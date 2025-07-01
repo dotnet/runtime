@@ -100,7 +100,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"The application '{relativePath}' is not a managed .dll or .exe.");
+                .And.HaveStdErrContaining($"The application '{relativePath}' is not a managed .dll.");
         }
 
         [Fact]
