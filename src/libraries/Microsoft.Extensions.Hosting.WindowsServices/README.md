@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Hosting.WindowsServices` contains implementation for using hosting in Windows Services.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.hosting.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](https://github.com/dotnet/runtime/tree/main/src/libraries#contribution-bar)

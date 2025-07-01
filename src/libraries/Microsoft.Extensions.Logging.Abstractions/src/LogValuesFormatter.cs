@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging
 
         public LogValuesFormatter(string format)
         {
-            ThrowHelper.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(format);
 
             OriginalFormat = format;
 
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Logging
                     formatDelimiterIndex = formatDelimiterIndex < 0 ? closeBraceIndex : formatDelimiterIndex + openBraceIndex;
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
-                    vsb.Append(_valueNames.Count.ToString());
+                    vsb.Append(_valueNames.Count.ToString(CultureInfo.InvariantCulture));
                     _valueNames.Add(format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
                     vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
 
@@ -186,32 +186,26 @@ namespace Microsoft.Extensions.Logging
 #if NET8_0_OR_GREATER
         internal string Format<TArg0>(TArg0 arg0)
         {
-            object? arg0String = null;
             return
-                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) ?
+                !TryFormatArgumentIfNullOrEnumerable(arg0, out object? arg0String) ?
                 string.Format(CultureInfo.InvariantCulture, _format, arg0) :
                 string.Format(CultureInfo.InvariantCulture, _format, arg0String);
         }
 
         internal string Format<TArg0, TArg1>(TArg0 arg0, TArg1 arg1)
         {
-            object? arg0String = null, arg1String = null;
             return
-                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) &&
-                !TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) ?
-                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1) :
-                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1);
+                TryFormatArgumentIfNullOrEnumerable(arg0, out object? arg0String) | TryFormatArgumentIfNullOrEnumerable(arg1, out object? arg1String) ?
+                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1) :
+                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1);
         }
 
         internal string Format<TArg0, TArg1, TArg2>(TArg0 arg0, TArg1 arg1, TArg2 arg2)
         {
-            object? arg0String = null, arg1String = null, arg2String = null;
             return
-                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) &&
-                !TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) &&
-                !TryFormatArgumentIfNullOrEnumerable(arg2, ref arg2String) ?
-                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1, arg2) :
-                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1, arg2String ?? arg2);
+                TryFormatArgumentIfNullOrEnumerable(arg0, out object? arg0String) | TryFormatArgumentIfNullOrEnumerable(arg1, out object? arg1String) | TryFormatArgumentIfNullOrEnumerable(arg2, out object? arg2String) ?
+                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1, arg2String ?? arg2):
+                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1, arg2);
         }
 #else
         internal string Format(object? arg0) =>
@@ -253,11 +247,10 @@ namespace Microsoft.Extensions.Logging
 
         private static object FormatArgument(object? value)
         {
-            object? stringValue = null;
-            return TryFormatArgumentIfNullOrEnumerable(value, ref stringValue) ? stringValue : value!;
+            return TryFormatArgumentIfNullOrEnumerable(value, out object? stringValue) ? stringValue : value!;
         }
 
-        private static bool TryFormatArgumentIfNullOrEnumerable<T>(T? value, [NotNullWhen(true)] ref object? stringValue)
+        private static bool TryFormatArgumentIfNullOrEnumerable<T>(T? value, [NotNullWhen(true)] out object? stringValue)
         {
             if (value == null)
             {
@@ -277,13 +270,17 @@ namespace Microsoft.Extensions.Logging
                         vsb.Append(", ");
                     }
 
-                    vsb.Append(e != null ? e.ToString() : NullValue);
+                    vsb.Append(
+                        e is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) :
+                        e is not null ? e.ToString() :
+                        NullValue);
                     first = false;
                 }
                 stringValue = vsb.ToString();
                 return true;
             }
 
+            stringValue = null;
             return false;
         }
     }

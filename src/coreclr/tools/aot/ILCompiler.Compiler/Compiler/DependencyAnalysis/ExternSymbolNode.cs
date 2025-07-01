@@ -55,4 +55,12 @@ namespace ILCompiler.DependencyAnalysis
             return _name.ToString();
         }
     }
+
+    public class AddressTakenExternSymbolNode : ExternSymbolNode
+    {
+        public AddressTakenExternSymbolNode(Utf8String name)
+            : base(name) { }
+
+        public override int ClassCode => -45645737;
+    }
 }

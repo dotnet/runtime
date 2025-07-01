@@ -255,7 +255,9 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not directly correspond to a <see cref="VarEnum"/> variant type.</exception>
         public static ComVariant Create<T>([DisallowNull] T value)
         {
-            Unsafe.SkipInit(out ComVariant variant);
+            // Although unused bits of native VARIANT is undefined, our managed test
+            // for Marshal.GetNativeVariantForObject asserts for its whole content.
+            ComVariant variant = default;
             if (typeof(T) == typeof(DBNull))
             {
                 variant = Null;
@@ -379,7 +381,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public static unsafe ComVariant CreateRaw<T>(VarEnum vt, T rawValue)
             where T : unmanaged
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(Unsafe.SizeOf<T>(), sizeof(UnionTypes), nameof(T));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(sizeof(T), sizeof(UnionTypes), nameof(T));
             if (vt == VarEnum.VT_DECIMAL)
             {
                 throw new ArgumentException(SR.ComVariant_VT_DECIMAL_NotSupported_CreateRaw, nameof(vt));
@@ -393,7 +395,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 throw new PlatformNotSupportedException(SR.ComVariant_SafeArray_PlatformNotSupported);
             }
 
-            Unsafe.SkipInit(out ComVariant value);
+            ComVariant value = default;
             value.VarType = vt;
             value.GetRawDataRef<T>() = (vt, sizeof(T)) switch
             {
@@ -571,7 +573,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public unsafe ref T GetRawDataRef<T>()
             where T : unmanaged
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(Unsafe.SizeOf<T>(), sizeof(UnionTypes), nameof(T));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(sizeof(T), sizeof(UnionTypes), nameof(T));
             if (typeof(T) == typeof(decimal))
             {
                 throw new ArgumentException(SR.ComVariant_VT_DECIMAL_NotSupported_RawDataRef, nameof(T));

@@ -20,8 +20,7 @@ namespace System.Linq
                 return gc.Count != 0;
             }
 
-#if !OPTIMIZE_FOR_SIZE
-            if (source is Iterator<TSource> iterator)
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 int count = iterator.GetCount(onlyIfCheap: true);
                 if (count >= 0)
@@ -32,7 +31,6 @@ namespace System.Linq
                 iterator.TryGetFirst(out bool found);
                 return found;
             }
-#endif
 
             if (source is ICollection ngc)
             {
@@ -55,11 +53,24 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (predicate(element))
+                foreach (TSource element in span)
                 {
-                    return true;
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -78,11 +89,24 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (!predicate(element))
+                foreach (TSource element in span)
                 {
-                    return false;
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
                 }
             }
 

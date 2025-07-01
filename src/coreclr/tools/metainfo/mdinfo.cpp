@@ -195,7 +195,7 @@ const char *g_szNativeType[] =
 
 static const char* ConvertToUtf8(LPCWSTR name, _Out_writes_(bufLen) char* buffer, ULONG bufLen)
 {
-    int res = WszWideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
+    int res = WideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
     if (res == 0)
         buffer[bufLen] = '\0';
     return buffer;
@@ -514,7 +514,10 @@ void MDInfo::DisplayScopeInfo()
     VWriteLine("ScopeName : %s",ConvertToUtf8(scopeName, scopeNameUtf8, ARRAY_SIZE(scopeNameUtf8)));
 
     if (!(m_DumpFilter & MDInfo::dumpNoLogo))
-        VWriteLine("MVID      : %s",GUIDAsString(mvid, guidString, STRING_BUFFER_LEN));
+    {
+        minipal_guid_as_string(mvid, guidString, STRING_BUFFER_LEN);
+        VWriteLine("MVID      : %s", guidString);
+    }
 
     hr = m_pImport->GetModuleFromScope(&mdm);
     if (FAILED(hr)) Error("GetModuleFromScope failed.", hr);
@@ -1949,7 +1952,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
         LPWSTR pwzName = (LPWSTR)(new WCHAR[iLen]);
         if(pwzName)
         {
-            WszMultiByteToWideChar(CP_UTF8,0, pMethName,-1, pwzName,iLen);
+            MultiByteToWideChar(CP_UTF8,0, pMethName,-1, pwzName,iLen);
             PrettyPrintSigLegacy(pSig, cbSig, pwzName, &qSigName, m_pImport);
             delete [] pwzName;
         }
@@ -2188,15 +2191,6 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
     sprintf_s (newPreFix, STRING_BUFFER_LEN, "\t\t%s", preFix);
     DisplayCustomAttributes(inPermission, newPreFix);
 } // void MDInfo::DisplayPermissionInfo()
-
-
-// simply prints out the given GUID in standard form
-
-LPCSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPSTR guidString, ULONG bufLen)
-{
-    GuidToLPSTR(inGuid, guidString, bufLen);
-    return guidString;
-} // LPCSTR MDInfo::GUIDAsString()
 
 #ifdef FEATURE_COMINTEROP
 LPCSTR MDInfo::VariantAsString(VARIANT *pVariant, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen)
@@ -2539,7 +2533,7 @@ void MDInfo::DisplayPinvokeInfo(mdToken inToken)
 /////////////////////////////////////////////////////////////////////////
 // void DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob);
 //
-// Display COM+ signature -- taken from cordump.cpp's DumpSignature
+// Display signature -- taken from cordump.cpp's DumpSignature
 /////////////////////////////////////////////////////////////////////////
 void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const char *preFix)
 {

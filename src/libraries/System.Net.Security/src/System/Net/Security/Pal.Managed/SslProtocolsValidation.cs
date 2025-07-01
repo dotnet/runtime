@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Security.Authentication;
 
 namespace System.Net
@@ -13,6 +14,7 @@ namespace System.Net
             // or throw if it's non-contiguous or if no protocols are specified.
 
             // First, mark all of the specified protocols.
+            Debug.Assert(orderedSslProtocols.Length <= 512); // it's currently 4(5), just make sure we're not going to blow the stack in the future
             Span<bool> protocolSet = stackalloc bool[orderedSslProtocols.Length];
             for (int i = 0; i < orderedSslProtocols.Length; i++)
             {

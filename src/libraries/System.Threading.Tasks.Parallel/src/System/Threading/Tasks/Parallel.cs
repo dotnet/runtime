@@ -240,7 +240,7 @@ namespace System.Threading.Tasks
 
 #if !FEATURE_WASM_MANAGED_THREADS
                 // Web browsers need special treatment that is implemented in TaskReplicator
-                if (OperatingSystem.IsBrowser() ||
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() ||
 #else
                 if (
 #endif

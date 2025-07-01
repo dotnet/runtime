@@ -681,18 +681,14 @@ namespace System
         {
             // For signed addition, we can detect overflow by checking if the sign of
             // both inputs are the same and then if that differs from the sign of the
-            // output.
+            // output. The logic for how this works is explained in the
+            //   System.Runtime.Intrinsics.Scalar<T>.AddSaturate method
 
             Int128 result = left + right;
 
-            uint sign = (uint)(left._upper >> 63);
-
-            if (sign == (uint)(right._upper >> 63))
+            if ((long)((result._upper ^ left._upper) & ~(left._upper ^ right._upper)) < 0)
             {
-                if (sign != (uint)(result._upper >> 63))
-                {
-                    ThrowHelper.ThrowOverflowException();
-                }
+                ThrowHelper.ThrowOverflowException();
             }
             return result;
         }
@@ -940,59 +936,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<Int128>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteInt128BigEndian(destination, this))
             {
-                ulong lower = _lower;
-                ulong upper = _upper;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    lower = BinaryPrimitives.ReverseEndianness(lower);
-                    upper = BinaryPrimitives.ReverseEndianness(upper);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, upper);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), lower);
-
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<Int128>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteInt128LittleEndian(destination, this))
             {
-                ulong lower = _lower;
-                ulong upper = _upper;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    lower = BinaryPrimitives.ReverseEndianness(lower);
-                    upper = BinaryPrimitives.ReverseEndianness(upper);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, lower);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), upper);
-
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -1616,15 +1580,13 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1660,8 +1622,7 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else
@@ -1691,15 +1652,13 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1735,8 +1694,7 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else
@@ -2109,18 +2067,14 @@ namespace System
         {
             // For signed subtraction, we can detect overflow by checking if the sign of
             // both inputs are different and then if that differs from the sign of the
-            // output.
+            // output. The logic for how this works is explained in the
+            //   System.Runtime.Intrinsics.Scalar<T>.SubtractSaturate method
 
             Int128 result = left - right;
 
-            uint sign = (uint)(left._upper >> 63);
-
-            if (sign != (uint)(right._upper >> 63))
+            if ((long)((result._upper ^ left._upper) & (left._upper ^ right._upper)) < 0)
             {
-                if (sign != (uint)(result._upper >> 63))
-                {
-                    ThrowHelper.ThrowOverflowException();
-                }
+                ThrowHelper.ThrowOverflowException();
             }
             return result;
         }

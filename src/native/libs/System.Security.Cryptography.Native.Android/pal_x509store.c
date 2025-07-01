@@ -458,3 +458,58 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
     (*env)->DeleteLocalRef(env, alias);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
+
+jobject AndroidCryptoNative_X509StoreGetPrivateKeyEntry(jobject /*KeyStore*/ store, const char* hashString)
+{
+    abort_if_invalid_pointer_argument (store);
+
+    JNIEnv* env = GetJNIEnv();
+    INIT_LOCALS(loc, alias);
+
+    jobject privateKeyEntry = NULL;
+
+    loc[alias] = make_java_string(env, hashString);
+
+    privateKeyEntry = (*env)->CallObjectMethod(env, store, g_KeyStoreGetEntry, loc[alias], NULL);
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, privateKeyEntry);
+        goto cleanup;
+    }
+
+    bool isPrivateKeyEntry = (*env)->IsInstanceOf(env, privateKeyEntry, g_PrivateKeyEntryClass);
+    if (!isPrivateKeyEntry)
+    {
+        ReleaseLRef(env, privateKeyEntry);
+        privateKeyEntry = NULL;
+        goto cleanup;
+    }
+
+    privateKeyEntry = ToGRef(env, privateKeyEntry);
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return privateKeyEntry;
+}
+
+int32_t AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const char* hashString)
+{
+    int32_t ret = FAIL;
+
+    abort_if_invalid_pointer_argument (store);
+
+    JNIEnv* env = GetJNIEnv();
+    INIT_LOCALS(loc, alias);
+
+    loc[alias] = make_java_string(env, hashString);
+
+    // store.deleteEntry(alias);
+    (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, loc[alias]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}

@@ -11,15 +11,23 @@ Imports System.Resources
 Namespace System
 
     Friend NotInheritable Class SR
-        ' This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format. 
-        ' by default it returns false.
-        ' Native code generators can replace the value this returns based on user input at the time of native code generation.
-        ' Marked as NoInlining because if this is used in an AoT compiled app that is not compiled into a single file, the user
-        ' could compile each module with a different setting for this. We want to make sure there's a consistent behavior
-        ' that doesn't depend on which native module this method got inlined into.
-        <Global.System.Runtime.CompilerServices.MethodImpl(Global.System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>
-        Public Shared Function UsingResourceKeys() As Boolean
+        Private Shared ReadOnly s_usingResourceKeys As Boolean = GetUsingResourceKeysSwitchValue()
+
+        Private Shared Function GetUsingResourceKeysSwitchValue() As Boolean
+            Dim usingResourceKeys As Boolean
+            If (AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", usingResourceKeys)) Then
+                Return usingResourceKeys
+            End If
+
             Return False
+        End Function
+
+        ' This method Is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
+        ' by default it returns the value of System.Resources.UseSystemResourceKeys AppContext switch Or false if Not specified.
+        ' Native code generators can replace the value this returns based on user input at the time of native code generation.
+        ' The trimming tools are also capable of replacing the value of this method when the application Is being trimmed.
+        Public Shared Function UsingResourceKeys() As Boolean
+            Return s_usingResourceKeys
         End Function
 
         Friend Shared Function GetResourceString(ByVal resourceKey As String, Optional ByVal defaultString As String = Nothing) As String

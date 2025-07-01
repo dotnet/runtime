@@ -112,8 +112,21 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override object? DefaultValue => default(T);
         internal override bool PropertyTypeCanBeNull => default(T) is null;
-        internal override JsonParameterInfo CreateJsonParameterInfo(JsonParameterInfoValues parameterInfoValues)
-            => new JsonParameterInfo<T>(parameterInfoValues, this);
+        internal override void AddJsonParameterInfo(JsonParameterInfoValues parameterInfoValues)
+        {
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(AssociatedParameter is null);
+
+            AssociatedParameter = new JsonParameterInfo<T>(parameterInfoValues, this);
+            // Overwrite the nullability annotation of property setter with the parameter.
+            _isSetNullable = parameterInfoValues.IsNullable;
+
+            if (Options.RespectRequiredConstructorParameters)
+            {
+                // If the property has been associated with a non-optional parameter, mark it as required.
+                _isRequired |= AssociatedParameter.IsRequiredParameter;
+            }
+        }
 
         internal new JsonConverter<T> EffectiveConverter
         {
@@ -165,7 +178,7 @@ namespace System.Text.Json.Serialization.Metadata
 #else
                 !EffectiveConverter.IsValueType &&
 #endif
-                Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                Options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.IgnoreCycles &&
                 value is not null &&
                 !state.IsContinuation &&
                 // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
@@ -290,7 +303,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 success = true;
-                state.Current.MarkRequiredPropertyAsRead(this);
+                state.Current.MarkPropertyAsRead(this);
             }
             else if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
@@ -312,7 +325,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 success = true;
-                state.Current.MarkRequiredPropertyAsRead(this);
+                state.Current.MarkPropertyAsRead(this);
             }
             else
             {
@@ -341,7 +354,7 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                         }
 
-                        state.Current.MarkRequiredPropertyAsRead(this);
+                        state.Current.MarkPropertyAsRead(this);
                     }
                 }
             }
@@ -414,6 +427,14 @@ namespace System.Text.Json.Serialization.Metadata
                 case JsonIgnoreCondition.WhenWritingDefault:
                     ShouldSerialize = ShouldSerializeIgnoreWhenWritingDefault;
                     IgnoreDefaultValuesOnWrite = true;
+                    break;
+
+                case JsonIgnoreCondition.WhenWriting:
+                    ShouldSerialize = ShouldSerializeIgnoreConditionAlways;
+                    break;
+
+                case JsonIgnoreCondition.WhenReading:
+                    Set = null;
                     break;
 
                 default:

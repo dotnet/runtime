@@ -22,7 +22,7 @@ namespace System.Numerics.Tensors
         /// the corresponding destination location is set to that value.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi / 180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <typeparamref name="T"/>.Pi / 180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -30,8 +30,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Sinh<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IHyperbolicFunctions<T> =>
+            where T : IHyperbolicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, SinhOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, SinhOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Sinh(x)</summary>
         internal readonly struct SinhOperator<T> : IUnaryOperator<T, T>

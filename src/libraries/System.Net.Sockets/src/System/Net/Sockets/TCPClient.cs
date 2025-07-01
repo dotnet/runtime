@@ -17,10 +17,10 @@ namespace System.Net.Sockets
         private AddressFamily _family;
         private Socket _clientSocket = null!; // initialized by helper called from ctor
         private NetworkStream? _dataStream;
-        private volatile int _disposed;
+        private volatile bool _disposed;
         private bool _active;
 
-        private bool Disposed => _disposed != 0;
+        private bool Disposed => _disposed;
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class.
         public TcpClient() : this(AddressFamily.Unknown)
@@ -123,6 +123,8 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(string hostname, int port)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(hostname);
@@ -140,6 +142,8 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(IPAddress address, int port)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(address);
@@ -155,6 +159,8 @@ namespace System.Net.Sockets
         // Connect the Client to the specified end point.
         public void Connect(IPEndPoint remoteEP)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(remoteEP);
@@ -166,6 +172,10 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress[] ipAddresses, int port)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
+            ThrowIfDisposed();
+
             Client.Connect(ipAddresses, port);
             _family = Client.AddressFamily;
             _active = true;
@@ -229,6 +239,8 @@ namespace System.Net.Sockets
 
         public void EndConnect(IAsyncResult asyncResult)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             _clientSocket.EndConnect(asyncResult);
             _active = true;
 
@@ -252,7 +264,7 @@ namespace System.Net.Sockets
         // Disposes the Tcp connection.
         protected virtual void Dispose(bool disposing)
         {
-            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+            if (!Interlocked.Exchange(ref _disposed, true))
             {
                 if (disposing)
                 {
@@ -307,23 +319,46 @@ namespace System.Net.Sockets
         // Gets or sets the receive time out value of the connection in milliseconds.
         public int ReceiveTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!; }
-            set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, value); }
+            get
+            {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+                return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!;
+            }
+            set
+            {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+                Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, value);
+            }
         }
 
         // Gets or sets the send time out value of the connection in milliseconds.
         public int SendTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!; }
-            set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, value); }
+            get
+            {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+                return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!;
+            }
+            set
+            {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+                Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, value);
+            }
         }
 
         // Gets or sets the value of the connection's linger option.
         [DisallowNull]
         public LingerOption? LingerState
         {
-            get { return Client.LingerState; }
-            set { Client.LingerState = value!; }
+            get
+            {
+                return Client.LingerState;
+            }
+            set
+            {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+                Client.LingerState = value!;
+            }
         }
 
         // Enables or disables delay when send or receive buffers are full.

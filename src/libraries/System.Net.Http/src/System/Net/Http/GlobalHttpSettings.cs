@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Net.Http
 {
     /// <summary>
@@ -10,15 +13,24 @@ namespace System.Net.Http
     {
         internal static class DiagnosticsHandler
         {
+            [FeatureSwitchDefinition("System.Net.Http.EnableActivityPropagation")]
             public static bool EnableActivityPropagation { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.EnableActivityPropagation",
                 "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION",
                 true);
         }
 
+        internal static class MetricsHandler
+        {
+            [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
+            public static bool IsGloballyEnabled { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Diagnostics.Metrics.Meter.IsSupported",
+                true);
+        }
+
         internal static class SocketsHttpHandler
         {
-#if !BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
             // Default to allowing HTTP/2, but enable that to be overridden by an
             // AppContext switch, or by an environment variable being set to false/0.
             public static bool AllowHttp2 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(

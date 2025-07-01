@@ -38,6 +38,52 @@ internal static partial class Interop
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static partial int GetMaxMdSize();
 
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_Pbkdf2", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int Pbkdf2(
+            string algorithmName,
+            ReadOnlySpan<byte> pPassword,
+            int passwordLength,
+            ReadOnlySpan<byte> pSalt,
+            int saltLength,
+            int iterations,
+            Span<byte> pDestination,
+            int destinationLength);
+
+        internal static void Pbkdf2(
+            string algorithmName,
+            ReadOnlySpan<byte> password,
+            ReadOnlySpan<byte> salt,
+            int iterations,
+            Span<byte> destination)
+        {
+            const int Success = 1;
+            const int UnsupportedAlgorithm = -1;
+            const int Failed = 0;
+
+            int result = Pbkdf2(
+                algorithmName,
+                password,
+                password.Length,
+                salt,
+                salt.Length,
+                iterations,
+                destination,
+                destination.Length);
+
+            switch (result)
+            {
+                case Success:
+                    return;
+                case UnsupportedAlgorithm:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, algorithmName));
+                case Failed:
+                    throw new CryptographicException();
+                default:
+                    Debug.Fail($"Unexpected result {result}");
+                    throw new CryptographicException();
+            }
+        }
+
         internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
         {
             // The partial needs to match the OpenSSL parameters.
@@ -56,12 +102,8 @@ internal static partial class Interop
             throw new UnreachableException();
         }
 
-        internal static SafeEvpMdCtxHandle EvpMdCtxCopyEx(SafeEvpMdCtxHandle ctx)
-        {
-            _ = ctx;
-            Debug.Fail("Should have validated that XOF is not supported before getting here.");
-            throw new UnreachableException();
-        }
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCopyEx")]
+        internal static partial SafeEvpMdCtxHandle EvpMdCtxCopyEx(SafeEvpMdCtxHandle ctx);
 
         internal static int EvpDigestSqueeze(SafeEvpMdCtxHandle ctx, Span<byte> destination)
         {

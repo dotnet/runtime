@@ -863,6 +863,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         public async Task Collections()
         {
             string source = """
+                using System.Collections;
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
 
@@ -888,6 +889,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         // Diagnostic warning because we don't know how to instantiate the property type.
                         public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedIReadOnlyDictionaryUnsupported { get; set; }
                         public IReadOnlyDictionary<string, int> IReadOnlyDictionary { get; set; }
+                        public CollectionStructExplicit CollectionStructExplicit { get; set; }
                     }
 
                     public class CustomDictionary<TKey, TValue> : Dictionary<TKey, TValue>
@@ -906,6 +908,32 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     // Diagnostic warning because we don't know how to instantiate this type.
                     public interface ICustomSet<T> : ISet<T>
                     {
+                    }
+
+                    // struct that explicitly implements ICollection<string>
+                    public struct CollectionStructExplicit : ICollection<string>
+                    {
+                        public CollectionStructExplicit() {}
+
+                        ICollection<string> _collection = new List<string>();
+
+                        int ICollection<string>.Count => _collection.Count;
+
+                        bool ICollection<string>.IsReadOnly => _collection.IsReadOnly;
+
+                        void ICollection<string>.Add(string item) => _collection.Add(item);
+
+                        void ICollection<string>.Clear() => _collection.Clear();
+
+                        bool ICollection<string>.Contains(string item) => _collection.Contains(item);
+
+                        void ICollection<string>.CopyTo(string[] array, int arrayIndex) => _collection.CopyTo(array, arrayIndex);
+
+                        IEnumerator<string> IEnumerable<string>.GetEnumerator() => _collection.GetEnumerator();
+
+                        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_collection).GetEnumerator();
+
+                        bool ICollection<string>.Remove(string item) => _collection.Remove(item);
                     }
                 }
                 """;

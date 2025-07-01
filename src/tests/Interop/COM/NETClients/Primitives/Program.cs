@@ -40,6 +40,7 @@ namespace NetClient
             new StringTests().Run();
             new ErrorTests().Run();
             new ColorTests().Run();
+            new CallViaReflectionTests().Run();
         }
     }
 }

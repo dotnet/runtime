@@ -56,5 +56,20 @@ internal static partial class Interop
             IntPtr phMsg,
             IntPtr ppvContext
             );
+
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CryptQueryObject(
+            CertQueryObjectType dwObjectType,
+            void* pvObject,
+            ExpectedContentTypeFlags dwExpectedContentTypeFlags,
+            ExpectedFormatTypeFlags dwExpectedFormatTypeFlags,
+            int dwFlags, // reserved - always pass 0
+            IntPtr pdwMsgAndCertEncodingType,
+            out ContentType pdwContentType,
+            IntPtr pdwFormatType,
+            IntPtr phCertStore,
+            IntPtr phMsg,
+            out SafeCertContextHandle ppvContext);
     }
 }

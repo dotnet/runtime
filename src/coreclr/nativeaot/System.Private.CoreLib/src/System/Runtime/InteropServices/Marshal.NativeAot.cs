@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(throwIfNotMarshalable);
 
-            if (t.IsPointer /* or IsFunctionPointer */)
+            if (t.IsPointer || t.IsFunctionPointer)
                 return IntPtr.Size;
 
             if (t.IsByRef || t.IsArray || t.ContainsGenericParameters)
@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structuretype, nameof(structuretype));
+            ArgumentNullException.ThrowIfNull(structuretype);
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
@@ -260,9 +260,7 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-#pragma warning disable 8500 // sizeof of managed types
             ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
-#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);
@@ -340,9 +338,7 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-#pragma warning disable 8500 // sizeof of managed types
             ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
-#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);

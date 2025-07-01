@@ -40,6 +40,7 @@ namespace System.Formats.Tar
         private const string PaxEaDevMinor = "devminor";
 
         internal Stream? _dataStream;
+        internal long _dataOffset;
 
         // Position in the stream where the data ends in this header.
         internal long _endOfHeaderAndDataAndBlockAlignment;
@@ -81,10 +82,6 @@ namespace System.Formats.Tar
         internal DateTimeOffset _aTime;
         internal DateTimeOffset _cTime;
 
-        // If the archive is GNU and the offset, longnames, unused, sparse, isextended and realsize
-        // fields have data, we store it to avoid data loss, but we don't yet expose it publicly.
-        internal byte[]? _gnuUnusedBytes;
-
         // Constructor called when creating an entry with default common fields.
         internal TarHeader(TarEntryFormat format, string name = "", int mode = 0, DateTimeOffset mTime = default, TarEntryType typeFlag = TarEntryType.RegularFile)
         {
@@ -95,6 +92,7 @@ namespace System.Formats.Tar
             _typeFlag = typeFlag;
             _magic = GetMagicForFormat(format);
             _version = GetVersionForFormat(format);
+            _dataOffset = -1;
         }
 
         // Constructor called when creating an entry using the common fields from another entry.
@@ -110,7 +108,7 @@ namespace System.Formats.Tar
             _dataStream = other._dataStream;
         }
 
-        internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing)
+        internal void AddExtendedAttributes(IEnumerable<KeyValuePair<string, string>> existing)
         {
             Debug.Assert(_ea == null);
             Debug.Assert(existing != null);
@@ -149,5 +147,10 @@ namespace System.Formats.Tar
             TarEntryFormat.Gnu => GnuVersion,
             _ => string.Empty,
         };
+
+        // Stores the archive stream's position where we know the current entry's data section begins,
+        // if the archive stream is seekable. Otherwise, -1.
+        private static void SetDataOffset(TarHeader header, Stream archiveStream) =>
+            header._dataOffset = archiveStream.CanSeek ? archiveStream.Position : -1;
     }
 }

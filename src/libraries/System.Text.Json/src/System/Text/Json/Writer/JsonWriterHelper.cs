@@ -257,7 +257,7 @@ namespace System.Text.Json
         private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 #endif
 
-        public static unsafe bool IsValidUtf8String(ReadOnlySpan<byte> bytes)
+        public static bool IsValidUtf8String(ReadOnlySpan<byte> bytes)
         {
 #if NET8_0_OR_GREATER
             return Utf8.IsValid(bytes);
@@ -269,9 +269,12 @@ namespace System.Text.Json
 #else
                 if (!bytes.IsEmpty)
                 {
-                    fixed (byte* ptr = bytes)
+                    unsafe
                     {
-                        s_utf8Encoding.GetCharCount(ptr, bytes.Length);
+                        fixed (byte* ptr = bytes)
+                        {
+                            s_utf8Encoding.GetCharCount(ptr, bytes.Length);
+                        }
                     }
                 }
 #endif
@@ -284,7 +287,7 @@ namespace System.Text.Json
 #endif
         }
 
-        internal static unsafe OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)
+        internal static OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)
         {
 #if NET
             OperationStatus status = Utf8.FromUtf16(source, destination, out int charsRead, out written, replaceInvalidSequences: false, isFinalBlock: true);
@@ -297,10 +300,13 @@ namespace System.Text.Json
             {
                 if (!source.IsEmpty)
                 {
-                    fixed (char* charPtr = source)
-                    fixed (byte* destPtr = destination)
+                    unsafe
                     {
-                        written = s_utf8Encoding.GetBytes(charPtr, source.Length, destPtr, destination.Length);
+                        fixed (char* charPtr = source)
+                        fixed (byte* destPtr = destination)
+                        {
+                            written = s_utf8Encoding.GetBytes(charPtr, source.Length, destPtr, destination.Length);
+                        }
                     }
                 }
 

@@ -70,14 +70,29 @@ namespace System.Globalization
             return s_dateData.Select(x => new object[] {x.Date, x.Week});
         }
 
+        public static IEnumerable<object[]> GetWeekOfYear_DateOnly_TestData()
+        {
+            return s_dateData.Select(x => new object[] { DateOnly.FromDateTime(x.Date), x.Week});
+        }
+
         public static IEnumerable<object[]> GetYear_TestData()
         {
             return s_dateData.Select(x => new object[] {x.Date, x.Year});
         }
 
+        public static IEnumerable<object[]> GetYear_DateOnly_TestData()
+        {
+            return s_dateData.Select(x => new object[] { DateOnly.FromDateTime(x.Date), x.Year});
+        }
+
         public static IEnumerable<object[]> ToDateTime_TestData()
         {
             return s_dateData.Select(x => new object[] {x.Year, x.Week, x.DayOfWeek, x.Date});
+        }
+
+        public static IEnumerable<object[]> ToDateOnly_TestData()
+        {
+            return s_dateData.Select(x => new object[] {x.Year, x.Week, x.DayOfWeek, DateOnly.FromDateTime(x.Date)});
         }
 
         public static IEnumerable<object[]> GetYearStart_TestData()
@@ -96,8 +111,20 @@ namespace System.Globalization
             Assert.Equal(expected, ISOWeek.GetWeekOfYear(date));
         }
 
+        [Theory, MemberData(nameof(GetWeekOfYear_DateOnly_TestData))]
+        public static void GetWeekOfYearUsingDateOnly(DateOnly date, int expected)
+        {
+            Assert.Equal(expected, ISOWeek.GetWeekOfYear(date));
+        }
+
         [Theory, MemberData(nameof(GetYear_TestData))]
         public static void GetYear(DateTime date, int expected)
+        {
+            Assert.Equal(expected, ISOWeek.GetYear(date));
+        }
+
+        [Theory, MemberData(nameof(GetYear_DateOnly_TestData))]
+        public static void GetYearUsingDateOnly(DateOnly date, int expected)
         {
             Assert.Equal(expected, ISOWeek.GetYear(date));
         }
@@ -108,12 +135,19 @@ namespace System.Globalization
             Assert.Equal(expected, ISOWeek.ToDateTime(year, week, dayOfWeek));
         }
 
+        [Theory, MemberData(nameof(ToDateOnly_TestData))]
+        public static void ToDateOnly(int year, int week, DayOfWeek dayOfWeek, DateOnly expected)
+        {
+            Assert.Equal(expected, ISOWeek.ToDateOnly(year, week, dayOfWeek));
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(10000)]
         public static void ToDateTime_WithInvalidYear_Throws(int year)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(year), () => ISOWeek.ToDateTime(year, 1, DayOfWeek.Friday));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(year), () => ISOWeek.ToDateOnly(year, 1, DayOfWeek.Friday));
         }
 
         [Theory]
@@ -122,6 +156,7 @@ namespace System.Globalization
         public static void ToDateTime_WithInvalidWeek_Throws(int week)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(week), () => ISOWeek.ToDateTime(2018, week, DayOfWeek.Friday));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(week), () => ISOWeek.ToDateOnly(2018, week, DayOfWeek.Friday));
         }
 
         [Theory]
@@ -130,6 +165,7 @@ namespace System.Globalization
         public static void ToDateTime_WithInvalidDayOfWeek_Throws(int dayOfWeek)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(dayOfWeek), () => ISOWeek.ToDateTime(2018, 1, (DayOfWeek)dayOfWeek));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(dayOfWeek), () => ISOWeek.ToDateOnly(2018, 1, (DayOfWeek)dayOfWeek));
         }
 
         [Fact]

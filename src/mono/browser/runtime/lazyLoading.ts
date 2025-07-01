@@ -3,7 +3,8 @@
 
 import { loaderHelpers } from "./globals";
 import { load_lazy_assembly } from "./managed-exports";
-import { AssetEntry } from "./types";
+import { type AssemblyAsset, type PdbAsset } from "./types";
+import { type AssetEntryInternal } from "./types/internal";
 
 export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boolean> {
     const resources = loaderHelpers.config.resources!;
@@ -12,34 +13,54 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
     }
 
-    if (!lazyAssemblies[assemblyNameToLoad]) {
+    let assemblyNameWithoutExtension = assemblyNameToLoad;
+    if (assemblyNameToLoad.endsWith(".dll"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 4);
+    else if (assemblyNameToLoad.endsWith(".wasm"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 5);
+
+    const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
+    const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
+
+    let dllAsset: (AssemblyAsset & AssetEntryInternal) | null = null;
+    for (let i = 0; i < lazyAssemblies.length; i++) {
+        const asset = lazyAssemblies[i];
+        if (asset.virtualPath === assemblyNameToLoadDll || asset.virtualPath === assemblyNameToLoadWasm) {
+            dllAsset = asset as AssemblyAsset & AssetEntryInternal;
+            dllAsset.behavior = "assembly";
+            break;
+        }
+    }
+
+    if (dllAsset == null) {
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
 
-    const dllAsset: AssetEntry = {
-        name: assemblyNameToLoad,
-        hash: lazyAssemblies[assemblyNameToLoad],
-        behavior: "assembly",
-    };
-
-    if (loaderHelpers.loadedAssemblies.includes(assemblyNameToLoad)) {
+    if (loaderHelpers.loadedAssemblies.includes(dllAsset.name)) {
         return false;
     }
 
-    const pdbNameToLoad = changeExtension(dllAsset.name, ".pdb");
-    const shouldLoadPdb = loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+    const pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
+    let shouldLoadPdb = false;
+    let pdbAsset: (PdbAsset & AssetEntryInternal) | null = null;
+    if (loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
+        for (let i = 0; i < lazyAssemblies.length; i++) {
+            if (lazyAssemblies[i].virtualPath === pdbNameToLoad) {
+                shouldLoadPdb = true;
+                pdbAsset = lazyAssemblies[i] as PdbAsset & AssetEntryInternal;
+                pdbAsset.behavior = "pdb";
+                break;
+            }
+        }
+    }
 
     const dllBytesPromise = loaderHelpers.retrieve_asset_download(dllAsset);
 
     let dll = null;
     let pdb = null;
     if (shouldLoadPdb) {
-        const pdbBytesPromise = lazyAssemblies[pdbNameToLoad]
-            ? loaderHelpers.retrieve_asset_download({
-                name: pdbNameToLoad,
-                hash: lazyAssemblies[pdbNameToLoad],
-                behavior: "pdb"
-            })
+        const pdbBytesPromise = pdbAsset != null
+            ? loaderHelpers.retrieve_asset_download(pdbAsset)
             : Promise.resolve(null);
 
         const [dllBytes, pdbBytes] = await Promise.all([dllBytesPromise, pdbBytesPromise]);
@@ -54,13 +75,4 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
 
     load_lazy_assembly(dll, pdb);
     return true;
-}
-
-function changeExtension (filename: string, newExtensionWithLeadingDot: string) {
-    const lastDotIndex = filename.lastIndexOf(".");
-    if (lastDotIndex < 0) {
-        throw new Error(`No extension to replace in '${filename}'`);
-    }
-
-    return filename.substring(0, lastDotIndex) + newExtensionWithLeadingDot;
 }

@@ -112,7 +112,7 @@ char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
     {
-        tokLen = WszWideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
+        tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
         nb[tokLen] = 0;
     }
     return nb;
@@ -129,7 +129,7 @@ char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Ou
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
-    tokLen = WszWideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
+    tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
@@ -839,10 +839,6 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 int yylex()
 {
     char* curPos = PENV->curPos;
@@ -971,7 +967,7 @@ Its_An_Id:
                             {
                                 if((wzFile = new WCHAR[tokLen+1]) != NULL)
                                 {
-                                    tokLen = WszMultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
+                                    tokLen = MultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
                                     wzFile[tokLen] = 0;
                                 }
                             }
@@ -1286,9 +1282,6 @@ Just_A_Character:
     PENV->curTok = curTok;
     return(tok);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /**************************************************************************/
 static char* newString(_In_ __nullterminated const char* str1)
@@ -1781,10 +1774,10 @@ void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
         if(g_uCodePage != CP_ACP)
         {
                 memset(wz,0,dwUniBuf); // dwUniBuf/2 WCHARs = dwUniBuf bytes
-                WszMultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
+                MultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
 
                 memset(sz,0,dwUniBuf);
-                WszWideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
+                WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
         }
         fprintf(pF,"%s",sz);
 }

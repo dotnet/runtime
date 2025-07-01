@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Logging.TraceSource` provides a basic implementation for the built-in TraceSource logger provider. This logger logs messages to a trace listener by writing messages with `System.Diagnostics.TraceSource.TraceEvent()`.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/logging.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/logging.
 
 ## Example
 

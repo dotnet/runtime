@@ -81,3 +81,9 @@ PALEXPORT int32_t CryptoNative_HmacOneShot(const EVP_MD* type,
                                            int32_t sourceSize,
                                            uint8_t* md,
                                            int32_t* mdSize);
+
+/**
+ * Clones the context of the HMAC.
+ * Returns NULL on failure.
+*/
+PALEXPORT HMAC_CTX* CryptoNative_HmacCopy(const HMAC_CTX* ctx);

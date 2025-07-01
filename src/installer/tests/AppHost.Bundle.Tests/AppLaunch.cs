@@ -80,6 +80,28 @@ namespace AppHost.Bundle.Tests
             }
         }
 
+        [ConditionalTheory(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DisableCetCompat(bool selfContained)
+        {
+            SingleFileTestApp app = selfContained
+                ? sharedTestState.SelfContainedApp.Copy()
+                : sharedTestState.FrameworkDependentApp.Copy();
+            app.CreateAppHost(disableCetCompat: true);
+
+            string singleFile = app.Bundle();
+            Command.Create(singleFile)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture)
+                .MultilevelLookup(false)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -97,6 +119,65 @@ namespace AppHost.Bundle.Tests
             }
 
             RunTheApp(singleFile, selfContained);
+        }
+
+        [Fact]
+        public void FrameworkDependent_NoBundleEntryPoint()
+        {
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle();
+
+            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrFrameworkMissingFailure"))
+            {
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
+                    .RemoveHostFxr()
+                    .AddMockHostFxr(new Version(2, 2, 0))
+                    .Build();
+
+                // Run the bundled app
+                Command.Create(singleFile)
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(dotnet.BinPath)
+                    .Execute()
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("You must install or update .NET to run this application.")
+                    .And.HaveStdErrContaining("App host version:")
+                    .And.HaveStdErrContaining("apphost_version=");
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        public void FrameworkDependent_GUI_DownlevelHostFxr_ErrorDialog()
+        {
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle();
+            Microsoft.NET.HostModel.AppHost.PEUtils.SetWindowsGraphicalUserInterfaceBit(singleFile);
+
+            // The mockhostfxrBundleVersionFailure folder name is used by mock hostfxr to return the appropriate error code
+            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrBundleVersionFailure"))
+            {
+                string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
+
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
+                    .RemoveHostFxr()
+                    .AddMockHostFxr(new Version(5, 0, 0))
+                    .Build();
+
+                Command command = Command.Create(singleFile)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
+                    .Start();
+
+                WindowsUtils.WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
+
+                command
+                    .WaitForExit()
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining("apphost_version=");
+            }
         }
 
         public class SharedTestState : IDisposable

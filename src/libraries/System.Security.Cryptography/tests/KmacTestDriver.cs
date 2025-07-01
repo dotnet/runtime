@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public interface IKmacTrait<TKmac> where TKmac : IDisposable
+    public interface IKmacTrait<TKmac> where TKmac : class, IDisposable
     {
         static abstract TKmac Create(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customizationString);
         static abstract TKmac Create(byte[] key, byte[] customizationString);
@@ -24,6 +24,7 @@ namespace System.Security.Cryptography.Tests
         static abstract void GetHashAndReset(TKmac kmac, Span<byte> destination);
         static abstract byte[] GetCurrentHash(TKmac kmac, int outputLength);
         static abstract void GetCurrentHash(TKmac kmac, Span<byte> destination);
+        static abstract TKmac Clone(TKmac kmac);
 
         static abstract byte[] HashData(byte[] key, byte[] source, int outputLength, byte[] customizationString);
         static abstract byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, int outputLength, ReadOnlySpan<byte> customizationString);
@@ -57,7 +58,7 @@ namespace System.Security.Cryptography.Tests
 
     public abstract class KmacTestDriver<TKmacTrait, TKmac>
         where TKmacTrait : IKmacTrait<TKmac>
-        where TKmac : IDisposable
+        where TKmac : class, IDisposable
     {
         // Test vectors can be generated with the following shell script. Change the algorithm and xof variables as needed.
         //
@@ -94,7 +95,7 @@ namespace System.Security.Cryptography.Tests
         public static bool IsSupported => TKmacTrait.IsSupported;
         public static bool IsNotSupported => !IsSupported;
         public static KeySizes? PlatformKeySizeRequirements { get; } =
-            PlatformDetection.IsOpenSslSupported ? new KeySizes(4, 512, 1) : null;
+            PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsAzureLinux ? new KeySizes(4, 512, 1) : null;
 
         public static int? PlatformMaxOutputSize { get; } = PlatformDetection.IsOpenSslSupported ? 0xFFFFFF / 8 : null;
         public static int? PlatformMaxCustomizationStringSize { get; } = PlatformDetection.IsOpenSslSupported ? 512 : null;
@@ -196,6 +197,94 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(testVector.Mac, Convert.ToHexString(mac), ignoreCase: true);
 
                     TKmacTrait.GetHashAndReset(kmac, mac);
+                    Assert.Equal(testVector.Mac, Convert.ToHexString(mac), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Clone_Independent_Unobserved()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] mac = new byte[testVector.Mac.Length / 2];
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                using (TKmac clone = TKmacTrait.Clone(kmac))
+                {
+                    TKmacTrait.AppendData(kmac, "badbadbad"u8);
+
+                    TKmacTrait.AppendData(clone, testVector.MsgBytes);
+                    TKmacTrait.GetCurrentHash(clone, mac);
+                    Assert.Equal(testVector.Mac, Convert.ToHexString(mac), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Clone_UseAfterReset()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] mac = new byte[testVector.Mac.Length / 2];
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+
+                    using (TKmac clone = TKmacTrait.Clone(kmac))
+                    {
+                        TKmacTrait.GetHashAndReset(clone, mac);
+                        Assert.Equal(testVector.MacBytes, mac);
+                        TKmacTrait.AppendData(clone, testVector.MsgBytes);
+
+                        TKmacTrait.GetHashAndReset(clone, mac);
+                        Assert.Equal(testVector.MacBytes, mac);
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Clone_Independent_Observed()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] mac = new byte[testVector.Mac.Length / 2];
+                byte[] cloneMac = new byte[testVector.Mac.Length / 2];
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, "badbadbad"u8);
+
+                    using (TKmac clone = TKmacTrait.Clone(kmac))
+                    {
+                        TKmacTrait.AppendData(clone, testVector.MsgBytes);
+                        TKmacTrait.GetHashAndReset(clone, cloneMac);
+                        Assert.NotEqual(testVector.MacBytes, cloneMac);
+
+                        TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+                        TKmacTrait.GetHashAndReset(kmac, mac);
+                        Assert.Equal(mac, cloneMac);
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Clone_Independent_Disposed()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] mac = new byte[testVector.Mac.Length / 2];
+
+                TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes);
+                using (TKmac clone = TKmacTrait.Clone(kmac))
+                {
+                    kmac.Dispose();
+
+                    TKmacTrait.AppendData(clone, testVector.MsgBytes);
+                    TKmacTrait.GetCurrentHash(clone, mac);
                     Assert.Equal(testVector.Mac, Convert.ToHexString(mac), ignoreCase: true);
                 }
             }
@@ -411,7 +500,7 @@ namespace System.Security.Cryptography.Tests
                 mac = stackalloc byte[OutputLength];
                 TKmacTrait.AppendData(kmac, "habaneros"u8);
                 TKmacTrait.GetHashAndReset(kmac, mac);
-                AssertExtensions.SequenceEqual(expected, mac);
+                AssertExtensions.SequenceEqual(expected.AsSpan(), mac);
             }
         }
 
@@ -643,6 +732,16 @@ namespace System.Security.Cryptography.Tests
 
                     Assert.Equal(testVector.Mac, Convert.ToHexString(destination), ignoreCase: true);
                 }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void Clone_DifferentInstance()
+        {
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: null))
+            using (TKmac clone = TKmacTrait.Clone(kmac))
+            {
+                Assert.NotSame(kmac, clone);
             }
         }
 
@@ -914,6 +1013,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => TKmacTrait.GetHashAndReset(kmac, buffer.AsSpan()));
             Assert.Throws<ObjectDisposedException>(() => TKmacTrait.GetCurrentHash(kmac, outputLength: 1));
             Assert.Throws<ObjectDisposedException>(() => TKmacTrait.GetCurrentHash(kmac, buffer.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => TKmacTrait.Clone(kmac));
         }
 
         [ConditionalFact(nameof(IsNotSupported))]

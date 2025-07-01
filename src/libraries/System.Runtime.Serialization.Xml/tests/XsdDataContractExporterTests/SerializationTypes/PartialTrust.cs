@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
         {
             public AttributeOnlyIXmlSerializable()
             {
-                // This was not commented in NetFx. It clutters output though and seems unneccesary for our needs.
+                // This was not commented in NetFx. It clutters output though and seems unnecessary for our needs.
                 //Console.WriteLine("Default Ctor");
             }
 

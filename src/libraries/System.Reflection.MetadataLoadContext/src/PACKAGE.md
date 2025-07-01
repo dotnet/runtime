@@ -50,9 +50,9 @@ The main types provided by this library are:
 
 <!-- Links to further documentation -->
 
-* [How to: Inspect assembly contents using MetadataLoadContext](https://docs.microsoft.com/dotnet/standard/assembly/inspect-contents-using-metadataloadcontext)
-* [System.Reflection.MetadataLoadContext](https://docs.microsoft.com/dotnet/api/system.reflection.metadataloadcontext)
-* [System.Reflection.MetadataAssemblyResolver](https://docs.microsoft.com/dotnet/api/system.reflection.metadataassemblyresolver)
+* [How to: Inspect assembly contents using MetadataLoadContext](https://learn.microsoft.com/dotnet/standard/assembly/inspect-contents-using-metadataloadcontext)
+* [System.Reflection.MetadataLoadContext](https://learn.microsoft.com/dotnet/api/system.reflection.metadataloadcontext)
+* [System.Reflection.MetadataAssemblyResolver](https://learn.microsoft.com/dotnet/api/system.reflection.metadataassemblyresolver)
 
 ## Feedback & Contributing
 

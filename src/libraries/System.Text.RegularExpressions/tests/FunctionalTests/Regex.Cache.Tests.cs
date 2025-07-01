@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
@@ -134,12 +135,63 @@ namespace System.Text.RegularExpressions.Tests
             }).Dispose();
         }
 
-        private int GetCachedItemsNum()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Cache_Add_additional_pattern_exceed_max_size_should_not_remove_previous_new_one()
         {
-            return ((ICollection)typeof(Regex).Assembly
-                .GetType("System.Text.RegularExpressions.RegexCache")
-                .GetField("s_cacheList", BindingFlags.NonPublic | BindingFlags.Static)
-                .GetValue(null)).Count;
+            RemoteExecutor.Invoke(() =>
+            {
+                string pattern;
+
+                // Fill cache list
+                for (int round = 0; round < 2; round++)
+                {
+                    for (int i = 0; i < Regex.CacheSize; i++)
+                    {
+                        pattern = i.ToString();
+
+                        _ = Regex.IsMatch(pattern, pattern);
+                    }
+                }
+
+                // Adding additional patterns which triggers cache item removal but should not remove previous New one
+                for (int i = Regex.CacheSize; i < Regex.CacheSize * 2; i++)
+                {
+                    pattern = i.ToString();
+
+                    _ = Regex.IsMatch(pattern, pattern);
+                    Assert.Contains(GetCachedRegexList(), r => r.ToString() == (i - 1).ToString());
+                }
+
+                static IEnumerable<Regex> GetCachedRegexList()
+                {
+                    IList innerCacheList = GetInnerCacheList();
+
+                    foreach (object node in innerCacheList)
+                    {
+                        yield return GetRegex(node);
+                    }
+                }
+
+                static Regex GetRegex(object node)
+                {
+                    Type nodeType = typeof(Regex).Assembly.GetType("System.Text.RegularExpressions.RegexCache+Node")!;
+                    FieldInfo regexField = nodeType.GetField("Regex", BindingFlags.Public | BindingFlags.Instance)!;
+                    return (Regex)regexField.GetValue(node)!;
+                }
+            }).Dispose();
+        }
+
+        private static int GetCachedItemsNum()
+        {
+            return GetInnerCacheList().Count;
+        }
+
+        private static IList GetInnerCacheList()
+        {
+            Type regexCacheType = typeof(Regex).Assembly.GetType("System.Text.RegularExpressions.RegexCache")!;
+
+            FieldInfo cacheListFieldInfo = regexCacheType.GetField("s_cacheList", BindingFlags.Static | BindingFlags.NonPublic)!;
+            return (IList)cacheListFieldInfo.GetValue(null)!;
         }
     }
 }

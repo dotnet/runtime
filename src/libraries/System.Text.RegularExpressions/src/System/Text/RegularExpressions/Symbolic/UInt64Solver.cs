@@ -12,12 +12,12 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly BDD[] _minterms;
         internal readonly MintermClassifier _classifier;
 
-        public UInt64Solver(BDD[] minterms, CharSetSolver solver)
+        public UInt64Solver(BDD[] minterms)
         {
             Debug.Assert(minterms.Length <= 64);
 
             _minterms = minterms;
-            _classifier = new MintermClassifier(minterms, solver);
+            _classifier = new MintermClassifier(minterms);
 
             Full = minterms.Length == 64 ? ulong.MaxValue : ulong.MaxValue >> (64 - minterms.Length);
         }

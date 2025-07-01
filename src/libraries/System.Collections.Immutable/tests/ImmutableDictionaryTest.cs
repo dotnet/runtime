@@ -121,6 +121,14 @@ namespace System.Collections.Immutable.Tests
         public void Create()
         {
             IEnumerable<KeyValuePair<string, string>> pairs = new Dictionary<string, string> { { "a", "b" } };
+            ReadOnlySpan<KeyValuePair<string, string>> pairsWithDuplicates =
+            [
+                new KeyValuePair<string, string>("a", "b"),
+                new KeyValuePair<string, string>("a", "c"),
+                new KeyValuePair<string, string>("b", "d"),
+                new KeyValuePair<string, string>("B", "e"),
+                new KeyValuePair<string, string>("a", "f"),
+            ];
             StringComparer keyComparer = StringComparer.OrdinalIgnoreCase;
             StringComparer valueComparer = StringComparer.CurrentCulture;
 
@@ -153,6 +161,31 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(1, dictionary.Count);
             Assert.Same(keyComparer, dictionary.KeyComparer);
             Assert.Same(valueComparer, dictionary.ValueComparer);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite<string, string>();
+            Assert.Equal(0, dictionary.Count);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite<string, string>(keyComparer);
+            Assert.Equal(0, dictionary.Count);
+            Assert.Same(keyComparer, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite(pairsWithDuplicates);
+            Assert.Equal(3, dictionary.Count);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+            Assert.Equal("f", dictionary["a"]);
+            Assert.Equal("d", dictionary["b"]);
+            Assert.Equal("e", dictionary["B"]);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite(keyComparer, pairsWithDuplicates);
+            Assert.Equal(2, dictionary.Count);
+            Assert.Same(keyComparer, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+            Assert.Equal("f", dictionary["a"]);
+            Assert.Equal("e", dictionary["b"]);
         }
 
         [Fact]
@@ -347,28 +380,6 @@ namespace System.Collections.Immutable.Tests
             Assert.False(enumerator.MoveNext());
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             enumerator.Dispose();
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public void DebuggerAttributesValid()
-        {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableDictionary.Create<int, int>());
-            ImmutableDictionary<string, int> dict = ImmutableDictionary.Create<string, int>().Add("One", 1).Add("Two", 2);
-            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
-
-            object rootNode = DebuggerAttributes.GetFieldValue(ImmutableDictionary.Create<string, string>(), "_root");
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
-            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            KeyValuePair<string, int>[] items = itemProperty.GetValue(info.Instance) as KeyValuePair<string, int>[];
-            Assert.Equal(dict, items);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes_Null()
-        {
-            Type proxyType = DebuggerAttributes.GetProxyType(ImmutableHashSet.Create<string>());
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
-            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]

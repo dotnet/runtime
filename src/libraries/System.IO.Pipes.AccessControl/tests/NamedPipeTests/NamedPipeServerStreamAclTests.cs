@@ -178,7 +178,7 @@ namespace System.IO.Pipes.Tests
             //         - PipeAccessRights.WriteData | PipeAccessRights.WriteExtendedAttributes | PipeAccessRights.WriteAttributes
 
             // additionalAccessRights gets bitwise merged with the 'dwOpenMode' parameter we pass to CreateNamedPipeW.
-            // This parameter can acquire any of the values described here: https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createnamedpipea
+            // This parameter can acquire any of the values described here: https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-createnamedpipea
             // It's particularly important to mention that two of the accepted values collide with the value of two PipeAccessRights enum values:
             // - ReadData (0x1): Same value as PIPE_ACCESS_INBOUND
             // - WriteData (0x2): Same value as PIPE_ACCESS_OUTBOUND

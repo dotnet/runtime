@@ -26,7 +26,7 @@ public:
     {
         SUPPORTS_DAC;
         m_pMD = NULL;
-        m_addrStart = NULL;
+        m_addrStart = (PCODE)NULL;
     }
 #endif
     // Eventually we may have many ways to initialize a request.
@@ -154,7 +154,7 @@ public:
         OUT ULONG32*                           pNumRichMappings);
 
 #ifdef DACCESS_COMPILE
-    static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif
 };
 

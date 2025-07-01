@@ -74,16 +74,7 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
     else
     {
-        PTR_Module retVal = NULL;
-        BOOL fFail = FALSE;
-
-        _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-        PTR_FnPtrTypeDesc asFnPtr = dac_cast<PTR_FnPtrTypeDesc>(this);
-        if (!fFail)
-        {
-            retVal = ClassLoader::ComputeLoaderModuleForFunctionPointer(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1);
-        }
-        return retVal;
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->GetLoaderModule();
     }
 }
 
@@ -165,7 +156,7 @@ Assembly* TypeDesc::GetAssembly() {
     STATIC_CONTRACT_FORBID_FAULT;
 
     Module *pModule = GetModule();
-    PREFIX_ASSUME(pModule!=NULL);
+    _ASSERTE(pModule!=NULL);
     return pModule->GetAssembly();
 }
 
@@ -520,9 +511,9 @@ OBJECTREF TypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == 0)
+    if (_exposedClassObject == 0)
     {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
+        TypeHandle(this).AllocateManagedClassObject(&_exposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }
@@ -536,9 +527,9 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    if (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
-        if (m_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
+        if (_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {
             return CLASS_DEPENDENCIES_LOADED;
         }
@@ -649,7 +640,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
     switch (level)
     {
         case CLASS_DEPENDENCIES_LOADED:
-            InterlockedOr((LONG*)&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
+            InterlockedOr((LONG*)&_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
             break;
 
         case CLASS_LOADED:
@@ -1464,7 +1455,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
         if ((specialConstraints & gpDefaultConstructorConstraint) != 0)
         {
-            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor()))
+            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor() || thArg.IsAbstract()))
                 return FALSE;
         }
 

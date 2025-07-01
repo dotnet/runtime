@@ -29,7 +29,15 @@ namespace System.Net.Http.Json
 
             Value = inputValue;
             _typeInfo = jsonTypeInfo;
-            Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
+
+            if (mediaType is not null)
+            {
+                Headers.ContentType = mediaType;
+            }
+            else
+            {
+                Headers.TryAddWithoutValidation("Content-Type", JsonHelpers.DefaultMediaType);
+            }
         }
 
         /// <summary>
@@ -57,7 +65,7 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
         {
-            ThrowHelper.ThrowIfNull(inputType);
+            ArgumentNullException.ThrowIfNull(inputType);
             EnsureTypeCompatibility(inputValue, inputType);
 
             return new JsonContent(inputValue, JsonHelpers.GetJsonTypeInfo(inputType, options), mediaType);
@@ -73,7 +81,7 @@ namespace System.Net.Http.Json
         /// <returns>A <see cref="JsonContent"/> instance.</returns>
         public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
         {
-            ThrowHelper.ThrowIfNull(jsonTypeInfo);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             return new JsonContent(inputValue, jsonTypeInfo, mediaType);
         }
@@ -87,7 +95,7 @@ namespace System.Net.Http.Json
         /// <returns>A <see cref="JsonContent"/> instance.</returns>
         public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
         {
-            ThrowHelper.ThrowIfNull(jsonTypeInfo);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
             EnsureTypeCompatibility(inputValue, jsonTypeInfo.Type);
 
             return new JsonContent(inputValue, jsonTypeInfo, mediaType);

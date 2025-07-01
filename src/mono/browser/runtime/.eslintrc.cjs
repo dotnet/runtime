@@ -23,7 +23,6 @@ module.exports = {
         "jiterpreter-opcodes.ts",
         "jiterpreter-tables.ts",
         "dotnet.d.ts",
-        "diagnostics-mock.d.ts",
     ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",

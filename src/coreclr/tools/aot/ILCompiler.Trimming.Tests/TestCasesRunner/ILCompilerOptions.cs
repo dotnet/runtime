@@ -19,5 +19,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public List<string> SubstitutionFiles = new List<string> ();
 		public bool TreatWarningsAsErrors;
 		public Dictionary<int, bool> WarningsAsErrors = new Dictionary<int, bool> ();
+		public List<string> SuppressedWarningCategories = new List<string> ();
 	}
 }

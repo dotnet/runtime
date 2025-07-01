@@ -33,14 +33,11 @@ namespace System.Reflection
             RuntimeTypeHandle[] typeHandleArgs = new RuntimeTypeHandle[size];
             for (int i = 0; i < size; i++)
             {
-                Type typeArg = genericArguments[i];
-                if (typeArg == null)
+                Type? typeArg = genericArguments[i]?.UnderlyingSystemType;
+
+                if (typeArg is not System.RuntimeType)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                typeArg = typeArg.UnderlyingSystemType;
-                if (typeArg == null)
-                    throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                if (!(typeArg is RuntimeType))
-                    throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
+
                 typeHandleArgs[i] = typeArg.TypeHandle;
             }
             return typeHandleArgs;
@@ -307,12 +304,8 @@ namespace System.Reflection
                 throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     SR.Format(SR.Argument_InvalidToken, tk, this));
 
-            string? str = MetadataImport.GetUserString(metadataToken);
-
-            if (str == null)
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_ResolveString, metadataToken, this));
-
+            string str = MetadataImport.GetUserString(metadataToken) ??
+                throw new ArgumentException(SR.Format(SR.Argument_ResolveString, metadataToken, this));
             return str;
         }
 

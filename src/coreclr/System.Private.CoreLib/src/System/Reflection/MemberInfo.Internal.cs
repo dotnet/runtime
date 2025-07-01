@@ -12,7 +12,7 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(other);
 
             // Ensure that "other" is a runtime-implemented MemberInfo. Do this check before calling any methods on it!
-            if (!(other is TOther))
+            if (other is not TOther)
                 return false;
 
             if (MetadataToken != other.MetadataToken)

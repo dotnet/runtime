@@ -9,7 +9,8 @@
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.DiagnosticsFileVersionInfo_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage> 
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.DiagnosticsFileVersionInfo_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <OmitResources Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</OmitResources>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">

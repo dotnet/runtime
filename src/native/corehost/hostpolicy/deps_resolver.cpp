@@ -513,20 +513,6 @@ bool deps_resolver_t::resolve_tpa_list(
     // we cannot determine what assemblies are framework assemblies, and what assemblies are app-local assemblies.
     if (m_host_mode != host_mode_t::libhost)
     {
-        // First add managed assembly to the TPA.
-        // TODO: Remove: the deps should contain the managed DLL.
-        // Workaround for: csc.deps.json doesn't have the csc.dll
-
-        // If this is a single-file bundle, app.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
-        // In all other cases, add its path to the TPA list.
-        pal::string_t managed_app_name = get_filename(m_managed_app);
-        if (!bundle::info_t::is_single_file_bundle() ||
-            bundle::runner_t::app()->probe(managed_app_name) == nullptr)
-        {
-            deps_asset_t asset(get_filename_without_ext(m_managed_app), managed_app_name, version_t(), version_t());
-            add_tpa_asset(asset, m_managed_app, &items);
-        }
-
         // Add the app's entries
         const auto& deps_entries = get_app_deps().get_entries(deps_entry_t::asset_types::runtime);
         for (const auto& entry : deps_entries)
@@ -601,7 +587,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
         return;
     }
 
-    assert(pal::is_path_rooted(path));
+    assert(pal::is_path_fully_qualified(path));
     if (m_coreclr_path.empty() && utils::ends_with(path, DIR_SEPARATOR_STR LIBCORECLR_NAME, false))
     {
         m_coreclr_path = path;
@@ -767,7 +753,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     std::unordered_set<pal::string_t> items;
 
     pal::string_t core_servicing = m_core_servicing;
-    pal::realpath(&core_servicing, true);
+    pal::fullpath(&core_servicing, true);
 
     // Filter out non-serviced assets so the paths can be added after servicing paths.
     pal::string_t non_serviced;
@@ -830,15 +816,21 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
     }
 
-    // If the deps file is missing add known locations.
-    if (!get_app_deps().exists())
+    // If the deps file is missing for the app, add known locations.
+    // For libhost scenarios, there is no app or app path
+    if (m_host_mode != host_mode_t::libhost && !get_app_deps().exists())
     {
+        assert(!m_app_dir.empty());
+
         // App local path
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
-        // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
-        // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
-        (void) file_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
+        if (m_coreclr_path.empty())
+        {
+            // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
+            // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
+            (void) file_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
+        }
     }
 
     // Handle any additional deps.json that were specified.
@@ -865,19 +857,6 @@ bool deps_resolver_t::resolve_probe_dirs(
             {
                 return false;
             }
-        }
-    }
-
-    // If this is a single-file app, add the app's dir to the native search directories.
-    if (bundle::info_t::is_single_file_bundle() && !is_resources)
-    {
-        auto bundle = bundle::runner_t::app();
-        add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
-
-        // Add the extraction path if it exists.
-        if (pal::directory_exists(bundle->extraction_path()))
-        {
-            add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
         }
     }
 

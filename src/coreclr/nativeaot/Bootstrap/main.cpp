@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include <stdlib.h>
 
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
@@ -101,7 +102,7 @@ extern "C" bool RhRegisterOSModule(void * pModule,
     void * pvUnboxingStubsStartRange, uint32_t cbUnboxingStubsRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
+void* PalGetModuleHandleFromPointer(void* pointer);
 
 #if defined(HOST_X86) && defined(HOST_WINDOWS)
 #define STRINGIFY(s) #s
@@ -222,7 +223,12 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
+#if defined(DEBUG) && defined(_WIN32)
+    // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
+    quick_exit(__managed__Main(argc, argv));
+#else
     return __managed__Main(argc, argv);
+#endif
 }
 
 #ifdef HAS_ADDRESS_SANITIZER
@@ -230,7 +236,7 @@ int main(int argc, char* argv[])
 // the linker can detect that we have ASAN components early enough in the build.
 // Include our asan support sources for executable projects here to ensure they
 // are compiled into the bootstrapper object.
-#include "minipal/asansupport.cpp"
+#include "minipal/sansupport.c"
 #endif // HAS_ADDRESS_SANITIZER
 
 #endif // !NATIVEAOT_DLL

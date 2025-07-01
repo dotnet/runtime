@@ -3,24 +3,18 @@
  */
 
 #include "zbuild.h"
+#include "zmemory.h"
 
-/* This requires SSE2 support. While it's implicit with SSSE3, we can minimize
- * code size by sharing the chunkcopy functions, which will certainly compile
- * to identical machine code */
-#if defined(X86_SSSE3) && defined(X86_SSE2)
+#if defined(X86_SSSE3)
 #include <immintrin.h>
 #include "../generic/chunk_permute_table.h"
 
 typedef __m128i chunk_t;
 
-#define CHUNK_SIZE 16
-
 #define HAVE_CHUNKMEMSET_2
 #define HAVE_CHUNKMEMSET_4
 #define HAVE_CHUNKMEMSET_8
 #define HAVE_CHUNK_MAG
-#define HAVE_CHUNKCOPY
-#define HAVE_CHUNKUNROLL
 
 static const lut_rem_pair perm_idx_lut[13] = {
     {0, 1},      /* 3 */
@@ -40,21 +34,15 @@ static const lut_rem_pair perm_idx_lut[13] = {
 
 
 static inline void chunkmemset_2(uint8_t *from, chunk_t *chunk) {
-    int16_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = _mm_set1_epi16(tmp);
+    *chunk = _mm_set1_epi16(zng_memread_2(from));
 }
 
 static inline void chunkmemset_4(uint8_t *from, chunk_t *chunk) {
-    int32_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = _mm_set1_epi32(tmp);
+    *chunk = _mm_set1_epi32(zng_memread_4(from));
 }
 
 static inline void chunkmemset_8(uint8_t *from, chunk_t *chunk) {
-    int64_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = _mm_set1_epi64x(tmp);
+    *chunk = _mm_set1_epi64x(zng_memread_8(from));
 }
 
 static inline void loadchunk(uint8_t const *s, chunk_t *chunk) {
@@ -83,14 +71,11 @@ static inline chunk_t GET_CHUNK_MAG(uint8_t *buf, uint32_t *chunk_rem, uint32_t 
     return ret_vec;
 }
 
-extern uint8_t* chunkcopy_sse2(uint8_t *out, uint8_t const *from, unsigned len);
-extern uint8_t* chunkunroll_sse2(uint8_t *out, unsigned *dist, unsigned *len);
-
 #define CHUNKSIZE        chunksize_ssse3
 #define CHUNKMEMSET      chunkmemset_ssse3
 #define CHUNKMEMSET_SAFE chunkmemset_safe_ssse3
-#define CHUNKCOPY        chunkcopy_sse2
-#define CHUNKUNROLL      chunkunroll_sse2
+#define CHUNKCOPY        chunkcopy_ssse3
+#define CHUNKUNROLL      chunkunroll_ssse3
 
 #include "chunkset_tpl.h"
 

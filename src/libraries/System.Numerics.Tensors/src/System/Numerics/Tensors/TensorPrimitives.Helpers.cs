@@ -6,21 +6,34 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
     public static partial class TensorPrimitives
     {
-        /// <summary>Throws an exception if the <paramref name="input"/> and <paramref name="output"/> spans overlap and don't begin at the same memory location.</summary>
+        /// <summary>Throws an exception if the <paramref name="input"/> and <paramref name="destination"/> spans overlap and don't begin at the same memory location.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ValidateInputOutputSpanNonOverlapping<T>(ReadOnlySpan<T> input, Span<T> output)
+        private static void ValidateInputOutputSpanNonOverlapping<T>(ReadOnlySpan<T> input, Span<T> destination)
         {
-            if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(output)) &&
-                input.Overlaps(output))
+            if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(destination)) &&
+                input.Overlaps(destination))
             {
                 ThrowHelper.ThrowArgument_InputAndDestinationSpanMustNotOverlap();
+            }
+        }
+
+        /// <summary>
+        /// Throws an exception if the region of <paramref name="destination1"/> that will store results and the
+        /// region of <paramref name="destination2"/> that will store results overlap.
+        /// </summary>
+        private static void ValidateOutputSpansNonOverlapping<T>(int inputLength, Span<T> destination1, Span<T> destination2)
+        {
+            Debug.Assert(destination1.Length >= inputLength);
+            Debug.Assert(destination1.Length >= inputLength);
+
+            if (destination1.Slice(0, inputLength).Overlaps(destination2.Slice(0, inputLength)))
+            {
+                ThrowHelper.ThrowArgument_DestinationSpansMustNotOverlap();
             }
         }
 
@@ -36,7 +49,11 @@ namespace System.Numerics.Tensors
         private static unsafe Span<TTo> Rename<TFrom, TTo>(Span<TFrom> span)
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
+#if NET9_0_OR_GREATER
+            return Unsafe.BitCast<Span<TFrom>, Span<TTo>>(span);
+#else
             return *(Span<TTo>*)(&span);
+#endif
         }
 
         /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TFrom"/> when they're the same type.</summary>
@@ -48,8 +65,31 @@ namespace System.Numerics.Tensors
         private static unsafe ReadOnlySpan<TTo> Rename<TFrom, TTo>(ReadOnlySpan<TFrom> span)
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
+#if NET9_0_OR_GREATER
+            return Unsafe.BitCast<ReadOnlySpan<TFrom>, ReadOnlySpan<TTo>>(span);
+#else
             return *(ReadOnlySpan<TTo>*)(&span);
+#endif
         }
+
+        /// <summary>Gets whether <typeparamref name="T"/> is a built-in binary integer type.</summary>
+        private static bool IsPrimitiveBinaryInteger<T>() =>
+#if NET
+            typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128) ||
+#endif
+            typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) ||
+            typeof(T) == typeof(short) || typeof(T) == typeof(ushort) || typeof(T) == typeof(char) ||
+            typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
+            typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
+            typeof(T) == typeof(nint) || typeof(T) == typeof(nuint);
+
+        private static bool IsPrimitiveFloatingPoint<T>() =>
+#if NET
+            typeof(T) == typeof(Half) ||
+            typeof(T) == typeof(NFloat) ||
+#endif
+            typeof(T) == typeof(float) ||
+            typeof(T) == typeof(double);
 
         /// <summary>Mask used to handle alignment elements before vectorized handling of the input.</summary>
         /// <remarks>

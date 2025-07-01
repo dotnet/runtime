@@ -129,8 +129,7 @@ NESTED_END VarargPInvokeGenILStub, _TEXT
 
 //
 // IN:
-// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
-//                          before actual InlinedCallFrame data)
+// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data
 //
 //
 NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
@@ -138,15 +137,8 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
         push_nonvol_reg r14
         END_PROLOGUE
 
-        PREPARE_EXTERNAL_VAR s_gsCookie, rax
-        mov             rax, qword ptr [rax]
-        mov             qword ptr [rdi], rax
-        add             rdi, SIZEOF_GSCookie
-
-        // set first slot to the value of InlinedCallFrame vftable (checked by runtime code)
-        PREPARE_EXTERNAL_VAR _ZTV16InlinedCallFrame, rax
-        add             rax, 0x10
-        mov             qword ptr [rdi], rax
+        // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+        mov             qword ptr [rdi], FRAMETYPE_InlinedCallFrame
 
         mov             qword ptr [rdi + OFFSETOF__InlinedCallFrame__m_Datum], 0
 
@@ -181,13 +173,11 @@ NESTED_END JIT_PInvokeBegin, _TEXT
 
 //
 // IN:
-// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
-//                          before actual InlinedCallFrame data)
+// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data
 //
 //
 LEAF_ENTRY JIT_PInvokeEnd, _TEXT
 
-        add             rdi, SIZEOF_GSCookie
         mov             rsi, qword ptr [rdi + OFFSETOF__InlinedCallFrame__m_pThread]
 
         // rdi = pFrame

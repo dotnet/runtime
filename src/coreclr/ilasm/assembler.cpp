@@ -57,11 +57,8 @@ void    Assembler::ClearImplList(void)
 {
     while(m_nImplList) m_crImplList[--m_nImplList] = mdTypeRefNil;
 }
+
 /**************************************************************************/
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22008) // "Suppress PREfast warnings about integer overflow"
-#endif
 void    Assembler::AddToImplList(mdToken tk)
 {
     if(m_nImplList+1 >= m_nImplListSize)
@@ -82,9 +79,6 @@ void    Assembler::AddToImplList(mdToken tk)
     m_crImplList[m_nImplList++] = tk;
     m_crImplList[m_nImplList] = mdTypeRefNil;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void    Assembler::ClearBoundList(void)
 {
@@ -379,7 +373,7 @@ mdToken Assembler::MakeTypeRef(mdToken tkResScope, LPCUTF8 pszFullClassName)
         if(*pc)
         {
             // convert name to widechar
-            WszMultiByteToWideChar(g_uCodePage,0,pc,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,pc,-1,wzUniBuf,dwUniBuf);
             if(FAILED(m_pEmitter->DefineTypeRefByName(tkResScope, wzUniBuf, &tkRet))) tkRet = mdTokenNil;
         }
     }
@@ -925,7 +919,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
     cSig = pFD->m_pbsSig->length();
     mySig = (COR_SIGNATURE*)(pFD->m_pbsSig->ptr());
 
-    WszMultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
+    MultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
     if(IsFdPrivateScope(pFD->m_dwAttr))
     {
         WCHAR* p = (WCHAR*)u16_strstr(wzFieldName,W("$PST04"));
@@ -1129,7 +1123,7 @@ void Assembler::AddException(DWORD pcStart, DWORD pcEnd, DWORD pcHandler, DWORD 
     clause->SetHandlerLength(pcHandlerTo - pcHandler);
     clause->SetClassToken(crException);
 
-    int flags = COR_ILEXCEPTION_CLAUSE_OFFSETLEN;
+    int flags = 0;
     if (isFilter) {
         flags |= COR_ILEXCEPTION_CLAUSE_FILTER;
     }
@@ -1383,7 +1377,7 @@ void Assembler::EmitDataString(BinStr* str)
 
         if(UnicodeString)
         {
-            WszMultiByteToWideChar(g_uCodePage,0,pb,-1,UnicodeString,DataLen);
+            MultiByteToWideChar(g_uCodePage,0,pb,-1,UnicodeString,DataLen);
             EmitData(UnicodeString,DataLen*sizeof(WCHAR));
             if(DataLen >= dwUniBuf) delete [] UnicodeString;
         }
@@ -1428,7 +1422,7 @@ void Assembler::EmitOpcode(Instr* instr)
                 {
                     m_pCurMethod->m_HasMultipleDocuments = TRUE;
                 }
-                
+
                 if (0xfeefee == instr->linenum &&
                     0xfeefee == instr->linenum_end &&
                     0 == instr->column &&
@@ -1792,7 +1786,7 @@ mdToken Assembler::MakeMemberRef(mdToken cr, _In_ __nullterminated char* pszMemb
     }
     else
     {
-        WszMultiByteToWideChar(g_uCodePage,0,pszMemberName,-1,wzUniBuf,dwUniBuf);
+        MultiByteToWideChar(g_uCodePage,0,pszMemberName,-1,wzUniBuf,dwUniBuf);
 
         if(cr == mdTokenNil) cr = mdTypeRefNil;
         if(TypeFromToken(cr) == mdtAssemblyRef)
@@ -2029,7 +2023,7 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
         literal->appendInt8(0);
         pb = literal->ptr();
         // convert string to Unicode
-        L = UnicodeString ? WszMultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
+        L = UnicodeString ? MultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
         if(L == 0)
         {
             const char* sz=NULL;
@@ -2427,19 +2421,16 @@ void Assembler::SetPdbFileName(_In_ __nullterminated char* szName)
         if (*szName)
         {
             strcpy_s(m_szPdbFileName, MAX_FILENAME_LENGTH * 3 + 1, szName);
-            WszMultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
+            MultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
         }
     }
 }
 HRESULT Assembler::SavePdbFile()
 {
     HRESULT hr = S_OK;
-    mdMethodDef entryPoint;
 
     if (FAILED(hr = (m_pPortablePdbWriter == NULL ? E_FAIL : S_OK))) goto exit;
     if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
-    if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
-    if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
     if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, 0))) goto exit;
 
 exit:

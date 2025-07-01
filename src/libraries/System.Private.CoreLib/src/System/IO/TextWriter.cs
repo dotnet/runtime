@@ -759,7 +759,11 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(writer);
 
+#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
             return writer is SyncTextWriter ? writer : new SyncTextWriter(writer);
+#else
+            return writer;
+#endif
         }
 
         internal sealed class SyncTextWriter : TextWriter, IDisposable
@@ -856,7 +860,7 @@ namespace System.IO
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object?[] arg) => _out.Write(format, arg);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, ReadOnlySpan<object?> arg) => _out.Write(format, arg);
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) => _out.Write(format, arg);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine() => _out.WriteLine();
@@ -919,7 +923,7 @@ namespace System.IO
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object?[] arg) => _out.WriteLine(format, arg);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, ReadOnlySpan<object?> arg) => _out.WriteLine(format, arg);
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) => _out.WriteLine(format, arg);
 
             //
             // On SyncTextWriter all APIs should run synchronously, even the async ones.

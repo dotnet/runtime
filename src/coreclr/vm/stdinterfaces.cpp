@@ -65,7 +65,7 @@ static const GUID IID_INoMarshal = {0xecc8691b, 0xc1db, 0x4dc0, { 0x85, 0x5e, 0x
 #endif // !__INoMarshal_INTERFACE_DEFINED__
 
 // NOTE: In the following vtables, QI points to the same function
-//       this is because, during marshalling between COM & COM+ we want a fast way to
+//       this is because, during marshalling between COM & CLR we want a fast way to
 //       check if a COM IP is a tear-off that we created.
 
 // array of vtable pointers for std. interfaces such as IProvideClassInfo etc.
@@ -155,8 +155,9 @@ Unknown_QueryInterface_Internal(ComCallWrapper* pWrap, IUnknown* pUnk, REFIID ri
             {
                 Exception *e = GET_EXCEPTION();
                 hr = e->GetHR();
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions)
+            EX_END_CATCH
         }
 
 ErrExit:
@@ -222,7 +223,7 @@ Unknown_AddRef_Internal(IUnknown* pUnk)
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
         // If we are in process detach, we cannot safely call release on our outer.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             return 1;
 
         ULONG cbRef = pOuter->AddRef();
@@ -284,7 +285,7 @@ Unknown_Release_Internal(IUnknown* pUnk)
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
         // If we are in process detach, we cannot safely call release on our outer.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             cbRef = 1;
 
         cbRef = SafeReleasePreemp(pOuter);
@@ -417,7 +418,7 @@ Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
         cbRef = pSimpleWrap->Release();
     EX_CATCH
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return cbRef;
 }
@@ -699,7 +700,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                     {
                         pThrowable = GET_THROWABLE();
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
 
                     if (pThrowable != NULL)
                         hr = SetupErrorInfo(pThrowable);
@@ -1435,7 +1436,7 @@ InternalDispatchImpl_Invoke
 
 
 //------------------------------------------------------------------------------------------
-//      IDispatchEx methods for COM+ objects
+//      IDispatchEx methods for CLR objects
 
 // IDispatchEx::GetTypeInfoCount
 HRESULT __stdcall   DispatchEx_GetTypeInfoCount(IDispatch* pDisp, unsigned int *pctinfo)
@@ -1891,12 +1892,12 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
 
                         // Find the MethodDesc's for the CanRead property.
                         MethodDesc *pCanReadMD = MemberLoader::FindPropertyMethod(MemberInfoObj->GetMethodTable(), PROPERTY_INFO_CAN_READ_PROP, PropertyGet);
-                        PREFIX_ASSUME_MSG((pCanReadMD != NULL), "Unable to find getter method for property PropertyInfo::CanRead");
+                        _ASSERTE_MSG((pCanReadMD != NULL), "Unable to find getter method for property PropertyInfo::CanRead");
                         MethodDescCallSite canRead(pCanReadMD, &MemberInfoObj);
 
                         // Find the MethodDesc's for the CanWrite property.
                         MethodDesc *pCanWriteMD = MemberLoader::FindPropertyMethod(MemberInfoObj->GetMethodTable(), PROPERTY_INFO_CAN_WRITE_PROP, PropertyGet);
-                        PREFIX_ASSUME_MSG((pCanWriteMD != NULL), "Unable to find setter method for property PropertyInfo::CanWrite");
+                        _ASSERTE_MSG((pCanWriteMD != NULL), "Unable to find setter method for property PropertyInfo::CanWrite");
                         MethodDescCallSite canWrite(pCanWriteMD, &MemberInfoObj);
 
                         // Check to see if the property can be read.
@@ -2112,7 +2113,7 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
 
 
 //------------------------------------------------------------------------------------------
-//      IMarshal methods for COM+ objects
+//      IMarshal methods for CLR objects
 
 //------------------------------------------------------------------------------------------
 
@@ -2285,7 +2286,7 @@ HRESULT __stdcall Marshal_DisconnectObject (IMarshal* pMarsh, ULONG dwReserved)
 }
 
 //------------------------------------------------------------------------------------------
-//      IConnectionPointContainer methods for COM+ objects
+//      IConnectionPointContainer methods for CLR objects
 //------------------------------------------------------------------------------------------
 
 // Enumerate all the connection points supported by the component.
@@ -2356,7 +2357,7 @@ HRESULT __stdcall ConnectionPointContainer_FindConnectionPoint(IUnknown* pUnk,
 
 
 //------------------------------------------------------------------------------------------
-//      IObjectSafety methods for COM+ objects
+//      IObjectSafety methods for CLR objects
 //------------------------------------------------------------------------------------------
 
 HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions(IUnknown* pUnk,
@@ -2379,7 +2380,7 @@ HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions(IUnknown* pUnk,
     if (pdwSupportedOptions == NULL || pdwEnabledOptions == NULL)
         return E_POINTER;
 
-    // Make sure the COM+ object implements the requested interface.
+    // Make sure the CLR object implements the requested interface.
     SafeComHolderPreemp<IUnknown> pItf;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, riid, (IUnknown**)&pItf);
     LogInteropQI(pUnk, riid, hr, "QI to for riid in GetInterfaceSafetyOptions");
@@ -2414,7 +2415,7 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
     }
     CONTRACTL_END;
 
-    // Make sure the COM+ object implements the requested interface.
+    // Make sure the CLR object implements the requested interface.
     SafeComHolderPreemp<IUnknown> pItf;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, riid, (IUnknown**)&pItf);
     LogInteropQI(pUnk, riid, hr, "QI to for riid in SetInterfaceSafetyOptions");

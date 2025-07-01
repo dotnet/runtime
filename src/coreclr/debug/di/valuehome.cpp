@@ -238,7 +238,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
 void RegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     UINT_PTR* reg = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(reg != NULL);
+    _ASSERTE(reg != NULL);
     _ASSERTE(sizeof(*reg) == valueOutBuffer.Size());
 
     memcpy(valueOutBuffer.StartAddress(), reg, sizeof(*reg));
@@ -293,10 +293,10 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
 void RegRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     UINT_PTR* highWordAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(highWordAddr != NULL);
+    _ASSERTE(highWordAddr != NULL);
 
     UINT_PTR* lowWordAddr = m_pFrame->GetAddressOfRegister(m_reg2Info.m_kRegNumber);
-    PREFIX_ASSUME(lowWordAddr != NULL);
+    _ASSERTE(lowWordAddr != NULL);
 
     _ASSERTE(sizeof(*highWordAddr) + sizeof(*lowWordAddr) == valueOutBuffer.Size());
 
@@ -353,7 +353,7 @@ void RegMemValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     // Read the high bits from the register...
     UINT_PTR* highBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(highBitsAddr != NULL);
+    _ASSERTE(highBitsAddr != NULL);
 
     // ... and the low bits from the remote process
     DWORD lowBits;
@@ -420,7 +420,7 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 
     // and the low bits from a register
     UINT_PTR* lowBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(lowBitsAddr != NULL);
+    _ASSERTE(lowBitsAddr != NULL);
 
     _ASSERTE(sizeof(*lowBitsAddr)+sizeof(highBits) == valueOutBuffer.Size());
 
@@ -518,11 +518,19 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
 
     while (i <= m_floatIndex)
     {
+        #ifdef _MSC_VER
         __asm fstp td
+        #else
+        __asm("fstpl %0" : "=m" (td));
+        #endif
         popArea[i++] = td;
     }
 
+    #ifdef _MSC_VER
     __asm fld newVal; // push on the new value.
+    #else
+    __asm("fldl %0" : "=m" (newVal));
+    #endif
 
     // Push any values that we popled off back onto the stack,
     // _except_ the last one, which was the one we changed.
@@ -531,7 +539,11 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
     while (i > 0)
     {
         td = popArea[--i];
+        #ifdef _MSC_VER
         __asm fld td
+        #else
+        __asm("fldl %0" : "=m" (td));
+        #endif
     }
 
     // Save out the modified float area.
@@ -595,7 +607,7 @@ void FloatRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
       ValueHome(pProcess),
       m_remoteValue(remoteValue)
     {
-        _ASSERTE(remoteValue.pAddress != NULL);
+        _ASSERTE(remoteValue.pAddress != 0);
     } // RemoteValueHome::RemoteValueHome
 
 // Gets a value and returns it in dest
@@ -887,7 +899,7 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return handle;
 }
 
@@ -901,7 +913,7 @@ void HandleValueHome::GetValue(MemoryRange dest)
 
     _ASSERTE(dest.Size() <= sizeof(void *));
     _ASSERTE(dest.StartAddress() != NULL);
-    _ASSERTE(objPtr != NULL);
+    _ASSERTE(objPtr != (CORDB_ADDRESS)NULL);
     m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, sizeof(void *)), (BYTE *)dest.StartAddress());
 } // HandleValueHome::GetValue
 

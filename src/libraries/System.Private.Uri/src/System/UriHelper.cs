@@ -10,15 +10,13 @@ namespace System
 {
     internal static class UriHelper
     {
-        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        public static string SpanToLowerInvariantString(ReadOnlySpan<char> span)
         {
-#pragma warning disable CS8500 // takes address of managed type
-            return string.Create(span.Length, (IntPtr)(&span), static (buffer, spanPtr) =>
+            return string.Create(span.Length, span, static (buffer, span) =>
             {
-                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                int charsWritten = span.ToLowerInvariant(buffer);
                 Debug.Assert(charsWritten == buffer.Length);
             });
-#pragma warning restore CS8500
         }
 
         // http://host/Path/Path/File?Query is the base of
@@ -214,7 +212,7 @@ namespace System
             return result;
         }
 
-        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+        internal static void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
@@ -367,7 +365,7 @@ namespace System
         {
             if ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.CopyOnly)
             {
-                dest.Append(pStr + start, end - start);
+                dest.Append(new ReadOnlySpan<char>(pStr + start, end - start));
                 return;
             }
 
@@ -593,7 +591,7 @@ namespace System
             char.IsBetween(ch, '\u200E', '\u202E') && !char.IsBetween(ch, '\u2010', '\u2029');
 
         // Strip Bidirectional control characters from this string
-        internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
+        internal static string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
             Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
@@ -618,12 +616,10 @@ namespace System
                 return backingString ?? new string(strToClean);
             }
 
-#pragma warning disable CS8500 // takes address of managed type
-            ReadOnlySpan<char> tmpStrToClean = strToClean; // avoid address exposing the span and impacting the other code in the method that uses it
-            return string.Create(tmpStrToClean.Length - charsToRemove, (IntPtr)(&tmpStrToClean), static (buffer, strToCleanPtr) =>
+            return string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
             {
                 int destIndex = 0;
-                foreach (char c in *(ReadOnlySpan<char>*)strToCleanPtr)
+                foreach (char c in strToClean)
                 {
                     if (!IsBidiControlCharacter(c))
                     {
@@ -632,7 +628,6 @@ namespace System
                 }
                 Debug.Assert(buffer.Length == destIndex);
             });
-#pragma warning restore CS8500
         }
     }
 }

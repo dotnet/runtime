@@ -586,6 +586,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX:
                     id = ReadyToRunHelper.Unbox;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_UNBOX_TYPETEST:
+                    id = ReadyToRunHelper.Unbox_TypeTest;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE:
                     id = ReadyToRunHelper.Unbox_Nullable;
                     break;
@@ -611,10 +614,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewPtrArrayFast");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8:
-                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayAlign8");
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayFastAlign8");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
-                    return _compilation.NodeFactory.ExternSymbol("RhpNewArray");
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayFast");
 
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     return _compilation.NodeFactory.ExternSymbol("RhpStackProbe");
@@ -672,9 +677,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.UMod;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT:
-                    id = ReadyToRunHelper.Dbl2Int;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF:
                     id = ReadyToRunHelper.Dbl2IntOvf;
                     break;
@@ -683,9 +685,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF:
                     id = ReadyToRunHelper.Dbl2LngOvf;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT:
-                    id = ReadyToRunHelper.Dbl2UInt;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF:
                     id = ReadyToRunHelper.Dbl2UIntOvf;
@@ -696,18 +695,18 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_OVF:
                     id = ReadyToRunHelper.Dbl2ULngOvf;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_LNG2FLT:
+                    id = ReadyToRunHelper.Lng2Flt;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULNG2FLT:
+                    id = ReadyToRunHelper.ULng2Flt;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_FLTREM:
                     id = ReadyToRunHelper.FltRem;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBLREM:
                     id = ReadyToRunHelper.DblRem;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND:
-                    id = ReadyToRunHelper.FltRound;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND:
-                    id = ReadyToRunHelper.DblRound;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
@@ -754,13 +753,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT:
                     id = ReadyToRunHelper.MonitorExit;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER_STATIC:
-                    id = ReadyToRunHelper.MonitorEnterStatic;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC:
-                    id = ReadyToRunHelper.MonitorExitStatic;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
@@ -843,8 +835,11 @@ namespace Internal.JitInterface
 
                 if (caller.IsNoInlining)
                 {
-                    // Do not tailcall from methods that are marked as noinline (people often use no-inline
+                    // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
                     // to mean "I want to always see this method in stacktrace")
+                    //
+                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+                    // to emit fast tail calls if optimizations are disabled.
                     result = false;
                 }
             }
@@ -1159,6 +1154,11 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(arrayCls);
 
             Debug.Assert(type.IsArray);
+
+            TypeDesc elementType = ((ArrayType)type).ElementType;
+
+            if (elementType.GetElementSize().AsInt == _compilation.TypeSystemContext.Target.PointerSize)
+                return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR;
 
             if (type.RequiresAlign8())
                 return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8;
@@ -2001,12 +2001,12 @@ namespace Internal.JitInterface
                 //  m_RIP (1)
                 //  m_FramePointer (1)
                 //  m_pThread
-                //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
+                //  m_Flags + align (no align for ARM64/LoongArch64/RiscV64 that has 64 bit m_Flags)
                 //  m_PreservedRegs - RSP / R9 (2)
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
                 //
-                // (1) On ARM32/ARM64 the order of m_RIP and m_FramePointer is reverse
+                // (1) On ARM32/ARM64/LoongArch64/RiscV64 the order of m_RIP and m_FramePointer is reverse
                 // (2) R9 is saved for ARM32 because it needs to be preserved for methods with stackalloc
                 int size = 5 * this.PointerSize;
 
@@ -2165,7 +2165,7 @@ namespace Internal.JitInterface
                     else if (field.IsThreadStatic)
                     {
                         var target = MethodBeingCompiled.Context.Target;
-                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64) ||
+                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64) ||
                             ((target.OperatingSystem == TargetOS.Linux) &&
                             (target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                         {

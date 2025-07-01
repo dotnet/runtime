@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +16,9 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal sealed partial class TarHeader
     {
+        private const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
+        private const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
+
         private static ReadOnlySpan<byte> UstarMagicBytes => "ustar\0"u8;
         private static ReadOnlySpan<byte> UstarVersionBytes => "00"u8;
 
@@ -24,6 +28,9 @@ namespace System.Formats.Tar
         // Predefined text for the Name field of a GNU long metadata entry. Applies for both LongPath ('L') and LongLink ('K').
         private const string GnuLongMetadataName = "././@LongLink";
         private const string ArgNameEntry = "entry";
+
+        private const int RootUidGid = 0;
+        private const string RootUNameGName = "root";
 
         // Writes the entry in the order required to be able to obtain the seekable data stream size.
         private void WriteWithSeekableDataStream(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
@@ -79,6 +86,9 @@ namespace System.Formats.Tar
             // We know the exact location where the data starts depending on the format
             long dataStartPosition = headerStartPosition + dataLocation;
 
+            // Before writing, update the offset field now that the entry belongs to an archive
+            _dataOffset = dataStartPosition;
+
             // Move to the data start location and write the data
             destinationStream.Seek(dataLocation, SeekOrigin.Current);
             _dataStream.CopyTo(destinationStream); // The data gets copied from the current position
@@ -127,6 +137,9 @@ namespace System.Formats.Tar
 
             // We know the exact location where the data starts depending on the format
             long dataStartPosition = headerStartPosition + dataLocation;
+
+            // Before writing, update the offset field now that the entry belongs to an archive
+            _dataOffset = dataStartPosition;
 
             // Move to the data start location and write the data
             destinationStream.Seek(dataLocation, SeekOrigin.Current);
@@ -344,6 +357,13 @@ namespace System.Formats.Tar
                 await WriteWithSeekableDataStreamAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
+        // Checks if the linkname string is too long to fit in the regular header field.
+        // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
+        private bool IsLinkNameTooLongForRegularField() => _linkName != null && (Encoding.UTF8.GetByteCount(_linkName) + 1) > FieldLengths.LinkName;
+
+        // Checks if the name string is too long to fit in the regular header field (excluding null char).
+        // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
+        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name)) > FieldLengths.Name;
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
@@ -351,19 +371,19 @@ namespace System.Formats.Tar
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName != null && Encoding.UTF8.GetByteCount(_linkName) > FieldLengths.LinkName)
+            if (IsLinkNameTooLongForRegularField())
             {
-                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                // Linkname is too long for the regular header field, create a longlink entry where the linkname will be stored.
+                TarHeader longLinkHeader = GetGnuLongLinkMetadataHeader();
                 Debug.Assert(longLinkHeader._dataStream != null && longLinkHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 longLinkHeader.WriteWithSeekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
             }
 
-            // Second, we determine if we need a preceding LongPath, and write it if needed
-            if (Encoding.UTF8.GetByteCount(_name) > FieldLengths.Name)
+            if (IsNameTooLongForRegularField())
             {
-                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
+                // Name is too long for the regular header field, create a longpath entry where the name will be stored.
+                TarHeader longPathHeader = GetGnuLongPathMetadataHeader();
                 Debug.Assert(longPathHeader._dataStream != null && longPathHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 longPathHeader.WriteWithSeekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
@@ -387,19 +407,19 @@ namespace System.Formats.Tar
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
             cancellationToken.ThrowIfCancellationRequested();
 
-            // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName != null && Encoding.UTF8.GetByteCount(_linkName) > FieldLengths.LinkName)
+            if (IsLinkNameTooLongForRegularField())
             {
-                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                // Linkname is too long for the regular header field, create a longlink entry where the linkname will be stored.
+                TarHeader longLinkHeader = GetGnuLongLinkMetadataHeader();
                 Debug.Assert(longLinkHeader._dataStream != null && longLinkHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 await longLinkHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
-            // Second, we determine if we need a preceding LongPath, and write it if needed
-            if (Encoding.UTF8.GetByteCount(_name) > FieldLengths.Name)
+            if (IsNameTooLongForRegularField())
             {
-                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
+                // Name is too long for the regular header field, create a longpath entry where the name will be stored.
+                TarHeader longPathHeader = GetGnuLongPathMetadataHeader();
                 Debug.Assert(longPathHeader._dataStream != null && longPathHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 await longPathHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
@@ -416,8 +436,30 @@ namespace System.Formats.Tar
             }
         }
 
+        private static MemoryStream GetLongMetadataStream(string text)
+        {
+            MemoryStream data = new MemoryStream();
+            data.Write(Encoding.UTF8.GetBytes(text));
+            data.WriteByte(0); // Add a null terminator at the end of the string, _size will be calculated later
+            data.Position = 0;
+            return data;
+        }
+
+        private TarHeader GetGnuLongLinkMetadataHeader()
+        {
+            Debug.Assert(_linkName != null);
+            MemoryStream dataStream = GetLongMetadataStream(_linkName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink);
+        }
+
+        private TarHeader GetGnuLongPathMetadataHeader()
+        {
+            MemoryStream dataStream = GetLongMetadataStream(_name);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath);
+        }
+
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream (seekable).
-        private static TarHeader GetGnuLongMetadataHeader(TarEntryType entryType, string longText)
+        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType)
         {
             Debug.Assert(entryType is TarEntryType.LongPath or TarEntryType.LongLink);
 
@@ -425,11 +467,15 @@ namespace System.Formats.Tar
             {
                 _name = GnuLongMetadataName, // Same name for both longpath or longlink
                 _mode = TarHelpers.GetDefaultMode(entryType),
-                _uid = 0,
-                _gid = 0,
-                _mTime = DateTimeOffset.MinValue, // 0
+                _uid = RootUidGid,
+                _gid = RootUidGid,
+                _mTime = DateTimeOffset.UnixEpoch, // Stores as series of 0 characters
                 _typeFlag = entryType,
-                _dataStream = new MemoryStream(Encoding.UTF8.GetBytes(longText))
+                _dataStream = dataStream,
+                _uName = RootUNameGName,
+                _gName = RootUNameGName,
+                _aTime = default, // LongLink/LongPath entries store these as nulls
+                _cTime = default, // LongLink/LongPath entries store these as nulls
             };
         }
 
@@ -604,37 +650,24 @@ namespace System.Formats.Tar
 
             int checksum = 0;
 
-            if (_mode > 0)
+            if (_mode >= 0)
             {
-                checksum += FormatOctal(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
+                checksum += FormatNumeric(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
             }
 
-            if (_uid > 0)
+            if (_uid >= 0)
             {
-                checksum += FormatOctal(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
+                checksum += FormatNumeric(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             }
 
-            if (_gid > 0)
+            if (_gid >= 0)
             {
-                checksum += FormatOctal(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
+                checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
-            if (_size > 0)
+            if (_size >= 0)
             {
-                if (_size <= TarHelpers.MaxSizeLength)
-                {
-                    checksum += FormatOctal(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
-                }
-                else if (_format is not TarEntryFormat.Pax)
-                {
-                    throw new ArgumentException(SR.Format(SR.TarSizeFieldTooLargeForEntryFormat, _format));
-                }
-                else
-                {
-                    // No writing, just verifications
-                    Debug.Assert(_typeFlag is not TarEntryType.ExtendedAttributes and not TarEntryType.GlobalExtendedAttributes);
-                    Debug.Assert(Convert.ToInt64(ExtendedAttributes[PaxEaSize]) > TarHelpers.MaxSizeLength);
-                }
+                checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
 
             checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
@@ -739,12 +772,12 @@ namespace System.Formats.Tar
 
             if (_devMajor > 0)
             {
-                checksum += FormatOctal(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
+                checksum += FormatNumeric(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
             }
 
             if (_devMinor > 0)
             {
-                checksum += FormatOctal(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
+                checksum += FormatNumeric(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
             }
 
             return checksum;
@@ -753,12 +786,12 @@ namespace System.Formats.Tar
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            int checksum = 0;
 
-            if (_gnuUnusedBytes != null)
+            if (_typeFlag is not TarEntryType.LongLink and not TarEntryType.LongPath)
             {
-                checksum += WriteLeftAlignedBytesAndGetChecksum(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
+                checksum += WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+                checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
             }
 
             return checksum;
@@ -767,6 +800,9 @@ namespace System.Formats.Tar
         // Writes the current header's data stream into the archive stream.
         private void WriteData(Stream archiveStream, Stream dataStream)
         {
+            // Before writing, update the offset field now that the entry belongs to an archive
+            SetDataOffset(this, archiveStream);
+
             dataStream.CopyTo(archiveStream); // The data gets copied from the current position
             WriteEmptyPadding(archiveStream);
         }
@@ -806,6 +842,9 @@ namespace System.Formats.Tar
         private async Task WriteDataAsync(Stream archiveStream, Stream dataStream, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Before writing, update the offset field now that the entry belongs to an archive
+            SetDataOffset(this, archiveStream);
 
             await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
 
@@ -916,13 +955,49 @@ namespace System.Formats.Tar
                 ExtendedAttributes[PaxEaLinkName] = _linkName;
             }
 
-            if (_size > TarHelpers.MaxSizeLength)
+            if (_size > Octal12ByteFieldMaxValue)
             {
                 ExtendedAttributes[PaxEaSize] = _size.ToString();
             }
             else
             {
                 ExtendedAttributes.Remove(PaxEaSize);
+            }
+
+            if (_uid > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaUid] = _uid.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaUid);
+            }
+
+            if (_gid > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaGid] = _gid.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaGid);
+            }
+
+            if (_devMajor > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaDevMajor] = _devMajor.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaDevMajor);
+            }
+
+            if (_devMinor > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaDevMinor] = _devMinor.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaDevMinor);
             }
 
             // Sets the specified string to the dictionary if it's longer than the specified max byte length; otherwise, remove it.
@@ -959,7 +1034,7 @@ namespace System.Formats.Tar
             destination[^2] = (byte)'\0';
 
             int i = destination.Length - 3;
-            int j = converted.Length - 1;
+            int j = converted.Length - 2; // Skip the null terminator in 'converted'
 
             while (i >= 0)
             {
@@ -1021,6 +1096,55 @@ namespace System.Formats.Tar
             }
             return checksum;
         }
+        private int FormatNumeric(int value, Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == 8, "8 byte field expected.");
+
+            bool isOctalRange = value >= 0 && value <= Octal8ByteFieldMaxValue;
+
+            if (isOctalRange || _format == TarEntryFormat.Pax)
+            {
+                return FormatOctal(value, destination);
+            }
+            else if (_format == TarEntryFormat.Gnu)
+            {
+                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
+                //             store positive numbers in big endian format with leading '0x80' byte.
+                long destinationValue = value;
+                destinationValue |= 1L << 63;
+                BinaryPrimitives.WriteInt64BigEndian(destination, destinationValue);
+                return Checksum(destination);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.TarFieldTooLargeForEntryFormat, _format));
+            }
+        }
+
+        private int FormatNumeric(long value, Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == 12, "12 byte field expected.");
+            const int Offset = 4; // 4 bytes before the long.
+
+            bool isOctalRange = value >= 0 && value <= Octal12ByteFieldMaxValue;
+
+            if (isOctalRange || _format == TarEntryFormat.Pax)
+            {
+                return FormatOctal(value, destination);
+            }
+            else if (_format == TarEntryFormat.Gnu)
+            {
+                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
+                //             store positive numbers in big endian format with leading '0x80' byte.
+                BinaryPrimitives.WriteUInt32BigEndian(destination, value < 0 ? 0xffffffff : 0x80000000);
+                BinaryPrimitives.WriteInt64BigEndian(destination.Slice(Offset), value);
+                return Checksum(destination);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.TarFieldTooLargeForEntryFormat, _format));
+            }
+        }
 
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
         private static int FormatOctal(long value, Span<byte> destination)
@@ -1029,6 +1153,7 @@ namespace System.Formats.Tar
             Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong
 
             int i = digits.Length - 1;
+
             while (true)
             {
                 digits[i] = (byte)('0' + (remaining % 8));
@@ -1040,11 +1165,17 @@ namespace System.Formats.Tar
             return WriteRightAlignedBytesAndGetChecksum(digits.Slice(i), destination);
         }
 
-        // Writes the specified DateTimeOffset's Unix time seconds as a right-aligned octal number, and returns its checksum.
-        private static int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
+        // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
+        private int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
+            // For 'default' we leave the buffer zero-ed to indicate: "no timestamp".
+            if (timestamp == default)
+            {
+                return 0;
+            }
+
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
-            return FormatOctal(unixTimeSeconds, destination);
+            return FormatNumeric(unixTimeSeconds, destination);
         }
 
         // Writes the specified text as an UTF8 string aligned to the left, and returns its checksum.

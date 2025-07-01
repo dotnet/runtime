@@ -20,73 +20,45 @@
 #include <mono/utils/mono-threads-wasm.h>
 
 #include <emscripten.h>
-#include <emscripten/stack.h>
 #ifndef DISABLE_THREADS
 #include <emscripten/threading.h>
 #include <mono/metadata/threads-types.h>
 #endif
 
+#endif
 
-#define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
-
-EMSCRIPTEN_KEEPALIVE
-static int
-wasm_get_stack_base (void)
-{
-	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
-	return emscripten_stack_get_end ();
-}
-
-EMSCRIPTEN_KEEPALIVE
-static int
-wasm_get_stack_size (void)
-{
-	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
-	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
-}
-
-#else /* HOST_BROWSER -> WASI */
-
-// TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
-// use __stack_low && __stack_high
-// see mono-threads-wasi.S
-uintptr_t get_wasm_heap_base(void);
-uintptr_t get_wasm_data_end(void);
+uintptr_t get_wasm_stack_high(void);
+uintptr_t get_wasm_stack_low(void);
 
 static int
 wasm_get_stack_size (void)
 {
+#if defined(HOST_WASI) && !defined(DISABLE_THREADS)
+	// TODO: this will need changes for WASI multithreading as the stack will be allocated per thread at different addresses
+	g_assert_not_reached ();
+#else
 	/*
 	 * | -- increasing address ---> |
-	 * | data (data_end)| stack |(heap_base) heap |
+	 * | data |(stack low) stack (stack high)| heap |
 	 */
-	size_t heap_base = get_wasm_heap_base();
-	size_t data_end = get_wasm_data_end();
-	size_t max_stack_size = heap_base - data_end;
+	size_t stack_high = get_wasm_stack_high();
+	size_t stack_low = get_wasm_stack_low();
+	size_t max_stack_size = stack_high - stack_low;
 
-	g_assert (data_end > 0);
-	g_assert (heap_base > data_end);
+	g_assert (stack_low >= 0);
+	g_assert (stack_high > stack_low);
+	g_assert (max_stack_size >= 64 * 1024);
 
-	// this is the max available stack size size,
-	// return a 16-byte aligned smaller size
-	return max_stack_size & ~0xF;
+	// this is the max available stack size size
+	return max_stack_size;
+#endif
 }
-
-static int
-wasm_get_stack_base (void)
-{
-	return get_wasm_data_end();
-	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
-}
-
-#endif /* HOST_BROWSER */
 
 int
 mono_thread_info_get_system_max_stack_size (void)
 {
 	return wasm_get_stack_size ();
 }
-
 
 void
 mono_threads_suspend_init_signals (void)
@@ -226,12 +198,13 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	if (*staddr == NULL) {
-		*staddr = (guint8*)wasm_get_stack_base ();
-		*stsize = wasm_get_stack_size ();
-	}
+	g_assert (*staddr != NULL);
+	g_assert (*stsize != (size_t)-1);
+#elif defined(HOST_WASI) && !defined(DISABLE_THREADS)
+	// TODO: this will need changes for WASI multithreading as the stack will be allocated per thread at different addresses
+	g_assert_not_reached ();
 #else
-	*staddr = (guint8*)wasm_get_stack_base ();
+	*staddr = (guint8*)get_wasm_stack_low ();
 	*stsize = wasm_get_stack_size ();
 #endif
 
@@ -349,6 +322,9 @@ extern void schedule_background_exec (void);
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
 // when this is called from gc, it would be mono_runtime_do_background_work
 #ifdef DISABLE_THREADS
+GSList *jobs;
+GSList *jobs_ds;
+
 void
 mono_main_thread_schedule_background_job (background_job_cb cb)
 {
@@ -362,7 +338,20 @@ mono_main_thread_schedule_background_job (background_job_cb cb)
 		jobs = g_slist_prepend (jobs, (gpointer)cb);
 }
 
-GSList *jobs;
+typedef struct {
+	ds_job_cb cb;
+	void* data;
+} DsJobRegistration;
+
+void
+mono_schedule_ds_job (ds_job_cb cb, void* data)
+{
+	g_assert (cb);
+	DsJobRegistration* reg = g_new0 (DsJobRegistration, 1);
+	reg->cb = cb;
+	reg->data = data;
+	jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
+}
 
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
@@ -380,6 +369,31 @@ mono_background_exec (void)
 		THREADS_DEBUG ("mono_background_exec on thread %p done job %p \n", (gpointer)pthread_self(), (gpointer)cb);
 	}
 	g_slist_free (j);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+G_EXTERN_C
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_ds_exec (void)
+{
+	MONO_ENTER_GC_UNSAFE;
+	GSList *j1 = jobs_ds, *cur1;
+	jobs_ds = NULL;
+
+	for (cur1 = j1; cur1; cur1 = cur1->next) {
+		DsJobRegistration* reg = (DsJobRegistration*)cur1->data;
+		g_assert (reg->cb);
+		THREADS_DEBUG ("mono_wasm_ds_exec running job %p \n", (gpointer)cb);
+		gsize done = reg->cb (reg->data);
+		if (done){
+			THREADS_DEBUG ("mono_wasm_ds_exec done job %p \n", (gpointer)cb);
+			g_free (reg);
+		} else {
+			THREADS_DEBUG ("mono_wasm_ds_exec scheduling job %p again \n", (gpointer)cb);
+			jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
+		}
+	}
+	g_slist_free (j1);
 	MONO_EXIT_GC_UNSAFE;
 }
 

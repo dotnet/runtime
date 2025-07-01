@@ -10,33 +10,6 @@
 
 //extern CallDescrWorkerUnwindFrameChainHandler:proc
 
-//
-//      EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
-//
-NESTED_ENTRY FastCallFinalizeWorker, _TEXT, NoHandler
-        push_nonvol_reg rbp
-        mov     rbp, rsp
-        END_PROLOGUE
-
-        //
-        // RDI: already contains obj*
-        // RSI: address of finalizer method to call
-        //
-
-        // !!!!!!!!!
-        // NOTE:  you cannot tail call here because we must have the CallDescrWorkerUnwindFrameChainHandler
-        //        personality routine on the stack.
-        // !!!!!!!!!
-        call    rsi
-        xor     rax, rax
-
-        // epilog
-        pop_nonvol_reg rbp
-        ret
-
-
-NESTED_END FastCallFinalizeWorker, _TEXT
-
 //extern "C" void CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
 NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler

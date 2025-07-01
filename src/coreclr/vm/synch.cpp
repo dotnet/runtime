@@ -26,7 +26,7 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
     SetAutoEvent();
 
     {
-        HANDLE h = WszCreateEvent(NULL,FALSE,bInitialState,NULL);
+        HANDLE h = CreateEvent(NULL,FALSE,bInitialState,NULL);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -56,7 +56,7 @@ BOOL CLREventBase::CreateAutoEventNoThrow (BOOL bInitialState  // If TRUE, initi
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }
@@ -76,7 +76,7 @@ void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial st
     CONTRACTL_END;
 
     {
-        HANDLE h = WszCreateEvent(NULL,TRUE,bInitialState,NULL);
+        HANDLE h = CreateEvent(NULL,TRUE,bInitialState,NULL);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -105,7 +105,7 @@ BOOL CLREventBase::CreateManualEventNoThrow (BOOL bInitialState  // If TRUE, ini
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }
@@ -127,7 +127,7 @@ void CLREventBase::CreateMonitorEvent(SIZE_T Cookie)
     InterlockedOr((LONG*)&m_dwFlags, CLREVENT_FLAGS_AUTO_EVENT);
 
     {
-        HANDLE h = WszCreateEvent(NULL,FALSE,FALSE,NULL);
+        HANDLE h = CreateEvent(NULL,FALSE,FALSE,NULL);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -225,7 +225,7 @@ void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial st
     SetOSEvent();
     SetAutoEvent();
 
-    HANDLE h = WszCreateEvent(NULL,FALSE,bInitialState,NULL);
+    HANDLE h = CreateEvent(NULL,FALSE,bInitialState,NULL);
     if (h == NULL) {
         ThrowOutOfMemory();
     }
@@ -251,7 +251,7 @@ BOOL CLREventBase::CreateOSAutoEventNoThrow (BOOL bInitialState  // If TRUE, ini
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }
@@ -273,7 +273,7 @@ void CLREventBase::CreateOSManualEvent (BOOL bInitialState  // If TRUE, initial 
 
     SetOSEvent();
 
-    HANDLE h = WszCreateEvent(NULL,TRUE,bInitialState,NULL);
+    HANDLE h = CreateEvent(NULL,TRUE,bInitialState,NULL);
     if (h == NULL) {
         ThrowOutOfMemory();
     }
@@ -299,7 +299,7 @@ BOOL CLREventBase::CreateOSManualEventNoThrow (BOOL bInitialState  // If TRUE, i
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }

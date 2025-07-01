@@ -27,6 +27,9 @@ enum StackTraceElementFlags
 
     // Set if the "ip" field has already been adjusted (decremented)
     STEF_IP_ADJUSTED = 0x0002,
+
+    // Set if the element references a method that needs a keep alive object
+    STEF_KEEPALIVE = 0x0004,
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -51,28 +54,23 @@ struct StackTraceElement
     }
 };
 
-// This struct is used by SOS in the diagnostic repo.
-// See: https://github.com/dotnet/diagnostics/blob/9ff35f13af2f03a68a166cfd53f1a4bb32425f2f/src/SOS/Strike/strike.cpp#L2669
 class StackTraceInfo
 {
-private:
-    // for building stack trace info
-    StackTraceElement*  m_pStackTrace;      // pointer to stack trace storage
-    unsigned            m_cStackTrace;      // size of stack trace storage
-    unsigned            m_dFrameCount;      // current frame in stack trace
-    unsigned            m_cDynamicMethodItems; // number of items in the Dynamic Method array
-    unsigned            m_dCurrentDynamicIndex; // index of the next location where the resolver object will be stored
+    struct StackTraceArrayProtect
+    {
+        // Stores the current stack trace array. This array may be accessed by multiple threads
+        // during exception handling, and needs to be protected from concurrent modifications.
+        StackTraceArray m_pStackTraceArray;
 
+        // Used as a temporary buffer when resizing the stack trace array.
+        // This allows atomic replacement of the original array with the newly sized array.
+        StackTraceArray m_pStackTraceArrayNew;
+    };
+    static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
+    static void EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceArrayProtected, size_t neededSize);
+    static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
 public:
-    void Init();
-    BOOL IsEmpty();
-    void AllocateStackTrace();
-    void ClearStackTrace();
-    void FreeStackTrace();
-    void SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable, BOOL bReplaceStack, BOOL bSkipLastElement);
-    BOOL AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
-
-    void GetLeafFrameInfo(StackTraceElement* pStackTraceElement);
+    static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
 
@@ -129,8 +127,10 @@ public:
     }
 
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
     HRESULT SetErrorInfo();
+#endif // FEATURE_COMINTEROP
 
     void GetMessage(SString &result);
 
@@ -182,7 +182,6 @@ public:
 #ifdef LOGGING // Use parent implementation that inlines into nothing in retail build
         void SucceedCatch();
 #endif
-        void SetupFinally();
     };
 };
 
@@ -222,7 +221,9 @@ class EEException : public CLRException
 
     // Virtual overrides
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif // FEATURE_COMINTEROP
     void GetMessage(SString &result);
     OBJECTREF CreateThrowable();
 
@@ -715,8 +716,9 @@ class EEFileLoadException : public EEException
 // EX_CATCH
 // {
 //      EX_RETHROW()
+//      RethrowTerminalExceptions();
 // }
-// EX_END_CATCH(RethrowTerminalExceptions)
+// EX_END_CATCH
 // --------------------------------------------------------------------------------------------------------
 
 // In DAC builds, we don't want to override the normal utilcode exception handling.
@@ -842,6 +844,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 //
 // Thus, the scoped use of FAULT_NOT_FATAL macro.
 #undef EX_CATCH_HRESULT
+#ifdef FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
     EX_CATCH                                                                    \
     {                                                                           \
@@ -856,7 +859,16 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         }                                                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
+#else // FEATURE_COMINTEROP
+#define EX_CATCH_HRESULT(_hr)                                                   \
+    EX_CATCH                                                                    \
+    {                                                                           \
+        (_hr) = GET_EXCEPTION()->GetHR();                                       \
+        _ASSERTE(FAILED(_hr));                                                  \
+    }                                                                           \
+    EX_END_CATCH
+#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
 
@@ -866,8 +878,9 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                                           \
     /* Swallow the exception and keep going unless COR_E_OPERATIONCANCELED */   \
     /* was thrown. Used generating dumps, where rethrow will cancel dump. */    \
+    RethrowCancelExceptions();                                                    \
     }                                                                           \
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
 // Only use this version to wrap single source lines, or it makes debugging painful.
 #define CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED(sourceCode)           \

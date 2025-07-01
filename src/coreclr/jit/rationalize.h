@@ -37,13 +37,15 @@ private:
 
     // Intrinsic related transformations
     void RewriteNodeAsCall(GenTree**             use,
+                           CORINFO_SIG_INFO*     sig,
                            ArrayStack<GenTree*>& parents,
                            CORINFO_METHOD_HANDLE callHnd,
 #if defined(FEATURE_READYTORUN)
                            CORINFO_CONST_LOOKUP entryPoint,
 #endif // FEATURE_READYTORUN
                            GenTree** operands,
-                           size_t    operandCount);
+                           size_t    operandCount,
+                           bool      isSpecialIntrinsic);
 
     void RewriteIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
 #if defined(FEATURE_HW_INTRINSICS)

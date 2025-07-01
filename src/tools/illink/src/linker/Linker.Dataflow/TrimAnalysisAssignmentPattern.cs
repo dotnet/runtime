@@ -9,43 +9,52 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly record struct TrimAnalysisAssignmentPattern
-	{
-		public MultiValue Source { get; init; }
-		public MultiValue Target { get; init; }
-		public MessageOrigin Origin { get; init; }
+    public readonly record struct TrimAnalysisAssignmentPattern
+    {
+        public MultiValue Source { get; init; }
+        public MultiValue Target { get; init; }
+        public MessageOrigin Origin { get; init; }
 
-		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, MessageOrigin origin)
-		{
-			Source = source.DeepCopy ();
-			Target = target.DeepCopy ();
-			Origin = origin;
-		}
+        // For assignment of a method parameter, we store the parameter index to disambiguate
+        // assignments from different out parameters of a single method call.
+        public int? ParameterIndex { get; init; }
 
-		public TrimAnalysisAssignmentPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
-		{
-			Debug.Assert (Origin == other.Origin);
+        public TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, int? parameterIndex)
+        {
+            Source = source.DeepCopy();
+            Target = target.DeepCopy();
+            Origin = origin;
+            ParameterIndex = parameterIndex;
+        }
 
-			return new TrimAnalysisAssignmentPattern (
-				lattice.Meet (Source, other.Source),
-				lattice.Meet (Target, other.Target),
-				Origin);
-		}
+        public TrimAnalysisAssignmentPattern Merge(ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
+        {
+            Debug.Assert(Origin == other.Origin);
+            Debug.Assert(ParameterIndex == other.ParameterIndex);
 
-		public void MarkAndProduceDiagnostics (ReflectionMarker reflectionMarker, LinkContext context)
-		{
-			bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (Origin.Provider, out _);
-			var diagnosticContext = new DiagnosticContext (Origin, diagnosticsEnabled, context);
+            return new TrimAnalysisAssignmentPattern(
+                lattice.Meet(Source, other.Source),
+                lattice.Meet(Target, other.Target),
+                Origin,
+                ParameterIndex);
+        }
 
-			foreach (var sourceValue in Source.AsEnumerable ()) {
-				foreach (var targetValue in Target.AsEnumerable ()) {
-					if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
-						throw new NotImplementedException ();
+        public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, LinkContext context)
+        {
+            bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(Origin.Provider, out _);
+            var diagnosticContext = new DiagnosticContext(Origin, diagnosticsEnabled, context);
 
-					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (reflectionMarker, diagnosticContext);
-					requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
-				}
-			}
-		}
-	}
+            foreach (var sourceValue in Source.AsEnumerable())
+            {
+                foreach (var targetValue in Target.AsEnumerable())
+                {
+                    if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
+                        throw new NotImplementedException();
+
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(context, reflectionMarker, diagnosticContext);
+                    requireDynamicallyAccessedMembersAction.Invoke(sourceValue, targetWithDynamicallyAccessedMembers);
+                }
+            }
+        }
+    }
 }

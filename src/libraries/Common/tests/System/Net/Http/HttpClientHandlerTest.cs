@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Sockets;
 #if !NETFRAMEWORK
 using System.Net.Quic;
 #endif
@@ -79,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.SupportsRedirectConfiguration);
 
                 // Changes from .NET Framework.
-                Assert.False(handler.CheckCertificateRevocationList);
+                Assert.True(handler.CheckCertificateRevocationList);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }
@@ -248,14 +247,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try
-                    {
-                        await client.GetAsync(ipv6Address);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(client.GetAsync(ipv6Address));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -300,14 +292,8 @@ namespace System.Net.Http.Functional.Tests
                         // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     }
-                    try
-                    {
-                        await client.GetAsync(url);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+
+                    await IgnoreExceptions(client.GetAsync(url));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -660,7 +646,11 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("close", resp.Headers.Connection);
                     Assert.True(resp.Headers.ConnectionClose.GetValueOrDefault());
                     Assert.Equal("attachment", resp.Content.Headers.ContentDisposition.DispositionType);
+#if NETFRAMEWORK
                     Assert.Equal("\"fname.ext\"", resp.Content.Headers.ContentDisposition.FileName);
+#else
+                    Assert.Equal("fname.ext", resp.Content.Headers.ContentDisposition.FileName);
+#endif
                     Assert.Contains("gzip", resp.Content.Headers.ContentEncoding);
                     Assert.Contains("da", resp.Content.Headers.ContentLanguage);
                     Assert.Equal(new Uri("/index.htm", UriKind.Relative), resp.Content.Headers.ContentLocation);
@@ -910,18 +900,15 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\n" + LoopbackServer.CorsHeaders + "Transfer-Encoding: chunked\r\n\r\n");
-                        try
+
+                        await IgnoreExceptions(async () =>
                         {
                             while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
                             {
                                 await connection.WriteStringAsync(new string(' ', 10000));
                                 await Task.Delay(1);
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
@@ -989,7 +976,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, true, true)]
         [InlineData(true, true, false)]
         [InlineData(true, false, false)]
@@ -999,11 +986,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/91757");
-            }
-
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -1027,12 +1009,9 @@ namespace System.Net.Http.Functional.Tests
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                 if (PlatformDetection.IsBrowser)
                 {
-                    if (enableWasmStreaming)
-                    {
 #if !NETFRAMEWORK
-                        request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+                    request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), enableWasmStreaming);
 #endif
-                    }
                 }
 
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
@@ -1261,7 +1240,7 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
-                        Assert.Equal(PlatformDetection.IsBrowser, responseStream.CanSeek);
+                        Assert.False(responseStream.CanSeek);
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
@@ -1292,11 +1271,14 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.CopyToAsync(Stream.Null, -1, default); });
                         Assert.Throws<NotSupportedException>(() => { responseStream.CopyToAsync(nonWritableStream, 100, default); });
                         Assert.Throws<ObjectDisposedException>(() => { responseStream.CopyToAsync(disposedStream, 100, default); });
-                        Assert.Throws<ArgumentNullException>(() => responseStream.Read(null, 0, 100));
-                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], -1, 1));
-                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 2, 1));
-                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], 0, -1));
-                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 0, 2));
+                        if (PlatformDetection.IsNotBrowser)
+                        {
+                            Assert.Throws<ArgumentNullException>(() => responseStream.Read(null, 0, 100));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], -1, 1));
+                            Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 2, 1));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], 0, -1));
+                            Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 0, 2));
+                        }
                         Assert.Throws<ArgumentNullException>(() => responseStream.BeginRead(null, 0, 100, null, null));
                         Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.BeginRead(new byte[1], -1, 1, null, null));
                         Assert.ThrowsAny<ArgumentException>(() => responseStream.BeginRead(new byte[1], 2, 1, null, null));
@@ -1306,29 +1288,37 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Throws<ArgumentNullException>(() => { responseStream.CopyTo(null); });
                         Assert.Throws<ArgumentNullException>(() => { responseStream.CopyToAsync(null, 100, default); });
                         Assert.Throws<ArgumentNullException>(() => { responseStream.CopyToAsync(null, 100, default); });
-                        Assert.Throws<ArgumentNullException>(() => { responseStream.Read(null, 0, 100); });
                         Assert.Throws<ArgumentNullException>(() => { responseStream.ReadAsync(null, 0, 100, default); });
                         Assert.Throws<ArgumentNullException>(() => { responseStream.BeginRead(null, 0, 100, null, null); });
 
                         // Empty reads
                         var buffer = new byte[1];
-                        Assert.Equal(-1, responseStream.ReadByte());
-                        Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                        if (PlatformDetection.IsNotBrowser)
+                        {
+                            Assert.Equal(-1, responseStream.ReadByte());
+                            Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                        }
 #if !NETFRAMEWORK
                         Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
 #endif
                         Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
+                        if (PlatformDetection.IsNotBrowser)
+                        {
 #if !NETFRAMEWORK
-                        Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
+                            Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
 #endif
-                        Assert.Equal(0, responseStream.Read(buffer, 0, 1));
+                            Assert.Equal(0, responseStream.Read(buffer, 0, 1));
+                        }
 
                         // Empty copies
                         var ms = new MemoryStream();
                         await responseStream.CopyToAsync(ms);
                         Assert.Equal(0, ms.Length);
-                        responseStream.CopyTo(ms);
-                        Assert.Equal(0, ms.Length);
+                        if (PlatformDetection.IsNotBrowser)
+                        {
+                            responseStream.CopyTo(ms);
+                            Assert.Equal(0, ms.Length);
+                        }
                     }
                 }
             },
@@ -1344,9 +1334,6 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
-#if !NETFRAMEWORK
-                request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
-#endif
 
                 var cts = new CancellationTokenSource();
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
@@ -1443,6 +1430,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            // Tasks are stored and awaited outside of the CreateServerAsync callbacks
+            // to let server disposal abort any pending operations.
+            Task serverTask1 = null;
+            Task serverTask2 = null;
+
             await LoopbackServerFactory.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServerFactory.CreateServerAsync(async (server2, url2) =>
@@ -1452,13 +1444,13 @@ namespace System.Net.Http.Functional.Tests
                         var unblockServers = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                         // First server connects but doesn't send any response yet
-                        Task serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
+                        serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
                         {
                             await unblockServers.Task;
                         });
 
                         // Second server connects and sends some but not all headers
-                        Task serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
+                        serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
                         {
                             await connection2.ReadRequestDataAsync();
                             await connection2.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
@@ -1495,9 +1487,14 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Assert.Equal("12345678901234567890", await response3.Content.ReadAsStringAsync());
                         }
+
+                        await serverTask3;
                     });
                 });
             });
+
+            await IgnoreExceptions(serverTask1);
+            await IgnoreExceptions(serverTask2);
         }
 
         [Theory]
@@ -1675,7 +1672,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
@@ -1812,15 +1809,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    try
-                    {
-                        await connection.ReadRequestDataAsync(readBody: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
-                    await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
+                    await IgnoreExceptions(connection.ReadRequestDataAsync(readBody: true));
                 });
             });
         }
@@ -1916,7 +1905,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -2024,22 +2013,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 1));
-            Assert.Equal(new Version(1, 1), receivedRequestVersion);
-        }
-
-        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
-        [Fact]
-        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
-        {
-            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
-            if (!IsWinHttpHandler)
-            {
-                return;
-            }
-
-            // The default value for HttpRequestMessage.Version is Version(1,1).
-            // So, we need to set something different (0,0), to test the "unknown" version.
-            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
@@ -2176,6 +2149,186 @@ namespace System.Net.Http.Functional.Tests
 
             request = new HttpRequestMessage(HttpMethod.Get, new Uri("foo://foo.bar"));
             await Assert.ThrowsAsync<NotSupportedException>(() => invoker.SendAsync(request, CancellationToken.None));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData('\r', HeaderType.Request)]
+        [InlineData('\n', HeaderType.Request)]
+        [InlineData('\0', HeaderType.Request)]
+        [InlineData('\u0100', HeaderType.Request)]
+        [InlineData('\u0080', HeaderType.Request)]
+        [InlineData('\u009F', HeaderType.Request)]
+        [InlineData('\r', HeaderType.Content)]
+        [InlineData('\n', HeaderType.Content)]
+        [InlineData('\0', HeaderType.Content)]
+        [InlineData('\u0100', HeaderType.Content)]
+        [InlineData('\u0080', HeaderType.Content)]
+        [InlineData('\u009F', HeaderType.Content)]
+        [InlineData('\r', HeaderType.Cookie)]
+        [InlineData('\n', HeaderType.Cookie)]
+        [InlineData('\0', HeaderType.Cookie)]
+        [InlineData('\u0100', HeaderType.Cookie)]
+        [InlineData('\u0080', HeaderType.Cookie)]
+        [InlineData('\u009F', HeaderType.Cookie)]
+        public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
+        {
+            string uri = "https://example.com"; // URI doesn't matter, the request should never leave the client
+            var handler = CreateHttpClientHandler();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            request.Version = UseVersion;
+            try
+            {
+                switch (headerType)
+                {
+                    case HeaderType.Request:
+                        request.Headers.Add("Custom-Header", $"HeaderValue{dangerousChar}WithControlChar");
+                        break;
+                    case HeaderType.Content:
+                        request.Content = new StringContent("test content");
+                        request.Content.Headers.Add("Custom-Content-Header", $"ContentValue{dangerousChar}WithControlChar");
+                        break;
+                    case HeaderType.Cookie:
+#if WINHTTPHANDLER_TEST
+                        handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+#endif
+                        handler.CookieContainer = new CookieContainer();
+                        handler.CookieContainer.Add(new Uri(uri), new Cookie("CustomCookie", $"Value{dangerousChar}WithControlChar"));
+                        break;
+                }
+            }
+            catch (FormatException fex) when (fex.Message.Contains("New-line or NUL") && dangerousChar != '\u0100')
+            {
+                return;
+            }
+            catch (CookieException) when (dangerousChar != '\u0100')
+            {
+                return;
+            }
+
+            using (var client = new HttpClient(handler))
+            {
+                var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                _output.WriteLine(ex.ToString());
+                if (IsWinHttpHandler)
+                {
+                    var fex = Assert.IsType<FormatException>(ex);
+                    Assert.Contains("Latin-1", fex.Message);
+                }
+                else
+                {
+                    var hrex = Assert.IsType<HttpRequestException>(ex);
+                    var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
+                    Assert.Contains("ASCII", message);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData('\u0001', HeaderType.Request)]
+        [InlineData('\u0007', HeaderType.Request)]
+        [InlineData('\u007F', HeaderType.Request)]
+        [InlineData('\u00A0', HeaderType.Request)]
+        [InlineData('\u00A9', HeaderType.Request)]
+        [InlineData('\u00FF', HeaderType.Request)]
+        [InlineData('\u0001', HeaderType.Content)]
+        [InlineData('\u0007', HeaderType.Content)]
+        [InlineData('\u007F', HeaderType.Content)]
+        [InlineData('\u00A0', HeaderType.Content)]
+        [InlineData('\u00A9', HeaderType.Content)]
+        [InlineData('\u00FF', HeaderType.Content)]
+        [InlineData('\u0001', HeaderType.Cookie)]
+        [InlineData('\u0007', HeaderType.Cookie)]
+        [InlineData('\u007F', HeaderType.Cookie)]
+        [InlineData('\u00A0', HeaderType.Cookie)]
+        [InlineData('\u00A9', HeaderType.Cookie)]
+        [InlineData('\u00FF', HeaderType.Cookie)]
+        public async Task SendAsync_RequestWithLatin1HeaderValue_Succeeds(char safeChar, HeaderType headerType)
+        {
+            if (!IsWinHttpHandler && safeChar > 0x7F)
+            {
+                return; // SocketsHttpHandler doesn't support Latin-1 characters in headers without setting header encoding.
+            }
+            var headerValue = $"HeaderValue{safeChar}WithSafeChar";
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                {
+                    var handler = CreateHttpClientHandler();
+                    using (var client = new HttpClient(handler))
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        request.Version = UseVersion;
+                        switch (headerType)
+                        {
+                            case HeaderType.Request:
+                                request.Headers.Add("Custom-Header", headerValue);
+                                break;
+                            case HeaderType.Content:
+                                request.Content = new StringContent("test content");
+                                request.Content.Headers.Add("Custom-Content-Header", headerValue);
+                                break;
+                            case HeaderType.Cookie:
+#if WINHTTPHANDLER_TEST
+                                handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+#endif
+                                handler.CookieContainer = new CookieContainer();
+                                handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
+                                break;
+                        }
+
+                        using (HttpResponseMessage response = await client.SendAsync(request))
+                        {
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        }
+                    }
+                }, async server =>
+                {
+                    var data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    switch (headerType)
+                    {
+                        case HeaderType.Request:
+                        {
+                            var headerLine = DecodeHeaderValue("Custom-Header");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
+                        case HeaderType.Content:
+                        {
+                            var headerLine = DecodeHeaderValue("Custom-Content-Header");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
+                        case HeaderType.Cookie:
+                        {
+                            var headerLine = DecodeHeaderValue("cookie");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
+                    }
+
+                    string DecodeHeaderValue(string headerName)
+                    {
+                        var encoding = Encoding.GetEncoding("ISO-8859-1");
+                        HttpHeaderData headerData = data.GetSingleHeaderData(headerName);
+                        ReadOnlySpan<byte> raw = headerData.Raw.AsSpan().Slice(headerData.RawValueStart);
+                        if (headerData.HuffmanEncoded)
+                        {
+                            byte[] buffer = new byte[raw.Length * 2];
+                            int length = HuffmanDecoder.Decode(raw, buffer);
+                            raw = buffer.AsSpan().Slice(0, length);
+                        }
+                        return encoding.GetString(raw.ToArray());
+                    }
+                });
+        }
+
+        public enum HeaderType
+        {
+            Request,
+            Content,
+            Cookie
         }
     }
 }

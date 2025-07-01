@@ -1,3 +1,9 @@
+#
+## Licensed to the .NET Foundation under one or more agreements.
+## The .NET Foundation licenses this file to you under the MIT license.
+#
+#
+
 from __future__ import print_function
 from genEventing import *
 from genLttngProvider import *
@@ -1183,21 +1189,26 @@ bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long key
 
     return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
 }
+
+bool DotNETRuntimeRundownProvider_IsEnabled(unsigned char level, unsigned long long keyword)
+{
+    if (!ep_enabled())
+        return false;
+
+    EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider;
+    if (!context.IsEnabled)
+        return false;
+
+    if (level > context.Level)
+        return false;
+
+    return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
+}
 """
 
 def generateEventPipeImplFiles(
         etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
     tree = DOM.parse(etwmanifest)
-
-    # Find the src directory starting with the assumption that
-    # A) It is named 'src'
-    # B) This script lives in it
-    src_dirname = os.path.dirname(__file__)
-    while os.path.basename(src_dirname) != "src":
-        src_dirname = os.path.dirname(src_dirname)
-
-        if os.path.basename(src_dirname) == "":
-            raise IOError("Could not find the Core CLR 'src' directory")
 
     for providerNode in tree.getElementsByTagName('provider'):
         providerName = providerNode.getAttribute('name')

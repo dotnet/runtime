@@ -10,24 +10,78 @@
 
 #include "removedup.h"
 
+#ifdef TARGET_WINDOWS
+typedef _WIN32_FIND_DATAW FindData;
+#else
+struct FindData
+{
+    unsigned char d_type;
+    WCHAR *cFileName;
+
+    FindData() : d_type(0), cFileName(nullptr)
+    {
+    }   
+
+    FindData(unsigned char type, WCHAR *fileName)
+    {
+        d_type = type;
+        cFileName = fileName;
+    }
+
+    // Prevent copying of the FindData, only allow moving so that the cFileName doesn't need to be duplicated.
+    FindData(const FindData& other) = delete;
+    FindData& operator=(const FindData& other) = delete;
+
+    FindData(FindData&& other) : d_type(other.d_type), cFileName(other.cFileName)
+    {
+        other.d_type = 0;
+        other.cFileName = nullptr;
+    }
+
+    FindData& operator=(FindData&& other)
+    {
+        d_type = other.d_type;
+        cFileName = other.cFileName;
+        other.d_type = 0;
+        other.cFileName = nullptr;
+
+        return *this;
+    }
+
+    ~FindData()
+    {
+        delete [] cFileName;
+    }
+};
+#endif
+
 class verbMerge
 {
 public:
     static int DoWork(const char* nameOfOutputFile, const char* pattern, bool recursive, bool dedup, bool stripCR);
 
 private:
-    typedef bool (*DirectoryFilterFunction_t)(WIN32_FIND_DATAW*);
-    static bool DirectoryFilterDirectories(WIN32_FIND_DATAW* findData);
-    static bool DirectoryFilterFile(WIN32_FIND_DATAW* findData);
-    static int __cdecl WIN32_FIND_DATAW_qsort_helper(const void* p1, const void* p2);
-    static int FilterDirectory(LPCWSTR                      searchPattern,
+
+#ifdef TARGET_WINDOWS
+    typedef _WIN32_FIND_DATAW FilterArgType;
+#else
+    typedef struct dirent FilterArgType;
+#endif
+
+    typedef bool (*DirectoryFilterFunction_t)(FilterArgType*);
+    static bool DirectoryFilterDirectories(FilterArgType* findData);
+    static bool DirectoryFilterFile(FilterArgType* findData);
+    static int __cdecl FindData_qsort_helper(const void* p1, const void* p2);
+    static int FilterDirectory(LPCWSTR                      dir,
+                               LPCWSTR                      searchPattern,
                                DirectoryFilterFunction_t    filter,
-                               /* out */ WIN32_FIND_DATAW** ppFileArray,
+                               /* out */ FindData** ppFileArray,
                                int*                         pElemCount);
 
     static LPWSTR MergePathStrings(LPCWSTR dir, LPCWSTR file);
 
     static char* ConvertWideCharToMultiByte(LPCWSTR wstr);
+    static WCHAR* ConvertMultiByteToWideChar(LPCSTR str);
 
     static int AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize);
     static int AppendFile(HANDLE hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize);

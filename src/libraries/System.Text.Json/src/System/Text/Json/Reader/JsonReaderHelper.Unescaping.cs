@@ -66,7 +66,7 @@ namespace System.Text.Json
             return utf8String;
         }
 
-        public static ReadOnlySpan<byte> GetUnescapedSpan(ReadOnlySpan<byte> utf8Source)
+        public static byte[] GetUnescaped(ReadOnlySpan<byte> utf8Source)
         {
             // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
             int length = utf8Source.Length;
@@ -79,8 +79,8 @@ namespace System.Text.Json
             Unescape(utf8Source, utf8Unescaped, out int written);
             Debug.Assert(written > 0);
 
-            ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written).ToArray();
-            Debug.Assert(!propertyName.IsEmpty);
+            byte[] propertyName = utf8Unescaped.Slice(0, written).ToArray();
+            Debug.Assert(propertyName.Length is not 0);
 
             if (pooledName != null)
             {
@@ -154,6 +154,50 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(unescapedArray);
                 utf8Escaped.Clear();
                 ArrayPool<byte>.Shared.Return(escapedArray);
+            }
+
+            return result;
+        }
+
+        public static bool UnescapeAndCompareBothInputs(ReadOnlySpan<byte> utf8Source1, ReadOnlySpan<byte> utf8Source2)
+        {
+            int index1 = utf8Source1.IndexOf(JsonConstants.BackSlash);
+            int index2 = utf8Source2.IndexOf(JsonConstants.BackSlash);
+
+            Debug.Assert(index1 >= 0, "the first parameter is not escaped");
+            Debug.Assert(index2 >= 0, "the second parameter is not escaped");
+
+            byte[]? unescapedArray1 = null;
+            byte[]? unescapedArray2 = null;
+
+            Span<byte> utf8Unescaped1 = utf8Source1.Length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
+                (unescapedArray1 = ArrayPool<byte>.Shared.Rent(utf8Source1.Length));
+
+            Span<byte> utf8Unescaped2 = utf8Source2.Length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
+                (unescapedArray2 = ArrayPool<byte>.Shared.Rent(utf8Source2.Length));
+
+            Unescape(utf8Source1, utf8Unescaped1, index1, out int written);
+            utf8Unescaped1 = utf8Unescaped1.Slice(0, written);
+            Debug.Assert(!utf8Unescaped1.IsEmpty);
+
+            Unescape(utf8Source2, utf8Unescaped2, index2, out written);
+            utf8Unescaped2 = utf8Unescaped2.Slice(0, written);
+            Debug.Assert(!utf8Unescaped2.IsEmpty);
+
+            bool result = utf8Unescaped1.SequenceEqual(utf8Unescaped2);
+
+            if (unescapedArray1 != null)
+            {
+                utf8Unescaped1.Clear();
+                ArrayPool<byte>.Shared.Return(unescapedArray1);
+            }
+
+            if (unescapedArray2 != null)
+            {
+                utf8Unescaped2.Clear();
+                ArrayPool<byte>.Shared.Return(unescapedArray2);
             }
 
             return result;
@@ -528,12 +572,8 @@ namespace System.Text.Json
                                 + JsonConstants.UnicodePlane01StartValue;
                         }
 
-#if NET
                         var rune = new Rune(scalar);
                         bool success = rune.TryEncodeToUtf8(destination.Slice(written), out int bytesWritten);
-#else
-                        bool success = TryEncodeToUtf8Bytes((uint)scalar, destination.Slice(written), out int bytesWritten);
-#endif
                         if (!success)
                         {
                             goto DestinationTooShort;
@@ -600,73 +640,5 @@ namespace System.Text.Json
         DestinationTooShort:
             return false;
         }
-
-#if !NET
-        /// <summary>
-        /// Copies the UTF-8 code unit representation of this scalar to an output buffer.
-        /// The buffer must be large enough to hold the required number of <see cref="byte"/>s.
-        /// </summary>
-        private static bool TryEncodeToUtf8Bytes(uint scalar, Span<byte> utf8Destination, out int bytesWritten)
-        {
-            Debug.Assert(JsonHelpers.IsValidUnicodeScalar(scalar));
-
-            if (scalar < 0x80U)
-            {
-                // Single UTF-8 code unit
-                if ((uint)utf8Destination.Length < 1u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)scalar;
-                bytesWritten = 1;
-            }
-            else if (scalar < 0x800U)
-            {
-                // Two UTF-8 code units
-                if ((uint)utf8Destination.Length < 2u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)(0xC0U | (scalar >> 6));
-                utf8Destination[1] = (byte)(0x80U | (scalar & 0x3FU));
-                bytesWritten = 2;
-            }
-            else if (scalar < 0x10000U)
-            {
-                // Three UTF-8 code units
-                if ((uint)utf8Destination.Length < 3u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)(0xE0U | (scalar >> 12));
-                utf8Destination[1] = (byte)(0x80U | ((scalar >> 6) & 0x3FU));
-                utf8Destination[2] = (byte)(0x80U | (scalar & 0x3FU));
-                bytesWritten = 3;
-            }
-            else
-            {
-                // Four UTF-8 code units
-                if ((uint)utf8Destination.Length < 4u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)(0xF0U | (scalar >> 18));
-                utf8Destination[1] = (byte)(0x80U | ((scalar >> 12) & 0x3FU));
-                utf8Destination[2] = (byte)(0x80U | ((scalar >> 6) & 0x3FU));
-                utf8Destination[3] = (byte)(0x80U | (scalar & 0x3FU));
-                bytesWritten = 4;
-            }
-
-            return true;
-        }
-#endif
     }
 }

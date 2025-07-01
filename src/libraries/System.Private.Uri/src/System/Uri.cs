@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -17,7 +18,7 @@ namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial class Uri : ISpanFormattable, ISerializable
+    public partial class Uri : ISpanFormattable, IEquatable<Uri>, ISerializable
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
@@ -584,7 +585,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private static unsafe void GetCombinedString(Uri baseUri, string relativeStr,
+        private static void GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string? result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -1674,20 +1675,6 @@ namespace System
             return !uri1.Equals(uri2);
         }
 
-        //
-        // Equals
-        //
-        //  Overrides default function (in Object class)
-        //
-        // Assumes:
-        //  <comparand> is an object of class Uri or String
-        //
-        // Returns:
-        //  true if objects have the same value, else false
-        //
-        // Throws:
-        //  Nothing
-        //
         public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             if (comparand is null)
@@ -1700,12 +1687,12 @@ namespace System
                 return true;
             }
 
-            Uri? obj = comparand as Uri;
+            Uri? other = comparand as Uri;
 
             // we allow comparisons of Uri and String objects only. If a string
             // is passed, convert to Uri. This is inefficient, but allows us to
             // canonicalize the comparand, making comparison possible
-            if (obj is null)
+            if (other is null)
             {
                 if (DisablePathAndQueryCanonicalization)
                     return false;
@@ -1716,28 +1703,48 @@ namespace System
                 if (ReferenceEquals(s, OriginalString))
                     return true;
 
-                if (!TryCreate(s, UriKind.RelativeOrAbsolute, out obj))
+                if (!TryCreate(s, UriKind.RelativeOrAbsolute, out other))
                     return false;
             }
 
-            if (DisablePathAndQueryCanonicalization != obj.DisablePathAndQueryCanonicalization)
-                return false;
+            return Equals(other);
+        }
 
-            if (ReferenceEquals(OriginalString, obj.OriginalString))
+        /// <summary>
+        /// Compares two <see cref="Uri"/> instances for equality.
+        /// </summary>
+        /// <param name="other">The <see cref="Uri"/> to compare to this instance.</param>
+        /// <returns><see langword="true"/> if the two instances represent the same URI; otherwise, <see langword="false"/>.</returns>
+        public bool Equals([NotNullWhen(true)] Uri? other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
             {
                 return true;
             }
 
-            if (IsAbsoluteUri != obj.IsAbsoluteUri)
+            if (DisablePathAndQueryCanonicalization != other.DisablePathAndQueryCanonicalization)
+                return false;
+
+            if (ReferenceEquals(OriginalString, other.OriginalString))
+            {
+                return true;
+            }
+
+            if (IsAbsoluteUri != other.IsAbsoluteUri)
                 return false;
 
             if (IsNotAbsoluteUri)
-                return OriginalString.Equals(obj.OriginalString);
+                return OriginalString.Equals(other.OriginalString);
 
-            if (NotAny(Flags.AllUriInfoSet) || obj.NotAny(Flags.AllUriInfoSet))
+            if (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet))
             {
                 // Try raw compare for _strings as the last chance to keep the working set small
-                if (string.Equals(_string, obj._string, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                if (string.Equals(_string, other._string, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -1746,20 +1753,20 @@ namespace System
             // Note that equality test will bring the working set of both
             // objects up to creation of _info.MoreInfo member
             EnsureUriInfo();
-            obj.EnsureUriInfo();
+            other.EnsureUriInfo();
 
-            if (!UserDrivenParsing && !obj.UserDrivenParsing && Syntax!.IsSimple && obj.Syntax.IsSimple)
+            if (!UserDrivenParsing && !other.UserDrivenParsing && Syntax!.IsSimple && other.Syntax.IsSimple)
             {
                 // Optimization of canonical DNS names by avoiding host string creation.
                 // Note there could be explicit ports specified that would invalidate path offsets
-                if (InFact(Flags.CanonicalDnsHost) && obj.InFact(Flags.CanonicalDnsHost))
+                if (InFact(Flags.CanonicalDnsHost) && other.InFact(Flags.CanonicalDnsHost))
                 {
                     int i1 = _info.Offset.Host;
                     int end1 = _info.Offset.Path;
 
-                    int i2 = obj._info.Offset.Host;
-                    int end2 = obj._info.Offset.Path;
-                    string str = obj._string;
+                    int i2 = other._info.Offset.Host;
+                    int end2 = other._info.Offset.Path;
+                    string str = other._string;
                     //Taking the shortest part
                     if (end1 - i1 > end2 - i2)
                     {
@@ -1794,14 +1801,14 @@ namespace System
                 else
                 {
                     EnsureHostString(false);
-                    obj.EnsureHostString(false);
-                    if (!_info.Host!.Equals(obj._info.Host))
+                    other.EnsureHostString(false);
+                    if (!_info.Host!.Equals(other._info.Host))
                     {
                         return false;
                     }
                 }
 
-                if (Port != obj.Port)
+                if (Port != other.Port)
                 {
                     return false;
                 }
@@ -1811,21 +1818,21 @@ namespace System
             // We should consider reducing the overall working set by not caching some other properties mentioned in MoreInfo
 
             MoreInfo selfInfo = _info.MoreInfo;
-            MoreInfo otherInfo = obj._info.MoreInfo;
+            MoreInfo otherInfo = other._info.MoreInfo;
 
             // Fragment AND UserInfo (for non-mailto URIs) are ignored
             UriComponents components = UriComponents.HttpRequestUrl;
 
             if (_syntax.InFact(UriSyntaxFlags.MailToLikeUri))
             {
-                if (!obj._syntax.InFact(UriSyntaxFlags.MailToLikeUri))
+                if (!other._syntax.InFact(UriSyntaxFlags.MailToLikeUri))
                     return false;
 
                 components |= UriComponents.UserInfo;
             }
 
             string selfUrl = selfInfo.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
-            string otherUrl = otherInfo.RemoteUrl ??= obj.GetParts(components, UriFormat.SafeUnescaped);
+            string otherUrl = otherInfo.RemoteUrl ??= other.GetParts(components, UriFormat.SafeUnescaped);
 
             // if IsUncOrDosPath is true then we ignore case in the path comparison
             return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
@@ -1896,7 +1903,7 @@ namespace System
         //  This method is called first to figure out the scheme or a simple file path
         //  Is called only at the .ctor time
         //
-        private static unsafe ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
+        private static ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
         {
             Debug.Assert((flags & Flags.Debug_LeftConstructor) == 0);
 
@@ -2390,16 +2397,13 @@ namespace System
         Done:
             cF |= Flags.MinimalUriInfoSet;
 
-            Debug.Assert(sizeof(Flags) == sizeof(ulong));
-
             Interlocked.CompareExchange(ref _info, info, null!);
 
             Flags current = _flags;
             while ((current & Flags.MinimalUriInfoSet) == 0)
             {
-                Flags newValue = (current & ~Flags.IndexMask) | cF;
-                ulong oldValue = Interlocked.CompareExchange(ref Unsafe.As<Flags, ulong>(ref _flags), (ulong)newValue, (ulong)current);
-                if (oldValue == (ulong)current)
+                Flags oldValue = Interlocked.CompareExchange(ref _flags, (current & ~Flags.IndexMask) | cF, current);
+                if (oldValue == current)
                 {
                     return;
                 }
@@ -2514,7 +2518,8 @@ namespace System
 
                 case Flags.IPv6HostType:
                     // The helper will return [...] string that is not suited for Dns.Resolve()
-                    host = IPv6AddressHelper.ParseCanonicalName(str, idx, ref loopback, ref scopeId);
+                    host = IPv6AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
+                    scopeId = scopeIdSpan.IsEmpty ? null : new string(scopeIdSpan);
                     break;
 
                 case Flags.IPv4HostType:
@@ -2697,7 +2702,7 @@ namespace System
             Debug.Assert(_info != null && (_flags & Flags.MinimalUriInfoSet) != 0);
 
             // Which Uri parts are not escaped canonically ?
-            // Notice that public UriComponents and private Uri.Flags must me in Sync so below code can work
+            // Notice that public UriComponents and private Uri.Flags must be in Sync so below code can work
             //
             ushort nonCanonical = unchecked((ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical));
 
@@ -3292,6 +3297,10 @@ namespace System
                     {
                         _string = _syntax.SchemeName + SchemeDelimiter;
                     }
+
+                    _info.Offset.Scheme = 0;
+                    _info.Offset.User = (ushort)_string.Length;
+                    _info.Offset.Host = (ushort)_string.Length;
                 }
 
                 _info.Offset.Path = (ushort)_string.Length;

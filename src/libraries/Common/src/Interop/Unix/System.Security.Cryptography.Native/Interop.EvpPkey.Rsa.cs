@@ -48,6 +48,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaDecrypt(
             SafeEvpPKeyHandle pkey,
+            IntPtr extraHandle,
             ref byte source,
             int sourceLength,
             RSAEncryptionPaddingMode paddingMode,
@@ -64,6 +65,7 @@ internal static partial class Interop
         {
             int written = CryptoNative_RsaDecrypt(
                 pkey,
+                pkey.ExtraHandle,
                 ref MemoryMarshal.GetReference(source),
                 source.Length,
                 paddingMode,
@@ -83,6 +85,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaEncrypt(
             SafeEvpPKeyHandle pkey,
+            IntPtr extraHandle,
             ref byte source,
             int sourceLength,
             RSAEncryptionPaddingMode paddingMode,
@@ -99,6 +102,7 @@ internal static partial class Interop
         {
             int written = CryptoNative_RsaEncrypt(
                 pkey,
+                pkey.ExtraHandle,
                 ref MemoryMarshal.GetReference(source),
                 source.Length,
                 paddingMode,
@@ -118,6 +122,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaSignHash(
             SafeEvpPKeyHandle pkey,
+            IntPtr extraHandle,
             RSASignaturePaddingMode paddingMode,
             IntPtr digestAlgorithm,
             ref byte hash,
@@ -128,14 +133,19 @@ internal static partial class Interop
         internal static int RsaSignHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
-            IntPtr digestAlgorithm,
+            HashAlgorithmName digestAlgorithm,
             ReadOnlySpan<byte> hash,
             Span<byte> destination)
         {
+            ArgumentNullException.ThrowIfNull(digestAlgorithm.Name, nameof(digestAlgorithm));
+
+            IntPtr digestAlgorithmPtr = Interop.Crypto.HashAlgorithmToEvp(digestAlgorithm.Name);
+
             int written = CryptoNative_RsaSignHash(
                 pkey,
+                pkey.ExtraHandle,
                 paddingMode,
-                digestAlgorithm,
+                digestAlgorithmPtr,
                 ref MemoryMarshal.GetReference(hash),
                 hash.Length,
                 ref MemoryMarshal.GetReference(destination),
@@ -153,6 +163,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaVerifyHash(
             SafeEvpPKeyHandle pkey,
+            IntPtr extraHandle,
             RSASignaturePaddingMode paddingMode,
             IntPtr digestAlgorithm,
             ref byte hash,
@@ -163,14 +174,19 @@ internal static partial class Interop
         internal static bool RsaVerifyHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
-            IntPtr digestAlgorithm,
+            HashAlgorithmName digestAlgorithm,
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature)
         {
+            ArgumentNullException.ThrowIfNull(digestAlgorithm.Name, nameof(digestAlgorithm));
+
+            IntPtr digestAlgorithmPtr = Interop.Crypto.HashAlgorithmToEvp(digestAlgorithm.Name);
+
             int ret = CryptoNative_RsaVerifyHash(
                 pkey,
+                pkey.ExtraHandle,
                 paddingMode,
-                digestAlgorithm,
+                digestAlgorithmPtr,
                 ref MemoryMarshal.GetReference(hash),
                 hash.Length,
                 ref MemoryMarshal.GetReference(signature),

@@ -83,7 +83,7 @@ with version reseliency.
 **Pros:**
 * ILLInk can afford to spend more time for escape analysis.
 * For self-contained apps, ILLink has access to all of application's code and can do full interprocedural analysis.
-* ILLink is already a part of System.Private.CoreLib and CoreFX build toolchain so the assemblies built there can benefit
+* ILLink is already a part of System.Private.CoreLib and core libraries build toolchain so the assemblies built there can benefit
 from this.
 
 **Cons:**

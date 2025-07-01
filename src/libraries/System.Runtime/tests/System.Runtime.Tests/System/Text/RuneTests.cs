@@ -57,8 +57,8 @@ namespace System.Text.Tests
             Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybridOnBrowser))]
-        // HybridGlobalization on Browser uses Invariant HashCode and SortKey, so its effect does not match this of ICU
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        // HybridGlobalization on Apple mobile platforms has issues with casing dotless I 
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
         [InlineData('i', 'I', 'i')]
@@ -71,7 +71,6 @@ namespace System.Text.Tests
         [InlineData('\u0131', '\u0131', '\u0131')] // U+0131 LATIN SMALL LETTER DOTLESS I
         [InlineData(0x10400, 0x10400, 0x10428)] // U+10400 DESERET CAPITAL LETTER LONG I
         [InlineData(0x10428, 0x10400, 0x10428)] // U+10428 DESERET SMALL LETTER LONG I
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void ICU_Casing_Invariant(int original, int upper, int lower)
         {
             var rune = new Rune(original);
@@ -247,6 +246,48 @@ namespace System.Text.Tests
             Assert.Equal(expectedOperationStatus, Rune.DecodeFromUtf8(data, out Rune actualRune, out int actualBytesConsumed));
             Assert.Equal(expectedRuneValue, actualRune.Value);
             Assert.Equal(expectedBytesConsumed, actualBytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 0x30 }, 0x0030)] // ASCII byte
+        [InlineData(new byte[] { 0xC3, 0x90 }, 0x00D0)] // [ C3 90 ] is U+00D0 LATIN CAPITAL LETTER ETH
+        [InlineData(new byte[] { 0xE2, 0x88, 0xB4 }, 0x2234)] // [ E2 88 B4 ] is U+2234 THEREFORE
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, 0xB2 }, 0x1F632)] // [ F0 9F 98 B2 ] is U+1F632 ASTONISHED FACE
+        public static void ParseUtf8(byte[] data, int expectedRuneValue)
+        {
+            Assert.Equal(expectedRuneValue, Utf8SpanParsableHelper<Rune>.Parse(data, null).Value);
+            Assert.True(Utf8SpanParsableHelper<Rune>.TryParse(data, null, out Rune actualRune));
+            Assert.Equal(expectedRuneValue, actualRune.Value);
+        }
+
+        [Theory]
+        [InlineData(new byte[0])] // empty buffer
+        [InlineData(new byte[] { 0x30, 0x40, 0x50 })] // Multiple ASCII bytes
+        [InlineData(new byte[] { 0x80 })] // standalone continuation byte
+        [InlineData(new byte[] { 0x80, 0x80, 0x80 })] // standalone continuation byte
+        [InlineData(new byte[] { 0xC1 })] // C1 is never a valid UTF-8 byte
+        [InlineData(new byte[] { 0xF5 })] // F5 is never a valid UTF-8 byte
+        [InlineData(new byte[] { 0xC2 })] // C2 is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xED })] // ED is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xF4 })] // F4 is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xC2, 0xC2 })] // C2 not followed by continuation byte
+        [InlineData(new byte[] { 0xC1, 0xBF })] // [ C1 BF ] is overlong 2-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE0, 0x9F })] // [ E0 9F ] is overlong 3-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE0, 0xA0 })] // [ E0 A0 ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xED, 0x9F })] // [ ED 9F ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xED, 0xBF })] // [ ED BF ] would place us in UTF-16 surrogate range, all surrogate sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xEE, 0x80 })] // [ EE 80 ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xF0, 0x8F })] // [ F0 8F ] is overlong 4-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xF0, 0x90 })] // [ F0 90 ] is valid 2-byte start of 4-byte sequence
+        [InlineData(new byte[] { 0xF4, 0x90 })] // [ F4 90 ] would place us beyond U+10FFFF, all such sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE2, 0x88, 0xC0 })] // [ E2 88 ] followed by non-continuation byte, maximal invalid subsequence length 2
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98 })] // [ F0 9F 98 ] is valid 3-byte start of 4-byte sequence
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, 0x20 })] // [ F0 9F 98 ] followed by non-continuation byte, maximal invalid subsequence length 3
+        public static void ParseUtf8_Invalid(byte[] data)
+        {
+            Assert.Throws<FormatException>(() => Utf8SpanParsableHelper<Rune>.Parse(data, null));
+            Assert.False(Utf8SpanParsableHelper<Rune>.TryParse(data, null, out Rune actualRune));
+            Assert.Equal(Rune.ReplacementChar, actualRune);
         }
 
         [Theory]

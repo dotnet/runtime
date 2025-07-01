@@ -315,9 +315,7 @@ namespace System
         {
             try
             {
-                Func<T>? factory = _factory;
-                if (factory == null)
-                    throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
+                Func<T> factory = _factory ?? throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
                 _factory = null;
 
                 _value = factory();

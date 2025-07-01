@@ -18,17 +18,6 @@ namespace Microsoft.NET.HostModel.AppHost
     }
 
     /// <summary>
-    /// The application host executable cannot be customized because adding resources requires
-    /// that the build be performed on Windows (excluding Nano Server).
-    /// </summary>
-    public sealed class AppHostCustomizationUnsupportedOSException : AppHostUpdateException
-    {
-        internal AppHostCustomizationUnsupportedOSException()
-        {
-        }
-    }
-
-    /// <summary>
     /// The MachO application host executable cannot be customized because
     /// it was not in the expected format
     /// </summary>
@@ -91,10 +80,38 @@ namespace Microsoft.NET.HostModel.AppHost
     {
         public string LongName { get; }
 
-        internal AppNameTooLongException(string name)
-            : base($"The name of the app is too long (must be less than 1024 bytes). Name: {name}")
+        internal AppNameTooLongException(string name, int maxSize)
+            : base($"The name of the app is too long (must be less than {maxSize} bytes when encoded in UTF-8). Name: {name}")
         {
             LongName = name;
+        }
+    }
+
+    /// <summary>
+    /// App-relative .NET path is an absolute path
+    /// </summary>
+    public sealed class AppRelativePathRootedException : AppHostUpdateException
+    {
+        public string Path { get; }
+
+        internal AppRelativePathRootedException(string path)
+            : base($"The app-relative .NET path should not be an absolute path. Path: {path}")
+        {
+            Path = path;
+        }
+    }
+
+    /// <summary>
+    /// App-relative .NET path is too long to be embedded in the apphost
+    /// </summary>
+    public sealed class AppRelativePathTooLongException : AppHostUpdateException
+    {
+        public string Path { get; }
+
+        internal AppRelativePathTooLongException(string path, int maxSize)
+            : base($"The app-relative .NET path is too long (must be less than {maxSize} bytes when encoded in UTF-8). Path: {path}")
+        {
+            Path = path;
         }
     }
 }

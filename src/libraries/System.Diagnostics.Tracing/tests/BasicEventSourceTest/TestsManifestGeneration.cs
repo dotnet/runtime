@@ -2,22 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif
-using Xunit;
 using System.Reflection;
-
-using SdtEventSources;
-using System.Diagnostics;
-using System.Threading;
-using System.Text.RegularExpressions;
+using System.Text;
+using Xunit;
 
 namespace BasicEventSourceTests
 {

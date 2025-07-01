@@ -12,8 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System
 {
     [Serializable]
@@ -731,7 +729,7 @@ namespace System
                 return true;
             }
 
-            if (!(other is Array o) || o.Length != this.Length)
+            if (other is not Array o || o.Length != this.Length)
             {
                 return false;
             }
@@ -918,29 +916,25 @@ namespace System
                                 result = GenericBinarySearch<ushort>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I4:
-#if TARGET_32BIT
-                            case CorElementType.ELEMENT_TYPE_I:
-#endif
                                 result = GenericBinarySearch<int>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                            case CorElementType.ELEMENT_TYPE_U:
-#endif
                                 result = GenericBinarySearch<uint>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I8:
-#if TARGET_64BIT
-                            case CorElementType.ELEMENT_TYPE_I:
-#endif
                                 result = GenericBinarySearch<long>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                            case CorElementType.ELEMENT_TYPE_U:
-#endif
                                 result = GenericBinarySearch<ulong>(array, adjustedIndex, length, value);
                                 break;
+                            case CorElementType.ELEMENT_TYPE_I:
+                                if (IntPtr.Size == 4)
+                                    goto case CorElementType.ELEMENT_TYPE_I4;
+                                goto case CorElementType.ELEMENT_TYPE_I8;
+                            case CorElementType.ELEMENT_TYPE_U:
+                                if (IntPtr.Size == 4)
+                                    goto case CorElementType.ELEMENT_TYPE_U4;
+                                goto case CorElementType.ELEMENT_TYPE_U8;
                             case CorElementType.ELEMENT_TYPE_R4:
                                 result = GenericBinarySearch<float>(array, adjustedIndex, length, value);
                                 break;
@@ -1067,9 +1061,9 @@ namespace System
 
         private static class EmptyArray<T>
         {
-#pragma warning disable CA1825 // this is the implementation of Array.Empty<T>()
+#pragma warning disable CA1825, IDE0300 // this is the implementation of Array.Empty<T>()
             internal static readonly T[] Value = new T[0];
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
         }
 
         public static T[] Empty<T>()
@@ -1426,20 +1420,17 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             result = GenericIndexOf<int>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             result = GenericIndexOf<long>(array, value, adjustedIndex, count);
                             break;
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+                            if (IntPtr.Size == 4)
+                                goto case CorElementType.ELEMENT_TYPE_I4;
+                            goto case CorElementType.ELEMENT_TYPE_I8;
                         case CorElementType.ELEMENT_TYPE_R4:
                             result = GenericIndexOf<float>(array, value, adjustedIndex, count);
                             break;
@@ -1522,7 +1513,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, byte>(ref value),
+                        Unsafe.BitCast<T, byte>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1530,7 +1521,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, short>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, short>(ref value),
+                        Unsafe.BitCast<T, short>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1538,7 +1529,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, int>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, int>(ref value),
+                        Unsafe.BitCast<T, int>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1546,7 +1537,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, long>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, long>(ref value),
+                        Unsafe.BitCast<T, long>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1656,20 +1647,17 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             result = GenericLastIndexOf<int>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             result = GenericLastIndexOf<long>(array, value, adjustedIndex, count);
                             break;
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+                            if (IntPtr.Size == 4)
+                                goto case CorElementType.ELEMENT_TYPE_I4;
+                            goto case CorElementType.ELEMENT_TYPE_I8;
                         case CorElementType.ELEMENT_TYPE_R4:
                             result = GenericLastIndexOf<float>(array, value, adjustedIndex, count);
                             break;
@@ -1770,7 +1758,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, byte>(ref value),
+                        Unsafe.BitCast<T, byte>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1780,7 +1768,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, short>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, short>(ref value),
+                        Unsafe.BitCast<T, short>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1790,7 +1778,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, int>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, int>(ref value),
+                        Unsafe.BitCast<T, int>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1800,7 +1788,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, long>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, long>(ref value),
+                        Unsafe.BitCast<T, long>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1865,22 +1853,19 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                case CorElementType.ELEMENT_TYPE_I:
-                case CorElementType.ELEMENT_TYPE_U:
-#endif
                 case CorElementType.ELEMENT_TYPE_R4:
                     UnsafeArrayAsSpan<int>(array, adjustedIndex, length).Reverse();
                     return;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                case CorElementType.ELEMENT_TYPE_I:
-                case CorElementType.ELEMENT_TYPE_U:
-#endif
                 case CorElementType.ELEMENT_TYPE_R8:
                     UnsafeArrayAsSpan<long>(array, adjustedIndex, length).Reverse();
                     return;
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+                    if (IntPtr.Size == 4)
+                        goto case CorElementType.ELEMENT_TYPE_I4;
+                    goto case CorElementType.ELEMENT_TYPE_I8;
                 case CorElementType.ELEMENT_TYPE_OBJECT:
                 case CorElementType.ELEMENT_TYPE_ARRAY:
                 case CorElementType.ELEMENT_TYPE_SZARRAY:
@@ -2071,29 +2056,25 @@ namespace System
                             GenericSort<ushort>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-#endif
                             GenericSort<int>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             GenericSort<uint>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I8:
-#if TARGET_64BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-#endif
                             GenericSort<long>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             GenericSort<ulong>(keys, items, adjustedIndex, length);
                             return;
+                        case CorElementType.ELEMENT_TYPE_I:
+                            if (IntPtr.Size == 4)
+                                goto case CorElementType.ELEMENT_TYPE_I4;
+                            goto case CorElementType.ELEMENT_TYPE_I8;
+                        case CorElementType.ELEMENT_TYPE_U:
+                            if (IntPtr.Size == 4)
+                                goto case CorElementType.ELEMENT_TYPE_U4;
+                            goto case CorElementType.ELEMENT_TYPE_U8;
                         case CorElementType.ELEMENT_TYPE_R4:
                             GenericSort<float>(keys, items, adjustedIndex, length);
                             return;

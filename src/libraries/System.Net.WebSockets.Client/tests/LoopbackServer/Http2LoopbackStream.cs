@@ -15,6 +15,7 @@ namespace System.Net.Test.Common
         private readonly int _streamId;
         private bool _readEnded;
         private ReadOnlyMemory<byte> _leftoverReadData;
+        private bool _sendResetOnDispose;
 
         public override bool CanRead => true;
         public override bool CanSeek => false;
@@ -23,10 +24,11 @@ namespace System.Net.Test.Common
         public Http2LoopbackConnection Connection => _connection;
         public int StreamId => _streamId;
 
-        public Http2LoopbackStream(Http2LoopbackConnection connection, int streamId)
+        public Http2LoopbackStream(Http2LoopbackConnection connection, int streamId, bool sendResetOnDispose = true)
         {
             _connection = connection;
             _streamId = streamId;
+            _sendResetOnDispose = sendResetOnDispose;
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -71,7 +73,7 @@ namespace System.Net.Test.Common
             {
                 await _connection.SendResponseDataAsync(_streamId, Memory<byte>.Empty, endStream: true).ConfigureAwait(false);
 
-                if (!_readEnded)
+                if (!_readEnded && _sendResetOnDispose)
                 {
                     var rstFrame = new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.NO_ERROR, _streamId);
                     await _connection.WriteFrameAsync(rstFrame).ConfigureAwait(false);

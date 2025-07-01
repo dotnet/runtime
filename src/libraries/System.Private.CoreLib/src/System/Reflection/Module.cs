@@ -161,7 +161,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(Module? left, Module? right) => !(left == right);
@@ -179,7 +179,7 @@ namespace System.Reflection
         private static bool FilterTypeNameImpl(Type cls, object filterCriteria, StringComparison comparison)
         {
             // Check that the criteria object is a String object
-            if (!(filterCriteria is string str))
+            if (filterCriteria is not string str)
             {
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }

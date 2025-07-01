@@ -17,9 +17,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("windows")]
     internal sealed class Http3RequestStream : IHttpStreamHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
@@ -88,7 +88,14 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
-                _stream.Dispose();
+                if (_stream.WritesClosed.IsCompleted)
+                {
+                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                }
+                else
+                {
+                    _stream.Dispose();
+                }
                 DisposeSyncHelper();
             }
         }
@@ -107,7 +114,14 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
-                await _stream.DisposeAsync().ConfigureAwait(false);
+                if (_stream.WritesClosed.IsCompleted)
+                {
+                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                }
+                else
+                {
+                    await _stream.DisposeAsync().ConfigureAwait(false);
+                }
                 DisposeSyncHelper();
             }
         }
@@ -158,15 +172,9 @@ namespace System.Net.Http
                     await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                 }
 
-                Task sendRequestTask;
-                if (_request.Content != null)
-                {
-                    sendRequestTask = SendContentAsync(_request.Content!, _requestBodyCancellationSource.Token);
-                }
-                else
-                {
-                    sendRequestTask = Task.CompletedTask;
-                }
+                Task sendRequestTask = _request.Content != null
+                    ? SendContentAsync(_request.Content, _requestBodyCancellationSource.Token)
+                    : Task.CompletedTask;
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
@@ -204,6 +212,27 @@ namespace System.Net.Http
 
                 // Wait for the response headers to be read.
                 await readResponseTask.ConfigureAwait(false);
+
+                // If we've sent a body, wait for the writes to be closed (most likely already done).
+                // If sendRequestTask hasn't completed yet, we're doing duplex content transfers and can't wait for writes to be closed yet.
+                if (sendRequestTask.IsCompletedSuccessfully &&
+                    _stream.WritesClosed is { IsCompletedSuccessfully: false } writesClosed)
+                {
+                    try
+                    {
+                        await writesClosed.WaitAsync(_requestBodyCancellationSource.Token).ConfigureAwait(false);
+                    }
+                    catch (QuicException qex) when (qex.QuicError == QuicError.StreamAborted && qex.ApplicationErrorCode == (long)Http3ErrorCode.NoError)
+                    {
+                        // The server doesn't need the whole request to respond so it's aborting its reading side gracefully, see https://datatracker.ietf.org/doc/html/rfc9114#section-4.1-15.
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // If the request got cancelled before WritesClosed completed, avoid leaking an unobserved task exception.
+                        _connection.LogExceptions(writesClosed);
+                        throw;
+                    }
+                }
 
                 Debug.Assert(_response != null && _response.Content != null);
                 // Set our content stream.
@@ -275,6 +304,12 @@ namespace System.Net.Http
                 Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
                 throw new HttpRequestException(HttpRequestError.HttpProtocolError, SR.net_http_client_execution_error, abortException);
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested)
+            {
+                // It is possible for QuicStream's code to throw an
+                // OperationAborted QuicException when cancellation is requested.
+                throw new TaskCanceledException(ex.Message, ex, cancellationToken);
+            }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
                 // we closed the connection already, propagate the AbortException
@@ -283,6 +318,12 @@ namespace System.Net.Http
                     : HttpRequestError.Unknown;
 
                 throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
+            }
+            catch (QuicException ex)
+            {
+                // Any other QuicException means transport error, and should be treated as a connection failure.
+                _connection.Abort(ex);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_http3_connection_quic_error, ex);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
@@ -444,6 +485,10 @@ namespace System.Net.Http
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(bytesWritten);
             }
+            catch (HttpRequestException hex) when (hex.InnerException is QuicException qex && qex.QuicError == QuicError.StreamAborted && qex.ApplicationErrorCode == (long)Http3ErrorCode.NoError)
+            {
+                // The server doesn't need the whole request to respond so it's aborting its reading side gracefully, see https://datatracker.ietf.org/doc/html/rfc9114#section-4.1-15.
+            }
             finally
             {
                 _requestSendCompleted = true;
@@ -502,12 +547,11 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
+        private ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
         {
-            await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream, cancellationToken).ConfigureAwait(false);
-            _sendBuffer.Discard(_sendBuffer.ActiveLength);
-
-            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            ReadOnlyMemory<byte> toSend = _sendBuffer.ActiveMemory;
+            _sendBuffer.Discard(toSend.Length);
+            return _stream.WriteAsync(toSend, endStream, cancellationToken);
         }
 
         private async ValueTask DrainContentLength0Frames(CancellationToken cancellationToken)
@@ -522,14 +566,9 @@ namespace System.Net.Http
                 switch (frameType)
                 {
                     case Http3FrameType.Headers:
-                        // Pick up any trailing headers.
-                        _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
-                        await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                        // Pick up any trailing headers and stop processing.
+                        await ProcessTrailersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // Stop looping after a trailing header.
-                        // There may be extra frames after this one, but they would all be unknown extension
-                        // frames that can be safely ignored. Just stop reading here.
-                        // Note: this does leave us open to a bad server sending us an out of order DATA frame.
                         goto case null;
                     case null:
                         // Done receiving: copy over trailing headers.
@@ -554,6 +593,25 @@ namespace System.Net.Http
                         Debug.Fail($"Received unexpected frame type {frameType}.");
                         return;
                 }
+            }
+        }
+
+        private async ValueTask ProcessTrailersAsync(long payloadLength, CancellationToken cancellationToken)
+        {
+            _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
+            await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+
+            // In typical cases, there should be no more frames. Make sure to read the EOS.
+            _recvBuffer.EnsureAvailableSpace(1);
+            int bytesRead = await _stream.ReadAsync(_recvBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
+            if (bytesRead > 0)
+            {
+                // The server may send us frames of unknown types after the trailer. Ideally we should drain the response by eating and ignoring them
+                // but this is a rare case so we just stop reading and let Dispose() send an ABORT_RECEIVE.
+                // Note: if a server sends additional HEADERS or DATA frames at this point, it
+                // would be a connection error -- not draining the stream also means we won't catch this.
+                _recvBuffer.Commit(bytesRead);
+                _recvBuffer.Discard(bytesRead);
             }
         }
 
@@ -1277,6 +1335,11 @@ namespace System.Net.Http
                         : HttpRequestError.Unknown;
                     throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
 
+                case QuicException e when (e.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested):
+                    // It is possible for QuicStream's code to throw an
+                    // OperationAborted QuicException when cancellation is requested.
+                    throw new TaskCanceledException(e.Message, e, cancellationToken);
+
                 case HttpIOException:
                     _connection.Abort(ex);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
@@ -1318,15 +1381,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining = payloadLength;
                         return true;
                     case Http3FrameType.Headers:
-                        // Read any trailing headers.
-                        _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
-                        await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                        // Pick up any trailing headers and stop processing.
+                        await ProcessTrailersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // There may be more frames after this one, but they would all be unknown extension
-                        // frames that we are allowed to skip. Just close the stream early.
-
-                        // Note: if a server sends additional HEADERS or DATA frames at this point, it
-                        // would be a connection error -- not draining the stream means we won't catch this.
                         goto case null;
                     case null:
                         // End of stream.

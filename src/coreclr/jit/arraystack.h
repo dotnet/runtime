@@ -121,6 +121,11 @@ public:
         tosIndex = 0;
     }
 
+    T* Data()
+    {
+        return data;
+    }
+
 private:
     CompAllocator m_alloc;
     int           tosIndex; // first free location

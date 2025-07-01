@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
-using static System.HexConverter;
 
 namespace System.Net.Http.Headers
 {
@@ -275,7 +274,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckMediaTypeFormat(string mediaType, [CallerArgumentExpression(nameof(mediaType))] string? parameterName = null)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(mediaType, parameterName);
+            ArgumentException.ThrowIfNullOrEmpty(mediaType, parameterName);
 
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             // Also no LWS between type and subtype are allowed.

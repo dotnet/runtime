@@ -527,7 +527,7 @@ namespace System.Text.Json.Serialization.Tests
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await Serializer.DeserializeWrapper<ClassWithExtensionData<JsonObject>>(@"{""TestKey"":""TestValue""}", options));
 
-            Assert.Contains("JsonObject", ex.ToString());
+            Assert.Contains("JsonObject", ex.Message);
         }
 
         [Theory]
@@ -612,6 +612,56 @@ namespace System.Text.Json.Serialization.Tests
 
             // Since there was no overflow, this should be null.
             Assert.Null(obj.MyOverflow);
+        }
+
+        [Theory]
+        [InlineData("""{ "1": 0   , "1": 1    }""")]
+        [InlineData("""{ "1": null, "1": null }""")]
+        [InlineData("""{ "1": "a" , "1": null }""")]
+        [InlineData("""{ "1": null, "1": "b"  }""")]
+        public async Task ExtensionProperty_DuplicatesThrow(string payload)
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
+
+            Exception ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload); // Assert no throw
+
+            ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload); // Assert no throw
+
+            ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{ "a": 0   , "A": 1    }""")]
+        [InlineData("""{ "a": null, "A": null }""")]
+        [InlineData("""{ "a": "a" , "A": null }""")]
+        [InlineData("""{ "a": null, "A": "b"  }""")]
+        public async Task ExtensionProperty_CaseInsensitiveDuplicatesNoThrow(string payload)
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+
+            // Dictionary extension properties are always case-sensitive
+            ICollection d;
+            d = (await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options)).MyOverflow;
+            Assert.Equal(2, d.Count);
+
+            d = (await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options)).MyOverflow;
+            Assert.Equal(2, d.Count);
+
+            // But JsonObject abides by options
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
         }
 
         [Theory]
@@ -894,10 +944,10 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NestedClassWithJsonElementExtensionDataProperty()
         {
             var child = new ChildClassWithJsonElement { Number = 4 };
-            child.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(await Serializer.SerializeWrapper("I am child class")).RootElement);
+            child.ExtensionData.Add("SpecialInformation", JsonElement.Parse(await Serializer.SerializeWrapper("I am child class")));
 
             var parent = new ParentClassWithJsonElement { Text = "Hello World" };
-            parent.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(await Serializer.SerializeWrapper("I am parent class")).RootElement);
+            parent.ExtensionData.Add("SpecialInformation", JsonElement.Parse(await Serializer.SerializeWrapper("I am parent class")));
             parent.Children.Add(child);
 
             Verify();
@@ -1222,7 +1272,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithExtensionPropertyThreeGenericParameters
         {
             [JsonExtensionData]
-            public GenericIDictonaryWrapperThreeGenericParameters<string, object, string> MyOverflow { get; set; }
+            public GenericIDictionaryWrapperThreeGenericParameters<string, object, string> MyOverflow { get; set; }
         }
 
         [Fact]
@@ -1303,7 +1353,7 @@ namespace System.Text.Json.Serialization.Tests
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(Json, options));
 
-            Assert.Contains("JsonObject", ex.ToString());
+            Assert.Contains("JsonObject", ex.Message);
         }
 
         public class JsonObjectConverter : JsonConverter<JsonObject>

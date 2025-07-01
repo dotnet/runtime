@@ -482,7 +482,8 @@ namespace System.Diagnostics.Eventing.Reader
         public static string EvtFormatMessage(EventLogHandle handle, uint msgId)
         {
             int bufferNeeded;
-            bool status = UnsafeNativeMethods.EvtFormatMessage(handle, EventLogHandle.Zero, msgId, 0, null, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId, 0, null, out bufferNeeded);
+            Span<char> emptyBuffer = [ '\0' ]; // issue: https://github.com/dotnet/runtime/issues/100198
+            bool status = UnsafeNativeMethods.EvtFormatMessage(handle, EventLogHandle.Zero, msgId, 0, null, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId, 0, emptyBuffer, out bufferNeeded);
             int error = Marshal.GetLastWin32Error();
 
             // ERROR_EVT_UNRESOLVED_VALUE_INSERT and its cousins are commonly returned for raw message text.
@@ -933,7 +934,8 @@ namespace System.Diagnostics.Eventing.Reader
         public static string EvtFormatMessageRenderName(EventLogHandle pmHandle, EventLogHandle eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags flag)
         {
             int bufferNeeded;
-            bool status = UnsafeNativeMethods.EvtFormatMessage(pmHandle, eventHandle, 0, 0, null, flag, 0, null, out bufferNeeded);
+            Span<char> emptyBuffer = [ '\0' ]; // issue: https://github.com/dotnet/runtime/issues/100198
+            bool status = UnsafeNativeMethods.EvtFormatMessage(pmHandle, eventHandle, 0, 0, null, flag, 0, emptyBuffer, out bufferNeeded);
             int error = Marshal.GetLastWin32Error();
 
             if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
@@ -985,11 +987,12 @@ namespace System.Diagnostics.Eventing.Reader
         {
             IntPtr buffer = IntPtr.Zero;
             int bufferNeeded;
+            Span<char> emptyBuffer = [ '\0' ]; // issue: https://github.com/dotnet/runtime/issues/100198
 
             try
             {
                 List<string> keywordsList = new List<string>();
-                bool status = UnsafeNativeMethods.EvtFormatMessageBuffer(pmHandle, eventHandle, 0, 0, IntPtr.Zero, flag, 0, IntPtr.Zero, out bufferNeeded);
+                bool status = UnsafeNativeMethods.EvtFormatMessage(pmHandle, eventHandle, 0, 0, null, flag, 0, emptyBuffer, out bufferNeeded);
                 int error = Marshal.GetLastWin32Error();
 
                 if (!status)
@@ -1071,6 +1074,7 @@ namespace System.Diagnostics.Eventing.Reader
         public static string EvtFormatMessageFormatDescription(EventLogHandle handle, EventLogHandle eventHandle, string[] values)
         {
             int bufferNeeded;
+            Span<char> emptyBuffer = [ '\0' ]; // issue: https://github.com/dotnet/runtime/issues/100198
 
             UnsafeNativeMethods.EvtStringVariant[] stringVariants = new UnsafeNativeMethods.EvtStringVariant[values.Length];
             for (int i = 0; i < values.Length; i++)
@@ -1079,7 +1083,7 @@ namespace System.Diagnostics.Eventing.Reader
                 stringVariants[i].StringVal = values[i];
             }
 
-            bool status = UnsafeNativeMethods.EvtFormatMessage(handle, eventHandle, 0xffffffff, values.Length, stringVariants, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageEvent, 0, null, out bufferNeeded);
+            bool status = UnsafeNativeMethods.EvtFormatMessage(handle, eventHandle, 0xffffffff, values.Length, stringVariants, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageEvent, 0, emptyBuffer, out bufferNeeded);
             int error = Marshal.GetLastWin32Error();
 
             if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT

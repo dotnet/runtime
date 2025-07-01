@@ -136,7 +136,7 @@ namespace System
         /// The newly created <see cref="ITimer"/> instance.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The number of milliseconds in the value of <paramref name="dueTime"/> or <paramref name="period"/> is negative and not equal to <see cref="Timeout.Infinite"/>, or is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The number of milliseconds in the value of <paramref name="dueTime"/> or <paramref name="period"/> is negative and not equal to <see cref="Timeout.Infinite"/>, or is greater than <see cref="int.MaxValue">int.MaxValue</see>.</exception>
         /// <remarks>
         /// <para>
         /// The delegate specified by the callback parameter is invoked once after <paramref name="dueTime"/> elapses, and thereafter each time the <paramref name="period"/> time interval elapses.
@@ -162,10 +162,7 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
             ArgumentNullException.ThrowIfNull(callback);
 #else
-            if (callback is null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
+            ArgumentNullException.ThrowIfNull(callback);
 #endif // SYSTEM_PRIVATE_CORELIB
 
             return new SystemTimeProviderTimer(dueTime, period, callback, state);

@@ -9,8 +9,9 @@ namespace System.Diagnostics.SymbolStore.Tests
 {
     public class StackTraceSymbolsTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51399", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void StackTraceSymbolsDoNotLockFile()
         {
             var asmPath = AssemblyPathHelper.GetAssemblyLocation(typeof(StackTraceSymbolsTests).Assembly);

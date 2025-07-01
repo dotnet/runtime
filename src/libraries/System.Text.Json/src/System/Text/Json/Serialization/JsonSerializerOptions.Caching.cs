@@ -54,10 +54,7 @@ namespace System.Text.Json
         /// </remarks>
         public JsonTypeInfo GetTypeInfo(Type type)
         {
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {
@@ -82,10 +79,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {
@@ -508,6 +502,7 @@ namespace System.Text.Json
                     left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
                     left._respectNullableAnnotations == right._respectNullableAnnotations &&
+                    left._respectRequiredConstructorParameters == right._respectRequiredConstructorParameters &&
                     left._ignoreNullValues == right._ignoreNullValues &&
                     left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
                     left._ignoreReadonlyFields == right._ignoreReadonlyFields &&
@@ -517,6 +512,7 @@ namespace System.Text.Json
                     left._indentCharacter == right._indentCharacter &&
                     left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
+                    left._allowDuplicateProperties == right._allowDuplicateProperties &&
                     CompareLists(left._converters, right._converters);
 
                 static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
@@ -567,6 +563,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
                 AddHashCode(ref hc, options._respectNullableAnnotations);
+                AddHashCode(ref hc, options._respectRequiredConstructorParameters);
                 AddHashCode(ref hc, options._ignoreNullValues);
                 AddHashCode(ref hc, options._ignoreReadOnlyProperties);
                 AddHashCode(ref hc, options._ignoreReadonlyFields);
@@ -576,6 +573,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._indentCharacter);
                 AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._typeInfoResolver);
+                AddHashCode(ref hc, options._allowDuplicateProperties);
                 AddListHashCode(ref hc, options._converters);
 
                 return hc.ToHashCode();

@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -25,9 +26,9 @@ namespace System.Net.Mail.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_EventsRaisedAsExpected()
+        public async Task EventSource_EventsRaisedAsExpected()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Mail", EventLevel.Verbose))
                 {
@@ -35,12 +36,12 @@ namespace System.Net.Mail.Tests
                     listener.RunWithCallback(events.Enqueue, () =>
                     {
                         // Invoke a test that'll cause some events to be generated
-                        new SmtpClientTest().TestMailDelivery();
+                        new SmtpClientTest(null!).TestMailDelivery();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 }

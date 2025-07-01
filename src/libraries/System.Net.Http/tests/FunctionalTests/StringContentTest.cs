@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -72,14 +73,57 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Ctor_PassNullStringForMediaType_DefaultMediaTypeUsed()
+        public void Ctor_SetsDefaultContentTypeHeader()
         {
-            string sourceString = "\u00C4\u00E4\u00FC\u00DC";
-            Encoding defaultStringEncoding = Encoding.GetEncoding("utf-8");
-            var content = new StringContent(sourceString, defaultStringEncoding, ((string)null)!);
+            var content = new StringContent("Foo");
+            Assert.Equal("text/plain; charset=utf-8", content.Headers.ContentType.ToString());
 
-            // If no media is passed-in, the default is used
-            Assert.Equal("text/plain", content.Headers.ContentType.MediaType);
+            content = new StringContent("Foo", (Encoding)null);
+            Assert.Equal("text/plain; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("Foo", Encoding.UTF8);
+            Assert.Equal("text/plain; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("Foo", Encoding.UTF8, "text/plain");
+            Assert.Equal("text/plain; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("Foo", null, "text/plain");
+            Assert.Equal("text/plain; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("Foo", Encoding.UTF8, (string)null);
+            Assert.Equal("text/plain; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("Foo", null, (string)null);
+            Assert.Equal("text/plain; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("Foo", (MediaTypeHeaderValue)null);
+            Assert.Null(content.Headers.ContentType);
+
+            content = new StringContent("Foo", null, (MediaTypeHeaderValue)null);
+            Assert.Null(content.Headers.ContentType);
+        }
+
+        [Theory]
+        [InlineData("text/plain")]
+        [InlineData("application/json")]
+        [InlineData("application/xml")]
+        [InlineData("foo/bar")]
+        public void Ctor_SetsContentTypeHeader(string mediaType)
+        {
+            var content = new StringContent("foo", Encoding.UTF8, mediaType);
+            Assert.Equal($"{mediaType}; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("foo", null, mediaType);
+            Assert.Equal($"{mediaType}; charset=utf-8", content.Headers.ContentType.ToString());
+
+            content = new StringContent("foo", Encoding.ASCII, mediaType);
+            Assert.Equal($"{mediaType}; charset=us-ascii", content.Headers.ContentType.ToString());
+
+            content = new StringContent("foo", new MediaTypeHeaderValue(mediaType));
+            Assert.Equal(mediaType, content.Headers.ContentType.ToString());
+
+            content = new StringContent("foo", Encoding.UTF8, new MediaTypeHeaderValue(mediaType, "ascii"));
+            Assert.Equal($"{mediaType}; charset=ascii", content.Headers.ContentType.ToString());
         }
 
         [Fact]
@@ -87,7 +131,7 @@ namespace System.Net.Http.Functional.Tests
         {
             string sourceString = "\u00C4\u00E4\u00FC\u00DC";
             Encoding defaultStringEncoding = Encoding.GetEncoding("utf-8");
-            var content = new StringContent(sourceString, defaultStringEncoding, ((Headers.MediaTypeHeaderValue)null)!);
+            var content = new StringContent(sourceString, defaultStringEncoding, (MediaTypeHeaderValue)null);
 
             // If no media header value is passed-in, there is none
             Assert.Null(content.Headers.ContentType);

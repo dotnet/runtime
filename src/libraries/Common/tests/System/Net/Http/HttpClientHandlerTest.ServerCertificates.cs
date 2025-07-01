@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Null(handler.ServerCertificateCustomValidationCallback);
-                Assert.False(handler.CheckCertificateRevocationList);
+                Assert.True(handler.CheckCertificateRevocationList);
             }
         }
 
@@ -228,11 +228,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77726")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106634", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            using (HttpClient client = CreateHttpClient())
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.CheckCertificateRevocationList = false;
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -244,7 +246,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.CheckCertificateRevocationList = true;
             using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.RevokedCertRemoteServer));
@@ -266,6 +267,14 @@ namespace System.Net.Http.Functional.Tests
 
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
+                    // https://github.com/dotnet/corefx/issues/21922#issuecomment-315555237
+                    X509ChainStatusFlags flags = chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (cur, status) => cur | status.Status);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
+                        flags == X509ChainStatusFlags.RevocationStatusUnknown)
+                    {
+                        expectedErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
+                    }
+
                     callbackCalled = true;
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
@@ -382,7 +391,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void HttpClientUsesSslCertEnvironmentVariables()
+        public async Task HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.
             // The HttpClient should fail to validate the server certificate.
@@ -395,7 +404,7 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
+            await RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
                 var version = Version.Parse(useVersionString);
@@ -405,7 +414,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
-            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
     }
 }

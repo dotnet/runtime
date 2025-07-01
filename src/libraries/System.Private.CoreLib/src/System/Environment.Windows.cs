@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -130,7 +131,7 @@ namespace System
             uint length;
             while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
             {
-                builder.EnsureCapacity((int)length);
+                builder.EnsureCapacity(builder.Capacity * 2);
             }
 
             if (length == 0)
@@ -358,5 +359,24 @@ namespace System
 
             return arrayBuilder.ToArray();
         }
+
+        /// <summary>
+        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
+        /// and the total time spent running both the application and operating system code.
+        /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static ProcessCpuUsage CpuUsage
+        {
+            get => Interop.Kernel32.GetProcessTimes(Interop.Kernel32.GetCurrentProcess(), out _, out _, out long procKernelTime, out long procUserTime) ?
+                    new ProcessCpuUsage { UserTime = new TimeSpan(procUserTime), PrivilegedTime = new TimeSpan(procKernelTime) } :
+                    new ProcessCpuUsage { UserTime = TimeSpan.Zero, PrivilegedTime = TimeSpan.Zero };
+        }
+
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static long TickCount64 => (long)Interop.Kernel32.GetTickCount64();
     }
 }

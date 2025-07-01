@@ -79,20 +79,21 @@ namespace System.Reflection.Runtime.General
             if (handleType != HandleType.ModifiedType)
                 return Array.Empty<Type>();
 
-            LowLevelList<Type> customModifiers = new LowLevelList<Type>();
+            ArrayBuilder<Type> customModifiers = default;
             do
             {
                 NativeFormatModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 if (optional == modifiedType.IsOptional)
                 {
                     Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext).ToType();
-                    customModifiers.Insert(0, customModifier);
+                    customModifiers.Add(customModifier);
                 }
 
                 handle = modifiedType.Type;
                 handleType = handle.HandleType;
             }
             while (handleType == HandleType.ModifiedType);
+            customModifiers.AsSpan().Reverse();
             return customModifiers.ToArray();
         }
 
@@ -525,6 +526,8 @@ namespace System.Reflection.Runtime.General
                     return false;
                 return true;
             }
+            else if (handleType == HandleType.TypeSpecification)
+                return false;
             else
                 throw new NotSupportedException();
         }

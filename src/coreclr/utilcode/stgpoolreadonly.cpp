@@ -91,7 +91,7 @@ HRESULT StgPoolReadOnly::GetStringW(        // Return code.
     int     iChars;
 
     IfFailRet(GetString(iOffset, &pString));
-    iChars = ::WszMultiByteToWideChar(CP_UTF8, 0, pString, -1, szOut, cchBuffer);
+    iChars = ::MultiByteToWideChar(CP_UTF8, 0, pString, -1, szOut, cchBuffer);
     if (iChars == 0)
         return (BadError(HRESULT_FROM_NT(GetLastError())));
     return S_OK;

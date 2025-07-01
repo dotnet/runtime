@@ -16,6 +16,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_KeepAlive
 {
@@ -79,7 +80,8 @@ public class Test_KeepAlive
         return success;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool success = RunTest();
 

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -22,34 +24,205 @@ namespace HostActivation.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Symlink_all_files_fx(string symlinkRelativePath)
+        {
+            using var testDir = TestArtifact.Create("symlink");
+            Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
+
+            // Symlink every file in the app directory
+            var symlinks = new List<SymLink>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(sharedTestState.FrameworkDependentApp.Location))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var symlinkPath = Path.Combine(testDir.Location, symlinkRelativePath, fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
+                    symlinks.Add(new SymLink(symlinkPath, file));
+                }
+
+                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                // This should succeed on all platforms, but for different reasons:
+                // * Windows: The apphost will look next to the symlink for the app dll and find the symlinked dll
+                // * Unix: The apphost will look next to the resolved apphost for the app dll and find the real thing
+                result
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World");
+            }
+            finally
+            {
+                foreach (var symlink in symlinks)
+                {
+                    symlink.Dispose();
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Symlink_split_files_fx(string symlinkRelativePath)
+        {
+            using var testDir = TestArtifact.Create("symlink");
+
+            // Split the app into two directories, one for the apphost and one for the rest of the files
+            var appHostDir = Path.Combine(testDir.Location, "apphost");
+            var appFilesDir = Path.Combine(testDir.Location, "appfiles");
+            Directory.CreateDirectory(appHostDir);
+            Directory.CreateDirectory(appFilesDir);
+
+            var appHostName = Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe);
+
+            File.Copy(
+                sharedTestState.FrameworkDependentApp.AppExe,
+                Path.Combine(appHostDir, appHostName));
+
+            foreach (var file in Directory.EnumerateFiles(sharedTestState.FrameworkDependentApp.Location))
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName != appHostName)
+                {
+                    File.Copy(file, Path.Combine(appFilesDir, fileName));
+                }
+            }
+
+            // Symlink all of the above into a single directory
+            var targetPath = Path.Combine(testDir.Location, symlinkRelativePath);
+            Directory.CreateDirectory(targetPath);
+            var symlinks = new List<SymLink>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(appFilesDir))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var symlinkPath = Path.Combine(targetPath, fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
+                    symlinks.Add(new SymLink(symlinkPath, file));
+                }
+                symlinks.Add(new SymLink(
+                    Path.Combine(targetPath, appHostName),
+                    Path.Combine(appHostDir, appHostName)));
+
+                var result = Command.Create(Path.Combine(targetPath, appHostName))
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Windows, the apphost will look next to the symlink for the app dll and find the symlinks
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
+                else
+                {
+                    // On Unix, the apphost will not find the app files next to the symlink
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+            }
+            finally
+            {
+                foreach (var symlink in symlinks)
+                {
+                    symlink.Dispose();
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Symlink_all_files_self_contained(string symlinkRelativePath)
+        {
+            using var testDir = TestArtifact.Create("symlink");
+            Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
+
+            // Symlink every file in the app directory
+            var symlinks = new List<SymLink>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(sharedTestState.SelfContainedApp.Location))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var symlinkPath = Path.Combine(testDir.Location, symlinkRelativePath, fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
+                    symlinks.Add(new SymLink(symlinkPath, file));
+                }
+
+                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                // This should succeed on all platforms, but for different reasons:
+                // * Windows: The apphost will look next to the symlink for the files and find the symlinks
+                // * Unix: The apphost will look next to the resolved apphost for the files and find the real thing
+                result
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World");
+            }
+            finally
+            {
+                foreach (var symlink in symlinks)
+                {
+                    symlink.Dispose();
+                }
+            }
+        }
+
+        [Theory]
         [InlineData ("a/b/SymlinkToApphost")]
         [InlineData ("a/SymlinkToApphost")]
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
+            symlinkRelativePath = Binaries.GetExeName(symlinkRelativePath);
             using (var testDir = TestArtifact.Create("symlink"))
             {
                 Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
                 var symlinkFullPath = Path.Combine(testDir.Location, symlinkRelativePath);
 
                 using var symlink = new SymLink(symlinkFullPath, sharedTestState.SelfContainedApp.AppExe);
-                Command.Create(symlinkFullPath)
+                var result = Command.Create(symlinkFullPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         [InlineData ("a/b/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/b/FirstSymlink", "c/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/SecondSymlink")]
         public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
         {
+            firstSymlinkRelativePath = Binaries.GetExeName(firstSymlinkRelativePath);
+            secondSymlinkRelativePath = Binaries.GetExeName(secondSymlinkRelativePath);
             using (var testDir = TestArtifact.Create("symlink"))
             {
                 // second symlink -> apphost
@@ -62,48 +235,69 @@ namespace HostActivation.Tests
                 Directory.CreateDirectory(Path.GetDirectoryName(symlink1Path));
                 using var symlink1 = new SymLink(symlink1Path, symlink2Path);
 
-                Command.Create(symlink1.SrcPath)
+                var result = Command.Create(symlink1.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
-        //[Theory]
-        //[InlineData("a/b/SymlinkToFrameworkDependentApp")]
-        //[InlineData("a/SymlinkToFrameworkDependentApp")]
-        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        [SkipOnPlatform(TestPlatforms.OSX, "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
             "CI failing to use stat on symbolic links on Linux (permission denied).")]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
-        public void Run_framework_dependent_app_behind_symlink(/*string symlinkRelativePath*/)
+        public void Run_framework_dependent_app_behind_symlink(string symlinkRelativePath)
         {
-            var symlinkRelativePath = string.Empty;
+            symlinkRelativePath = Binaries.GetExeName(symlinkRelativePath);
 
             using (var testDir = TestArtifact.Create("symlink"))
             {
                 Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
 
                 using var symlink = new SymLink(Path.Combine(testDir.Location, symlinkRelativePath), sharedTestState.FrameworkDependentApp.AppExe);
-                Command.Create(symlink.SrcPath)
+                var result = Command.Create(symlink.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .DotNetRoot(TestContext.BuiltDotNet.BinPath)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
-        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
-                     "CI failing to use stat on symbolic links on Linux (permission denied).")]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.OSX, "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+            "CI failing to use stat on symbolic links on Linux (permission denied).")]
         public void Run_framework_dependent_app_with_runtime_behind_symlink()
         {
             using (var testDir = TestArtifact.Create("symlink"))
             {
-                var dotnetSymlink = Path.Combine(testDir.Location, "dotnet");
+                var dotnetSymlink = Path.Combine(testDir.Location, Binaries.GetExeName("dotnet"));
 
                 using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.BinPath);
                 Command.Create(sharedTestState.FrameworkDependentApp.AppExe)
@@ -117,7 +311,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink()
         {
             var app = sharedTestState.SelfContainedApp.Copy();
@@ -138,7 +331,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_dotnet_behind_symlink()
         {
             using (var testDir = TestArtifact.Create("symlink"))
@@ -146,17 +338,27 @@ namespace HostActivation.Tests
                 var dotnetSymlink = Path.Combine(testDir.Location, Binaries.DotNet.FileName);
 
                 using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.DotnetExecutablePath);
-                Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
+                var result = Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining($"[{Path.Combine(testDir.Location, "host", "fxr")}] does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
             var app = sharedTestState.SelfContainedApp.Copy();
@@ -177,7 +379,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_satellite_assembly_behind_symlink()
         {
             var app = sharedTestState.LocalizedApp.Copy();

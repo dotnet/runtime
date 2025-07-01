@@ -33,7 +33,7 @@ public:
         if(pwzName)
         {
             memset(pwzName,0,sizeof(WCHAR)*cTemp);
-            WszMultiByteToWideChar(g_uCodePage,0,name,-1,pwzName,cTemp);
+            MultiByteToWideChar(g_uCodePage,0,name,-1,pwzName,cTemp);
         }
         m_dwAttrs = attrs;
     };
@@ -105,11 +105,6 @@ public:
         return ret;
     };
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6211) // "Leaking memory 'b' due to an exception. Consider using a local catch block to clean up memory"
-#endif /*_PREFAST_ */
-
     int ToArray(BinStr ***bounds, LPCWSTR** names, DWORD **attrs)
     {
         int n = Count();
@@ -124,7 +119,7 @@ public:
             WCHAR*              wzDllName = new WCHAR [cTemp];
             // Convert name to UNICODE
             memset(wzDllName,0,sizeof(WCHAR)*cTemp);
-            WszMultiByteToWideChar(g_uCodePage,0,tp->name,-1,wzDllName,cTemp);
+            MultiByteToWideChar(g_uCodePage,0,tp->name,-1,wzDllName,cTemp);
             nam[i] = (LPCWSTR)wzDllName;
             b[i] = tp->bound;
             if (attr)
@@ -139,10 +134,6 @@ public:
             *attrs = attr;
         return n;
     };
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
 
     int ToArray(TyParDescr **ppTPD)
     {

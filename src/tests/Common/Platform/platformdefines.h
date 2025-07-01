@@ -191,7 +191,7 @@ inline void *CoreClrBStrAlloc(size_t cb)
 {
     // A null is automatically applied in the SysAllocStringByteLen API.
     // Remove a single OLECHAR for the implied null.
-    // https://docs.microsoft.com/en-us/previous-versions/windows/desktop/api/oleauto/nf-oleauto-sysallocstringbytelen
+    // https://learn.microsoft.com/previous-versions/windows/desktop/api/oleauto/nf-oleauto-sysallocstringbytelen
     if (cb >= sizeof(OLECHAR))
         cb -= sizeof(OLECHAR);
 

@@ -199,7 +199,7 @@ OBJECTREF CLRException::GetThrowable()
                 throwable = CLRException::GetThrowableFromException(pException);
             }
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
     }
 
@@ -239,7 +239,7 @@ OBJECTREF CLRException::GetThrowable()
         {
             // No matter... we just don't get to cache the throwable.
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     GCPROTECT_END();
@@ -289,7 +289,7 @@ HRESULT CLRException::SetErrorInfo()
         pErrorInfo = NULL;
         LOG((LF_EH, LL_INFO100, "CLRException::SetErrorInfo: caught exception (hr = %08X) while trying to get IErrorInfo\n", hr));
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (!pErrorInfo)
     {
@@ -316,7 +316,7 @@ HRESULT CLRException::SetErrorInfo()
             // Log the failure
             LOG((LF_EH, LL_INFO100, "CLRException::SetErrorInfo: caught exception (hr = %08X) while trying to set IErrorInfo\n", hr));
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return hr;
@@ -366,18 +366,6 @@ IErrorInfo *CLRException::GetErrorInfo()
     // return the IErrorInfo we got...
     return pErrorInfo;
 }
-#else   // FEATURE_COMINTEROP
-IErrorInfo *CLRException::GetErrorInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-    return NULL;
-}
-HRESULT CLRException::SetErrorInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return S_OK;
- }
 #endif  // FEATURE_COMINTEROP
 
 void CLRException::GetMessage(SString &result)
@@ -544,7 +532,7 @@ OBJECTREF CLRException::GetBestException(HRESULT hr, PTR_MethodTable mt)
     {
         retVal = GetPreallocatedOutOfMemoryException();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     _ASSERTE(retVal != NULL);
 
@@ -660,7 +648,6 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         GCPROTECT_BEGIN (throwable);
         EX_TRY
         {
-            SCAN_IGNORE_FAULT;
             if (throwable != NULL  && !CLRException::IsPreallocatedExceptionObject(throwable))
             {
                 _ASSERTE(IsException(throwable->GetMethodTable()));
@@ -672,7 +659,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
         GCPROTECT_END ();
 
         return throwable;
@@ -698,6 +685,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 }
                 else
                 {
+#ifdef FEATURE_COMINTEROP
                     SafeComHolder<IErrorInfo> pErrInfo(pException->GetErrorInfo());
 
                     if (pErrInfo != NULL)
@@ -705,6 +693,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                         GetExceptionForHR(hr, pErrInfo, &oRetVal);
                     }
                     else
+#endif // FEATURE_COMINTEROP
                     {
                         SString message;
                         pException->GetMessage(message);
@@ -761,7 +750,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 }
 
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
         }
         GCPROTECT_END();
 
@@ -854,16 +843,6 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(_In_z_ const char * sz
             }
         }
     }
-
-#ifdef FEATURE_EH_FUNCLETS
-    if (!DidCatchCxx() && !g_isNewExceptionHandlingEnabled)
-    {
-        // this must be done after the second pass has run, it does not
-        // reference anything on the stack, so it is safe to run in an
-        // SEH __except clause as well as a C++ catch clause.
-        ExceptionTracker::PopTrackers(this);
-    }
-#endif // FEATURE_EH_FUNCLETS
 }
 
 #ifdef LOGGING
@@ -875,17 +854,6 @@ void CLRException::HandlerState::SucceedCatch()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     LOG((LF_EH, LL_INFO100, "EX_CATCH catch succeeded (CLRException::HandlerState)\n"));
-
-    //
-    // At this point, we don't believe we need to do any unwinding of the ExInfo chain after an EX_CATCH. The chain
-    // is unwound by CPFH_UnwindFrames1() when it detects that the exception is being caught by an unmanaged
-    // catcher. EX_CATCH looks just like an unmanaged catcher now, so the unwind is already done by the time we get
-    // into the catch. That's different than before the big switch to the new exception system, and it effects
-    // rethrows. Fixing rethrows is a work item for a little later. For now, we're simplying removing the unwind
-    // from here to avoid the extra unwind, which is harmless in many cases, but is very harmful when a managed
-    // filter throws an exception.
-    //
-    //
 
     Exception::HandlerState::SucceedCatch();
 }
@@ -938,12 +906,14 @@ HRESULT EEException::GetHR()
     return EEException::GetHRFromKind(m_kind);
 }
 
+#ifdef FEATURE_COMINTEROP
 IErrorInfo *EEException::GetErrorInfo()
 {
     LIMITED_METHOD_CONTRACT;
 
     return NULL;
 }
+#endif // FEATURE_COMINTEROP
 
 BOOL EEException::GetThrowableMessage(SString &result)
 {

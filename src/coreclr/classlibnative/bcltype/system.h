@@ -37,16 +37,10 @@ private:
 
 public:
     // Functions on the System.Environment class
-    static FCDECL0(UINT32, GetTickCount);
-    static FCDECL0(UINT64, GetTickCount64);
-
     static FCDECL1(VOID,SetExitCode,INT32 exitcode);
     static FCDECL0(INT32, GetExitCode);
 
     static FCDECL0(FC_BOOL_RET, IsServerGC);
-
-    // Return a method info for the method were the exception was thrown
-    static FCDECL1(ReflectMethodObject*, GetMethodFromStackTrace, ArrayBase* pStackTraceUNSAFE);
 };
 
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);

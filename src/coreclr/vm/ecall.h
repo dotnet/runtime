@@ -94,15 +94,13 @@ class ECall
 
         static void PopulateManagedStringConstructors();
 
-        static void PopulateManagedHelpers();
-
 #ifdef DACCESS_COMPILE
         // Enumerates all gFCallMethods for minidumps.
         static void EnumFCallMethods();
 #endif // DACCESS_COMPILE
 
 #define _DYNAMICALLY_ASSIGNED_FCALLS_BASE() \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(FastAllocateString,                FramedAllocateString) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(FastAllocateString,                RhpNewVariableSizeObject) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharArrayManaged,              NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharArrayStartLengthManaged,   NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharCountManaged,              NULL) \

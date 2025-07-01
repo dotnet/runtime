@@ -52,7 +52,7 @@ namespace System.Text
             // object allocation on the startup path.
 
             if (s_providers is null &&
-                Interlocked.CompareExchange(ref s_providers, new EncodingProvider[1] { provider }, null) is null)
+                Interlocked.CompareExchange(ref s_providers, [provider], null) is null)
             {
                 return;
             }

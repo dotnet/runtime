@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
+
+using static Microsoft.DotNet.CoreSetup.Test.Constants;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
@@ -66,11 +69,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .And.HaveStdOutContaining("mock is_framework_dependent: 0");
         }
 
-        private CommandResult RunFrameworkDependentTest(TestSettings testSettings) =>
-            RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings);
+        private CommandResult RunFrameworkDependentTest(TestSettings testSettings, [CallerMemberName] string caller = "") =>
+            RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings, caller: caller);
 
-        private CommandResult RunSelfContainedTest(TestSettings testSettings) =>
-            RunSelfContainedTest(SharedState.SelfContainedApp, testSettings);
+        private CommandResult RunSelfContainedTest(TestSettings testSettings, [CallerMemberName] string caller = "") =>
+            RunSelfContainedTest(SharedState.SelfContainedApp, testSettings, caller: caller);
 
         public class SharedTestState : SharedTestStateBase
         {

@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         // As of FIPS 186-4 the maximum Q size is 32 bytes.
         //
         // See also: cbGroupSize at
-        // https://docs.microsoft.com/en-us/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_dsa_key_blob_v2
+        // https://learn.microsoft.com/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_dsa_key_blob_v2
         private const int WindowsMaxQSize = 32;
 
         public override byte[] CreateSignature(byte[] rgbHash)
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
             {
                 unsafe
                 {
-                    return CngCommon.SignHash(keyHandle, source, AsymmetricPaddingMode.None, null, source.Length * 2);
+                    return CngHelpers.SignHash(keyHandle, source, AsymmetricPaddingMode.None, null, source.Length * 2);
                 }
             }
         }
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                if (!CngCommon.TrySignHash(keyHandle, source, destination, AsymmetricPaddingMode.None, null, out bytesWritten))
+                if (!CngHelpers.TrySignHash(keyHandle, source, destination, AsymmetricPaddingMode.None, null, out bytesWritten))
                 {
                     bytesWritten = 0;
                     return false;
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
             {
                 unsafe
                 {
-                    return CngCommon.VerifyHash(keyHandle, source, signature, AsymmetricPaddingMode.None, null);
+                    return CngHelpers.VerifyHash(keyHandle, source, signature, AsymmetricPaddingMode.None, null);
                 }
             }
         }

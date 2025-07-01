@@ -41,13 +41,6 @@ enum var_types_register
 #else
 #define TYP_I_IMPL TYP_INT
 #define TYP_U_IMPL TYP_UINT
-#ifdef _PREFAST_
-// We silence this in the 32-bit build because for portability, we like to have asserts like this:
-// assert(op2->gtType == TYP_INT || op2->gtType == TYP_I_IMPL);
-// This is obviously redundant for 32-bit builds, but we don't want to have ifdefs and different
-// asserts just for 64-bit builds, so for now just silence the assert
-#pragma warning(disable : 6287) // warning 6287: the left and right sub-expressions are identical
-#endif                          //_PREFAST_
 #endif
 
 /*****************************************************************************/
@@ -185,7 +178,7 @@ inline bool varTypeIsArithmetic(T vt)
 template <class T>
 inline bool varTypeIsGC(T vt)
 {
-    return ((varTypeClassification[TypeGet(vt)] & (VTF_GCR | VTF_BYR)) != 0);
+    return (TypeGet(vt) == TYP_REF) || (TypeGet(vt) == TYP_BYREF);
 }
 
 template <class T>
@@ -327,7 +320,7 @@ inline bool varTypeUsesMaskReg(T vt)
     // However, we only have one type that uses VTR_MASK today
     // and so its quite a bit cheaper to just check that directly
 
-#if defined(FEATURE_SIMD) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     assert((TypeGet(vt) == TYP_MASK) || (varTypeRegister[TypeGet(vt)] != VTR_MASK));
     return TypeGet(vt) == TYP_MASK;
 #else

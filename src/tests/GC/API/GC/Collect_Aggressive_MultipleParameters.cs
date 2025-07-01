@@ -4,10 +4,12 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class AggressiveCollect_MultipleParameters
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         long before = CreateGarbage();
         GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
@@ -55,7 +57,6 @@ public class AggressiveCollect_MultipleParameters
         }
 
         // If we got this far, we have successfully executed all the tests. 
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

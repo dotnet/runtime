@@ -184,47 +184,6 @@ GetModuleFileNameWrapper(
     return ret;
 }
 
-DWORD WINAPI GetTempPathWrapper(
-    SString& lpBuffer
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    DWORD ret = 0;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        //Change the behaviour in Redstone to retry
-        COUNT_T size = MAX_LONGPATH;
-
-        ret = GetTempPathW(
-            size,
-            lpBuffer.OpenUnicodeBuffer(size - 1)
-            );
-
-        lastError = GetLastError();
-        lpBuffer.CloseBuffer(ret);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK)
-    {
-        SetLastError(hr);
-    }
-    else if (ret == 0)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
     _Out_opt_ SString&  lpBuffer
@@ -376,53 +335,6 @@ CreateFileWrapper(
         SetLastError(hr);
     }
     else if(ret == INVALID_HANDLE_VALUE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
-BOOL
-GetFileAttributesExWrapper(
-        _In_ LPCWSTR lpFileName,
-        _In_ GET_FILEEX_INFO_LEVELS fInfoLevelId,
-        _Out_writes_bytes_(sizeof(WIN32_FILE_ATTRIBUTE_DATA)) LPVOID lpFileInformation
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BOOL   ret = FALSE;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        LongPathString path(LongPathString::Literal, lpFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(path)))
-        {
-            ret = GetFileAttributesExW(
-                    path.GetUnicode(),
-                    fInfoLevelId,
-                    lpFileInformation
-                    );
-
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
     {
         SetLastError(lastError);
     }

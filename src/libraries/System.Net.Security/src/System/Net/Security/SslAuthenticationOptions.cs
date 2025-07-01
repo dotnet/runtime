@@ -11,6 +11,14 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
+        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
+
+        internal static readonly X509RevocationMode DefaultRevocationMode =
+            AppContextSwitchHelper.GetBooleanConfig(
+                "System.Net.Security.NoRevocationCheckByDefault",
+                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT")
+                ? X509RevocationMode.NoCheck : X509RevocationMode.Online;
+
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
@@ -50,6 +58,17 @@ namespace System.Net.Security
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
             TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
+
+            AllowRsaPssPadding = sslClientAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslClientAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslClientAuthenticationOptions.AllowRsaPssPadding || !sslClientAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -109,6 +128,18 @@ namespace System.Net.Security
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+
+            AllowRsaPssPadding = sslServerAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslServerAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslServerAuthenticationOptions.AllowRsaPssPadding || !sslServerAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
+
             if (sslServerAuthenticationOptions.ServerCertificateContext != null)
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
@@ -119,8 +150,10 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
+                    bool ocspFetch = false;
+                    _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: !ocspFetch);
                 }
                 else
                 {
@@ -149,7 +182,7 @@ namespace System.Net.Security
 
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
         {
-            if (protocols.HasFlag(SslProtocols.Tls12) || protocols.HasFlag(SslProtocols.Tls13))
+            if ((protocols & (SslProtocols.Tls12 | SslProtocols.Tls13)) != SslProtocols.None)
             {
 #pragma warning disable 0618
                 // SSL2 is mutually exclusive with >= TLS1.2
@@ -182,6 +215,8 @@ namespace System.Net.Security
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
         internal bool AllowTlsResume { get; set; }
+        internal bool AllowRsaPssPadding { get; set; }
+        internal bool AllowRsaPkcs1Padding { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }

@@ -61,6 +61,19 @@ namespace Internal.IL.Stubs
 
             ILEmitter emitter = new ILEmitter();
 
+            if (_owningType is MetadataType mdType)
+            {
+                // Types marked as InlineArray aren't supported by
+                // the built-in Equals() or GetHashCode().
+                if (mdType.IsInlineArray)
+                {
+                    var stream = emitter.NewCodeStream();
+                    MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
+                    stream.EmitCallThrowHelper(emitter, thrower);
+                    return emitter.Link(this);
+                }
+            }
+
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
             MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
 

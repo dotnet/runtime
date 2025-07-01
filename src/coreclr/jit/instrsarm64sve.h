@@ -91,7 +91,7 @@ INST13(mov,              "mov",                   0,                       IF_SV
 
 
 //     enum              name                     info                                              SVE_JD_4B        SVE_JD_4C        SVE_JI_3A_A      SVE_JJ_4A        SVE_JJ_4A_B      SVE_JJ_4A_C      SVE_JJ_4A_D      SVE_JJ_4B        SVE_JJ_4B_E      SVE_JN_3B        SVE_JN_3C        
-INST11(st1w,             "st1w",                  0,                       IF_SVE_11A,              0xE5404000,      0xE5004000,      0xE540A000,      0xE5608000,      0xE5208000,      0xE5008000,      0xE5408000,      0xE520A000,      0xE500A000,      0xE540E000,      0xE500E000       )
+INST11(st1w,             "st1w",                  ST,                      IF_SVE_11A,              0xE5404000,      0xE5004000,      0xE540A000,      0xE5608000,      0xE5208000,      0xE5008000,      0xE5408000,      0xE520A000,      0xE500A000,      0xE540E000,      0xE500E000       )
     // ST1W    {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2]                                 SVE_JD_4B           1110010101xmmmmm 010gggnnnnnttttt     E540 4000   
     // ST1W    {<Zt>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]                                  SVE_JD_4C           11100101000mmmmm 010gggnnnnnttttt     E500 4000   
     // ST1W    {<Zt>.D }, <Pg>, [<Zn>.D{, #<imm>}]                                       SVE_JI_3A_A         11100101010iiiii 101gggnnnnnttttt     E540 A000   
@@ -106,7 +106,7 @@ INST11(st1w,             "st1w",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IJ_3A_F      SVE_IK_4A_G      
-INST9(ld1sh,             "ld1sh",                 0,                       IF_SVE_9A,               0x84A00000,      0xC4A00000,      0xC4800000,      0x84800000,      0xC4E08000,      0xC4C08000,      0x84A08000,      0xA500A000,      0xA5004000       )
+INST9(ld1sh,             "ld1sh",                 LD,                      IF_SVE_9A,               0x84A00000,      0xC4A00000,      0xC4800000,      0x84800000,      0xC4E08000,      0xC4C08000,      0x84A08000,      0xA500A000,      0xA5004000       )
     // LD1SH   {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]                            SVE_HW_4A           100001001h1mmmmm 000gggnnnnnttttt     84A0 0000   
     // LD1SH   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]                            SVE_HW_4A_A         110001001h1mmmmm 000gggnnnnnttttt     C4A0 0000   
     // LD1SH   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001001h0mmmmm 000gggnnnnnttttt     C480 0000   
@@ -119,7 +119,7 @@ INST9(ld1sh,             "ld1sh",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IJ_3A_G      SVE_IK_4A_I      
-INST9(ld1h,              "ld1h",                  0,                       IF_SVE_9B,               0x84A04000,      0xC4A04000,      0xC4804000,      0x84804000,      0xC4E0C000,      0xC4C0C000,      0x84A0C000,      0xA480A000,      0xA4804000       )
+INST9(ld1h,              "ld1h",                  LD,                      IF_SVE_9B,               0x84A04000,      0xC4A04000,      0xC4804000,      0x84804000,      0xC4E0C000,      0xC4C0C000,      0x84A0C000,      0xA480A000,      0xA4804000       )
     // LD1H    {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]                            SVE_HW_4A           100001001h1mmmmm 010gggnnnnnttttt     84A0 4000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]                            SVE_HW_4A_A         110001001h1mmmmm 010gggnnnnnttttt     C4A0 4000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001001h0mmmmm 010gggnnnnnttttt     C480 4000   
@@ -132,7 +132,7 @@ INST9(ld1h,              "ld1h",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IH_3A_F      SVE_II_4A_H      
-INST9(ld1w,              "ld1w",                  0,                       IF_SVE_9C,               0x85204000,      0xC5204000,      0xC5004000,      0x85004000,      0xC560C000,      0xC540C000,      0x8520C000,      0xA5002000,      0xA5000000       )
+INST9(ld1w,              "ld1w",                  LD,                      IF_SVE_9C,               0x85204000,      0xC5204000,      0xC5004000,      0x85004000,      0xC560C000,      0xC540C000,      0x8520C000,      0xA5002000,      0xA5000000       )
     // LD1W    {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #2]                            SVE_HW_4A           100001010h1mmmmm 010gggnnnnnttttt     8520 4000   
     // LD1W    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]                            SVE_HW_4A_A         110001010h1mmmmm 010gggnnnnnttttt     C520 4000   
     // LD1W    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001010h0mmmmm 010gggnnnnnttttt     C500 4000   
@@ -145,7 +145,7 @@ INST9(ld1w,              "ld1w",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IH_3A        SVE_IH_3A_A      SVE_II_4A        SVE_II_4A_B      SVE_IU_4A        SVE_IU_4A_C      SVE_IU_4B        SVE_IU_4B_D      SVE_IV_3A        
-INST9(ld1d,              "ld1d",                  0,                       IF_SVE_9D,               0xA5E0A000,      0xA5902000,      0xA5E04000,      0xA5808000,      0xC5A04000,      0xC5804000,      0xC5E0C000,      0xC5C0C000,      0xC5A0C000       )
+INST9(ld1d,              "ld1d",                  LD,                      IF_SVE_9D,               0xA5E0A000,      0xA5902000,      0xA5E04000,      0xA5808000,      0xC5A04000,      0xC5804000,      0xC5E0C000,      0xC5C0C000,      0xC5A0C000       )
     // LD1D    {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IH_3A           101001011110iiii 101gggnnnnnttttt     A5E0 A000   
     // LD1D    {<Zt>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IH_3A_A         101001011001iiii 001gggnnnnnttttt     A590 2000   
     // LD1D    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]                                SVE_II_4A           10100101111mmmmm 010gggnnnnnttttt     A5E0 4000   
@@ -158,7 +158,7 @@ INST9(ld1d,              "ld1d",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_JD_4A        SVE_JI_3A_A      SVE_JJ_4A        SVE_JJ_4A_B      SVE_JJ_4A_C      SVE_JJ_4A_D      SVE_JJ_4B        SVE_JJ_4B_E      SVE_JN_3A        
-INST9(st1h,              "st1h",                  0,                       IF_SVE_9E,               0xE4804000,      0xE4C0A000,      0xE4E08000,      0xE4A08000,      0xE4808000,      0xE4C08000,      0xE4A0A000,      0xE480A000,      0xE480E000       )
+INST9(st1h,              "st1h",                  ST,                      IF_SVE_9E,               0xE4804000,      0xE4C0A000,      0xE4E08000,      0xE4A08000,      0xE4808000,      0xE4C08000,      0xE4A0A000,      0xE480A000,      0xE480E000       )
     // ST1H    {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #1]                                 SVE_JD_4A           111001001xxmmmmm 010gggnnnnnttttt     E480 4000   
     // ST1H    {<Zt>.D }, <Pg>, [<Zn>.D{, #<imm>}]                                       SVE_JI_3A_A         11100100110iiiii 101gggnnnnnttttt     E4C0 A000   
     // ST1H    {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]                              SVE_JJ_4A           11100100111mmmmm 1h0gggnnnnnttttt     E4E0 8000   
@@ -171,7 +171,7 @@ INST9(st1h,              "st1h",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_JD_4C        SVE_JD_4C_A      SVE_JJ_4A        SVE_JJ_4A_B      SVE_JJ_4B        SVE_JJ_4B_C      SVE_JL_3A        SVE_JN_3C        SVE_JN_3C_D      
-INST9(st1d,              "st1d",                  0,                       IF_SVE_9F,               0xE5E04000,      0xE5C04000,      0xE5A08000,      0xE5808000,      0xE5A0A000,      0xE580A000,      0xE5C0A000,      0xE5E0E000,      0xE5C0E000       )
+INST9(st1d,              "st1d",                  ST,                      IF_SVE_9F,               0xE5E04000,      0xE5C04000,      0xE5A08000,      0xE5808000,      0xE5A0A000,      0xE580A000,      0xE5C0A000,      0xE5E0E000,      0xE5C0E000       )
     // ST1D    {<Zt>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]                                  SVE_JD_4C           11100101111mmmmm 010gggnnnnnttttt     E5E0 4000   
     // ST1D    {<Zt>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]                                  SVE_JD_4C_A         11100101110mmmmm 010gggnnnnnttttt     E5C0 4000   
     // ST1D    {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]                              SVE_JJ_4A           11100101101mmmmm 1h0gggnnnnnttttt     E5A0 8000   
@@ -196,7 +196,7 @@ INST8(pmov,              "pmov",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IG_4A_F      
-INST8(ldff1sh,           "ldff1sh",               0,                       IF_SVE_8B,               0x84A02000,      0xC4A02000,      0xC4802000,      0x84802000,      0xC4E0A000,      0xC4C0A000,      0x84A0A000,      0xA5006000       )
+INST8(ldff1sh,           "ldff1sh",               LD,                      IF_SVE_8B,               0x84A02000,      0xC4A02000,      0xC4802000,      0x84802000,      0xC4E0A000,      0xC4C0A000,      0x84A0A000,      0xA5006000       )
     // LDFF1SH {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]                            SVE_HW_4A           100001001h1mmmmm 001gggnnnnnttttt     84A0 2000   
     // LDFF1SH {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]                            SVE_HW_4A_A         110001001h1mmmmm 001gggnnnnnttttt     C4A0 2000   
     // LDFF1SH {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001001h0mmmmm 001gggnnnnnttttt     C480 2000   
@@ -206,7 +206,7 @@ INST8(ldff1sh,           "ldff1sh",               0,                       IF_SV
     // LDFF1SH {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_E         10000100101iiiii 101gggnnnnnttttt     84A0 A000   
     // LDFF1SH {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #1}]                              SVE_IG_4A_F         10100101000mmmmm 011gggnnnnnttttt     A500 6000   
 
-INST8(ldff1w,            "ldff1w",                0,                       IF_SVE_8B,               0x85206000,      0xC5206000,      0xC5006000,      0x85006000,      0xC560E000,      0xC540E000,      0x8520E000,      0xA5406000       )
+INST8(ldff1w,            "ldff1w",                LD,                      IF_SVE_8B,               0x85206000,      0xC5206000,      0xC5006000,      0x85006000,      0xC560E000,      0xC540E000,      0x8520E000,      0xA5406000       )
     // LDFF1W  {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #2]                            SVE_HW_4A           100001010h1mmmmm 011gggnnnnnttttt     8520 6000   
     // LDFF1W  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]                            SVE_HW_4A_A         110001010h1mmmmm 011gggnnnnnttttt     C520 6000   
     // LDFF1W  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001010h0mmmmm 011gggnnnnnttttt     C500 6000   
@@ -218,7 +218,7 @@ INST8(ldff1w,            "ldff1w",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IG_4A_G      
-INST8(ldff1h,            "ldff1h",                0,                       IF_SVE_8C,               0x84A06000,      0xC4A06000,      0xC4806000,      0x84806000,      0xC4E0E000,      0xC4C0E000,      0x84A0E000,      0xA4806000       )
+INST8(ldff1h,            "ldff1h",                LD,                      IF_SVE_8C,               0x84A06000,      0xC4A06000,      0xC4806000,      0x84806000,      0xC4E0E000,      0xC4C0E000,      0x84A0E000,      0xA4806000       )
     // LDFF1H  {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]                            SVE_HW_4A           100001001h1mmmmm 011gggnnnnnttttt     84A0 6000   
     // LDFF1H  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]                            SVE_HW_4A_A         110001001h1mmmmm 011gggnnnnnttttt     C4A0 6000   
     // LDFF1H  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001001h0mmmmm 011gggnnnnnttttt     C480 6000   
@@ -230,7 +230,7 @@ INST8(ldff1h,            "ldff1h",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IJ_3A        SVE_IK_4A        SVE_IU_4A        SVE_IU_4A_A      SVE_IU_4B        SVE_IU_4B_B      SVE_IV_3A        
-INST7(ld1sw,             "ld1sw",                 0,                       IF_SVE_7A,               0xA480A000,      0xA4804000,      0xC5200000,      0xC5000000,      0xC5608000,      0xC5408000,      0xC5208000       )
+INST7(ld1sw,             "ld1sw",                 LD,                      IF_SVE_7A,               0xA480A000,      0xA4804000,      0xC5200000,      0xC5000000,      0xC5608000,      0xC5408000,      0xC5208000       )
     // LD1SW   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IJ_3A           101001001000iiii 101gggnnnnnttttt     A480 A000   
     // LD1SW   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]                                SVE_IK_4A           10100100100mmmmm 010gggnnnnnttttt     A480 4000   
     // LD1SW   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]                            SVE_IU_4A           110001010h1mmmmm 000gggnnnnnttttt     C520 0000   
@@ -260,7 +260,7 @@ INST6(fdot,              "fdot",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4B        SVE_HX_3A_B      SVE_IJ_3A_D      SVE_IK_4A_F      
-INST6(ld1sb,             "ld1sb",                 0,                       IF_SVE_6C,               0xC4000000,      0x84000000,      0xC4408000,      0x84208000,      0xA580A000,      0xA5804000       )
+INST6(ld1sb,             "ld1sb",                 LD,                      IF_SVE_6C,               0xC4000000,      0x84000000,      0xC4408000,      0x84208000,      0xA580A000,      0xA5804000       )
     // LD1SB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 000gggnnnnnttttt     C400 0000   
     // LD1SB   {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 000gggnnnnnttttt     8400 0000   
     // LD1SB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 100gggnnnnnttttt     C440 8000   
@@ -270,7 +270,7 @@ INST6(ld1sb,             "ld1sb",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4B        SVE_HX_3A_B      SVE_IJ_3A_E      SVE_IK_4A_H      
-INST6(ld1b,              "ld1b",                  0,                       IF_SVE_6D,               0xC4004000,      0x84004000,      0xC440C000,      0x8420C000,      0xA400A000,      0xA4004000       )
+INST6(ld1b,              "ld1b",                  LD,                      IF_SVE_6D,               0xC4004000,      0x84004000,      0xC440C000,      0x8420C000,      0xA400A000,      0xA4004000       )
     // LD1B    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 010gggnnnnnttttt     C400 4000   
     // LD1B    {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 010gggnnnnnttttt     8400 4000   
     // LD1B    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 110gggnnnnnttttt     C440 C000   
@@ -314,7 +314,7 @@ INST6(prfw,              "prfw",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IG_4A        SVE_IU_4A        SVE_IU_4A_A      SVE_IU_4B        SVE_IU_4B_B      SVE_IV_3A        
-INST6(ldff1d,            "ldff1d",                0,                       IF_SVE_6F,               0xA5E06000,      0xC5A06000,      0xC5806000,      0xC5E0E000,      0xC5C0E000,      0xC5A0E000       )
+INST6(ldff1d,            "ldff1d",                LD,                      IF_SVE_6F,               0xA5E06000,      0xC5A06000,      0xC5806000,      0xC5E0E000,      0xC5C0E000,      0xC5A0E000       )
     // LDFF1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #3}]                              SVE_IG_4A           10100101111mmmmm 011gggnnnnnttttt     A5E0 6000   
     // LDFF1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #3]                            SVE_IU_4A           110001011h1mmmmm 011gggnnnnnttttt     C5A0 6000   
     // LDFF1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_IU_4A_A         110001011h0mmmmm 011gggnnnnnttttt     C580 6000   
@@ -322,7 +322,7 @@ INST6(ldff1d,            "ldff1d",                0,                       IF_SV
     // LDFF1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_IU_4B_B         11000101110mmmmm 111gggnnnnnttttt     C5C0 E000   
     // LDFF1D  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_IV_3A           11000101101iiiii 111gggnnnnnttttt     C5A0 E000   
 
-INST6(ldff1sw,           "ldff1sw",               0,                       IF_SVE_6F,               0xA4806000,      0xC5202000,      0xC5002000,      0xC560A000,      0xC540A000,      0xC520A000       )
+INST6(ldff1sw,           "ldff1sw",               LD,                      IF_SVE_6F,               0xA4806000,      0xC5202000,      0xC5002000,      0xC560A000,      0xC540A000,      0xC520A000       )
     // LDFF1SW {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #2}]                              SVE_IG_4A           10100100100mmmmm 011gggnnnnnttttt     A480 6000   
     // LDFF1SW {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]                            SVE_IU_4A           110001010h1mmmmm 001gggnnnnnttttt     C520 2000   
     // LDFF1SW {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_IU_4A_A         110001010h0mmmmm 001gggnnnnnttttt     C500 2000   
@@ -332,7 +332,7 @@ INST6(ldff1sw,           "ldff1sw",               0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_JD_4A        SVE_JI_3A_A      SVE_JK_4A        SVE_JK_4A_B      SVE_JK_4B        SVE_JN_3A        
-INST6(st1b,              "st1b",                  0,                       IF_SVE_6G,               0xE4004000,      0xE440A000,      0xE4008000,      0xE4408000,      0xE400A000,      0xE400E000       )
+INST6(st1b,              "st1b",                  ST,                      IF_SVE_6G,               0xE4004000,      0xE440A000,      0xE4008000,      0xE4408000,      0xE400A000,      0xE400E000       )
     // ST1B    {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>]                                         SVE_JD_4A           111001000xxmmmmm 010gggnnnnnttttt     E400 4000   
     // ST1B    {<Zt>.D }, <Pg>, [<Zn>.D{, #<imm>}]                                       SVE_JI_3A_A         11100100010iiiii 101gggnnnnnttttt     E440 A000   
     // ST1B    {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]                                 SVE_JK_4A           11100100000mmmmm 1h0gggnnnnnttttt     E400 8000   
@@ -390,7 +390,7 @@ INST5(udot,              "udot",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4B        SVE_HX_3A_B      SVE_IG_4A_D      
-INST5(ldff1sb,           "ldff1sb",               0,                       IF_SVE_5D,               0xC4002000,      0x84002000,      0xC440A000,      0x8420A000,      0xA5806000       )
+INST5(ldff1sb,           "ldff1sb",               LD,                      IF_SVE_5D,               0xC4002000,      0x84002000,      0xC440A000,      0x8420A000,      0xA5806000       )
     // LDFF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 001gggnnnnnttttt     C400 2000   
     // LDFF1SB {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 001gggnnnnnttttt     8400 2000   
     // LDFF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 101gggnnnnnttttt     C440 A000   
@@ -399,7 +399,7 @@ INST5(ldff1sb,           "ldff1sb",               0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4B        SVE_HX_3A_B      SVE_IG_4A_E      
-INST5(ldff1b,            "ldff1b",                0,                       IF_SVE_5E,               0xC4006000,      0x84006000,      0xC440E000,      0x8420E000,      0xA4006000       )
+INST5(ldff1b,            "ldff1b",                LD,                      IF_SVE_5E,               0xC4006000,      0x84006000,      0xC440E000,      0x8420E000,      0xA4006000       )
     // LDFF1B  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 011gggnnnnnttttt     C400 6000   
     // LDFF1B  {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 011gggnnnnnttttt     8400 6000   
     // LDFF1B  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 111gggnnnnnttttt     C440 E000   
@@ -516,19 +516,19 @@ INST4(cpy,               "cpy",                   0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IF_4A        SVE_IF_4A_A      SVE_IM_3A        SVE_IN_4A        
-INST4(ldnt1b,            "ldnt1b",                0,                       IF_SVE_4K,               0x8400A000,      0xC400C000,      0xA400E000,      0xA400C000       )
+INST4(ldnt1b,            "ldnt1b",                LD,                      IF_SVE_4K,               0x8400A000,      0xC400C000,      0xA400E000,      0xA400C000       )
     // LDNT1B  {<Zt>.S }, <Pg>/Z, [<Zn>.S{, <Xm>}]                                       SVE_IF_4A           10000100000mmmmm 101gggnnnnnttttt     8400 A000   
     // LDNT1B  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IF_4A_A         11000100000mmmmm 110gggnnnnnttttt     C400 C000   
     // LDNT1B  {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IM_3A           101001000000iiii 111gggnnnnnttttt     A400 E000   
     // LDNT1B  {<Zt>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]                                        SVE_IN_4A           10100100000mmmmm 110gggnnnnnttttt     A400 C000   
 
-INST4(ldnt1h,            "ldnt1h",                0,                       IF_SVE_4K,               0x8480A000,      0xC480C000,      0xA480E000,      0xA480C000       )
+INST4(ldnt1h,            "ldnt1h",                LD,                      IF_SVE_4K,               0x8480A000,      0xC480C000,      0xA480E000,      0xA480C000       )
     // LDNT1H  {<Zt>.S }, <Pg>/Z, [<Zn>.S{, <Xm>}]                                       SVE_IF_4A           10000100100mmmmm 101gggnnnnnttttt     8480 A000   
     // LDNT1H  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IF_4A_A         11000100100mmmmm 110gggnnnnnttttt     C480 C000   
     // LDNT1H  {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IM_3A           101001001000iiii 111gggnnnnnttttt     A480 E000   
     // LDNT1H  {<Zt>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]                                SVE_IN_4A           10100100100mmmmm 110gggnnnnnttttt     A480 C000   
 
-INST4(ldnt1w,            "ldnt1w",                0,                       IF_SVE_4K,               0x8500A000,      0xC500C000,      0xA500E000,      0xA500C000       )
+INST4(ldnt1w,            "ldnt1w",                LD,                      IF_SVE_4K,               0x8500A000,      0xC500C000,      0xA500E000,      0xA500C000       )
     // LDNT1W  {<Zt>.S }, <Pg>/Z, [<Zn>.S{, <Xm>}]                                       SVE_IF_4A           10000101000mmmmm 101gggnnnnnttttt     8500 A000   
     // LDNT1W  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IF_4A_A         11000101000mmmmm 110gggnnnnnttttt     C500 C000   
     // LDNT1W  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IM_3A           101001010000iiii 111gggnnnnnttttt     A500 E000   
@@ -536,19 +536,19 @@ INST4(ldnt1w,            "ldnt1w",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IZ_4A        SVE_IZ_4A_A      SVE_JB_4A        SVE_JM_3A        
-INST4(stnt1b,            "stnt1b",                0,                       IF_SVE_4L,               0xE4402000,      0xE4002000,      0xE4006000,      0xE410E000       )
+INST4(stnt1b,            "stnt1b",                ST,                      IF_SVE_4L,               0xE4402000,      0xE4002000,      0xE4006000,      0xE410E000       )
     // STNT1B  {<Zt>.S }, <Pg>, [<Zn>.S{, <Xm>}]                                         SVE_IZ_4A           11100100010mmmmm 001gggnnnnnttttt     E440 2000   
     // STNT1B  {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IZ_4A_A         11100100000mmmmm 001gggnnnnnttttt     E400 2000   
     // STNT1B  {<Zt>.B }, <Pg>, [<Xn|SP>, <Xm>]                                          SVE_JB_4A           11100100000mmmmm 011gggnnnnnttttt     E400 6000   
     // STNT1B  {<Zt>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                              SVE_JM_3A           111001000001iiii 111gggnnnnnttttt     E410 E000   
 
-INST4(stnt1h,            "stnt1h",                0,                       IF_SVE_4L,               0xE4C02000,      0xE4802000,      0xE4806000,      0xE490E000       )
+INST4(stnt1h,            "stnt1h",                ST,                      IF_SVE_4L,               0xE4C02000,      0xE4802000,      0xE4806000,      0xE490E000       )
     // STNT1H  {<Zt>.S }, <Pg>, [<Zn>.S{, <Xm>}]                                         SVE_IZ_4A           11100100110mmmmm 001gggnnnnnttttt     E4C0 2000   
     // STNT1H  {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IZ_4A_A         11100100100mmmmm 001gggnnnnnttttt     E480 2000   
     // STNT1H  {<Zt>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]                                  SVE_JB_4A           11100100100mmmmm 011gggnnnnnttttt     E480 6000   
     // STNT1H  {<Zt>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                              SVE_JM_3A           111001001001iiii 111gggnnnnnttttt     E490 E000   
 
-INST4(stnt1w,            "stnt1w",                0,                       IF_SVE_4L,               0xE5402000,      0xE5002000,      0xE5006000,      0xE510E000       )
+INST4(stnt1w,            "stnt1w",                ST,                      IF_SVE_4L,               0xE5402000,      0xE5002000,      0xE5006000,      0xE510E000       )
     // STNT1W  {<Zt>.S }, <Pg>, [<Zn>.S{, <Xm>}]                                         SVE_IZ_4A           11100101010mmmmm 001gggnnnnnttttt     E540 2000   
     // STNT1W  {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IZ_4A_A         11100101000mmmmm 001gggnnnnnttttt     E500 2000   
     // STNT1W  {<Zt>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]                                  SVE_JB_4A           11100101000mmmmm 011gggnnnnnttttt     E500 6000   
@@ -679,54 +679,54 @@ INST3(clastb,            "clastb",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_CX_4A        SVE_CX_4A_A      SVE_CY_3A        
-INST3(cmpeq,             "cmpeq",                 0,                       IF_SVE_3J,               0x2400A000,      0x24002000,      0x25008000       )
+INST3(cmpeq,             "cmpeq",                 CMP,                     IF_SVE_3J,               0x2400A000,      0x24002000,      0x25008000       )
     // CMPEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 101gggnnnnn0DDDD     2400 A000   
     // CMPEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 001gggnnnnn0DDDD     2400 2000   
     // CMPEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3A           00100101xx0iiiii 100gggnnnnn0DDDD     2500 8000   
 
-INST3(cmpge,             "cmpge",                 0,                       IF_SVE_3J,               0x24008000,      0x24004000,      0x25000000       )
+INST3(cmpge,             "cmpge",                 CMP,                     IF_SVE_3J,               0x24008000,      0x24004000,      0x25000000       )
     // CMPGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 100gggnnnnn0DDDD     2400 8000   
     // CMPGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 010gggnnnnn0DDDD     2400 4000   
     // CMPGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3A           00100101xx0iiiii 000gggnnnnn0DDDD     2500 0000   
 
-INST3(cmpgt,             "cmpgt",                 0,                       IF_SVE_3J,               0x24008010,      0x24004010,      0x25000010       )
+INST3(cmpgt,             "cmpgt",                 CMP,                     IF_SVE_3J,               0x24008010,      0x24004010,      0x25000010       )
     // CMPGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 100gggnnnnn1DDDD     2400 8010   
     // CMPGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 010gggnnnnn1DDDD     2400 4010   
     // CMPGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3A           00100101xx0iiiii 000gggnnnnn1DDDD     2500 0010   
 
-INST3(cmple,             "cmple",                 0,                       IF_SVE_3J,               0x24008000,      0x24006010,      0x25002010       )
+INST3(cmple,             "cmple",                 CMP,                     IF_SVE_3J,               0x24008000,      0x24006010,      0x25002010       )
     // CMPLE   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 100gggnnnnn0DDDD     2400 8000   
     // CMPLE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 011gggnnnnn1DDDD     2400 6010   
     // CMPLE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3A           00100101xx0iiiii 001gggnnnnn1DDDD     2500 2010   
 
-INST3(cmplt,             "cmplt",                 0,                       IF_SVE_3J,               0x24008010,      0x24006000,      0x25002000       )
+INST3(cmplt,             "cmplt",                 CMP,                     IF_SVE_3J,               0x24008010,      0x24006000,      0x25002000       )
     // CMPLT   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 100gggnnnnn1DDDD     2400 8010   
     // CMPLT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 011gggnnnnn0DDDD     2400 6000   
     // CMPLT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3A           00100101xx0iiiii 001gggnnnnn0DDDD     2500 2000   
 
-INST3(cmpne,             "cmpne",                 0,                       IF_SVE_3J,               0x2400A010,      0x24002010,      0x25008010       )
+INST3(cmpne,             "cmpne",                 CMP,                     IF_SVE_3J,               0x2400A010,      0x24002010,      0x25008010       )
     // CMPNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 101gggnnnnn1DDDD     2400 A010   
     // CMPNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 001gggnnnnn1DDDD     2400 2010   
     // CMPNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3A           00100101xx0iiiii 100gggnnnnn1DDDD     2500 8010   
 
 
 //    enum               name                     info                                              SVE_CX_4A        SVE_CX_4A_A      SVE_CY_3B        
-INST3(cmphi,             "cmphi",                 0,                       IF_SVE_3K,               0x24000010,      0x2400C010,      0x24200010       )
+INST3(cmphi,             "cmphi",                 CMP,                     IF_SVE_3K,               0x24000010,      0x2400C010,      0x24200010       )
     // CMPHI   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 000gggnnnnn1DDDD     2400 0010   
     // CMPHI   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 110gggnnnnn1DDDD     2400 C010   
     // CMPHI   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3B           00100100xx1iiiii ii0gggnnnnn1DDDD     2420 0010   
 
-INST3(cmphs,             "cmphs",                 0,                       IF_SVE_3K,               0x24000000,      0x2400C000,      0x24200000       )
+INST3(cmphs,             "cmphs",                 CMP,                     IF_SVE_3K,               0x24000000,      0x2400C000,      0x24200000       )
     // CMPHS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 000gggnnnnn0DDDD     2400 0000   
     // CMPHS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 110gggnnnnn0DDDD     2400 C000   
     // CMPHS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3B           00100100xx1iiiii ii0gggnnnnn0DDDD     2420 0000   
 
-INST3(cmplo,             "cmplo",                 0,                       IF_SVE_3K,               0x24000010,      0x2400E000,      0x24202000       )
+INST3(cmplo,             "cmplo",                 CMP,                     IF_SVE_3K,               0x24000010,      0x2400E000,      0x24202000       )
     // CMPLO   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 000gggnnnnn1DDDD     2400 0010   
     // CMPLO   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 111gggnnnnn0DDDD     2400 E000   
     // CMPLO   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3B           00100100xx1iiiii ii1gggnnnnn0DDDD     2420 2000   
 
-INST3(cmpls,             "cmpls",                 0,                       IF_SVE_3K,               0x24000000,      0x2400E010,      0x24202010       )
+INST3(cmpls,             "cmpls",                 CMP,                     IF_SVE_3K,               0x24000000,      0x2400E010,      0x24202010       )
     // CMPLS   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_CX_4A           00100100xx0mmmmm 000gggnnnnn0DDDD     2400 0000   
     // CMPLS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D                                        SVE_CX_4A_A         00100100xx0mmmmm 111gggnnnnn1DDDD     2400 E010   
     // CMPLS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm>                                        SVE_CY_3B           00100100xx1iiiii ii1gggnnnnn1DDDD     2420 2010   
@@ -901,27 +901,27 @@ INST3(bfmul,             "bfmul",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IM_3A        SVE_IN_4A        SVE_IX_4A        
-INST3(ldnt1d,            "ldnt1d",                0,                       IF_SVE_3U,               0xA580E000,      0xA580C000,      0xC580C000       )
+INST3(ldnt1d,            "ldnt1d",                LD,                      IF_SVE_3U,               0xA580E000,      0xA580C000,      0xC580C000       )
     // LDNT1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IM_3A           101001011000iiii 111gggnnnnnttttt     A580 E000   
     // LDNT1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]                                SVE_IN_4A           10100101100mmmmm 110gggnnnnnttttt     A580 C000   
     // LDNT1D  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IX_4A           11000101100mmmmm 110gggnnnnnttttt     C580 C000   
 
 
 //    enum               name                     info                                              SVE_JA_4A        SVE_JB_4A        SVE_JM_3A        
-INST3(stnt1d,            "stnt1d",                0,                       IF_SVE_3V,               0xE5802000,      0xE5806000,      0xE590E000       )
+INST3(stnt1d,            "stnt1d",                ST,                      IF_SVE_3V,               0xE5802000,      0xE5806000,      0xE590E000       )
     // STNT1D  {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_JA_4A           11100101100mmmmm 001gggnnnnnttttt     E580 2000   
     // STNT1D  {<Zt>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]                                  SVE_JB_4A           11100101100mmmmm 011gggnnnnnttttt     E580 6000   
     // STNT1D  {<Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                              SVE_JM_3A           111001011001iiii 111gggnnnnnttttt     E590 E000   
 
 
 //    enum               name                     info                                              SVE_ID_2A        SVE_IE_2A                   
-INST2(ldr,               "ldr",                   0,                       IF_SVE_2AA,              0x85800000,      0x85804000                  )
+INST2(ldr,               "ldr",                   LD,                      IF_SVE_2AA,              0x85800000,      0x85804000                  )
     // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_ID_2A           1000010110iiiiii 000iiinnnnn0TTTT     8580 0000   
     // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_IE_2A           1000010110iiiiii 010iiinnnnnttttt     8580 4000   
 
 
 //    enum               name                     info                                              SVE_JG_2A        SVE_JH_2A                   
-INST2(str,               "str",                   0,                       IF_SVE_2AB,              0xE5800000,      0xE5804000                  )
+INST2(str,               "str",                   ST,                      IF_SVE_2AB,              0xE5800000,      0xE5804000                  )
     // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_JG_2A           1110010110iiiiii 000iiinnnnn0TTTT     E580 0000   
     // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_JH_2A           1110010110iiiiii 010iiinnnnnttttt     E580 4000   
 
@@ -993,27 +993,27 @@ INST2(uqshl,             "uqshl",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HI_3A        SVE_HT_4A                   
-INST2(fcmeq,             "fcmeq",                 0,                       IF_SVE_2AJ,              0x65122000,      0x65006000                  )
+INST2(fcmeq,             "fcmeq",                 CMP,                     IF_SVE_2AJ,              0x65122000,      0x65006000                  )
     // FCMEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0                                          SVE_HI_3A           01100101xx010010 001gggnnnnn0DDDD     6512 2000   
     // FCMEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 011gggnnnnn0DDDD     6500 6000   
 
-INST2(fcmge,             "fcmge",                 0,                       IF_SVE_2AJ,              0x65102000,      0x65004000                  )
+INST2(fcmge,             "fcmge",                 CMP,                     IF_SVE_2AJ,              0x65102000,      0x65004000                  )
     // FCMGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0                                          SVE_HI_3A           01100101xx010000 001gggnnnnn0DDDD     6510 2000   
     // FCMGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 010gggnnnnn0DDDD     6500 4000   
 
-INST2(fcmgt,             "fcmgt",                 0,                       IF_SVE_2AJ,              0x65102010,      0x65004010                  )
+INST2(fcmgt,             "fcmgt",                 CMP,                     IF_SVE_2AJ,              0x65102010,      0x65004010                  )
     // FCMGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0                                          SVE_HI_3A           01100101xx010000 001gggnnnnn1DDDD     6510 2010   
     // FCMGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 010gggnnnnn1DDDD     6500 4010   
 
-INST2(fcmle,             "fcmle",                 0,                       IF_SVE_2AJ,              0x65112010,      0x65004000                  )
+INST2(fcmle,             "fcmle",                 CMP,                     IF_SVE_2AJ,              0x65112010,      0x65004000                  )
     // FCMLE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0                                          SVE_HI_3A           01100101xx010001 001gggnnnnn1DDDD     6511 2010   
     // FCMLE   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 010gggnnnnn0DDDD     6500 4000   
 
-INST2(fcmlt,             "fcmlt",                 0,                       IF_SVE_2AJ,              0x65112000,      0x65004010                  )
+INST2(fcmlt,             "fcmlt",                 CMP,                     IF_SVE_2AJ,              0x65112000,      0x65004010                  )
     // FCMLT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0                                          SVE_HI_3A           01100101xx010001 001gggnnnnn0DDDD     6511 2000   
     // FCMLT   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 010gggnnnnn1DDDD     6500 4010   
 
-INST2(fcmne,             "fcmne",                 0,                       IF_SVE_2AJ,              0x65132000,      0x65006010                  )
+INST2(fcmne,             "fcmne",                 CMP,                     IF_SVE_2AJ,              0x65132000,      0x65006010                  )
     // FCMNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0                                          SVE_HI_3A           01100101xx010011 001gggnnnnn0DDDD     6513 2000   
     // FCMNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 011gggnnnnn1DDDD     6500 6010   
 
@@ -1331,173 +1331,173 @@ INST2(bfsub,             "bfsub",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IF_4A        SVE_IF_4A_A                 
-INST2(ldnt1sb,           "ldnt1sb",               0,                       IF_SVE_2BN,              0x84008000,      0xC4008000                  )
+INST2(ldnt1sb,           "ldnt1sb",               LD,                      IF_SVE_2BN,              0x84008000,      0xC4008000                  )
     // LDNT1SB {<Zt>.S }, <Pg>/Z, [<Zn>.S{, <Xm>}]                                       SVE_IF_4A           10000100000mmmmm 100gggnnnnnttttt     8400 8000   
     // LDNT1SB {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IF_4A_A         11000100000mmmmm 100gggnnnnnttttt     C400 8000   
 
-INST2(ldnt1sh,           "ldnt1sh",               0,                       IF_SVE_2BN,              0x84808000,      0xC4808000                  )
+INST2(ldnt1sh,           "ldnt1sh",               LD,                      IF_SVE_2BN,              0x84808000,      0xC4808000                  )
     // LDNT1SH {<Zt>.S }, <Pg>/Z, [<Zn>.S{, <Xm>}]                                       SVE_IF_4A           10000100100mmmmm 100gggnnnnnttttt     8480 8000   
     // LDNT1SH {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IF_4A_A         11000100100mmmmm 100gggnnnnnttttt     C480 8000   
 
 
 //    enum               name                     info                                              SVE_IO_3A        SVE_IP_4A                   
-INST2(ld1rob,            "ld1rob",                0,                       IF_SVE_2BO,              0xA4202000,      0xA4200000                  )
+INST2(ld1rob,            "ld1rob",                LD,                      IF_SVE_2BO,              0xA4202000,      0xA4200000                  )
     // LD1ROB  {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001000010iiii 001gggnnnnnttttt     A420 2000   
     // LD1ROB  {<Zt>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]                                        SVE_IP_4A           10100100001mmmmm 000gggnnnnnttttt     A420 0000   
 
-INST2(ld1rod,            "ld1rod",                0,                       IF_SVE_2BO,              0xA5A02000,      0xA5A00000                  )
+INST2(ld1rod,            "ld1rod",                LD,                      IF_SVE_2BO,              0xA5A02000,      0xA5A00000                  )
     // LD1ROD  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001011010iiii 001gggnnnnnttttt     A5A0 2000   
     // LD1ROD  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]                                SVE_IP_4A           10100101101mmmmm 000gggnnnnnttttt     A5A0 0000   
 
-INST2(ld1roh,            "ld1roh",                0,                       IF_SVE_2BO,              0xA4A02000,      0xA4A00000                  )
+INST2(ld1roh,            "ld1roh",                LD,                      IF_SVE_2BO,              0xA4A02000,      0xA4A00000                  )
     // LD1ROH  {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001001010iiii 001gggnnnnnttttt     A4A0 2000   
     // LD1ROH  {<Zt>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]                                SVE_IP_4A           10100100101mmmmm 000gggnnnnnttttt     A4A0 0000   
 
-INST2(ld1row,            "ld1row",                0,                       IF_SVE_2BO,              0xA5202000,      0xA5200000                  )
+INST2(ld1row,            "ld1row",                LD,                      IF_SVE_2BO,              0xA5202000,      0xA5200000                  )
     // LD1ROW  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001010010iiii 001gggnnnnnttttt     A520 2000   
     // LD1ROW  {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]                                SVE_IP_4A           10100101001mmmmm 000gggnnnnnttttt     A520 0000   
 
-INST2(ld1rqb,            "ld1rqb",                0,                       IF_SVE_2BO,              0xA4002000,      0xA4000000                  )
+INST2(ld1rqb,            "ld1rqb",                LD,                      IF_SVE_2BO,              0xA4002000,      0xA4000000                  )
     // LD1RQB  {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001000000iiii 001gggnnnnnttttt     A400 2000   
     // LD1RQB  {<Zt>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]                                        SVE_IP_4A           10100100000mmmmm 000gggnnnnnttttt     A400 0000   
 
-INST2(ld1rqd,            "ld1rqd",                0,                       IF_SVE_2BO,              0xA5802000,      0xA5800000                  )
+INST2(ld1rqd,            "ld1rqd",                LD,                      IF_SVE_2BO,              0xA5802000,      0xA5800000                  )
     // LD1RQD  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001011000iiii 001gggnnnnnttttt     A580 2000   
     // LD1RQD  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]                                SVE_IP_4A           10100101100mmmmm 000gggnnnnnttttt     A580 0000   
 
-INST2(ld1rqh,            "ld1rqh",                0,                       IF_SVE_2BO,              0xA4802000,      0xA4800000                  )
+INST2(ld1rqh,            "ld1rqh",                LD,                      IF_SVE_2BO,              0xA4802000,      0xA4800000                  )
     // LD1RQH  {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001001000iiii 001gggnnnnnttttt     A480 2000   
     // LD1RQH  {<Zt>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]                                SVE_IP_4A           10100100100mmmmm 000gggnnnnnttttt     A480 0000   
 
-INST2(ld1rqw,            "ld1rqw",                0,                       IF_SVE_2BO,              0xA5002000,      0xA5000000                  )
+INST2(ld1rqw,            "ld1rqw",                LD,                      IF_SVE_2BO,              0xA5002000,      0xA5000000                  )
     // LD1RQW  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IO_3A           101001010000iiii 001gggnnnnnttttt     A500 2000   
     // LD1RQW  {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]                                SVE_IP_4A           10100101000mmmmm 000gggnnnnnttttt     A500 0000   
 
 
 //    enum               name                     info                                              SVE_IQ_3A        SVE_IR_4A                   
-INST2(ld2q,              "ld2q",                  0,                       IF_SVE_2BP,              0xA490E000,      0xA4A08000                  )
+INST2(ld2q,              "ld2q",                  LD,                      IF_SVE_2BP,              0xA490E000,      0xA4A08000                  )
     // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                  SVE_IQ_3A           101001001001iiii 111gggnnnnnttttt     A490 E000   
     // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #4]                      SVE_IR_4A           10100100101mmmmm 100gggnnnnnttttt     A4A0 8000   
 
-INST2(ld3q,              "ld3q",                  0,                       IF_SVE_2BP,              0xA510E000,      0xA5208000                  )
+INST2(ld3q,              "ld3q",                  LD,                      IF_SVE_2BP,              0xA510E000,      0xA5208000                  )
     // LD3Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]         SVE_IQ_3A           101001010001iiii 111gggnnnnnttttt     A510 E000   
     // LD3Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #4]             SVE_IR_4A           10100101001mmmmm 100gggnnnnnttttt     A520 8000   
 
-INST2(ld4q,              "ld4q",                  0,                       IF_SVE_2BP,              0xA590E000,      0xA5A08000                  )
+INST2(ld4q,              "ld4q",                  LD,                      IF_SVE_2BP,              0xA590E000,      0xA5A08000                  )
     // LD4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]SVE_IQ_3A           101001011001iiii 111gggnnnnnttttt     A590 E000   
     // LD4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #4]    SVE_IR_4A           10100101101mmmmm 100gggnnnnnttttt     A5A0 8000   
 
 
 //    enum               name                     info                                              SVE_IS_3A        SVE_IT_4A                   
-INST2(ld2b,              "ld2b",                  0,                       IF_SVE_2BQ,              0xA420E000,      0xA420C000                  )
+INST2(ld2b,              "ld2b",                  LD,                      IF_SVE_2BQ,              0xA420E000,      0xA420C000                  )
     // LD2B    {<Zt1>.B, <Zt2>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                  SVE_IS_3A           101001000010iiii 111gggnnnnnttttt     A420 E000   
     // LD2B    {<Zt1>.B, <Zt2>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]                              SVE_IT_4A           10100100001mmmmm 110gggnnnnnttttt     A420 C000   
 
-INST2(ld2d,              "ld2d",                  0,                       IF_SVE_2BQ,              0xA5A0E000,      0xA5A0C000                  )
+INST2(ld2d,              "ld2d",                  LD,                      IF_SVE_2BQ,              0xA5A0E000,      0xA5A0C000                  )
     // LD2D    {<Zt1>.D, <Zt2>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                  SVE_IS_3A           101001011010iiii 111gggnnnnnttttt     A5A0 E000   
     // LD2D    {<Zt1>.D, <Zt2>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]                      SVE_IT_4A           10100101101mmmmm 110gggnnnnnttttt     A5A0 C000   
 
-INST2(ld2h,              "ld2h",                  0,                       IF_SVE_2BQ,              0xA4A0E000,      0xA4A0C000                  )
+INST2(ld2h,              "ld2h",                  LD,                      IF_SVE_2BQ,              0xA4A0E000,      0xA4A0C000                  )
     // LD2H    {<Zt1>.H, <Zt2>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                  SVE_IS_3A           101001001010iiii 111gggnnnnnttttt     A4A0 E000   
     // LD2H    {<Zt1>.H, <Zt2>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]                      SVE_IT_4A           10100100101mmmmm 110gggnnnnnttttt     A4A0 C000   
 
-INST2(ld2w,              "ld2w",                  0,                       IF_SVE_2BQ,              0xA520E000,      0xA520C000                  )
+INST2(ld2w,              "ld2w",                  LD,                      IF_SVE_2BQ,              0xA520E000,      0xA520C000                  )
     // LD2W    {<Zt1>.S, <Zt2>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                  SVE_IS_3A           101001010010iiii 111gggnnnnnttttt     A520 E000   
     // LD2W    {<Zt1>.S, <Zt2>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]                      SVE_IT_4A           10100101001mmmmm 110gggnnnnnttttt     A520 C000   
 
-INST2(ld3b,              "ld3b",                  0,                       IF_SVE_2BQ,              0xA440E000,      0xA440C000                  )
+INST2(ld3b,              "ld3b",                  LD,                      IF_SVE_2BQ,              0xA440E000,      0xA440C000                  )
     // LD3B    {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]         SVE_IS_3A           101001000100iiii 111gggnnnnnttttt     A440 E000   
     // LD3B    {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]                     SVE_IT_4A           10100100010mmmmm 110gggnnnnnttttt     A440 C000   
 
-INST2(ld3d,              "ld3d",                  0,                       IF_SVE_2BQ,              0xA5C0E000,      0xA5C0C000                  )
+INST2(ld3d,              "ld3d",                  LD,                      IF_SVE_2BQ,              0xA5C0E000,      0xA5C0C000                  )
     // LD3D    {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]         SVE_IS_3A           101001011100iiii 111gggnnnnnttttt     A5C0 E000   
     // LD3D    {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]             SVE_IT_4A           10100101110mmmmm 110gggnnnnnttttt     A5C0 C000   
 
-INST2(ld3h,              "ld3h",                  0,                       IF_SVE_2BQ,              0xA4C0E000,      0xA4C0C000                  )
+INST2(ld3h,              "ld3h",                  LD,                      IF_SVE_2BQ,              0xA4C0E000,      0xA4C0C000                  )
     // LD3H    {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]         SVE_IS_3A           101001001100iiii 111gggnnnnnttttt     A4C0 E000   
     // LD3H    {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]             SVE_IT_4A           10100100110mmmmm 110gggnnnnnttttt     A4C0 C000   
 
-INST2(ld3w,              "ld3w",                  0,                       IF_SVE_2BQ,              0xA540E000,      0xA540C000                  )
+INST2(ld3w,              "ld3w",                  LD,                      IF_SVE_2BQ,              0xA540E000,      0xA540C000                  )
     // LD3W    {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]         SVE_IS_3A           101001010100iiii 111gggnnnnnttttt     A540 E000   
     // LD3W    {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]             SVE_IT_4A           10100101010mmmmm 110gggnnnnnttttt     A540 C000   
 
-INST2(ld4b,              "ld4b",                  0,                       IF_SVE_2BQ,              0xA460E000,      0xA460C000                  )
+INST2(ld4b,              "ld4b",                  LD,                      IF_SVE_2BQ,              0xA460E000,      0xA460C000                  )
     // LD4B    {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]SVE_IS_3A           101001000110iiii 111gggnnnnnttttt     A460 E000   
     // LD4B    {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]            SVE_IT_4A           10100100011mmmmm 110gggnnnnnttttt     A460 C000   
 
-INST2(ld4d,              "ld4d",                  0,                       IF_SVE_2BQ,              0xA5E0E000,      0xA5E0C000                  )
+INST2(ld4d,              "ld4d",                  LD,                      IF_SVE_2BQ,              0xA5E0E000,      0xA5E0C000                  )
     // LD4D    {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]SVE_IS_3A           101001011110iiii 111gggnnnnnttttt     A5E0 E000   
     // LD4D    {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]    SVE_IT_4A           10100101111mmmmm 110gggnnnnnttttt     A5E0 C000   
 
-INST2(ld4h,              "ld4h",                  0,                       IF_SVE_2BQ,              0xA4E0E000,      0xA4E0C000                  )
+INST2(ld4h,              "ld4h",                  LD,                      IF_SVE_2BQ,              0xA4E0E000,      0xA4E0C000                  )
     // LD4H    {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]SVE_IS_3A           101001001110iiii 111gggnnnnnttttt     A4E0 E000   
     // LD4H    {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]    SVE_IT_4A           10100100111mmmmm 110gggnnnnnttttt     A4E0 C000   
 
-INST2(ld4w,              "ld4w",                  0,                       IF_SVE_2BQ,              0xA560E000,      0xA560C000                  )
+INST2(ld4w,              "ld4w",                  LD,                      IF_SVE_2BQ,              0xA560E000,      0xA560C000                  )
     // LD4W    {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]SVE_IS_3A           101001010110iiii 111gggnnnnnttttt     A560 E000   
     // LD4W    {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]    SVE_IT_4A           10100101011mmmmm 110gggnnnnnttttt     A560 C000   
 
 
 //    enum               name                     info                                              SVE_JC_4A        SVE_JO_3A                   
-INST2(st2b,              "st2b",                  0,                       IF_SVE_2BR,              0xE4206000,      0xE430E000                  )
+INST2(st2b,              "st2b",                  ST,                      IF_SVE_2BR,              0xE4206000,      0xE430E000                  )
     // ST2B    {<Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>, <Xm>]                                SVE_JC_4A           11100100001mmmmm 011gggnnnnnttttt     E420 6000   
     // ST2B    {<Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                    SVE_JO_3A           111001000011iiii 111gggnnnnnttttt     E430 E000   
 
-INST2(st2d,              "st2d",                  0,                       IF_SVE_2BR,              0xE5A06000,      0xE5B0E000                  )
+INST2(st2d,              "st2d",                  ST,                      IF_SVE_2BR,              0xE5A06000,      0xE5B0E000                  )
     // ST2D    {<Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]                        SVE_JC_4A           11100101101mmmmm 011gggnnnnnttttt     E5A0 6000   
     // ST2D    {<Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                    SVE_JO_3A           111001011011iiii 111gggnnnnnttttt     E5B0 E000   
 
-INST2(st2h,              "st2h",                  0,                       IF_SVE_2BR,              0xE4A06000,      0xE4B0E000                  )
+INST2(st2h,              "st2h",                  ST,                      IF_SVE_2BR,              0xE4A06000,      0xE4B0E000                  )
     // ST2H    {<Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]                        SVE_JC_4A           11100100101mmmmm 011gggnnnnnttttt     E4A0 6000   
     // ST2H    {<Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                    SVE_JO_3A           111001001011iiii 111gggnnnnnttttt     E4B0 E000   
 
-INST2(st2w,              "st2w",                  0,                       IF_SVE_2BR,              0xE5206000,      0xE530E000                  )
+INST2(st2w,              "st2w",                  ST,                      IF_SVE_2BR,              0xE5206000,      0xE530E000                  )
     // ST2W    {<Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]                        SVE_JC_4A           11100101001mmmmm 011gggnnnnnttttt     E520 6000   
     // ST2W    {<Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                    SVE_JO_3A           111001010011iiii 111gggnnnnnttttt     E530 E000   
 
-INST2(st3b,              "st3b",                  0,                       IF_SVE_2BR,              0xE4406000,      0xE450E000                  )
+INST2(st3b,              "st3b",                  ST,                      IF_SVE_2BR,              0xE4406000,      0xE450E000                  )
     // ST3B    {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>, [<Xn|SP>, <Xm>]                       SVE_JC_4A           11100100010mmmmm 011gggnnnnnttttt     E440 6000   
     // ST3B    {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]           SVE_JO_3A           111001000101iiii 111gggnnnnnttttt     E450 E000   
 
-INST2(st3d,              "st3d",                  0,                       IF_SVE_2BR,              0xE5C06000,      0xE5D0E000                  )
+INST2(st3d,              "st3d",                  ST,                      IF_SVE_2BR,              0xE5C06000,      0xE5D0E000                  )
     // ST3D    {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]               SVE_JC_4A           11100101110mmmmm 011gggnnnnnttttt     E5C0 6000   
     // ST3D    {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]           SVE_JO_3A           111001011101iiii 111gggnnnnnttttt     E5D0 E000   
 
-INST2(st3h,              "st3h",                  0,                       IF_SVE_2BR,              0xE4C06000,      0xE4D0E000                  )
+INST2(st3h,              "st3h",                  ST,                      IF_SVE_2BR,              0xE4C06000,      0xE4D0E000                  )
     // ST3H    {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]               SVE_JC_4A           11100100110mmmmm 011gggnnnnnttttt     E4C0 6000   
     // ST3H    {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]           SVE_JO_3A           111001001101iiii 111gggnnnnnttttt     E4D0 E000   
 
-INST2(st3w,              "st3w",                  0,                       IF_SVE_2BR,              0xE5406000,      0xE550E000                  )
+INST2(st3w,              "st3w",                  ST,                      IF_SVE_2BR,              0xE5406000,      0xE550E000                  )
     // ST3W    {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]               SVE_JC_4A           11100101010mmmmm 011gggnnnnnttttt     E540 6000   
     // ST3W    {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]           SVE_JO_3A           111001010101iiii 111gggnnnnnttttt     E550 E000   
 
-INST2(st4b,              "st4b",                  0,                       IF_SVE_2BR,              0xE4606000,      0xE470E000                  )
+INST2(st4b,              "st4b",                  ST,                      IF_SVE_2BR,              0xE4606000,      0xE470E000                  )
     // ST4B    {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>, [<Xn|SP>, <Xm>]              SVE_JC_4A           11100100011mmmmm 011gggnnnnnttttt     E460 6000   
     // ST4B    {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]  SVE_JO_3A           111001000111iiii 111gggnnnnnttttt     E470 E000   
 
-INST2(st4d,              "st4d",                  0,                       IF_SVE_2BR,              0xE5E06000,      0xE5F0E000                  )
+INST2(st4d,              "st4d",                  ST,                      IF_SVE_2BR,              0xE5E06000,      0xE5F0E000                  )
     // ST4D    {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]      SVE_JC_4A           11100101111mmmmm 011gggnnnnnttttt     E5E0 6000   
     // ST4D    {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]  SVE_JO_3A           111001011111iiii 111gggnnnnnttttt     E5F0 E000   
 
-INST2(st4h,              "st4h",                  0,                       IF_SVE_2BR,              0xE4E06000,      0xE4F0E000                  )
+INST2(st4h,              "st4h",                  ST,                      IF_SVE_2BR,              0xE4E06000,      0xE4F0E000                  )
     // ST4H    {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]      SVE_JC_4A           11100100111mmmmm 011gggnnnnnttttt     E4E0 6000   
     // ST4H    {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]  SVE_JO_3A           111001001111iiii 111gggnnnnnttttt     E4F0 E000   
 
-INST2(st4w,              "st4w",                  0,                       IF_SVE_2BR,              0xE5606000,      0xE570E000                  )
+INST2(st4w,              "st4w",                  ST,                      IF_SVE_2BR,              0xE5606000,      0xE570E000                  )
     // ST4W    {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]      SVE_JC_4A           11100101011mmmmm 011gggnnnnnttttt     E560 6000   
     // ST4W    {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]  SVE_JO_3A           111001010111iiii 111gggnnnnnttttt     E570 E000   
 
 
 //    enum               name                     info                                              SVE_JE_3A        SVE_JF_4A                   
-INST2(st2q,              "st2q",                  0,                       IF_SVE_2BS,              0xE4400000,      0xE4600000                  )
+INST2(st2q,              "st2q",                  ST,                      IF_SVE_2BS,              0xE4400000,      0xE4600000                  )
     // ST2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]                    SVE_JE_3A           111001000100iiii 000gggnnnnnttttt     E440 0000   
     // ST2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #4]                        SVE_JF_4A           11100100011mmmmm 000gggnnnnnttttt     E460 0000   
 
-INST2(st3q,              "st3q",                  0,                       IF_SVE_2BS,              0xE4800000,      0xE4A00000                  )
+INST2(st3q,              "st3q",                  ST,                      IF_SVE_2BS,              0xE4800000,      0xE4A00000                  )
     // ST3Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]           SVE_JE_3A           111001001000iiii 000gggnnnnnttttt     E480 0000   
     // ST3Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #4]               SVE_JF_4A           11100100101mmmmm 000gggnnnnnttttt     E4A0 0000   
 
-INST2(st4q,              "st4q",                  0,                       IF_SVE_2BS,              0xE4C00000,      0xE4E00000                  )
+INST2(st4q,              "st4q",                  ST,                      IF_SVE_2BS,              0xE4C00000,      0xE4E00000                  )
     // ST4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]  SVE_JE_3A           111001001100iiii 000gggnnnnnttttt     E4C0 0000   
     // ST4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #4]      SVE_JF_4A           11100100111mmmmm 000gggnnnnnttttt     E4E0 0000   
 
@@ -1791,19 +1791,19 @@ INST1(ftsmul,            "ftsmul",                0,                       IF_SV
     // FTSMUL  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100101xx0mmmmm 000011nnnnnddddd     6500 0C00   
 
 //    enum               name                     info                                              SVE_HT_4A                                    
-INST1(facge,             "facge",                 0,                       IF_SVE_HT_4A,            0x6500C010                                   )
+INST1(facge,             "facge",                 CMP,                     IF_SVE_HT_4A,            0x6500C010                                   )
     // FACGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 110gggnnnnn1DDDD     6500 C010   
 
-INST1(facgt,             "facgt",                 0,                       IF_SVE_HT_4A,            0x6500E010                                   )
+INST1(facgt,             "facgt",                 CMP,                     IF_SVE_HT_4A,            0x6500E010                                   )
     // FACGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 111gggnnnnn1DDDD     6500 E010   
 
-INST1(facle,             "facle",                 0,                       IF_SVE_HT_4A,            0x6500C010                                   )
+INST1(facle,             "facle",                 CMP,                     IF_SVE_HT_4A,            0x6500C010                                   )
     // FACLE   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 110gggnnnnn1DDDD     6500 C010   
 
-INST1(faclt,             "faclt",                 0,                       IF_SVE_HT_4A,            0x6500E010                                   )
+INST1(faclt,             "faclt",                 CMP,                     IF_SVE_HT_4A,            0x6500E010                                   )
     // FACLT   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 111gggnnnnn1DDDD     6500 E010   
 
-INST1(fcmuo,             "fcmuo",                 0,                       IF_SVE_HT_4A,            0x6500C000                                   )
+INST1(fcmuo,             "fcmuo",                 CMP,                     IF_SVE_HT_4A,            0x6500C000                                   )
     // FCMUO   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>                                      SVE_HT_4A           01100101xx0mmmmm 110gggnnnnn0DDDD     6500 C000   
 
 
@@ -2769,81 +2769,76 @@ INST1(fnmsb,             "fnmsb",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IC_3A_C                                  
-INST1(ld1rb,             "ld1rb",                 0,                       IF_SVE_IC_3A_C,          0x84408000                                   )
+INST1(ld1rb,             "ld1rb",                 LD,                      IF_SVE_IC_3A_C,          0x84408000                                   )
     // LD1RB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IC_3A_C         1000010001iiiiii 100gggnnnnnttttt     8440 8000   
 
 
 //    enum               name                     info                                              SVE_IC_3A                                    
-INST1(ld1rd,             "ld1rd",                 0,                       IF_SVE_IC_3A,            0x85C0E000                                   )
+INST1(ld1rd,             "ld1rd",                 LD,                      IF_SVE_IC_3A,            0x85C0E000                                   )
     // LD1RD   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IC_3A           1000010111iiiiii 111gggnnnnnttttt     85C0 E000   
 
-INST1(ld1rsw,            "ld1rsw",                0,                       IF_SVE_IC_3A,            0x84C08000                                   )
+INST1(ld1rsw,            "ld1rsw",                LD,                      IF_SVE_IC_3A,            0x84C08000                                   )
     // LD1RSW  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IC_3A           1000010011iiiiii 100gggnnnnnttttt     84C0 8000   
 
 
 //    enum               name                     info                                              SVE_IC_3A_B                                  
-INST1(ld1rh,             "ld1rh",                 0,                       IF_SVE_IC_3A_B,          0x84C08000                                   )
+INST1(ld1rh,             "ld1rh",                 LD,                      IF_SVE_IC_3A_B,          0x84C08000                                   )
     // LD1RH   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IC_3A_B         1000010011iiiiii 100gggnnnnnttttt     84C0 8000   
 
-INST1(ld1rsb,            "ld1rsb",                0,                       IF_SVE_IC_3A_B,          0x85C08000                                   )
+INST1(ld1rsb,            "ld1rsb",                LD,                      IF_SVE_IC_3A_B,          0x85C08000                                   )
     // LD1RSB  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IC_3A_B         1000010111iiiiii 100gggnnnnnttttt     85C0 8000   
 
 
 //    enum               name                     info                                              SVE_IC_3A_A                                  
-INST1(ld1rsh,            "ld1rsh",                0,                       IF_SVE_IC_3A_A,          0x85408000                                   )
+INST1(ld1rsh,            "ld1rsh",                LD,                      IF_SVE_IC_3A_A,          0x85408000                                   )
     // LD1RSH  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IC_3A_A         1000010101iiiiii 100gggnnnnnttttt     8540 8000   
 
-INST1(ld1rw,             "ld1rw",                 0,                       IF_SVE_IC_3A_A,          0x8540C000                                   )
+INST1(ld1rw,             "ld1rw",                 LD,                      IF_SVE_IC_3A_A,          0x8540C000                                   )
     // LD1RW   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]                                    SVE_IC_3A_A         1000010101iiiiii 110gggnnnnnttttt     8540 C000   
 
 
 //    enum               name                     info                                              SVE_IL_3A_C                                  
-INST1(ldnf1b,            "ldnf1b",                0,                       IF_SVE_IL_3A_C,          0xA410A000                                   )
+INST1(ldnf1b,            "ldnf1b",                LD,                      IF_SVE_IL_3A_C,          0xA410A000                                   )
     // LDNF1B  {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_C         101001000001iiii 101gggnnnnnttttt     A410 A000   
 
 
 //    enum               name                     info                                              SVE_IL_3A                                    
-INST1(ldnf1d,            "ldnf1d",                0,                       IF_SVE_IL_3A,            0xA5F0A000                                   )
+INST1(ldnf1d,            "ldnf1d",                LD,                      IF_SVE_IL_3A,            0xA5F0A000                                   )
     // LDNF1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A           101001011111iiii 101gggnnnnnttttt     A5F0 A000   
 
-INST1(ldnf1sw,           "ldnf1sw",               0,                       IF_SVE_IL_3A,            0xA490A000                                   )
+INST1(ldnf1sw,           "ldnf1sw",               LD,                      IF_SVE_IL_3A,            0xA490A000                                   )
     // LDNF1SW {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A           101001001001iiii 101gggnnnnnttttt     A490 A000   
 
 
 //    enum               name                     info                                              SVE_IL_3A_B                                  
-INST1(ldnf1h,            "ldnf1h",                0,                       IF_SVE_IL_3A_B,          0xA490A000                                   )
+INST1(ldnf1h,            "ldnf1h",                LD,                      IF_SVE_IL_3A_B,          0xA490A000                                   )
     // LDNF1H  {<Zt>.X }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_B         101001001001iiii 101gggnnnnnttttt     A490 A000   
 
-INST1(ldnf1sb,           "ldnf1sb",               0,                       IF_SVE_IL_3A_B,          0xA590A000                                   )
+INST1(ldnf1sb,           "ldnf1sb",               LD,                      IF_SVE_IL_3A_B,          0xA590A000                                   )
     // LDNF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_B         101001011001iiii 101gggnnnnnttttt     A590 A000   
 
 
 //    enum               name                     info                                              SVE_IL_3A_A                                  
-INST1(ldnf1sh,           "ldnf1sh",               0,                       IF_SVE_IL_3A_A,          0xA510A000                                   )
+INST1(ldnf1sh,           "ldnf1sh",               LD,                      IF_SVE_IL_3A_A,          0xA510A000                                   )
     // LDNF1SH {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_A         101001010001iiii 101gggnnnnnttttt     A510 A000   
 
-INST1(ldnf1w,            "ldnf1w",                0,                       IF_SVE_IL_3A_A,          0xA550A000                                   )
+INST1(ldnf1w,            "ldnf1w",                LD,                      IF_SVE_IL_3A_A,          0xA550A000                                   )
     // LDNF1W  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_A         101001010101iiii 101gggnnnnnttttt     A550 A000   
 
 
 //    enum               name                     info                                              SVE_IW_4A                                    
-INST1(ld1q,              "ld1q",                  0,                       IF_SVE_IW_4A,            0xC400A000                                   )
+INST1(ld1q,              "ld1q",                  LD,                      IF_SVE_IW_4A,            0xC400A000                                   )
     // LD1Q    {<Zt>.Q }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IW_4A           11000100000mmmmm 101gggnnnnnttttt     C400 A000   
 
 
 //    enum               name                     info                                              SVE_IX_4A                                    
-INST1(ldnt1sw,           "ldnt1sw",               0,                       IF_SVE_IX_4A,            0xC5008000                                   )
+INST1(ldnt1sw,           "ldnt1sw",               LD,                      IF_SVE_IX_4A,            0xC5008000                                   )
     // LDNT1SW {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]                                       SVE_IX_4A           11000101000mmmmm 100gggnnnnnttttt     C500 8000   
 
 
 //    enum               name                     info                                              SVE_IY_4A                                    
-INST1(st1q,              "st1q",                  0,                       IF_SVE_IY_4A,            0xE4202000                                   )
+INST1(st1q,              "st1q",                  ST,                      IF_SVE_IY_4A,            0xE4202000                                   )
     // ST1Q    {<Zt>.Q }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IY_4A           11100100001mmmmm 001gggnnnnnttttt     E420 2000
-
-
-// TODO-SVE: Removable once REG_V0 and REG_P0 are distinct
-INST1(str_mask,          "str_mask",              0,                       IF_SN_0A,                BAD_CODE)
-INST1(ldr_mask,          "ldr_mask",              0,                       IF_SN_0A,                BAD_CODE)
 
 // clang-format on
 

@@ -90,7 +90,7 @@ namespace System.Net.Http
             }
             set
             {
-                if ((value != null) && HttpRuleParser.ContainsNewLine(value))
+                if ((value != null) && HttpRuleParser.ContainsNewLineOrNull(value))
                 {
                     throw new FormatException(SR.net_http_reasonphrase_format_error);
                 }
@@ -177,27 +177,29 @@ namespace System.Net.Http
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[512]);
 
             sb.Append("StatusCode: ");
-            sb.Append((int)_statusCode);
+            sb.AppendSpanFormattable((int)_statusCode);
 
             sb.Append(", ReasonPhrase: '");
             sb.Append(ReasonPhrase ?? "<null>");
 
             sb.Append("', Version: ");
-            sb.Append(_version);
+            sb.AppendSpanFormattable(_version);
 
             sb.Append(", Content: ");
             sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
 
-            sb.AppendLine(", Headers:");
-            HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
+            sb.Append(", Headers:");
+            sb.Append(Environment.NewLine);
+            HeaderUtilities.DumpHeaders(ref sb, _headers, _content?.Headers);
 
             if (_trailingHeaders != null)
             {
-                sb.AppendLine(", Trailing Headers:");
-                HeaderUtilities.DumpHeaders(sb, _trailingHeaders);
+                sb.Append(", Trailing Headers:");
+                sb.Append(Environment.NewLine);
+                HeaderUtilities.DumpHeaders(ref sb, _trailingHeaders);
             }
 
             return sb.ToString();

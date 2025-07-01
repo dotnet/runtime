@@ -5,6 +5,10 @@
 #include "pal_compiler.h"
 #include "opensslshim.h"
 
+// index for storing an opaque pointer of used (client) certificate in SSL_SESSION.
+// we need dedicated index in order to tell OpenSSL how to copy the pointer during SSL_SESSION_dup.
+extern int g_ssl_sess_cert_index;
+
 /*
 These values should be kept in sync with System.Security.Authentication.SslProtocols.
 */
@@ -184,6 +188,11 @@ OpenSSL holds reference to it and it must not be freed.
 PALEXPORT const char* CryptoNative_SslGetServerName(SSL* ssl);
 
 /*
+Returns session associated with given ssl.
+*/
+PALEXPORT SSL_SESSION* CryptoNative_SslGetSession(SSL* ssl);
+
+/*
 This function will attach existing ssl session for possible TLS resume.
 */
 PALEXPORT int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION* session);
@@ -327,6 +336,13 @@ Returns the certificate presented by the peer.
 PALEXPORT X509* CryptoNative_SslGetPeerCertificate(SSL* ssl);
 
 /*
+Shims the SSL_get_certificate method.
+
+Returns the certificate representing local peer.
+*/
+PALEXPORT X509* CryptoNative_SslGetCertificate(SSL* ssl);
+
+/*
 Shims the SSL_get_peer_cert_chain method.
 
 Returns the certificate chain presented by the peer.
@@ -451,6 +467,16 @@ Shims the SSL_session_reused macro.
 PALEXPORT int32_t CryptoNative_SslSessionReused(SSL* ssl);
 
 /*
+Sets the app data pointer for the given session instance.
+*/
+PALEXPORT void CryptoNative_SslSessionSetData(SSL_SESSION* session, void* val);
+
+/*
+Returns the stored application data pointer.
+*/
+PALEXPORT void* CryptoNative_SslSessionGetData(SSL_SESSION* session);
+
+/*
 Adds the given certificate to the extra chain certificates associated with ctx.
 
 libssl frees the x509 object.
@@ -497,6 +523,16 @@ Shims the SSL_set_tlsext_host_name method.
 PALEXPORT int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name);
 
 /*
+Shims the SSL_set1_sigalgs_list method.
+*/
+PALEXPORT int32_t CryptoNative_SslSetSigalgs(SSL* ssl, uint8_t* str);
+
+/*
+Shim for SSL_set_client_sigalgs
+*/
+PALEXPORT int32_t CryptoNative_SslSetClientSigalgs(SSL* ssl, uint8_t* str);
+
+/*
 Shims the SSL_get_current_cipher and SSL_CIPHER_get_id.
 */
 PALEXPORT int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId);
@@ -506,6 +542,11 @@ Looks up a cipher by the IANA identifier, returns a shared string for the OpenSS
 and emits a value indicating if the cipher belongs to the SSL2-TLS1.2 list, or the TLS1.3+ list.
 */
 PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower);
+
+/*
+Returns the signature algorithms enabled by default
+*/
+PALEXPORT int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* count);
 
 /*
 Checks if given protocol version is supported.

@@ -457,6 +457,25 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task PrimaryConstructorWithParameterUsedInMethodOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C(ILogger logger)
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+
+                    private void M2()
+                    {
+                        logger.LogInformation(""M2"");
+                    }
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
         public async Task PrimaryConstructorOnOtherPartialDeclarationOK()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
@@ -516,7 +535,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     public partial void M1();
                 }
             ");
-            
+
             Assert.Equal(2, diagnostics.Count);
 
             Assert.Equal(DiagnosticDescriptors.PrimaryConstructorParameterLoggerHidden.Id, diagnostics[0].Id);
@@ -967,6 +986,23 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Empty(diagnostics);    // should fail quietly on broken code
+        }
+
+        [Fact]
+        public async Task EventIdGenerationTest()
+        {
+            // hashing Dzoggee should not result breaking generation.
+            // in our hashing, Dzoggee result to int.MinValue before we convert it to non-negative value.
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using Microsoft.Extensions.Logging;
+                internal static partial class LoggerExtensions
+                {
+                    [LoggerMessage(Level = LogLevel.Information)]
+                    public static partial void Dzoggee(this ILogger logger);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
         }
 
         [Fact]

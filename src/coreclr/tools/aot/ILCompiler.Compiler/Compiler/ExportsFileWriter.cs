@@ -13,11 +13,11 @@ namespace ILCompiler
     public class ExportsFileWriter
     {
         private readonly string _exportsFile;
-        private readonly IEnumerable<string> _exportSymbols;
+        private readonly string[] _exportSymbols;
         private readonly List<EcmaMethod> _methods;
         private readonly TypeSystemContext _context;
 
-        public ExportsFileWriter(TypeSystemContext context, string exportsFile, IEnumerable<string> exportSymbols)
+        public ExportsFileWriter(TypeSystemContext context, string exportsFile, string[] exportSymbols)
         {
             _exportsFile = exportsFile;
             _exportSymbols = exportSymbols;
@@ -26,7 +26,7 @@ namespace ILCompiler
         }
 
         public void AddExportedMethods(IEnumerable<EcmaMethod> methods)
-            => _methods.AddRange(methods.Where(m => m.Module != _context.SystemModule));
+            => _methods.AddRange(methods);
 
         public void EmitExportedMethods()
         {
@@ -41,7 +41,7 @@ namespace ILCompiler
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"   {method.GetUnmanagedCallersOnlyExportName()}");
                 }
-                else if(_context.Target.IsApplePlatform)
+                else if (_context.Target.IsApplePlatform)
                 {
                     foreach (string symbol in _exportSymbols)
                         streamWriter.WriteLine($"_{symbol}");
@@ -51,11 +51,14 @@ namespace ILCompiler
                 else
                 {
                     streamWriter.WriteLine("V1.0 {");
-                    streamWriter.WriteLine("    global:");
-                    foreach (string symbol in _exportSymbols)
-                        streamWriter.WriteLine($"        {symbol};");
-                    foreach (var method in _methods)
-                        streamWriter.WriteLine($"        {method.GetUnmanagedCallersOnlyExportName()};");
+                    if (_exportSymbols.Length != 0 || _methods.Count != 0)
+                    {
+                        streamWriter.WriteLine("    global:");
+                        foreach (string symbol in _exportSymbols)
+                            streamWriter.WriteLine($"        {symbol};");
+                        foreach (var method in _methods)
+                            streamWriter.WriteLine($"        {method.GetUnmanagedCallersOnlyExportName()};");
+                    }
                     streamWriter.WriteLine("    local: *;");
                     streamWriter.WriteLine("};");
                 }

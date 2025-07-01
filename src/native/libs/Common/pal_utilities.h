@@ -12,7 +12,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <unistd.h>
+#ifndef  _WIN32
+    #include <unistd.h>
+#endif
 #include <limits.h>
 
 #include <minipal/utils.h>
@@ -69,6 +71,7 @@ inline static int ToFileDescriptorUnchecked(intptr_t fd)
     return (int)fd;
 }
 
+#ifndef _WIN32
 /**
 * Converts an intptr_t to a file descriptor.
 * intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
@@ -86,6 +89,7 @@ static inline bool CheckInterrupted(ssize_t result)
 {
     return result < 0 && errno == EINTR;
 }
+#endif
 
 inline static uint32_t Int32ToUint32(int32_t value)
 {

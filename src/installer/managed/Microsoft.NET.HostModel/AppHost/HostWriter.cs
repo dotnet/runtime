@@ -3,11 +3,11 @@
 
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.NET.HostModel.MachO;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -23,6 +23,36 @@ namespace Microsoft.NET.HostModel.AppHost
         private const string AppBinaryPathPlaceholder = "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2";
         private static readonly byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
+        // See placeholder array in corehost.cpp
+        private const int MaxAppBinaryPathSizeInBytes = 1024;
+
+        /// <summary>
+        /// Value embedded in default apphost executable for configuration of how it will search for the .NET install
+        /// </summary>
+        private const string DotNetSearchPlaceholder = "\0\019ff3e9c3602ae8e841925bb461a0adb064a1f1903667a5e0d87e8f608f425ac";
+        private static readonly byte[] DotNetSearchPlaceholderSearchValue = Encoding.UTF8.GetBytes(DotNetSearchPlaceholder);
+
+        // See placeholder array in hostfxr_resolver.cpp
+        private const int MaxDotNetSearchSizeInBytes = 512;
+        private const int MaxAppRelativeDotNetSizeInBytes = MaxDotNetSearchSizeInBytes - 3; // -2 for search location + null, -1 for null terminator
+
+        public class DotNetSearchOptions
+        {
+            // Keep in sync with fxr_resolver::search_location in fxr_resolver.h
+            [Flags]
+            public enum SearchLocation : byte
+            {
+                Default,
+                AppLocal = 1 << 0,
+                AppRelative = 1 << 1,
+                EnvironmentVariable = 1 << 2,
+                Global = 1 << 3,
+            }
+
+            public SearchLocation Location { get; set; } = SearchLocation.Default;
+            public string AppRelativeDotNet { get; set; }
+        }
+
         /// <summary>
         /// Create an AppHost with embedded configuration of app binary location
         /// </summary>
@@ -31,27 +61,41 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="appBinaryFilePath">Full path to app binary or relative path to the result apphost file</param>
         /// <param name="windowsGraphicalUserInterface">Specify whether to set the subsystem to GUI. Only valid for PE apphosts.</param>
         /// <param name="assemblyToCopyResourcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
-        /// <param name="enableMacOSCodeSign">Sign the app binary using codesign with an anonymous certificate.</param>
+        /// <param name="enableMacOSCodeSign">Sign the app binary with an anonymous certificate. Only use when the AppHost is a Mach-O file built for MacOS.</param>
+        /// <param name="disableCetCompat">Remove CET Shadow Stack compatibility flag if set</param>
+        /// <param name="dotNetSearchOptions">Options for how the created apphost should look for the .NET install</param>
         public static void CreateAppHost(
             string appHostSourceFilePath,
             string appHostDestinationFilePath,
             string appBinaryFilePath,
             bool windowsGraphicalUserInterface = false,
             string assemblyToCopyResourcesFrom = null,
-            bool enableMacOSCodeSign = false)
+            bool enableMacOSCodeSign = false,
+            bool disableCetCompat = false,
+            DotNetSearchOptions dotNetSearchOptions = null)
         {
-            var bytesToWrite = Encoding.UTF8.GetBytes(appBinaryFilePath);
-            if (bytesToWrite.Length > 1024)
+            byte[] appPathBytes = Encoding.UTF8.GetBytes(appBinaryFilePath);
+            if (appPathBytes.Length > MaxAppBinaryPathSizeInBytes)
             {
-                throw new AppNameTooLongException(appBinaryFilePath);
+                throw new AppNameTooLongException(appBinaryFilePath, MaxAppBinaryPathSizeInBytes);
             }
+
+            byte[] searchOptionsBytes = dotNetSearchOptions != null
+                ? GetSearchOptionBytes(dotNetSearchOptions)
+                : null;
 
             bool appHostIsPEImage = false;
 
-            void RewriteAppHost(MemoryMappedViewAccessor accessor)
+            void RewriteAppHost(MemoryMappedFile mappedFile, MemoryMappedViewAccessor accessor)
             {
                 // Re-write the destination apphost with the proper contents.
-                BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
+                BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, appPathBytes);
+
+                // Update the .NET search configuration
+                if (searchOptionsBytes != null)
+                {
+                    BinaryUtils.SearchAndReplace(accessor, DotNetSearchPlaceholderSearchValue, searchOptionsBytes);
+                }
 
                 appHostIsPEImage = PEUtils.IsPEImage(accessor);
 
@@ -64,82 +108,72 @@ namespace Microsoft.NET.HostModel.AppHost
 
                     PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
                 }
+
+                if (disableCetCompat && appHostIsPEImage)
+                {
+                    PEUtils.RemoveCetCompatBit(mappedFile, accessor);
+                }
             }
 
             try
             {
                 RetryUtil.RetryOnIOError(() =>
                 {
-                    FileStream appHostSourceStream = null;
-                    MemoryMappedFile memoryMappedFile = null;
-                    MemoryMappedViewAccessor memoryMappedViewAccessor = null;
-                    try
-                    {
-                        // Open the source host file.
-                        appHostSourceStream = new FileStream(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
-                        memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
-                        memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
+                    bool isMachOImage;
+                    // MacOS requires a new inode to be created when updating a signed file, so we'll delete the file and create a new one.
+                    if (File.Exists(appHostDestinationFilePath))
+                        File.Delete(appHostDestinationFilePath);
 
+                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.CreateNew, FileAccess.ReadWrite))
+                    {
+                        using (FileStream appHostSourceStream = new(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+                        {
+                            isMachOImage = MachObjectFile.IsMachOImage(appHostSourceStream);
+                            if (!isMachOImage && enableMacOSCodeSign)
+                            {
+                                throw new InvalidDataException("Cannot sign a non-Mach-O file.");
+                            }
+                            appHostSourceStream.CopyTo(appHostDestinationStream);
+                        }
                         // Get the size of the source app host to ensure that we don't write extra data to the destination.
                         // On Windows, the size of the view accessor is rounded up to the next page boundary.
-                        long sourceAppHostLength = appHostSourceStream.Length;
+                        long appHostLength = appHostDestinationStream.Length;
+                        string destinationFileName = Path.GetFileName(appHostDestinationFilePath);
+                        // On Mac, we need to extend the file size to accommodate the signature.
+                        long appHostTmpCapacity = enableMacOSCodeSign ?
+                            appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName)
+                            : appHostLength;
 
-                        // Transform the host file in-memory.
-                        RewriteAppHost(memoryMappedViewAccessor);
-
-                        // Save the transformed host.
-                        using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create))
+                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostTmpCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+                        using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostTmpCapacity, MemoryMappedFileAccess.ReadWrite))
                         {
-                            BinaryUtils.WriteToStream(memoryMappedViewAccessor, fileStream, sourceAppHostLength);
-
-                            // Remove the signature from MachO hosts.
-                            if (!appHostIsPEImage)
+                            // Transform the host file in-memory.
+                            RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
+                            if (isMachOImage)
                             {
-                                MachOUtils.RemoveSignature(fileStream);
-                            }
-
-                            if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
-                            {
-                                using var updater = new ResourceUpdater(fileStream, true);
-                                updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
-                                updater.Update();
+                                IMachOFileAccess file = new MemoryMappedMachOViewAccessor(memoryMappedViewAccessor);
+                                if (enableMacOSCodeSign)
+                                {
+                                    MachObjectFile machObjectFile = MachObjectFile.Create(file);
+                                    appHostLength = machObjectFile.AdHocSignFile(file, destinationFileName);
+                                }
+                                else if (MachObjectFile.RemoveCodeSignatureIfPresent(file, out long? length))
+                                {
+                                    appHostLength = length.Value;
+                                }
                             }
                         }
-                    }
-                    finally
-                    {
-                        memoryMappedViewAccessor?.Dispose();
-                        memoryMappedFile?.Dispose();
-                        appHostSourceStream?.Dispose();
+                        appHostDestinationStream.SetLength(appHostLength);
+
+                        if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                        {
+                            using var updater = new ResourceUpdater(appHostDestinationStream, true);
+                            updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
+                            updater.Update();
+                        }
                     }
                 });
-
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
-                    const int EINTR = 4;
-                    int chmodReturnCode = 0;
-
-                    do
-                    {
-                        chmodReturnCode = chmod(appHostDestinationFilePath, filePermissionOctal);
-                    }
-                    while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
-
-                    if (chmodReturnCode == -1)
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
-                    }
-
-                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
-                    {
-                        (int exitCode, string stdErr) = HostModelUtils.RunCodesign("-s -", appHostDestinationFilePath);
-                        if (exitCode != 0)
-                        {
-                            throw new AppHostSigningException(exitCode, stdErr);
-                        }
-                    }
-                }
+                Chmod755(appHostDestinationFilePath);
             }
             catch (Exception ex)
             {
@@ -162,9 +196,11 @@ namespace Microsoft.NET.HostModel.AppHost
         /// </summary>
         /// <param name="appHostPath">The path of Apphost template, which has the place holder</param>
         /// <param name="bundleHeaderOffset">The offset to the location of bundle header</param>
+        /// <param name="macosCodesign">Whether to ad-hoc sign the bundle as a Mach-O executable</param>
         public static void SetAsBundle(
             string appHostPath,
-            long bundleHeaderOffset)
+            long bundleHeaderOffset,
+            bool macosCodesign = false)
         {
             byte[] bundleHeaderPlaceholder = {
                 // 8 bytes represent the bundle header-offset
@@ -179,17 +215,59 @@ namespace Microsoft.NET.HostModel.AppHost
 
             // Re-write the destination apphost with the proper contents.
             RetryUtil.RetryOnIOError(() =>
-                BinaryUtils.SearchAndReplace(appHostPath,
-                                             bundleHeaderPlaceholder,
-                                             BitConverter.GetBytes(bundleHeaderOffset),
-                                             pad0s: false));
+            {
+                string tmpFile = null;
+                try
+                {
+                    // MacOS keeps a cache of file signatures. To avoid using the cached value,
+                    // we need to create a new inode with the contents of the old file, sign it,
+                    // and copy it the original file path.
+                    tmpFile = Path.GetTempFileName();
+                    using (FileStream newBundleStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
+                    {
+                        using (FileStream oldBundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.Read))
+                        {
+                            oldBundleStream.CopyTo(newBundleStream);
+                        }
 
-            RetryUtil.RetryOnIOError(() =>
-                MachOUtils.AdjustHeadersForBundle(appHostPath));
+                        long bundleSize = newBundleStream.Length;
+                        long mmapFileSize = macosCodesign
+                            ? bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
+                            : bundleSize;
+                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(newBundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
+                        using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                        {
+                            BinaryUtils.SearchAndReplace(accessor,
+                                                        bundleHeaderPlaceholder,
+                                                        BitConverter.GetBytes(bundleHeaderOffset),
+                                                        pad0s: false);
 
-            // Memory-mapped write does not updating last write time
-            RetryUtil.RetryOnIOError(() =>
-                File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
+                            var file = new MemoryMappedMachOViewAccessor(accessor);
+                            if (MachObjectFile.IsMachOImage(file))
+                            {
+                                var machObjectFile = MachObjectFile.Create(file);
+                                if (machObjectFile.HasSignature)
+                                    throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
+
+                                bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, file);
+                                if (!wasBundled)
+                                    throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
+
+                                if (macosCodesign)
+                                    bundleSize = machObjectFile.AdHocSignFile(file, Path.GetFileName(appHostPath));
+                            }
+                        }
+                        newBundleStream.SetLength(bundleSize);
+                    }
+                    File.Copy(tmpFile, appHostPath, overwrite: true);
+                    Chmod755(appHostPath);
+                }
+                finally
+                {
+                    if (tmpFile is not null)
+                        File.Delete(tmpFile);
+                }
+            });
         }
 
         /// <summary>
@@ -230,6 +308,49 @@ namespace Microsoft.NET.HostModel.AppHost
             bundleHeaderOffset = headerOffset;
 
             return headerOffset != 0;
+        }
+
+        private static byte[] GetSearchOptionBytes(DotNetSearchOptions searchOptions)
+        {
+            if (Path.IsPathRooted(searchOptions.AppRelativeDotNet))
+                throw new AppRelativePathRootedException(searchOptions.AppRelativeDotNet);
+
+            byte[] pathBytes = searchOptions.AppRelativeDotNet != null
+                ? Encoding.UTF8.GetBytes(searchOptions.AppRelativeDotNet)
+                : [];
+
+            if (pathBytes.Length > MaxAppRelativeDotNetSizeInBytes)
+                throw new AppRelativePathTooLongException(searchOptions.AppRelativeDotNet, MaxAppRelativeDotNetSizeInBytes);
+
+            // <search_location> 0 <app_relative_dotnet_root> 0
+            byte[] searchOptionsBytes = new byte[pathBytes.Length + 3]; // +2 for search location + null, +1 for null terminator
+            searchOptionsBytes[0] = (byte)searchOptions.Location;
+            searchOptionsBytes[1] = 0;
+            searchOptionsBytes[searchOptionsBytes.Length - 1] = 0;
+            if (pathBytes.Length > 0)
+                pathBytes.CopyTo(searchOptionsBytes, 2);
+
+            return searchOptionsBytes;
+        }
+
+        private static void Chmod755(string pathName)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+            var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
+            const int EINTR = 4;
+            int chmodReturnCode;
+
+            do
+            {
+                chmodReturnCode = chmod(pathName, filePermissionOctal);
+            }
+            while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
+
+            if (chmodReturnCode == -1)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {pathName}.");
+            }
         }
 
         [LibraryImport("libc", SetLastError = true)]

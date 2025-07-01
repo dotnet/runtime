@@ -8,7 +8,7 @@ namespace Microsoft.Interop
     public interface IMarshallingGeneratorResolver
     {
         /// <summary>
-        /// Create an <see cref="IMarshallingGenerator"/> instance for marshalling the supplied type in the given position and collect any diagnostics from generator resolution.
+        /// Create an <see cref="IUnboundMarshallingGenerator"/> instance for marshalling the supplied type in the given position and collect any diagnostics from generator resolution.
         /// </summary>
         /// <param name="info">Type details</param>
         /// <param name="context">Metadata about the stub the type is associated with</param>

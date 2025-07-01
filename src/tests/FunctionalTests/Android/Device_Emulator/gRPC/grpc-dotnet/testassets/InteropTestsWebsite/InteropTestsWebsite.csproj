@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -8,7 +8,7 @@
 
     <!-- Disable CS8981 because the generated code from the protobuf files contains classes with lowercase names -->
     <!-- Disable SYSLIB0039 because the tests intentionally use TLS 1.0 and 1.1 -->
-    <NoWarn>CS8981;SYSLIB0039</NoWarn>
+    <NoWarn>$(NoWarn);CS8981;SYSLIB0039</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

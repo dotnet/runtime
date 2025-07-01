@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -149,6 +150,30 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Create_CanSquirrelAwayArg()
+        {
+            object arg = new object();
+            object storedArg = null;
+            string result = string.Create(5, arg, (span, arg) =>
+            {
+                "hello".AsSpan().CopyTo(span);
+                storedArg = arg;
+            });
+            Assert.Equal("hello", result);
+            Assert.Same(arg, storedArg);
+        }
+
+        [Fact]
+        public static void Create_CanPassSpanAsArg()
+        {
+            string result = string.Create(5, "hello".AsSpan(), (span, arg) =>
+            {
+                arg.CopyTo(span);
+            });
+            Assert.Equal("hello", result);
+        }
+
+        [Fact]
         public static void Create_InterpolatedString_ConstructsStringAndClearsBuilder()
         {
             Span<char> initialBuffer = stackalloc char[16];
@@ -185,6 +210,7 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.CurrentCulture, true)]
         [InlineData("Hello", 'E', StringComparison.CurrentCulture, false)]
         [InlineData("", 'H', StringComparison.CurrentCulture, false)]
+        [InlineData("", '\u0301', StringComparison.CurrentCulture, false)] // Using non-ASCII character to test ICU path
         // CurrentCultureIgnoreCase
         [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false)]
@@ -308,7 +334,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Contains_String_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Contains_String_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));
@@ -778,8 +803,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Replace_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparison_ReturnsExpected(string original, string oldValue, string newValue, StringComparison comparisonType, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
@@ -787,7 +810,6 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -847,8 +869,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Replace_StringComparisonCulture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparisonCulture_ReturnsExpected(string original, string oldValue, string newValue, bool ignoreCase, CultureInfo culture, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, ignoreCase, culture));
@@ -966,6 +986,30 @@ namespace System.Tests
             Assert.Equal(hashCodeFromStringComparer, hashCodeFromStringGetHashCodeOfSpan);
         }
 
+        public static IEnumerable<object[]> NonRandomizedGetHashCode_EquivalentForStringAndSpan_MemberData() =>
+            from charValueLimit in new[] { 128, 256, char.MaxValue }
+            from ignoreCase in new[] { false, true }
+            select new object[] { charValueLimit, ignoreCase };
+
+        [Theory]
+        [MemberData(nameof(NonRandomizedGetHashCode_EquivalentForStringAndSpan_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116815", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public static void NonRandomizedGetHashCode_EquivalentForStringAndSpan(int charValueLimit, bool ignoreCase)
+        {
+            // This is testing internal API. If that API changes, this test will need to be updated.
+            const BindingFlags Flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
+            string suffix = ignoreCase ? "OrdinalIgnoreCase" : "";
+            Func<string, int> getStringHC = typeof(string).GetMethod($"GetNonRandomizedHashCode{suffix}", Flags, Type.EmptyTypes)!.CreateDelegate<Func<string, int>>();
+            Func<ReadOnlySpan<char>, int> getSpanHC = typeof(string).GetMethod($"GetNonRandomizedHashCode{suffix}", Flags, [typeof(ReadOnlySpan<char>)])!.CreateDelegate<Func<ReadOnlySpan<char>, int>>();
+
+            var r = new Random(42);
+            for (int i = 0; i < 512; i++)
+            {
+                string s = new string(r.GetItems(Enumerable.Range(0, charValueLimit).Select(i => (char)i).ToArray(), i));
+                Assert.Equal(getStringHC(s), getSpanHC(s.AsSpan()));
+            }
+        }
+
         public static IEnumerable<object[]> GetHashCode_NoSuchStringComparison_ThrowsArgumentException_Data => new[]
         {
             new object[] { StringComparisons.Min() - 1 },
@@ -1000,7 +1044,7 @@ namespace System.Tests
             try
             {
                 // Unsafe.AsPointer is safe since it's pinned by the gc handle
-                Assert.Equal((IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in rChar)), gcHandle.AddrOfPinnedObject());
+                Assert.Equal((IntPtr)Unsafe.AsPointer(in rChar), gcHandle.AddrOfPinnedObject());
             }
             finally
             {

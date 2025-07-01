@@ -59,6 +59,12 @@ namespace System.Text.Json.Serialization.Converters
             {
                 int parameterCount = parameters.Length;
 
+                foreach (ParameterInfo parameter in parameters)
+                {
+                    // Every argument must be of supported type.
+                    JsonTypeInfo.ValidateType(parameter.ParameterType);
+                }
+
                 if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold)
                 {
                     Type placeHolderType = JsonTypeInfo.ObjectType;

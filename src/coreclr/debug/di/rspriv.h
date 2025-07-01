@@ -15,7 +15,7 @@
 #include <windows.h>
 
 #include <utilcode.h>
-
+#include <minipal/mutex.h>
 
 #ifdef _DEBUG
 #define LOGGING
@@ -49,6 +49,8 @@ struct MachineInfo;
 
 
 #include "eventchannel.h"
+
+#include <shash.h>
 
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
@@ -796,7 +798,7 @@ protected:
     }
 
 
-    CRITICAL_SECTION m_lock;
+    minipal_mutex m_lock;
 
 #ifdef _DEBUG
 public:
@@ -837,9 +839,8 @@ public:
 typedef RSLock::RSLockHolder RSLockHolder;
 typedef RSLock::RSInverseLockHolder RSInverseLockHolder;
 
-// In the RS, we should be using RSLocks instead of raw critical sections.
-#define CRITICAL_SECTION USE_RSLOCK_INSTEAD_OF_CRITICAL_SECTION
-
+// In the RS, we should be using RSLocks instead of raw minipal_mutex.
+#define minipal_mutex USE_RSLOCK_INSTEAD_OF_MINIPAL_MUTEX
 
 /* ------------------------------------------------------------------------- *
  * Helper macros. Use the ATT_* macros below instead of these.
@@ -1835,14 +1836,14 @@ public ICorDebugAssemblyEnum
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id);
+        const GUID &id);
 
 public:
     static void BuildOrThrow(
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id,
+        const GUID &id,
         RSInitHolder<CordbHashTableEnum> * pHolder);
 
     CordbHashTableEnum(CordbHashTableEnum *cloneSrc);
@@ -2220,7 +2221,6 @@ public:
     // CorDebug
     //-----------------------------------------------------------
 
-    static COM_METHOD CreateObjectV1(REFIID id, void **object);
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
@@ -2530,8 +2530,7 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheAssembly(VMPTR_DomainAssembly vmDomainAssembly);
-    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
+    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly, VMPTR_DomainAssembly);
 
 
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
@@ -2543,7 +2542,7 @@ public:
     CordbSafeHashTable<CordbModule>      m_modules;
 private:
     // Cache of assemblies in this appdomain.
-    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
+    // This is indexed by VMPTR_Assembly.
     // This is populated by code:CordbAppDomain::LookupOrCreateAssembly (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbAssembly>    m_assemblies;
@@ -2879,6 +2878,14 @@ public:
     virtual void RequestSyncAtEvent()= 0;
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
+
+#ifdef FEATURE_INTEROP_DEBUGGING
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
+#endif
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    virtual void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent) = 0;
+#endif
 };
 
 
@@ -2916,6 +2923,42 @@ public:
     CordbProcess *  m_pThis;
     VMPTR_AppDomain m_vmAppDomainDeleted;
 };
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+class UnmanagedThreadTracker
+{
+    DWORD m_dwThreadId = (DWORD)-1;
+    HANDLE m_hThread = INVALID_HANDLE_VALUE;
+    CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL;
+    DWORD m_dwSuspendCount = 0;
+
+public:
+    UnmanagedThreadTracker(DWORD wThreadId, HANDLE hThread) : m_dwThreadId(wThreadId), m_hThread(hThread) {}
+
+    DWORD GetThreadId() const { return m_dwThreadId; }
+    HANDLE GetThreadHandle() const { return m_hThread; }
+    bool IsInPlaceStepping() const { return m_pPatchSkipAddress != NULL; }
+    void SetPatchSkipAddress(CORDB_ADDRESS_TYPE *pPatchSkipAddress) { m_pPatchSkipAddress = pPatchSkipAddress; }
+    CORDB_ADDRESS_TYPE *GetPatchSkipAddress() const { return m_pPatchSkipAddress; }
+    void ClearPatchSkipAddress() { m_pPatchSkipAddress = NULL; }
+    void Suspend();
+    void Resume();
+    void Close();
+};
+
+class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+{
+    public:
+        typedef DWORD key_t;
+
+        static key_t GetKey(const element_t &e) { return e->GetThreadId(); }
+        static BOOL Equals(const key_t &e, const key_t &f) { return e == f; }
+        static count_t Hash(const key_t &e) { return (count_t)(e ^ (e >> 16) * 0x45D9F43); }
+};
+
+typedef SHash<CUnmanagedThreadSHashTraits> CUnmanagedThreadHashTableImpl;
+typedef SHash<CUnmanagedThreadSHashTraits>::Iterator CUnmanagedThreadHashTableIterator;
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 class CordbProcess :
     public CordbBase,
@@ -2963,11 +3006,10 @@ public:
     //-----------------------------------------------------------
     // IMetaDataLookup
     // -----------------------------------------------------------
-    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage);
+    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
     IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   bool &isILMetaDataForNGENImage,
                                                    CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
@@ -3282,6 +3324,7 @@ public:
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     void HandleSetThreadContextNeeded(DWORD dwThreadId);
+    bool HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress);
 #endif
 
     //
@@ -3462,6 +3505,8 @@ public:
         _ASSERTE(ThreadHoldsProcessLock());
         return m_unmanagedThreads.GetBase(dwThreadId);
     }
+
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread);
 #endif // FEATURE_INTEROP_DEBUGGING
 
     /*
@@ -3643,8 +3688,8 @@ public:
     // Lookup or create an appdomain.
     CordbAppDomain * LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain);
 
-    // Get the shared app domain.
-    CordbAppDomain * GetSharedAppDomain();
+    // Get the app domain.
+    CordbAppDomain * GetAppDomain();
 
     // Get metadata dispenser.
     IMetaDataDispenserEx * GetDispenser();
@@ -3653,7 +3698,7 @@ public:
     // the jit attach.
     HRESULT GetAttachStateFlags(CLR_DEBUGGING_PROCESS_FLAGS *pFlags);
 
-    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
+    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
 
     WriteableMetadataUpdateMode GetWriteableMetadataUpdateMode() { return m_writableMetadataUpdateMode; }
 private:
@@ -3683,7 +3728,6 @@ private:
     void ProcessContinuedLogMessage (DebuggerIPCEvent *event);
 
     void CloseIPCHandles();
-    void UpdateThreadsForAdUnload( CordbAppDomain* pAppDomain );
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Each win32 debug event needs to be triaged to get a Reaction.
@@ -3856,8 +3900,6 @@ public:
 
     CordbSafeHashTable<CordbAppDomain>        m_appDomains;
 
-    CordbAppDomain * m_sharedAppDomain;
-
     // Since a stepper can begin in one appdomain, and complete in another,
     // we put the hashtable here, rather than on specific appdomains.
     CordbSafeHashTable<CordbStepper>          m_steppers;
@@ -4010,8 +4052,6 @@ public:
 
     HANDLE GetHelperThreadHandle() { return m_hHelperThread; }
 
-    CordbAppDomain* GetDefaultAppDomain() { return m_pDefaultAppDomain; }
-
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Lookup if there's a native BP at the given address. Return NULL not found.
     NativePatch * GetNativePatch(const void * pAddress);
@@ -4028,11 +4068,6 @@ private:
     DebuggerIPCEventType  m_dispatchedEvent;   // what event are we currently dispatching?
 
     RSLock            m_StopGoLock;
-
-    // Each process has exactly one Default AppDomain
-    // @dbgtodo  appdomain : We should try and simplify things by removing this.
-    // At the moment it's necessary for CordbProcess::UpdateThreadsForAdUnload.
-    CordbAppDomain*     m_pDefaultAppDomain;    // owned by m_appDomains
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Helpers
@@ -4118,7 +4153,15 @@ private:
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
-    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
+    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
+    DWORD m_dwOutOfProcessStepping;
+public:
+    void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 };
 
 // Some IMDArocess APIs are supported as interop-only.
@@ -4344,8 +4387,6 @@ public:
     // Get the module filename, or NULL if none.  Throws on error.
     const WCHAR * GetModulePath();
 
-    const WCHAR * GetNGenImagePath();
-
     const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
     {
         return m_vmDomainAssembly;
@@ -4403,10 +4444,6 @@ private:
 
     // Full path to module's image, if any.  Empty if none, NULL if not yet set.
     StringCopyHolder m_strModulePath;
-
-    // Full path to the ngen file. Empty if not ngenned, NULL if not yet set.
-    // This isn't exposed publicly, but we may use it internally for loading metadata.
-    StringCopyHolder m_strNGenImagePath;
 
     // "Global" class for this module. Global functions + vars exist in this class.
     RSSmartPtr<CordbClass> m_pClass;
@@ -11151,7 +11188,7 @@ inline CordbEval * UnwrapCookieCordbEval(CordbProcess *pProc, UINT cookie)
 
 
 // We defined this at the top of the file - undef it now so that we don't pollute other files.
-#undef CRITICAL_SECTION
+#undef minipal_mutex
 
 
 #ifdef RSCONTRACTS
@@ -11178,11 +11215,7 @@ public:
     DbgRSThread();
 
     // The TLS slot that we'll put this thread object in.
-#ifndef __GNUC__
-    static __declspec(thread) DbgRSThread* t_pCurrent;
-#else  // !__GNUC__
-    static __thread DbgRSThread* t_pCurrent;
-#endif // !__GNUC__
+    static thread_local DbgRSThread* t_pCurrent;
 
     static LONG s_Total; // Total count of thread objects
 

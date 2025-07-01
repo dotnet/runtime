@@ -427,7 +427,7 @@ namespace System.Resources
         // This will take a minimal number of locks.
         protected virtual ResourceSet? InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
-            Debug.Assert(culture != null, "culture != null");
+            Debug.Assert(culture != null);
             Debug.Assert(_resourceSets != null);
 
             Dictionary<string, ResourceSet> localResourceSets = _resourceSets;

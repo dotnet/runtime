@@ -1416,7 +1416,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentFlowsWithAsyncSimple()
         {
             Activity activity = new Activity("activity").Start();
@@ -1433,7 +1433,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentFlowsWithAsyncComplex()
         {
             Activity originalActivity = Activity.Current;
@@ -1472,7 +1472,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current could be set
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentSet()
         {
             Activity activity = new Activity("activity");
@@ -1624,6 +1624,102 @@ namespace System.Diagnostics.Tests
             KeyValuePair<string, object> tag = links[1].Tags.Single();
             Assert.Equal("foo", tag.Key);
             Assert.Equal(99, tag.Value);
+        }
+
+        [Fact]
+        public void AddExceptionTest()
+        {
+            using ActivitySource aSource = new ActivitySource("AddExceptionTest");
+
+            ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(activitySource, aSource);
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener);
+
+            using Activity? activity = aSource.StartActivity("Activity1");
+            Assert.NotNull(activity);
+            Assert.Empty(activity.Events);
+
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
+
+            Exception exception = new ArgumentOutOfRangeException("Some message");
+            activity.AddException(exception);
+            List<ActivityEvent> events = activity.Events.ToList();
+            Assert.Equal(1, events.Count);
+            Assert.Equal(ExceptionEventName, events[0].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[0].Tags);
+
+            try { throw new InvalidOperationException("Some other message"); } catch (Exception e) { exception = e; }
+            activity.AddException(exception);
+            events = activity.Events.ToList();
+            Assert.Equal(2, events.Count);
+            Assert.Equal(ExceptionEventName, events[1].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[1].Tags);
+
+            listener.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) => theTags.Add("foo", "bar");
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(3, events.Count);
+            Assert.Equal(ExceptionEventName, events[2].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "foo", "bar" },
+                                { ExceptionMessageTag, exception.Message },
+                                { ExceptionStackTraceTag, exception.ToString() },
+                                { ExceptionTypeTag, exception.GetType().ToString() }
+                            },
+                            events[2].Tags);
+
+            listener.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) =>
+                                            {
+                                                theTags.Add("exception.escaped", "true");
+                                                theTags.Add("exception.message", "Overridden message");
+                                                theTags.Add("exception.stacktrace", "Overridden stacktrace");
+                                                theTags.Add("exception.type", "Overridden type");
+                                            };
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(4, events.Count);
+            Assert.Equal(ExceptionEventName, events[3].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "exception.escaped", "true" },
+                                { "exception.message", "Overridden message" },
+                                { "exception.stacktrace", "Overridden stacktrace" },
+                                { "exception.type", "Overridden type" }
+                            },
+                            events[3].Tags);
+
+            ActivityListener listener1 = new ActivityListener();
+            listener1.ShouldListenTo = (activitySource) => object.ReferenceEquals(activitySource, aSource);
+            listener1.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener1);
+            listener1.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) =>
+                                            {
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.message", "Overridden message"));
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.stacktrace", "Overridden stacktrace"));
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.type", "Overridden type"));
+                                                theTags.Add("secondListener", "win");
+                                            };
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(5, events.Count);
+            Assert.Equal(ExceptionEventName, events[4].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "exception.escaped", "true" },
+                                { "secondListener", "win" },
+                                { "exception.message", exception.Message },
+                                { "exception.stacktrace", exception.ToString() },
+                                { "exception.type", exception.GetType().ToString() },
+                            },
+                            events[4].Tags);
         }
 
         [Fact]
@@ -2324,6 +2420,100 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(values[0], tag);
                 values.RemoveAt(0);
             }
+        }
+
+        [Fact]
+        public void TestLinksToString()
+        {
+            Activity activity = new Activity("testLinksActivity");
+
+            Assert.Equal("[]", activity.Links.ToString());
+
+            activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded), new ActivityTagsCollection { ["alk1"] = "alv1", ["alk2"] = "alv2", ["alk3"] = null }));
+            activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
+
+            string formattedLinks = "[";
+            string linkSep = "";
+            foreach (ActivityLink link in activity.Links)
+            {
+                ActivityContext ac = link.Context;
+
+                formattedLinks += $"{linkSep}(";
+                formattedLinks += ac.TraceId.ToHexString();
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.SpanId.ToHexString();
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.TraceFlags.ToString();
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.TraceState ?? "null";
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.IsRemote ? "true" : "false";
+
+                if (link.Tags is not null)
+                {
+                    formattedLinks += ",\u200B[";
+                    string sep = "";
+                    foreach (KeyValuePair<string, object?> kvp in link.EnumerateTagObjects())
+                    {
+                        formattedLinks += sep;
+                        formattedLinks += kvp.Key;
+                        formattedLinks += ":\u200B";
+                        formattedLinks += kvp.Value?.ToString() ?? "null";
+                        sep = ",\u200B";
+                    }
+
+                    formattedLinks += "]";
+                }
+                formattedLinks += ")";
+                linkSep = ",\u200B";
+            }
+            formattedLinks += "]";
+
+            Assert.Equal(formattedLinks, activity.Links.ToString());
+        }
+
+        [Fact]
+        public void TestEventsToString()
+        {
+            Activity activity = new Activity("testLinksActivity");
+
+            Assert.Equal("[]", activity.Events.ToString());
+
+            activity.AddEvent(new ActivityEvent("TestEvent1", DateTime.UtcNow, new ActivityTagsCollection { { "E11", "EV1" }, { "E12", "EV2" } }));
+            activity.AddEvent(new ActivityEvent("TestEvent2", DateTime.UtcNow.AddSeconds(10), new ActivityTagsCollection { { "E21", "EV21" }, { "E22", "EV22" } }));
+
+            string formattedEvents = "[";
+            string linkSep = "";
+
+            foreach (var e in activity.Events)
+            {
+                formattedEvents += $"{linkSep}(";
+                formattedEvents += e.Name;
+                formattedEvents += ",\u200B";
+                formattedEvents += e.Timestamp.ToString("o");
+
+                if (e.Tags is not null)
+                {
+                    formattedEvents += ",\u200B[";
+                    string sep = "";
+                    foreach (KeyValuePair<string, object?> kvp in e.EnumerateTagObjects())
+                    {
+                        formattedEvents += sep;
+                        formattedEvents += kvp.Key;
+                        formattedEvents += ":\u200B";
+                        formattedEvents += kvp.Value?.ToString() ?? "null";
+                        sep = ",\u200B";
+                    }
+
+                    formattedEvents += "]";
+                }
+
+                formattedEvents += ")";
+                linkSep = ",\u200B";
+            }
+
+            formattedEvents += "]";
+            Assert.Equal(formattedEvents, activity.Events.ToString());
         }
 
         public void Dispose()

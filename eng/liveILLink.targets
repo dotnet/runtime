@@ -23,20 +23,17 @@
   <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- Don't use SDK's trimming functionality. -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
-    <!-- Keep in sync with SetTargetFramework metadata on the ProjectReference below. -->
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)$(NetCoreAppToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)$(NetFrameworkToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)net\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)netframework\ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
-    <!-- ILLink.Tasks is architecture independent, so TargetArch and TargetOS should not be specified -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
                       Private="false"
-                      SetConfiguration="Configuration=$(ToolsConfiguration)"
-                      GlobalPropertiesToRemove="TargetArchitecture;TargetOS" >
+                      SetConfiguration="Configuration=$(ToolsConfiguration)">
         <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>

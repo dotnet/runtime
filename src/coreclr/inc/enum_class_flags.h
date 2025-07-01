@@ -49,4 +49,10 @@ inline auto operator ^= (T& left, T right) -> const decltype(T::support_use_as_f
     return left;
 }
 
+template <typename T>
+inline bool HasFlag(T value, decltype(T::support_use_as_flags) flag)
+{
+    return (value & flag) == flag;
+}
+
 #endif /* ENUM_CLASS_FLAGS_OPERATORS */

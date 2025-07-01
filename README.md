@@ -3,7 +3,6 @@
 [![Build Status](https://dev.azure.com/dnceng-public/public/_apis/build/status/dotnet/runtime/runtime?branchName=main)](https://dev.azure.com/dnceng-public/public/_build/latest?definitionId=129&branchName=main)
 [![Help Wanted](https://img.shields.io/github/issues/dotnet/runtime/help%20wanted?style=flat-square&color=%232EA043&label=help%20wanted)](https://github.com/dotnet/runtime/labels/help%20wanted)
 [![Good First Issue](https://img.shields.io/github/issues/dotnet/runtime/good%20first%20issue?style=flat-square&color=%232EA043&label=good%20first%20issue)](https://github.com/dotnet/runtime/labels/good%20first%20issue)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/runtime)
 [![Discord](https://img.shields.io/discord/732297728826277939?style=flat-square&label=Discord&logo=discord&logoColor=white&color=7289DA)](https://aka.ms/dotnet-discord)
 
 * [What is .NET?](#what-is-net)
@@ -21,14 +20,12 @@ all supported platforms, as well as the sources to .NET runtime and libraries.
 
 Official Starting Page: <https://dotnet.microsoft.com>
 
-* [How to use .NET](https://docs.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
+* [How to use .NET](https://learn.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://dotnet.microsoft.com/download)
-  * [Install daily builds](docs/project/dogfooding.md)
-  * [Documentation](https://docs.microsoft.com/dotnet/core) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
-    * [Deploying apps](https://docs.microsoft.com/dotnet/core/deploying)
-  * [Supported OS versions](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md)
+  * [Documentation](https://learn.microsoft.com/dotnet/core) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
+    * [Deploying apps](https://learn.microsoft.com/dotnet/core/deploying)
+* [Support](https://github.com/dotnet/core/blob/main/support.md) (Releases, OS Versions, ...)
 * [Roadmap](https://github.com/dotnet/core/blob/main/roadmap.md)
-* [Releases](https://github.com/dotnet/core/tree/main/release-notes)
 
 ## How can I contribute?
 
@@ -53,7 +50,7 @@ For other issues, please file them to their appropriate sibling repos. We have l
 ## Useful Links
 
 * [.NET source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
-* [API Reference docs](https://docs.microsoft.com/dotnet/api)
+* [API Reference docs](https://learn.microsoft.com/dotnet/api)
 * [.NET API Catalog](https://apisof.net) (incl. APIs from daily builds and API usage info)
 * [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
 * [.NET Discord Server](https://aka.ms/dotnet-discord) - a place to discuss the development of .NET and its ecosystem
@@ -65,7 +62,7 @@ For other issues, please file them to their appropriate sibling repos. We have l
 There are many .NET related projects on GitHub.
 
 * [.NET home repo](https://github.com/Microsoft/dotnet) - links to 100s of .NET projects, from Microsoft and the community.
-* [ASP.NET Core home](https://docs.microsoft.com/aspnet/core) - the best place to start learning about ASP.NET Core.
+* [ASP.NET Core home](https://learn.microsoft.com/aspnet/core) - the best place to start learning about ASP.NET Core.
 
 This project has adopted the code of conduct defined by the [Contributor Covenant](https://contributor-covenant.org) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](https://www.dotnetfoundation.org/code-of-conduct).
 

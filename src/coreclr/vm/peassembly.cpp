@@ -32,7 +32,7 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    if (pPEAssembly->IsDynamic())
+    if (pPEAssembly->IsReflectionEmit())
         return;    // PEFiles for ReflectionEmit assemblies don't cache the machine type.
 
     DWORD peKind;
@@ -44,16 +44,6 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 
     if (actualMachineType != IMAGE_FILE_MACHINE_NATIVE && actualMachineType != IMAGE_FILE_MACHINE_NATIVE_NI)
     {
-#ifdef TARGET_AMD64
-        // v4.0 64-bit compatibility workaround. The 64-bit v4.0 CLR's Reflection.Load(byte[]) api does not detect cpu-matches. We should consider fixing that in
-        // the next SxS release. In the meantime, this bypass will retain compat for 64-bit v4.0 CLR for target platforms that existed at the time.
-        //
-        // Though this bypass kicks in for all Load() flavors, the other Load() flavors did detect cpu-matches through various other code paths that still exist.
-        // Or to put it another way, this #ifdef makes the (4.5 only) ValidatePEFileMachineType() a NOP for x64, hence preserving 4.0 compatibility.
-        if (actualMachineType == IMAGE_FILE_MACHINE_I386 || actualMachineType == IMAGE_FILE_MACHINE_IA64)
-            return;
-#endif // BIT64_
-
         // Image has required machine that doesn't match the CLR.
         StackSString name;
         pPEAssembly->GetDisplayName(name);
@@ -74,7 +64,7 @@ void PEAssembly::EnsureLoaded()
     }
     CONTRACT_END;
 
-    if (IsDynamic())
+    if (IsReflectionEmit())
         RETURN;
 
     // Ensure that loaded layout is available.
@@ -208,7 +198,7 @@ PTR_CVOID PEAssembly::GetMetadata(COUNT_T *pSize)
     }
     CONTRACT_END;
 
-    if (IsDynamic()
+    if (IsReflectionEmit()
          || !GetPEImage()->HasNTHeaders()
          || !GetPEImage()->HasCorHeader())
     {
@@ -257,7 +247,7 @@ TADDR PEAssembly::GetIL(RVA il)
     {
         INSTANCE_CHECK;
         PRECONDITION(il != 0);
-        PRECONDITION(!IsDynamic());
+        PRECONDITION(!IsReflectionEmit());
 #ifndef DACCESS_COMPILE
         PRECONDITION(HasLoadedPEImage());
 #endif
@@ -299,9 +289,9 @@ void PEAssembly::OpenImporter()
     ConvertMDInternalToReadWrite();
 
     IMetaDataImport2 *pIMDImport = NULL;
-    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetMDImport(),
-                                                       IID_IMetaDataImport2,
-                                                       (void **)&pIMDImport));
+    IfFailThrow(GetMDPublicInterfaceFromInternal((void*)GetMDImport(),
+                                                 IID_IMetaDataImport2,
+                                                 (void **)&pIMDImport));
 
     // Atomically swap it into the field (release it if we lose the race)
     if (InterlockedCompareExchangeT(&m_pImporter, pIMDImport, NULL) != NULL)
@@ -329,7 +319,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     IMetaDataImport *pIMDImport = m_pImporter;
     if (pIMDImport != NULL)
     {
-        HRESULT hr = GetMetaDataInternalInterfaceFromPublic(pIMDImport, IID_IMDInternalImport, (void **)&pNew);
+        HRESULT hr = GetMDInternalInterfaceFromPublic(pIMDImport, IID_IMDInternalImport, (void **)&pNew);
         if (FAILED(hr))
         {
             EX_THROW(EEMessageException, (hr));
@@ -389,7 +379,7 @@ void PEAssembly::OpenMDImport()
 
     if (m_pMDImport != NULL)
         return;
-    if (!IsDynamic()
+    if (!IsReflectionEmit()
         && GetPEImage()->HasNTHeaders()
             && GetPEImage()->HasCorHeader())
     {
@@ -420,9 +410,9 @@ void PEAssembly::OpenEmitter()
     ConvertMDInternalToReadWrite();
 
     IMetaDataEmit *pIMDEmit = NULL;
-    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetMDImport(),
-                                                       IID_IMetaDataEmit,
-                                                       (void **)&pIMDEmit));
+    IfFailThrow(GetMDPublicInterfaceFromInternal((void*)GetMDImport(),
+                                                 IID_IMetaDataEmit,
+                                                 (void **)&pIMDEmit));
 
     // Atomically swap it into the field (release it if we lose the race)
     if (InterlockedCompareExchangeT(&m_pEmitter, pIMDEmit, NULL) != NULL)
@@ -502,11 +492,11 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
 
-
+// dwLocation maps to System.Reflection.ResourceLocation
 BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                             PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
+                             PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                              LPCSTR *szFileName, DWORD *dwLocation,
-                             BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly, AppDomain* pAppDomain)
+                             Assembly* pAssembly)
 {
     CONTRACTL
     {
@@ -518,12 +508,10 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     CONTRACTL_END;
 
-
     mdToken            mdLinkRef;
     DWORD              dwResourceFlags;
     DWORD              dwOffset;
     mdManifestResource mdResource;
-    Assembly*          pAssembly = NULL;
     PEAssembly*        pPEAssembly = NULL;
     IMDInternalImport* pImport = GetMDImport();
     if (SUCCEEDED(pImport->FindManifestResourceByName(szName, &mdResource)))
@@ -538,16 +526,12 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     else
     {
-        if (fSkipRaiseResolveEvent || pAppDomain == NULL)
-            return FALSE;
-
-        DomainAssembly* pParentAssembly = GetAppDomain()->FindAssembly(this);
+        AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
+        Assembly* pParentAssembly = pAppDomain->FindAssembly(this);
         pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly, szName);
         if (pAssembly == NULL)
             return FALSE;
-
-        pDomainAssembly = pAssembly->GetDomainAssembly();
-        pPEAssembly = pDomainAssembly->GetPEAssembly();
+        pPEAssembly = pAssembly->GetPEAssembly();
 
         if (FAILED(pAssembly->GetMDImport()->FindManifestResourceByName(
             szName,
@@ -559,11 +543,11 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         if (dwLocation != 0)
         {
             if (pAssemblyRef != NULL)
-                *pAssemblyRef = pDomainAssembly;
+                *pAssemblyRef = pAssembly;
 
             *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
         }
-        IfFailThrow(pPEAssembly->GetMDImport()->GetManifestResourceProps(
+        IfFailThrow(pAssembly->GetMDImport()->GetManifestResourceProps(
             mdResource,
             NULL,           //&szName,
             &mdLinkRef,
@@ -572,30 +556,31 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
 
 
-    switch(TypeFromToken(mdLinkRef)) {
+    switch(TypeFromToken(mdLinkRef))
+    {
     case mdtAssemblyRef:
         {
-            if (pDomainAssembly == NULL)
+            if (pAssembly == NULL)
                 return FALSE;
 
             AssemblySpec spec;
-            spec.InitializeSpec(mdLinkRef, GetMDImport(), pDomainAssembly);
-            pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
+            spec.InitializeSpec(mdLinkRef, pAssembly->GetMDImport(), pAssembly);
+            Assembly* pLoadedAssembly = spec.LoadAssembly(FILE_LOADED);
 
             if (dwLocation) {
                 if (pAssemblyRef)
-                    *pAssemblyRef = pDomainAssembly;
+                    *pAssemblyRef = pLoadedAssembly;
 
                 *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
             }
 
-            return pDomainAssembly->GetResource(szName,
-                                                cbResource,
-                                                pbInMemoryResource,
-                                                pAssemblyRef,
-                                                szFileName,
-                                                dwLocation,
-                                                fSkipRaiseResolveEvent);
+            return pLoadedAssembly->GetResource(
+                        szName,
+                        cbResource,
+                        pbInMemoryResource,
+                        pAssemblyRef,
+                        szFileName,
+                        dwLocation);
         }
 
     case mdtFile:
@@ -626,7 +611,7 @@ void PEAssembly::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(pdwKind != NULL && pdwMachine != NULL);
-    if (IsDynamic())
+    if (IsReflectionEmit())
     {
         *pdwKind = 0;
         *pdwMachine = 0;
@@ -697,8 +682,8 @@ PEAssembly::PEAssembly(
         OpenMDImport(); //constructor, cannot race with anything
     else
     {
-        IfFailThrow(GetMetaDataInternalInterfaceFromPublic(pEmit, IID_IMDInternalImport,
-                                                           (void **)&m_pMDImport));
+        IfFailThrow(GetMDInternalInterfaceFromPublic(pEmit, IID_IMDInternalImport,
+                                                     (void **)&m_pMDImport));
         m_pEmitter = pEmit;
         pEmit->AddRef();
         m_MDImportIsRW_Debugger_Use_Only = TRUE;
@@ -865,7 +850,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 #ifndef DACCESS_COMPILE
 
 // Supports implementation of the legacy Assembly.CodeBase property.
-// Returns false if the assembly was loaded from a bundle, true otherwise
+// Returns false if the assembly was loaded via reflection emit or from a probe extension, true otherwise
 BOOL PEAssembly::GetCodeBase(SString &result)
 {
     CONTRACTL
@@ -879,7 +864,7 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     CONTRACTL_END;
 
     PEImage* ilImage = GetPEImage();
-    if (ilImage != NULL && !ilImage->IsInBundle())
+    if (ilImage != NULL && !ilImage->IsInBundle() && !ilImage->IsExternalData())
     {
         // All other cases use the file path.
         result.Set(ilImage->GetPath());
@@ -1054,7 +1039,7 @@ LPCWSTR PEAssembly::GetPathForErrorMessages()
     }
     CONTRACTL_END
 
-    if (!IsDynamic())
+    if (!IsReflectionEmit())
     {
         return m_PEImage->GetPathForErrorMessages();
     }
@@ -1106,7 +1091,7 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
         // If we do not have a host assembly, check if we are dealing with
         // a dynamically emitted assembly and if so, use its fallback load context
         // binder reference.
-        if (IsDynamic())
+        if (IsReflectionEmit())
         {
             pBinder = GetFallbackBinder();
         }

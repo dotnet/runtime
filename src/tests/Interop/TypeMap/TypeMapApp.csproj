@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
+    <IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TypeMapApp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="TypeMapLib1.csproj" />
+    <ProjectReference Include="TypeMapLib2.csproj">
+      <Aliases>Original</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="TypeMapLib3.csproj" />
+    <ProjectReference Include="TypeMapLib4.csproj" />
+  </ItemGroup>
+</Project>

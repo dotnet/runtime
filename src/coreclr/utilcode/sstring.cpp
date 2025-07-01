@@ -23,10 +23,6 @@
 // Have one internal, well-known, literal for the empty string.
 const BYTE SString::s_EmptyBuffer[2] = { 0 };
 
-// @todo: these need to be initialized by calling GetACP()
-
-UINT SString::s_ACP = 0;
-
 #ifndef DACCESS_COMPILE
 static BYTE s_EmptySpace[sizeof(SString)] = { 0 };
 #endif // DACCESS_COMPILE
@@ -38,18 +34,14 @@ void SString::Startup()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if (s_ACP == 0)
-    {
-        UINT ACP = GetACP();
-
 #ifndef DACCESS_COMPILE
-        s_Empty = PTR_SString(new (s_EmptySpace) SString());
-        s_Empty->SetNormalized();
-#endif // DACCESS_COMPILE
-
-        MemoryBarrier();
-        s_ACP = ACP;
+    if (s_Empty == NULL)
+    {
+        SString* emptyString = new (s_EmptySpace) SString();
+        emptyString->SetNormalized();
+        s_Empty = PTR_SString(emptyString);
     }
+#endif // DACCESS_COMPILE
 }
 
 CHECK SString::CheckStartup()
@@ -690,7 +682,7 @@ void SString::ConvertToUnicode() const
         {
             StackSString s;
             ConvertToUnicode(s);
-            PREFIX_ASSUME(!s.IsImmutable());
+            _ASSERTE(!s.IsImmutable());
             (const_cast<SString*>(this))->Set(s);
         }
     }
@@ -772,7 +764,7 @@ void SString::ConvertToUTF8() const
         {
             StackSString s;
             ConvertToUTF8(s);
-            PREFIX_ASSUME(!s.IsImmutable());
+            _ASSERTE(!s.IsImmutable());
             (const_cast<SString*>(this))->Set(s);
         }
     }
@@ -819,13 +811,13 @@ void SString::ConvertToUnicode(SString &s) const
         UNREACHABLE();
     }
 
-    COUNT_T length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
+    COUNT_T length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
     if (length == 0)
         ThrowLastError();
 
     s.Resize(length-1, REPRESENTATION_UNICODE);
 
-    length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
+    length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
     if (length == 0)
         ThrowLastError();
 
@@ -1713,18 +1705,6 @@ void SString::Printf(const CHAR *format, ...)
     va_end(args);
 }
 
-#ifndef EBADF
-#define EBADF 9
-#endif
-
-#ifndef ENOMEM
-#define ENOMEM 12
-#endif
-
-#ifndef ERANGE
-#define ERANGE 34
-#endif
-
 #if defined(_MSC_VER)
 #undef va_copy
 #define va_copy(dest,src) (dest = src)
@@ -1856,7 +1836,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
         // First, try to use our existing buffer to hold the result.
         Resize(GetRawCount(), REPRESENTATION_UNICODE);
 
-        DWORD result = ::WszFormatMessage(dwFlags | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+        DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                           lpSource, dwMessageId, dwLanguageId,
                                           GetRawUnicode(), GetRawCount()+1, (va_list*)args);
 
@@ -1878,7 +1858,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
     // We don't have enough space in our buffer, do dynamic allocation.
     LocalAllocHolder<WCHAR> string;
 
-    DWORD result = ::WszFormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+    DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                       lpSource, dwMessageId, dwLanguageId,
                                       (LPWSTR)(LPWSTR*)&string, 0, (va_list*)args);
 
@@ -2344,11 +2324,11 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
             // iPage defaults to CP_ACP.
             if (pcNeedChars)
             {
-                *pcNeedChars = WszMultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
+                *pcNeedChars = MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
             }
             if (pBuffer && cBufChars)
             {
-                if (!WszMultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
+                if (!MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
                 {
                     return false;
                 }

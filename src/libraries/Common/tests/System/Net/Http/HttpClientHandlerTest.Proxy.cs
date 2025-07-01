@@ -117,9 +117,9 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalFact(nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
-        public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
+        public async Task Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
-            RemoteExecutor.Invoke(async (useVersionString) =>
+            await RemoteExecutor.Invoke(async (useVersionString) =>
             {
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
@@ -134,7 +134,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
                 }
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString()).DisposeAsync();
         }
 
         const string BasicAuth = "Basic";
@@ -300,7 +300,11 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.PostAsync("https://nosuchhost.invalid", new StringContent(content)));
-                    Assert.Contains("407", e.Message);
+                    Assert.Contains(((int)HttpStatusCode.ProxyAuthenticationRequired).ToString(), e.Message);
+#if !WINHTTPHANDLER_TEST
+                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, e.StatusCode);
+                    Assert.Equal(HttpRequestError.ProxyTunnelError, e.HttpRequestError);
+#endif
                 }
             }
         }
@@ -313,7 +317,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 handler.Proxy = new WebProxy($"https://{Guid.NewGuid():N}");
 
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid():N}"));
+                HttpRequestException e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid():N}"));
+#if !WINHTTPHANDLER_TEST
+                Assert.Null(e.StatusCode);
+                Assert.Equal(HttpRequestError.ProxyTunnelError, e.HttpRequestError);
+#endif
             }
         }
 
@@ -505,7 +513,7 @@ namespace System.Net.Http.Functional.Tests
             winInetProxyHelperType.GetField("_proxyBypass", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
 
             // Create a HttpWindowsProxy with our custom WinInetProxyHelper.
-            IWebProxy httpWindowsProxy = (IWebProxy)Activator.CreateInstance(Type.GetType("System.Net.Http.HttpWindowsProxy, System.Net.Http", true), Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, new[] { winInetProxyHelper, null }, null);
+            IWebProxy httpWindowsProxy = (IWebProxy)Activator.CreateInstance(Type.GetType("System.Net.Http.HttpWindowsProxy, System.Net.Http", true), Reflection.BindingFlags.Public | Reflection.BindingFlags.NonPublic| Reflection.BindingFlags.Instance, null, new[] { winInetProxyHelper }, null);
 
             Task<bool> nextFailedConnection = null;
 
@@ -573,14 +581,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try
-                    {
-                        await client.GetAsync(uri);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(client.GetAsync(uri));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -613,14 +614,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try
-                    {
-                        await client.GetAsync(addressUri);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(client.GetAsync(addressUri));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -647,14 +641,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try
-                    {
-                        await client.GetAsync(addressUri);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(client.GetAsync(addressUri));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {

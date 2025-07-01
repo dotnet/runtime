@@ -58,10 +58,11 @@ namespace System.Diagnostics
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
-        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
-        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
+        private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
         private const int RequestIdMaxLength = 1024;
@@ -129,6 +130,22 @@ namespace System.Diagnostics
         /// Gets whether the parent context was created from remote propagation.
         /// </summary>
         public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the current operation (Activity) for the current thread. This flows
+        /// across async calls.
+        /// </summary>
+        public static Activity? Current
+        {
+            get { return s_current.Value; }
+            set
+            {
+                if (ValidateSetCurrent(value))
+                {
+                    SetCurrent(value);
+                }
+            }
+        }
 
         /// <summary>
         /// Sets the status code and description on the current activity object.
@@ -200,7 +217,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
-        /// to a particular ID insures that you get only one request that matches.
+        /// to a particular ID ensures that you get only one request that matches.
         /// Id has a hierarchical structure: '|root-id.id1_id2.id3_' Id is generated when
         /// <see cref="Start"/> is called by appending suffix to Parent.Id
         /// or ParentId; Activity has no Id until it started
@@ -515,6 +532,72 @@ namespace System.Diagnostics
             }
 
             return this;
+        }
+
+        /// <summary>
+        /// Add an <see cref="ActivityEvent" /> object containing the exception information to the <see cref="Events" /> list.
+        /// </summary>
+        /// <param name="exception">The exception to add to the attached events list.</param>
+        /// <param name="tags">The tags to add to the exception event.</param>
+        /// <param name="timestamp">The timestamp to add to the exception event.</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
+        /// <remarks>
+        /// <para>- The name of the event will be "exception", and it will include the tags "exception.message", "exception.stacktrace", and "exception.type",
+        /// in addition to the tags provided in the <paramref name="tags"/> parameter.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback will be notified about this exception addition
+        /// before the <see cref="ActivityEvent" /> object is added to the <see cref="Events" /> list.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback that adds "exception.message", "exception.stacktrace", or "exception.type" tags
+        /// will not have these tags overwritten, except by any subsequent <see cref="ActivityListener"/> that explicitly overwrites them.</para>
+        /// </remarks>
+        public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+
+            TagList exceptionTags = tags;
+
+            Source.NotifyActivityAddException(this, exception, ref exceptionTags);
+
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
+
+            bool hasMessage = false;
+            bool hasStackTrace = false;
+            bool hasType = false;
+
+            for (int i = 0; i < exceptionTags.Count; i++)
+            {
+                if (exceptionTags[i].Key == ExceptionMessageTag)
+                {
+                    hasMessage = true;
+                }
+                else if (exceptionTags[i].Key == ExceptionStackTraceTag)
+                {
+                    hasStackTrace = true;
+                }
+                else if (exceptionTags[i].Key == ExceptionTypeTag)
+                {
+                    hasType = true;
+                }
+            }
+
+            if (!hasMessage)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionMessageTag, exception.Message));
+            }
+
+            if (!hasStackTrace)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionStackTraceTag, exception.ToString()));
+            }
+
+            if (!hasType)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionTypeTag, exception.GetType().ToString()));
+            }
+
+            return AddEvent(new ActivityEvent(ExceptionEventName, timestamp, ref exceptionTags));
         }
 
         /// <summary>
@@ -1147,7 +1230,9 @@ namespace System.Diagnostics
                     activity._parentSpanId = parentContext.SpanId.ToString();
                 }
 
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                // Note: Don't inherit Recorded from parent as it is set below
+                // based on sampling decision
+                activity.ActivityTraceFlags = parentContext.TraceFlags & ~ActivityTraceFlags.Recorded;
                 activity._parentTraceFlags = (byte)parentContext.TraceFlags;
                 activity.HasRemoteParent = parentContext.IsRemote;
             }
@@ -1170,6 +1255,21 @@ namespace System.Diagnostics
             }
 
             return activity;
+        }
+
+        private static void SetCurrent(Activity? activity)
+        {
+            EventHandler<ActivityChangedEventArgs>? handler = CurrentChanged;
+            if (handler is null)
+            {
+                s_current.Value = activity;
+            }
+            else
+            {
+                Activity? previous = s_current.Value;
+                s_current.Value = activity;
+                handler.Invoke(null, new ActivityChangedEventArgs(previous, activity));
+            }
         }
 
         /// <summary>
@@ -1903,7 +2003,7 @@ namespace System.Diagnostics
         /// Sets the bytes in 'outBytes' to be random values. outBytes.Length must be either 8 or 16 bytes.
         /// </summary>
         /// <param name="outBytes"></param>
-        internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
+        internal static void SetToRandomBytes(Span<byte> outBytes)
         {
             Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
             RandomNumberGenerator r = RandomNumberGenerator.Current;

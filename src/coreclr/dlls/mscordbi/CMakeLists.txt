@@ -75,6 +75,7 @@ set(COREDBI_LIBRARIES
     mdruntimerw-dbi
     mddatasource_dbi
     corguids
+    minipal
 )
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -96,7 +97,6 @@ if(CLR_CMAKE_HOST_WIN32)
 elseif(CLR_CMAKE_HOST_UNIX)
 
     list(APPEND COREDBI_LIBRARIES
-        palrt
         # share the PAL in the dac module
         mscordaccore
     )
@@ -130,6 +130,8 @@ elseif(CLR_CMAKE_HOST_UNIX)
     endif(CLR_CMAKE_HOST_LINUX)
 
 endif(CLR_CMAKE_HOST_WIN32)
+
+esrp_sign(mscordbi)
 
 # add the install targets
 install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT debug)

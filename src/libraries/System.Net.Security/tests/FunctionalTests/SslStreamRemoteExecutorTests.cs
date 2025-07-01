@@ -25,7 +25,8 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
         [InlineData(true)]
         [InlineData(false)]
-        public void SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/116473")]
+        public async Task SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
             if (PlatformDetection.IsDebugLibrary(typeof(SslStream).Assembly) && !enabledBySwitch)
             {
@@ -34,11 +35,18 @@ namespace System.Net.Security.Tests
                 return;
             }
 
+            if (PlatformDetection.IsOpenSsl3_5 && !enabledBySwitch)
+            {
+                // OpenSSL 3.5 and later versions log into file in SSLKEYLOGFILE environment variable by default,
+                // regardless of AppContext switch.
+                return;
+            }
+
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
 
-            RemoteExecutor.Invoke(async (enabledBySwitch) =>
+            await RemoteExecutor.Invoke(async (enabledBySwitch) =>
             {
                 if (bool.Parse(enabledBySwitch))
                 {
@@ -64,7 +72,7 @@ namespace System.Net.Security.Tests
 
                     await TestHelper.PingPong(client, server);
                 }
-            }, enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
             if (enabledBySwitch)
             {
@@ -74,6 +82,32 @@ namespace System.Net.Security.Tests
             {
                 Assert.True(File.ReadAllText(tempFile).Length == 0);
             }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DefaultRevocationMode_OfflineRevocationByDefault_True_UsesNoCheck(bool useEnvVar)
+        {
+            var psi = new ProcessStartInfo();
+            if (useEnvVar)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT", "true");
+            }
+
+            Assert.Equal(X509RevocationMode.Online, new SslClientAuthenticationOptions().CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.Online, new SslServerAuthenticationOptions().CertificateRevocationCheckMode);
+
+            RemoteExecutor.Invoke(useEnvVar =>
+            {
+                if (!bool.Parse(useEnvVar))
+                {
+                    AppContext.SetSwitch("System.Net.Security.NoRevocationCheckByDefault", true);
+                }
+
+                Assert.Equal(X509RevocationMode.NoCheck, new SslClientAuthenticationOptions().CertificateRevocationCheckMode);
+                Assert.Equal(X509RevocationMode.NoCheck, new SslServerAuthenticationOptions().CertificateRevocationCheckMode);
+            }, useEnvVar.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

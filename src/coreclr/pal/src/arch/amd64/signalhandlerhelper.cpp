@@ -8,7 +8,10 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/context.h"
 #include "pal/signal.hpp"
 #include "pal/utils.h"
+
+#if HAVE_SYS_UCONTEXT_H
 #include <sys/ucontext.h>
+#endif
 
 /*++
 Function :

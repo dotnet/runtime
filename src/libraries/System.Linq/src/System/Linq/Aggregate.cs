@@ -19,21 +19,37 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
 
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            TSource result;
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
+                if (span.IsEmpty)
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                result = span[0];
+                for (int i = 1; i < span.Length; i++)
+                {
+                    result = func(result, span[i]);
+                }
+            }
+            else
+            {
+                using IEnumerator<TSource> e = source.GetEnumerator();
+
                 if (!e.MoveNext())
                 {
                     ThrowHelper.ThrowNoElementsException();
                 }
 
-                TSource result = e.Current;
+                result = e.Current;
                 while (e.MoveNext())
                 {
                     result = func(result, e.Current);
                 }
-
-                return result;
             }
+
+            return result;
         }
 
         public static TAccumulate Aggregate<TSource, TAccumulate>(this IEnumerable<TSource> source, TAccumulate seed, Func<TAccumulate, TSource, TAccumulate> func)
@@ -49,9 +65,19 @@ namespace System.Linq
             }
 
             TAccumulate result = seed;
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                result = func(result, element);
+                foreach (TSource element in span)
+                {
+                    result = func(result, element);
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    result = func(result, element);
+                }
             }
 
             return result;
@@ -75,9 +101,19 @@ namespace System.Linq
             }
 
             TAccumulate result = seed;
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                result = func(result, element);
+                foreach (TSource element in span)
+                {
+                    result = func(result, element);
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    result = func(result, element);
+                }
             }
 
             return resultSelector(result);

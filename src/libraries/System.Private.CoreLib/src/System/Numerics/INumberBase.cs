@@ -216,7 +216,10 @@ namespace System.Numerics
         /// <summary>Determines if a value represents a real value.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is a real number; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returns <c>true</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</remarks>
+        /// <remarks>
+        ///     <para>This function returns <c>true</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</para>
+        ///     <para>This function checks values against the extended real number line, thus returns <c>true</c> for positive and negative infinity.</para>
+        /// </remarks>
         static abstract bool IsRealNumber(TSelf value);
 
         /// <summary>Determines if a value is subnormal.</summary>
@@ -306,7 +309,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -314,7 +317,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
@@ -440,7 +443,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -448,7 +451,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
@@ -486,7 +489,7 @@ namespace System.Numerics
             scoped Span<char> utf16Destination;
             int destinationMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Destination.Length);
 
-            if (destinationMaxCharCount < 256)
+            if (destinationMaxCharCount <= 256)
             {
                 utf16DestinationArray = null;
                 utf16Destination = stackalloc char[256];
@@ -494,7 +497,7 @@ namespace System.Numerics
             else
             {
                 utf16DestinationArray = ArrayPool<char>.Shared.Rent(destinationMaxCharCount);
-                utf16Destination = utf16DestinationArray.AsSpan(0, destinationMaxCharCount);
+                utf16Destination = utf16DestinationArray;
             }
 
             if (!TryFormat(utf16Destination, out int charsWritten, format, provider))
@@ -542,7 +545,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -550,7 +553,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
@@ -589,7 +592,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -597,7 +600,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);

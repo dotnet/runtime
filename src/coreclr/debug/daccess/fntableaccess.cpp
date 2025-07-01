@@ -44,10 +44,12 @@
 
 static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUserContext, DWORD_PTR pMapIn, DWORD_PTR addr, DWORD_PTR &codeHead)
 {
+    using namespace NibbleMap;
     codeHead = 0;
 
+    DWORD       dword;
     DWORD       tmp;                              // must be a DWORD, not a DWORD_PTR
-    DWORD_PTR   startPos  = ADDR2POS(addr);       // align to  128 byte buckets ( == index into the array of nibbles)
+    DWORD_PTR   startPos  = ADDR2POS(addr);       // align to 32 byte buckets ( == index into the array of nibbles)
     DWORD_PTR   offset    = ADDR2OFFS(addr);      // this is the offset inside the bucket + 1
     DWORD *     pMap      = (DWORD *) pMapIn;     // make this a pointer type so our pointer math is correct w/o adding sizeof(DWORD) everywhere
 
@@ -55,12 +57,19 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
 
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
 
-    //
-    // get DWORD and shift down our nibble
-    //
-    move(tmp, pMap);
-    tmp = tmp >> POS2SHIFTCOUNT(startPos);
+    // #1 look up DWORD represnting current PC
+    move(dword, pMap);
 
+    // #2 if DWORD is a pointer, then we can return
+    if (IsPointer(dword))
+    {
+        codeHead = DecodePointer(dword) - sizeof(CodeHeader);
+        return STATUS_SUCCESS;
+    }
+
+    tmp = dword >> POS2SHIFTCOUNT(startPos);
+
+    // #3 check if corresponding nibble is intialized and points to an equal or earlier address
     // don't allow equality in the next check (tmp & NIBBLE_MASK == offset)
     // there are code blocks that terminate with a call instruction
     // (like call throwobject), i.e. their return address is
@@ -76,9 +85,8 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
         return STATUS_SUCCESS;
     }
 
-    // is there a header in the remainder of the DWORD ?
+    // #4 try to find preceeding nibble in the DWORD
     tmp = tmp >> NIBBLE_SIZE;
-
     if (tmp)
     {
         startPos--;
@@ -92,40 +100,40 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
         return STATUS_SUCCESS;
     }
 
-    // we skipped the remainder of the DWORD,
+    // #5.1 read previous DWORD
+    // We skipped the remainder of the DWORD,
     // so we must set startPos to the highest position of
-    // previous DWORD
+    // previous DWORD, unless we are already on the first DWORD
+    if (startPos < NIBBLES_PER_DWORD)
+    {
+        return 0;
+    }
 
     startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
+    pMap--;
+    move(dword, pMap);
 
-    if ((INT_PTR)startPos < 0)
+    // If the second dword is not empty, it either has a nibble or a pointer
+    if (dword)
     {
+        // #5.2 either DWORD is a pointer
+        if (IsPointer(dword))
+        {
+            codeHead = DecodePointer(dword) - sizeof(CodeHeader);
+            return STATUS_SUCCESS;
+        }
+
+        // #5.4 or contains a nibble
+        tmp = dword;
+        while(!(tmp & NIBBLE_MASK))
+        {
+            tmp >>= NIBBLE_SIZE;
+            startPos--;
+        }
+        codeHead = POSOFF2ADDR(startPos, tmp & NIBBLE_MASK) - sizeof(CodeHeader);
         return STATUS_SUCCESS;
     }
 
-    // skip "headerless" DWORDS
-
-    pMap--;
-    move(tmp, pMap);
-    while (!tmp)
-    {
-        startPos -= NIBBLES_PER_DWORD;
-        if ((INT_PTR)startPos < 0)
-        {
-            return STATUS_SUCCESS;
-        }
-        pMap--;
-        move (tmp, pMap);
-    }
-
-
-    while (!(tmp & NIBBLE_MASK))
-    {
-        tmp = tmp >> NIBBLE_SIZE;
-        startPos--;
-    }
-
-    codeHead = POSOFF2ADDR(startPos, tmp & NIBBLE_MASK) - sizeof(CodeHeader);
     return STATUS_SUCCESS;
 }
 
@@ -139,11 +147,11 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
         pHeader = tmp;                                      \
     }
 
-static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    fpReadMemory,
-                                                      IN  PVOID                 pUserContext,
-                                                      IN  PVOID                 TableAddress,
-                                                      OUT PULONG                pnEntries,
-                                                      OUT PT_RUNTIME_FUNCTION*    ppFunctions)
+extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction    fpReadMemory,
+                                                        IN  PVOID				  pUserContext,
+                                                        IN  PVOID                 TableAddress,
+                                                        OUT PULONG                pnEntries,
+                                                        OUT PT_RUNTIME_FUNCTION*  ppFunctions)
 {
     if (NULL == pnEntries)      { return STATUS_INVALID_PARAMETER_3; }
     if (NULL == ppFunctions)    { return STATUS_INVALID_PARAMETER_4; }
@@ -270,135 +278,6 @@ static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    
     return STATUS_SUCCESS;
 }
 
-
-#ifdef DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-
-static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction    fpReadMemory,
-                                                       IN  PVOID                 pUserContext,
-                                                       IN  PVOID                 TableAddress,
-                                                       OUT PULONG                pnEntries,
-                                                       OUT PT_RUNTIME_FUNCTION*    ppFunctions)
-{
-    if (NULL == pnEntries)      { return STATUS_INVALID_PARAMETER_3; }
-    if (NULL == ppFunctions)    { return STATUS_INVALID_PARAMETER_4; }
-
-    *ppFunctions = 0;
-    *pnEntries   = 0;
-
-    PVOID pvContext;
-    move_field(pvContext, TableAddress, DYNAMIC_FUNCTION_TABLE, Context);
-
-    SIZE_T pStubHeapSegment = ((SIZE_T)pvContext & ~3);
-
-    FakeStubUnwindInfoHeapSegment stubHeapSegment;
-    move(stubHeapSegment, pStubHeapSegment);
-
-    UINT nEntries = 0;
-    UINT nEntriesAllocated = 0;
-    PT_RUNTIME_FUNCTION rgFunctions = NULL;
-
-    for (int pass = 1; pass <= 2; pass++)
-    {
-        // Use the same initial header for both passes.  The process may still be running,
-        // and so new entries could be added at the beginning of the list.  Using the initial header
-        // makes sure new entries are not picked up in the second pass.  Entries could also be deleted,
-        // and there is a small time window here where we could read invalid memory.  This just means
-        // that ReadProcessMemory() may fail.  As long as we don't crash the host process (e.g. WER)
-        // we are fine.
-        SIZE_T pHeader = (SIZE_T)stubHeapSegment.pUnwindHeaderList;
-
-        while (pHeader)
-        {
-            FakeStubUnwindInfoHeader unwindInfoHeader;
-            move(unwindInfoHeader, pHeader);
-#if defined(TARGET_AMD64)
-            // Consistency checks to detect corrupted process state
-            if (unwindInfoHeader.FunctionEntry.BeginAddress > unwindInfoHeader.FunctionEntry.EndAddress ||
-                unwindInfoHeader.FunctionEntry.EndAddress > stubHeapSegment.cbSegment)
-            {
-                _ASSERTE(1 == pass);
-                return STATUS_UNSUCCESSFUL;
-            }
-
-            if ((SIZE_T)stubHeapSegment.pbBaseAddress + unwindInfoHeader.FunctionEntry.UnwindData !=
-                    pHeader + offsetof(FakeStubUnwindInfoHeader, UnwindInfo))
-            {
-                _ASSERTE(1 == pass);
-                return STATUS_UNSUCCESSFUL;
-            }
-#elif defined(TARGET_ARM)
-
-            // Skip checking the corrupted process stateon ARM
-
-#elif defined(TARGET_ARM64)
-            // Compute the function length
-            ULONG64 functionLength = 0;
-            ULONG64 unwindData = unwindInfoHeader.FunctionEntry.UnwindData;
-            if (( unwindData & 3) != 0) {
-                // the unwindData contains the function length, retrieve it directly from unwindData
-                functionLength = (unwindInfoHeader.FunctionEntry.UnwindData >> 2) & 0x7ff;
-            } else {
-                // the unwindData is an RVA to the .xdata record which contains the function length
-                DWORD xdataHeader=0;
-                if ((SIZE_T)stubHeapSegment.pbBaseAddress + unwindData != pHeader + offsetof(FakeStubUnwindInfoHeader, UnwindInfo))
-                {
-                    _ASSERTE(1 == pass);
-                    return STATUS_UNSUCCESSFUL;
-                }
-                move(xdataHeader, stubHeapSegment.pbBaseAddress + unwindData);
-                functionLength = (xdataHeader & 0x3ffff) << 2;
-            }
-            if (unwindInfoHeader.FunctionEntry.BeginAddress + functionLength > stubHeapSegment.cbSegment)
-            {
-                _ASSERTE(1 == pass);
-                return STATUS_UNSUCCESSFUL;
-            }
-#else
-            PORTABILITY_ASSERT("OutOfProcessFunctionTableCallback_Stub");
-#endif
-            if (nEntriesAllocated)
-            {
-                if (nEntries >= nEntriesAllocated)
-                    break;
-                rgFunctions[nEntries] = unwindInfoHeader.FunctionEntry;
-            }
-            nEntries++;
-
-            pHeader = (SIZE_T)unwindInfoHeader.pNext;
-        }
-
-        if (1 == pass)
-        {
-            if (!nEntries)
-                break;
-
-            _ASSERTE(!nEntriesAllocated);
-            nEntriesAllocated = nEntries;
-
-            S_SIZE_T blockSize = S_SIZE_T(nEntries) * S_SIZE_T(sizeof(T_RUNTIME_FUNCTION));
-            if (blockSize.IsOverflow())
-                return STATUS_UNSUCCESSFUL;
-
-            rgFunctions = (PT_RUNTIME_FUNCTION)HeapAlloc(GetProcessHeap(), 0, blockSize.Value());
-            if (rgFunctions == NULL)
-                return STATUS_NO_MEMORY;
-            nEntries = 0;
-        }
-        else
-        {
-            _ASSERTE(nEntriesAllocated >= nEntries);
-        }
-    }
-
-    *ppFunctions = rgFunctions;
-    *pnEntries   = nEntries;        // return the final count
-
-    return STATUS_SUCCESS;
-}
-
-#endif // DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-
-
 BOOL ReadMemory(PVOID pUserContext, LPCVOID lpBaseAddress, PVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesRead)
 {
     HANDLE hProcess = (HANDLE)pUserContext;
@@ -411,48 +290,6 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallback(IN  HANDLE                
                                                       OUT PT_RUNTIME_FUNCTION*    ppFunctions)
 {
     return OutOfProcessFunctionTableCallbackEx(&ReadMemory, hProcess, TableAddress, pnEntries, ppFunctions);
-}
-
-extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction    fpReadMemory,
-                                                        IN  PVOID				  pUserContext,
-                                                        IN  PVOID                 TableAddress,
-                                                        OUT PULONG                pnEntries,
-                                                        OUT PT_RUNTIME_FUNCTION*    ppFunctions)
-{
-    if (NULL == pnEntries)      { return STATUS_INVALID_PARAMETER_3; }
-    if (NULL == ppFunctions)    { return STATUS_INVALID_PARAMETER_4; }
-
-    DYNAMIC_FUNCTION_TABLE * pTable = (DYNAMIC_FUNCTION_TABLE *) TableAddress;
-    PVOID pvContext;
-
-    move(pvContext, &pTable->Context);
-
-    FakeEEDynamicFunctionTableType type = (FakeEEDynamicFunctionTableType)((SIZE_T)pvContext & 3);
-
-    switch (type)
-    {
-    case FAKEDYNFNTABLE_JIT:
-        return OutOfProcessFunctionTableCallback_JIT(
-                fpReadMemory,
-                pUserContext,
-                TableAddress,
-                pnEntries,
-                ppFunctions);
-
-#ifdef DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-    case FAKEDYNFNTABLE_STUB:
-        return OutOfProcessFunctionTableCallback_Stub(
-                fpReadMemory,
-                pUserContext,
-                TableAddress,
-                pnEntries,
-                ppFunctions);
-#endif // DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-    default:
-        break;
-    }
-
-    return STATUS_UNSUCCESSFUL;
 }
 
 #else

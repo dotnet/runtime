@@ -25,10 +25,7 @@
 #include "customassemblybinder.h"
 #endif // !defined(DACCESS_COMPILE)
 
-#include "bundle.h"
 #include <assemblybinderutil.h>
-
-class DomainAssembly;
 
 namespace BINDER_SPACE
 {
@@ -56,15 +53,15 @@ namespace BINDER_SPACE
             return m_pBinder;
         }
 
-        DomainAssembly* GetDomainAssembly()
+        ::Assembly* GetRuntimeAssembly()
         {
-            return m_domainAssembly;
+            return m_runtimeAssembly;
         }
 
-        void SetDomainAssembly(DomainAssembly* value)
+        void SetRuntimeAssembly(::Assembly* value)
         {
-            _ASSERTE(value == NULL || m_domainAssembly == NULL);
-            m_domainAssembly = value;
+            _ASSERTE(value == NULL || m_runtimeAssembly == NULL);
+            m_runtimeAssembly = value;
         }
 
     private:
@@ -73,7 +70,7 @@ namespace BINDER_SPACE
         AssemblyName            *m_pAssemblyName;
         PTR_AssemblyBinder       m_pBinder;
         bool                     m_isInTPA;
-        DomainAssembly          *m_domainAssembly;
+        ::Assembly              *m_runtimeAssembly;
 
 #if !defined(DACCESS_COMPILE)
         inline void SetBinder(AssemblyBinder *pBinder)

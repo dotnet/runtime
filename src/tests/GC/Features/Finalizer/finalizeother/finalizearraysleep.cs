@@ -6,6 +6,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_finalizearraysleep {
 
@@ -39,7 +40,8 @@ public class Test_finalizearraysleep {
         }
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         CreateObj temp = new CreateObj();
         temp.RunTest();
 

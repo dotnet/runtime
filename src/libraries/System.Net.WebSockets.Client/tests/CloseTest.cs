@@ -12,6 +12,7 @@ using System.Linq;
 
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Net.WebSockets.Client.Tests
 {
@@ -264,7 +265,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersWithSwitch))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersAndBoolean))]
         public async Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
         {
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
@@ -367,15 +368,8 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        public static IEnumerable<object[]> EchoServersWithSwitch =>
-            EchoServers.SelectMany(server => new List<object[]>
-            {
-                new object[] { server[0], true },
-                new object[] { server[0], false }
-            });
-
         [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersWithSwitch))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersAndBoolean))]
         public async Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -495,11 +489,11 @@ namespace System.Net.WebSockets.Client.Tests
                 try
                 {
                     using (var cws = new ClientWebSocket())
-                    using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                    using (var testTimeoutCts = new CancellationTokenSource(TimeOutMilliseconds))
                     {
-                        await ConnectAsync(cws, uri, cts.Token);
+                        await ConnectAsync(cws, uri, testTimeoutCts.Token);
 
-                        Task receiveTask = cws.ReceiveAsync(new byte[1], CancellationToken.None);
+                        Task receiveTask = cws.ReceiveAsync(new byte[1], testTimeoutCts.Token);
 
                         var cancelCloseCts = new CancellationTokenSource();
                         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
@@ -509,7 +503,12 @@ namespace System.Net.WebSockets.Client.Tests
                             await t;
                         });
 
+                        Assert.True(cancelCloseCts.Token.IsCancellationRequested);
+                        Assert.False(testTimeoutCts.Token.IsCancellationRequested);
+
                         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiveTask);
+
+                        Assert.False(testTimeoutCts.Token.IsCancellationRequested);
                     }
                 }
                 finally
@@ -524,6 +523,43 @@ namespace System.Net.WebSockets.Client.Tests
                 await tcs.Task;
 
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/80116.
+        [OuterLoop("Uses Task.Delay")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task CloseHandshake_ExceptionsAreObserved()
+        {
+            await RemoteExecutor.Invoke(static (typeName) =>
+            {
+                CloseTest test = (CloseTest)Activator.CreateInstance(typeof(CloseTest).Assembly.GetType(typeName), new object[] { null });
+                using CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                Exception unobserved = null;
+                TaskScheduler.UnobservedTaskException += (obj, args) =>
+                {
+                    unobserved = args.Exception;
+                };
+
+                TaskCompletionSource clientCompleted = new TaskCompletionSource();
+
+                return LoopbackWebSocketServer.RunAsync(async (clientWs, ct) =>
+                {
+                    await clientWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
+                    await clientWs.ReceiveAsync(new byte[16], ct);
+                    await Task.Delay(1500);
+                    GC.Collect(2);
+                    GC.WaitForPendingFinalizers();
+                    clientCompleted.SetResult();
+                    Assert.Null(unobserved);
+                },
+                async (serverWs, ct) =>
+                {
+                    await serverWs.ReceiveAsync(new byte[16], ct);
+                    await serverWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
+                    await clientCompleted.Task;
+                }, new LoopbackWebSocketServer.Options(HttpVersion.Version11, true, test.GetInvoker()), timeoutCts.Token);
+            }, GetType().FullName).DisposeAsync();
         }
     }
 }

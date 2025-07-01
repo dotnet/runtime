@@ -22,6 +22,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.PrivilegedTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return MapTime(info.ri_system_time);
@@ -64,6 +69,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.TotalTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return MapTime(info.ri_system_time + info.ri_user_time);
@@ -81,6 +91,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.UserTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return MapTime(info.ri_user_time);

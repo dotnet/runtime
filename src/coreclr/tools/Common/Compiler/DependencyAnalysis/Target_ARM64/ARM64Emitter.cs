@@ -90,6 +90,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             }
         }
 
+        // ldar regDst, [regAddr]
+        public void EmitLDAR(Register regDst, Register regAddr)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            Debug.Assert((uint)regAddr <= 0x1f);
+            uint instruction = 0xc8dffc00 | ((uint)regAddr << 5) | (uint)regDst;
+            Builder.EmitUInt(instruction);
+        }
+
         public void EmitCMP(Register reg, sbyte immediate)
         {
             if (immediate >= 0)

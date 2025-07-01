@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
-            private static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
+            internal static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
             {
                 AsnWriter keyWriter;
                 bool hasPrivateKey;
@@ -170,24 +170,17 @@ namespace System.Security.Cryptography
                     hasPrivateKey = false;
                 }
 
-                byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
-
-                if (!keyWriter.TryEncode(rented, out int written))
-                {
-                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                    throw new InvalidOperationException();
-                }
-
-                // Explicitly clear the inner buffer
-                keyWriter.Reset();
-
                 try
                 {
-                    return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                    return keyWriter.Encode(hasPrivateKey, static (hasPrivateKey, encoded) =>
+                    {
+                        return Interop.AppleCrypto.ImportEphemeralKey(encoded, hasPrivateKey);
+                    });
                 }
                 finally
                 {
-                    CryptoPool.Return(rented, written);
+                    // Explicitly clear the inner buffer
+                    keyWriter.Reset();
                 }
             }
 

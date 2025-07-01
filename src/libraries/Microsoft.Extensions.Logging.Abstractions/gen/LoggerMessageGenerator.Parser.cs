@@ -181,7 +181,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     break;
 
                                                 default:
-                                                    Debug.Assert(false, "Unexpected number of arguments in attribute constructor.");
+                                                    Debug.Fail("Unexpected number of arguments in attribute constructor.");
                                                     break;
                                             }
                                         }
@@ -652,6 +652,10 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             continue;
                         }
+                        if (!fs.CanBeReferencedByName)
+                        {
+                            continue;
+                        }
                         if (IsBaseOrIdentity(fs.Type, loggerSymbol))
                         {
                             if (loggerField == null)
@@ -912,7 +916,9 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 result = (c ^ result) * 16777619;
             }
-            return Math.Abs((int)result);
+
+            int ret = (int)result;
+            return ret == int.MinValue ? 0 : Math.Abs(ret); // Ensure the result is non-negative
         }
     }
 }

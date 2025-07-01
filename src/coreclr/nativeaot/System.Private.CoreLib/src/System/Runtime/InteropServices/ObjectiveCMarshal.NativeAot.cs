@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
             }
 
-            var trackerInfo = s_objects.GetValue(obj, static o => new ObjcTrackingInformation());
+            var trackerInfo = s_objects.GetOrAdd(obj, static o => new ObjcTrackingInformation());
             trackerInfo.EnsureInitialized(obj);
             trackerInfo.GetTaggedMemory(out memInSizeT, out mem);
             return RuntimeImports.RhHandleAllocRefCounted(obj);

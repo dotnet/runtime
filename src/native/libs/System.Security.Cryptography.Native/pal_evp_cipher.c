@@ -157,13 +157,19 @@ int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
 int32_t
 CryptoNative_EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
 {
+    assert(outl != NULL);
     ERR_clear_error();
 
-    int outLength;
+    int outLength = 0;
     int32_t ret = EVP_CipherUpdate(ctx, out, &outLength, in, inl);
+
     if (ret == SUCCESS)
     {
         *outl = outLength;
+    }
+    else
+    {
+        *outl = 0;
     }
 
     return ret;
@@ -386,13 +392,27 @@ const EVP_CIPHER* CryptoNative_EvpDes3Cbc(void)
 const EVP_CIPHER* CryptoNative_EvpRC2Ecb(void)
 {
     // No error queue impact.
-    return EVP_rc2_ecb();
+#if HAVE_OPENSSL_RC2
+    if (API_EXISTS(EVP_rc2_ecb))
+    {
+        return EVP_rc2_ecb();
+    }
+#endif
+
+    return NULL;
 }
 
 const EVP_CIPHER* CryptoNative_EvpRC2Cbc(void)
 {
     // No error queue impact.
-    return EVP_rc2_cbc();
+#if HAVE_OPENSSL_RC2
+    if (API_EXISTS(EVP_rc2_cbc))
+    {
+        return EVP_rc2_cbc();
+    }
+#endif
+
+    return NULL;
 }
 
 const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305(void)

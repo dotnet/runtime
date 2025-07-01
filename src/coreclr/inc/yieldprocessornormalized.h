@@ -3,14 +3,11 @@
 
 #pragma once
 
-// Undefine YieldProcessor to encourage using the normalized versions below instead. System_YieldProcessor() can be used where
-// the intention is to use the system-default implementation of YieldProcessor().
-#define HAS_SYSTEM_YIELDPROCESSOR
+#ifdef FEATURE_NATIVEAOT
+FORCEINLINE void System_YieldProcessor() { PalYieldProcessor(); }
+#else
 FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
-#ifdef YieldProcessor
-#undef YieldProcessor
 #endif
-#define YieldProcessor Dont_Use_YieldProcessor
 
 #define DISABLE_COPY(T) \
     T(const T &) = delete; \
@@ -144,9 +141,9 @@ FORCEINLINE void YieldProcessorNormalized(const YieldProcessorNormalizationInfo 
 {
     _ASSERTE(count != 0);
 
-    if (sizeof(SIZE_T) <= sizeof(unsigned int))
+    if (sizeof(size_t) <= sizeof(unsigned int))
     {
-        // On platforms with a small SIZE_T, prevent overflow on the multiply below
+        // On platforms with a small size_t, prevent overflow on the multiply below
         const unsigned int MaxCount = UINT_MAX / YieldProcessorNormalization::MaxYieldsPerNormalizedYield;
         if (count > MaxCount)
         {
@@ -154,7 +151,7 @@ FORCEINLINE void YieldProcessorNormalized(const YieldProcessorNormalizationInfo 
         }
     }
 
-    SIZE_T n = (SIZE_T)count * normalizationInfo.yieldsPerNormalizedYield;
+    size_t n = (size_t)count * normalizationInfo.yieldsPerNormalizedYield;
     _ASSERTE(n != 0);
     do
     {
@@ -189,9 +186,9 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(
 {
     _ASSERTE(preSkylakeCount != 0);
 
-    if (sizeof(SIZE_T) <= sizeof(unsigned int))
+    if (sizeof(size_t) <= sizeof(unsigned int))
     {
-        // On platforms with a small SIZE_T, prevent overflow on the multiply below
+        // On platforms with a small size_t, prevent overflow on the multiply below
         const unsigned int MaxCount = UINT_MAX / YieldProcessorNormalization::MaxYieldsPerNormalizedYield;
         if (preSkylakeCount > MaxCount)
         {
@@ -200,7 +197,7 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(
     }
 
     const unsigned int PreSkylakeCountToSkylakeCountDivisor = 8;
-    SIZE_T n = (SIZE_T)preSkylakeCount * normalizationInfo.yieldsPerNormalizedYield / PreSkylakeCountToSkylakeCountDivisor;
+    size_t n = (size_t)preSkylakeCount * normalizationInfo.yieldsPerNormalizedYield / PreSkylakeCountToSkylakeCountDivisor;
     if (n == 0)
     {
         n = 1;
@@ -227,9 +224,9 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(unsigned int preSkyl
 
     _ASSERTE(preSkylakeCount != 0);
 
-    if (sizeof(SIZE_T) <= sizeof(unsigned int))
+    if (sizeof(size_t) <= sizeof(unsigned int))
     {
-        // On platforms with a small SIZE_T, prevent overflow on the multiply below
+        // On platforms with a small size_t, prevent overflow on the multiply below
         const unsigned int MaxCount = UINT_MAX / YieldProcessorNormalization::MaxYieldsPerNormalizedYield;
         if (preSkylakeCount > MaxCount)
         {
@@ -238,8 +235,8 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(unsigned int preSkyl
     }
 
     const unsigned int PreSkylakeCountToSkylakeCountDivisor = 8;
-    SIZE_T n =
-        (SIZE_T)preSkylakeCount *
+    size_t n =
+        (size_t)preSkylakeCount *
         YieldProcessorNormalization::s_yieldsPerNormalizedYield /
         PreSkylakeCountToSkylakeCountDivisor;
     if (n == 0)
@@ -268,11 +265,11 @@ FORCEINLINE void YieldProcessorWithBackOffNormalized(
     unsigned int spinIteration)
 {
     // This shift value should be adjusted based on the asserted conditions below
-    const UINT8 MaxShift = 3;
-    static_assert_no_msg(
-        ((unsigned int)1 << MaxShift) <= YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration);
-    static_assert_no_msg(
-        ((unsigned int)1 << (MaxShift + 1)) > YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration);
+    const uint8_t MaxShift = 3;
+    static_assert(
+        ((unsigned int)1 << MaxShift) <= YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
+    static_assert(
+        ((unsigned int)1 << (MaxShift + 1)) > YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
 
     unsigned int n;
     if (spinIteration <= MaxShift &&

@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal X509ChainElementCollection(X509ChainElement[] chainElements)
         {
-            Debug.Assert(chainElements != null, "chainElements != null");
+            Debug.Assert(chainElements != null);
             _elements = chainElements;
         }
 

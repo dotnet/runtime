@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -75,7 +76,7 @@ namespace Internal.IL.Stubs
         /// Gets the comparer type that is suitable to compare instances of <paramref name="type"/>
         /// or null if such comparer cannot be determined at compile time.
         /// </summary>
-        private static InstantiatedType GetComparerForType(TypeDesc type, string flavor, string interfaceName)
+        private static TypeDesc GetComparerForType(TypeDesc type, string flavor, string interfaceName)
         {
             TypeSystemContext context = type.Context;
 
@@ -90,6 +91,11 @@ namespace Internal.IL.Stubs
             {
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
                     .MakeInstantiatedType(type.Instantiation[0]);
+            }
+
+            if (type.IsString && flavor == "EqualityComparer")
+            {
+                return context.SystemModule.GetKnownType("System.Collections.Generic", "StringEqualityComparer");
             }
 
             if (type.IsEnum)
@@ -240,6 +246,9 @@ namespace Internal.IL.Stubs
             if (type.ContainsGCPointers)
                 return false;
 
+            if (type.IsInlineArray)
+                return false;
+
             if (type.IsGenericDefinition)
                 return false;
 
@@ -298,11 +307,11 @@ namespace Internal.IL.Stubs
 
         private struct OverlappingFieldTracker
         {
-            private bool[] _usedBytes;
+            private BitArray _usedBytes;
 
             public OverlappingFieldTracker(MetadataType type)
             {
-                _usedBytes = new bool[type.InstanceFieldSize.AsInt];
+                _usedBytes = new BitArray(type.InstanceFieldSize.AsInt);
             }
 
             public bool TrackField(FieldDesc field)

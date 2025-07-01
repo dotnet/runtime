@@ -6,11 +6,11 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// The result of <see cref="ActivatorUtilities.CreateFactory{T}"/>. A delegate to specify a factory method to call to instantiate an instance of type `T`
+    /// Returns the result of <see cref="M:Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateFactory``1(System.Type[])" />, which is a delegate that specifies a factory method to call to instantiate an instance of type <typeparamref name="T" />.
     /// </summary>
-    /// <typeparam name="T">The type of the instance being returned</typeparam>
+    /// <typeparam name="T">The type of the instance that's returned.</typeparam>
     /// <param name="serviceProvider">The <see cref="IServiceProvider"/> to get service arguments from.</param>
     /// <param name="arguments">Additional constructor arguments.</param>
-    /// <returns>An instance of T</returns>
-    public delegate T ObjectFactory<T>(IServiceProvider serviceProvider, object?[]? arguments);
+    /// <returns>An instance of type <typeparamref name="T" />.</returns>
+    public delegate T ObjectFactory<out T>(IServiceProvider serviceProvider, object?[]? arguments);
 }

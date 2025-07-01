@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -27,6 +28,26 @@ namespace System
         [DoesNotReturn]
         public static void ThrowArgument_InputAndDestinationSpanMustNotOverlap() =>
             throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
+
+        public static void ThrowIfArrayTypeMismatch<T>(Array? array)
+        {
+            if ((array is not null) && (array.GetType().GetElementType() != typeof(T)))
+            {
+                ThrowArrayTypeMismatchException();
+            }
+        }
+
+        public static void ThrowIfArrayTypeMismatch<T>(T[]? array)
+        {
+            if ((array is not null) && !typeof(T).IsValueType && (array.GetType() != typeof(T[])))
+            {
+                ThrowArrayTypeMismatchException();
+            }
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_DestinationSpansMustNotOverlap() =>
+            throw new ArgumentException(SR.Argument_DestinationSpansMustNotOverlap);
 
         [DoesNotReturn]
         internal static void ThrowArrayTypeMismatchException()
@@ -53,13 +74,19 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgumentException_DestinationTooShort()
+        public static void ThrowArgument_LengthsMustEqualArrayLength()
         {
-            throw GetArgumentException(SR.DestinationTooShort);
+            throw new ArgumentOutOfRangeException();
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_LengthsMustEqualArrayLength()
+        public static void ThrowArgument_LengthIsNegative()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StartIndexOutOfBounds()
         {
             throw new ArgumentOutOfRangeException();
         }
@@ -98,9 +125,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_ShapesNotBroadcastCompatible()
+        public static void ThrowArgument_LengthsNotCompatible()
         {
-            throw new ArgumentException(SR.ThrowArgument_ShapesNotBroadcastCompatible);
+            throw new ArgumentException(SR.ThrowArgument_LengthsNotCompatible);
         }
 
         [DoesNotReturn]
@@ -119,6 +146,12 @@ namespace System
         public static void ThrowArgument_1DTensorRequired(string? paramNames)
         {
             throw new ArgumentException(SR.ThrowArgument_1DTensorRequired, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_2DTensorRequired(string? paramNames)
+        {
+            throw new ArgumentException(SR.Argument_2DTensorRequired, paramNames);
         }
 
         [DoesNotReturn]
@@ -164,9 +197,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_InvalidAxis()
+        public static void ThrowArgument_InvalidDimension()
         {
-            throw new ArgumentException(SR.ThrowArgument_InvalidAxis);
+            throw new ArgumentException(SR.ThrowArgument_InvalidDimension);
         }
 
         [DoesNotReturn]
@@ -194,15 +227,51 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_InvalidStridesAndLengths()
+        public static void ThrowArgument_InvalidTensorShape()
         {
             throw new ArgumentException(SR.ThrowArgument_InvalidStridesAndLengths);
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_StrideLessThan0()
+        public static void ThrowArgument_LengthIsNonZeroForNullReference()
         {
-            throw new ArgumentException(SR.ThrowArgument_StrideLessThan0);
+            throw new ArgumentOutOfRangeException(SR.ThrowArgument_LengthIsNonZeroForNullReference);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StrideIsNegative()
+        {
+            throw new ArgumentOutOfRangeException(SR.ThrowArgument_StrideLessThan0);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_IncompatibleDimensions(nint leftDim, nint rightDim)
+        {
+            throw new ArgumentException(SR.Format(SR.Argument_IncompatibleDimensions, leftDim, rightDim));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_StackShapesNotSame()
+        {
+            throw new ArgumentException(SR.ThrowArgument_StackShapesNotSame);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_CannotReshapeNonContiguousOrDense()
+        {
+            throw new ArgumentException(SR.Argument_CannotReshapeNonContiguousOrDense);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_MinGreaterThanMax()
+        {
+            throw new ArgumentException(SR.Argument_MinGreaterThanMax);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArithmetic_NaN()
+        {
+            throw new ArithmeticException(SR.Arithmetic_NaN);
         }
     }
 }

@@ -16,6 +16,8 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        protected static readonly Uri InvalidUri = new("http://nosuchhost.invalid");
+
         // This file is shared with the WinHttpHandler implementation, which supports .NET Framework
         // So, define this so derived tests can use it.
         public static readonly Version HttpVersion30 = new Version(3, 0);
@@ -30,6 +32,20 @@ namespace System.Net.Http.Functional.Tests
         {
             _output = output;
         }
+
+        protected async Task IgnoreExceptions(Func<Task> func)
+        {
+            try
+            {
+                await func();
+            }
+            catch (Exception ex)
+            {
+                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+            }
+        }
+
+        protected Task IgnoreExceptions(Task task) => IgnoreExceptions(() => task);
 
         protected virtual HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 

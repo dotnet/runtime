@@ -109,13 +109,13 @@ For example, for Windows x64 machine, the project file is:
     <Project Sdk="Microsoft.NET.Sdk">
       <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
       </PropertyGroup>
     </Project>
     ```
 
-   You can find a list of RIDs and their corresponding OSes [here](https://docs.microsoft.com/en-us/dotnet/articles/core/rid-catalog).
+   You can find a list of RIDs and their corresponding OSes [here](https://learn.microsoft.com/dotnet/articles/core/rid-catalog).
 
 * After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/<tfm>/<rid>/publish`.
 * Overwrite the CLR dlls with the ones you've built locally. If you're a fan of the command line, here are some shell commands for doing this:
@@ -172,6 +172,8 @@ Some environment variables such as `DOTNET_JitDisasm` take a list of patterns sp
   + The simplest method list is a single method name specified using just the method name (no class name), e.g. `Main`.
   + A list of simple method names can be used, e.g., `Main Test1 Test2`.
 * The string matched against depends on characters in the pattern:
+  + If the pattern contains a '!' character, the string matched against is prefixed by the assembly name and an exclamation mark.
+    - Example: `testassembly!*` - specifies all methods from the assembly named `testassembly`.
   + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon.
     - Example: `TestClass:Main` - specifies a single method named `Main` in the class named `TestClass`.
   + If the pattern contains a '(' character, the string matched against is suffixed by the signature.

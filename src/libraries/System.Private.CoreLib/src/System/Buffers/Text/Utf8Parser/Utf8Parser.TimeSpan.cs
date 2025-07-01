@@ -27,26 +27,14 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> source, out TimeSpan value, out int bytesConsumed, char standardFormat = default)
-        {
-            switch (standardFormat)
+        public static bool TryParse(ReadOnlySpan<byte> source, out TimeSpan value, out int bytesConsumed, char standardFormat = default) =>
+            standardFormat switch
             {
-                case default(char):
-                case 'c':
-                case 't':
-                case 'T':
-                    return TryParseTimeSpanC(source, out value, out bytesConsumed);
-
-                case 'G':
-                    return TryParseTimeSpanBigG(source, out value, out bytesConsumed);
-
-                case 'g':
-                    return TryParseTimeSpanLittleG(source, out value, out bytesConsumed);
-
-                default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
-            }
-        }
+                default(char) or 'c' or 't' or 'T' => TryParseTimeSpanC(source, out value, out bytesConsumed),
+                'G' => TryParseTimeSpanBigG(source, out value, out bytesConsumed),
+                'g' => TryParseTimeSpanLittleG(source, out value, out bytesConsumed),
+                _ => ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed),
+            };
 
         /// <summary>
         /// Parse the fraction portion of a TimeSpan. Must be 1..7 digits. If fewer than 7, zeroes are implied to the right. If more than 7, the TimeSpan

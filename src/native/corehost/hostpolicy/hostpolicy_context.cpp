@@ -120,6 +120,18 @@ namespace
             return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
         }
 
+        if (::strcmp(key, HOST_PROPERTY_BUNDLE_EXTRACTION_PATH) == 0)
+        {
+            if (!bundle::info_t::is_single_file_bundle())
+                return -1;
+
+            auto bundle = bundle::runner_t::app();
+            if (bundle->extraction_path().empty())
+                return -1;
+
+            return pal::pal_utf8string(bundle->extraction_path(), value_buffer, value_buffer_size);
+        }
+
         // Properties from runtime initialization
         pal::string_t key_str;
         if (pal::clr_palstring(key, &key_str))
@@ -204,7 +216,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     }
 
     clr_path = probe_paths.coreclr;
-    if (clr_path.empty() || !pal::realpath(&clr_path))
+    if (clr_path.empty() || !pal::fullpath(&clr_path))
     {
         // in a single-file case we may not need coreclr,
         // otherwise fail early.

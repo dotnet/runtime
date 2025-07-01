@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // Debug.cpp
 //
 // Helper code for debugging.
 //*****************************************************************************
-//
-
 
 #include "stdafx.h"
 #include "utilcode.h"
 #include "ex.h"
 #include "corexcep.h"
 
+#include <minipal/debugger.h>
+
 #ifdef _DEBUG
 #define LOGGING
 #endif
-
 
 #include "log.h"
 
@@ -38,8 +38,8 @@ static void GetExecutableFileNameUtf8(SString& value)
     CONTRACTL_END;
 
     SString tmp;
-    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
-    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
+    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(MAX_PATH);
+    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, MAX_PATH);
     tmp.CloseBuffer(numChars);
 
     tmp.ConvertToUTF8(value);
@@ -133,7 +133,7 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (option == rTestAndRaise && fRet != 0)
     {
@@ -156,7 +156,7 @@ VOID LogAssert(
 
     // Log asserts to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
-    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
+    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     SYSTEMTIME st;
 #ifndef TARGET_UNIX
@@ -202,7 +202,7 @@ HRESULT _OutOfMemory(LPCSTR szFile, int iLine)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    printf("WARNING: Out of memory condition being issued from: %s, line %d\n", szFile, iLine);
+    minipal_log_print(minipal_log_flags_warning, "WARNING: Out of memory condition being issued from: %s, line %d\n", szFile, iLine);
     return (E_OUTOFMEMORY);
 }
 
@@ -250,14 +250,14 @@ bool _DbgBreakCheck(
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     // Emit assert in debug output and console for easy access.
     if (formattedMessages)
     {
         OutputDebugStringUtf8(formatBuffer);
-        fprintf(stderr, "%s", formatBuffer);
+        minipal_log_print_error("%s", formatBuffer);
     }
     else
     {
@@ -268,12 +268,7 @@ bool _DbgBreakCheck(
         OutputDebugStringUtf8("\n");
         OutputDebugStringUtf8(szExpr);
         OutputDebugStringUtf8("\n");
-        printf("%s", szLowMemoryAssertMessage);
-        printf("\n");
-        printf("%s", szFile);
-        printf("\n");
-        printf("%s", szExpr);
-        printf("\n");
+        minipal_log_print_error("%s\n%s\n%s\n", szLowMemoryAssertMessage, szFile, szExpr);
     }
 
     LogAssert(szFile, iLine, szExpr);
@@ -283,7 +278,7 @@ bool _DbgBreakCheck(
         return false;       // don't stop debugger. No gui.
     }
 
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         return true;       // like a retry
     }
@@ -313,7 +308,7 @@ bool _DbgBreakCheckNoThrow(
     {
         failed = true;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (failed)
     {
@@ -321,33 +316,6 @@ bool _DbgBreakCheckNoThrow(
     }
     return result;
 }
-
-#ifndef TARGET_UNIX
-// Get the timestamp from the PE file header.  This is useful
-unsigned DbgGetEXETimeStamp()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    static ULONG cache = 0;
-    if (cache == 0) {
-        // Use GetModuleHandleA to avoid contracts - this results in a recursive loop initializing the
-        // debug allocator.
-        BYTE* imageBase = (BYTE*) GetModuleHandleA(NULL);
-        if (imageBase == 0)
-            return(0);
-        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER*) imageBase;
-        if ((pDOS->e_magic != VAL16(IMAGE_DOS_SIGNATURE)) || (pDOS->e_lfanew == 0))
-            return(0);
-
-        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*) (VAL32(pDOS->e_lfanew) + imageBase);
-        cache = VAL32(pNT->FileHeader.TimeDateStamp);
-    }
-
-    return cache;
-}
-#endif // TARGET_UNIX
 
 VOID DebBreakHr(HRESULT hr)
 {
@@ -449,7 +417,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 #endif  // DACCESS_COMPILE
 #endif  // TARGET_UNIX
 
@@ -497,7 +465,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
     {
         // Nothing to do here.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // TARGET_UNIX
 
     return fSuccess;
@@ -521,7 +489,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     OutputDebugStringUtf8(buffer.GetUTF8());
 
     // Write out the error to the console
-    printf("%s", buffer.GetUTF8());
+    minipal_log_print_error("%s", buffer.GetUTF8());
 
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).

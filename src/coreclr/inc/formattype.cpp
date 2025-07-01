@@ -163,7 +163,7 @@ const char* PrettyPrintSig(
         out->Shrink(0);
         appendStr(out,"ERROR PARSING THE SIGNATURE");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return(asString(out));
 }
@@ -338,7 +338,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
     {
         if(name) // printing the arguments
         {
-            PREFIX_ASSUME(typePtr != NULL);
+            _ASSERTE(typePtr != NULL);
             if (*typePtr == ELEMENT_TYPE_SENTINEL)
             {
                 if (needComma)
@@ -555,7 +555,7 @@ PCCOR_SIGNATURE PrettyPrintType(
             case ELEMENT_TYPE_ARRAY       :
                 {
                 typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
-                PREFIX_ASSUME(typePtr != NULL);
+                _ASSERTE(typePtr != NULL);
                 unsigned rank = CorSigUncompressData(typePtr);
                     // <TODO> what is the syntax for the rank 0 case? </TODO>
                 if (rank == 0) {
@@ -563,11 +563,6 @@ PCCOR_SIGNATURE PrettyPrintType(
                 }
                 else {
                     _ASSERTE(rank != 0);
-
-#ifdef _PREFAST_
-#pragma prefast(push)
-#pragma prefast(disable:22009 "Suppress PREFAST warnings about integer overflow")
-#endif
                     int* lowerBounds = (int*) _alloca(sizeof(int)*2*rank);
                     int* sizes       = &lowerBounds[rank];
                     memset(lowerBounds, 0, sizeof(int)*2*rank);
@@ -609,9 +604,6 @@ PCCOR_SIGNATURE PrettyPrintType(
                         }
                     }
                     appendChar(out, ']');
-#ifdef _PREFAST_
-#pragma prefast(pop)
-#endif
                 }
                 } break;
 
@@ -691,6 +683,44 @@ PCCOR_SIGNATURE PrettyPrintType(
                 const char fmt[] = " /* MT: %p */";
                 char sz[Max64BitHexString + ARRAY_SIZE(fmt)];
                 sprintf_s(sz, ARRAY_SIZE(sz), fmt, pMT);
+                appendStr(out, sz);
+                break;
+            }
+            case ELEMENT_TYPE_CMOD_INTERNAL :
+            {
+                // ELEMENT_TYPE_CMOD_INTERNAL <required> <TypeHandle>
+                bool required = *typePtr++ != 0;
+                _ASSERTE(sizeof(TypeHandle) == sizeof(void *));
+                TypeHandle typeHandle;
+                typePtr += CorSigUncompressPointer(typePtr, (void **)&typeHandle);
+
+                MethodTable *pMT = NULL;
+                if (typeHandle.IsTypeDesc())
+                {
+                    pMT = typeHandle.AsTypeDesc()->GetMethodTable();
+                    if (pMT)
+                    {
+                        PrettyPrintClass(out, pMT->GetCl(), pMT->GetMDImport());
+
+                        // It could be a "native version" of the managed type used in interop
+                        if (typeHandle.AsTypeDesc()->IsNativeValueType())
+                            appendStr(out, "_NativeValueType");
+                    }
+                    else
+                        appendStr(out, "(null)");
+                }
+                else
+                {
+                    pMT = typeHandle.AsMethodTable();
+                    if (pMT)
+                        PrettyPrintClass(out, pMT->GetCl(), pMT->GetMDImport());
+                    else
+                        appendStr(out, "(null)");
+                }
+
+                const char fmt[] = " mod%s(/* MT: %p */)";
+                char sz[Max64BitHexString + ARRAY_SIZE(fmt) + ARRAY_SIZE("req")];
+                sprintf_s(sz, ARRAY_SIZE(sz), fmt, required ? "req" : "opt", pMT);
                 appendStr(out, sz);
                 break;
             }
@@ -1068,11 +1098,6 @@ bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed dat
     }
 }
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 char* DumpMarshaling(IMDInternalImport* pImport,
                      _Inout_updates_(cchszString) char* szString,
                      DWORD cchszString,
@@ -1198,18 +1223,11 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                         cbCur += ByteCountLength;
                         if(strLen)
                         {
-#ifdef _PREFAST_
-#pragma prefast(push)
-#pragma prefast(disable:22009 "Suppress PREFAST warnings about integer overflow")
-#endif
                             strTemp = (LPUTF8)_alloca(strLen + 1);
                             memcpy(strTemp, (LPUTF8)&pSigNativeType[cbCur], strLen);
                             strTemp[strLen] = 0;
                             buf.AppendPrintf(", \"%s\"", UnquotedProperName(strTemp));
                             cbCur += strLen;
-#ifdef _PREFAST_
-#pragma prefast(pop)
-#endif
                         }
                     }
                     break;
@@ -1537,9 +1555,6 @@ error:
         }
     }
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 char* DumpParamAttr(_Inout_updates_(cchszString) char* szString, DWORD cchszString, DWORD dwAttr)
 {

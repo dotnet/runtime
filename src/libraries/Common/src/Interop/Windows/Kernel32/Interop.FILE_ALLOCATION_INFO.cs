@@ -5,7 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        // Value taken from https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileinformationbyhandle#remarks:
+        // Value taken from https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-setfileinformationbyhandle#remarks:
         internal const int FileAllocationInfo = 5;
 
         internal struct FILE_ALLOCATION_INFO

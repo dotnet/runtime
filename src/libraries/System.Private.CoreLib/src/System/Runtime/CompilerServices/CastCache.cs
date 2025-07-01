@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
+    // See typehandle.h for matching unmanaged type.
     internal enum CastResult
     {
         CannotCast = 0,
@@ -91,11 +92,10 @@ namespace System.Runtime.CompilerServices
             // then we use fibonacci hashing to reduce the value to desired size.
 
             int hashShift = HashShift(ref tableData);
+            nuint hash = BitOperations.RotateLeft(source, (nuint.Size * 8) / 2) ^ target;
 #if TARGET_64BIT
-            ulong hash = BitOperations.RotateLeft((ulong)source, 32) ^ (ulong)target;
             return (int)((hash * 11400714819323198485ul) >> hashShift);
 #else
-            uint hash = BitOperations.RotateLeft((uint)source, 16) ^ (uint)target;
             return (int)((hash * 2654435769u) >> hashShift);
 #endif
         }
@@ -165,7 +165,7 @@ namespace System.Runtime.CompilerServices
                 if (entrySource == source)
                 {
                     // we do ordinary reads of the entry parts and
-                    // Interlocked.ReadMemoryBarrier() before reading the version
+                    // Volatile.ReadBarrier() before reading the version
                     nuint entryTargetAndResult = pEntry._targetAndResult;
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
@@ -178,7 +178,7 @@ namespace System.Runtime.CompilerServices
                         // - use acquires for both _source and _targetAndResults or
                         // - issue a load barrier before reading _version
                         // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
-                        Interlocked.ReadMemoryBarrier();
+                        Volatile.ReadBarrier();
 
                         if (version != pEntry._version)
                         {

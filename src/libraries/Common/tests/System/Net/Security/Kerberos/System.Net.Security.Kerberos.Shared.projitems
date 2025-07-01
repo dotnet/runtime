@@ -36,5 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Kerberos.NET" Version="4.5.178" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
   </ItemGroup>
 </Project>

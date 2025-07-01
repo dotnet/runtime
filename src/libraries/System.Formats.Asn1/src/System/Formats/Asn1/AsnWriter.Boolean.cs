@@ -16,7 +16,7 @@ namespace System.Formats.Asn1
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
-        ///   the method
+        ///   the method.
         /// </exception>
         public void WriteBoolean(bool value, Asn1Tag? tag = null)
         {

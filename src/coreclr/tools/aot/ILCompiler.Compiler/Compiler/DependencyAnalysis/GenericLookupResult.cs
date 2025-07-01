@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override bool Equals(object obj)
         {
             GenericLookupResult other = obj as GenericLookupResult;
-            if (obj == null)
+            if (other == null)
                 return false;
 
             return ClassCode == other.ClassCode && EqualsImpl(other);
@@ -447,7 +447,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
+            // TODO-SIZE: this is address taken only in the delegate target case
+            return factory.FatAddressTakenFunctionPointer(instantiatedMethod, _isUnboxingThunk);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -466,17 +467,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            //
-            // For universal canonical methods, we don't need the unboxing stub really, because
-            // the calling convention translation thunk will handle the unboxing (and we can avoid having a double thunk here)
-            // We just need the flag in the native layout info signature indicating that we needed an unboxing stub
-            //
-            bool getUnboxingStubNode = _isUnboxingThunk && !canonMethod.IsCanonicalMethod(CanonicalFormKind.Universal);
-
+            // TODO-SIZE: this is address taken only in the delegate target case
             return factory.NativeLayout.MethodEntrypointDictionarySlot(
                 _method,
                 _isUnboxingThunk,
-                factory.MethodEntrypoint(canonMethod, getUnboxingStubNode));
+                factory.AddressTakenMethodEntrypoint(canonMethod, _isUnboxingThunk));
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -884,20 +879,21 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
 
+            // TODO-SIZE: this is address taken only in the delegate target case
             if (implMethod.Signature.IsStatic)
             {
                 if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
-                    return factory.ExactCallableAddress(implMethod);
+                    return factory.ExactCallableAddressTakenAddress(implMethod);
                 else
-                    return factory.MethodEntrypoint(implMethod);
+                    return factory.AddressTakenMethodEntrypoint(implMethod);
             }
             else if (implMethod.HasInstantiation)
             {
-                return factory.ExactCallableAddress(implMethod);
+                return factory.ExactCallableAddressTakenAddress(implMethod);
             }
             else
             {
-                return factory.CanonicalEntrypoint(implMethod);
+                return factory.AddressTakenMethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
             }
         }
 

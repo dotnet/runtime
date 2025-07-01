@@ -120,14 +120,14 @@ VOID InitLogging()
                 *ptr = *ptr + 1;
             }
             if (LogFileHandle == INVALID_HANDLE_VALUE) {
-                int ret = WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
+                int ret = WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
                 const char *msg = "Could not open log file, logging to ";
                 DWORD msgLen = (DWORD)strlen(msg);
                 CQuickSTR buff;
                 if (SUCCEEDED(buff.ReSizeNoThrow(ret + msgLen)))
                 {
                     strcpy_s(buff.Ptr(), buff.Size(), msg);
-                    WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
+                    WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
                     msg = buff.Ptr();
                 }
                 else
@@ -185,7 +185,7 @@ VOID InitializeLogging()
     if (bLoggingInitialized)
         return;
 
-    HANDLE mutex = WszCreateMutex(NULL, FALSE, NULL);
+    HANDLE mutex = CreateMutex(NULL, FALSE, NULL);
     _ASSERTE(mutex != 0);
     if (InterlockedCompareExchangeT(&LogFileMutex, mutex, 0) != 0)
     {
@@ -260,7 +260,6 @@ bool Logging2On(DWORD facility2, DWORD level) {
 //
 VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -275,7 +274,6 @@ VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
 
 VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -290,7 +288,6 @@ VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args)
 
 VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -372,10 +369,9 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     if (LogFlags & LOG_ENABLE_CONSOLE_LOGGING)
     {
-        WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), pBuffer, buflen, &written, 0);
-        //<TODO>@TODO ...Unnecessary to flush console?</TODO>
+        minipal_log_write_info(pBuffer);
         if (LogFlags & LOG_ENABLE_FLUSH_FILE)
-            FlushFileBuffers( GetStdHandle(STD_OUTPUT_HANDLE) );
+            minipal_log_sync_info();
     }
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
@@ -415,6 +411,5 @@ VOID LogSpewAlways (const char *fmt, ... )
     LogSpewValist (LF_ALWAYS, LL_ALWAYS, fmt, args);
     va_end(args);
 }
-
 #endif // LOGGING
 

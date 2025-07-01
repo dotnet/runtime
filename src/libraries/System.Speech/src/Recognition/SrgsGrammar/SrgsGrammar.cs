@@ -88,7 +88,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                     break;
 
                 default:
-                    System.Diagnostics.Debug.Assert(false, "Unknown Tag Format!!!");
+                    System.Diagnostics.Debug.Fail("Unknown Tag Format!!!");
                     break;
             }
 
@@ -303,7 +303,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 _culture = value;
             }

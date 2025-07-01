@@ -93,7 +93,7 @@ namespace System.Diagnostics.Metrics
                 case 3: tags[2] = tagList.Tag3; goto case 2;
                 case 2: tags[1] = tagList.Tag2; goto case 1;
                 case 1: tags[0] = tagList.Tag1; break;
-                case 0: return; // no need to report anything
+                case 0: break;
                 default:
                     Debug.Assert(false);
                     return;

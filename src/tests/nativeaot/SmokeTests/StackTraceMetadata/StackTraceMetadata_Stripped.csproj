@@ -9,8 +9,15 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
     <DefineConstants>$(DefineConstants);STRIPPED</DefineConstants>
     <StackTraceSupport>false</StackTraceSupport>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackTraceMetadata.cs" />
+    <Compile Include="BodyFoldingTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--export-unmanaged-entrypoints" />
   </ItemGroup>
 </Project>

@@ -80,6 +80,32 @@ namespace ILCompiler.ObjectWriter
                     InitialCFAOffset = 8;
                     break;
 
+                case TargetArchitecture.LoongArch64:
+                    CodeAlignFactor = 1;
+                    DataAlignFactor = -4;
+                    ReturnAddressRegister = 1; // RA
+                    Instructions =
+                    [
+                        DW_CFA_def_cfa,
+                        3, // SP
+                        0, // Offset from SP
+                    ];
+                    InitialCFAOffset = 0;
+                    break;
+
+                case TargetArchitecture.RiscV64:
+                    CodeAlignFactor = 1;
+                    DataAlignFactor = -8;
+                    ReturnAddressRegister = 1; // RA
+                    Instructions = new byte[]
+                    {
+                        DW_CFA_def_cfa,
+                        2, // SP
+                        0, // Offset from SP
+                    };
+                    InitialCFAOffset = 0;
+                    break;
+
                 default:
                     throw new NotSupportedException("Unsupported architecture");
             }

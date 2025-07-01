@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Runtime.Intrinsics.Tests.Vectors;
+using System.Tests;
 using Xunit;
 using Xunit.Sdk;
 
@@ -17,7 +17,6 @@ namespace System.Numerics.Tests
     /// <summary>
     ///  Vector{T} tests that use random number generation and a unified generic test structure
     /// </summary>
-    [RequiresPreviewFeatures]
     public unsafe class GenericVectorTests
     {
         /// <summary>Verifies that two <see cref="Vector{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
@@ -54,7 +53,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
         public unsafe void IsHardwareAcceleratedTest()
         {
             MethodInfo methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
@@ -1096,10 +1094,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionInt64() { TestAddition<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionSingle() { TestAddition<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionDouble() { TestAddition<double>(); }
         private void TestAddition<T>() where T : struct, INumber<T>
         {
@@ -1163,10 +1159,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void SubtractionInt64() { TestSubtraction<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionSingle() { TestSubtraction<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionDouble() { TestSubtraction<double>(); }
         private void TestSubtraction<T>() where T : struct, INumber<T>
         {
@@ -1230,10 +1224,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationInt64() { TestMultiplication<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationSingle() { TestMultiplication<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationDouble() { TestMultiplication<double>(); }
         private void TestMultiplication<T>() where T : struct, INumber<T>
         {
@@ -1274,11 +1266,9 @@ namespace System.Numerics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt64() { TestMultiplicationWithScalar<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSingle() { TestMultiplicationWithScalar<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarDouble() { TestMultiplicationWithScalar<double>(); }
         private void TestMultiplicationWithScalar<T>() where T : struct, INumber<T>
@@ -1320,10 +1310,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionInt64() { TestDivision<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionSingle() { TestDivision<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionDouble() { TestDivision<double>(); }
         private void TestDivision<T>() where T : struct, INumber<T>
         {
@@ -1390,11 +1378,9 @@ namespace System.Numerics.Tests
         public void DivisionWithScalarInt64() { TestDivisionWithScalar<long>(); }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionWithScalarSingle() { TestDivisionWithScalar<float>(); }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionWithScalarDouble() { TestDivisionWithScalar<double>(); }
 
         private void TestDivisionWithScalar<T>() where T : struct, INumber<T>
@@ -1462,10 +1448,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void UnaryMinusInt64() { TestUnaryMinus<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusSingle() { TestUnaryMinus<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusDouble() { TestUnaryMinus<double>(); }
         private void TestUnaryMinus<T>() where T : struct, INumber<T>
         {
@@ -1852,10 +1836,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void VectorGreaterThanInt64() { TestVectorGreaterThan<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanSingle() { TestVectorGreaterThan<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanDouble() { TestVectorGreaterThan<double>(); }
         private void TestVectorGreaterThan<T>() where T : struct, INumber<T>
         {
@@ -1891,10 +1873,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void GreaterThanOrEqualInt64() { TestVectorGreaterThanOrEqual<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualSingle() { TestVectorGreaterThanOrEqual<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualDouble() { TestVectorGreaterThanOrEqual<double>(); }
         private void TestVectorGreaterThanOrEqual<T>() where T : struct, INumber<T>
         {
@@ -2146,10 +2126,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanInt64() { TestVectorLessThan<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanSingle() { TestVectorLessThan<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanDouble() { TestVectorLessThan<double>(); }
         private void TestVectorLessThan<T>() where T : struct, INumber<T>
         {
@@ -2185,10 +2163,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanOrEqualInt64() { TestVectorLessThanOrEqual<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualSingle() { TestVectorLessThanOrEqual<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualDouble() { TestVectorLessThanOrEqual<double>(); }
         private void TestVectorLessThanOrEqual<T>() where T : struct, INumber<T>
         {
@@ -2224,10 +2200,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanAnyInt64() { TestVectorLessThanAny<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnySingle() { TestVectorLessThanAny<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnyDouble() { TestVectorLessThanAny<double>(); }
         private void TestVectorLessThanAny<T>() where T : struct, INumber<T>
         {
@@ -2552,10 +2526,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void ConditionalSelectInt64() { TestConditionalSelect<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectSingle() { TestConditionalSelect<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectDouble() { TestConditionalSelect<double>(); }
         private void TestConditionalSelect<T>() where T : struct, INumber<T>
         {
@@ -2606,10 +2578,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void DotProductInt64() { TestDotProduct<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductSingle() { TestDotProduct<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductDouble() { TestDotProduct<double>(); }
         private void TestDotProduct<T>() where T : struct, INumber<T>
         {
@@ -2644,10 +2614,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MaxInt64() { TestMax<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxSingle() { TestMax<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxDouble() { TestMax<double>(); }
         private void TestMax<T>() where T : struct, INumber<T>
         {
@@ -2682,10 +2650,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MinInt64() { TestMin<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinSingle() { TestMin<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinDouble() { TestMin<double>(); }
         private void TestMin<T>() where T : struct, INumber<T>
         {
@@ -2720,10 +2686,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void SquareRootInt64() { TestSquareRoot<long>(-1); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootSingle() { TestSquareRoot<float>(6); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootDouble() { TestSquareRoot<double>(15); }
         private void TestSquareRoot<T>(int precision = -1) where T : struct, INumber<T>, IEquatable<T>
         {
@@ -2816,10 +2780,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void AbsInt64() { TestAbs<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsSingle() { TestAbs<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsDouble() { TestAbs<double>(); }
         private void TestAbs<T>() where T : struct, INumber<T>
         {
@@ -2856,10 +2818,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationReflectionInt64() { TestMultiplicationReflection<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionSingle() { TestMultiplicationReflection<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionDouble() { TestMultiplicationReflection<double>(); }
         private void TestMultiplicationReflection<T>() where T : struct, INumber<T>
         {
@@ -2895,10 +2855,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionReflectionInt64() { TestAdditionReflection<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionSingle() { TestAdditionReflection<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionDouble() { TestAdditionReflection<double>(); }
         private void TestAdditionReflection<T>() where T : struct, INumber<T>
         {
@@ -2934,10 +2892,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionReflectionInt64() { TestDivisionReflection<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionSingle() { TestDivisionReflection<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionDouble() { TestDivisionReflection<double>(); }
         private void TestDivisionReflection<T>() where T : struct, INumber<T>
         {
@@ -3160,6 +3116,19 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void ConvertUInt32ToSingleWithReflection()
+        {
+            MethodInfo method = typeof(Vector).GetMethod(nameof(Vector.ConvertToSingle), [typeof(Vector<uint>)]);
+            uint[] source = GenerateRandomValuesForVector<uint>();
+            Vector<uint> sourceVec = new Vector<uint>(source);
+            Vector<float> targetVec = (Vector<float>)method.Invoke(null, [sourceVec]);
+            for (int i = 0; i < Vector<float>.Count; i++)
+            {
+                Assert.Equal(unchecked((float)source[i]), targetVec[i]);
+            }
+        }
+
+        [Fact]
         public void ConvertInt64ToDouble()
         {
             long[] source = GenerateRandomValuesForVector<long>();
@@ -3172,11 +3141,37 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void ConvertInt64ToDoubleWithReflection()
+        {
+            MethodInfo method = typeof(Vector).GetMethod(nameof(Vector.ConvertToDouble), [typeof(Vector<long>)]);
+            long[] source = GenerateRandomValuesForVector<long>();
+            Vector<long> sourceVec = new Vector<long>(source);
+            Vector<double> targetVec = (Vector<double>)method.Invoke(null, [sourceVec]);
+            for (int i = 0; i < Vector<double>.Count; i++)
+            {
+                Assert.Equal(unchecked((double)source[i]), targetVec[i]);
+            }
+        }
+
+        [Fact]
         public void ConvertUInt64ToDouble()
         {
             ulong[] source = GenerateRandomValuesForVector<ulong>();
             Vector<ulong> sourceVec = new Vector<ulong>(source);
             Vector<double> targetVec = Vector.ConvertToDouble(sourceVec);
+            for (int i = 0; i < Vector<double>.Count; i++)
+            {
+                Assert.Equal(unchecked((double)source[i]), targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertUInt64ToDoubleWithReflection()
+        {
+            MethodInfo method = typeof(Vector).GetMethod(nameof(Vector.ConvertToDouble), [typeof(Vector<ulong>)]);
+            ulong[] source = GenerateRandomValuesForVector<ulong>();
+            Vector<ulong> sourceVec = new Vector<ulong>(source);
+            Vector<double> targetVec = (Vector<double>)method.Invoke(null, [sourceVec]);
             for (int i = 0; i < Vector<double>.Count; i++)
             {
                 Assert.Equal(unchecked((double)source[i]), targetVec[i]);
@@ -4537,35 +4532,1552 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
-        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosDoubleTest(double value, double expectedResult, double variance)
         {
-            Vector<double> actualResult = Vector.FusedMultiplyAdd(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
-            AssertEqual(new Vector<double>(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<double>.Zero);
+            Vector<double> actualResult = Vector.Cos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
-        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        [MemberData(nameof(GenericMathTestMemberData.CosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosSingleTest(float value, float expectedResult, float variance)
         {
-            Vector<float> actualResult = Vector.FusedMultiplyAdd(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
-            AssertEqual(new Vector<float>(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<float>.Zero);
+            Vector<float> actualResult = Vector.Cos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
-        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        [MemberData(nameof(GenericMathTestMemberData.ExpDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void ExpDoubleTest(double value, double expectedResult, double variance)
         {
-            Vector<double> actualResult = Vector.MultiplyAddEstimate(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
-            AssertEqual(new Vector<double>(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<double>.Zero);
+            Vector<double> actualResult = Vector.Exp(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
-        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        [MemberData(nameof(GenericMathTestMemberData.ExpSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void ExpSingleTest(float value, float expectedResult, float variance)
         {
-            Vector<float> actualResult = Vector.MultiplyAddEstimate(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
-            AssertEqual(new Vector<float>(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<float>.Zero);
+            Vector<float> actualResult = Vector.Exp(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
         }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LogDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void LogDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult = Vector.Log(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LogSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void LogSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector<float> actualResult = Vector.Log(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.Log2Double), MemberType = typeof(GenericMathTestMemberData))]
+        public void Log2DoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult = Vector.Log2(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.Log2Single), MemberType = typeof(GenericMathTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            Vector<float> actualResult = Vector.Log2(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend, double expectedResult)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.FusedMultiplyAdd(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<double>.Zero);
+            AssertEqual(Vector.Create(double.MultiplyAddEstimate(left, right, addend)), Vector.MultiplyAddEstimate(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend, float expectedResult)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.FusedMultiplyAdd(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<float>.Zero);
+            AssertEqual(Vector.Create(float.MultiplyAddEstimate(left, right, addend)), Vector.MultiplyAddEstimate(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.ClampDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void ClampDoubleTest(double x, double min, double max, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Clamp(Vector.Create(x), Vector.Create(min), Vector.Create(max));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.ClampSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void ClampSingleTest(float x, float min, float max, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Clamp(Vector.Create(x), Vector.Create(min), Vector.Create(max));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CopySignDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void CopySignDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.CopySign(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CopySignSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CopySignSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.CopySign(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.DegreesToRadiansDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void DegreesToRadiansDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult1 = Vector.DegreesToRadians(Vector.Create(-value));
+            AssertEqual(Vector.Create(-expectedResult), actualResult1, Vector.Create(variance));
+
+            Vector<double> actualResult2 = Vector.DegreesToRadians(Vector.Create(+value));
+            AssertEqual(Vector.Create(+expectedResult), actualResult2, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.DegreesToRadiansSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void DegreesToRadiansSingleTest(float value, float expectedResult, float variance)
+        {
+            AssertEqual(Vector.Create(-expectedResult), Vector.DegreesToRadians(Vector.Create(-value)), Vector.Create(variance));
+            AssertEqual(Vector.Create(+expectedResult), Vector.DegreesToRadians(Vector.Create(+value)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.HypotDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void HypotDoubleTest(double x, double y, double expectedResult, double variance)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(+y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(+y)), Vector.Create(variance));
+
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(+x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(+x)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.HypotSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void HypotSingleTest(float x, float y, float expectedResult, float variance)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(+y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(+y)), Vector.Create(variance));
+
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(+x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(+x)), Vector.Create(variance));
+        }
+
+        private void IsEvenInteger<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsEvenInteger(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsEvenInteger(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerByteTest(byte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerDoubleTest(double value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt16Test(short value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt32Test(int value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt64Test(long value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSByteTest(sbyte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSingleTest(float value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt16Test(ushort value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt32Test(uint value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt64Test(ulong value) => IsEvenInteger(value);
+
+        private void IsFinite<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsFinite(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsFinite(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteByteTest(byte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteDoubleTest(double value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt16Test(short value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt32Test(int value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt64Test(long value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSByteTest(sbyte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSingleTest(float value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt16Test(ushort value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt32Test(uint value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt64Test(ulong value) => IsFinite(value);
+
+        private void IsInfinity<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsInfinity(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsInfinity(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityByteTest(byte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityDoubleTest(double value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt16Test(short value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt32Test(int value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt64Test(long value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySByteTest(sbyte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySingleTest(float value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt16Test(ushort value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt32Test(uint value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt64Test(ulong value) => IsInfinity(value);
+
+        private void IsInteger<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsInteger(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsInteger(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerByteTest(byte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerDoubleTest(double value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt16Test(short value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt32Test(int value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt64Test(long value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSByteTest(sbyte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSingleTest(float value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt16Test(ushort value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt32Test(uint value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt64Test(ulong value) => IsInteger(value);
+
+        private void IsNaN<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsNaN(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsNaN(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNByteTest(byte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNDoubleTest(double value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt16Test(short value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt32Test(int value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt64Test(long value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSByteTest(sbyte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSingleTest(float value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt16Test(ushort value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt32Test(uint value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt64Test(ulong value) => IsNaN(value);
+
+        private void IsNegative<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsNegative(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsNegative(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeByteTest(byte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeDoubleTest(double value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt16Test(short value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt32Test(int value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt64Test(long value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSByteTest(sbyte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSingleTest(float value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt16Test(ushort value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt32Test(uint value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt64Test(ulong value) => IsNegative(value);
+
+        private void IsNegativeInfinity<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsNegativeInfinity(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsNegativeInfinity(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityByteTest(byte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityDoubleTest(double value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt16Test(short value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt32Test(int value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt64Test(long value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySByteTest(sbyte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySingleTest(float value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt16Test(ushort value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt32Test(uint value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt64Test(ulong value) => IsNegativeInfinity(value);
+
+        private void IsNormal<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsNormal(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsNormal(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalByteTest(byte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalDoubleTest(double value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt16Test(short value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt32Test(int value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt64Test(long value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSByteTest(sbyte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSingleTest(float value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt16Test(ushort value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt32Test(uint value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt64Test(ulong value) => IsNormal(value);
+
+        private void IsOddInteger<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsOddInteger(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsOddInteger(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerByteTest(byte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerDoubleTest(double value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt16Test(short value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt32Test(int value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt64Test(long value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSByteTest(sbyte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSingleTest(float value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt16Test(ushort value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt32Test(uint value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt64Test(ulong value) => IsOddInteger(value);
+
+        private void IsPositive<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsPositive(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsPositive(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveByteTest(byte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveDoubleTest(double value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt16Test(short value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt32Test(int value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt64Test(long value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSByteTest(sbyte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSingleTest(float value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt16Test(ushort value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt32Test(uint value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt64Test(ulong value) => IsPositive(value);
+
+        private void IsPositiveInfinity<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsPositiveInfinity(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsPositiveInfinity(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityByteTest(byte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityDoubleTest(double value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt16Test(short value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt32Test(int value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt64Test(long value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySByteTest(sbyte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySingleTest(float value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt16Test(ushort value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt32Test(uint value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt64Test(ulong value) => IsPositiveInfinity(value);
+
+        private void IsSubnormal<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsSubnormal(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsSubnormal(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalByteTest(byte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalDoubleTest(double value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt16Test(short value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt32Test(int value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt64Test(long value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSByteTest(sbyte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSingleTest(float value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt16Test(ushort value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt32Test(uint value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt64Test(ulong value) => IsSubnormal(value);
+
+        private void IsZero<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsZero(value) ? Vector<T>.AllBitsSet : Vector<T>.Zero, Vector.IsZero(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroByteTest(byte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroDoubleTest(double value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt16Test(short value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt32Test(int value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt64Test(long value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSByteTest(sbyte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSingleTest(float value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt16Test(ushort value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt32Test(uint value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt64Test(ulong value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LerpDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void LerpDoubleTest(double x, double y, double amount, double expectedResult)
+        {
+            AssertEqual(Vector.Create(+expectedResult), Vector.Lerp(Vector.Create(+x), Vector.Create(+y), Vector.Create(amount)), Vector<double>.Zero);
+            AssertEqual(Vector.Create((expectedResult == 0.0) ? expectedResult : -expectedResult), Vector.Lerp(Vector.Create(-x), Vector.Create(-y), Vector.Create(amount)), Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LerpSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void LerpSingleTest(float x, float y, float amount, float expectedResult)
+        {
+            AssertEqual(Vector.Create(+expectedResult), Vector.Lerp(Vector.Create(+x), Vector.Create(+y), Vector.Create(amount)), Vector<float>.Zero);
+            AssertEqual(Vector.Create((expectedResult == 0.0f) ? expectedResult : -expectedResult), Vector.Lerp(Vector.Create(-x), Vector.Create(-y), Vector.Create(amount)), Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Max(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Max(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MaxMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MaxMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MaxMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MaxMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MaxNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MaxNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Min(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Min(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MinMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MinMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MinMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MinMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MinNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MinNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RadiansToDegreesDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RadiansToDegreesDoubleTest(double value, double expectedResult, double variance)
+        {
+            AssertEqual(Vector.Create(-expectedResult), Vector.RadiansToDegrees(Vector.Create(-value)), Vector.Create(variance));
+            AssertEqual(Vector.Create(+expectedResult), Vector.RadiansToDegrees(Vector.Create(+value)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RadiansToDegreesSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RadiansToDegreesSingleTest(float value, float expectedResult, float variance)
+        {
+            AssertEqual(Vector.Create(-expectedResult), Vector.RadiansToDegrees(Vector.Create(-value)), Vector.Create(variance));
+            AssertEqual(Vector.Create(+expectedResult), Vector.RadiansToDegrees(Vector.Create(+value)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Round(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Round(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundAwayFromZeroDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundAwayFromZeroDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.AwayFromZero);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundAwayFromZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundAwayFromZeroSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.AwayFromZero);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundToEvenDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundToEvenDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.ToEven);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundToEvenSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundToEvenSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.ToEven);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult = Vector.Sin(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector<float> actualResult = Vector.Sin(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosDoubleTest(double value, double expectedResultSin, double expectedResultCos, double allowedVarianceSin, double allowedVarianceCos)
+        {
+            (Vector<double> resultSin, Vector<double> resultCos) = Vector.SinCos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResultSin), resultSin, Vector.Create(allowedVarianceSin));
+            AssertEqual(Vector.Create(expectedResultCos), resultCos, Vector.Create(allowedVarianceCos));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosSingleTest(float value, float expectedResultSin, float expectedResultCos, float allowedVarianceSin, float allowedVarianceCos)
+        {
+            (Vector<float> resultSin, Vector<float> resultCos) = Vector.SinCos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResultSin), resultSin, Vector.Create(allowedVarianceSin));
+            AssertEqual(Vector.Create(expectedResultCos), resultCos, Vector.Create(allowedVarianceCos));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.TruncateDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void TruncateDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Truncate(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.TruncateSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void TruncateSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Truncate(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector.Create<T>(value1);
+            var input2 = Vector.Create<T>(value2);
+
+            Assert.True(Vector.All(input1, value1));
+            Assert.True(Vector.All(input2, value2));
+            Assert.False(Vector.All(input1.WithElement(0, value2), value1));
+            Assert.False(Vector.All(input2.WithElement(0, value1), value2));
+            Assert.False(Vector.All(input1, value2));
+            Assert.False(Vector.All(input2, value1));
+            Assert.False(Vector.All(input1.WithElement(0, value2), value2));
+            Assert.False(Vector.All(input2.WithElement(0, value1), value1));
+
+            Assert.True(Vector.Any(input1, value1));
+            Assert.True(Vector.Any(input2, value2));
+            Assert.True(Vector.Any(input1.WithElement(0, value2), value1));
+            Assert.True(Vector.Any(input2.WithElement(0, value1), value2));
+            Assert.False(Vector.Any(input1, value2));
+            Assert.False(Vector.Any(input2, value1));
+            Assert.True(Vector.Any(input1.WithElement(0, value2), value2));
+            Assert.True(Vector.Any(input2.WithElement(0, value1), value1));
+
+            Assert.False(Vector.None(input1, value1));
+            Assert.False(Vector.None(input2, value2));
+            Assert.False(Vector.None(input1.WithElement(0, value2), value1));
+            Assert.False(Vector.None(input2.WithElement(0, value1), value2));
+            Assert.True(Vector.None(input1, value2));
+            Assert.True(Vector.None(input2, value1));
+            Assert.False(Vector.None(input1.WithElement(0, value2), value2));
+            Assert.False(Vector.None(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector.Create<T>(value);
+
+            Assert.False(Vector.All(input, value));
+            Assert.False(Vector.Any(input, value));
+            Assert.True(Vector.None(input, value));
+        }
+
+        [Fact]
+        public void AllAnyNoneByteTest() => AllAnyNoneTest<byte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest() => AllAnyNoneTest<double>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void AllAnyNoneInt16Test() => AllAnyNoneTest<short>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt32Test() => AllAnyNoneTest<int>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt64Test() => AllAnyNoneTest<long>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSByteTest() => AllAnyNoneTest<sbyte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest() => AllAnyNoneTest<float>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void AllAnyNoneUInt16Test() => AllAnyNoneTest<ushort>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt32Test() => AllAnyNoneTest<uint>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt64Test() => AllAnyNoneTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector.Create<T>(allBitsSet);
+            var input2 = Vector.Create<T>(value2);
+
+            Assert.True(Vector.AllWhereAllBitsSet(input1));
+            Assert.False(Vector.AllWhereAllBitsSet(input2));
+            Assert.False(Vector.AllWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.False(Vector.AllWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.True(Vector.AnyWhereAllBitsSet(input1));
+            Assert.False(Vector.AnyWhereAllBitsSet(input2));
+            Assert.True(Vector.AnyWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.True(Vector.AnyWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.False(Vector.NoneWhereAllBitsSet(input1));
+            Assert.True(Vector.NoneWhereAllBitsSet(input2));
+            Assert.False(Vector.NoneWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.False(Vector.NoneWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetByteTest() => AllAnyNoneWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetDoubleTest() => AllAnyNoneWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt16Test() => AllAnyNoneWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt32Test() => AllAnyNoneWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt64Test() => AllAnyNoneWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSByteTest() => AllAnyNoneWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSingleTest() => AllAnyNoneWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt16Test() => AllAnyNoneWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt32Test() => AllAnyNoneWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt64Test() => AllAnyNoneWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector.Create<T>(value1);
+            var input2 = Vector.Create<T>(value2);
+
+            Assert.Equal(Vector<T>.Count, Vector.Count(input1, value1));
+            Assert.Equal(Vector<T>.Count, Vector.Count(input2, value2));
+            Assert.Equal(Vector<T>.Count - 1, Vector.Count(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector<T>.Count - 1, Vector.Count(input2.WithElement(0, value1), value2));
+            Assert.Equal(0, Vector.Count(input1, value2));
+            Assert.Equal(0, Vector.Count(input2, value1));
+            Assert.Equal(1, Vector.Count(input1.WithElement(0, value2), value2));
+            Assert.Equal(1, Vector.Count(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(0, Vector.IndexOf(input1, value1));
+            Assert.Equal(0, Vector.IndexOf(input2, value2));
+            Assert.Equal(1, Vector.IndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal(1, Vector.IndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector.IndexOf(input1, value2));
+            Assert.Equal(-1, Vector.IndexOf(input2, value1));
+            Assert.Equal(0, Vector.IndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector.IndexOf(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(Vector<T>.Count - 1, Vector.LastIndexOf(input1, value1));
+            Assert.Equal(Vector<T>.Count - 1, Vector.LastIndexOf(input2, value2));
+            Assert.Equal(Vector<T>.Count - 1, Vector.LastIndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector<T>.Count - 1, Vector.LastIndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector.LastIndexOf(input1, value2));
+            Assert.Equal(-1, Vector.LastIndexOf(input2, value1));
+            Assert.Equal(0, Vector.LastIndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector.LastIndexOf(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector.Create<T>(value);
+
+            Assert.Equal(0, Vector.Count(input, value));
+            Assert.Equal(-1, Vector.IndexOf(input, value));
+            Assert.Equal(-1, Vector.LastIndexOf(input, value));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfByteTest() => CountIndexOfLastIndexOfTest<byte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest() => CountIndexOfLastIndexOfTest<double>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt16Test() => CountIndexOfLastIndexOfTest<short>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt32Test() => CountIndexOfLastIndexOfTest<int>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt64Test() => CountIndexOfLastIndexOfTest<long>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSByteTest() => CountIndexOfLastIndexOfTest<sbyte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest() => CountIndexOfLastIndexOfTest<float>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt16Test() => CountIndexOfLastIndexOfTest<ushort>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt32Test() => CountIndexOfLastIndexOfTest<uint>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt64Test() => CountIndexOfLastIndexOfTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector.Create<T>(allBitsSet);
+            var input2 = Vector.Create<T>(value2);
+
+            Assert.Equal(Vector<T>.Count, Vector.CountWhereAllBitsSet(input1));
+            Assert.Equal(0, Vector.CountWhereAllBitsSet(input2));
+            Assert.Equal(Vector<T>.Count - 1, Vector.CountWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(1, Vector.CountWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(0, Vector.IndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector.IndexOfWhereAllBitsSet(input2));
+            Assert.Equal(1, Vector.IndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector.IndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(Vector<T>.Count - 1, Vector.LastIndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector.LastIndexOfWhereAllBitsSet(input2));
+            Assert.Equal(Vector<T>.Count - 1, Vector.LastIndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector.LastIndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetDoubleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSingleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMaxTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector<T> left = Vector.CreateSequence<T>(start, T.One);
+            Vector<T> right = Vector.Create<T>(T.MaxValue - T.CreateTruncating(Vector<T>.Count) + T.One);
+
+            Vector<T> result = Vector.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMinTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector<T> left = Vector.CreateSequence<T>(start, T.NegativeOne);
+            Vector<T> right = Vector.Create<T>(T.MinValue + T.CreateTruncating(Vector<T>.Count) - T.One);
+
+            Vector<T> result = Vector.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void AddSaturateByteTest() => AddSaturateToMaxTest<byte>(1);
+
+        [Fact]
+        public void AddSaturateInt16Test()
+        {
+            AddSaturateToMinTest<short>(-1);
+            AddSaturateToMaxTest<short>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt32Test()
+        {
+            AddSaturateToMinTest<int>(-1);
+            AddSaturateToMaxTest<int>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt64Test()
+        {
+            AddSaturateToMinTest<long>(-1);
+            AddSaturateToMaxTest<long>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateIntPtrTest()
+        {
+            AddSaturateToMinTest<nint>(-1);
+            AddSaturateToMaxTest<nint>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateSByteTest()
+        {
+            AddSaturateToMinTest<sbyte>(-1);
+            AddSaturateToMaxTest<sbyte>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateUInt16Test() => AddSaturateToMaxTest<ushort>(1);
+
+        [Fact]
+        public void AddSaturateUInt32Test() => AddSaturateToMaxTest<uint>(1);
+
+        [Fact]
+        public void AddSaturateUInt64Test() => AddSaturateToMaxTest<ulong>(1);
+
+        [Fact]
+        public void AddSaturateUIntPtrTest() => AddSaturateToMaxTest<nuint>(1);
+
+        private (Vector<TFrom> lower, Vector<TFrom> upper) GetNarrowWithSaturationInputs<TFrom, TTo>()
+            where TFrom : unmanaged, IMinMaxValue<TFrom>, INumber<TFrom>
+            where TTo : unmanaged, IMinMaxValue<TTo>, INumber<TTo>
+        {
+            Vector<TFrom> lower = Vector.Create<TFrom>(TFrom.CreateTruncating(TTo.MaxValue) - TFrom.CreateTruncating(Vector<TFrom>.Count) + TFrom.One)
+                                  + Vector.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            Vector<TFrom> upper = Vector.Create<TFrom>(TFrom.CreateTruncating(TTo.MinValue) + TFrom.CreateTruncating(Vector<TFrom>.Count) - TFrom.One)
+                                  - Vector.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            return (lower, upper);
+        }
+
+        private void NarrowWithSaturationTest<TFrom, TTo>(Vector<TFrom> lower, Vector<TFrom> upper, Vector<TTo> result)
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            for (int i = 0; i < Vector<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(lower[i]);
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            for (int i = 0; i < Vector<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(upper[i]);
+                Assert.Equal(expectedResult, result[Vector<TFrom>.Count + i]);
+            }
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt16Test()
+        {
+            (Vector<short> lower, Vector<short> upper) = GetNarrowWithSaturationInputs<short, sbyte>();
+            Vector<sbyte> result = Vector.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt32Test()
+        {
+            (Vector<int> lower, Vector<int> upper) = GetNarrowWithSaturationInputs<int, short>();
+            Vector<short> result = Vector.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt64Test()
+        {
+            (Vector<long> lower, Vector<long> upper) = GetNarrowWithSaturationInputs<long, int>();
+            Vector<int> result = Vector.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt16Test()
+        {
+            (Vector<ushort> lower, Vector<ushort> upper) = GetNarrowWithSaturationInputs<ushort, byte>();
+            Vector<byte> result = Vector.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt32Test()
+        {
+            (Vector<uint> lower, Vector<uint> upper) = GetNarrowWithSaturationInputs<uint, ushort>();
+            Vector<ushort> result = Vector.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt64Test()
+        {
+            (Vector<ulong> lower, Vector<ulong> upper) = GetNarrowWithSaturationInputs<ulong, uint>();
+            Vector<uint> result = Vector.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMaxTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector<T> left = Vector.Create<T>(T.MaxValue - T.CreateTruncating(Vector<T>.Count) + T.One);
+            Vector<T> right = Vector.CreateSequence<T>(start, T.NegativeOne);
+
+            Vector<T> result = Vector.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMinTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector<T> left = Vector.Create<T>(T.MinValue + T.CreateTruncating(Vector<T>.Count) - T.One);
+            Vector<T> right = Vector.CreateSequence<T>(start, T.One);
+
+            Vector<T> result = Vector.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void SubtractSaturateByteTest() => SubtractSaturateToMinTest<byte>(1);
+
+        [Fact]
+        public void SubtractSaturateInt16Test()
+        {
+            SubtractSaturateToMinTest<short>(+1);
+            SubtractSaturateToMaxTest<short>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt32Test()
+        {
+            SubtractSaturateToMinTest<int>(+1);
+            SubtractSaturateToMaxTest<int>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt64Test()
+        {
+            SubtractSaturateToMinTest<long>(+1);
+            SubtractSaturateToMaxTest<long>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateIntPtrTest()
+        {
+            SubtractSaturateToMinTest<nint>(+1);
+            SubtractSaturateToMaxTest<nint>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateSByteTest()
+        {
+            SubtractSaturateToMinTest<sbyte>(+1);
+            SubtractSaturateToMaxTest<sbyte>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateUInt16Test() => SubtractSaturateToMinTest<ushort>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt32Test() => SubtractSaturateToMinTest<uint>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt64Test() => SubtractSaturateToMinTest<ulong>(1);
+
+        [Fact]
+        public void SubtractSaturateUIntPtrTest() => SubtractSaturateToMinTest<nuint>(1);
     }
 }

@@ -32,11 +32,7 @@ namespace System.Reflection
                 TypeInfo[] typeinfos = new TypeInfo[types.Length];
                 for (int i = 0; i < types.Length; i++)
                 {
-                    TypeInfo typeinfo = types[i].GetTypeInfo();
-                    if (typeinfo == null)
-                        throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
-
-                    typeinfos[i] = typeinfo;
+                    typeinfos[i] = types[i].GetTypeInfo() ?? throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
                 }
                 return typeinfos;
             }
@@ -200,7 +196,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(Assembly? left, Assembly? right) => !(left == right);

@@ -731,8 +731,8 @@ DWORD LCM(DWORD u, DWORD v)
     if (m_nGroups > 1)
     {
         m_enableGCCPUGroups = TRUE;
-        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
-        m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+        m_threadUseAllCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.UseAllCpuGroups"), CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
+        m_threadAssignCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.AssignCpuGroups"), CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
         // Save the processor group affinity of the initial thread
         GROUP_AFFINITY groupAffinity;
@@ -1166,7 +1166,7 @@ void ConfigMethodSet::init(const CLRConfig::ConfigStringInfo & info)
 }
 
 /**************************************************************************/
-bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig)
+bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, int argCount)
 {
     CONTRACTL
     {
@@ -1178,7 +1178,7 @@ bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGN
 
     if (m_list.IsEmpty())
         return false;
-    return(m_list.IsInList(methodName, className, sig));
+    return(m_list.IsInList(methodName, className, argCount));
 }
 
 /**************************************************************************/
@@ -1509,25 +1509,6 @@ void MethodNamesListBase::Destroy()
         pName = pName->next;
         delete curName;
     }
-}
-
-/**************************************************************/
-bool MethodNamesListBase::IsInList(LPCUTF8 methName, LPCUTF8 clsName, PCCOR_SIGNATURE sig)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    int numArgs = -1;
-    if (sig != NULL)
-    {
-        sig++;      // Skip calling convention
-        numArgs = CorSigUncompressData(sig);
-    }
-
-    return IsInList(methName, clsName, numArgs);
 }
 
 /**************************************************************/
@@ -1942,35 +1923,6 @@ HRESULT validateTokenSig(
     return S_OK;
 }   // validateTokenSig()
 
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pString);
-    STORAGESIGNATURE* pSig = (STORAGESIGNATURE*) pMetaData;
-
-    // Verify the signature.
-
-    // If signature didn't match, you shouldn't be here.
-    if (pSig->GetSignature() != STORAGE_MAGIC_SIG)
-        return CLDB_E_FILE_CORRUPT;
-
-    // The version started in version 1.1
-    if (pSig->GetMajorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    if (pSig->GetMajorVer() == 1 && pSig->GetMinorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    // Header data starts after signature.
-    *pString = (LPCSTR) pSig->pVersion;
-    return S_OK;
-}
-
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.
 //*****************************************************************************
@@ -2011,11 +1963,11 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
-    iReqLen = WszMultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
+    iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
 
     // If the buffer was too small, determine what is required.
     if (iReqLen == 0)
-        bAlloc = iReqLen = WszMultiByteToWideChar(CP_UTF8, 0, pStr, -1, 0, 0);
+        bAlloc = iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, 0, 0);
     // Resize the buffer.  If the buffer was large enough, this just sets the internal
     //  counter, but if it was too small, this will attempt a reallocation.  Note that
     //  the length includes the terminating W('/0').
@@ -2038,7 +1990,7 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
-        iActLen = WszMultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
+        iActLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
         _ASSERTE(iReqLen == iActLen);
     }
 ErrExit:
@@ -2286,6 +2238,100 @@ void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
     _ASSERTE(GetArm64Rel12(pCode) == imm12);
 }
 
+//*****************************************************************************
+//  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
+//*****************************************************************************
+INT64 GetLoongArch64PC12(UINT32 * pCode)
+{
+    UINT32 pcInstr = *pCode;
+
+    // first get the high 20 bits,
+    INT64 imm = (INT64)(((pcInstr >> 5) & 0xFFFFF) << 12);
+
+    // then get the low 12 bits,
+    pcInstr = *(pCode + 1);
+    imm |= (INT64)((pcInstr >> 10) & 0xFFF);
+
+    return imm;
+}
+
+//*****************************************************************************
+//  Extract the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+INT64 GetLoongArch64JIR(UINT32 * pCode)
+{
+    UINT32 pcInstr = *pCode;
+
+    // first get the high 20 bits,
+    INT64 imm = ((INT64)((pcInstr >> 5) & 0xFFFFF) << 18);
+
+    // then get the low 18 bits
+    pcInstr = *(pCode + 1);
+    imm += ((INT64)((INT16)((pcInstr >> 10) & 0xFFFF))) << 2;
+
+    return imm;
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative page address and page offset into pcalau12i+add/ld
+//*****************************************************************************
+void PutLoongArch64PC12(UINT32 * pCode, INT64 imm)
+{
+    // Verify that we got a valid offset
+    _ASSERTE((INT32)imm == imm);
+
+    UINT32 pcInstr = *pCode;
+
+    _ASSERTE((pcInstr & 0xFE000000) == 0x1a000000); // Must be pcalau12i
+
+    // Assemble the pc-relative high 20 bits of 'imm' into the pcalau12i instruction
+    pcInstr |= (UINT32)((imm >> 7) & 0x1FFFFE0);
+
+    *pCode = pcInstr; // write the assembled instruction
+
+    pcInstr = *(pCode + 1);
+
+    // Assemble the pc-relative low 12 bits of 'imm' into the addid or ld instruction
+    pcInstr |= (UINT32)((imm & 0xFFF) << 10);
+
+    *(pCode + 1) = pcInstr; // write the assembled instruction
+
+    _ASSERTE(GetLoongArch64PC12(pCode) == imm);
+}
+
+//*****************************************************************************
+//  Deposit the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
+{
+    // Verify that we got a valid offset
+    _ASSERTE((imm38 >= -0x2000000000L) && (imm38 < 0x2000000000L));
+
+    _ASSERTE((imm38 & 0x3) == 0); // the low two bits must be zero
+
+    UINT32 pcInstr = *pCode;
+
+    _ASSERTE(pcInstr == 0x1e000010); // Must be pcaddu18i t4, 0
+
+    INT64 relOff = imm38 & 0x20000;
+    INT64 imm = imm38 + relOff;
+    relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
+
+    // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu18i instruction
+    pcInstr |= (UINT32)(((imm >> 18) & 0xFFFFF) << 5);
+
+    *pCode = pcInstr; // write the assembled instruction
+
+    pcInstr = *(pCode + 1);
+
+    // Assemble the pc-relative low 18 bits of 'imm38' into the jirl instruction
+    pcInstr |= (UINT32)(relOff << 10);
+
+    *(pCode + 1) = pcInstr; // write the assembled instruction
+
+    _ASSERTE(GetLoongArch64JIR(pCode) == imm38);
+}
+
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
@@ -2385,7 +2431,7 @@ namespace Util
 {
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
-    // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation
+    // https://learn.microsoft.com/windows/desktop/secauthz/client-impersonation
     class SuspendImpersonation
     {
     public:
@@ -2498,17 +2544,17 @@ namespace Reg
         }
         else
         {   // Try to open the specified subkey.
-            if (WszRegOpenKeyEx(hKey, wszSubKeyName, 0, KEY_READ, &hTargetKey) != ERROR_SUCCESS)
+            if (RegOpenKeyEx(hKey, wszSubKeyName, 0, KEY_READ, &hTargetKey) != ERROR_SUCCESS)
                 return REGDB_E_CLASSNOTREG;
         }
 
         DWORD type;
         DWORD size;
-        if ((WszRegQueryValueEx(hTargetKey, wszValueName, 0, &type, 0, &size) == ERROR_SUCCESS) &&
+        if ((RegQueryValueEx(hTargetKey, wszValueName, 0, &type, 0, &size) == ERROR_SUCCESS) &&
             type == REG_SZ && size > 0)
         {
             LPWSTR wszValueBuf = ssValue.OpenUnicodeBuffer(static_cast<COUNT_T>((size / sizeof(WCHAR)) - 1));
-            LONG lResult = WszRegQueryValueEx(
+            LONG lResult = RegQueryValueEx(
                 hTargetKey,
                 wszValueName,
                 0,
@@ -2574,7 +2620,7 @@ namespace Com
         {
             STANDARD_VM_CONTRACT;
 
-            WCHAR wszClsid[GUID_STR_BUFFER_LEN];
+            WCHAR wszClsid[MINIPAL_GUID_BUFFER_LEN];
             if (GuidToLPWSTR(rclsid, wszClsid) == 0)
                 return E_UNEXPECTED;
 

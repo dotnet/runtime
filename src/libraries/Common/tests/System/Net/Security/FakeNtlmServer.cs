@@ -13,7 +13,7 @@ using Xunit;
 namespace System.Net.Security
 {
     // Implementation of subset of the NTLM specification
-    // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/b38c36ed-2804-4868-a9ff-8dd3182128e4
+    // https://learn.microsoft.com/openspecs/windows_protocols/ms-nlmp/b38c36ed-2804-4868-a9ff-8dd3182128e4
     //
     // Server-side implementation of the NTLMv2 exchange is implemented with
     // basic verification of the messages passed by the client against a

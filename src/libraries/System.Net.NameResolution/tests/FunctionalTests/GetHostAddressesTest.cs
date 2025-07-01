@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
@@ -69,14 +69,14 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostAddressesAsync(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsBeginGetHostAddresses_BadName_Throws()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses("BadName", null, null);
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(asyncObject));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsBeginGetHostAddresses_BadIpString_ReturnsAddress()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses("0.0.1.1", null, null);
@@ -86,7 +86,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.Parse("0.0.1.1"), results[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsBeginGetHostAddresses_MachineName_MatchesGetHostAddresses()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses(TestSettings.LocalHost, null, null);
@@ -170,6 +170,39 @@ namespace System.Net.NameResolution.Tests
 
             OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost, cts.Token));
             Assert.Equal(cts.Token, oce.CancellationToken);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetHostAddresses_DisableIPv6_ExcludesIPv6Addresses(bool useAsyncOuter)
+        {
+            RemoteExecutor.Invoke(RunTest, useAsyncOuter.ToString()).Dispose();
+
+            static async Task RunTest(string useAsync)
+            {
+                AppContext.SetSwitch("System.Net.DisableIPv6", true);
+                IPAddress[] addresses =
+                    bool.Parse(useAsync) ? await Dns.GetHostAddressesAsync(TestSettings.LocalHost) :
+                    Dns.GetHostAddresses(TestSettings.LocalHost);
+                Assert.All(addresses, address => Assert.Equal(AddressFamily.InterNetwork, address.AddressFamily));
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetHostAddresses_DisableIPv6_AddressFamilyInterNetworkV6_ReturnsEmpty(bool useAsyncOuter)
+        {
+            RemoteExecutor.Invoke(RunTest, useAsyncOuter.ToString()).Dispose();
+            static async Task RunTest(string useAsync)
+            {
+                AppContext.SetSwitch("System.Net.DisableIPv6", true);
+                IPAddress[] addresses =
+                    bool.Parse(useAsync) ? await Dns.GetHostAddressesAsync(TestSettings.LocalHost, AddressFamily.InterNetworkV6) :
+                    Dns.GetHostAddresses(TestSettings.LocalHost, AddressFamily.InterNetworkV6);
+                Assert.Empty(addresses);
+            }
         }
     }
 

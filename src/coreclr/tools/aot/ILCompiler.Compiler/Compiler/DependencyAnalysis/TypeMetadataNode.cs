@@ -77,9 +77,11 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         try
                         {
-                            // Make sure we're not adding a method to the dependency graph that is going to
-                            // cause trouble down the line. This entire type would not actually load on CoreCLR anyway.
-                            LibraryRootProvider.CheckCanGenerateMethod(method);
+                            // Spot check by parsing signature.
+                            // Previously we had LibraryRootProvider.CheckCanGenerateMethod(method) here, but that one
+                            // expects fully instantiated types and methods. We operate on definitions here.
+                            // This is not as thorough as it could be. This option is unsupported anyway.
+                            _ = method.Signature;
                         }
                         catch (TypeSystemException)
                         {
@@ -129,6 +131,18 @@ namespace ILCompiler.DependencyAnalysis
 
                 default:
                     Debug.Assert(type.IsDefType);
+
+                    // We generally postpone creating MethodTables until absolutely needed.
+                    // IDynamicInterfaceCastableImplementation is special in the sense that just obtaining a System.Type
+                    // (by e.g. browsing custom attribute metadata) gives the user enough to pass this to runtime APIs
+                    // that need a MethodTable. We don't have a legitimate type handle without the MethodTable. Other
+                    // kinds of APIs that expect a MethodTable have enough dataflow annotation to trigger warnings.
+                    // There's no dataflow annotations on the IDynamicInterfaceCastable.GetInterfaceImplementation API.
+                    if (type.IsInterface && ((MetadataType)type).IsDynamicInterfaceCastableImplementation())
+                    {
+                        dependencies ??= new DependencyList();
+                        dependencies.Add(nodeFactory.ReflectedType(type), "Reflected IDynamicInterfaceCastableImplementation");
+                    }
 
                     TypeDesc typeDefinition = type.GetTypeDefinition();
                     if (typeDefinition != type)

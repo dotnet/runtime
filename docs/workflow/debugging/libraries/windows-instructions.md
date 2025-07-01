@@ -1,5 +1,5 @@
-Debugging CoreFX on Windows
-==========================
+Debugging core .NET libraries on Windows
+========================================
 
 You can Debug .NET via Visual Studio or WinDBG.
 
@@ -37,11 +37,11 @@ For example: `src\System.Net.Sockets\tests\Functional\System.Net.Sockets.Tests.c
 
 * Execute the test
 
-Assuming that your repo is at `C:\corefx`:
+Assuming that your repo is at `C:\root`:
 
 ```
-cd C:\corefx\bin\tests\windows.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0
-C:\corefx\bin\tests\windows.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0\CoreRun.exe xunit.console.dll System.Net.Sockets.Tests.dll -xml testResults.xml -notrait category=nonwindowstests -notrait category=OuterLoop -notrait category=failing
+cd C:\root\bin\tests\windows.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0
+C:\root\bin\tests\windows.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0\CoreRun.exe xunit.console.dll System.Net.Sockets.Tests.dll -xml testResults.xml -notrait category=nonwindowstests -notrait category=OuterLoop -notrait category=failing
 ```
 
 * If the test crashes or encounters a `Debugger.Launch()` method call, WinDBG will automatically start and attach to the `CoreRun.exe` process
@@ -52,7 +52,7 @@ The following commands will properly configure the debugging extension and fix s
 .symfix
 .srcfix
 .reload
-!load C:\corefx\packages\runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR\<version>\tools\sos
+!load C:\root\packages\runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR\<version>\tools\sos
 ```
 
 _Important_: Pass in the correct path to your SOS extension discovered during the Prerequisites, step 2.
@@ -137,7 +137,7 @@ Logs are going to be placed in %SYSTEMDRIVE%\sockets.etl.
 
 ### Built-in EventSource tracing
 
-The following EventSources are built-in to CoreFX. The ones that are not marked as [__TestCode__] can be enabled in production scenarios for log collection.
+The following EventSources are built-in to the .NET platform. The ones that are not marked as [__TestCode__] can be enabled in production scenarios for log collection.
 
 #### Global
 * `*System.Diagnostics.Eventing.FrameworkEventSource {8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1}`: Global EventSource used by multiple namespaces.

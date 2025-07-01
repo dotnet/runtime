@@ -12,18 +12,18 @@
 #endif
 #include "ds-getter-setter.h"
 
-#ifdef HOST_WIN32
-#include <winsock2.h>
-typedef SOCKET ds_ipc_socket_t;
-typedef SOCKADDR ds_ipc_socket_address_t;
-typedef ADDRESS_FAMILY ds_ipc_socket_family_t;
-typedef int ds_ipc_socket_len_t;
-#else
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 typedef int ds_ipc_socket_t;
 typedef struct sockaddr ds_ipc_socket_address_t;
 typedef int ds_ipc_socket_family_t;
 typedef socklen_t ds_ipc_socket_len_t;
+#else
+#include <winsock2.h>
+typedef SOCKET ds_ipc_socket_t;
+typedef SOCKADDR ds_ipc_socket_address_t;
+typedef ADDRESS_FAMILY ds_ipc_socket_family_t;
+typedef int ds_ipc_socket_len_t;
 #endif
 
 /*

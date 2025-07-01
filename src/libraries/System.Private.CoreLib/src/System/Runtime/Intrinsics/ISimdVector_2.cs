@@ -42,7 +42,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in the vector.</summary>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
-        static abstract int Count { get; }
+        static abstract int ElementCount { get; }
 
         /// <summary>Gets a value that indicates whether the vector operations are subject to hardware acceleration through JIT intrinsic support.</summary>
         /// <value><see langword="true" /> if the vector operations are subject to hardware acceleration; otherwise, <see langword="false" />.</value>
@@ -93,23 +93,49 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf Add(TSelf left, TSelf right) => left + right;
 
+        /// <summary>Determines if all elements of a vector are equal to a given value.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <param name="value">The value to check for in <paramref name="vector" /></param>
+        /// <returns><c>true</c> if all elements of <paramref name="vector" /> are equal to <paramref name="value" />; otherwise, <c>false</c>.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool All(TSelf vector, T value);
+
+        /// <summary>Determines if all elements of a vector have all their bits set.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <returns><c>true</c> if all elements of <paramref name="vector" /> have all their bits set; otherwise, <c>false</c>.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" />(<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool AllWhereAllBitsSet(TSelf vector);
+
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to that is ones-complemented before being bitwise-and with <paramref name="left" />.</param>
         /// <returns>The bitwise-and of <paramref name="left" /> and the ones-complement of <paramref name="right" />.</returns>
         static virtual TSelf AndNot(TSelf left, TSelf right) => left & ~right;
 
+        /// <summary>Determines if any elements of a vector are equal to a given value.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <param name="value">The value to check for in <paramref name="vector" /></param>
+        /// <returns><c>true</c> if any elements of <paramref name="vector" /> are equal to <paramref name="value" />; otherwise, <c>false</c>.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool Any(TSelf vector, T value);
+
+        /// <summary>Determines if any elements of a vector have all their bits set.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <returns><c>true</c> if any elements of <paramref name="vector" /> have all their bits set; otherwise, <c>false</c>.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" />(<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool AnyWhereAllBitsSet(TSelf vector);
+
         /// <summary>Computes the bitwise-and of two vectors.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
-        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf BitwiseAnd(TSelf left, TSelf right) => left & right;
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
-        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf BitwiseOr(TSelf left, TSelf right) => left | right;
 
@@ -118,13 +144,36 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
         static abstract TSelf Ceiling(TSelf vector);
 
+        /// <summary>Restricts a vector between a minimum and a maximum value.</summary>
+        /// <param name="value">The vector to restrict.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>The restricted vector.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
+
+        /// <summary>Restricts a vector between a minimum and a maximum value using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="value">The vector to restrict.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>The restricted vector.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf ClampNative(TSelf value, TSelf min, TSelf max);
+
         /// <summary>Conditionally selects bits from two vectors based on a given condition.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
         /// <param name="left">The vector that is selected when the corresponding bit in <paramref name="condition" /> is one.</param>
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        /// <remarks>The returned vector is equivalent to <paramref name="condition" /> <c>?</c> <paramref name="left" /> <c>:</c> <paramref name="right" /> on a per-bit basis.</remarks>
         static virtual TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right) => (left & condition) | (right & ~condition);
+
+        /// <summary>Copies the per-element sign of a vector to the per-element sign of another vector.</summary>
+        /// <param name="value">The vector whose magnitude is used in the result.</param>
+        /// <param name="sign">The vector whose sign is used in the result.</param>
+        /// <returns>A vector with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
+        static abstract TSelf CopySign(TSelf value, TSelf sign);
 
         /// <summary>Copies a vector to a given array.</summary>
         /// <param name="vector">The vector to be copied.</param>
@@ -151,12 +200,25 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static virtual void CopyTo(TSelf vector, Span<T> destination)
         {
-            if (destination.Length < TSelf.Count)
+            if (destination.Length < TSelf.ElementCount)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
             TSelf.StoreUnsafe(vector, ref MemoryMarshal.GetReference(destination));
         }
+
+        /// <summary>Determines the number of elements in a vector that are equal to a given value.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <param name="value">The value to check for in <paramref name="vector" /></param>
+        /// <returns>The number of elements in <paramref name="vector" /> that are equal to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract int Count(TSelf vector, T value);
+
+        /// <summary>Determines the number of elements in a vector that have all their bits set.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <returns>The number of elements in <paramref name="vector" /> that have all their bits set.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract int CountWhereAllBitsSet(TSelf vector);
 
         /// <summary>Creates a new vector with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -188,7 +250,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf Create(ReadOnlySpan<T> values)
         {
-            if (values.Length < TSelf.Count)
+            if (values.Length < TSelf.ElementCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
@@ -310,6 +372,110 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract bool GreaterThanOrEqualAny(TSelf left, TSelf right);
 
+        /// <summary>Determines the index of the first element in a vector that is equal to a given value.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <param name="value">The value to check for in <paramref name="vector" /></param>
+        /// <returns>The index into <paramref name="vector" /> representing the first element that was equal to <paramref name="value" />; otherwise, <c>-1</c> if no such element exists.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract int IndexOf(TSelf vector, T value);
+
+        /// <summary>Determines the index of the first element in a vector that has all bits set.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <returns>The index into <paramref name="vector" /> representing the first element that had all bits set; otherwise, <c>-1</c> if no such element exists.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract int IndexOfWhereAllBitsSet(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are even integral values.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were even integral values.</returns>
+        /// <remarks>
+        ///    <para>This correctly handles floating-point values and so <c>2.0</c> will return <c>all-bits-set</c> while <c>2.2</c> will return <c>zero</c>.</para>
+        ///    <para>This functioning returning <c>zero</c> for a corresponding element does not imply that <see cref="IsOddInteger(TSelf)" /> will return <c>all-bits-set</c> for that element. A number with a fractional portion, <c>3.3</c>, is not even nor odd.</para>
+        /// </remarks>
+        static abstract TSelf IsEvenInteger(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are finite.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were finite.</returns>
+        /// <remarks>This function returning <c>zero</c> for a corresponding element does not imply that <see cref="IsInfinity(TSelf)" /> will return <c>all-bits-set</c> for that element. <c>NaN</c> is not finite nor infinite.</remarks>
+        static abstract TSelf IsFinite(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are infinity.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were infinity.</returns>
+        /// <remarks>This function returning <c>zero</c> for a corresponding element does not imply that <see cref="IsFinite(TSelf)" /> will return <c>all-bits-set</c> for that element. <c>NaN</c> is not finite nor infinite.</remarks>
+        static abstract TSelf IsInfinity(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are integral values.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were integral values.</returns>
+        /// <remarks>This correctly handles floating-point values and so <c>2.0</c> and <c>3.0</c> will return <c>all-bits-set</c> for a corresponding element while <c>2.2</c> and <c>3.3</c> will return <c>zero</c>.</remarks>
+        static abstract TSelf IsInteger(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are NaN.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were NaN.</returns>
+        static abstract TSelf IsNaN(TSelf vector);
+
+        /// <summary>Determines which elements in a vector represents negative real numbers.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were negative.</returns>
+        /// <remarks>If this type has signed zero, then <c>-0</c> is also considered negative.</remarks>
+        static abstract TSelf IsNegative(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are negative infinity.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were negative infinity.</returns>
+        static abstract TSelf IsNegativeInfinity(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are normal.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were normal.</returns>
+        static abstract TSelf IsNormal(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are odd integral values.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were odd integral values.</returns>
+        /// <remarks>
+        ///     <para>This correctly handles floating-point values and so <c>3.0</c> will return <c>all-bits-set</c> for a corresponding element while <c>3.3</c> will return <c>zero</c>.</para>
+        ///     <para>This functioning returning <c>zero</c> for a corresponding element does not imply that <see cref="IsEvenInteger(TSelf)" /> will return <c>all-bits-set</c> for that element. A number with a fractional portion, <c>3.3</c>, is neither even nor odd.</para>
+        /// </remarks>
+        static abstract TSelf IsOddInteger(TSelf vector);
+
+        /// <summary>Determines which elements in a vector represents positive real numbers.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were positive.</returns>
+        /// <remarks>If this type has signed zero, then <c>-0</c> is not considered positive, but <c>+0</c> is.</remarks>
+        static abstract TSelf IsPositive(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are positive infinity.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were positive infinity.</returns>
+        static abstract TSelf IsPositiveInfinity(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are subnormal.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were subnormal.</returns>
+        static abstract TSelf IsSubnormal(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are zero.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were zero.</returns>
+        static abstract TSelf IsZero(TSelf vector);
+
+        /// <summary>Determines the index of the last element in a vector that is equal to a given value.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <param name="value">The value to check for in <paramref name="vector" /></param>
+        /// <returns>The index into <paramref name="vector" /> representing the last element that was equal to <paramref name="value" />; otherwise, <c>-1</c> if no such element exists.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract int LastIndexOf(TSelf vector, T value);
+
+        /// <summary>Determines the index of the last element in a vector that has all bits set.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <returns>The index into <paramref name="vector" /> representing the last element that had all bits set; otherwise, <c>-1</c> if no such element exists.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract int LastIndexOfWhereAllBitsSet(TSelf vector);
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
@@ -352,7 +518,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract bool LessThanOrEqualAny(TSelf left, TSelf right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <param name="source">The source from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" />.</returns>
@@ -378,7 +543,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf LoadAlignedNonTemporal(T* source) => TSelf.LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -393,33 +557,108 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf LoadUnsafe(ref readonly T source, nuint elementOffset);
 
-        /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
+        /// <summary>Compare two vectors to determine which is greater on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the maximum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is greater than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref ="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>maximum</c> function.This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf Max(TSelf left, TSelf right);
 
-        /// <summary>Computes the minimum of two vectors on a per-element basis.</summary>
+        /// <summary>Compares two vectors to compute which has the greater magnitude on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the minimum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a greater magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>maximumMagnitude</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxMagnitude(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which has the greater magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a greater magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>maximumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxMagnitudeNumber(TSelf left, TSelf right);
+
+        /// <summary>Compare two vectors to determine which is greater on a per-element basis using platform specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is greater than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxNative(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which is greater and returning the other value if an element is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is greater than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>maximumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxNumber(TSelf left, TSelf right);
+
+        /// <summary>Compare two vectors to determine which is lesser on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is lesser than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref ="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>minimum</c> function.This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf Min(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors to compute which has the lesser magnitude on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a lesser magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>minimumMagnitude</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinMagnitude(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which has the lesser magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a lesser magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>minimumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinMagnitudeNumber(TSelf left, TSelf right);
+
+        /// <summary>Compare two vectors to determine which is lesser on a per-element basis using platform specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is lesser than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinNative(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which is lesser and returning the other value if an element is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is lesser than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>minimumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinNumber(TSelf left, TSelf right);
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
         /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
         /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right"/> (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf Multiply(TSelf left, TSelf right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
         /// <param name="right">The scalar to multiply with <paramref name="left" />.</param>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right"/> (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf Multiply(TSelf left, T right) => left * right;
+
+        /// <summary>Computes an estimate of (<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" />.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of (<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" />.</returns>
+        /// <remarks>
+        ///   <para>On hardware that natively supports <c>FusedMultiplyAdd</c>, this may return a result that was rounded as one ternary operation.</para>
+        ///   <para>On hardware without specialized support, this may just return (<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" />.</para>
+        /// </remarks>
+        static abstract TSelf MultiplyAddEstimate(TSelf left, TSelf right, TSelf addend);
 
         /// <summary>Negates a vector.</summary>
         /// <param name="vector">The vector to negate.</param>
@@ -427,11 +666,29 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf Negate(TSelf vector) => -vector;
 
+        /// <summary>Determines if no elements of a vector are equal to a given value.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <param name="value">The value to check for in <paramref name="vector" /></param>
+        /// <returns><c>true</c> if no elements of <paramref name="vector" /> are equal to <paramref name="value" />; otherwise, <c>false</c>.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool None(TSelf vector, T value);
+
+        /// <summary>Determines if no elements of a vector have all their bits set.</summary>
+        /// <param name="vector">The vector whose elements are being checked.</param>
+        /// <returns><c>true</c> if no elements of <paramref name="vector" /> have all their bits set; otherwise, <c>false</c>.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" />(<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool NoneWhereAllBitsSet(TSelf vector);
+
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf OnesComplement(TSelf vector) => ~vector;
+
+        /// <summary>Rounds each element in a vector to the nearest integer using the default rounding mode (<see cref="MidpointRounding.ToEven" />).</summary>
+        /// <param name="vector">The vector to round.</param>
+        /// <returns>The result of rounding each element in <paramref name="vector" /> to the nearest integer using the default rounding mode.</returns>
+        static abstract TSelf Round(TSelf vector);
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -457,7 +714,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf Sqrt(TSelf vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
@@ -483,7 +739,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual void StoreAlignedNonTemporal(TSelf source, T* destination) => TSelf.StoreAligned(source, destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <param name="vector">The vector that will be stored.</param>
@@ -517,6 +772,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static virtual T ToScalar(TSelf vector) => TSelf.GetElement(vector, 0);
 
+        /// <summary>Truncates each element in a vector.</summary>
+        /// <param name="vector">The vector to truncate.</param>
+        /// <returns>The truncation of each element in <paramref name="vector" />.</returns>
+        static abstract TSelf Truncate(TSelf vector);
+
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="vector">The vector to copy.</param>
         /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
@@ -524,7 +784,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static virtual bool TryCopyTo(TSelf vector, Span<T> destination)
         {
-            if (destination.Length < TSelf.Count)
+            if (destination.Length < TSelf.ElementCount)
             {
                 return false;
             }
@@ -548,24 +808,5 @@ namespace System.Runtime.Intrinsics
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf Xor(TSelf left, TSelf right) => left ^ right;
-
-        //
-        // New Surface Area
-        //
-
-        /// <summary>Checks if any of the vector lanes are equivalent to value.</summary>
-        /// <param name="vector">The Vector.</param>
-        /// <param name="value">The Value to check.</param>
-        /// <returns><c>true</c> if <paramref name="vector" /> has any lanes equivalent to <paramref name="value" /> otherwise, <c>false</c> if none of the lanes are equivalent to <paramref name="value" /> />.</returns>
-        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
-        static abstract bool Any(TSelf vector, T value);
-
-        /// <summary>Checks if any of the vector lanes have All Bits set.</summary>
-        /// <param name="vector">The Vector to check.</param>
-        /// <returns><c>true</c> if <paramref name="vector" /> has any lanes with All Bits set otherwise, <c>false</c> if none of the lanes have All Bits set />.</returns>
-        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
-        static abstract bool AnyWhereAllBitsSet(TSelf vector);
-
-        static abstract int IndexOfLastMatch(TSelf vector);
     }
 }

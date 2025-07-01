@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Configuration.Ini
 {
     /// <summary>
-    /// Represents an INI file as an <see cref="IConfigurationSource"/>.
+    /// Represents an INI stream as an <see cref="IConfigurationSource"/>.
     /// Files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI Files on Wikipedia</a>)
     /// </summary>
     /// <examples>
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Configuration.Ini
         /// Builds the <see cref="IniConfigurationProvider"/> for this source.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>An <see cref="IniConfigurationProvider"/></returns>
+        /// <returns>An <see cref="IniConfigurationProvider"/>.</returns>
         public override IConfigurationProvider Build(IConfigurationBuilder builder)
             => new IniStreamConfigurationProvider(this);
     }

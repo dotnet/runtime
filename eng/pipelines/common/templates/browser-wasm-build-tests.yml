@@ -25,11 +25,12 @@ jobs:
         - name: alwaysRunVar
           value: ${{ parameters.alwaysRun }}
         - name: workloadsTestPreviousVersionsVar
-          value: $[
-            or(
-              eq(variables['Build.SourceBranchName'], 'main'),
-              eq(variables['System.PullRequest.TargetBranch'], 'main'))
-            ]
+          value: false
+#         value: $[
+#           or(
+#             eq(variables['Build.SourceBranchName'], 'main'),
+#             eq(variables['System.PullRequest.TargetBranch'], 'main'))
+#           ]
         - name: wbtProjectArg
           ${{ if eq(platform, 'browser_wasm_win') }}:
             value: '-projects'
@@ -110,6 +111,7 @@ jobs:
           /p:InstallWorkloadForTesting=true
           /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
+          /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
         timeoutInMinutes: 180
         condition: >-
           or(

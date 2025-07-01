@@ -10,7 +10,7 @@ namespace System.Text.Json.Nodes
 {
     public partial class JsonObject : IDictionary<string, JsonNode?>
     {
-        private JsonPropertyDictionary<JsonNode?>? _dictionary;
+        private OrderedDictionary<string, JsonNode?>? _dictionary;
 
         /// <summary>
         ///   Adds an element with the provided property name and value to the <see cref="JsonObject"/>.
@@ -25,6 +25,8 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public void Add(string propertyName, JsonNode? value)
         {
+            ArgumentNullException.ThrowIfNull(propertyName);
+
             Dictionary.Add(propertyName, value);
             value?.AssignParent(this);
         }
@@ -48,7 +50,7 @@ namespace System.Text.Json.Nodes
         /// </summary>
         public void Clear()
         {
-            JsonPropertyDictionary<JsonNode?>? dictionary = _dictionary;
+            OrderedDictionary<string, JsonNode?>? dictionary = _dictionary;
 
             if (dictionary is null)
             {
@@ -56,7 +58,7 @@ namespace System.Text.Json.Nodes
                 return;
             }
 
-            foreach (JsonNode? node in dictionary.GetValueCollection())
+            foreach (JsonNode? node in dictionary.Values)
             {
                 DetachParent(node);
             }
@@ -74,7 +76,12 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
-        public bool ContainsKey(string propertyName) => Dictionary.ContainsKey(propertyName);
+        public bool ContainsKey(string propertyName)
+        {
+            ArgumentNullException.ThrowIfNull(propertyName);
+
+            return Dictionary.ContainsKey(propertyName);
+        }
 
         /// <summary>
         ///   Gets the number of elements contained in <see cref="JsonObject"/>.
@@ -93,12 +100,9 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public bool Remove(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
-            bool success = Dictionary.TryRemoveProperty(propertyName, out JsonNode? removedNode);
+            bool success = Dictionary.Remove(propertyName, out JsonNode? removedNode);
             if (success)
             {
                 DetachParent(removedNode);
@@ -114,7 +118,8 @@ namespace System.Text.Json.Nodes
         /// <returns>
         ///   <see langword="true"/> if the <see cref="JsonObject"/> contains an element with the property name; otherwise, <see langword="false"/>.
         /// </returns>
-        bool ICollection<KeyValuePair<string, JsonNode?>>.Contains(KeyValuePair<string, JsonNode?> item) => Dictionary.Contains(item);
+        bool ICollection<KeyValuePair<string, JsonNode?>>.Contains(KeyValuePair<string, JsonNode?> item) =>
+            ((IDictionary<string, JsonNode?>)Dictionary).Contains(item);
 
         /// <summary>
         ///   Copies the elements of the <see cref="JsonObject"/> to an array of type KeyValuePair starting at the specified array index.
@@ -133,7 +138,8 @@ namespace System.Text.Json.Nodes
         ///   The number of elements in the source ICollection is greater than the available space from <paramref name="index"/>
         ///   to the end of the destination <paramref name="array"/>.
         /// </exception>
-        void ICollection<KeyValuePair<string, JsonNode?>>.CopyTo(KeyValuePair<string, JsonNode?>[] array, int index) => Dictionary.CopyTo(array, index);
+        void ICollection<KeyValuePair<string, JsonNode?>>.CopyTo(KeyValuePair<string, JsonNode?>[] array, int index) =>
+            ((IDictionary<string, JsonNode?>)Dictionary).CopyTo(array, index);
 
         /// <summary>
         ///   Returns an enumerator that iterates through the <see cref="JsonObject"/>.
@@ -178,7 +184,12 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
-        bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode) => Dictionary.TryGetValue(propertyName, out jsonNode);
+        bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode)
+        {
+            ArgumentNullException.ThrowIfNull(propertyName);
+
+            return Dictionary.TryGetValue(propertyName, out jsonNode);
+        }
 
         /// <summary>
         ///   Returns <see langword="false"/>.
@@ -193,13 +204,13 @@ namespace System.Text.Json.Nodes
         /// </returns>
         IEnumerator IEnumerable.GetEnumerator() => Dictionary.GetEnumerator();
 
-        private JsonPropertyDictionary<JsonNode?> InitializeDictionary()
+        private OrderedDictionary<string, JsonNode?> InitializeDictionary()
         {
-            GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
             if (dictionary is null)
             {
-                dictionary = new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive(Options));
+                dictionary = CreateDictionary(Options);
 
                 if (jsonElement.HasValue)
                 {
@@ -211,7 +222,7 @@ namespace System.Text.Json.Nodes
                             node.Parent = this;
                         }
 
-                        dictionary.Add(new KeyValuePair<string, JsonNode?>(jElementProperty.Name, node));
+                        dictionary.Add(jElementProperty.Name, node);
                     }
                 }
 
@@ -224,14 +235,20 @@ namespace System.Text.Json.Nodes
             return dictionary;
         }
 
-        private static bool IsCaseInsensitive(JsonNodeOptions? options) =>
-            options?.PropertyNameCaseInsensitive ?? false;
+        private static OrderedDictionary<string, JsonNode?> CreateDictionary(JsonNodeOptions? options, int capacity = 0)
+        {
+            StringComparer comparer = options?.PropertyNameCaseInsensitive ?? false
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal;
+
+            return new(capacity, comparer);
+        }
 
         /// <summary>
         /// Provides a coherent view of the underlying representation of the current node.
         /// The jsonElement value should be consumed if and only if dictionary value is null.
         /// </summary>
-        private void GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement)
+        private void GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement)
         {
             // Because JsonElement cannot be read atomically there might be torn reads,
             // however the order of read/write operations guarantees that that's only

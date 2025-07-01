@@ -149,6 +149,14 @@ bool NearDiffer::InitAsmDiff()
             {
                 coreDisTargetArchitecture = Target_Arm64;
             }
+            else if (0 == _stricmp(TargetArchitecture, "loongarch64"))
+            {
+                coreDisTargetArchitecture = Target_LoongArch64;
+            }
+            else if (0 == _stricmp(TargetArchitecture, "riscv64"))
+            {
+                coreDisTargetArchitecture = Target_RiscV64;
+            }
             else
             {
                 LogError("Illegal target architecture '%s'", TargetArchitecture);
@@ -1129,7 +1137,7 @@ bool NearDiffer::compareVars(MethodContext* mc, CompileResult* cr1, CompileResul
     if (ftn_1 != ftn_2)
     {
         // We would like to find out this situation
-        __debugbreak();
+        DEBUG_BREAK;
         LogVerbose("compareVars found non-matching CORINFO_METHOD_HANDLE %p %p", ftn_1, ftn_2);
         return false;
     }

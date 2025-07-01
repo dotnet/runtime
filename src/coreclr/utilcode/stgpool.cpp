@@ -505,7 +505,7 @@ StgPool::PersistToStream(
     {
         hr = E_FAIL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 } // StgPool::PersistToStream
@@ -984,7 +984,7 @@ StgStringPool::AddStringW(
     }
 
     // How many bytes will be required in the heap?
-    iLen = ::WszWideCharToMultiByte(
+    iLen = ::WideCharToMultiByte(
         CP_UTF8,
         0,
         szString,
@@ -1004,7 +1004,7 @@ StgStringPool::AddStringW(
     pData = reinterpret_cast<LPSTR>(GetNextLocation());
 
     // Convert the data in place to the correct location.
-    iLen = ::WszWideCharToMultiByte(
+    iLen = ::WideCharToMultiByte(
         CP_UTF8,
         0,
         szString,

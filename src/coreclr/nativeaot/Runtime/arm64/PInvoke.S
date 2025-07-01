@@ -7,17 +7,6 @@
 
 .global RhpTrapThreads
 
-// Note: these must match the defs in PInvokeTransitionFrameFlags defined in rhbinder.h
-PTFF_SAVE_SP            = 0x00000400
-
-// Bit position for the flags above, to be used with tbz / tbnz instructions
-PTFF_THREAD_ABORT_BIT   = 36
-
-// Bit position for the flags above, to be used with tbz/tbnz instructions
-TSF_Attached_Bit                = 0
-TSF_SuppressGcStress_Bit        = 3
-TSF_DoNotTriggerGc_Bit          = 4
-
 //
 // RhpPInvoke
 //

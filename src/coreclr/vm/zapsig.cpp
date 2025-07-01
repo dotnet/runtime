@@ -419,7 +419,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }
@@ -482,7 +482,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }
@@ -579,7 +579,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
         }
         else
         {
-            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
+            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef));
         }
     }
     else
@@ -599,7 +599,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
 
         if(pAssembly == NULL)
         {
-            DomainAssembly *pParentAssembly = fromModule->GetDomainAssembly();
+            Assembly *pParentAssembly = fromModule->GetAssembly();
             if (nativeImage != NULL)
             {
                 pAssembly = nativeImage->LoadManifestAssembly(index, pParentAssembly);
@@ -921,12 +921,15 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
     // in non-generic structs.
     BOOL isInstantiatingStub = (methodFlags & ENCODE_METHOD_SIG_InstantiatingStub);
     BOOL isUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub);
+    bool isAsyncVariant = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
 
     pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pMethod, thOwner.GetMethodTable(),
                                                             isUnboxingStub,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
-                                                            actualOwnerRequired);
+                                                            actualOwnerRequired,
+                                                            TRUE,
+                                                            isAsyncVariant == pMethod->IsAsyncVariantMethod() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {
@@ -1216,6 +1219,8 @@ BOOL ZapSig::EncodeMethod(
         methodFlags |= ENCODE_METHOD_SIG_InstantiatingStub;
     if (fMethodNeedsInstantiation)
         methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
+    if (pMethod->IsAsyncVariantMethod())
+        methodFlags |= ENCODE_METHOD_SIG_AsyncVariant;
 
     // Assume that the owner type is going to be needed
     methodFlags |= ENCODE_METHOD_SIG_OwnerType;

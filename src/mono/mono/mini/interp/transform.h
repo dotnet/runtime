@@ -95,6 +95,10 @@ struct _InterpInst {
 	guint16 data [MONO_ZERO_LEN_ARRAY];
 };
 
+#define BB_STATE_NOT_EMITTED 0
+#define BB_STATE_EMITTING 1
+#define BB_STATE_EMITTED 2
+
 struct _InterpBasicBlock {
 	int il_offset;
 	GSList *seq_points;
@@ -143,7 +147,6 @@ struct _InterpBasicBlock {
 	StackInfo *stack_state;
 
 	int index;
-	int jump_targets;
 
 	InterpBasicBlock *try_bblock;
 
@@ -151,12 +154,11 @@ struct _InterpBasicBlock {
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
 
+	guint emit_state : 2;
 	guint reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
 	guint preserve : 1;
 	guint dead: 1;
-	// This bblock is detectead early as being dead, we don't inline into it
-	guint no_inlining: 1;
 	// If patchpoint is set we will store mapping information between native offset and bblock index within
 	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
 	// optimized method we will map the bb_index to the corresponding native offset.
@@ -311,10 +313,12 @@ typedef struct
 	int n_data_items;
 	int max_data_items;
 	void **data_items;
-	GHashTable *data_hash;
+	// FIXME: ptr_u32
+	dn_simdhash_ptr_ptr_t *data_hash;
 	GSList *imethod_items;
 #ifdef ENABLE_EXPERIMENT_TIERED
-	GHashTable *patchsite_hash;
+	// FIXME: ptr_u32
+	dn_simdhash_ptr_ptr_t *patchsite_hash;
 #endif
 	int *clause_indexes;
 	int *clause_vars;
@@ -504,7 +508,7 @@ interp_dump_ins (InterpInst *ins, gpointer *data_items);
 InterpInst*
 interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct, int dreg);
 
-gint32 
+gint32
 interp_get_const_from_ldc_i4 (InterpInst *ins);
 
 int
@@ -520,7 +524,7 @@ void
 interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to);
 
 int
-interp_compute_native_offset_estimates (TransformData *td);
+interp_compute_native_offset_estimates (TransformData *td, gboolean final_code);
 
 void
 interp_optimize_code (TransformData *td);

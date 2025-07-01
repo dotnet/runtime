@@ -1,18 +1,12 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-project(comhost)
-
-set(DOTNET_PROJECT_NAME "comhost")
-
 # Include directories
-include_directories(../fxr)
 include_directories(../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     comhost.cpp
-    ../fxr_resolver.cpp
     clsidmap.cpp
     ../redirected_error_writer.cpp
 )
@@ -26,9 +20,12 @@ if(CLR_CMAKE_TARGET_WIN32)
         Exports.def)
 endif()
 
-include(../lib.cmake)
+add_compile_definitions(FEATURE_LIBHOST)
+add_compile_definitions(EXPORT_SHARED_API)
 
-add_definitions(-DFEATURE_LIBHOST=1)
+add_library(comhost SHARED ${SOURCES})
+
+add_version_info_to_target(comhost)
 
 if (CLR_CMAKE_TARGET_WIN32)
     set(WINLIBS wintrust.lib)
@@ -42,4 +39,4 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif()
 
 install_with_stripped_symbols(comhost TARGETS corehost)
-target_link_libraries(comhost PRIVATE libhostcommon)
+target_link_libraries(comhost PRIVATE libhostcommon fxr_resolver)

@@ -6,12 +6,14 @@
     <OptimizationPreference>Speed</OptimizationPreference>
     <ControlFlowGuard>Guard</ControlFlowGuard>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols Condition="'$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
+    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- Replace this line with the documented property once https://github.com/dotnet/runtime/issues/83495 is fixed -->
-    <RuntimeHostConfigurationOption Include="System.Xml.XmlResolver.IsNetworkingEnabledByDefault"
-                                    Value="false"
-                                    Trim="true" />
-  </ItemGroup>
+  <PropertyGroup>
+    <_LibPrefix Condition="'$(CrossHostArch)' == 'true'">$(LibPrefix)</_LibPrefix>
+    <_LibPrefix Condition="'$(CrossHostArch)' != 'true'">$(HostLibPrefix)</_LibPrefix>
+    <_LibSuffix Condition="'$(CrossHostArch)' == 'true'">$(LibSuffix)</_LibSuffix>
+    <_LibSuffix Condition="'$(CrossHostArch)' != 'true'">$(HostLibSuffix)</_LibSuffix>
+  </PropertyGroup>
 </Project>

@@ -370,6 +370,20 @@ PALEXPORT intptr_t SystemNative_Dup(intptr_t oldfd);
 PALEXPORT int32_t SystemNative_Unlink(const char* path);
 
 /**
+ * Check if the system supports memfd_create(2). 
+ * 
+ * Returns 1 if memfd_create is supported, 0 if not supported, or -1 on failure. Sets errno on failure.
+ */
+PALEXPORT int32_t SystemNative_IsMemfdSupported(void);
+
+/**
+ * Create an anonymous file descriptor. Implemented as shim to memfd_create(2).
+ *
+ * Returns file descriptor or -1 on failure. Sets errno on failure.
+ */
+PALEXPORT intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly);
+
+/**
  * Open or create a shared memory object. Implemented as shim to shm_open(3).
  *
  * Returns file descriptor or -1 on fiailure. Sets errno on failure.
@@ -384,16 +398,11 @@ PALEXPORT intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t
 PALEXPORT int32_t SystemNative_ShmUnlink(const char* name);
 
 /**
- * Returns the size of the dirent struct on the current architecture
- */
-PALEXPORT int32_t SystemNative_GetReadDirRBufferSize(void);
-
-/**
- * Re-entrant readdir that will retrieve the next dirent from the directory stream pointed to by dir.
+ * Retrieves the next dirent from the directory stream pointed to by dir.
  *
  * Returns 0 when data is retrieved; returns -1 when end-of-stream is reached; returns an error code on failure
  */
-PALEXPORT int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry);
+PALEXPORT int32_t SystemNative_ReadDir(DIR* dir, DirectoryEntry* outputEntry);
 
 /**
  * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.

@@ -5,6 +5,7 @@ using System.Collections.Tests;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -84,7 +85,7 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Fact]
-        public void EmptySource_ProducedFrozenDictionaryEmpty()
+        public void EmptyEnumerableSource_ProducedFrozenDictionaryEmpty()
         {
             IEnumerable<KeyValuePair<TKey, TValue>>[] sources = new[]
             {
@@ -115,6 +116,23 @@ namespace System.Collections.Frozen.Tests
                 Assert.Equal(0, source.ToFrozenDictionary(s => s.Key, NonDefaultEqualityComparer<TKey>.Instance).Count);
                 Assert.Equal(0, source.ToFrozenDictionary(s => s.Key, s => s.Value, NonDefaultEqualityComparer<TKey>.Instance).Count);
             }
+        }
+
+        [Fact]
+        public void EmptySpanSource_ProducedFrozenDictionaryEmpty()
+        {
+            ReadOnlySpan<KeyValuePair<TKey, TValue>> source = default;
+
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary.Create(source));
+
+            foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default })
+            {
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary.Create(comparer, source));
+            }
+
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary.Create(NonDefaultEqualityComparer<TKey>.Instance, source));
+
+            Assert.Equal(0, FrozenDictionary.Create(NonDefaultEqualityComparer<TKey>.Instance, source).Count);
         }
 
         [Fact]
@@ -201,23 +219,28 @@ namespace System.Collections.Frozen.Tests
         }
 
         public static IEnumerable<object[]> LookupItems_AllItemsFoundAsExpected_MemberData() =>
+            from useToFrozenDictionary in new[] { false, true }
             from size in new[] { 0, 1, 2, 10, 99 }
             from comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default, NonDefaultEqualityComparer<TKey>.Instance }
             from specifySameComparer in new[] { false, true }
-            select new object[] { size, comparer, specifySameComparer };
+            select new object[] { useToFrozenDictionary, size, comparer, specifySameComparer };
 
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
-        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
+        public void LookupItems_AllItemsFoundAsExpected(bool useToFrozenDictionary, int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
         {
             Dictionary<TKey, TValue> original =
                 GenerateUniqueKeyValuePairs(size)
                 .ToDictionary(p => p.Key, p => p.Value, comparer);
             KeyValuePair<TKey, TValue>[] originalPairs = original.ToArray();
 
-            FrozenDictionary<TKey, TValue> frozen = specifySameComparer ?
-                original.ToFrozenDictionary(comparer) :
-                original.ToFrozenDictionary();
+            FrozenDictionary<TKey, TValue> frozen = (useToFrozenDictionary, specifySameComparer) switch
+            {
+                (true, true) => original.ToFrozenDictionary(comparer),
+                (true, false) => original.ToFrozenDictionary(),
+                (false, true) => FrozenDictionary.Create(comparer, originalPairs),
+                (false, false) => FrozenDictionary.Create(originalPairs),
+            };
 
             // Make sure creating the frozen dictionary didn't alter the original
             Assert.Equal(originalPairs.Length, original.Count);
@@ -282,8 +305,10 @@ namespace System.Collections.Frozen.Tests
             }
         }
 
-        [Fact]
-        public void MultipleValuesSameKey_LastInSourceWins()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MultipleValuesSameKey_LastInSourceWins(bool useToFrozenDictionary)
         {
             TKey[] keys = GenerateUniqueKeyValuePairs(2).Select(pair => pair.Key).ToArray();
             TValue[] values = Enumerable.Range(0, 10).Select(CreateTValue).ToArray();
@@ -300,7 +325,9 @@ namespace System.Collections.Frozen.Tests
                     source = source.Reverse();
                 }
 
-                FrozenDictionary<TKey, TValue> frozen = source.ToFrozenDictionary(GetKeyIEqualityComparer());
+                FrozenDictionary<TKey, TValue> frozen = useToFrozenDictionary ?
+                    source.ToFrozenDictionary(GetKeyIEqualityComparer()) :
+                    FrozenDictionary.Create(GetKeyIEqualityComparer(), source.ToArray());
 
                 Assert.Equal(values[reverse ? 0 : values.Length - 1], frozen[keys[0]]);
                 Assert.Equal(values[reverse ? 0 : values.Length - 1], frozen[keys[1]]);
@@ -386,7 +413,9 @@ namespace System.Collections.Frozen.Tests
                 expected.Add(value, value);
             }
 
-            FrozenDictionary<string, string> actual = expected.ToFrozenDictionary(GetKeyIEqualityComparer());
+            FrozenDictionary<string, string> actual = percentageWithNonAscii % 2 == 0 ?
+                expected.ToFrozenDictionary(GetKeyIEqualityComparer()) :
+                FrozenDictionary.Create(GetKeyIEqualityComparer(), expected.ToArray());
 
             Assert.All(expected, kvp => actual.ContainsKey(kvp.Key));
         }
@@ -521,6 +550,42 @@ namespace System.Collections.Frozen.Tests
         protected override int MaxUniqueValueCount => byte.MaxValue;
 
         protected override byte Next(Random random) => (byte)random.Next(byte.MinValue, byte.MaxValue);
+    }
+
+    public class FrozenDictionary_Generic_Tests_ContiguousFromZeroEnum_byte : FrozenDictionary_Generic_Tests_base_for_numbers<ContiguousFromZeroEnum>
+    {
+        protected override bool AllowVeryLargeSizes => false;
+
+        protected override ContiguousFromZeroEnum Next(Random random) => (ContiguousFromZeroEnum)random.Next();
+    }
+
+    public class FrozenDictionary_Generic_Tests_NonContiguousFromZeroEnum_byte : FrozenDictionary_Generic_Tests_base_for_numbers<NonContiguousFromZeroEnum>
+    {
+        protected override bool AllowVeryLargeSizes => false;
+
+        protected override NonContiguousFromZeroEnum Next(Random random) => (NonContiguousFromZeroEnum)random.Next();
+    }
+
+    public enum ContiguousFromZeroEnum
+    {
+        A1, B1, C1, D1, E1, F1, G1, H1, I1, J1, K1, L1, M1, N1, O1, P1, Q1, R1, S1, T1, U1, V1, W1, X1, Y1, Z1,
+        A2, B2, C2, D2, E2, F2, G2, H2, I2, J2, K2, L2, M2, N2, O2, P2, Q2, R2, S2, T2, U2, V2, W2, X2, Y2, Z2,
+        A3, B3, C3, D3, E3, F3, G3, H3, I3, J3, K3, L3, M3, N3, O3, P3, Q3, R3, S3, T3, U3, V3, W3, X3, Y3, Z3,
+        A4, B4, C4, D4, E4, F4, G4, H4, I4, J4, K4, L4, M4, N4, O4, P4, Q4, R4, S4, T4, U4, V4, W4, X4, Y4, Z4,
+    }
+
+    public enum NonContiguousFromZeroEnum
+    {
+        A1 = 1, B1, C1, D1, E1, F1, G1, H1, I1, J1, K1, L1, M1, N1, O1, P1, Q1, S1, T1, U1, V1, W1, X1, Y1, Z1,
+        A2, B2, C2, D2, E2, F2, G2, H2, I2, J2, K2, L2, M2, N2, O2, P2, Q2, R2, S2, T2, U2, V2, W2, X2, Y2, Z2,
+        A3, B3, C3, D3, E3, F3, G3, H3, I3, J3, K3, L3, M3, N3, O3, P3, Q3, R3, S3, T3, U3, V3, W3, X3, Y3, Z3,
+        A4, B4, C4, D4, E4, F4, G4, H4, I4, J4, K4, L4, M4, N4, O4, P4, Q4, R4, S4, T4, U4, V4, W4, X4, Y4, Z4,
+    }
+
+    public class FrozenDictionary_Generic_Tests_HttpStatusCode_byte : FrozenDictionary_Generic_Tests_base_for_numbers<HttpStatusCode>
+    {
+        protected override bool AllowVeryLargeSizes => false;
+        protected override HttpStatusCode Next(Random random) => (HttpStatusCode)random.Next();
     }
 
     public class FrozenDictionary_Generic_Tests_sbyte_sbyte : FrozenDictionary_Generic_Tests_base_for_numbers<sbyte>

@@ -333,4 +333,28 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public new int ShadowProperty { get; set; }
     }
+
+    public sealed class ClassWithConflictingIgnoredProperties
+    {
+        [JsonIgnore]
+        public List<string>? UserList { get; set; }
+
+        [JsonPropertyName("userlist")]
+        public List<string>? SystemTextJsonUserList { get; set; }
+
+        [JsonIgnore]
+        public List<string>? UserGroupsList { get; set; }
+
+        [JsonPropertyName("usergroupslist")]
+        public List<string>? SystemTextJsonUserGroupsList { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public List<string>? SystemTextJsonIPAddresses { get; set; }
+
+        [JsonIgnore]
+        public List<object>? QueryParams { get; set; }
+
+        [JsonPropertyName("queryparams")]
+        public List<object>? SystemTextJsonQueryParams { get; set; }
+    }
 }

@@ -133,7 +133,7 @@ namespace System
                 return null;
             }
 
-            if (!(value is IConvertible v))
+            if (value is not IConvertible v)
             {
                 throw new InvalidCastException(SR.InvalidCast_IConvertible);
             }
@@ -239,7 +239,7 @@ namespace System
                 return null;
             }
 
-            if (!(value is IConvertible ic))
+            if (value is not IConvertible ic)
             {
                 if (value.GetType() == conversionType)
                 {
@@ -314,12 +314,12 @@ namespace System
         // Conversions to Boolean
         public static bool ToBoolean([NotNullWhen(true)] object? value)
         {
-            return value == null ? false : ((IConvertible)value).ToBoolean(null);
+            return value != null && ((IConvertible)value).ToBoolean(null);
         }
 
         public static bool ToBoolean([NotNullWhen(true)] object? value, IFormatProvider? provider)
         {
-            return value == null ? false : ((IConvertible)value).ToBoolean(provider);
+            return value != null && ((IConvertible)value).ToBoolean(provider);
         }
 
         public static bool ToBoolean(bool value)
@@ -2046,7 +2046,7 @@ namespace System
         //
         // Parses value in base base.  base can only
         // be 2, 8, 10, or 16.  If base is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static byte ToByte(string? value, int fromBase)
         {
@@ -2068,7 +2068,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static sbyte ToSByte(string? value, int fromBase)
@@ -2094,7 +2094,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static short ToInt16(string? value, int fromBase)
         {
@@ -2119,7 +2119,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static ushort ToUInt16(string? value, int fromBase)
@@ -2142,7 +2142,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static int ToInt32(string? value, int fromBase)
         {
@@ -2157,7 +2157,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static uint ToUInt32(string? value, int fromBase)
@@ -2173,7 +2173,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static long ToInt64(string? value, int fromBase)
         {
@@ -2188,7 +2188,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static ulong ToUInt64(string? value, int fromBase)
@@ -2202,11 +2202,11 @@ namespace System
                 0;
         }
 
-        // Convert the byte value to a string in base fromBase
+        // Convert the byte value to a string in base toBase
         public static string ToString(byte value, int toBase) =>
             ToString((int)value, toBase);
 
-        // Convert the Int16 value to a string in base fromBase
+        // Convert the Int16 value to a string in base toBase
         public static string ToString(short value, int toBase)
         {
             string format = "d";
@@ -2397,7 +2397,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, inArrayLength - length);
 
-            if (inArrayLength == 0)
+            if (length == 0)
                 return 0;
 
             // This is the maximally required length that must be available in the char array
@@ -2470,7 +2470,7 @@ namespace System
         /// <param name="bytes">The bytes to encode.</param>
         /// <param name="chars">The destination buffer large enough to handle the encoded chars.</param>
         /// <param name="charLengthRequired">The pre-calculated, exact number of chars that will be written.</param>
-        private static unsafe void ToBase64CharsLargeNoLineBreaks(ReadOnlySpan<byte> bytes, Span<char> chars, int charLengthRequired)
+        private static void ToBase64CharsLargeNoLineBreaks(ReadOnlySpan<byte> bytes, Span<char> chars, int charLengthRequired)
         {
             // For large enough inputs, it's beneficial to use the vectorized UTF8-based Base64 encoding
             // and then widen the resulting bytes into chars.
@@ -2798,7 +2798,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
-            if (inArray.Length == 0)
+            if (length == 0)
             {
                 return Array.Empty<byte>();
             }
@@ -2999,7 +2999,7 @@ namespace System
                 return remainder == 1 ? OperationStatus.NeedMoreData : OperationStatus.Done;
             }
 
-            var result = OperationStatus.Done;
+            OperationStatus result;
 
             if (destination.Length < quotient)
             {
@@ -3007,11 +3007,19 @@ namespace System
                 quotient = destination.Length;
                 result = OperationStatus.DestinationTooSmall;
             }
-            else if (remainder == 1)
+            else
             {
-                source = source.Slice(0, source.Length - 1);
-                destination = destination.Slice(0, destination.Length - 1);
-                result = OperationStatus.NeedMoreData;
+                if (remainder == 1)
+                {
+                    source = source.Slice(0, source.Length - 1);
+                    result = OperationStatus.NeedMoreData;
+                }
+                else
+                {
+                    result = OperationStatus.Done;
+                }
+
+                destination = destination.Slice(0, quotient);
             }
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))
@@ -3091,7 +3099,7 @@ namespace System
                 charsWritten = 0;
                 return true;
             }
-            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            else if (source.Length > int.MaxValue / 2 || destination.Length < source.Length * 2)
             {
                 charsWritten = 0;
                 return false;
@@ -3168,7 +3176,7 @@ namespace System
                 charsWritten = 0;
                 return true;
             }
-            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            else if (source.Length > int.MaxValue / 2 || destination.Length < source.Length * 2)
             {
                 charsWritten = 0;
                 return false;

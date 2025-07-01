@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.TrimAnalysis;
@@ -9,62 +9,62 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisGenericInstantiationPattern
-	{
-		public ISymbol GenericInstantiation { get; init; }
-		public IOperation Operation { get; init; }
-		public ISymbol OwningSymbol { get; init; }
-		public FeatureContext FeatureContext { get; init; }
+    internal readonly record struct TrimAnalysisGenericInstantiationPattern
+    {
+        public ISymbol GenericInstantiation { get; init; }
+        public IOperation Operation { get; init; }
+        public ISymbol OwningSymbol { get; init; }
+        public FeatureContext FeatureContext { get; init; }
 
-		public TrimAnalysisGenericInstantiationPattern (
-			ISymbol genericInstantiation,
-			IOperation operation,
-			ISymbol owningSymbol,
-			FeatureContext featureContext)
-		{
-			GenericInstantiation = genericInstantiation;
-			Operation = operation;
-			OwningSymbol = owningSymbol;
-			FeatureContext = featureContext.DeepCopy ();
-		}
+        public TrimAnalysisGenericInstantiationPattern(
+            ISymbol genericInstantiation,
+            IOperation operation,
+            ISymbol owningSymbol,
+            FeatureContext featureContext)
+        {
+            GenericInstantiation = genericInstantiation;
+            Operation = operation;
+            OwningSymbol = owningSymbol;
+            FeatureContext = featureContext.DeepCopy();
+        }
 
-		public TrimAnalysisGenericInstantiationPattern Merge (
-			FeatureContextLattice featureContextLattice,
-			TrimAnalysisGenericInstantiationPattern other)
-		{
-			Debug.Assert (Operation == other.Operation);
-			Debug.Assert (SymbolEqualityComparer.Default.Equals (GenericInstantiation, other.GenericInstantiation));
-			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
+        public TrimAnalysisGenericInstantiationPattern Merge(
+            FeatureContextLattice featureContextLattice,
+            TrimAnalysisGenericInstantiationPattern other)
+        {
+            Debug.Assert(Operation == other.Operation);
+            Debug.Assert(SymbolEqualityComparer.Default.Equals(GenericInstantiation, other.GenericInstantiation));
+            Debug.Assert(SymbolEqualityComparer.Default.Equals(OwningSymbol, other.OwningSymbol));
 
-			return new TrimAnalysisGenericInstantiationPattern (
-				GenericInstantiation,
-				Operation,
-				OwningSymbol,
-				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
-		}
+            return new TrimAnalysisGenericInstantiationPattern(
+                GenericInstantiation,
+                Operation,
+                OwningSymbol,
+                featureContextLattice.Meet(FeatureContext, other.FeatureContext));
+        }
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
-		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			if (context.EnableTrimAnalyzer &&
-				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
-				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
-				switch (GenericInstantiation) {
-				case INamedTypeSymbol type:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, type);
-					break;
+        public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
+        {
+            if (context.EnableTrimAnalyzer &&
+                !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
+                !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
+            {
+                var location = Operation.Syntax.GetLocation();
+                switch (GenericInstantiation)
+                {
+                    case INamedTypeSymbol type:
+                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(location, type, reportDiagnostic);
+                        break;
 
-				case IMethodSymbol method:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, method);
-					break;
+                    case IMethodSymbol method:
+                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(location, method, reportDiagnostic);
+                        break;
 
-				case IFieldSymbol field:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, field);
-					break;
-				}
-			}
-
-			return diagnosticContext.Diagnostics;
-		}
-	}
+                    case IFieldSymbol field:
+                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(location, field, reportDiagnostic);
+                        break;
+                }
+            }
+        }
+    }
 }

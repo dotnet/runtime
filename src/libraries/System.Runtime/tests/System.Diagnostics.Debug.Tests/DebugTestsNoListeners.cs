@@ -81,15 +81,17 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Asserts()
         {
-            VerifyLogged(() => Debug.Assert(true), "");
-            VerifyLogged(() => Debug.Assert(true, "assert passed"), "");
-            VerifyLogged(() => Debug.Assert(true, "assert passed", "nothing is wrong"), "");
-            VerifyLogged(() => Debug.Assert(true, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "");
+            bool someSuccessfulCondition = true;
+            VerifyLogged(() => Debug.Assert(someSuccessfulCondition), "");
+            VerifyLogged(() => Debug.Assert(someSuccessfulCondition, "assert passed"), "");
+            VerifyLogged(() => Debug.Assert(someSuccessfulCondition, "assert passed", "nothing is wrong"), "");
+            VerifyLogged(() => Debug.Assert(someSuccessfulCondition, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "");
 
-            VerifyAssert(() => Debug.Assert(false), "");
-            VerifyAssert(() => Debug.Assert(false, "assert passed"), "assert passed");
-            VerifyAssert(() => Debug.Assert(false, "assert passed", "nothing is wrong"), "assert passed", "nothing is wrong");
-            VerifyAssert(() => Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "assert passed", "nothing is wrong a b");
+            bool someFailedCondition = false;
+            VerifyAssert(() => Debug.Assert(someFailedCondition), "someFailedCondition");
+            VerifyAssert(() => Debug.Assert(someFailedCondition, "assert passed"), "assert passed");
+            VerifyAssert(() => Debug.Assert(someFailedCondition, "assert passed", "nothing is wrong"), "assert passed", "nothing is wrong");
+            VerifyAssert(() => Debug.Assert(someFailedCondition, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "assert passed", "nothing is wrong a b");
         }
 
         [Fact]

@@ -87,48 +87,49 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             _isSimpleAssembly = (_formatterEnums._assemblyFormat == FormatterAssemblyStyle.Simple);
 
-            using (DeserializationToken token = SerializationInfo.StartDeserialization())
+            // When BinaryFormatter was built-in to the platform we used to activate SerializationGuard here,
+            // but now that it has moved to an OOB offering it no longer does.
+
+            if (_fullDeserialization)
             {
-                if (_fullDeserialization)
-                {
-                    // Reinitialize
-                    _objectManager = new ObjectManager(_surrogates, _context);
-                    _serObjectInfoInit = new SerObjectInfoInit();
-                }
-
-                // Will call back to ParseObject, ParseHeader for each object found
-                serParser.Run();
-
-                if (_fullDeserialization)
-                {
-                    _objectManager!.DoFixups();
-                }
-
-                if (TopObject == null)
-                {
-                    throw new SerializationException(SR.Serialization_TopObject);
-                }
-
-                //if TopObject has a surrogate then the actual object may be changed during special fixup
-                //So refresh it using topID.
-                if (HasSurrogate(TopObject.GetType()) && _topId != 0)//Not yet resolved
-                {
-                    Debug.Assert(_objectManager != null);
-                    TopObject = _objectManager.GetObject(_topId);
-                }
-
-                if (TopObject is IObjectReference)
-                {
-                    TopObject = ((IObjectReference)TopObject).GetRealObject(_context);
-                }
-
-                if (_fullDeserialization)
-                {
-                    _objectManager!.RaiseDeserializationEvent(); // This will raise both IDeserialization and [OnDeserialized] events
-                }
-
-                return TopObject!;
+                // Reinitialize
+                _objectManager = new ObjectManager(_surrogates, _context);
+                _serObjectInfoInit = new SerObjectInfoInit();
             }
+
+            // Will call back to ParseObject, ParseHeader for each object found
+            serParser.Run();
+
+            if (_fullDeserialization)
+            {
+                _objectManager!.DoFixups();
+            }
+
+            if (TopObject == null)
+            {
+                throw new SerializationException(SR.Serialization_TopObject);
+            }
+
+            //if TopObject has a surrogate then the actual object may be changed during special fixup
+            //So refresh it using topID.
+            if (HasSurrogate(TopObject.GetType()) && _topId != 0) //Not yet resolved
+            {
+                Debug.Assert(_objectManager != null);
+                TopObject = _objectManager.GetObject(_topId);
+            }
+
+            if (TopObject is IObjectReference)
+            {
+                TopObject = ((IObjectReference)TopObject).GetRealObject(_context);
+            }
+
+            if (_fullDeserialization)
+            {
+                _objectManager!.
+                    RaiseDeserializationEvent(); // This will raise both IDeserialization and [OnDeserialized] events
+            }
+
+            return TopObject!;
         }
         private bool HasSurrogate(Type t)
         {

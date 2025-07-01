@@ -16,8 +16,6 @@
 #include "dynamicarray.h"
 #include "resource.h"
 
-#include "clrinternal.h"
-
 #ifndef MAX_LOCALE_NAME
 #define MAX_LOCALE_NAME (32)
 #endif
@@ -76,7 +74,7 @@ void DumpFiles(void* GUICookie)
                         int L = ulNameLen*3+3;
                         char* sz = new char[L];
                         memset(sz,0,L);
-                        WszWideCharToMultiByte(CP_UTF8,0,rFile[ix].name,-1,sz,L,NULL,NULL);
+                        WideCharToMultiByte(CP_UTF8,0,rFile[ix].name,-1,sz,L,NULL,NULL);
                         strcpy_s(szptr,SZSTRING_REMAINING_SIZE(szptr), ANCHORPT(ProperName(sz),rFileTok[ix]));
                         VDELETE(sz);
                     }
@@ -120,7 +118,7 @@ void DumpScope(void* GUICookie)
     mdModule mdm;
     GUID mvid;
     WCHAR scopeName[1024];
-    CHAR guidString[GUID_STR_BUFFER_LEN];
+    CHAR guidString[MINIPAL_GUID_BUFFER_LEN];
     memset(scopeName,0,1024*sizeof(WCHAR));
     if(SUCCEEDED(g_pPubImport->GetScopeProps( scopeName, 1024, NULL, &mvid))&& scopeName[0])
     {
@@ -128,12 +126,12 @@ void DumpScope(void* GUICookie)
             UINT32 L = (UINT32)u16_strlen(scopeName)*3+3;
             char* sz = new char[L];
             memset(sz,0,L);
-            WszWideCharToMultiByte(CP_UTF8,0,scopeName,-1,sz,L,NULL,NULL);
+            WideCharToMultiByte(CP_UTF8,0,scopeName,-1,sz,L,NULL,NULL);
             sprintf_s(szString,SZSTRING_SIZE,"%s%s %s",g_szAsmCodeIndent,KEYWORD(".module"),ProperName(sz));
             VDELETE(sz);
         }
         printLine(GUICookie,szString);
-        GuidToLPSTR(mvid, guidString);
+        minipal_guid_as_string(mvid, guidString, MINIPAL_GUID_BUFFER_LEN);
         sprintf_s(szString,SZSTRING_SIZE,COMMENT("%s// MVID: %s"),g_szAsmCodeIndent,guidString);
 
         printLine(GUICookie,szString);
@@ -234,7 +232,7 @@ void DumpAssembly(void* GUICookie, BOOL fFullDump)
             {
                 char* sz = new char[3*ulNameLen+3];
                 memset(sz,0,3*ulNameLen+3);
-                WszWideCharToMultiByte(CP_UTF8,0,wzName,-1,sz,3*ulNameLen+3,NULL,NULL);
+                WideCharToMultiByte(CP_UTF8,0,wzName,-1,sz,3*ulNameLen+3,NULL,NULL);
                 strcat_s(szString,SZSTRING_SIZE,ANCHORPT(ProperName(sz),tkAsm));
                 VDELETE(sz);
             }
@@ -356,7 +354,7 @@ void DumpAssemblyRefs(void* GUICookie)
                     {
                         char* sz = new char[3*ulNameLen+32];
                         memset(sz,0,3*ulNameLen+3);
-                        WszWideCharToMultiByte(CP_UTF8,0,rAsmRef[ix].name,-1,sz,3*ulNameLen+3,NULL,NULL);
+                        WideCharToMultiByte(CP_UTF8,0,rAsmRef[ix].name,-1,sz,3*ulNameLen+3,NULL,NULL);
                         // check for name duplication and introduce alias if needed
                         for(ixx = 0; ixx < ix; ixx++)
                         {
@@ -426,7 +424,7 @@ void DumpComTypeFQN(
     UINT32 L = (UINT32)u16_strlen(pCTD->wzName)*3+3;
     char* sz = new char[L];
     memset(sz,0,L);
-    WszWideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
+    WideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
     strcat_s(szName, SZSTRING_SIZE, JUMPPT(ProperName(sz), pCTD->tkComTypeTok));
     VDELETE(sz);
 }
@@ -449,7 +447,7 @@ void DumpImplementation(mdToken tkImplementation,
                     UINT32 L = (UINT32)u16_strlen(rFile[i].name)*3+3;
                     char* sz = new char[L];
                     memset(sz,0,L);
-                    WszWideCharToMultiByte(CP_UTF8,0,rFile[i].name,-1,sz,L,NULL,NULL);
+                    WideCharToMultiByte(CP_UTF8,0,rFile[i].name,-1,sz,L,NULL,NULL);
                     sprintf_s(szString,SZSTRING_SIZE,"%s%s %s",g_szAsmCodeIndent,KEYWORD(".file"),
                             JUMPPT(ProperName(sz),tkImplementation));
                     VDELETE(sz);
@@ -469,7 +467,7 @@ void DumpImplementation(mdToken tkImplementation,
                     UINT32 L = (UINT32)u16_strlen(rAsmRef[i].name)*3+3;
                     char* sz = new char[L];
                     memset(sz,0,L);
-                    WszWideCharToMultiByte(CP_UTF8,0,rAsmRef[i].name,-1,sz,L,NULL,NULL);
+                    WideCharToMultiByte(CP_UTF8,0,rAsmRef[i].name,-1,sz,L,NULL,NULL);
                     sprintf_s(szString,SZSTRING_SIZE,"%s%s %s",g_szAsmCodeIndent,KEYWORD(".assembly extern"),
                             JUMPPT(ProperName(sz),tkImplementation));
                     VDELETE(sz);
@@ -515,7 +513,7 @@ void DumpComType(LocalComTypeDescr* pCTD,
         UINT32 L = (UINT32)u16_strlen(pCTD->wzName)*3+3;
         char* sz = new char[L];
         memset(sz,0,L);
-        WszWideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
+        WideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
         strcpy_s(pc,SZSTRING_REMAINING_SIZE(pc),ANCHORPT(ProperName(sz),pCTD->tkComTypeTok));
         VDELETE(sz);
     }
@@ -781,7 +779,7 @@ void DumpManifestResources(void* GUICookie)
 
             static WCHAR wzFileName[2048];
 
-            WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzFileName,2048);
+            MultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzFileName,2048);
             wzName = (WCHAR*)u16_strrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_W);
 #ifdef HOST_WINDOWS
             if(wzName == NULL) wzName = (WCHAR*)u16_strrchr(wzFileName,':');
@@ -838,7 +836,7 @@ void DumpManifestResources(void* GUICookie)
                     char* pc = szString + strlen(szString);
                     wzName[ulNameLen]=0;
 
-                    WszWideCharToMultiByte(CP_UTF8,0,wzName,-1,sz,sizeof(sz),NULL,NULL);
+                    WideCharToMultiByte(CP_UTF8,0,wzName,-1,sz,sizeof(sz),NULL,NULL);
                     strcpy_s(pc,SZSTRING_REMAINING_SIZE(pc),ProperName(sz));
 
                     // get rid of invalid characters and reserved names
@@ -893,7 +891,7 @@ void DumpManifestResources(void* GUICookie)
                     if(fAlias)
                     {
                         // update sz with the aliased name and print the 'as' keyword
-                        if (WszWideCharToMultiByte(CP_UTF8, 0, wzName, -1, sz, sizeof(sz), NULL, NULL) == 0)
+                        if (WideCharToMultiByte(CP_UTF8, 0, wzName, -1, sz, sizeof(sz), NULL, NULL) == 0)
                         {
                             sz[sizeof(sz) - 1] = 0;
                         }
@@ -987,14 +985,14 @@ IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
             if(pdwSize && *pdwSize)
             {
                 pbManifest += sizeof(DWORD);
-                if (SUCCEEDED(hr = GetMetaDataInternalInterface(
+                if (SUCCEEDED(hr = GetMDInternalInterface(
                     pbManifest,
                     VAL32(*pdwSize),
                     ofRead,
                     IID_IMDInternalImport,
                     (LPVOID *)&pParam->pImport)))
                 {
-                    if (FAILED(hr = GetMetaDataPublicInterfaceFromInternal(
+                    if (FAILED(hr = GetMDPublicInterfaceFromInternal(
                         pParam->pImport,
                         IID_IMetaDataAssemblyImport,
                         (LPVOID *)&pParam->pAssemblyImport)))

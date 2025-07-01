@@ -111,7 +111,7 @@ So solution techniques that can leverage sparseness are of particular interest.
 
 Note the matrix $\boldsymbol I - \boldsymbol P$ has non-negative diagonal elements and negative non-diagonal elements, since all entries of $\boldsymbol P$ are in the range [0,1].
 
-If we further restrict ourselves to the case where $p_{i,i} \lt 1$ (meaning there are are no infinite self-loops) then all the diagonal entries are positive and the matrix has an inverse with no negative elements.
+If we further restrict ourselves to the case where $p_{i,i} \lt 1$ (meaning there are no infinite self-loops) then all the diagonal entries are positive and the matrix has an inverse with no negative elements.
 
 Such matrices are known as M-matrices.
 

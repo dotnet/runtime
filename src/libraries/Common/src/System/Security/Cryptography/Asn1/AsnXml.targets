@@ -56,6 +56,12 @@
       SourceFiles="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
       DestinationFiles="@(AsnXml -> '%(Identity).cs')" />
 
+    <!-- For files that were not copied because there were no meaningful changes, we still need to touch the timestamp
+    if they were part of the build input.
+    Otherwise, MSBuild will think the output from the target is still out of date, and it will continue to re-run the
+    target for all inputs for incremental builds. -->
+    <Touch Condition="'@(_FilesDiffer)' != 'true'" Files="@(AsnXml -> '%(Identity).cs')" />
+
     <Warning Condition="'@(_FilesDiffer)' == 'true'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
   </Target>
 </Project>

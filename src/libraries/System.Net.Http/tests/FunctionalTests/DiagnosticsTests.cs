@@ -8,17 +8,19 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class DiagnosticsTest : HttpClientHandlerTestBase
+    public abstract class DiagnosticsTest : DiagnosticsTestBase
     {
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
         private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
@@ -26,12 +28,9 @@ namespace System.Net.Http.Functional.Tests
         private static bool EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported =>
             string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName)) && RemoteExecutor.IsSupported;
 
-        private static readonly Uri InvalidUri = new("http://nosuchhost.invalid");
-
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71877", TestPlatforms.Browser)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -49,9 +48,9 @@ namespace System.Net.Http.Functional.Tests
         // with those tests.
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 HttpRequestMessage requestLogged = null;
                 HttpResponseMessage responseLogged = null;
@@ -109,13 +108,13 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                     Assert.False(activityLogged, "HttpOutReq was logged while HttpOutReq logging was disabled");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceNoLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceNoLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool requestLogged = false;
                 bool responseLogged = false;
@@ -160,20 +159,20 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(responseLogged, "Response was logged while logging disabled.");
                     Assert.False(activityStopLogged, "HttpRequestOut.Stop was logged while logging disabled.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public void SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
+        public async Task SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
         {
             if (useSsl && UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
             {
                 return;
             }
 
-            RemoteExecutor.Invoke(async (useVersion, useSsl, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, useSsl, testAsync) =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose))
                 {
@@ -194,13 +193,13 @@ namespace System.Net.Http.Functional.Tests
                         ev => ev.EventId == 0); // make sure there are no event source error messages
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-            }, UseVersion.ToString(), useSsl.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticExceptionLogging()
+        public async Task SendAsync_ExpectedDiagnosticExceptionLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 Exception exceptionLogged = null;
 
@@ -232,13 +231,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Same(ex, exceptionLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticCancelledLogging()
+        public async Task SendAsync_ExpectedDiagnosticCancelledLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 TaskCompletionSource responseLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -284,15 +283,15 @@ namespace System.Net.Http.Functional.Tests
                             });
                         });
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(ActivityIdFormat.Hierarchical)]
         [InlineData(ActivityIdFormat.W3C)]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLogging(ActivityIdFormat idFormat)
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLogging(ActivityIdFormat idFormat)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, idFormatString) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, idFormatString) =>
             {
                 ActivityIdFormat idFormat = Enum.Parse<ActivityIdFormat>(idFormatString);
 
@@ -310,7 +309,7 @@ namespace System.Net.Http.Functional.Tests
                 parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddBaggage("moreBaggage", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddTag("tag", "tag"); // add tag to ensure it is not injected into request
-                parentActivity.TraceStateString = "Foo";
+                parentActivity.TraceStateString = "foo=1";
 
                 parentActivity.Start();
 
@@ -376,20 +375,533 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                     Assert.False(responseLogged, "Response was logged when Activity logging was enabled.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(200, "GET")]
+        [InlineData(404, "GET")]
+        [InlineData(200, "CUSTOM")]
+        public async Task SendAsync_DiagnosticListener_ExpectedTagsRecorded(int statusCode, string method)
+        {
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync, statusCodeStr, method) =>
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                Activity parentActivity = new Activity("parent");
+                parentActivity.Start();
+
+                Uri? currentUri = null;
+                string? expectedUriFull = null;
+
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    Assert.NotNull(currentUri);
+
+                    if (!kvp.Key.StartsWith("System.Net.Http.HttpRequestOut"))
+                    {
+                        return;
+                    }
+                    Activity activity = Activity.Current;
+                    Assert.NotNull(activity);
+                    Assert.Equal(parentActivity, Activity.Current.Parent);
+                    IEnumerable<KeyValuePair<string, object?>> tags = activity.TagObjects;
+                    Assert.Equal(method is "CUSTOM" ? "HTTP" : method, activity.DisplayName);
+                    VerifyRequestTags(tags, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
+                    VerifyTag(tags, "http.request.method_original", method is "CUSTOM" ? method : null);
+
+                    if (kvp.Key.EndsWith(".Stop"))
+                    {
+                        VerifyTag(tags, "network.protocol.version", GetVersionString(Version.Parse(useVersion)));
+                        VerifyTag(tags, "http.response.status_code", int.Parse(statusCodeStr));
+
+                        if (statusCodeStr != "200")
+                        {
+                            string errorType = (string)tags.Single(t => t.Key == "error.type").Value;
+                            Assert.Equal(ActivityStatusCode.Error, activity.Status);
+                            Assert.Equal(statusCodeStr, errorType);
+                        }
+                        else
+                        {
+                            Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+                            Assert.DoesNotContain(tags, t => t.Key == "error.type");
+                        }
+
+                        activityStopTcs.SetResult();
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable(s => s.Contains("HttpRequestOut"));
+
+                    await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            uri = new Uri($"{uri.Scheme}://user:pass@{uri.Authority}/1/2/?a=1&b=2");
+                            expectedUriFull = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}?*";
+                            currentUri = uri;
+
+                            using HttpClient client = new(CreateHttpClientHandler(allowAllCertificates: true));
+                            using HttpRequestMessage request = CreateRequest(HttpMethod.Parse(method), uri, Version.Parse(useVersion), exactVersion: true);
+                            await client.SendAsync(bool.Parse(testAsync), request);
+                            await activityStopTcs.Task;
+                        },
+                        async server =>
+                        {
+                            HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(
+                                statusCode: (HttpStatusCode)int.Parse(statusCodeStr));
+                            AssertHeadersAreInjected(requestData, parentActivity);
+                        });
+                }
+            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(200, "GET")]
+        [InlineData(404, "GET")]
+        [InlineData(200, "CUSTOM")]
+        public async Task SendAsync_ActivitySource_ExpectedTagsRecorded(int statusCode, string method)
+        {
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync, statusCodeStr, method) =>
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+                Uri? currentUri = null;
+                string? expectedUriFull = null;
+
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        var tags = activity.TagObjects;
+                        VerifyRequestTags(a.TagObjects, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
+                        VerifyTag(tags, "http.request.method_original", method is "CUSTOM" ? method : null);
+                        VerifyTag(tags, "network.protocol.version", GetVersionString(Version.Parse(useVersion)));
+                        VerifyTag(tags, "http.response.status_code", int.Parse(statusCodeStr));
+
+                        if (statusCodeStr != "200")
+                        {
+                            string errorType = (string)tags.Single(t => t.Key == "error.type").Value;
+                            Assert.Equal(ActivityStatusCode.Error, activity.Status);
+                            Assert.Equal(statusCodeStr, errorType);
+                        }
+                        else
+                        {
+                            Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+                            Assert.DoesNotContain(tags, t => t.Key == "error.type");
+                        }
+
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            uri = new Uri($"{uri.Scheme}://user:pass@{uri.Authority}/1/2/?a=1&b=2");
+                            expectedUriFull = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}?*";
+                            currentUri = uri;
+
+                            using HttpClient client = new(CreateHttpClientHandler(allowAllCertificates: true));
+                            using HttpRequestMessage request = CreateRequest(HttpMethod.Parse(method), uri, Version.Parse(useVersion), exactVersion: true);
+                            await client.SendAsync(bool.Parse(testAsync), request);
+                            await activityStopTcs.Task;
+                        },
+                        async server =>
+                        {
+                            await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: (HttpStatusCode)int.Parse(statusCodeStr));
+                        });
+
+                Assert.NotNull(activity);
+            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage()
+        public async Task SendAsync_DoNotSampleAllData_NoTagsRecorded()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync) =>
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.PropagationData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                            async uri =>
+                            {
+
+                                await GetAsync(useVersion, testAsync, uri);
+                                await activityStopTcs.Task;
+                            },
+                            async server =>
+                            {
+                                _ = await server.AcceptConnectionSendResponseAndCloseAsync();
+                            });
+
+                Assert.NotNull(activity);
+                Assert.Empty(activity.TagObjects);
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+        }
+
+        protected static void VerifyRequestTags(IEnumerable<KeyValuePair<string, object?>> tags, Uri uri, string expectedUriFull, string expectedMethodTag = "GET")
+        {
+            VerifyTag(tags, "server.address", uri.Host);
+            VerifyTag(tags, "server.port", uri.Port);
+            VerifyTag(tags, "http.request.method", expectedMethodTag);
+            VerifyTag(tags, "url.full", expectedUriFull);
+        }
+
+        protected static void VerifyTag<T>(KeyValuePair<string, object?>[] tags, string name, T value)
+        {
+            if (value is null)
+            {
+                Assert.DoesNotContain(tags, t => t.Key == name);
+            }
+            else
+            {
+                Assert.Equal(value, (T)tags.Single(t => t.Key == name).Value);
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendAsync_Success_ConnectionSetupActivityGraphRecorded(bool useTls)
+        {
+            if (UseVersion == HttpVersion30 && !useTls) return;
+
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync, string useTlsString)
+            {
+                bool useTls = bool.Parse(useTlsString);
+
+                Activity parentActivity = new Activity("parent").Start();
+
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                {
+                    VerifyParent = false
+                };
+
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+                using ActivityRecorder dnsRecorder = new("Experimental.System.Net.NameResolution", "Experimental.System.Net.NameResolution.DnsLookup") { VerifyParent = false };
+                using ActivityRecorder socketRecorder = new("Experimental.System.Net.Sockets", "Experimental.System.Net.Sockets.Connect") { VerifyParent = false };
+                using ActivityRecorder tlsRecorder = new("Experimental.System.Net.Security", "Experimental.System.Net.Security.TlsHandshake")
+                {
+                    VerifyParent = false
+                };
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        Version version = Version.Parse(useVersion);
+                        if (version != HttpVersion30)
+                        {
+                            uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        }
+
+                        using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
+
+                        await client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, version, exactVersion: true));
+
+                        Activity req1 = requestRecorder.VerifyActivityRecordedOnce();
+                        Activity wait1 = waitForConnectionRecorder.VerifyActivityRecordedOnce();
+                        Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
+
+                        Activity? dns = null;
+                        Activity? sock = null;
+                        Activity? tls = null;
+
+                        if (version != HttpVersion30)
+                        {
+                            dns = dnsRecorder.VerifyActivityRecordedOnce();
+                            Assert.True(socketRecorder.Stopped is 1 or 2);
+                            sock = socketRecorder.LastFinishedActivity;
+
+                            if (useTls)
+                            {
+                                tls = tlsRecorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
+                            }
+                            else
+                            {
+                                tlsRecorder.VerifyActivityRecorded(0);
+                            }
+                        }
+
+                        // Verify relationships between request and connection_setup, wait_for_connection:
+                        Assert.Same(parentActivity, req1.Parent);
+                        Assert.Same(req1, wait1.Parent);
+
+                        // Verify timing relationships between request, wait_for_connection, connection_setup:
+                        ActivityAssert.FinishedInOrder(conn, wait1);
+                        ActivityAssert.FinishedInOrder(wait1, req1);
+
+                        // req1->conn link:
+                        req1.Links.Single(l => l.Context == conn.Context);
+
+                        // Verify the connection_setup graph:
+                        Assert.Null(conn.Parent);
+
+                        if (version != HttpVersion30)
+                        {
+                            Assert.Same(conn, dns.Parent);
+                            Assert.Same(conn, sock.Parent);
+                            if (useTls)
+                            {
+                                Assert.Same(conn, tls.Parent);
+                            }
+
+                            // Verify timing relationships for connection setup:
+                            ActivityAssert.FinishedInOrder(dns, sock);
+                            if (useTls)
+                            {
+                                ActivityAssert.FinishedInOrder(sock, tls);
+                                ActivityAssert.FinishedInOrder(tls, conn);
+                            }
+                            else
+                            {
+                                ActivityAssert.FinishedInOrder(sock, conn);
+                            }
+                        }
+
+                        // Verify display names and attributes:
+                        Assert.Equal(ActivityKind.Internal, wait1.Kind);
+                        Assert.Equal(ActivityKind.Internal, conn.Kind);
+                        Assert.Equal($"HTTP wait_for_connection {uri.Host}:{uri.Port}", wait1.DisplayName);
+                        Assert.Equal($"HTTP connection_setup {uri.Host}:{uri.Port}", conn.DisplayName);
+                        ActivityAssert.HasTag(conn, "network.peer.address",
+                            (string a) => a == IPAddress.Loopback.ToString() ||
+                            a == IPAddress.Loopback.MapToIPv6().ToString() ||
+                            a == IPAddress.IPv6Loopback.ToString());
+                        ActivityAssert.HasTag(conn, "server.address", uri.Host);
+                        ActivityAssert.HasTag(conn, "server.port", uri.Port);
+                        ActivityAssert.HasTag(conn, "url.scheme", useTls ? "https" : "http");
+
+                        // The second request should reuse the first connection, connection_setup and wait_for_connection should not be recorded again.
+                        await client.SendAsync(CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true));
+                        requestRecorder.VerifyActivityRecorded(2);
+                        Activity req2 = requestRecorder.LastFinishedActivity;
+                        Assert.NotSame(req1, req2);
+                        waitForConnectionRecorder.VerifyActivityRecorded(1);
+                        connectionSetupRecorder.VerifyActivityRecorded(1);
+
+                        // The second request should also have a link to the shared connection.
+                        req2.Links.Single(l => l.Context == conn.Context);
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            await connection.ReadRequestDataAsync();
+                            await connection.SendResponseAsync(HttpStatusCode.OK);
+                            connection.CompleteRequestProcessing();
+
+                            await connection.ReadRequestDataAsync();
+                            await connection.SendResponseAsync(HttpStatusCode.OK);
+                        });
+                    }, options: new GenericLoopbackOptions()
+                    {
+                        UseSsl = useTls
+                    });
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("dns")]
+        [InlineData("socket")]
+        public async Task SendAsync_ConnectionFailure_RecordsActivitiesWithCorrectErrorInfo(string failureType)
+        {
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), failureType).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync, string failureType)
+            {
+                Version version = Version.Parse(useVersion);
+
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                using HttpClient client = new HttpClient(handler);
+
+                Activity parentActivity = new Activity("parent").Start();
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                {
+                    VerifyParent = false
+                };
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+                using ActivityRecorder dnsRecorder = new("Experimental.System.Net.NameResolution", "Experimental.System.Net.NameResolution.DnsLookup") { VerifyParent = false };
+                using ActivityRecorder socketRecorder = new("Experimental.System.Net.Sockets", "Experimental.System.Net.Sockets.Connect") { VerifyParent = false };
+
+                Uri uri;
+                using Socket? notListening = failureType is "socket"
+                    ? (version == HttpVersion30) ? new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) : new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                    : null;
+
+                if (failureType is "dns")
+                {
+                    uri = new Uri("https://does.not.exist.sorry");
+                }
+                else
+                {
+                    Debug.Assert(notListening is not null);
+                    notListening.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    IPEndPoint ep = (IPEndPoint)notListening.LocalEndPoint;
+                    uri = new Uri($"https://{ep.Address}:{ep.Port}");
+                }
+
+                using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, version, exactVersion: true);
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(bool.Parse(testAsync), request));
+
+                Activity req = requestRecorder.VerifyActivityRecordedOnce();
+                Activity wait = waitForConnectionRecorder.VerifyActivityRecordedOnce();
+                Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
+
+                Assert.Same(req, wait.Parent);
+                Assert.Null(conn.Parent);
+
+                if (failureType == "dns")
+                {
+                    Assert.Equal(ActivityStatusCode.Error, conn.Status);
+                    Assert.Equal(ActivityStatusCode.Error, wait.Status);
+
+                    ActivityAssert.HasTag(conn, "error.type", "name_resolution_error");
+                    ActivityAssert.HasTag(wait, "error.type", "name_resolution_error");
+
+                    ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
+                    Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                    Assert.Contains("exception.type", tags.Keys);
+                    Assert.Contains("exception.message", tags.Keys);
+                    Assert.Contains("exception.stacktrace", tags.Keys);
+                    Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
+
+                    // Whether System.Net.Quic uses System.Net.Dns is an implementation detail.
+                    if (version != HttpVersion30)
+                    {
+                        Activity dns = dnsRecorder.VerifyActivityRecordedOnce();
+                        Assert.Same(conn, dns.Parent);
+                        Assert.Equal(ActivityStatusCode.Error, dns.Status);
+                        ActivityAssert.HasTag(dns, "error.type", (string t) => t is "host_not_found" or "timed_out");
+                    }
+                }
+                else
+                {
+                    Debug.Assert(failureType is "socket");
+
+                    Assert.Equal(ActivityStatusCode.Error, conn.Status);
+                    Assert.Equal(ActivityStatusCode.Error, wait.Status);
+
+                    ActivityAssert.HasTag(conn, "error.type", "connection_error");
+                    ActivityAssert.HasTag(wait, "error.type", "connection_error");
+
+                    ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
+                    Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                    Assert.Contains("exception.type", tags.Keys);
+                    Assert.Contains("exception.message", tags.Keys);
+                    Assert.Contains("exception.stacktrace", tags.Keys);
+                    Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
+
+                    if (version != HttpVersion30)
+                    {
+                        Activity sock = socketRecorder.VerifyActivityRecordedOnce();
+                        Assert.Same(conn, sock.Parent);
+                        Assert.Equal(ActivityStatusCode.Error, sock.Status);
+                        ActivityAssert.HasTag(sock, "error.type", (string t) => t is "connection_refused" or "timed_out");
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo()
+        {
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync)
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        Assert.Equal(ActivityStatusCode.Error, a.Status);
+                        ActivityAssert.HasTag(a, "error.type", typeof(TaskCanceledException).FullName);
+                        ActivityEvent evt = a.Events.Single(e => e.Name == "exception");
+                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                        Assert.Contains("exception.type", tags.Keys);
+                        Assert.Contains("exception.message", tags.Keys);
+                        Assert.Contains("exception.stacktrace", tags.Keys);
+                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
+
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                var cts = new CancellationTokenSource();
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        Version version = Version.Parse(useVersion);
+                        if (version != HttpVersion30)
+                        {
+                            uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        }
+
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            cts.Cancel();
+
+                            await activityStopTcs.Task;
+                        });
+                    });
+
+                Assert.NotNull(activity);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage()
+        {
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool exceptionLogged = false;
 
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+                // To test the Hierarchical propagation format, we need to set the legacy propagator.
+                DistributedContextPropagator.Current = DistributedContextPropagator.CreatePreW3CPropagator();
+
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
+
                 parentActivity.AddBaggage("bad/key", "value");
                 parentActivity.AddBaggage("goodkey", "bad/value");
                 parentActivity.AddBaggage("key", "value");
@@ -432,13 +944,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader()
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityStartLogged = false;
 
@@ -486,13 +998,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader()
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityStartLogged = false;
 
@@ -544,13 +1056,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
@@ -588,13 +1100,13 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(activityStartLogged, "HttpRequestOut.Start was logged while URL disabled.");
                     Assert.False(activityStopLogged, "HttpRequestOut.Stop was logged while URL disabled.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticExceptionActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticExceptionActivityLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 Exception exceptionLogged = null;
 
@@ -627,90 +1139,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Same(ex, exceptionLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                Exception exceptionLogged = null;
-
-                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
-                {
-                    if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        GetProperty<HttpRequestMessage>(kvp.Value, "Request");
-                        TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
-                        Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();
-                    }
-                    else if (kvp.Key.Equals("System.Net.Http.Exception"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        exceptionLogged = GetProperty<Exception>(kvp.Value, "Exception");
-                    }
-                });
-
-                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-                {
-                    diagnosticListenerObserver.Enable();
-
-                    using (HttpClientHandler handler = CreateHttpClientHandler(useVersion))
-                    using (HttpClient client = CreateHttpClient(handler, useVersion))
-                    {
-                        // Set a ftp proxy.
-                        // Forces a synchronous exception for SocketsHttpHandler.
-                        // SocketsHttpHandler only allow http & https & socks scheme for proxies.
-                        handler.Proxy = new WebProxy($"ftp://foo.bar", false);
-                        var request = new HttpRequestMessage(HttpMethod.Get, InvalidUri)
-                        {
-                            Version = Version.Parse(useVersion)
-                        };
-
-                        // We cannot use Assert.Throws<Exception>(() => { SendAsync(...); }) to verify the
-                        // synchronous exception here, because DiagnosticsHandler SendAsync() method has async
-                        // modifier, and returns Task. If the call is not awaited, the current test method will continue
-                        // run before the call is completed, thus Assert.Throws() will not capture the exception.
-                        // We need to wait for the Task to complete synchronously, to validate the exception.
-
-                        Exception exception = null;
-                        if (bool.Parse(testAsync))
-                        {
-                            Task sendTask = client.SendAsync(request);
-                            Assert.True(sendTask.IsFaulted);
-                            exception = sendTask.Exception.InnerException;
-                        }
-                        else
-                        {
-                            try
-                            {
-                                client.Send(request);
-                            }
-                            catch (Exception ex)
-                            {
-                                exception = ex;
-                            }
-                            Assert.NotNull(exception);
-                        }
-
-                        await activityStopTcs.Task;
-
-                        Assert.IsType<NotSupportedException>(exception);
-                        Assert.Same(exceptionLogged, exception);
-                    }
-                }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
-        {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool requestLogged = false;
                 bool activityStartLogged = false;
@@ -755,13 +1190,13 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(requestLogged, "Request was not logged.");
                     Assert.True(activityStopLogged, "HttpRequestOut.Stop was not logged.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityLogged = false;
                 Exception exceptionLogged = null;
@@ -793,7 +1228,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Same(ex, exceptionLogged);
                     Assert.False(activityLogged, "HttpOutReq was logged when logging was disabled");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         public static IEnumerable<object[]> UseSocketsHttpHandler_WithIdFormat_MemberData()
@@ -813,9 +1248,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("fAlSe")]
         [InlineData("helloworld")]
         [InlineData("")]
-        public void SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
+        public async Task SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
             {
                 Environment.SetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName, envVarValue);
 
@@ -844,7 +1279,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Equal(isInstrumentationEnabled, anyEventLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -853,7 +1288,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Activity parent = new Activity("parent");
             parent.SetIdFormat(idFormat);
-            parent.TraceStateString = "Foo";
+            parent.TraceStateString = "foo=1";
             parent.Start();
 
             await GetFactoryForVersion(UseVersion).CreateServerAsync(async (originalServer, originalUri) =>
@@ -891,7 +1326,9 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        Assert.NotEqual(GetHeaderValue(firstRequestData, "Request-Id"), GetHeaderValue(secondRequestData, "Request-Id"));
+                        // Hierarchical format is not supported with the default W3C propgator. Only Legacy propagator support it.
+                        Assert.Null(GetHeaderValue(firstRequestData, "Request-Id"));
+                        Assert.Null(GetHeaderValue(secondRequestData, "Request-Id"));
                     }
                 });
             });
@@ -900,9 +1337,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public void SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue)
+        public async Task SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, switchValue) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, switchValue) =>
             {
                 AppContext.SetSwitch(EnableActivityPropagationAppCtxSettingName, bool.Parse(switchValue));
 
@@ -917,12 +1354,19 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(bool.Parse(switchValue), request.Headers.Contains(headerName));
                     },
                     async server => await server.HandleRequestAsync());
-            }, UseVersion.ToString(), TestAsync.ToString(), switchValue.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), switchValue.ToString()).DisposeAsync();
         }
 
         public static IEnumerable<object[]> SocketsHttpHandlerPropagators_WithIdFormat_MemberData()
         {
-            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
+            foreach (var propagator in new[]
+                                        {
+                                            null,
+                                            DistributedContextPropagator.CreateDefaultPropagator(),
+                                            DistributedContextPropagator.CreatePreW3CPropagator(),
+                                            DistributedContextPropagator.CreateNoOutputPropagator(),
+                                            DistributedContextPropagator.CreatePassThroughPropagator()
+                                        })
             {
                 foreach (ActivityIdFormat format in new[] { ActivityIdFormat.Hierarchical, ActivityIdFormat.W3C })
                 {
@@ -958,7 +1402,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()));
+                        AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()), ReferenceEquals(propagator, DistributedContextPropagator.CreateDefaultPropagator()));
                     }
                 });
         }
@@ -987,11 +1431,10 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(SocketsHttpHandler_ActivityCreation_MemberData))]
-        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
+        public async Task SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
         {
             string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
-
-            RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync, parametersString) =>
             {
                 bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
                 bool currentActivitySet = parameters[0].Value;
@@ -1003,7 +1446,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     ActivitySource.AddActivityListener(new ActivityListener
                     {
-                        ShouldListenTo = _ => true,
+                        ShouldListenTo = s => s.Name is "System.Net.Http",
                         Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
                         {
                             madeASamplingDecision = true;
@@ -1032,7 +1475,7 @@ namespace System.Net.Http.Functional.Tests
                     // (when a DiagnosticListener forced one to be created)
                     ActivitySource.AddActivityListener(new ActivityListener
                     {
-                        ShouldListenTo = _ => true,
+                        ShouldListenTo = s => s.Name is "System.Net.Http" or "",
                         ActivityStarted = created =>
                         {
                             Assert.Null(parent);
@@ -1071,7 +1514,156 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
                 Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
-            }, UseVersion.ToString(), TestAsync.ToString(), parameters).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), parameters).DisposeAsync();
+        }
+
+        private sealed class SendMultipleTimesHandler : DelegatingHandler
+        {
+            private readonly Activity[] _parentActivities;
+
+            public SendMultipleTimesHandler(HttpMessageHandler innerHandler, params Activity[] parentActivities) : base(innerHandler)
+            {
+                Assert.NotEmpty(parentActivities);
+                _parentActivities = parentActivities;
+            }
+
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+                => SendAsync(request, testAsync: false, cancellationToken).Result;
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+                => await SendAsync(request, testAsync: true, cancellationToken);
+
+            private async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool testAsync, CancellationToken cancellationToken)
+            {
+                HttpResponseMessage response = null;
+                foreach (Activity parent in _parentActivities)
+                {
+                    parent.Start();
+                    Assert.Equal(ActivityIdFormat.W3C, parent.IdFormat);
+                    response = testAsync ? await base.SendAsync(request, cancellationToken) : base.Send(request, cancellationToken);
+                    parent.Stop();
+                    if (parent != _parentActivities.Last())
+                    {
+                        response.Dispose(); // only keep the last response
+                    }
+                }
+                return response;
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse()
+        {
+            Activity parent0 = new Activity("parent0");
+            Activity parent1 = new Activity("parent1") { TraceStateString = "wow=1" };
+            Activity parent2 = new Activity("parent2") { TraceStateString = "wow=2" };
+
+            const string FirstTraceParent = "00-F";
+            const string FirstTraceState = "first";
+
+            await GetFactoryForVersion(UseVersion).CreateServerAsync(async (server, uri) =>
+            {
+                SendMultipleTimesHandler handler = new SendMultipleTimesHandler(CreateSocketsHttpHandler(allowAllCertificates: true), parent0, parent1, parent2);
+                using HttpClient client = new HttpClient(handler);
+                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+                request.Headers.Add("traceparent", FirstTraceParent);
+                request.Headers.Add("tracestate", FirstTraceState);
+
+                Task clientTask = TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request));
+
+                HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                // On the first send DiagnosticsHandler should keep user-supplied headers.
+                string traceparent = GetHeaderValue(requestData, "traceparent");
+                string tracestate = GetHeaderValue(requestData, "tracestate");
+                Assert.Equal(FirstTraceParent, traceparent);
+                Assert.Equal(FirstTraceState, tracestate);
+
+                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                // Headers should be overridden on each subsequent send.
+                AssertHeadersAreInjected(requestData, parent1);
+                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
+                AssertHeadersAreInjected(requestData, parent2);
+
+                await clientTask;
+            });
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task Http3_WaitForConnection_RecordedWhenWaitingForStream()
+        {
+            if (UseVersion != HttpVersion30 || !TestAsync)
+            {
+                throw new SkipTestException("This test is specific to async HTTP/3 runs.");
+            }
+
+            await RemoteExecutor.Invoke(RunTest).DisposeAsync();
+            static async Task RunTest()
+            {
+                using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = 1 });
+
+                TaskCompletionSource stream1Created = new();
+                TaskCompletionSource allRequestsWaiting = new();
+
+                Task serverTask = Task.Run(async () =>
+                {
+                    await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                    Http3LoopbackStream stream1 = await connection.AcceptRequestStreamAsync();
+                    stream1Created.SetResult();
+
+                    await allRequestsWaiting.Task;
+                    await stream1.HandleRequestAsync();
+                    await stream1.DisposeAsync();
+
+                    Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                    await stream2.HandleRequestAsync();
+                    await stream2.DisposeAsync();
+
+                    Http3LoopbackStream stream3 = await connection.AcceptRequestStreamAsync();
+                    await stream3.HandleRequestAsync();
+                    await stream3.DisposeAsync();
+                });
+
+                Task clientTask = Task.Run(async () =>
+                {
+                    using Activity parentActivity = new Activity("parent").Start();
+                    using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                    {
+                        ExpectedParent = parentActivity
+                    };
+                    using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                    {
+                        VerifyParent = false
+                    };
+                    waitForConnectionRecorder.OnStarted = a =>
+                    {
+                        if (waitForConnectionRecorder.Started == 3)
+                        {
+                            allRequestsWaiting.SetResult();
+                        }
+                    };
+
+                    SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                    using HttpClient client = new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true))
+                    {
+                        DefaultRequestVersion = HttpVersion30,
+                        DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+
+                    Task<HttpResponseMessage> request1Task = client.GetAsync(server.Address);
+                    await stream1Created.Task;
+
+                    Task<HttpResponseMessage> request2Task = client.GetAsync(server.Address);
+                    Task<HttpResponseMessage> request3Task = client.GetAsync(server.Address);
+
+                    await new Task[] { request1Task, request2Task, request3Task }.WhenAllOrAnyFailed(30_000);
+                    Assert.Equal(3, waitForConnectionRecorder.Stopped);
+                });
+
+                await new Task[] { serverTask, clientTask }.WhenAllOrAnyFailed(30_000);
+            }
         }
 
         private static T GetProperty<T>(object obj, string propertyName)
@@ -1100,19 +1692,31 @@ namespace System.Net.Http.Functional.Tests
             Assert.Null(GetHeaderValue(request, "Correlation-Context"));
         }
 
-        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent, bool passthrough = false)
+        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent, bool passthrough = false, bool isW3C = true)
         {
             string requestId = GetHeaderValue(request, "Request-Id");
             string traceparent = GetHeaderValue(request, "traceparent");
             string tracestate = GetHeaderValue(request, "tracestate");
 
-            if (parent.IdFormat == ActivityIdFormat.Hierarchical)
+            if (parent.IdFormat == ActivityIdFormat.Hierarchical && !isW3C)
             {
                 Assert.True(requestId != null, "Request-Id was not injected when instrumentation was enabled");
                 Assert.StartsWith(parent.Id, requestId);
                 Assert.Equal(passthrough, parent.Id == requestId);
                 Assert.Null(traceparent);
                 Assert.Null(tracestate);
+
+                List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "Correlation-Context") ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(kvp => NameValueHeaderValue.Parse(kvp))
+                    .ToList();
+
+                List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
+                Assert.Equal(baggage.Count, correlationContext.Count);
+                foreach (var kvp in baggage)
+                {
+                    Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                }
             }
             else if (parent.IdFormat == ActivityIdFormat.W3C)
             {
@@ -1121,18 +1725,18 @@ namespace System.Net.Http.Functional.Tests
                 Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
                 Assert.Equal(passthrough, parent.Id == traceparent);
                 Assert.Equal(parent.TraceStateString, tracestate);
-            }
 
-            List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "Correlation-Context") ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(kvp => NameValueHeaderValue.Parse(kvp))
-                .ToList();
+                List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "baggage") ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(kvp => NameValueHeaderValue.Parse(kvp))
+                    .ToList();
 
-            List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
-            Assert.Equal(baggage.Count, correlationContext.Count);
-            foreach (var kvp in baggage)
-            {
-                Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
+                Assert.Equal(baggage.Count, correlationContext.Count);
+                foreach (var kvp in baggage)
+                {
+                    Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                }
             }
         }
 
