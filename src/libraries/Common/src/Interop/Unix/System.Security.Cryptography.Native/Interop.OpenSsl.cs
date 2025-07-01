@@ -11,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -695,7 +696,11 @@ internal static partial class Interop
                     return SecurityStatusPalErrorCode.CredentialsNeeded;
                 }
 
-                if ((retVal != -1) || (errorCode != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
+                if (errorCode == Ssl.SslErrorCode.SSL_ERROR_SSL && context.CertificateValidationException is Exception ex)
+                {
+                    handshakeException = ex;
+                }
+                else if ((retVal != -1) || (errorCode != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
                     Exception? innerError = GetSslError(retVal, errorCode);
 
@@ -732,7 +737,7 @@ internal static partial class Interop
 
             if (handshakeException != null)
             {
-                throw handshakeException;
+                ExceptionDispatchInfo.Throw(handshakeException);
             }
 
             // in case of TLS 1.3 post-handshake authentication, SslDoHandhaske
@@ -869,8 +874,10 @@ internal static partial class Interop
 
             using SafeX509StoreCtxHandle storeHandle = new(store, ownsHandle: false);
 
+            // the chain will get properly disposed inside the VerifyRemoteCertificate call
             X509Chain chain = new X509Chain();
             X509Certificate2? certificate = null;
+            SafeSslHandle sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;
 
             using (SafeSharedX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetSharedUntrusted(storeHandle))
             {
@@ -901,44 +908,55 @@ internal static partial class Interop
 
             ProtocolToken alertToken = default;
 
-            if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            try
             {
-                // success
-                return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK;
-            }
+                if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                {
+                    // success
+                    return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK;
+                }
 
-            if (options.CertValidationDelegate != null)
-            {
-                // rejected by user validation callback
-                return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_APPLICATION_VERIFICATION;
-            }
+                sslHandle.CertificateValidationException = SslStream.CreateCertificateValidationException(options, sslPolicyErrors, chainStatus);
 
-            TlsAlertMessage alert;
-            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
-            {
-                alert = SslStream.GetAlertMessageFromChain(chain);
-            }
-            else if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != SslPolicyErrors.None)
-            {
-                alert = TlsAlertMessage.BadCertificate;
-            }
-            else
-            {
-                alert = TlsAlertMessage.CertificateUnknown;
-            }
+                if (options.CertValidationDelegate != null)
+                {
+                    // rejected by user validation callback
+                    return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_APPLICATION_VERIFICATION;
+                }
 
-            // since we can't set the alert directly, we pick one of the error verify statuses
-            // which will result in the same alert being sent
+                TlsAlertMessage alert;
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
+                {
+                    alert = SslStream.GetAlertMessageFromChain(chain);
+                }
+                else if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != SslPolicyErrors.None)
+                {
+                    alert = TlsAlertMessage.BadCertificate;
+                }
+                else
+                {
+                    alert = TlsAlertMessage.CertificateUnknown;
+                }
 
-            return alert switch
+                // since we can't set the alert directly, we pick one of the error verify statuses
+                // which will result in the same alert being sent
+
+                return alert switch
+                {
+                    TlsAlertMessage.BadCertificate => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
+                    TlsAlertMessage.UnknownCA => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
+                    TlsAlertMessage.CertificateRevoked => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REVOKED,
+                    TlsAlertMessage.CertificateExpired => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_HAS_EXPIRED,
+                    TlsAlertMessage.UnsupportedCert => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_PURPOSE,
+                    _ => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
+                };
+            }
+            catch (Exception ex)
             {
-                TlsAlertMessage.BadCertificate => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
-                TlsAlertMessage.UnknownCA => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
-                TlsAlertMessage.CertificateRevoked => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REVOKED,
-                TlsAlertMessage.CertificateExpired => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_HAS_EXPIRED,
-                TlsAlertMessage.UnsupportedCert => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_PURPOSE,
-                _ => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
-            };
+                sslHandle.CertificateValidationException = ex;
+
+                return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_UNSPECIFIED;
+            }
         }
 
         [UnmanagedCallersOnly]

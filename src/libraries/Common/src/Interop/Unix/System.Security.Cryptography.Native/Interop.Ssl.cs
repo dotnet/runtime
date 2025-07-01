@@ -390,6 +390,10 @@ namespace Microsoft.Win32.SafeHandles
         // refcount management.
         public SafeSslContextHandle? SslContextHandle;
 
+        // Storage for the exception that occurred during certificate validation callback so that
+        // we may rethrow it after returning to managed code.
+        public Exception? CertificateValidationException;
+
         public bool IsServer
         {
             get { return _isServer; }

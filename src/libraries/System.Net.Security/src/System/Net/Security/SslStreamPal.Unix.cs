@@ -18,6 +18,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool CertValidationInCallback = true;
         internal const bool CanEncryptEmptyMessage = false;
 
         public static void VerifyPackageInfo()
@@ -214,18 +215,6 @@ namespace System.Net.Security
                     errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
                 }
 
-                // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
-                // If it was, then that indicates ALPN failed, send failure.
-                // We have this workaround, as openssl supports terminating handshake only from version 1.1.0,
-                // whereas ALPN is supported from version 1.0.2.
-                SafeSslHandle sslContext = (SafeSslHandle)context;
-                if (errorCode == SecurityStatusPalErrorCode.OK && sslAuthenticationOptions.IsServer
-                    && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
-                {
-                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
-                    return token;
-                }
-
                 token.Status = new SecurityStatusPal(errorCode);
             }
             catch (Exception exc)
@@ -236,7 +225,10 @@ namespace System.Net.Security
             return token;
         }
 
-        public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        public static SecurityStatusPal ApplyAlertToken(
+            SafeDeleteContext? securityContext,
+            TlsAlertType alertType,
+            TlsAlertMessage alertMessage)
         {
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by

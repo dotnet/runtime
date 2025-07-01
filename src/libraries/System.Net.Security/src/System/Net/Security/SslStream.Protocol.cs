@@ -51,7 +51,7 @@ namespace System.Net.Security
 
 
         private SafeFreeCredentials? _credentialsHandle;
-        private SafeDeleteSslContext? _securityContext;
+        internal SafeDeleteSslContext? _securityContext;
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -1131,7 +1131,7 @@ namespace System.Net.Security
                         sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                     }
 
-                    success = (sslPolicyErrors == SslPolicyErrors.None);
+                    success = sslPolicyErrors == SslPolicyErrors.None;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
@@ -1142,10 +1142,14 @@ namespace System.Net.Security
 
                 if (!success)
                 {
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+#pragma warning disable CS0162 // unreachable code on some platforms
+                    // avoid reentrant call to GenerateToken if validation was called from a callback
+                    if (!SslStreamPal.CertValidationInCallback)
                     {
                         CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
                     }
+#pragma warning restore CS0162 // unreachable code on some platforms
+
                     if (chain != null)
                     {
                         foreach (X509ChainStatus status in chain.ChainStatus)

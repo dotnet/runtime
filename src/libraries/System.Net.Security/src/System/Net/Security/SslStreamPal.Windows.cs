@@ -44,6 +44,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = true;
+        internal const bool CertValidationInCallback = false;
         internal const bool CanEncryptEmptyMessage = true;
 
         private static readonly byte[] s_sessionTokenBuffer = InitSessionTokenBuffer();
