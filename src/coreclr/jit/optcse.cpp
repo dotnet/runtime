@@ -623,7 +623,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         assert(hashDsc->csdTreeList.tslTree != nullptr);
 
         // Check for mismatched types on GT_CNS_INT nodes
-        if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
+        if (tree->OperIs(GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
         {
             continue;
         }
@@ -1030,7 +1030,7 @@ void Compiler::optValnumCSE_InitDataFlow()
                     unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
                     BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailCrossCallBit);
                 }
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     // Any cse's that we haven't placed in the block->bbCseGen set
                     // aren't currently alive (using cseAvailCrossCallBit)
@@ -1531,29 +1531,17 @@ void Compiler::optValnumCSE_Availability()
 #ifdef DEBUG
                             if (this->verbose)
                             {
-                                VNFuncApp excSeq;
-
-                                vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
                                 printf(">>> defExcSetCurrent is ");
-                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                vnStore->vnDumpExc(this, desc->defExcSetCurrent);
                                 printf("\n");
 
-                                vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
                                 printf(">>> theLiberalExcSet is ");
-                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                vnStore->vnDumpExc(this, theLiberalExcSet);
                                 printf("\n");
 
-                                if (intersectionExcSet == vnStore->VNForEmptyExcSet())
-                                {
-                                    printf(">>> the intersectionExcSet is the EmptyExcSet\n");
-                                }
-                                else
-                                {
-                                    vnStore->GetVNFunc(intersectionExcSet, &excSeq);
-                                    printf(">>> the intersectionExcSet is ");
-                                    vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                    printf("\n");
-                                }
+                                printf(">>> the intersectionExcSet is ");
+                                vnStore->vnDumpExc(this, intersectionExcSet);
+                                printf("\n");
                             }
 #endif // DEBUG
 
@@ -1876,7 +1864,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 "GT_IND(GT_ARR_ELEM) = GT_IND(GT_ARR_ELEM) + xyz", whereas doing
                 the second would not allow it */
 
-            if (tree->AsOp()->gtOp1->gtOper == GT_ARR_ELEM)
+            if (tree->AsOp()->gtOp1->OperIs(GT_ARR_ELEM))
             {
                 return false;
             }

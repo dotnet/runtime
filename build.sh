@@ -26,7 +26,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 if is_cygwin_or_mingw; then
   # if bash shell running on Windows (not WSL),
   # pass control to batch build script.
-  "$scriptroot/build.cmd" $@
+  "$scriptroot/build.cmd" "$@"
 else
-  "$scriptroot/eng/build.sh" $@
+  "$scriptroot/eng/build.sh" "$@"
 fi

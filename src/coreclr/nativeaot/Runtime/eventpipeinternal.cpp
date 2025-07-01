@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-config.h>
@@ -67,12 +67,16 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
 
     if (configProviders) {
         for (uint32_t i = 0; i < numProviders; ++i) {
+            ep_char8_t *providerName = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName));
+            ep_char8_t *filterData = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData));
             ep_provider_config_init (
                 &configProviders[i],
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName)),
+                providerName,
                 nativeProviders[i].keywords,
                 static_cast<EventPipeEventLevel>(nativeProviders[i].loggingLevel),
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData)));
+                filterData);
+            ep_rt_utf8_string_free (providerName);
+            ep_rt_utf8_string_free (filterData);
         }
     }
 
@@ -95,10 +99,8 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
     ep_start_streaming(result);
 
     if (configProviders) {
-        for (uint32_t i = 0; i < numProviders; ++i) {
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&configProviders[i]));
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&configProviders[i]));
-        }
+        for (uint32_t i = 0; i < numProviders; ++i)
+            ep_provider_config_fini (&configProviders[i]);
         free(configProviders);
     }
 

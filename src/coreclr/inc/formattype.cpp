@@ -163,7 +163,7 @@ const char* PrettyPrintSig(
         out->Shrink(0);
         appendStr(out,"ERROR PARSING THE SIGNATURE");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return(asString(out));
 }

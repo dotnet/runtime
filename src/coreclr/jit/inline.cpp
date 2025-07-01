@@ -332,6 +332,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Code(nullptr)
     , m_Callee(nullptr)
     , m_RuntimeContext(nullptr)
+    , m_PgoInfo()
     , m_ILSize(0)
     , m_ImportedILSize(0)
     , m_ActualCallOffset(BAD_IL_OFFSET)
@@ -1343,9 +1344,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // which becomes a single statement where the IL location points to the
     // ldarg instruction.
     context->m_Location = stmt->GetDebugInfo().GetLocation();
-
-    assert(call->gtCallType == CT_USER_FUNC);
-    context->m_Callee = call->gtCallMethHnd;
+    context->m_Callee   = call->gtCallMethHnd;
 
 #if defined(DEBUG)
     context->m_Devirtualized = call->IsDevirtualized();
@@ -1822,4 +1821,23 @@ bool InlineStrategy::IsInliningDisabled()
     return false;
 
 #endif // defined(DEBUG)
+}
+
+PgoInfo::PgoInfo()
+{
+    PgoSchema      = nullptr;
+    PgoSchemaCount = 0;
+    PgoData        = nullptr;
+}
+
+PgoInfo::PgoInfo(Compiler* compiler)
+{
+    PgoSchema      = compiler->fgPgoSchema;
+    PgoSchemaCount = compiler->fgPgoSchemaCount;
+    PgoData        = compiler->fgPgoData;
+}
+
+PgoInfo::PgoInfo(InlineContext* context)
+{
+    *this = context->GetPgoInfo();
 }
