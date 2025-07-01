@@ -133,13 +133,13 @@ namespace System.Net.Http
             _connection.RemoveStream(_stream);
 
             // If the request sending was offloaded to be done concurrently and not awaited within SendAsync (by calling connection.LogException),
-            // the _sendBuffer disposal is the responsibility of that offloaded task to prevent returning buffer to the pool while it still might be accessed by the task.
+            // the _sendBuffer disposal is the responsibility of that offloaded task to prevent returning the buffer to the pool while it still might be in use.
             if (!_concurrentWrite)
             {
                 _sendBuffer.Dispose();
             }
             // If the response receiving was offloaded to be done concurrently and not awaited within SendAsync (by calling connection.LogException),
-            // the _recvBuffer disposal is the responsibility of that offloaded task to prevent returning buffer to the pool while it still might be accessed by the task.
+            // the _recvBuffer disposal is the responsibility of that offloaded task to prevent returning the buffer to the pool while it still might be in use.
             if (!_concurrentRead)
             {
                 _recvBuffer.Dispose();
