@@ -106,10 +106,9 @@ void* PalGetModuleHandleFromPointer(void* pointer);
 
 #if defined(HOST_X86) && defined(HOST_WINDOWS)
 #define STRINGIFY(s) #s
-#define LINKER_COMMENT(comment) _Pragma(STRINGIFY(comment))
 #define MANAGED_RUNTIME_EXPORT_ALTNAME(_method) STRINGIFY(/alternatename:_##_method=_method)
 #define MANAGED_RUNTIME_EXPORT(_name) \
-    LINKER_COMMENT(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
+    __pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
     extern "C" void __cdecl _name();
 #define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
 #define CDECL __cdecl

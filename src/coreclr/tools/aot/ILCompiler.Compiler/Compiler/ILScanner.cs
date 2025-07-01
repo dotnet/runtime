@@ -297,8 +297,8 @@ namespace ILCompiler
                 // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because
                 // the callers do type checks based on flags on the MethodTable instead of an actual type cast.
                 // Trim out the logic that we can't do easily here.
-                TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
-                MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetMethod("GetDynamicInterfaceImplementation", null);
+                TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
+                MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetKnownMethod("GetDynamicInterfaceImplementation", null);
                 bodySubstitutions.Add(getDynamicInterfaceImplementationMethod, BodySubstitution.ThrowingBody);
             }
 

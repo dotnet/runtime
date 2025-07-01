@@ -52,7 +52,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private IEETypeNode GetInterfaceTypeNode(NodeFactory factory)
         {
-            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
             // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
             // see a RuntimeTypeHandle representing this interface.
             if (factory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations(_targetMethod.OwningType))
