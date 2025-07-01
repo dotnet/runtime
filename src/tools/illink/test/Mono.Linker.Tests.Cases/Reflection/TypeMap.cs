@@ -237,7 +237,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class ProxyType3;
 }
 
-// Polyfill for the type map types until we use an LKG runtime that has it.
+// Polyfill for the type map types until we use an LKG runtime that has them with an updated LinkAttributes XML.
 namespace System.Runtime.InteropServices
 {
     [Kept(By = Tool.Trimmer)]
@@ -277,7 +277,7 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]
         public static IReadOnlyDictionary<string, Type> GetOrCreateExternalTypeMapping<TTypeMapGroup>()
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"External type map for {typeof(TTypeMapGroup).Name}");
         }
 
         [Kept(By = Tool.Trimmer)]
@@ -285,7 +285,7 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]
         public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>()
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"Proxy type map for {typeof(TTypeMapGroup).Name}");
         }
     }
 }
