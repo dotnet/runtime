@@ -425,6 +425,9 @@ namespace System
             CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
         }
 
+        // Reliability-wise, this method will either possibly corrupt your
+        // instance, or if the reliable flag is true, it will either always
+        // succeed or always throw an exception with no side effects.
         private static unsafe void CopyImpl(Array? sourceArray, int sourceIndex, Array? destinationArray, int destinationIndex, int length, bool reliable)
         {
             ArgumentNullException.ThrowIfNull(sourceArray);
@@ -477,9 +480,6 @@ namespace System
             CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, assignType);
         }
 
-        // Reliability-wise, this method will either possibly corrupt your
-        // instance, or if the reliable flag is true, it will either always
-        // succeed or always throw an exception with no side effects.
         private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
