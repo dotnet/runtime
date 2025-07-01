@@ -124,7 +124,7 @@
     </PropertyGroup>
 
     <Error Text="The shared framework must be built before the local targeting pack can be consumed."
-           Condition="!Exists('$(LocalRefPackDir)\data\FrameworkList.xml')" />
+           Condition="!Exists('$(LocalRefPackDir)\data\FrameworkList.xml') and '$(DesignTimeBuild)' != 'true'" />
 
     <ItemGroup>
       <ResolvedTargetingPack Path="$(LocalRefPackDir.TrimEnd('/\'))"
@@ -193,8 +193,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseLocalNativeAotPack)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
-    <IlcFrameworkPath>$(BootstrapRuntimePackDir)/runtimes/$(OutputRID)/lib/$(NetCoreAppCurrent)/</IlcFrameworkPath>
-    <IlcFrameworkNativePath>$(BootstrapRuntimePackDir)/runtimes/$(OutputRID)/native/</IlcFrameworkNativePath>
+    <IlcFrameworkPath>$(BootstrapRuntimePackDir)/runtimes/$(TargetRid)/lib/$(NetCoreAppCurrent)/</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(BootstrapRuntimePackDir)/runtimes/$(TargetRid)/native/</IlcFrameworkNativePath>
     <IlcSdkPath>$(BootstrapAotSdkDir)/</IlcSdkPath>
   </PropertyGroup>
 </Project>

@@ -745,11 +745,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         pVal->Clear();
         fSucceeded = TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     if (!fSucceeded)
         return -1;
 
@@ -784,11 +780,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             pVal->rgTypeParameters.Append((ULONGLONG) th.GetArrayElementTypeHandle().AsTAddr());
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
         if (!fSucceeded)
             return -1;
     }
@@ -804,11 +796,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
                 pVal->rgTypeParameters.Append((ULONGLONG) pTypeDesc->GetTypeParam().AsTAddr());
                 fSucceeded = TRUE;
             }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL
             if (!fSucceeded)
                 return -1;
         }
@@ -843,11 +831,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
                 }
                 fSucceeded = TRUE;
             }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL
             if (!fSucceeded)
                 return -1;
         }
@@ -884,8 +868,9 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         // If this failed, the name remains empty, which is ok; the event just
         // won't have a name in it.
         pVal->sName.Clear();
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     // Now that we know the full size of this type's data, see if it fits in our
     // batch or whether we need to flush
@@ -979,11 +964,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSyst
         }
         fSucceeded = TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     if (!fSucceeded)
         return;
 

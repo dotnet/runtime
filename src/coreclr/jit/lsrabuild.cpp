@@ -782,7 +782,27 @@ regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
     regMaskTP killMask = RBM_NONE;
 #ifdef TARGET_XARCH
     assert(mulNode->OperIsMul());
-    if (!mulNode->OperIs(GT_MUL) || (((mulNode->gtFlags & GTF_UNSIGNED) != 0) && mulNode->gtOverflowEx()))
+    if (!mulNode->OperIs(GT_MUL))
+    {
+        // If we can use the mulx instruction, we don't need to kill RAX
+        if (mulNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            // If on operand is contained, we define fixed RDX register for use, so we don't need to kill register.
+            if (mulNode->gtGetOp1()->isContained() || mulNode->gtGetOp2()->isContained())
+            {
+                killMask = RBM_NONE;
+            }
+            else
+            {
+                killMask = RBM_RDX;
+            }
+        }
+        else
+        {
+            killMask = RBM_RAX | RBM_RDX;
+        }
+    }
+    else if (mulNode->IsUnsigned() && mulNode->gtOverflowEx())
     {
         killMask = RBM_RAX | RBM_RDX;
     }
@@ -826,11 +846,11 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
-        if (call->TypeGet() == TYP_DOUBLE)
+        if (call->TypeIs(TYP_DOUBLE))
         {
             needDoubleTmpForFPCall = true;
         }
-        else if (call->TypeGet() == TYP_FLOAT)
+        else if (call->TypeIs(TYP_FLOAT))
         {
             needFloatTmpForFPCall = true;
         }
@@ -1826,13 +1846,6 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
             }
         }
 
-        if (tree->OperIsPutArgSplit())
-        {
-            // While we have attempted to account for any "specialPutArg" defs above, we're only looking at RefPositions
-            // created for this node. We must be defining at least one register in the PutArgSplit, so conservatively
-            // add one less than the maximum number of registers args to 'minRegCount'.
-            minRegCount += MAX_REG_ARG - 1;
-        }
         for (refPositionMark++; refPositionMark != refPositions.end(); refPositionMark++)
         {
             RefPosition* newRefPosition    = &(*refPositionMark);
@@ -2696,16 +2709,14 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
-                        calleeSaveCount = CNT_CALLEE_SAVED_MASK;
+                        calleeSaveCount = CNT_CALLEE_ENREG_MASK;
                     }
-#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
-                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                        calleeSaveCount = CNT_CALLEE_ENREG_FLOAT;
                     }
 
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
@@ -3069,6 +3080,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
 #ifndef TARGET_ARM
     setTgtPref(interval, tgtPrefUse);
     setTgtPref(interval, tgtPrefUse2);
+    setTgtPref(interval, tgtPrefUse3);
 #endif // !TARGET_ARM
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -3109,19 +3121,6 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
                 BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
             }
 
-            continue;
-        }
-#endif
-
-#if FEATURE_ARG_SPLIT
-        if (argNode->OperIs(GT_PUTARG_SPLIT))
-        {
-            unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
-            for (unsigned int i = 0; i < regCount; i++)
-            {
-                BuildUse(argNode, genSingleTypeRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
-            }
-            srcCount += regCount;
             continue;
         }
 #endif
@@ -4038,7 +4037,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     LclVarDsc*   varDsc   = compiler->lvaGetDesc(storeLoc);
 
     assert(compiler->lvaEnregMultiRegVars);
-    assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+    assert(storeLoc->OperIs(GT_STORE_LCL_VAR));
     bool isMultiRegSrc = op1->IsMultiRegNode();
     // The source must be:
     // - a multi-reg source
@@ -4123,7 +4122,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && (storeLoc->TypeGet() == TYP_SIMD12))
+    if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && storeLoc->TypeIs(TYP_SIMD12))
     {
 #ifdef TARGET_ARM64
         // Need an additional register to extract upper 4 bytes of Vector3,
@@ -4143,7 +4142,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
-        assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+        assert(storeLoc->OperIs(GT_STORE_LCL_VAR));
         srcCount = op1->GetMultiRegCount(compiler);
 
         for (int i = 0; i < srcCount; ++i)
@@ -4151,7 +4150,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             BuildUse(op1, RBM_NONE, i);
         }
 #if defined(FEATURE_SIMD) && defined(TARGET_X86)
-        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
         {
             if (varTypeIsSIMD(storeLoc) && op1->IsCall())
             {
@@ -4272,9 +4271,9 @@ int LinearScan::BuildReturn(GenTree* tree)
     GenTree* op1 = tree->AsOp()->GetReturnValue();
 
 #if !defined(TARGET_64BIT)
-    if (tree->TypeGet() == TYP_LONG)
+    if (tree->TypeIs(TYP_LONG))
     {
-        assert((op1->OperGet() == GT_LONG) && op1->isContained());
+        assert(op1->OperIs(GT_LONG) && op1->isContained());
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
         BuildUse(loVal, RBM_LNGRET_LO.GetIntRegSet());
@@ -4283,7 +4282,7 @@ int LinearScan::BuildReturn(GenTree* tree)
     }
     else
 #endif // !defined(TARGET_64BIT)
-        if ((tree->TypeGet() != TYP_VOID) && !op1->isContained())
+        if (!tree->TypeIs(TYP_VOID) && !op1->isContained())
         {
             SingleTypeRegSet useCandidates = RBM_NONE;
 
@@ -4299,7 +4298,7 @@ int LinearScan::BuildReturn(GenTree* tree)
             if (varTypeIsStruct(tree))
             {
                 // op1 has to be either a lclvar or a multi-reg returning call
-                if ((op1->OperGet() == GT_LCL_VAR) && !op1->IsMultiRegLclVar())
+                if (op1->OperIs(GT_LCL_VAR) && !op1->IsMultiRegLclVar())
                 {
                     BuildUse(op1, useCandidates);
                 }

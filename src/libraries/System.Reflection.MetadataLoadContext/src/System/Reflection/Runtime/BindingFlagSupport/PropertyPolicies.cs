@@ -25,7 +25,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
-            MethodInfo? accessorMethod = GetAccessorMethod(member);
+            MethodInfo? accessorMethod = GetMostAccessibleAccessor(member);
             if (accessorMethod == null)
             {
                 // If we got here, this is a inherited PropertyInfo that only had private accessors and is now refusing to give them out
@@ -83,5 +83,20 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         private static MethodInfo? GetAccessorMethod(PropertyInfo property) =>
             property.GetMethod ?? property.SetMethod;
+
+        private static MethodInfo? GetMostAccessibleAccessor(PropertyInfo property)
+        {
+            MethodInfo? getter = property.GetMethod;
+            MethodInfo? setter = property.SetMethod;
+
+            if (getter == null)
+                return setter;
+            if (setter == null)
+                return getter;
+
+            // Return the setter if it's more accessible, otherwise return the getter.
+            // MethodAttributes acessibility values are higher for more accessible methods: private (1) --> public (6).
+            return (setter.Attributes & MethodAttributes.MemberAccessMask) > (getter.Attributes & MethodAttributes.MemberAccessMask) ? setter : getter;
+        }
     }
 }

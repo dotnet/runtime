@@ -346,6 +346,8 @@ void
 ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
     STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_aot_provider_config_init (EventPipeProviderConfiguration *provider_config);
+    ep_rt_aot_provider_config_init(provider_config);
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -707,7 +709,9 @@ ep_rt_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // NativeAOT does not currently support rundown
+    extern void
+    ep_rt_aot_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
+    ep_rt_aot_execute_rundown (execution_checkpoints);
 }
 
 /*
@@ -1445,8 +1449,8 @@ void
 ep_rt_thread_setup (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    // Likely not needed and do nothing until testing shows to be required
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    ep_rt_aot_setup_thread ();
 }
 
 static

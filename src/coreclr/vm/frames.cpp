@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// FRAMES.CPP
-
-
 
 #include "common.h"
 #include "log.h"
@@ -19,7 +16,6 @@
 #include "dllimportcallback.h"
 #include "stackwalk.h"
 #include "dbginterface.h"
-#include "gms.h"
 #include "eeconfig.h"
 #include "ecall.h"
 #include "clsload.hpp"
@@ -1004,8 +1000,6 @@ Frame::Interception PrestubMethodFrame::GetInterception_Impl()
     return INTERCEPTION_PRESTUB;
 }
 
-#ifdef FEATURE_READYTORUN
-
 #ifndef DACCESS_COMPILE
 DynamicHelperFrame::DynamicHelperFrame(TransitionBlock * pTransitionBlock, int dynamicHelperFrameFlags)
     : FramedMethodFrame(FrameIdentifier::DynamicHelperFrame, pTransitionBlock, NULL)
@@ -1051,9 +1045,6 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
         (*fn)(dac_cast<PTR_PTR_Object>(pArgument), sc, CHECK_APP_DOMAIN);
     }
 }
-
-#endif // FEATURE_READYTORUN
-
 
 #ifndef DACCESS_COMPILE
 
@@ -1415,41 +1406,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
 
-void ProtectByRefsFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ByRefInfo *pByRefInfos = m_brInfo;
-    while (pByRefInfos)
-    {
-        if (!CorIsPrimitiveType(pByRefInfos->typ))
-        {
-            TADDR pData = PTR_HOST_MEMBER_TADDR(ByRefInfo, pByRefInfos, data);
-
-            if (pByRefInfos->typeHandle.IsValueType())
-            {
-                ReportPointersFromValueType(fn, sc, pByRefInfos->typeHandle.GetMethodTable(), PTR_VOID(pData));
-            }
-            else
-            {
-                PTR_PTR_Object ppObject = PTR_PTR_Object(pData);
-
-                LOG((LF_GC, INFO3, "ProtectByRefs Frame Promoting" FMT_ADDR "to ", DBG_ADDR(*ppObject)));
-
-                (*fn)(ppObject, sc, CHECK_APP_DOMAIN);
-
-                LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(*ppObject) ));
-            }
-        }
-        pByRefInfos = pByRefInfos->pNext;
-    }
-}
-
 void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 {
     CONTRACTL
@@ -1713,7 +1669,6 @@ CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, Met
 }
 #endif // #ifndef DACCESS_COMPILE
 
-//virtual
 void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1724,22 +1679,32 @@ void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
     FramedMethodFrame::GcScanRoots_Impl(fn, sc);
     PromoteCallerStack(fn, sc);
 
-
+    //
     // Promote the returned object
-    MethodDesc* methodDesc = GetFunction();
-    ReturnKind returnKind = methodDesc->GetReturnKind();
-    if (returnKind == RT_Object)
+    //
+
+    MetaSig sig(GetFunction());
+
+    TypeHandle thValueType;
+    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
+    if (CorTypeInfo::IsObjRef_NoThrow(et))
     {
         (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
     }
-    else if (returnKind == RT_ByRef)
+    else if (CorTypeInfo::IsByRef_NoThrow(et))
     {
         PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
     }
-    else
+    else if (et == ELEMENT_TYPE_VALUETYPE)
     {
-        _ASSERTE_MSG(!IsStructReturnKind(returnKind), "NYI: We can't promote multiregs struct returns");
-        _ASSERTE_MSG(IsScalarReturnKind(returnKind), "Non-scalar types must be promoted.");
+        ArgIterator argit(&sig);
+        if (!argit.HasRetBuffArg())
+        {
+#ifdef TARGET_UNIX
+#error Non-Windows ABIs must be special cased
+#endif
+            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
+        }
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -1781,16 +1746,6 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
     return sc.oref_protected;
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     TPMethodFrame::GcScanRoots    public
-//
-//  Synopsis:   GC protects arguments on the stack
-//
-
-//
-//+----------------------------------------------------------------------------
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1849,215 +1804,6 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(_MSC_VER) && defined(TARGET_X86)
-#pragma optimize("y", on)   // Small critical routines, don't put in EBP frame
-#endif
-
-// Initialization of HelperMethodFrame.
-void HelperMethodFrame::Push()
-{
-    CONTRACTL {
-        if (m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) NOTHROW; else THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    //
-    // Finish initialization
-    //
-
-    _ASSERTE(!m_MachState.isValid());
-
-    Thread * pThread = ::GetThread();
-    m_pThread = pThread;
-
-    // Push the frame
-    Frame::Push(pThread);
-
-    if (!pThread->HasThreadStateOpportunistic(Thread::TS_AbortRequested))
-        return;
-
-    // Outline the slow path for better perf
-    PushSlowHelper();
-}
-
-void HelperMethodFrame::Pop()
-{
-    CONTRACTL {
-        if (m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) NOTHROW; else THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    Thread * pThread = m_pThread;
-
-    if ((m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) || !pThread->HasThreadStateOpportunistic(Thread::TS_AbortInitiated))
-    {
-        Frame::Pop(pThread);
-        return;
-    }
-
-    // Outline the slow path for better perf
-    PopSlowHelper();
-}
-
-#if defined(_MSC_VER) && defined(TARGET_X86)
-#pragma optimize("", on)     // Go back to command line default optimizations
-#endif
-
-NOINLINE void HelperMethodFrame::PushSlowHelper()
-{
-    CONTRACTL {
-        if (m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) NOTHROW; else THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    if (!(m_Attribs & FRAME_ATTR_NO_THREAD_ABORT))
-    {
-        if (m_pThread->IsAbortRequested())
-        {
-            m_pThread->HandleThreadAbort();
-        }
-
-    }
-}
-
-NOINLINE void HelperMethodFrame::PopSlowHelper()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    m_pThread->HandleThreadAbort();
-    Frame::Pop(m_pThread);
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-MethodDesc* HelperMethodFrame::GetFunction_Impl()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE
-    EnsureInit(NULL);
-    return m_pMD;
-#else
-    if (m_MachState.isValid())
-    {
-        return m_pMD;
-    }
-    else
-    {
-        return ECall::MapTargetBackToMethod(m_FCallEntry);
-    }
-#endif
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Ensures the HelperMethodFrame gets initialized, if not already.
-//
-// Arguments:
-//      * unwindState - [out] DAC builds use this to return the unwound machine state.
-//
-// Return Value:
-//     Normally, the function always returns TRUE meaning the initialization succeeded.
-//
-//
-
-BOOL HelperMethodFrame::EnsureInit(MachState * unwindState)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    if (m_MachState.isValid())
-    {
-        return TRUE;
-    }
-
-    _ASSERTE(m_Attribs != 0xCCCCCCCC);
-
-#ifndef DACCESS_COMPILE
-    m_pMD = ECall::MapTargetBackToMethod(m_FCallEntry);
-
-    // if this is an FCall, we should find it
-    _ASSERTE(m_FCallEntry == 0 || m_pMD != 0);
-#endif
-
-    // Because TRUE FCalls can be called from via reflection, com-interop, etc.,
-    // we can't rely on the fact that we are called from jitted code to find the
-    // caller of the FCALL.   Thus FCalls must erect the frame directly in the
-    // FCall.  For JIT helpers, however, we can rely on this, and so they can
-    // be sneakier and defer the HelperMethodFrame setup to a called worker method.
-
-    // Work with a copy so that we only write the values once.
-    // this avoids race conditions.
-    LazyMachState* lazy = &m_MachState;
-    DWORD threadId = m_pThread->GetOSThreadId();
-    MachState unwound;
-
-    if (m_FCallEntry == 0 &&
-        !(m_Attribs & Frame::FRAME_ATTR_EXACT_DEPTH)) // Jit Helper
-    {
-        LazyMachState::unwindLazyState(
-            lazy,
-            &unwound,
-            threadId,
-            0);
-
-#if !defined(DACCESS_COMPILE)
-        if (!unwound.isValid())
-        {
-            // This only happens if LazyMachState::unwindLazyState had to abort as a
-            // result of failing to take a reader lock (because we told it not to yield,
-            // but the writer lock was already held).  Since we've not yet updated
-            // m_MachState, this HelperMethodFrame will still be considered not fully
-            // initialized (so a future call into EnsureInit() will attempt to complete
-            // initialization again).
-            //
-            // Note that, in DAC builds, the contract with LazyMachState::unwindLazyState
-            // is a bit different, and it's expected that LazyMachState::unwindLazyState
-            // will commonly return an unwound state with _pRetAddr==NULL (which counts
-            // as an "invalid" MachState). So have DAC builds deliberately fall through
-            // rather than aborting when unwound is invalid.
-            return FALSE;
-        }
-#endif // !defined(DACCESS_COMPILE)
-    }
-    else if ((m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
-    {
-        // explicitly told depth
-        LazyMachState::unwindLazyState(lazy, &unwound, threadId, 2);
-    }
-    else
-    {
-        // True FCall
-        LazyMachState::unwindLazyState(lazy, &unwound, threadId, 1);
-    }
-
-    _ASSERTE(unwound.isValid());
-
-#if !defined(DACCESS_COMPILE)
-    lazy->setLazyStateFromUnwind(&unwound);
-#else  // DACCESS_COMPILE
-    if (unwindState)
-    {
-        *unwindState = unwound;
-    }
-#endif // DACCESS_COMPILE
-
-    return TRUE;
-}
-
-
-#ifndef DACCESS_COMPILE
-
 VOID InlinedCallFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
@@ -2103,6 +1849,9 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_INTERPRETER
+
+TADDR InterpreterFrame::DummyCallerIP = (TADDR)&InterpreterFrame::DummyFuncletCaller;
+
 PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
 {
     LIMITED_METHOD_CONTRACT;
@@ -2144,7 +1893,7 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
     SetIP(pContext, (TADDR)pFrame->ip);
     SetSP(pContext, dac_cast<TADDR>(pFrame));
     SetFP(pContext, (TADDR)pFrame->pStack);
-    SetFirstArgReg(pContext, (TADDR)this);
+    SetFirstArgReg(pContext, dac_cast<TADDR>(this));
 }
 
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)

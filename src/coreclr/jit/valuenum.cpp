@@ -6079,7 +6079,7 @@ FieldSeq* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
 
 ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, GenTree* opB)
 {
-    if (opB->OperGet() == GT_CNS_INT)
+    if (opB->OperIs(GT_CNS_INT))
     {
         return ExtendPtrVN(opA, opB->AsIntCon()->gtFieldSeq, opB->AsIntCon()->IconValue());
     }
@@ -6624,7 +6624,7 @@ bool ValueNumStore::IsVNLog2(ValueNum vn, int* upperBound)
         IsVNBinFunc(op, VNF_Cast, &op);
 
 #ifdef TARGET_XARCH
-        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
+        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_AVX2_LeadingZeroCount : VNF_HWI_AVX2_X64_LeadingZeroCount;
 #else
         VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
 #endif
@@ -6702,12 +6702,12 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
-                case VNF_HWI_POPCNT_PopCount:
-                case VNF_HWI_POPCNT_X64_PopCount:
-                case VNF_HWI_LZCNT_LeadingZeroCount:
-                case VNF_HWI_LZCNT_X64_LeadingZeroCount:
-                case VNF_HWI_BMI1_TrailingZeroCount:
-                case VNF_HWI_BMI1_X64_TrailingZeroCount:
+                case VNF_HWI_SSE42_PopCount:
+                case VNF_HWI_SSE42_X64_PopCount:
+                case VNF_HWI_AVX2_LeadingZeroCount:
+                case VNF_HWI_AVX2_TrailingZeroCount:
+                case VNF_HWI_AVX2_X64_LeadingZeroCount:
+                case VNF_HWI_AVX2_X64_TrailingZeroCount:
                     return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
                 case VNF_HWI_AdvSimd_PopCount:
@@ -7910,7 +7910,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #ifdef TARGET_ARM64
             case NI_ArmBase_LeadingZeroCount:
 #else
-            case NI_LZCNT_LeadingZeroCount:
+            case NI_AVX2_LeadingZeroCount:
 #endif
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
@@ -7932,7 +7932,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 #else
-            case NI_LZCNT_X64_LeadingZeroCount:
+            case NI_AVX2_X64_LeadingZeroCount:
             {
                 assert(varTypeIsLong(type));
 
@@ -7991,7 +7991,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
             }
 
-            case NI_BMI1_TrailingZeroCount:
+            case NI_AVX2_TrailingZeroCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
 
@@ -8001,7 +8001,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
-            case NI_BMI1_X64_TrailingZeroCount:
+            case NI_AVX2_X64_TrailingZeroCount:
             {
                 assert(varTypeIsLong(type));
 
@@ -8011,7 +8011,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_POPCNT_PopCount:
+            case NI_SSE42_PopCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
 
@@ -8021,7 +8021,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
-            case NI_POPCNT_X64_PopCount:
+            case NI_SSE42_X64_PopCount:
             {
                 assert(varTypeIsLong(type));
 
@@ -9707,59 +9707,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_Max:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximumMagnitudeNumber(arg0Val, arg1Val);
-                    break;
-                }
-
+#ifdef TARGET_RISCV64
                 case NI_System_Math_MaxNumber:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
                     res            = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_Min:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimumMagnitudeNumber(arg0Val, arg1Val);
                     break;
                 }
 
@@ -9770,6 +9723,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res            = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
+#endif // TARGET_RISCV64
 
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
@@ -9795,59 +9749,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_Max:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximumMagnitudeNumber(arg0Val, arg1Val);
-                    break;
-                }
-
+#ifdef TARGET_RISCV64
                 case NI_System_Math_MaxNumber:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
                     res           = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_Min:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimumMagnitudeNumber(arg0Val, arg1Val);
                     break;
                 }
 
@@ -9858,6 +9765,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res           = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
+#endif // TARGET_RISCV64
 
                 case NI_System_Math_Pow:
                 {
@@ -9924,41 +9832,25 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_Atan2;
                 break;
 
+#ifdef TARGET_RISCV64
             case NI_System_Math_Max:
                 vnf = VNF_Max;
-                break;
-
-            case NI_System_Math_MaxMagnitude:
-                vnf = VNF_MaxMagnitude;
-                break;
-
-            case NI_System_Math_MaxMagnitudeNumber:
-                vnf = VNF_MaxMagnitudeNumber;
                 break;
 
             case NI_System_Math_MaxNumber:
                 vnf = VNF_MaxNumber;
                 break;
 
+            case NI_System_Math_MaxUnsigned:
+                vnf = VNF_Max_UN;
+                break;
+
             case NI_System_Math_Min:
                 vnf = VNF_Min;
                 break;
 
-            case NI_System_Math_MinMagnitude:
-                vnf = VNF_MinMagnitude;
-                break;
-
-            case NI_System_Math_MinMagnitudeNumber:
-                vnf = VNF_MinMagnitudeNumber;
-                break;
-
             case NI_System_Math_MinNumber:
                 vnf = VNF_MinNumber;
-                break;
-
-#ifdef TARGET_RISCV64
-            case NI_System_Math_MaxUnsigned:
-                vnf = VNF_Max_UN;
                 break;
 
             case NI_System_Math_MinUnsigned:
@@ -10357,6 +10249,24 @@ void ValueNumStore::vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc)
     printf(", exc=");
     printf(FMT_VN, excVN);
     vnDumpExcSeq(comp, &excSeq, true);
+}
+
+// Requires vn to be VNF_ExcSetCons or VNForEmptyExcSet().
+void ValueNumStore::vnDumpExc(Compiler* comp, ValueNum vn)
+{
+    VNFuncApp funcApp;
+    if (vn == VNForEmptyExcSet())
+    {
+        printf("EmptyExcSet");
+    }
+    else if (GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_ExcSetCons))
+    {
+        vnDumpExcSeq(comp, &funcApp, true);
+    }
+    else
+    {
+        assert(!"Invalid VN passed to vnDumpExc");
+    }
 }
 
 // Requires "excSeq" to be a ExcSetCons sequence.
@@ -11949,7 +11859,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
 
             valueVNPair.SetBoth(initObjVN);
         }
-        else if (value->TypeGet() == TYP_REF)
+        else if (value->TypeIs(TYP_REF))
         {
             // If we have an unsafe IL store of a TYP_REF to a non-ref (typically a TYP_BYREF)
             // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
@@ -12068,13 +11978,13 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
     {
         if (genTypeSize(varDsc) != genTypeSize(lcl))
         {
-            assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
+            assert(varDsc->TypeIs(TYP_LONG) && lcl->TypeIs(TYP_INT));
             lcl->gtVNPair = vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
         }
         else
         {
-            assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
-                   ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
+            assert((varDsc->TypeIs(TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
+                   (varDsc->TypeIs(TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
             lcl->gtVNPair = wholeLclVarVNP;
         }
     }
@@ -12681,11 +12591,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
             }
         }
-        else if (tree->OperGet() == GT_CAST)
+        else if (tree->OperIs(GT_CAST))
         {
             fgValueNumberCastTree(tree);
         }
-        else if (tree->OperGet() == GT_INTRINSIC)
+        else if (tree->OperIs(GT_INTRINSIC))
         {
             fgValueNumberIntrinsic(tree);
         }
@@ -13046,7 +12956,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
 void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_INTRINSIC);
+    assert(tree->OperIs(GT_INTRINSIC));
     GenTreeIntrinsic* intrinsic = tree->AsIntrinsic();
     ValueNumPair      arg0VNP, arg1VNP;
     ValueNumPair      arg0VNPx = ValueNumStore::VNPForEmptyExcSet();
@@ -13332,7 +13242,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
 void Compiler::fgValueNumberCastTree(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
+    assert(tree->OperIs(GT_CAST));
 
     ValueNumPair srcVNPair        = tree->AsOp()->gtOp1->gtVNPair;
     var_types    castToType       = tree->CastToType();
@@ -13921,11 +13831,6 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             srcIsUnsigned = true;
             break;
 
-        case CORINFO_HELP_DBL2INT:
-            castToType   = TYP_INT;
-            castFromType = TYP_DOUBLE;
-            break;
-
         case CORINFO_HELP_DBL2INT_OVF:
             castToType       = TYP_INT;
             castFromType     = TYP_DOUBLE;
@@ -13941,11 +13846,6 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             castToType       = TYP_LONG;
             castFromType     = TYP_DOUBLE;
             hasOverflowCheck = true;
-            break;
-
-        case CORINFO_HELP_DBL2UINT:
-            castToType   = TYP_UINT;
-            castFromType = TYP_DOUBLE;
             break;
 
         case CORINFO_HELP_DBL2UINT_OVF:
@@ -14048,7 +13948,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_NEWARR_1_DIRECT:
-        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_VC:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             vnf = VNF_JitNewArr;
@@ -14266,11 +14166,9 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         case CORINFO_HELP_LNG2DBL:
         case CORINFO_HELP_ULNG2FLT:
         case CORINFO_HELP_ULNG2DBL:
-        case CORINFO_HELP_DBL2INT:
         case CORINFO_HELP_DBL2INT_OVF:
         case CORINFO_HELP_DBL2LNG:
         case CORINFO_HELP_DBL2LNG_OVF:
-        case CORINFO_HELP_DBL2UINT:
         case CORINFO_HELP_DBL2UINT_OVF:
         case CORINFO_HELP_DBL2ULNG:
         case CORINFO_HELP_DBL2ULNG_OVF:
@@ -14434,7 +14332,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
     ValueNumPair vnpNorm;
 
-    if (call->TypeGet() == TYP_VOID)
+    if (call->TypeIs(TYP_VOID))
     {
         vnpNorm = ValueNumStore::VNPForVoid();
     }
@@ -14882,7 +14780,7 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
 void Compiler::fgValueNumberAddExceptionSetForCkFinite(GenTree* tree)
 {
     // We should only be dealing with an check finite operation.
-    assert(tree->OperGet() == GT_CKFINITE);
+    assert(tree->OperIs(GT_CKFINITE));
 
     // Unpack, Norm,Exc for the tree's VN
     //

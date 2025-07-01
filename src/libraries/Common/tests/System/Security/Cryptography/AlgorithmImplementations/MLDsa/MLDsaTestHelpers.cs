@@ -10,12 +10,20 @@ using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
-    internal static class MLDsaTestHelpers
+    internal static partial class MLDsaTestHelpers
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
+        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
+        internal static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+
+        // TODO: Windows does not support signing empty data. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
+        internal static bool SigningEmptyDataIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+
         // DER encoding of ASN.1 BitString "foo"
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };
+
+        private const int NTE_NOT_SUPPORTED = unchecked((int)0x80090029);
 
         internal static void VerifyDisposed(MLDsa mldsa)
         {
@@ -56,9 +64,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, publicKey));
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, publicKey.AsSpan()));
             }
 
@@ -101,9 +111,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey));
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey.AsSpan()));
             }
 
@@ -139,9 +151,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, privateSeed));
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, privateSeed.AsSpan()));
             }
 
@@ -270,9 +284,26 @@ namespace System.Security.Cryptography.Tests
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    MLDsaPrivateKeyAsn.Decode(
+                    DecodeExpandedKey(
+                        mldsa,
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).ExpandedKey?.ToArray()));
+        }
+
+        // TODO remove this when windows supports draft 10 PKCS#8 format
+        internal static MLDsaPrivateKeyAsn DecodeExpandedKey(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            try
+            {
+                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
+            }
+            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
+            {
+                return new MLDsaPrivateKeyAsn
+                {
+                    ExpandedKey = (mldsa.Algorithm.SecretKeySizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
+                };
+            }
         }
 
         internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback) =>
@@ -289,9 +320,26 @@ namespace System.Security.Cryptography.Tests
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    MLDsaPrivateKeyAsn.Decode(
+                    DecodePrivateSeed(
+                        mldsa,
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).Seed?.ToArray()));
+        }
+
+        // TODO remove this when windows supports draft 10 PKCS#8 format
+        internal static MLDsaPrivateKeyAsn DecodePrivateSeed(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            try
+            {
+                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
+            }
+            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
+            {
+                return new MLDsaPrivateKeyAsn
+                {
+                    Seed = (mldsa.Algorithm.PrivateSeedSizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
+                };
+            }
         }
 
         internal static void AssertExportPkcs8PrivateKey(MLDsa mldsa, Action<byte[]> callback) =>
@@ -421,6 +469,35 @@ namespace System.Security.Cryptography.Tests
             }
 
             return buffer.AsSpan(0, written).ToArray();
+        }
+
+        // CryptographicException can only have both HRESULT and Message set starting in .NET Core 3.0+.
+        // To work around this, the product code throws an exception derived from CryptographicException
+        // that has both set. This assert checks for that instead.
+        internal static void AssertThrowsCryptographicExceptionWithHResult(Action export)
+        {
+            CryptographicException ce = Assert.ThrowsAny<CryptographicException>(export);
+            Assert.Equal(NTE_NOT_SUPPORTED, ce.HResult);
+        }
+
+        internal static CngProperty GetCngProperty(MLDsaAlgorithm algorithm)
+        {
+            string parameterSetValue = algorithm.Name switch
+            {
+                "ML-DSA-44" => "44",
+                "ML-DSA-65" => "65",
+                "ML-DSA-87" => "87",
+                _ => throw new XunitException("Unknown algorithm."),
+            };
+
+            byte[] byteValue = new byte[(parameterSetValue.Length + 1) * 2]; // Null terminator
+            int written = Encoding.Unicode.GetBytes(parameterSetValue, 0, parameterSetValue.Length, byteValue, 0);
+            Assert.Equal(byteValue.Length - 2, written);
+
+            return new CngProperty(
+                "ParameterSetName",
+                byteValue,
+                CngPropertyOptions.None);
         }
 
         internal static string? AlgorithmToOid(MLDsaAlgorithm algorithm)

@@ -66,6 +66,23 @@ namespace System.Threading.Channels
             return new ValueTask<T>(t);
         }
 
+        /// <summary>Dequeues from <paramref name="head"/> until an element is dequeued that can have completion reserved.</summary>
+        /// <param name="head">The head of the list, with items dequeued up through the returned element, or entirely if <see langword="null"/> is returned.</param>
+        /// <returns>The operation on which completion has been reserved, or null if none can be found.</returns>
+        internal static TAsyncOp? TryDequeueAndReserveCompletionIfCancelable<TAsyncOp>(ref TAsyncOp? head)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
+        {
+            while (ChannelUtilities.TryDequeue(ref head, out var op))
+            {
+                if (op.TryReserveCompletionIfCancelable())
+                {
+                    return op;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>Dequeues an operation from the circular doubly-linked list referenced by <paramref name="head"/>.</summary>
         /// <param name="head">The head of the list.</param>
         /// <param name="op">The dequeued operation.</param>
@@ -315,6 +332,29 @@ namespace System.Threading.Channels
                 }
                 while (current != head);
             }
+        }
+
+        /// <summary>Counts the number of operations in the list.</summary>
+        /// <param name="head">The head of the queue of operations to count.</param>
+        internal static long CountOperations<TAsyncOp>(TAsyncOp? head)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
+        {
+            TAsyncOp? current = head;
+            long count = 0;
+
+            if (current is not null)
+            {
+                do
+                {
+                    count++;
+
+                    Debug.Assert(current is not null);
+                    current = current.Next;
+                }
+                while (current != head);
+            }
+
+            return count;
         }
 
         /// <summary>Creates and returns an exception object to indicate that a channel has been closed.</summary>

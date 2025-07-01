@@ -441,7 +441,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
         returnIP = NULL;
         returnSP = NULL; // this will cause us to return true.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     LOG((LF_CORDB, LL_INFO100000,
          "DWSP: TYPE_EXIT: returnIP=0x%08x, returnSP=0x%08x, frame=0x%08x, threadFrame=0x%08x, regSP=0x%08x\n",
@@ -614,7 +614,7 @@ DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame() const
     {
         ji = NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return ji;
 }
@@ -1671,7 +1671,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
         case Frame::TYPE_ENTRY: // We now ignore entry + exit frames.
         case Frame::TYPE_EXIT:
-        case Frame::TYPE_HELPER_METHOD_FRAME:
         case Frame::TYPE_INTERNAL:
 
             /* If we have a specific interception type, use it. However, if this
@@ -1694,8 +1693,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             break;
 
         case Frame::TYPE_INTERCEPTION:
-        case Frame::TYPE_SECURITY: // Security is a sub-type of interception
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_INTERCEPTION/TYPE_SECURITY.\n"));
+            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_INTERCEPTION.\n"));
             d->info.managed = true;
             d->info.internal = true;
             use = true;
@@ -1703,22 +1701,14 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
         case Frame::TYPE_CALL:
             LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_CALL.\n"));
-            // In V4, StubDispatchFrame is only used on 64-bit (and PPC?) but not on x86.  x86 uses a
-            // different code path which sets up a HelperMethodFrame instead.  In V4.5, x86 and ARM
-            // both use the 64-bit code path and they set up a StubDispatchFrame as well.  This causes
-            // a problem in the debugger stackwalker (see Dev11 Issue 13229) since the two frame types
-            // are treated differently.  More specifically, a StubDispatchFrame causes the debugger
-            // stackwalk to make an invalid callback, i.e. a callback which is not for a managed method,
-            // an explicit frame, or a chain.
+
+            // StubDispatchFrame is used during virtual stub dispatch and appears temporarily on the stack
+            // across architectures like x64, x86, and ARM. It exists for a short duration while dispatching
+            // a virtual call through a stub, making its presence rare during a typical debugger stack walk.
             //
-            // Ideally we would just change the StubDispatchFrame to behave like a HMF, but it's
-            // too big of a change for an in-place release.  For now I'm just making surgical fixes in
-            // the debugger stackwalker.  This may introduce behavioural changes in on X64, but the
-            // chance of that is really small.  StubDispatchFrame is only used in the virtual stub
-            // disptch code path.  It stays on the stack in a small time window and it's not likely to
-            // be on the stack while some managed methods closer to the leaf are on the stack.  There is
-            // only one scenario I know of, and that's the repro for Dev11 13229, but that's for x86 only.
-            // The jitted code on X64 behaves differently.
+            // In the debugger, we avoid treating StubDispatchFrame as a managed or inspectable frame.
+            // It doesn't represent a managed method, explicit frame, or chain, and attempting to interpret
+            // it as such may lead to invalid callbacks or incorrect debugger behavior.
             //
             // Note that there is a corresponding change in DacDbiInterfaceImpl::GetInternalFrameType().
             if (frame->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
