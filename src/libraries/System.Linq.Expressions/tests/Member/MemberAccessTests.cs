@@ -960,7 +960,7 @@ namespace System.Linq.Expressions.Tests
 
             Action<PassStructMembersMemberToRefFunctionClass> f = e.Compile(useInterpreter);
 
-            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = new Tuple2Ints{ Item1 = 0, Item2 = 0 } };
+            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = new Tuple2Ints { Item1 = 0, Item2 = 0 } };
 
             Assert.Equal(0, src.Tuple2Ints.Item1);
 
@@ -976,7 +976,7 @@ namespace System.Linq.Expressions.Tests
                 value = 42;
             }
         }
-        
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void PassStructMembersMemberToRefConstructor(bool useInterpreter)
@@ -1007,6 +1007,38 @@ namespace System.Linq.Expressions.Tests
             f(src);
 
             Assert.Equal(42, src.Tuple2Ints.Item1);
+        }
+
+        static class StaticClass
+        {
+            public static Struct<int> Item;
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypeInStaticClassTest(bool useInterpreter)
+        {
+            Expression<Action> e =
+                Expression.Lambda<Action>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                null,
+                                typeof(StaticClass),
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.Constant(42)
+                    ));
+
+            Action f = e.Compile(useInterpreter);
+
+            StaticClass.Item.Item = 0;
+
+            f();
+
+            Assert.Equal(42, StaticClass.Item.Item);
         }
     }
 }

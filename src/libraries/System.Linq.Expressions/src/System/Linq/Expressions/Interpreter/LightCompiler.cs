@@ -3202,14 +3202,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 var rawObject = frame.Data.GetRaw(_object.GetValueOrDefault().Index);
 
-                if (rawObject is FieldData fieldData)
-                {
-                    fieldData.SetValueDirect(_field, value);
-                }
-                else
-                {
-                    _field.SetValue(rawObject, value);
-                }
+                FieldData.SetValue(rawObject!, _field, value);
             }
         }
 

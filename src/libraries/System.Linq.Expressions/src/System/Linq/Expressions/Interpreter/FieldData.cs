@@ -45,7 +45,7 @@ namespace System.Linq.Expressions.Interpreter
             return TypedReference.ToObject(typedReference);
         }
 
-        public void SetValueDirect(FieldInfo field, object? value)
+        private void SetValueDirect(FieldInfo field, object? value)
         {
             (object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
 
@@ -54,13 +54,43 @@ namespace System.Linq.Expressions.Interpreter
             field.SetValueDirect(typedReference, value!);
         }
 
-        public object? GetValueDirect(FieldInfo field)
+        private object? GetValueDirect(FieldInfo field)
         {
             (object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
 
             var typedReference = TypedReference.MakeTypedReference(root, fieldInfos);
 
             return field.GetValueDirect(typedReference);
+        }
+
+
+        public static void SetValue(object self, FieldInfo field, object? value)
+        {
+            switch (self, field.DeclaringType)
+            {
+                case (FieldData fieldData, { IsPrimitive: false, IsValueType: true }):
+                    fieldData.SetValueDirect(field, value);
+                    break;
+
+                case (FieldData fieldData, _):
+                    field.SetValue(fieldData.ToObject(), value);
+                    break;
+
+                default:
+                    field.SetValue(self, value);
+                    break;
+            }
+        }
+
+        public static object? GetValue(object self, FieldInfo field)
+        {
+            return
+                (self, field.FieldType) switch
+                {
+                    (_, { IsPrimitive: false, IsValueType: true }) => new FieldData(self!, field),
+                    (FieldData fieldData, _) => fieldData.GetValueDirect(field),
+                    (_, _) => field.GetValue(self),
+                };
         }
     }
 }
