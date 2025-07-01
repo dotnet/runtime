@@ -478,9 +478,8 @@ namespace System
         }
 
         // Reliability-wise, this method will either possibly corrupt your
-        // instance & might fail when called from within a CER, or if the
-        // reliable flag is true, it will either always succeed or always
-        // throw an exception with no side effects.
+        // instance, or if the reliable flag is true, it will either always
+        // succeed or always throw an exception with no side effects.
         private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
