@@ -2237,6 +2237,24 @@ bool GenTreeCall::IsAsync() const
 }
 
 //-------------------------------------------------------------------------
+// IsAsyncAndAlwaysSavesAndRestoresExecutionContext:
+//   Check if this is an async call that always saves and restores the
+//   ExecutionContext around it.
+//
+// Return Value:
+//   True if so.
+//
+// Remarks:
+//   Normal user await calls have this behavior, while custom awaiters (via
+//   AsyncHelpers.AwaitAwaiter) only saves and restores the ExecutionContext if
+//   actual suspension happens.
+//
+bool GenTreeCall::IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const
+{
+    return IsAsync() && (GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore);
+}
+
+//-------------------------------------------------------------------------
 // HasNonStandardAddedArgs: Return true if the method has non-standard args added to the call
 // argument list during argument morphing (fgMorphArgs), e.g., passed in R10 or R11 on AMD64.
 // See also GetNonStandardAddedArgCount().
@@ -9887,9 +9905,20 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // because the inlinee still uses the inliner's memory allocator anyway.)
     INDEBUG(copy->callSig = tree->callSig;)
 
-    // The tail call info does not change after it is allocated, so for the same reasons as above
-    // a shallow copy suffices.
-    copy->tailCallInfo = tree->tailCallInfo;
+    if (tree->IsUnmanaged())
+    {
+        copy->unmgdCallConv = tree->unmgdCallConv;
+    }
+    else if (tree->IsAsync())
+    {
+        copy->asyncInfo = tree->asyncInfo;
+    }
+    else if (tree->IsTailPrefixedCall())
+    {
+        // The tail call info does not change after it is allocated, so for the same reasons as above
+        // a shallow copy suffices.
+        copy->tailCallInfo = tree->tailCallInfo;
+    }
 
     copy->gtRetClsHnd        = tree->gtRetClsHnd;
     copy->gtControlExpr      = gtCloneExpr(tree->gtControlExpr);

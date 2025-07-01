@@ -3844,9 +3844,6 @@ void Compiler::fgFindBasicBlocks()
             filtBB->bbRefs++; // The first block of a filter gets an extra, "artificial" reference count.
         }
 
-        tryBegBB->SetFlags(BBF_DONT_REMOVE);
-        hndBegBB->SetFlags(BBF_DONT_REMOVE);
-
         //
         // Store the info to the table of EH block handlers
         //
