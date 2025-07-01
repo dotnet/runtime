@@ -193,6 +193,10 @@ bool VMToOSInterface::ReleaseDoubleMappedMemory(void *mapperHandle, void* pStart
 {
     LPVOID  result = VirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
     assert(result != NULL);
+    if (result == NULL)
+    {
+        return false;
+    }
     memset(pStart, 0, size);
     return UnmapViewOfFile(pStart);
 }

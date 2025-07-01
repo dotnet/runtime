@@ -5,11 +5,11 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 {
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
-	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
-	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/MultipleDimsProvidedByRecursiveInterface.il" })]
-	[SkipILVerify]
+    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [TestCaseRequirements(TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
+    [Define("IL_ASSEMBLY_AVAILABLE")]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/MultipleDimsProvidedByRecursiveInterface.il" })]
+    [SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
 	// Both DIMs on I01 and I00 should be kept because one is not more specific than another.
@@ -27,15 +27,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 	//[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I010), "library.dll", typeof (Program.I01))]
 	//[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I01), "library.dll", typeof (Program.I0))]
 #endif
-	class MultipleDimsProvidedByRecursiveInterface
-	{
-		static void Main ()
-		{
+    class MultipleDimsProvidedByRecursiveInterface
+    {
+        static void Main()
+        {
 #if IL_ASSEMBLY_AVAILABLE
 			Program.I0 foo = new Program.MyFoo ();
 			CallMethod(foo);
 #endif
-		}
+        }
 #if IL_ASSEMBLY_AVAILABLE
 		[Kept]
 		static void CallMethod(Program.I0 foo)
@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			foo.Method();
 		}
 #endif
-	}
+    }
 }
 
 

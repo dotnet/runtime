@@ -213,4 +213,10 @@ install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DE
 
 if(CLR_CMAKE_HOST_ANDROID)
     install (TARGETS System.IO.Compression.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+
+    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        if (TARGET "${BROTLI_LIB}")
+            install (TARGETS ${BROTLI_LIB} DESTINATION sharedFramework COMPONENT runtime)
+        endif()
+    endforeach()
 endif()

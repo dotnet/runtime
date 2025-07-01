@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
@@ -167,6 +168,48 @@ namespace Internal.Cryptography
         {
             throw new CryptographicException(
                 SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, algorithmId));
+        }
+
+#if !BUILDING_PKCS
+        internal static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
+        {
+#if NET10_0_OR_GREATER
+            return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
+#else
+            int length = writer.GetEncodedLength();
+            byte[] rent = CryptoPool.Rent(length);
+
+            try
+            {
+                int written = writer.Encode(rent);
+                Debug.Assert(written == length);
+                return PemEncoding.WriteString(label, rent.AsSpan(0, written));
+            }
+            finally
+            {
+                CryptoPool.Return(rent, clear ? length : 0);
+            }
+#endif
+        }
+#endif
+
+        internal static void ThrowIfAsnInvalidLength(ReadOnlySpan<byte> data)
+        {
+            int bytesRead;
+
+            try
+            {
+                AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out bytesRead);
+            }
+            catch (AsnContentException ace)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ace);
+            }
+
+            if (bytesRead != data.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
         }
     }
 }
