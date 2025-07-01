@@ -25,14 +25,17 @@ namespace ILCompiler
             if (_symbolRemapping != null)
                 return;
 
+            HashSet<MethodInternKey> previousMethodHash;
+            HashSet<MethodInternKey> methodHash = null;
             Dictionary<ISymbolNode, ISymbolNode> previousSymbolRemapping;
             Dictionary<ISymbolNode, ISymbolNode> symbolRemapping = null;
 
             do
             {
+                previousMethodHash = methodHash;
                 previousSymbolRemapping = symbolRemapping;
-                var methodHash = new HashSet<MethodInternKey>(new MethodInternComparer(factory, previousSymbolRemapping));
-                symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>();
+                methodHash = new HashSet<MethodInternKey>(previousMethodHash?.Count ?? 0, new MethodInternComparer(factory, previousSymbolRemapping));
+                symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>(previousSymbolRemapping?.Count ?? 0);
 
                 foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
                 {
