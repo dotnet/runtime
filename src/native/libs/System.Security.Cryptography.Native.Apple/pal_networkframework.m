@@ -32,9 +32,16 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
     //
     // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
     // syntactically and semantically valid since the connection is never established.
-    nw_parameters_t nw_parameters = nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
-    nw_endpoint_t nw_endpoint = nw_endpoint_create_host("127.0.0.1", "42");
-    nw_connection_t connection = nw_connection_create(nw_endpoint, nw_parameters);
+    //
+    // TODO: reuse parameters and endpoint across connections
+    nw_parameters_t parameters = nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+    nw_endpoint_t endpoint = nw_endpoint_create_host("127.0.0.1", "42");
+
+    nw_connection_t connection = nw_connection_create(endpoint, parameters);
+
+    // connection retains its own reference to the endpoint and parameters
+    nw_release(endpoint);
+    nw_release(parameters);
 
     return connection;
 }
@@ -42,11 +49,10 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
 // This writes encrypted TLS frames to the safe handle. It is executed on NW Thread pool
 static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, nw_framer_message_t message, size_t message_length, bool is_complete)
 {
-    nw_protocol_options_t framer_options;
 
     if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 2.0, *))
     {
-        framer_options = nw_framer_copy_options(framer);
+        nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
 
         NSNumber* num = nw_framer_options_copy_object_value(framer_options, "GCHANDLE");
         assert(num != NULL);
@@ -62,6 +68,8 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
             (void)message;
             return buffer_length;
         });
+
+        nw_release(framer_options);
     }
     else
     {
@@ -81,6 +89,8 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) 
             [num getValue:&state];
             (_statusFunc)(state, PAL_NwStatusUpdates_FramerStop, 0, 0);
         }
+
+        nw_release(framer_options);
     }
 
     return TRUE;
@@ -110,6 +120,9 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
     nw_framer_set_stop_handler(framer, framer_stop_handler);
     nw_framer_set_cleanup_handler(framer, framer_cleanup_handler);
+
+    nw_release(framer_options);
+
     return nw_framer_start_result_ready;
 };
 
@@ -162,6 +175,7 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
     if (connection == NULL)
         return -1;
 
+    nw_retain(connection); // hold a reference until canceled
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
         switch (status)
@@ -184,6 +198,7 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
             case nw_connection_state_cancelled:
             {
                 (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0);
+                nw_release(connection); // release the reference we held
             }
             break;
             case nw_connection_state_invalid:
@@ -228,7 +243,7 @@ PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, 
 PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state)
 {
     nw_connection_receive(connection, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
-        int errorCode  = error ? nw_error_get_error_code(error) : 0;
+        int errorCode = error ? nw_error_get_error_code(error) : 0;
 
         if (error != NULL)
         {
@@ -279,8 +294,8 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 // This configures TLS properties
 PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
-    nw_protocol_options_t tlsOptions = nw_tls_create_options();
-    sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
+    nw_protocol_options_t tls_options = nw_tls_create_options();
+    sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tls_options);
     if (targetName != NULL)
     {
         sec_protocol_options_set_tls_server_name(sec_options, targetName);
@@ -327,7 +342,11 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
     nw_parameters_t parameters = nw_connection_copy_parameters(connection);
     nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(parameters);
     nw_protocol_stack_prepend_application_protocol(protocol_stack, framer_options);
-    nw_protocol_stack_prepend_application_protocol(protocol_stack, tlsOptions);
+    nw_protocol_stack_prepend_application_protocol(protocol_stack, tls_options);
+
+    nw_release(framer_options);
+    nw_release(protocol_stack);
+    nw_release(tls_options);
 }
 
 // This wil get TLS details after handshake is finished
@@ -375,6 +394,10 @@ PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connecti
 #pragma clang diagnostic pop
 
         *pCipherSuiteOut = sec_protocol_metadata_get_negotiated_tls_ciphersuite(secMeta);
+
+        nw_release(meta);
+        nw_release(secMeta);
+
         return 0;
     }
 
@@ -408,6 +431,8 @@ PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFA
 
             sec_release(secMeta);
         }
+
+        nw_release(meta);
     }
 
     if (certs != NULL)

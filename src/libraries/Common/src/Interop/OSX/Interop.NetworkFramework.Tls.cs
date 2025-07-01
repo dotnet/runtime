@@ -125,6 +125,7 @@ internal static partial class Interop
 
         protected override bool ReleaseHandle()
         {
+            NetworkFramework.Release(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
