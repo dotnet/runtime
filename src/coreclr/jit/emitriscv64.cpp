@@ -1866,26 +1866,16 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
         assert(regLink == REG_ZERO || regLink == REG_RA);
         addr -= regLink;
         assert((addr & 1) == 0);
+        regNumber addrReg = (regLink == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
 
-        unsigned offsetHi = 0;
-        unsigned offsetLo = 0;
-        if (!id->idIsReloc() || !emitComp->opts.compReloc)
-        {
-            ssize_t offset = addr - (ssize_t)dst;
-            assert(isValidSimm32(offset));
-            if (!id->idIsReloc())
-            {
-                offsetLo = offset & 0xFFF;
-                offsetHi = TrimSignedToImm20((offset + 0x800) >> 12);
-            }
-        }
+        dst += emitOutput_UTypeInstr(dst, INS_auipc, addrReg, 0);
+        emitGCregDeadUpd(addrReg, dst);
 
-        dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_DEFAULT_HELPER_CALL_TARGET, offsetHi);
-        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
-        dst += emitOutput_ITypeInstr(dst, INS_jalr, regLink, REG_DEFAULT_HELPER_CALL_TARGET, offsetLo);
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, regLink, addrReg, 0);
+        if (regLink != addrReg)
+            emitGCregDeadUpd(regLink, dst);
 
-        if (id->idIsReloc())
-            emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
+        emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
     }
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
