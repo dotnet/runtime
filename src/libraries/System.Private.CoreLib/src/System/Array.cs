@@ -437,19 +437,14 @@ namespace System
 
             int srcLB = sourceArray.GetLowerBound(0);
             ArgumentOutOfRangeException.ThrowIfLessThan(sourceIndex, srcLB);
-            if (sourceIndex - srcLB < 0)
-                throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
             sourceIndex -= srcLB;
+            if ((sourceIndex < 0) || ((uint)(sourceIndex + length) > sourceArray.NativeLength))
+                throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
 
             int dstLB = destinationArray.GetLowerBound(0);
             ArgumentOutOfRangeException.ThrowIfLessThan(destinationIndex, dstLB);
-            if (destinationIndex - dstLB < 0)
-                throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
             destinationIndex -= dstLB;
-
-            if ((uint)(sourceIndex + length) > sourceArray.NativeLength)
-                throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
-            if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
+            if ((destinationIndex < 0) || ((uint)(destinationIndex + length) > destinationArray.NativeLength))
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
             ArrayAssignType assignType;
