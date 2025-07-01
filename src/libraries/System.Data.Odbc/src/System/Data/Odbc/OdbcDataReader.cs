@@ -965,6 +965,11 @@ namespace System.Data.Odbc
                         // followed by exception. I did not add it now to avoid breaking change
                         Debug.Assert(lengthOrIndicator >= 0 || lengthOrIndicator == ODBC32.SQL_NO_TOTAL, "unexpected lengthOrIndicator value");
 
+                        if (0 == lengthOrIndicator)
+                        {
+                            break;  // done
+                        }
+
                         if (lengthOrIndicator <= cbMaxData && (ODBC32.SQL_NO_TOTAL != lengthOrIndicator))
                         {
                             // all data read? good! Directly marshal to a string and we're done
