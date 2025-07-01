@@ -1136,6 +1136,10 @@ void InsertIntoNativeToILCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset
     {
         // Initialize the cache if it is not already initialized
         DWORD cacheSize = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_NativeToILOffsetCacheSize);
+        if (cacheSize < 1)
+        {
+            cacheSize = 1; // Ensure cache size is at least 1 to prevent division-by-zero
+        }
         s_stackWalkCacheSize = cacheSize;
         VolatileStore(&s_stackWalkCache, new(nothrow)StackWalkNativeToILCacheEntry[cacheSize]);
 
