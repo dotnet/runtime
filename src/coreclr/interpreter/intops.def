@@ -23,8 +23,10 @@ OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
 OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpLdPtr)
 OPDEF(INTOP_LDPTR_DEREF, "ldptr.deref", 3, 1, 0, InterpOpLdPtr)
-OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpInt)
-OPDEF(INTOP_NEWMDARR, "newmdarr", 5, 1, 1, InterpOpTwoInts)
+OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpPointerHelperFtn)
+OPDEF(INTOP_NEWARR_GENERIC, "newarr.generic", 6, 1, 2, InterpOpGenericHelperFtn)
+OPDEF(INTOP_NEWMDARR, "newmdarr", 5, 1, 1, InterpOpPointerInt)
+OPDEF(INTOP_NEWMDARR_GENERIC, "newmdarr.generic", 6, 1, 2, InterpOpGenericLookupInt)
 
 OPDEF(INTOP_LDELEM_I1, "ldelem.i1", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_LDELEM_U1, "ldelem.u1", 4, 1, 2, InterpOpNoArgs)
@@ -51,9 +53,6 @@ OPDEF(INTOP_STELEM_VT_NOREF, "stelem.vt.noref", 5, 0, 3, InterpOpInt)
 
 OPDEF(INTOP_LDELEMA, "ldelema", 5, 1, 2, InterpOpInt)
 OPDEF(INTOP_LDELEMA_REF, "ldelema.ref", 6, 1, 2, InterpOpTwoInts)
-
-OPDEF(INTOP_LDTOKEN, "ldtoken", 4, 1, 0, InterpOpTwoInts) // [token data item] [conversion helper func]
-OPDEF(INTOP_LDTOKEN_VAR, "ldtoken.var", 4, 1, 1, InterpOpInt) // [var index] [conversion helper func]
 
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
@@ -206,10 +205,8 @@ OPDEF(INTOP_CONV_OVF_I8_R8, "conv.ovf.i8.r8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
-OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
-OPDEF(INTOP_BOX_PTR, "box.ptr", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
-OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
-OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpHelperFtn) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX_ANY_GENERIC, "unbox.any.generic", 6, 1, 2, InterpOpGenericHelperFtn) // [class handle data item] [helper data item]
 // Unary operations end
 
 OPDEF(INTOP_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, InterpOpInt)
@@ -336,18 +333,35 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
-OPDEF(INTOP_CALLI, "call", 5, 1, 2, InterpOpLdPtr)
+OPDEF(INTOP_CALLI, "calli", 5, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
-OPDEF(INTOP_NEWOBJ_VAR, "newobj.var", 5, 1, 2, InterpOpMethodHandle)
+OPDEF(INTOP_NEWOBJ_GENERIC, "newobj.generic", 6, 1, 2, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 
-OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 4, 1, 0, InterpOpHelperFtn)
-OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 5, 1, 1, InterpOpHelperFtn)
+// The following helper call instructions exist in 2 variants, one for normal methods, and one for cases where a shared generic lookup is needed.
+// In the case where a shared generic lookup is needed an extra argument is passed as an svar, which is a pointer to the generic context.
+// If there is a generic context argument it is always the first SVar to the instruction.
 
-OPDEF(INTOP_GENERICLOOKUP_METHOD, "generic.method", 4, 1, 1, InterpOpGenericLookup)
-OPDEF(INTOP_GENERICLOOKUP_CLASS, "generic.class", 4, 1, 1, InterpOpGenericLookup)
-OPDEF(INTOP_GENERICLOOKUP_THIS, "generic.this", 4, 1, 1, InterpOpGenericLookup)
+// Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg))
+OPDEF(INTOP_CALL_HELPER_P_P, "call.helper.p.p", 4, 1, 0, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_G, "call.helper.p.g", 5, 1, 1, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_S, "call.helper.p.s", 4, 1, 1, InterpOpHelperFtnNoArgs)
+
+// Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, SVar))
+OPDEF(INTOP_CALL_HELPER_P_PS, "call.helper.p.ps", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_GS, "call.helper.p.gs", 6, 1, 2, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_SP, "call.helper.p.sp", 5, 1, 1, InterpOpHelperFtn)
+
+// Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, AddrOfSVar))
+OPDEF(INTOP_CALL_HELPER_P_PA, "call.helper.p.pa", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_GA, "call.helper.p.ga", 6, 1, 2, InterpOpGenericHelperFtn)
+
+// Call a helper function with a signature of void helper(AddrOfDVar, TypeOrGenericArg, SVar))
+OPDEF(INTOP_CALL_HELPER_V_APS, "call.helper.v.aps", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_V_AGS, "call.helper.v.ags", 6, 1, 2, InterpOpGenericHelperFtn)
+
+OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 

@@ -429,7 +429,7 @@ COMToCLRDispatchHelper_RegSetup
 #endif ; FEATURE_COMINTEROP
 
 ;
-; x12 = UMEntryThunk*
+; x12 = UMEntryThunkData*
 ;
     NESTED_ENTRY TheUMEntryPrestub,,UMEntryPrestubUnwindFrameChainHandler
 
@@ -1085,6 +1085,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
@@ -1095,6 +1096,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldr x0, [x0]
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
@@ -1106,6 +1108,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldr d0, [x0]
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
@@ -1130,6 +1133,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldr x1, [x0, #8]
         ldr x0, [x0]
@@ -1142,6 +1146,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldp d0, d1, [x0]
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
@@ -1153,6 +1158,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldp d0, d1, [x0]
         ldr d2, [x0, #16]
@@ -1165,6 +1171,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldp d0, d1, [x0]
         ldp d2, d3, [x0, #16]
@@ -1177,6 +1184,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldr s0, [x0]
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
@@ -1188,6 +1196,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldp s0, s1, [x0]
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
@@ -1199,6 +1208,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldp s0, s1, [x0]
         ldr s2, [x0, #8]
@@ -1211,6 +1221,7 @@ JIT_PollGCRarePath
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
         bl ExecuteInterpretedMethod
         ldp s0, s1, [x0]
         ldp s2, s3, [x0, #8]

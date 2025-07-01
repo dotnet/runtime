@@ -230,6 +230,111 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> AbsoluteDifferenceWideningUpper(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
+        // Add with carry long (bottom)
+
+        /// <summary>
+        /// svuint32_t svadclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   ADCLB Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static unsafe Vector<uint> AddCarryWideningLower(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   ADCLB Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ulong> AddCarryWideningLower(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
+
+        // Add with carry long (top)
+
+        /// <summary>
+        /// svuint32_t svadclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   ADCLT Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static unsafe Vector<uint> AddCarryWideningUpper(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   ADCLT Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ulong> AddCarryWideningUpper(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
+
+        // Add narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svaddhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddHighNarrowingEven(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svaddhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddHighNarrowingEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svaddhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddHighNarrowingEven(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svaddhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddHighNarrowingEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svaddhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddHighNarrowingEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svaddhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddHighNarrowingEven(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Add narrow high part (top)
+
+        /// <summary>
+        /// svuint8_t svaddhnt[_u16](svuint8_t even, svuint16_t op1, svuint16_t op2)
+        ///   ADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<byte> AddHighNarrowingOdd(Vector<byte> even, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svaddhnt[_s32](svint16_t even, svint32_t op1, svint32_t op2)
+        ///   ADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<short> AddHighNarrowingOdd(Vector<short> even, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svaddhnt[_s64](svint32_t even, svint64_t op1, svint64_t op2)
+        ///   ADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> AddHighNarrowingOdd(Vector<int> even, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svaddhnt[_s16](svint8_t even, svint16_t op1, svint16_t op2)
+        ///   ADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<sbyte> AddHighNarrowingOdd(Vector<sbyte> even, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svaddhnt[_u32](svuint16_t even, svuint32_t op1, svuint32_t op2)
+        ///   ADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<ushort> AddHighNarrowingOdd(Vector<ushort> even, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svaddhnt[_u64](svuint32_t even, svuint64_t op1, svuint64_t op2)
+        ///   ADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<uint> AddHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
@@ -538,25 +643,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticRounded(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftArithmeticRounded(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticRounded(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftArithmeticRounded(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticRounded(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftArithmeticRounded(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t svrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticRounded(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ShiftArithmeticRounded(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
 
 
         // Saturating rounding shift left
@@ -565,25 +670,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SQRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticRoundedSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftArithmeticRoundedSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svqrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SQRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticRoundedSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftArithmeticRoundedSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svqrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SQRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticRoundedSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftArithmeticRoundedSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t svqrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SQRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticRoundedSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ShiftArithmeticRoundedSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
 
 
         // Saturating shift left
@@ -592,25 +697,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SQSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftArithmeticSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svqshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SQSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftArithmeticSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svqshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SQSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftArithmeticSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t svqshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SQSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ShiftArithmeticSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
 
 
         // Shift left and insert
@@ -794,6 +899,675 @@ namespace System.Runtime.Intrinsics.Arm
         ///   USHLLT Zresult.D, Zop1.S, #imm2
         /// </summary>
         public static Vector<ulong> ShiftLeftLogicalWideningOdd(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift left
+
+        /// <summary>
+        /// svuint8_t svrshl[_u8]_m(svbool_t pg, svuint8_t op1, svint8_t op2)
+        ///   URSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> ShiftLogicalRounded(Vector<byte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrshl[_u16]_m(svbool_t pg, svuint16_t op1, svint16_t op2)
+        ///   URSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> ShiftLogicalRounded(Vector<ushort> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrshl[_u32]_m(svbool_t pg, svuint32_t op1, svint32_t op2)
+        ///   URSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> ShiftLogicalRounded(Vector<uint> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrshl[_u64]_m(svbool_t pg, svuint64_t op1, svint64_t op2)
+        ///   URSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> ShiftLogicalRounded(Vector<ulong> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift left
+
+        /// <summary>
+        /// svuint8_t svqrshl[_u8]_m(svbool_t pg, svuint8_t op1, svint8_t op2)
+        ///   UQRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> ShiftLogicalRoundedSaturate(Vector<byte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqrshl[_u16]_m(svbool_t pg, svuint16_t op1, svint16_t op2)
+        ///   UQRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> ShiftLogicalRoundedSaturate(Vector<ushort> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqrshl[_u32]_m(svbool_t pg, svuint32_t op1, svint32_t op2)
+        ///   UQRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> ShiftLogicalRoundedSaturate(Vector<uint> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svqrshl[_u64]_m(svbool_t pg, svuint64_t op1, svint64_t op2)
+        ///   UQRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> ShiftLogicalRoundedSaturate(Vector<ulong> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+
+
+        // Shift right and insert
+
+        /// <summary>
+        /// svuint8_t svsri[_n_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   SRI Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<byte> ShiftRightAndInsert(Vector<byte> left, Vector<byte> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svsri[_n_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   SRI Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<short> ShiftRightAndInsert(Vector<short> left, Vector<short> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svsri[_n_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   SRI Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<int> ShiftRightAndInsert(Vector<int> left, Vector<int> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svsri[_n_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   SRI Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<long> ShiftRightAndInsert(Vector<long> left, Vector<long> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svsri[_n_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   SRI Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<sbyte> ShiftRightAndInsert(Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svsri[_n_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   SRI Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<ushort> ShiftRightAndInsert(Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svsri[_n_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   SRI Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<uint> ShiftRightAndInsert(Vector<uint> left, Vector<uint> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svsri[_n_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   SRI Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<ulong> ShiftRightAndInsert(Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+
+        // Shift right and accumulate
+
+        /// <summary>
+        /// svint16_t svsra[_n_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   SSRA Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<short> ShiftRightArithmeticAdd(Vector<short> addend, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svsra[_n_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   SSRA Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<int> ShiftRightArithmeticAdd(Vector<int> addend, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svsra[_n_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   SSRA Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<long> ShiftRightArithmeticAdd(Vector<long> addend, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svsra[_n_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   SSRA Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<sbyte> ShiftRightArithmeticAdd(Vector<sbyte> addend, Vector<sbyte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating shift right narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svqshrnb[_n_u16](svuint16_t op1, uint64_t imm2)
+        ///   UQSHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightArithmeticNarrowingSaturateEven(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqshrnb[_n_s32](svint32_t op1, uint64_t imm2)
+        ///   SQSHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightArithmeticNarrowingSaturateEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqshrnb[_n_s64](svint64_t op1, uint64_t imm2)
+        ///   SQSHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightArithmeticNarrowingSaturateEven(Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqshrnb[_n_s16](svint16_t op1, uint64_t imm2)
+        ///   SQSHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightArithmeticNarrowingSaturateEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqshrnb[_n_u32](svuint32_t op1, uint64_t imm2)
+        ///   UQSHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightArithmeticNarrowingSaturateEven(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqshrnb[_n_u64](svuint64_t op1, uint64_t imm2)
+        ///   UQSHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightArithmeticNarrowingSaturateEven(Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating shift right narrow (top)
+
+        /// <summary>
+        /// svuint8_t svqshrnt[_n_u16](svuint8_t even, svuint16_t op1, uint64_t imm2)
+        ///   UQSHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightArithmeticNarrowingSaturateOdd(Vector<byte> even, Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqshrnt[_n_s32](svint16_t even, svint32_t op1, uint64_t imm2)
+        ///   SQSHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightArithmeticNarrowingSaturateOdd(Vector<short> even, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqshrnt[_n_s64](svint32_t even, svint64_t op1, uint64_t imm2)
+        ///   SQSHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightArithmeticNarrowingSaturateOdd(Vector<int> even, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqshrnt[_n_s16](svint8_t even, svint16_t op1, uint64_t imm2)
+        ///   SQSHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightArithmeticNarrowingSaturateOdd(Vector<sbyte> even, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqshrnt[_n_u32](svuint16_t even, svuint32_t op1, uint64_t imm2)
+        ///   UQSHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightArithmeticNarrowingSaturateOdd(Vector<ushort> even, Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqshrnt[_n_u64](svuint32_t even, svuint64_t op1, uint64_t imm2)
+        ///   UQSHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightArithmeticNarrowingSaturateOdd(Vector<uint> even, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating shift right unsigned narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svqshrunb[_n_s16](svint16_t op1, uint64_t imm2)
+        ///   SQSHRUNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightArithmeticNarrowingSaturateUnsignedEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqshrunb[_n_s32](svint32_t op1, uint64_t imm2)
+        ///   SQSHRUNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqshrunb[_n_s64](svint64_t op1, uint64_t imm2)
+        ///   SQSHRUNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightArithmeticNarrowingSaturateUnsignedEven(Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating shift right unsigned narrow (top)
+
+        /// <summary>
+        /// svuint8_t svqshrunt[_n_s16](svuint8_t even, svint16_t op1, uint64_t imm2)
+        ///   SQSHRUNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightArithmeticNarrowingSaturateUnsignedOdd(Vector<byte> even, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqshrunt[_n_s32](svuint16_t even, svint32_t op1, uint64_t imm2)
+        ///   SQSHRUNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedOdd(Vector<ushort> even, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqshrunt[_n_s64](svuint32_t even, svint64_t op1, uint64_t imm2)
+        ///   SQSHRUNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightArithmeticNarrowingSaturateUnsignedOdd(Vector<uint> even, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift right
+
+        /// <summary>
+        /// svint16_t svrshr[_n_s16]_m(svbool_t pg, svint16_t op1, uint64_t imm2)
+        ///   SRSHR Ztied1.H, Pg/M, Ztied1.H, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightArithmeticRounded(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrshr[_n_s32]_m(svbool_t pg, svint32_t op1, uint64_t imm2)
+        ///   SRSHR Ztied1.S, Pg/M, Ztied1.S, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightArithmeticRounded(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrshr[_n_s64]_m(svbool_t pg, svint64_t op1, uint64_t imm2)
+        ///   SRSHR Ztied1.D, Pg/M, Ztied1.D, #imm2
+        /// </summary>
+        public static Vector<long> ShiftRightArithmeticRounded(Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrshr[_n_s8]_m(svbool_t pg, svint8_t op1, uint64_t imm2)
+        ///   SRSHR Ztied1.B, Pg/M, Ztied1.B, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightArithmeticRounded(Vector<sbyte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift right and accumulate
+
+        /// <summary>
+        /// svint16_t svrsra[_n_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   SRSRA Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<short> ShiftRightArithmeticRoundedAdd(Vector<short> addend, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrsra[_n_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   SRSRA Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<int> ShiftRightArithmeticRoundedAdd(Vector<int> addend, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrsra[_n_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   SRSRA Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<long> ShiftRightArithmeticRoundedAdd(Vector<long> addend, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrsra[_n_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   SRSRA Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<sbyte> ShiftRightArithmeticRoundedAdd(Vector<sbyte> addend, Vector<sbyte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift right narrow (bottom)
+
+        /// <summary>
+        /// svint16_t svqrshrnb[_n_s32](svint32_t op1, uint64_t imm2)
+        ///   SQRSHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightArithmeticRoundedNarrowingSaturateEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrshrnb[_n_s64](svint64_t op1, uint64_t imm2)
+        ///   SQRSHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightArithmeticRoundedNarrowingSaturateEven(Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqrshrnb[_n_s16](svint16_t op1, uint64_t imm2)
+        ///   SQRSHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift right narrow (top)
+
+        /// <summary>
+        /// svint16_t svqrshrnt[_n_s32](svint16_t even, svint32_t op1, uint64_t imm2)
+        ///   SQRSHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightArithmeticRoundedNarrowingSaturateOdd(Vector<short> even, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrshrnt[_n_s64](svint32_t even, svint64_t op1, uint64_t imm2)
+        ///   SQRSHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightArithmeticRoundedNarrowingSaturateOdd(Vector<int> even, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqrshrnt[_n_s16](svint8_t even, svint16_t op1, uint64_t imm2)
+        ///   SQRSHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateOdd(Vector<sbyte> even, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift right unsigned narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svqrshrunb[_n_s16](svint16_t op1, uint64_t imm2)
+        ///   SQRSHRUNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqrshrunb[_n_s32](svint32_t op1, uint64_t imm2)
+        ///   SQRSHRUNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqrshrunb[_n_s64](svint64_t op1, uint64_t imm2)
+        ///   SQRSHRUNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven(Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift right unsigned narrow (top)
+
+        /// <summary>
+        /// svuint8_t svqrshrunt[_n_s16](svuint8_t even, svint16_t op1, uint64_t imm2)
+        ///   SQRSHRUNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd(Vector<byte> even, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqrshrunt[_n_s32](svuint16_t even, svint32_t op1, uint64_t imm2)
+        ///   SQRSHRUNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd(Vector<ushort> even, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqrshrunt[_n_s64](svuint32_t even, svint64_t op1, uint64_t imm2)
+        ///   SQRSHRUNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd(Vector<uint> even, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Shift right and accumulate
+
+        /// <summary>
+        /// svuint8_t svsra[_n_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   USRA Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalAdd(Vector<byte> addend, Vector<byte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svsra[_n_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   USRA Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalAdd(Vector<ushort> addend, Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svsra[_n_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   USRA Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalAdd(Vector<uint> addend, Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svsra[_n_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   USRA Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<ulong> ShiftRightLogicalAdd(Vector<ulong> addend, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Shift right narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svshrnb[_n_u16](svuint16_t op1, uint64_t imm2)
+        ///   SHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalNarrowingEven(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svshrnb[_n_s32](svint32_t op1, uint64_t imm2)
+        ///   SHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightLogicalNarrowingEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svshrnb[_n_s64](svint64_t op1, uint64_t imm2)
+        ///   SHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightLogicalNarrowingEven(Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svshrnb[_n_s16](svint16_t op1, uint64_t imm2)
+        ///   SHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightLogicalNarrowingEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svshrnb[_n_u32](svuint32_t op1, uint64_t imm2)
+        ///   SHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalNarrowingEven(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svshrnb[_n_u64](svuint64_t op1, uint64_t imm2)
+        ///   SHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalNarrowingEven(Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Shift right narrow (top)
+
+        /// <summary>
+        /// svuint8_t svshrnt[_n_u16](svuint8_t even, svuint16_t op1, uint64_t imm2)
+        ///   SHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalNarrowingOdd(Vector<byte> even, Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svshrnt[_n_s32](svint16_t even, svint32_t op1, uint64_t imm2)
+        ///   SHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightLogicalNarrowingOdd(Vector<short> even, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svshrnt[_n_s64](svint32_t even, svint64_t op1, uint64_t imm2)
+        ///   SHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightLogicalNarrowingOdd(Vector<int> even, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svshrnt[_n_s16](svint8_t even, svint16_t op1, uint64_t imm2)
+        ///   SHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightLogicalNarrowingOdd(Vector<sbyte> even, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svshrnt[_n_u32](svuint16_t even, svuint32_t op1, uint64_t imm2)
+        ///   SHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalNarrowingOdd(Vector<ushort> even, Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svshrnt[_n_u64](svuint32_t even, svuint64_t op1, uint64_t imm2)
+        ///   SHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalNarrowingOdd(Vector<uint> even, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift right
+
+        /// <summary>
+        /// svuint8_t svrshr[_n_u8]_m(svbool_t pg, svuint8_t op1, uint64_t imm2)
+        ///   URSHR Ztied1.B, Pg/M, Ztied1.B, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalRounded(Vector<byte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrshr[_n_u16]_m(svbool_t pg, svuint16_t op1, uint64_t imm2)
+        ///   URSHR Ztied1.H, Pg/M, Ztied1.H, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalRounded(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrshr[_n_u32]_m(svbool_t pg, svuint32_t op1, uint64_t imm2)
+        ///   URSHR Ztied1.S, Pg/M, Ztied1.S, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalRounded(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrshr[_n_u64]_m(svbool_t pg, svuint64_t op1, uint64_t imm2)
+        ///   URSHR Ztied1.D, Pg/M, Ztied1.D, #imm2
+        /// </summary>
+        public static Vector<ulong> ShiftRightLogicalRounded(Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift right and accumulate
+
+        /// <summary>
+        /// svuint8_t svrsra[_n_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   URSRA Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalRoundedAdd(Vector<byte> addend, Vector<byte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrsra[_n_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   URSRA Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalRoundedAdd(Vector<ushort> addend, Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrsra[_n_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   URSRA Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalRoundedAdd(Vector<uint> addend, Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrsra[_n_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   URSRA Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<ulong> ShiftRightLogicalRoundedAdd(Vector<ulong> addend, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift right narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svrshrnb[_n_u16](svuint16_t op1, uint64_t imm2)
+        ///   RSHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalRoundedNarrowingEven(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrshrnb[_n_s32](svint32_t op1, uint64_t imm2)
+        ///   RSHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightLogicalRoundedNarrowingEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrshrnb[_n_s64](svint64_t op1, uint64_t imm2)
+        ///   RSHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightLogicalRoundedNarrowingEven(Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrshrnb[_n_s16](svint16_t op1, uint64_t imm2)
+        ///   RSHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightLogicalRoundedNarrowingEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrshrnb[_n_u32](svuint32_t op1, uint64_t imm2)
+        ///   RSHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalRoundedNarrowingEven(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrshrnb[_n_u64](svuint64_t op1, uint64_t imm2)
+        ///   RSHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalRoundedNarrowingEven(Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift right narrow (top)
+
+        /// <summary>
+        /// svuint8_t svrshrnt[_n_u16](svuint8_t even, svuint16_t op1, uint64_t imm2)
+        ///   RSHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalRoundedNarrowingOdd(Vector<byte> even, Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrshrnt[_n_s32](svint16_t even, svint32_t op1, uint64_t imm2)
+        ///   RSHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<short> ShiftRightLogicalRoundedNarrowingOdd(Vector<short> even, Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrshrnt[_n_s64](svint32_t even, svint64_t op1, uint64_t imm2)
+        ///   RSHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<int> ShiftRightLogicalRoundedNarrowingOdd(Vector<int> even, Vector<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrshrnt[_n_s16](svint8_t even, svint16_t op1, uint64_t imm2)
+        ///   RSHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<sbyte> ShiftRightLogicalRoundedNarrowingOdd(Vector<sbyte> even, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrshrnt[_n_u32](svuint16_t even, svuint32_t op1, uint64_t imm2)
+        ///   RSHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalRoundedNarrowingOdd(Vector<ushort> even, Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrshrnt[_n_u64](svuint32_t even, svuint64_t op1, uint64_t imm2)
+        ///   RSHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalRoundedNarrowingOdd(Vector<uint> even, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift right narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svqrshrnb[_n_u16](svuint16_t op1, uint64_t imm2)
+        ///   UQRSHRNB Zresult.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalRoundedNarrowingSaturateEven(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqrshrnb[_n_u32](svuint32_t op1, uint64_t imm2)
+        ///   UQRSHRNB Zresult.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalRoundedNarrowingSaturateEven(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqrshrnb[_n_u64](svuint64_t op1, uint64_t imm2)
+        ///   UQRSHRNB Zresult.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateEven(Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift right narrow (top)
+
+        /// <summary>
+        /// svuint8_t svqrshrnt[_n_u16](svuint8_t even, svuint16_t op1, uint64_t imm2)
+        ///   UQRSHRNT Ztied.B, Zop1.H, #imm2
+        /// </summary>
+        public static Vector<byte> ShiftRightLogicalRoundedNarrowingSaturateOdd(Vector<byte> even, Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqrshrnt[_n_u32](svuint16_t even, svuint32_t op1, uint64_t imm2)
+        ///   UQRSHRNT Ztied.H, Zop1.S, #imm2
+        /// </summary>
+        public static Vector<ushort> ShiftRightLogicalRoundedNarrowingSaturateOdd(Vector<ushort> even, Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqrshrnt[_n_u64](svuint32_t even, svuint64_t op1, uint64_t imm2)
+        ///   UQRSHRNT Ztied.S, Zop1.D, #imm2
+        /// </summary>
+        public static Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateOdd(Vector<uint> even, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
 
         // Bitwise exclusive OR of three vectors

@@ -1333,10 +1333,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         LIR::Range& switchBlockRange = LIR::AsRange(afterDefaultCondBlock);
         switchBlockRange.InsertAtEnd(switchValue);
 
-        // We are going to modify the switch, invalidate any desc map.
-        //
-        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
-
         // Try generating a bit test based switch first,
         // if that's not possible a jump table based switch will be generated.
         if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue,
@@ -1358,7 +1354,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             GenTree* switchJump  = comp->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, switchValue, switchTable);
             switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
 
-            // this block no longer branches to the default block
+            // This block no longer has a default switch case.
+            // If no other cases branch to this successor, remove it from the switch map entry.
+            if (defaultEdge->getDupCount() == 0)
+            {
+                comp->fgRemoveSuccFromSwitchDescMapEntry(afterDefaultCondBlock, defaultEdge);
+            }
+
             afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
 
             // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
@@ -1419,6 +1421,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                     edge->setLikelihood(newLikelihood);
                 }
             }
+        }
+        else
+        {
+            // 'afterDefaultCondBlock' is no longer a switch block. Remove its switch map entry.
+            comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
         }
     }
 
@@ -1550,14 +1557,13 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 #endif
 
     //
-    // Rewire the blocks as needed.
+    // Set successor edge dup counts to 1 each
     //
 
-    comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
-    comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
-
-    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch, case0Edge);
-    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch, case1Edge);
+    bbCase0->bbRefs -= (case0Edge->getDupCount() - 1);
+    bbCase1->bbRefs -= (case1Edge->getDupCount() - 1);
+    case0Edge->decrementDupCount(case0Edge->getDupCount() - 1);
+    case1Edge->decrementDupCount(case1Edge->getDupCount() - 1);
 
     // If defaultLikelihood is not ~ 1.0
     //   up-scale case likelihoods by 1.0 / (1.0 - defaultLikelihood)
@@ -7921,11 +7927,12 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
 
 #ifdef TARGET_XARCH
-        // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
-        // redundant copies otherwise
+        // force input transformation to RAX/RDX because the following MULHI will kill RDX:RAX (RDX if mulx is
+        // available) anyway and LSRA often causes redundant copies otherwise
         if (firstNode && !simpleMul)
         {
-            adjustedDividend->SetRegNum(REG_RAX);
+            regNumber implicitReg = comp->compOpportunisticallyDependsOn(InstructionSet_AVX2) ? REG_RDX : REG_RAX;
+            adjustedDividend->SetRegNum(implicitReg);
         }
 #endif
 

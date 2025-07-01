@@ -295,6 +295,7 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     // Walk the successor table looking for the old successor, which we expect to find only once.
     unsigned oldSuccNum = UINT_MAX;
     unsigned newSuccNum = UINT_MAX;
+    unsigned higherNum  = 0;
     for (unsigned i = 0; i < succCount; i++)
     {
         assert(succTab[i]->getSourceBlock() == block);
@@ -302,22 +303,28 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
         if (succTab[i]->getDestinationBlock() == newSucc)
         {
             assert(newSuccNum == UINT_MAX);
-            newSuccNum = i;
+            newSuccNum = higherNum = i;
         }
 
         if (succTab[i]->getDestinationBlock() == oldSucc)
         {
             assert(oldSuccNum == UINT_MAX);
-            oldSuccNum = i;
+            oldSuccNum = higherNum = i;
         }
     }
 
     noway_assert((oldSuccNum != UINT_MAX) && "Did not find oldSucc in succTab[]");
 
+    fgRedirectEdge(succTab[oldSuccNum], newSucc);
+
     if (newSuccNum != UINT_MAX)
     {
-        // The new successor is already in the table; simply remove the old one.
-        fgRemoveEhfSuccessor(block, oldSuccNum);
+        // The old and new succ edges are now duplicates.
+        // Remove the one at the higher index from the table.
+        // If we're lucky, the higher index is at the end of the table,
+        // so we don't have to copy anything over.
+        assert(succTab[oldSuccNum] == succTab[newSuccNum]);
+        fgRemoveEhfSuccFromTable(block, higherNum);
 
         JITDUMP("Remove existing BBJ_EHFINALLYRET " FMT_BB " successor " FMT_BB "; replacement successor " FMT_BB
                 " already exists in list\n",
@@ -325,47 +332,32 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     }
     else
     {
-        // Remove the old edge [block => oldSucc]
-        //
-        fgRemoveAllRefPreds(oldSucc, block);
-
-        // Create the new edge [block => newSucc]
-        //
-        FlowEdge* const newEdge = fgAddRefPred(newSucc, block);
-
-        // Replace the old one with the new one.
-        //
-        succTab[oldSuccNum] = newEdge;
-
         JITDUMP("Replace BBJ_EHFINALLYRET " FMT_BB " successor " FMT_BB " with " FMT_BB "\n", block->bbNum,
                 oldSucc->bbNum, newSucc->bbNum);
     }
 }
 
 //------------------------------------------------------------------------
-// fgRemoveEhfSuccessor: update BBJ_EHFINALLYRET block to remove the successor at `succIndex`
+// fgRemoveEhfSuccFromTable: update BBJ_EHFINALLYRET block to remove the successor at `succIndex`
 // in the block's jump table.
-// Updates the predecessor list of the successor, if necessary.
+// Don't update the predecessor list of the successor; the caller is expected to handle this.
 //
 // Arguments:
 //   block     - BBJ_EHFINALLYRET block
 //   succIndex - index of the successor in block->GetEhfTargets()->bbeSuccs
 //
-void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
+void Compiler::fgRemoveEhfSuccFromTable(BasicBlock* block, const unsigned succIndex)
 {
     assert(block != nullptr);
     assert(block->KindIs(BBJ_EHFINALLYRET));
-    assert(fgPredsComputed);
 
     BBehfDesc* const ehfDesc   = block->GetEhfTargets();
     const unsigned   succCount = ehfDesc->bbeCount;
     FlowEdge**       succTab   = ehfDesc->bbeSuccs;
     assert(succIndex < succCount);
-    FlowEdge* succEdge = succTab[succIndex];
+    FlowEdge* const succEdge = succTab[succIndex];
 
-    fgRemoveRefPred(succEdge);
-
-    // If succEdge not the last entry, move everything after in the table down one slot.
+    // If succEdge is not the last entry, move everything after in the table down one slot.
     if ((succIndex + 1) < succCount)
     {
         memmove_s(&succTab[succIndex], (succCount - succIndex) * sizeof(FlowEdge*), &succTab[succIndex + 1],
@@ -470,17 +462,17 @@ void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
 //    oldTarget - the old branch target of the block.
 //
 // Notes:
-// 1. Only branches are changed: BBJ_ALWAYS, the non-fallthrough path of BBJ_COND, BBJ_SWITCH, etc.
+// 1. Only branches are changed: BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, etc.
 //    We assert for other jump kinds.
 // 2. All branch targets found are updated. If there are multiple ways for a block
 //    to reach 'oldTarget' (e.g., multiple arms of a switch), all of them are changed.
 // 3. The predecessor lists are updated.
-// 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
 //
 void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget)
 {
     assert(block != nullptr);
     assert(fgPredsComputed);
+    assert(fgGetPredForBlock(oldTarget, block) != nullptr);
 
     switch (block->GetKind())
     {
@@ -491,36 +483,21 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
             assert(block->TargetIs(oldTarget));
-            fgRedirectTargetEdge(block, newTarget);
+            fgRedirectEdge(block->TargetEdgeRef(), newTarget);
             break;
 
         case BBJ_COND:
             if (block->TrueTargetIs(oldTarget))
             {
-                if (block->FalseEdgeIs(block->GetTrueEdge()))
-                {
-                    // Branch was degenerate, simplify it first
-                    //
-                    fgRemoveConditionalJump(block);
-                    assert(block->KindIs(BBJ_ALWAYS));
-                    assert(block->TargetIs(oldTarget));
-                    fgRedirectTargetEdge(block, newTarget);
-                }
-                else
-                {
-                    fgRedirectTrueEdge(block, newTarget);
-                }
+                fgRedirectEdge(block->TrueEdgeRef(), newTarget);
             }
             else
             {
-                // Already degenerate cases should have taken the true path above
-                //
                 assert(block->FalseTargetIs(oldTarget));
-                assert(!block->TrueEdgeIs(block->GetFalseEdge()));
-                fgRedirectFalseEdge(block, newTarget);
+                fgRedirectEdge(block->FalseEdgeRef(), newTarget);
             }
 
-            if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
+            if (block->TrueEdgeIs(block->GetFalseEdge()))
             {
                 // Block became degenerate, simplify
                 //
@@ -533,42 +510,49 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 
         case BBJ_SWITCH:
         {
-            unsigned const   jumpCnt      = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
-            bool             existingEdge = false;
-            FlowEdge*        oldEdge      = nullptr;
-            FlowEdge*        newEdge      = nullptr;
-            bool             changed      = false;
+            unsigned const   jumpCnt = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** const jumpTab = block->GetSwitchTargets()->bbsDstTab;
+            FlowEdge*        oldEdge = nullptr;
+            FlowEdge*        newEdge = nullptr;
+            bool             changed = false;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
-                if (jumpTab[i]->getDestinationBlock() == newTarget)
-                {
-                    // The new target already has an edge from this switch statement.
-                    // We'll need to add the likelihood from the edge we're redirecting
-                    // to the existing edge. Note that if there is no existing edge,
-                    // then we'll copy the likelihood from the existing edge we pass to
-                    // `fgAddRefPred`. Note also that we can visit the same edge multiple
-                    // times if there are multiple switch cases with the same target. The
-                    // edge has a dup count and a single likelihood for all the possible
-                    // paths to the target, so we only want to add the likelihood once
-                    // despite visiting the duplicated edges in the `jumpTab` array
-                    // multiple times.
-                    existingEdge = true;
-                }
+                // If the new target already has an edge from this switch statement,
+                // we will need to add the likelihood from the edge we're redirecting
+                // to the existing edge, so save the old and new targets' edges.
+                // Note that we can visit the same edge multiple times
+                // if there are multiple switch cases with the same target.
+                // The edge has a dup count and a single likelihood for all the possible
+                // paths to the target, so we only want to add the likelihood once
+                // despite visiting the duplicated edges in the `jumpTab` array
+                // multiple times.
 
-                if (jumpTab[i]->getDestinationBlock() == oldTarget)
+                // If there are duplicate edges to 'oldTarget',
+                // and there is already an edge to 'newTarget',
+                // overwrite the duplicate edges with 'newEdge'.
+                if (jumpTab[i] == oldEdge)
                 {
-                    assert((oldEdge == nullptr) || (oldEdge == jumpTab[i]));
-                    oldEdge = jumpTab[i];
-                    fgRemoveRefPred(oldEdge);
-                    newEdge    = fgAddRefPred(newTarget, block, oldEdge);
+                    assert(oldEdge != nullptr);
+                    assert(newEdge != nullptr);
                     jumpTab[i] = newEdge;
-                    changed    = true;
+                }
+                // Else, we have found the edge we need to redirect to 'newTarget'.
+                else if (jumpTab[i]->getDestinationBlock() == oldTarget)
+                {
+                    assert(oldEdge == nullptr);
+                    assert(newEdge == nullptr);
+                    oldEdge = jumpTab[i];
+                    fgRedirectEdge(jumpTab[i], newTarget);
+                    newEdge = jumpTab[i];
+                    changed = true;
                 }
             }
 
-            if (existingEdge)
+            // If the edge to 'oldTarget' isn't the same as the edge pointing to 'newTarget',
+            // then 'block' already had an edge to 'newTarget' (i.e. 'newEdge').
+            // Increase the likelihood of 'newEdge' accordingly.
+            if (oldEdge != newEdge)
             {
                 assert(oldEdge != nullptr);
                 assert(oldEdge->getSourceBlock() == block);
@@ -576,12 +560,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 assert(newEdge != nullptr);
                 assert(newEdge->getSourceBlock() == block);
                 assert(newEdge->getDestinationBlock() == newTarget);
-
                 newEdge->addLikelihood(oldEdge->getLikelihood());
+
+                // Remove 'oldEdge' from the switch map entry, if it exists.
+                fgRemoveSuccFromSwitchDescMapEntry(block, oldEdge);
             }
 
+            // If we simply redirected 'oldEdge' to 'newTarget', we don't need to update the switch map entry,
+            // because we did not remove any edges.
             assert(changed);
-            InvalidateUniqueSwitchSuccMap();
             break;
         }
 
@@ -4132,7 +4119,7 @@ void Compiler::fgFixEntryFlowForOSR()
     fgCreateNewInitBB();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS));
 
-    fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
+    fgRedirectEdge(fgFirstBB->TargetEdgeRef(), fgOSREntryBB);
 
     fgFirstBB->bbWeight = fgCalledCount;
     fgFirstBB->CopyFlags(fgEntryBB, BBF_PROF_WEIGHT);

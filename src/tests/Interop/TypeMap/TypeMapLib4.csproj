@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>library</OutputType>
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <NativeAotIncompatible>true</NativeAotIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
@@ -12,4 +11,3 @@
     <ProjectReference Include="TypeMapLib1.csproj" />
   </ItemGroup>
 </Project>
-

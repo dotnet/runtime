@@ -42,11 +42,13 @@ This contract depends on the following descriptors:
 | `InlinedCallFrame` | `CallSiteSP` | SP saved in Frame |
 | `InlinedCallFrame` | `CallerReturnAddress` | Return address saved in Frame |
 | `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
+| `InlinedCallFrame` (arm) | `SPAfterProlog` | Value of the SP after prolog. Used on ARM to maintain additional JIT invariant |
 | `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
 | `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
+| `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
@@ -56,8 +58,11 @@ This contract depends on the following descriptors:
 | `HijackFrame` | `HijackArgsPtr` | Pointer to the Frame's stored HijackArgs |
 | `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
-| `HijackArgs` (arm64) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `HijackArgs` (arm/arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `ArgumentRegisters` (arm) | For each register `r` saved in ArgumentRegisters, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
+| `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
+| `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -242,6 +247,8 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
 
+* On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
+
 #### SoftwareExceptionFrame
 
 SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
@@ -251,6 +258,8 @@ SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all 
 TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock holds a return address along with a `CalleeSavedRegisters` struct which has values for all ABI specified callee-saved registers. The SP can be found using the address of the TransitionBlock. Since the TransitionBlock will be the lowest element on the stack, the SP is the address of the TransitionBlock + sizeof(TransitionBlock).
 
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
+
+* On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame
@@ -287,11 +296,13 @@ HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platf
 * x64 - On x64, HijackArgs contains a CalleeSavedRegister struct. The saved registers values contained in the struct are copied over to the working context.
     * Windows - On Windows, HijackArgs also contains the SP value directly which is copied over to the working context.
     * Non-Windows - On OS's other than Windows, HijackArgs does not contain an SP value. Instead since the HijackArgs struct lives on the stack, the SP is `&hijackArgs + sizeof(HijackArgs)`. This value is also copied over.
-* arm64 - Unlike on x64, on arm64 HijackArgs contains a list of register values instead of the CalleeSavedRegister struct. These values are copied over to the working context. The SP is fetched using the same technique as on x64 non-Windows where `SP = &hijackArgs + sizeof(HijackArgs)` and is copied over to the working context.
+* x86 - On x86, HijackArgs contains a list of register values instead of the CalleeSavedRegister struct. These values are copied over to the working context. The SP copied over to the working context and found using `SP = &hijackArgs + sizeof(HijackArgs)`.
+* arm64 - Unlike on x64, on arm64 HijackArgs contains a list of register values instead of the CalleeSavedRegister struct. These values are copied over to the working context. The SP is fetched using the same technique as on x64 non-Windows where `SP = &hijackArgs + sizeof(HijackArgs) + (hijackArgsSize % 16)` and is copied over to the working context. Note: `HijackArgs` may be padded to maintain 16 byte stack alignment.
+* arm - Similar to arm64, HijackArgs contains a list of register values. These values are copied over to the working context. The SP is fetched using the same technique as arm64 where `SP = &hijackArgs + sizeof(HijackArgs) + (hijackArgsSize % 8)` and is copied over to the working context. Note: `HijackArgs` may be padded to maintain 8 byte stack alignment.
 
 #### TailCallFrame
 
-TailCallFrames are only used on Windows x86 which is not yet supported in the cDAC and therefore not implemented.
+TailCallFrames only appear on x86 Windows. They hold a `CalleeSavedRegisters` struct as well as a `ReturnAddress`. While the stack pointer is not directly contained in the TailCallFrame structure, it will be on the stack immediately following the Frame (found at the address of the Frame + size of the Frame). To process these Frames, update all of the registers in `CalleeSavedRegisters`, the instruction pointer from the stored return address, and the stack pointer from the address saved on the stack.
 
 ### APIs
 

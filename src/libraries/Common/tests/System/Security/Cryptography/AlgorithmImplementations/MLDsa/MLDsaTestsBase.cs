@@ -222,20 +222,25 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
         }
 
+        protected virtual void AssertExportPkcs8FromPublicKey(Action export) =>
+            Assert.Throws<CryptographicException>(export);
+
         [Theory]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void ImportPublicKey_Export(MLDsaKeyInfo info)
         {
             using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
 
-            MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
-                AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
+            MLDsaTestHelpers.AssertExportMLDsaPublicKey(
+                export => AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                Assert.Throws<CryptographicException>(() => export(mldsa)));
+            MLDsaTestHelpers.AssertExportMLDsaSecretKey(
+                export => Assert.Throws<CryptographicException>(() => export(mldsa)),
+                export => AssertExportPkcs8FromPublicKey(() => export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                Assert.Throws<CryptographicException>(() => export(mldsa)));
+            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(
+                export => Assert.Throws<CryptographicException>(() => export(mldsa)),
+                export => AssertExportPkcs8FromPublicKey(() => export(mldsa)));
         }
 
         [Theory]
@@ -272,6 +277,18 @@ namespace System.Security.Cryptography.Tests
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
                 AssertExtensions.SequenceEqual(info.PrivateSeed, export(mldsa)));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void SignData_PublicKeyOnlyThrows(MLDsaKeyInfo info)
+        {
+            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
+            byte[] destination = new byte[info.Algorithm.SignatureSizeInBytes];
+            CryptographicException ce =
+                Assert.ThrowsAny<CryptographicException>(() => mldsa.SignData("hello"u8, destination));
+
+            Assert.DoesNotContain("unknown", ce.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context)
