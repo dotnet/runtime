@@ -224,7 +224,7 @@ PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection)
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
 PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
 {
-    dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
+    dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 
     nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t  error) {
         if (error != NULL)
