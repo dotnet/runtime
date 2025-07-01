@@ -50,11 +50,15 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int GetKeyWrapPaddedLength(int plaintextLengthInBytes)
         {
-            if (plaintextLengthInBytes <= 0)
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(plaintextLengthInBytes);
+
+            const int MaxSupportedValue = 0x7FFF_FFF0;
+
+            if (plaintextLengthInBytes > MaxSupportedValue)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(plaintextLengthInBytes),
-                    "Plaintext length must be positive.");
+                    SR.Cryptography_PlaintextTooLarge);
             }
 
             checked
@@ -74,7 +78,8 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">An error occurred during the cryptographic operation.</exception>
         public byte[] EncryptKeyWrapPadded(byte[] plaintext)
         {
-            ArgumentNullException.ThrowIfNull(plaintext);
+            if (plaintext is null || plaintext.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(plaintext));
 
             return EncryptKeyWrapPadded(new ReadOnlySpan<byte>(plaintext));
         }

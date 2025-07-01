@@ -85,13 +85,15 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void GetPaddedLength_Overflows()
+        public static void GetPaddedLength_TooLarge()
         {
             int i = int.MaxValue;
 
             for (; i >= 0x7FFF_FFF1; i--)
             {
-                Assert.Throws<OverflowException>(() => Aes.GetKeyWrapPaddedLength(i));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "plaintextLengthInBytes",
+                    () => Aes.GetKeyWrapPaddedLength(i));
             }
 
             Assert.Equal(0x7FFF_FFF8, Aes.GetKeyWrapPaddedLength(i));
