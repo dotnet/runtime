@@ -535,7 +535,7 @@ namespace System
 
             nuint destSize = pDestArrayMT->ComponentSize;
             ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
-            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
+            ref byte destData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
 
             for (int i = 0; i < length; i++)
             {
@@ -544,14 +544,12 @@ namespace System
                 // Now that we have retrieved the element, we are no longer subject to race
                 // conditions from another array mutator.
 
-                ref byte dest = ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize);
-
                 if (pDestMT->IsNullable)
                 {
 #if NATIVEAOT
-                    RuntimeExports.RhUnboxNullable(ref dest, pDestMT, obj);
+                    RuntimeExports.RhUnboxNullable(ref destData, pDestMT, obj);
 #else
-                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
+                    CastHelpers.Unbox_Nullable(ref destData, pDestMT, obj);
 #endif
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
@@ -560,12 +558,14 @@ namespace System
                 }
                 else if (pDestMT->ContainsGCPointers)
                 {
-                    Buffer.BulkMoveWithWriteBarrier(ref dest, ref obj.GetRawData(), destSize);
+                    Buffer.BulkMoveWithWriteBarrier(ref destData, ref obj.GetRawData(), destSize);
                 }
                 else
                 {
-                    SpanHelpers.Memmove(ref dest, ref obj.GetRawData(), destSize);
+                    SpanHelpers.Memmove(ref destData, ref obj.GetRawData(), destSize);
                 }
+
+                destData = ref Unsafe.AddByteOffset(ref destData, destSize);
             }
         }
 
@@ -579,17 +579,18 @@ namespace System
             Debug.Assert(!destinationArray.ElementMethodTable->IsValueType);
 
             nuint srcSize = pSrcArrayMT->ComponentSize;
-            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
+            ref byte srcData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
             ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
 
             for (int i = 0; i < length; i++)
             {
 #if NATIVEAOT
-                object? obj = RuntimeExports.RhBox(pSrcMT, ref Unsafe.AddByteOffset(ref data, (nuint)i * srcSize));
+                object? obj = RuntimeExports.RhBox(pSrcMT, ref srcData);
 #else
-                object? obj = RuntimeHelpers.Box(pSrcMT, ref Unsafe.AddByteOffset(ref data, (nuint)i * srcSize));
+                object? obj = RuntimeHelpers.Box(pSrcMT, ref srcData);
 #endif
                 Unsafe.Add(ref destData, i) = obj;
+                srcData = ref Unsafe.AddByteOffset(ref srcData, srcSize);
             }
         }
 
