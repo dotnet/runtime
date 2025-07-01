@@ -31,14 +31,19 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
     }
 
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public sealed class KeyWrapTests_AesCryptoServiceProvider : KeyWrapTests
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public static class KeyWrapTests_AesCryptoServiceProvider
     {
-        protected override Aes CreateKey(byte[] key)
+        [Fact]
+        public static void NotValidForAesCsp()
         {
-            Aes aes = new AesCryptoServiceProvider();
-            aes.Key = key;
-            return aes;
+            byte[] input = new byte[16];
+
+            using (Aes aes = new AesCryptoServiceProvider())
+            {
+                Assert.Throws<NotSupportedException>(() => aes.EncryptKeyWrapPadded(input));
+                Assert.Throws<NotSupportedException>(() => aes.DecryptKeyWrapPadded(input));
+            }
         }
     }
 
