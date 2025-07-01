@@ -2530,8 +2530,7 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheAssembly(VMPTR_DomainAssembly vmDomainAssembly);
-    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
+    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly, VMPTR_DomainAssembly);
 
 
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
@@ -2543,7 +2542,7 @@ public:
     CordbSafeHashTable<CordbModule>      m_modules;
 private:
     // Cache of assemblies in this appdomain.
-    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
+    // This is indexed by VMPTR_Assembly.
     // This is populated by code:CordbAppDomain::LookupOrCreateAssembly (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbAssembly>    m_assemblies;
@@ -3689,8 +3688,8 @@ public:
     // Lookup or create an appdomain.
     CordbAppDomain * LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain);
 
-    // Get the shared app domain.
-    CordbAppDomain * GetSharedAppDomain();
+    // Get the app domain.
+    CordbAppDomain * GetAppDomain();
 
     // Get metadata dispenser.
     IMetaDataDispenserEx * GetDispenser();
@@ -3699,7 +3698,7 @@ public:
     // the jit attach.
     HRESULT GetAttachStateFlags(CLR_DEBUGGING_PROCESS_FLAGS *pFlags);
 
-    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
+    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
 
     WriteableMetadataUpdateMode GetWriteableMetadataUpdateMode() { return m_writableMetadataUpdateMode; }
 private:
@@ -3729,7 +3728,6 @@ private:
     void ProcessContinuedLogMessage (DebuggerIPCEvent *event);
 
     void CloseIPCHandles();
-    void UpdateThreadsForAdUnload( CordbAppDomain* pAppDomain );
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Each win32 debug event needs to be triaged to get a Reaction.
@@ -3902,8 +3900,6 @@ public:
 
     CordbSafeHashTable<CordbAppDomain>        m_appDomains;
 
-    CordbAppDomain * m_sharedAppDomain;
-
     // Since a stepper can begin in one appdomain, and complete in another,
     // we put the hashtable here, rather than on specific appdomains.
     CordbSafeHashTable<CordbStepper>          m_steppers;
@@ -4056,8 +4052,6 @@ public:
 
     HANDLE GetHelperThreadHandle() { return m_hHelperThread; }
 
-    CordbAppDomain* GetDefaultAppDomain() { return m_pDefaultAppDomain; }
-
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Lookup if there's a native BP at the given address. Return NULL not found.
     NativePatch * GetNativePatch(const void * pAddress);
@@ -4074,11 +4068,6 @@ private:
     DebuggerIPCEventType  m_dispatchedEvent;   // what event are we currently dispatching?
 
     RSLock            m_StopGoLock;
-
-    // Each process has exactly one Default AppDomain
-    // @dbgtodo  appdomain : We should try and simplify things by removing this.
-    // At the moment it's necessary for CordbProcess::UpdateThreadsForAdUnload.
-    CordbAppDomain*     m_pDefaultAppDomain;    // owned by m_appDomains
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Helpers
@@ -4164,7 +4153,7 @@ private:
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
-    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
+    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;

@@ -153,8 +153,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.NotNull(certKey);
                 byte[] expectedKey = MLDsaTestsData.IetfMLDsa44.SecretKey;
-                byte[] actualKey = new byte[MLDsaAlgorithm.MLDsa44.SecretKeySizeInBytes];
-                Assert.Equal(MLDsaAlgorithm.MLDsa44.SecretKeySizeInBytes, certKey.ExportMLDsaSecretKey(actualKey));
+                byte[] actualKey = certKey.ExportMLDsaSecretKey();
                 AssertExtensions.SequenceEqual(expectedKey, actualKey);
             }
         }

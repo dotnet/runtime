@@ -345,19 +345,21 @@ OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg))
 OPDEF(INTOP_CALL_HELPER_P_P, "call.helper.p.p", 4, 1, 0, InterpOpHelperFtn)
-OPDEF(INTOP_CALL_HELPER_P_PP, "call.helper.p.pp", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_G, "call.helper.p.g", 5, 1, 1, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_S, "call.helper.p.s", 4, 1, 1, InterpOpHelperFtnNoArgs)
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, SVar))
-OPDEF(INTOP_CALL_HELPER_P_G, "call.helper.p.g", 5, 1, 1, InterpOpGenericHelperFtn)
-OPDEF(INTOP_CALL_HELPER_P_GP, "call.helper.p.gp", 6, 1, 2, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_PS, "call.helper.p.ps", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_GS, "call.helper.p.gs", 6, 1, 2, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_SP, "call.helper.p.sp", 5, 1, 1, InterpOpHelperFtn)
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, AddrOfSVar))
 OPDEF(INTOP_CALL_HELPER_P_PA, "call.helper.p.pa", 5, 1, 1, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_P_GA, "call.helper.p.ga", 6, 1, 2, InterpOpGenericHelperFtn)
 
 // Call a helper function with a signature of void helper(AddrOfDVar, TypeOrGenericArg, SVar))
-OPDEF(INTOP_CALL_HELPER_V_APP, "call.helper.v.app", 5, 1, 1, InterpOpHelperFtn)
-OPDEF(INTOP_CALL_HELPER_V_AGP, "call.helper.v.agp", 6, 1, 2, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_V_APS, "call.helper.v.aps", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_V_AGS, "call.helper.v.ags", 6, 1, 2, InterpOpGenericHelperFtn)
 
 OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 
