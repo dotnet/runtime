@@ -180,6 +180,14 @@ namespace System
                     return ArrayAssignType.WrongType;
             }
 
+            // Different value types
+            if (sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
+            {
+                // Different from CanCastTo in coreclr, AreTypesAssignable also allows T -> Nullable<T> conversion.
+                // Kick for this path early.
+                return ArrayAssignType.WrongType;
+            }
+
             // Value class boxing
             if (sourceElementEEType->IsValueType && !destinationElementEEType->IsValueType)
             {
