@@ -240,9 +240,6 @@ namespace System.Security.Cryptography
         ///   <see langword="true" /> if <paramref name="destination"/> is long enough to receive the unwrapped key;
         ///   otherwise, <see langword="false" />.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="ciphertext"/> is <see langword="null" />.
-        /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="ciphertext"/> has a <see cref="ReadOnlySpan{T}.Length"/> that does not correspond
         ///   to the output of the Key Wrap with Padding algorithm.
@@ -278,8 +275,11 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
-            CryptoPoolLease lease = CryptoPoolLease.RentConditionally(maxOutput, destination, skipClearIfNotRented: true);
-            bool rented = !lease.Span.Overlaps(destination);
+            CryptoPoolLease lease = CryptoPoolLease.RentConditionally(
+                maxOutput,
+                destination,
+                out bool rented,
+                skipClearIfNotRented: true);
 
             try
             {
@@ -318,7 +318,7 @@ namespace System.Security.Cryptography
             catch
             {
                 // It's only important to clear destination if it was not rented...
-                // but rather than have some exceptions clear it, and some not, always clear.`
+                // but rather than have some exceptions clear it, and some not, always clear.
                 CryptographicOperations.ZeroMemory(destination);
                 throw;
             }

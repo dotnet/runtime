@@ -94,8 +94,25 @@ namespace System.Security.Cryptography
             bool skipClear = false,
             bool skipClearIfNotRented = false)
         {
+            return RentConditionally(
+                length,
+                currentBuffer,
+                out _,
+                skipClear,
+                skipClearIfNotRented);
+        }
+
+        internal static CryptoPoolLease RentConditionally(
+            int length,
+            Span<byte> currentBuffer,
+            out bool rented,
+            bool skipClear = false,
+            bool skipClearIfNotRented = false)
+        {
             if (currentBuffer.Length >= length)
             {
+                rented = false;
+
                 return new CryptoPoolLease
                 {
                     _rented = null,
@@ -104,6 +121,7 @@ namespace System.Security.Cryptography
                 };
             }
 
+            rented = true;
             return Rent(length, skipClear);
         }
     }
