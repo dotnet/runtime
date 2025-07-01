@@ -34,14 +34,6 @@ Run `build[.cmd|.sh] -c Release` from the repo root to build the NativeAOT toolc
 
 * Add the package directory to your `nuget.config` file. For example, add `<add key="local" value="C:\runtime\artifacts\packages\Release\Shipping" />`
 * Run `dotnet add package Microsoft.DotNet.ILCompiler -v 10.0.0-dev` to add the local package reference to your project.
-* Add the following snippet to your project file, replacing `win-x64` with the target runtime identifier:
-
-```
-<ItemGroup>
-   <PackageDownload Include="Microsoft.NETCore.App.Runtime.NativeAOT.win-x64" Version="[10.0.0-dev]" />
-</ItemGroup>
-```
-
 * Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
 
 ## High Level Overview
