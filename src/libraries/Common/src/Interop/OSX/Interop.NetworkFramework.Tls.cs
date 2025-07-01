@@ -111,16 +111,6 @@ internal static partial class Interop
             ConnectionWriteFailed = 102,
             ConnectionCancelled = 103,
         }
-
-        internal enum OSStatus
-        {
-            NoError = 0,
-            ReadError = -19,
-            WriteError = -20,
-            EOFError = -39,
-            SecUserCanceled = -128,
-            WouldBlock = -9803
-        }
     }
 
     // Safe handle classes for Network Framework TLS resources

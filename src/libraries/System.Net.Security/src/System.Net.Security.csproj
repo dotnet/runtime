@@ -440,6 +440,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.OSStatus.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.OSStatus.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.NetworkFramework.cs"
              Link="Common\Interop\OSX\Interop.NetworkFramework.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.NetworkFramework.Tls.cs"
