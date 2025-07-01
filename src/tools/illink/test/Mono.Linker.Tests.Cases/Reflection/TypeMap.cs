@@ -12,11 +12,12 @@ using Mono.Linker.Tests.Cases.Reflection;
 
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), By = Tool.Trimmer)]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), By = Tool.Trimmer)]
-[assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckClass", typeof(TargetType2), typeof(AllocatedNoTypeCheckClass))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckStruct", typeof(TargetType3), typeof(AllocatedNoTypeCheckStruct))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnreferenced", typeof(UnreferencedTargetType), typeof(UnreferencedTrimTarget))]
+[assembly: TypeMap<UsedTypeMap>("TypeMapEntryOnly", typeof(TypeMapEntryOnly))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(TypeCheckOnlyClass), typeof(ProxyType2))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(AllocatedNoBoxStructType), typeof(ProxyType3))]
@@ -203,6 +204,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept]
     struct AllocatedNoTypeCheckStruct;
+
+    [Kept]
+    class TypeMapEntryOnly;
 
     [Kept]
     class TargetType2;

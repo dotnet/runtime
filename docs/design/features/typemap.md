@@ -134,7 +134,7 @@ Given the above types the following would take place.
 `TypeMapAttribute` assembly attribute that declared the external type system name, a target
 type, and optionally a "trim-target" to determine if the target
 type should be included in the map. If the `TypeMapAttribute` constructor that doesn't
-take a trim-target is used, the "target type" will be treated as the "trim-target".
+take a trim-target is used the entry will always be emitted into the type map.
 
 2. Types used in a managed-to-unmanaged interop operation would use `TypeMapAssociationAttribute`
 to define a conditional link between the source and proxy type. In other words, if the

@@ -159,10 +159,10 @@ namespace Mono.Linker
                 RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries);
                 return;
             }
-            if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference target }])
+            if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
             {
-                // This is a TypeMapAssemblyTargetAttribute, which has a single type argument.
-                RecordTypeMapEntry(attr, group, target, _unmarkedExternalTypeMapEntries);
+                // There's no trim target, so include the attribute unconditionally.
+                RecordTypeMapEntry(attr, group, null, _unmarkedExternalTypeMapEntries);
                 return;
             }
             // Invalid attribute, skip it.
@@ -181,8 +181,15 @@ namespace Mono.Linker
             // Let the runtime handle the failure.
         }
 
-        void RecordTypeMapEntry(CustomAttributeWithOrigin attr, TypeReference group, TypeReference trimTarget, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedEntryList)
+        void RecordTypeMapEntry(CustomAttributeWithOrigin attr, TypeReference group, TypeReference? trimTarget, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedEntryList)
         {
+            if (trimTarget is null)
+            {
+                // If there's no trim target, we can just mark the attribute.
+                MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, null));
+                return;
+            }
+
             TypeDefinition? typeDef = _context.Resolve(trimTarget);
             if (typeDef is null)
             {
@@ -195,7 +202,6 @@ namespace Mono.Linker
             }
             else
             {
-
                 if (!unmarkedEntryList.TryGetValue(typeDef, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries))
                 {
                     entries = new() {
