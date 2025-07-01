@@ -139,111 +139,6 @@ namespace System
             return ArrayAssignType.WrongType;
         }
 
-        // Unboxes from an Object[] into a value class or primitive array.
-        private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            MethodTable* pDestArrayMT = RuntimeHelpers.GetMethodTable(destinationArray);
-            TypeHandle destTH = pDestArrayMT->GetArrayElementTypeHandle();
-
-            Debug.Assert(!destTH.IsTypeDesc && destTH.AsMethodTable()->IsValueType);
-            Debug.Assert(!RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle().AsMethodTable()->IsValueType);
-
-            MethodTable* pDestMT = destTH.AsMethodTable();
-            nuint destSize = pDestArrayMT->ComponentSize;
-            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
-            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
-
-            for (int i = 0; i < length; i++)
-            {
-                object? obj = Unsafe.Add(ref srcData, i);
-
-                // Now that we have retrieved the element, we are no longer subject to race
-                // conditions from another array mutator.
-
-                ref byte dest = ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize);
-
-                if (pDestMT->IsNullable)
-                {
-                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
-                }
-                else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
-                {
-                    throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-                }
-                else if (pDestMT->ContainsGCPointers)
-                {
-                    Buffer.BulkMoveWithWriteBarrier(ref dest, ref obj.GetRawData(), destSize);
-                }
-                else
-                {
-                    SpanHelpers.Memmove(ref dest, ref obj.GetRawData(), destSize);
-                }
-            }
-        }
-
-        // Will box each element in an array of value classes or primitives into an array of Objects.
-        private static unsafe void CopyImplBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
-            TypeHandle srcTH = pSrcArrayMT->GetArrayElementTypeHandle();
-
-            Debug.Assert(!srcTH.IsTypeDesc && srcTH.AsMethodTable()->IsValueType);
-            Debug.Assert(!RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle().AsMethodTable()->IsValueType);
-
-            MethodTable* pSrcMT = srcTH.AsMethodTable();
-
-            nuint srcSize = pSrcArrayMT->ComponentSize;
-            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
-            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
-
-            for (int i = 0; i < length; i++)
-            {
-                object? obj = RuntimeHelpers.Box(pSrcMT, ref Unsafe.AddByteOffset(ref data, (nuint)i * srcSize));
-                Unsafe.Add(ref destData, i) = obj;
-            }
-        }
-
-        // Casts and assigns each element of src array to the dest array type.
-        private static unsafe void CopyImplCastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            void* destTH = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
-
-            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
-            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
-
-            for (int i = 0; i < length; i++)
-            {
-                object? obj = Unsafe.Add(ref srcData, i);
-
-                // Now that we have grabbed obj, we are no longer subject to races from another
-                // mutator thread.
-
-                Unsafe.Add(ref destData, i) = CastHelpers.ChkCastAny(destTH, obj);
-            }
-        }
-
-        // Widen primitive types to another primitive type.
-        private static unsafe void CopyImplPrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            // Get appropriate sizes, which requires method tables.
-
-            CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
-            CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
-
-            nuint srcElSize = RuntimeHelpers.GetMethodTable(sourceArray)->ComponentSize;
-            nuint destElSize = RuntimeHelpers.GetMethodTable(destinationArray)->ComponentSize;
-
-            ref byte srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElSize);
-            ref byte data = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElSize);
-
-            for (int i = 0; i < length; i++)
-            {
-                InvokeUtils.PrimitiveWiden(ref srcData, ref data, srcElType, destElType);
-                srcData = ref Unsafe.AddByteOffset(ref srcData, srcElSize);
-                data = ref Unsafe.AddByteOffset(ref data, destElSize);
-            }
-        }
-
         internal unsafe object? InternalGetValue(nint flattenedIndex)
         {
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
@@ -408,6 +303,16 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern CorElementType GetCorElementTypeOfElementType();
+
+        private unsafe MethodTable* ElementMethodTable
+        {
+            get
+            {
+                TypeHandle elementTH = RuntimeHelpers.GetMethodTable(this)->GetArrayElementTypeHandle();
+                Debug.Assert(!elementTH.IsTypeDesc);
+                return elementTH.AsMethodTable();
+            }
+        }
 
         private unsafe bool IsValueOfElementType(object value)
         {

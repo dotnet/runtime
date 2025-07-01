@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime;
@@ -524,6 +525,128 @@ namespace System
             PrimitiveWiden,
         }
 
+        // Array.CopyImpl case: Object[] or interface array to value-type array copy.
+        private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pDestArrayMT = RuntimeHelpers.GetMethodTable(destinationArray);
+            MethodTable* pDestMT = destinationArray.ElementMethodTable;
+
+            Debug.Assert(!sourceArray.ElementMethodTable->IsValueType);
+
+            nuint destSize = pDestArrayMT->ComponentSize;
+            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
+            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
+
+            for (int i = 0; i < length; i++)
+            {
+                object? obj = Unsafe.Add(ref srcData, i);
+
+                // Now that we have retrieved the element, we are no longer subject to race
+                // conditions from another array mutator.
+
+                ref byte dest = ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize);
+
+                if (pDestMT->IsNullable)
+                {
+#if NATIVEAOT
+                    RuntimeExports.RhUnboxNullable(ref dest, pDestMT, obj);
+#else
+                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
+#endif
+                }
+                else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
+                {
+                    throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                }
+                else if (pDestMT->ContainsGCPointers)
+                {
+                    Buffer.BulkMoveWithWriteBarrier(ref dest, ref obj.GetRawData(), destSize);
+                }
+                else
+                {
+                    SpanHelpers.Memmove(ref dest, ref obj.GetRawData(), destSize);
+                }
+            }
+        }
+
+        // Array.CopyImpl case: Value-type array to Object[] or interface array copy.
+        private static unsafe void CopyImplBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
+            MethodTable* pSrcMT = sourceArray.ElementMethodTable;
+
+            Debug.Assert(pSrcMT->IsValueType);
+            Debug.Assert(!destinationArray.ElementMethodTable->IsValueType);
+
+            nuint srcSize = pSrcArrayMT->ComponentSize;
+            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
+            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
+
+            for (int i = 0; i < length; i++)
+            {
+#if NATIVEAOT
+                object? obj = RuntimeExports.RhBox(pSrcMT, ref Unsafe.AddByteOffset(ref data, (nuint)i * srcSize));
+#else
+                object? obj = RuntimeHelpers.Box(pSrcMT, ref Unsafe.AddByteOffset(ref data, (nuint)i * srcSize));
+#endif
+                Unsafe.Add(ref destData, i) = obj;
+            }
+        }
+
+        // Array.CopyImpl case: Casting copy from gc-ref array to gc-ref array.
+        private static unsafe void CopyImplCastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pDestMT = destinationArray.ElementMethodTable;
+
+            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
+            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
+
+            for (int i = 0; i < length; i++)
+            {
+                object? obj = Unsafe.Add(ref srcData, i);
+
+                // Now that we have grabbed obj, we are no longer subject to races from another
+                // mutator thread.
+
+#if NATIVEAOT
+                Unsafe.Add(ref destData, i) = TypeCast.CheckCastAny(pDestMT, obj);
+#else
+                Unsafe.Add(ref destData, i) = CastHelpers.ChkCastAny(pDestMT, obj);
+#endif
+            }
+        }
+
+        // Array.CopyImpl case: Primitive types that have a widening conversion
+        private static unsafe void CopyImplPrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            // Get appropriate sizes, which requires method tables.
+
+#if NATIVEAOT
+            EETypeElementType srcElType = RuntimeHelpers.GetMethodTable(sourceArray)->ElementType;
+            EETypeElementType destElType = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
+#else
+            CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
+            CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
+#endif
+
+            nuint srcElSize = RuntimeHelpers.GetMethodTable(sourceArray)->ComponentSize;
+            nuint destElSize = RuntimeHelpers.GetMethodTable(destinationArray)->ComponentSize;
+
+            ref byte srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElSize);
+            ref byte data = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElSize);
+
+            for (int i = 0; i < length; i++)
+            {
+#if NATIVEAOT
+                InvokeUtils.PrimitiveWiden(destElType, srcElType, ref data, ref srcData);
+#else
+                InvokeUtils.PrimitiveWiden(ref srcData, ref data, srcElType, destElType);
+#endif
+                srcData = ref Unsafe.AddByteOffset(ref srcData, srcElSize);
+                data = ref Unsafe.AddByteOffset(ref data, destElSize);
+            }
+        }
+
         /// <summary>
         /// Clears the contents of an array.
         /// </summary>
@@ -679,7 +802,7 @@ namespace System
         }
 #endif
 
-        // The various Get values...
+            // The various Get values...
         public object? GetValue(params int[] indices)
         {
             if (indices == null)
