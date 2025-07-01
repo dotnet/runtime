@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
-
+import isWasm64 from "consts:isWasm64";
 import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
@@ -37,9 +37,15 @@ export function temp_malloc (size: number): VoidPtr {
     return result;
 }
 
-// returns always uint32 (not negative Number)
 export function malloc (size: number): VoidPtr {
-    return (Module._malloc(size) as any >>> 0) as any;
+    const ptr = Module._malloc(size) as any;
+    if (isWasm64) {
+        // NB: emscripten's malloc currently returns a number, not a bigint
+        return ptr;
+    } else {
+        // This bitshift ensures the value is returned as a 32-bit unsigned integer.
+        return (ptr >>> 0) as any;
+    }
 }
 
 export function free (ptr: VoidPtr) {
