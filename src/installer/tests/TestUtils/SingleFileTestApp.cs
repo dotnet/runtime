@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return Bundle(options, bundleDirectory, out manifest, bundleVersion);
         }
 
-        public string ReBundle(string bundleDirectory, BundleOptions options, out Manifest manifest, Version? bundleVersion = null)
+        public string Rebundle(string bundleDirectory, BundleOptions options, out Manifest manifest, Version? bundleVersion = null)
         {
             // Reuse the existing bundle directory if it exists
             if (!Directory.Exists(bundleDirectory))

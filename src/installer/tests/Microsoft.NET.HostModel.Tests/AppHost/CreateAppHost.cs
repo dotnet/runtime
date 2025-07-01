@@ -305,15 +305,10 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                    appBinaryFilePath,
                    windowsGraphicalUserInterface: false,
                    enableMacOSCodeSign: true);
-                var firstls = Command.Create("/bin/ls", "-li", destinationFilePath)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .Execute();
-                firstls.Should().Pass();
-                var firstInode = firstls.StdOut.Split(' ')[0];
+                var firstInode = Inode.GetInode(destinationFilePath);
 
                 // Validate that there is a signature present in the apphost Mach file
-                SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
 
                 HostWriter.CreateAppHost(
                    sourceAppHostMock,
@@ -321,17 +316,12 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                    appBinaryFilePath,
                    windowsGraphicalUserInterface: false,
                    enableMacOSCodeSign: true);
+                var secondInode = Inode.GetInode(destinationFilePath);
 
-                var secondls = Command.Create("/bin/ls", "-li", destinationFilePath)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .Execute();
-                secondls.Should().Pass();
-                var secondInode = secondls.StdOut.Split(' ')[0];
                 // Ensure the MacOS signature cache is cleared
-                Assert.False(firstInode == secondInode, "not a different inode after rebundle");
+                Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
 
-                SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
             }
         }
 

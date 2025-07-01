@@ -19,11 +19,19 @@ using System.Collections;
 using System.Collections.Generic;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System.Security.AccessControl;
+using Microsoft.NET.HostModel.Bundle;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
-    public class SigningTests
+    public class SigningTests :IClassFixture<SigningTests.SharedTestState>
     {
+        private SharedTestState sharedTestState;
+
+        public SigningTests(SharedTestState fixture)
+        {
+            sharedTestState = fixture;
+        }
+
         [Theory]
         [MemberData(nameof(GetTestFilePaths), nameof(CanSignMachObject))]
         public void CanSignMachObject(string filePath, TestArtifact _)
@@ -82,13 +90,14 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             // Codesigned file
             File.Copy(filePath, codesignFilePath);
             Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
-            Codesign.Run("-s - -f --preserve-metadata=entitlements -i" + fileName, codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - {codesignFilePath}' failed!");
+            var (exitCode, stdErr) = Codesign.Run("-s - -f --preserve-metadata=entitlements -i" + fileName, codesignFilePath);
+            Assert.Equal(0, exitCode);
 
             // Managed signed file
             AdHocSignFile(originalFilePath, managedSignedPath, fileName);
 
-            var check = Codesign.Run("-v", managedSignedPath);
-            check.ExitCode.Should().Be(0, check.StdErr, $"Failed to sign a copy of '{filePath}'");
+            (exitCode, stdErr) = Codesign.Run("-v", managedSignedPath);
+            Assert.Equal(0, exitCode);
             AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
         }
 
@@ -109,7 +118,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 File.SetUnixFileMode(signedPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
                 var result = Command.Create(signedPath).CaptureStdErr().CaptureStdOut().Execute();
-                result.ExitCode.Should().Be(0, result.StdErr);
+                Assert.Equal(0, result.ExitCode);
             }
         }
 
@@ -128,6 +137,78 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 var resignedObject = MachObjectFile.Create(signedMachFile);
                 resignedObject.AdHocSignFile(signedMachFile, filePath);
                 MachObjectFile.AssertEquivalent(signedObject, resignedObject);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void SigningAppHostPreservesEntitlements()
+        {
+            using var testDirectory = TestArtifact.Create(nameof(SigningAppHostPreservesEntitlements));
+            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
+            File.Copy(Binaries.AppHost.FilePath, testAppHostPath);
+            string signedHostPath = testAppHostPath + ".signed";
+
+            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
+
+            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasEntitlementsBlob(signedHostPath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(signedHostPath));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void BundledAppHostHasEntitlements()
+        {
+            using var testDirectory = TestArtifact.Create(nameof(BundledAppHostHasEntitlements));
+            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.SingleFileHost.FilePath));
+            File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
+            string signedHostPath = testAppHostPath + ".signed";
+
+            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
+            var bundlePath = new Bundler(Path.GetFileName(signedHostPath), testAppHostPath + ".bundle").GenerateBundle([new(signedHostPath, Path.GetFileName(signedHostPath))]);
+
+            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasEntitlementsBlob(bundlePath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(bundlePath));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void OverwritingExistingBundleClearsMacOsSignatureCache()
+        {
+            // Bundle to a single-file and ensure it is signed
+            string singleFile = sharedTestState.SelfContainedApp.Bundle();
+            Assert.True(SigningTests.IsSigned(singleFile));
+
+            var firstInode = Inode.GetInode(singleFile);
+
+            // Rebundle to the same location.
+            // Bundler should create a new inode for the bundle which should clear the MacOS signature cache.
+            string oldFile = singleFile;
+            string dir = Path.GetDirectoryName(singleFile);
+            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _, new Version(5, 0));
+            Assert.True(singleFile == oldFile, "Rebundled app should have the same path as the original single-file app.");
+            var secondInode = Inode.GetInode(singleFile);
+            Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
+            // Ensure the MacOS signature cache is cleared
+            Assert.True(Codesign.Run("-v", singleFile).ExitCode == 0);
+        }
+
+        public class SharedTestState : IDisposable
+        {
+            public SingleFileTestApp SelfContainedApp { get; }
+
+            public SharedTestState()
+            {
+                SelfContainedApp = SingleFileTestApp.CreateSelfContained("HelloWorld");
+            }
+
+            public void Dispose()
+            {
+                SelfContainedApp.Dispose();
             }
         }
 
