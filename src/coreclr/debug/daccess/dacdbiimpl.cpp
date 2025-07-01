@@ -4856,12 +4856,14 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetCurrentCustomDebuggerNotification(VMP
     return vmObjHandle;
 }
 
-// Return the current appdomain.
-VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain()
+// Return the current appdomain the specified thread is in.
+VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
 {
     DD_ENTER_MAY_THROW;
 
+    Thread *    pThread    = vmThread.GetDacPtr();
     AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
+
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
     return vmAppDomain;
