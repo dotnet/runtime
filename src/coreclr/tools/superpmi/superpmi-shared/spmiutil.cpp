@@ -480,7 +480,7 @@ void PutArm32MovtConstant(UINT32* p, unsigned con)
 //*****************************************************************************
 //  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
 //*****************************************************************************
-INT64 GetRiscv64AuipcItype(UINT32 * pCode)
+INT64 GetRiscV64AuipcItype(UINT32 * pCode)
 {
     enum
     {
@@ -513,16 +513,16 @@ INT64 GetRiscv64AuipcItype(UINT32 * pCode)
 //*****************************************************************************
 //  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
 //*****************************************************************************
-void PutRiscv64AuipcItype(UINT32 * pCode, INT64 offset)
+void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset)
 {
     INT32 lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
     INT32 hi20 = offset - lo12;
     _ASSERTE(INT64(hi20) + INT64(lo12) == offset);
 
-    _ASSERTE(GetRiscv64AuipcItype(pCode) == 0);
+    _ASSERTE(GetRiscV64AuipcItype(pCode) == 0);
     pCode[0] |= hi20;
     pCode[1] |= lo12 << 20;
-    _ASSERTE(GetRiscv64AuipcItype(pCode) == offset);
+    _ASSERTE(GetRiscV64AuipcItype(pCode) == offset);
 }
 
 template<typename TPrint>

@@ -920,7 +920,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         // Similar to x64's IMAGE_REL_BASED_REL32 handling we
                         // will handle this by also hardcoding the bottom bits
                         // of the target into the instruction.
-                        PutRiscv64AuipcItype((UINT32*)address, (INT32)tmp.target);
+                        PutRiscV64AuipcItype((UINT32*)address, (INT32)tmp.target);
                     }
                     wasRelocHandled = true;
                 }

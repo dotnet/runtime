@@ -11883,7 +11883,7 @@ void CEEJitInfo::recordRelocation(void * location,
             _ASSERTE(addlDelta == 0);
 
             INT64 offset = (INT64)target - (INT64)location;
-            PutRiscv64AuipcItype((UINT32 *)locationRW, offset);
+            PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
         }
         break;
 
