@@ -60,7 +60,8 @@ PhaseStatus Compiler::SaveAsyncContexts()
 {
     if (!compMustSaveAsyncContexts)
     {
-        JITDUMP("No async calls where async context capture/restore is necessary\n");
+        JITDUMP("No async calls where execution context capture/restore is necessary\n");
+        ValidateNoAsyncSavesNecessary();
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -81,6 +82,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
             if (!tree->IsCall() || !tree->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
             {
+                ValidateNoAsyncSavesNecessaryInStatement(stmt);
                 continue;
             }
 
@@ -176,6 +178,68 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------
+// Compiler::ValidateNoAsyncSavesNecessary:
+//   Check that there are no async calls requiring saving of ExecutionContext
+//   in the method.
+//
+void Compiler::ValidateNoAsyncSavesNecessary()
+{
+#ifdef DEBUG
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            ValidateNoAsyncSavesNecessaryInStatement(stmt);
+        }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// Compiler::ValidateNoAsyncSavesNecessaryInStatement:
+//   Check that there are no async calls requiring saving of ExecutionContext
+//   in the statement.
+//
+// Parameters:
+//   stmt - The statement
+//
+void Compiler::ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt)
+{
+#ifdef DEBUG
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        Visitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (((*use)->gtFlags & GTF_CALL) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if ((*use)->IsCall())
+            {
+                assert(!(*use)->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext());
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+#endif
 }
 
 //------------------------------------------------------------------------

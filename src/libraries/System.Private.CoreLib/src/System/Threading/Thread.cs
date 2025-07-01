@@ -395,8 +395,9 @@ namespace System.Threading
         {
             get
             {
-                Debug.Assert(t_currentThread != null);
-                return t_currentThread;
+                Thread? thread = t_currentThread;
+                Debug.Assert(thread != null);
+                return thread;
             }
         }
 

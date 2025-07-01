@@ -5529,6 +5529,8 @@ public:
 
     PhaseStatus SaveAsyncContexts();
     BasicBlock* InsertTryFinallyForContextRestore(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
+    void ValidateNoAsyncSavesNecessary();
+    void ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt);
     PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor

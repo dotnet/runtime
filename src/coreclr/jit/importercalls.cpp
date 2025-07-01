@@ -742,7 +742,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // Spill the arguments to accomplish that.
             // (We could do this via splitting in SaveAsyncContexts, but since we need to
             //  handle inline candidates we won't gain much.)
-            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with save and restore"));
+            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
         }
     }
 
