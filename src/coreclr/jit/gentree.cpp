@@ -32254,6 +32254,45 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     // We shouldn't find AND_NOT nodes since it should only be produced in lowering
     assert(oper != GT_AND_NOT);
 
+    switch (ni)
+    {
+        // There's certain IR simplifications that are possible and which
+        // unblock other constant folding, so do those early here.
+
+#if defined(TARGET_XARCH)
+        case NI_AVX_Compare:
+        case NI_AVX512_Compare:
+        case NI_AVX_CompareScalar:
+        {
+            assert(tree->GetOperandCount() == 3);
+
+            if (!op3->IsCnsIntOrI())
+            {
+                break;
+            }
+
+            FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+            NamedIntrinsic      id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(ni, mode, simdBaseType, simdSize);
+
+            if (id == ni)
+            {
+                break;
+            }
+
+            tree->ResetHWIntrinsicId(id, op1, op2);
+            DEBUG_DESTROY_NODE(op3);
+
+            tree->SetMorphed(this);
+            return gtFoldExprHWIntrinsic(tree);
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            break;
+        }
+    }
+
     GenTree* cnsNode   = nullptr;
     GenTree* otherNode = nullptr;
 
