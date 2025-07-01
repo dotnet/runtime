@@ -26,6 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
 {
+    // dummy diff to trigger SPMI
     /* Check for overflow. If inlining, we may be using a bigger stack */
 
     if ((stackState.esStackDepth >= info.compMaxStack) &&
