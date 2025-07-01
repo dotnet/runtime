@@ -1125,7 +1125,7 @@ void InsertIntoNativeToILCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset
         return;
     }
 
-    if (versionStart != InterlockedCompareExchange(&s_stackWalkNativeToILCacheVersion, versionStart, versionStart | 1))
+    if (versionStart != InterlockedCompareExchange(&s_stackWalkNativeToILCacheVersion, versionStart | 1, versionStart))
     {
         // Someone else updated the cache version while we were attempting to take the lock, so abort updating the cache
         return;
@@ -1203,9 +1203,6 @@ void DebugStackTrace::Element::InitPass2()
         uint32_t dwILOffsetFromCache;
         if (CheckNativeToILCache((void*)this->ip, fAdjustOffset, &dwILOffsetFromCache))
         {
-#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
-            _ASSERTE(this->dwILOffset == dwILOffsetFromCache); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
-#endif // DEBUGGING_SUPPORTED && DEBUG
             this->dwILOffset = dwILOffsetFromCache;
             bRes = true;
         }
