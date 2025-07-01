@@ -16,7 +16,7 @@ internal static partial class Interop
     {
         internal static partial class Tls
         {
-            // Core TLS functions for Network Framework integration
+            // Initialize internal shim for NetworkFramework integration
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwInit")]
             [return: MarshalAs(UnmanagedType.I4)]
             internal static unsafe partial bool Init(
@@ -24,9 +24,11 @@ internal static partial class Interop
                 delegate* unmanaged<IntPtr, byte*, void**, int> readCallback,
                 delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
 
+            // Create a new connection context
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCreateContext")]
             internal static partial SafeNwHandle CreateContext([MarshalAs(UnmanagedType.I4)] bool isServer);
 
+            // Set TLS options for a connection
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
             private static partial void SetTlsOptions(SafeNwHandle connection, IntPtr state,
             string targetName, Span<byte> alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol);
@@ -40,24 +42,31 @@ internal static partial class Interop
                 SetTlsOptions(nwHandle, state, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
             }
 
+            // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwStartTlsHandshake")]
             internal static partial int StartTlsHandshake(SafeNwHandle connection, IntPtr state);
 
+            // takes encrypted input from underlying stream and feed it to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
             internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength);
 
+            // sends plaintext data to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSendToConnection")]
             internal static unsafe partial void SendToConnection(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength);
 
+            // read plaintext data from the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
             internal static partial void ReadFromConnection(SafeNwHandle connection, IntPtr state);
 
+            // starts connection cleanup
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]
             internal static partial void CancelConnection(SafeNwHandle connection);
 
+            // gets TLS connection information
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwGetConnectionInfo")]
             internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, ref byte* negotiatedAlpn, out int negotiatedAlpnLength);
 
+            // copies the certificate chain from the connection
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]
             internal static partial void CopyCertChain(SafeNwHandle connection, out SafeCFArrayHandle certificates, out int count);
 
