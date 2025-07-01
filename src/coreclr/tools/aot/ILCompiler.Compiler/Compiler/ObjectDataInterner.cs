@@ -35,7 +35,7 @@ namespace ILCompiler
                 previousMethodHash = methodHash;
                 previousSymbolRemapping = symbolRemapping;
                 methodHash = new HashSet<MethodInternKey>(previousMethodHash?.Count ?? 0, new MethodInternComparer(factory, previousSymbolRemapping));
-                symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>(previousSymbolRemapping?.Count ?? 0);
+                symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>((int)(1.05 * (previousSymbolRemapping?.Count ?? 0)));
 
                 foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
                 {
