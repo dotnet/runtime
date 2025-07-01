@@ -12587,13 +12587,25 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
 {
     instruction ins = id->idIns();
 
-    if ((ins == INS_cmppd) || (ins == INS_cmpps) || (ins == INS_cmpsd) || (ins == INS_cmpss) ||
-        (ins == INS_pclmulqdq) || (ins == INS_vpcmpb) || (ins == INS_vpcmpd) || (ins == INS_vpcmpq) ||
-        (ins == INS_vpcmpw) || (ins == INS_vpcmpub) || (ins == INS_vpcmpud) || (ins == INS_vpcmpuq) ||
-        (ins == INS_vpcmpuw))
+    if (CodeGenInterface::instHasPseudoName(ins))
     {
-        // These instructions have pseudo-names for each possible immediate value
-        return;
+        switch (ins)
+        {
+            case INS_roundpd:
+            case INS_roundps:
+            case INS_roundsd:
+            case INS_roundss:
+            {
+                // These instructions have pseudo-names, but still need to display the immediate
+                break;
+            }
+
+            default:
+            {
+                // These instructions have pseudo-names for each possible immediate value
+                return;
+            }
+        }
     }
 
     CnsVal cnsVal;
