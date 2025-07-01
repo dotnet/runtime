@@ -142,11 +142,18 @@ namespace System.Text.Json.Nodes
         {
             ArgumentNullException.ThrowIfNull(propertyName);
 
-#if NET10_0_OR_GREATER
-            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
-#else
+#if NET9_0
             index = Dictionary.IndexOf(propertyName);
-            return Dictionary.TryGetValue(propertyName, out jsonNode);
+            if (index < 0)
+            {
+                jsonNode = null;
+                return false;
+            }
+
+            jsonNode = Dictionary.GetAt(index).Value;
+            return true;
+#else
+            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
 #endif
         }
 
