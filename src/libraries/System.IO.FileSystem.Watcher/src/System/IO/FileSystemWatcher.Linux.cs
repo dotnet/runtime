@@ -13,9 +13,35 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    // Note: This class has an OS Limitation where the inotify API can miss events if a directory is created and immediately has
-    //       changes underneath. This is due to the inotify* APIs not being recursive and needing to call inotify_add_watch on
-    //       each subdirectory, causing a race between adding the watch and file system events happening.
+    // Implementation notes:
+    //
+    // Missed events for recursive watching:
+    //   The inotify APIs are not recursive. We need to call inotify_add_watch when we detect a child directory to track it.
+    //   Events that occurred on the directory before we've added it will be lost.
+    //
+    // Path vs directory:
+    //   Note that inotify does not watch a path, but it watches directories.
+    //   When a path is passed to inotify_add_watch, the directory is looked up by the kernel and a watch descriptor (wd) is returned for watching that directory.
+    //   If the directory is moved to a different path, inotify will continue to reports its events.
+    //   If we have previously added a watch for a path, and we call inotify_add_watch again for that path then:
+    //   - if the looked up directory is still the same, the same wd will be returned, or
+    //   - if the path now refers to a different directory, another wd will be returned.
+    //
+    //   For each FileSystemWatcher we use a Watcher object that represents all inotify operations performed for that FileSystemWatcher.
+    //   To represent the difference explained above (path vs directory) we use a WatchDirectory object to represent a path that is watched
+    //   and a separate Watch object that represent the wd returned by the inotify_add_watch.
+    //   Each WatchDirectory has a single Watch, while a Watch may be used by several WatchDirectories.
+    //   When there are no more WatchDirectories using the Watch, we can remove it.
+    //
+    // Locking:
+    //   To prevent deadlocks, the locks (as needed) should be taken in this order: s_watchersLock, _addLock, lock on Watcher instance, lock on Watch instance.
+    //
+    // Shared inotify instance:
+    //   By default, the number of inotify instances per user is limited to 128.
+    //   Because of this low limit, we make all the FileSystemWatchers share a single inotify instance to reduce contention with other processes.
+    //   A dedicated thread dequeues the inotify events. From the inotify events, FileSystemWatcher events are emitted from the ThreadPool.
+    //   This stops FileSystemWatcher event handlers to block one another, or them blocking the inotify thread which could cause the inotify event queue to overflow.
+    //   This requires us to use IN_MASK_ADD which may cause us to continue receive events that no FileSystemWatcher is still interested in.
     public partial class FileSystemWatcher
     {
         private const int PATH_MAX = 4096;
@@ -78,37 +104,12 @@ namespace System.IO
             catch { return null; }
         }
 
-        // Implementation notes:
-        //
-        // Path vs directory:
-        //   Note that inotify does not watch a path, but it watches directories.
-        //   When a path is passed to inotify_add_watch, the directory is looked up by the kernel and a watch descriptor (wd) is returned for watching that directory.
-        //   If the directory is moved to a different path, inotify will continue to reports its events.
-        //   If we have previously added a watch for a path, and we call inotify_add_watch again for that path then:
-        //   - if the looked up directory is still the same, the same wd will be returned, or
-        //   - if the path now refers to a different directory, another wd will be returned.
-        //
-        //   For each FileSystemWatcher we use a Watcher object that represents all inotify operations performed for that FileSystemWatcher.
-        //   To represent the difference explained above (path vs directory) we use a WatchDirectory object to represent a path that is watched
-        //   and a separate Watch object that represent the wd returned by the inotify_add_watch.
-        //   Each WatchDirectory has a single Watch, while a Watch may be used by several WatchDirectories.
-        //   When there are no more WatchDirectories using the Watch, we can remove it.
-        //
-        // Locking:
-        //   To prevent deadlocks, the locks (as needed) should be taken in this order: _addLock/s_watchersLock, lock on Watcher instance, lock on Watch instance.
-        //
-        // Shared inotify instance:
-        //   By default, the number of inotify instances per user is limited to 128.
-        //   Because of this low limit, we make all the FileSystemWatchers share a single inotify instance to reduce contention with other processes.
-        //   A dedicated thread dequeues the inotify events. From the inotify events, FileSystemWatcher events are emitted from the ThreadPool.
-        //   This stops FileSystemWatcher event handlers to block one another, or them blocking the inotify thread which could cause the inotify event queue to overflow.
-        //   This requires us to use IN_MASK_ADD which may cause us to continue receive events that no FileSystemWatcher is still interested in.
         private sealed class INotify
         {
             // Guards the watchers of the inotify instance.
             public static readonly object s_watchersLock = new();
 
-            private static INotify? _currentInotify;
+            private static INotify? s_currentInotify;
 
             public static Watcher? StartWatcher(FileSystemWatcher fsw)
             {
@@ -116,14 +117,14 @@ namespace System.IO
                 lock (s_watchersLock)
                 {
                     // If there is no running instance, start one.
-                    if (_currentInotify is null || _currentInotify.IsStopped)
+                    if (s_currentInotify is null || s_currentInotify.IsStopped)
                     {
                         INotify inotify = new(s_watchersLock);
                         inotify.Start();
-                        _currentInotify = inotify;
+                        s_currentInotify = inotify;
                     }
 
-                    watcher = _currentInotify.CreateWatcherCore(fsw);
+                    watcher = s_currentInotify.CreateWatcherCore(fsw);
                 }
 
                 watcher.Start();
@@ -221,23 +222,16 @@ namespace System.IO
 
             private void Stop()
             {
-                // note: this method gets called only on the ProcessEvents thread, or when that thread fails to start.
-                Debug.Assert(Monitor.IsEntered(_watchersLock));
-                Debug.Assert(!IsStopped);
+                // This method gets called only on the ProcessEvents thread, or when that thread fails to start.
+                // It closes the inotify handle.
 
-                IsStopped = true;
+                IsStopped = true; // note: may be set already by RemoveUnusedINotifyWatches.
 
-                // Before we can close the inotify handle we need to sync so no further watches may be added/removed:
-                // Sync with AddOrUpdateWatchedDirectory.
-                foreach (var watcher in _watchers)
-                {
-                    lock (watcher)
-                    { }
-                }
-                // Sync with RemoveUnusedINotifyWatches.
+                // Sync with AddOrUpdateWatchedDirectory and RemoveUnusedINotifyWatches.
                 _addLock.EnterWriteLock();
                 _addLock.ExitWriteLock();
 
+                // Close the handle.
                 _inotifyHandle.Dispose();
             }
 
@@ -246,13 +240,14 @@ namespace System.IO
                 WatchedDirectory? inotifyWatchesToRemove = null;
                 WatchedDirectory dir;
 
+                // This locks prevents removing watches while watches are being added.
+                // It is also used to synchronize with Stop.
                 _addLock.EnterReadLock();
                 try
                 {
                     // Serialize adding watches to the same watcher.
                     // Concurrently adding watches may happen during the initial reursive iteration of the directory.
                     // This ensures the WatchedDirectory matches with the most recent INotifyAddWatch directory.
-                    // The lock on the watcher is also used to synchronizes with Stop.
                     lock (watcher)
                     {
                         if (IsStopped || watcher.IsStopped)
@@ -376,18 +371,44 @@ namespace System.IO
 
             private void RemoveUnusedINotifyWatches(WatchedDirectory removedDir, int ignoredFd = -1)
             {
-                // _addLock stops handles from being added while we'll removing watches.
-                // This is needed to prevent removing watch descriptors between INotifyAddWatch and adding them to the Watch.Watchers.
-                // _addLock is also used to synchronizes with Stop.
-                _addLock.EnterWriteLock();
+                bool watchersLockTaken = false;
+                bool addLockTaken = false;
                 try
                 {
+                    // If this is a root watch we need to take the watchers lock.
+                    if (removedDir.Parent is null)
+                    {
+                        Monitor.Enter(_watchersLock, ref watchersLockTaken);
+                    }
+
+                    // _addLock stops handles from being added while we'll removing watches.
+                    // This is needed to prevent removing watch descriptors between INotifyAddWatch and adding them to the Watch.Watchers.
+                    // _addLock is also used to synchronizes with Stop.
+                    _addLock.EnterWriteLock();
+                    addLockTaken = true;
+
                     if (IsStopped)
                     {
                         return;
                     }
 
+                    if (watchersLockTaken)
+                    {
+                        _watchers.Remove(removedDir.Watcher);
+
+                        // We'll return the watch to get an IN_IGNORE event that will stop the event loop.
+                        IsStopped = _watchers.Count == 0;
+
+                        Monitor.Exit(_watchersLock);
+                        watchersLockTaken = false;
+                    }
+
                     RemoveINotifyWatchWhenNoMoreWatchers(removedDir.Watch, ignoredFd);
+
+                    if (IsStopped)
+                    {
+                        return;
+                    }
 
                     if (removedDir.Children is { } children)
                     {
@@ -399,7 +420,15 @@ namespace System.IO
                 }
                 finally
                 {
-                    _addLock.ExitWriteLock();
+                    if (addLockTaken)
+                    {
+                        _addLock.ExitWriteLock();
+                    }
+
+                    if (watchersLockTaken)
+                    {
+                        Monitor.Exit(_watchersLock);
+                    }
                 }
 
                 void RemoveINotifyWatchWhenNoMoreWatchers(Watch watch, int ignoredFd)
@@ -471,20 +500,16 @@ namespace System.IO
 
             private void ProcessEvents()
             {
-                lock (_watchersLock)
-                {
-                    // We've started an INotify, but no root watch was created for the FileSystemWatcher that started it.
-                    if (_watchers.Count == 0)
-                    {
-                        Stop();
-                    }
-                }
-
                 try
                 {
-                    if (IsStopped)
+                    lock (_watchersLock)
                     {
-                        return;
+                        // We've started an INotify, but no root watch was created for the FileSystemWatcher that started it.
+                        if (_watchers.Count == 0)
+                        {
+                            Stop();
+                            return;
+                        }
                     }
 
                     // Carry over information from MOVED_FROM to MOVED_TO events.
@@ -514,7 +539,7 @@ namespace System.IO
                 }
                 finally
                 {
-                    Debug.Assert(IsStopped);
+                    Debug.Assert(_inotifyHandle.IsClosed);
                 }
             }
 
@@ -532,6 +557,13 @@ namespace System.IO
                     Interop.Sys.NotifyEvents.IN_ACCESS |
                     Interop.Sys.NotifyEvents.IN_MODIFY |
                     Interop.Sys.NotifyEvents.IN_ATTRIB;
+
+                // When RemoveUnusedINotifyWatches removes the last watcher, it sets IsStopped and we get an IN_IGNORE event.
+                if (IsStopped)
+                {
+                    Stop();
+                    return false;
+                }
 
                 Span<char> pathBuffer = stackalloc char[PATH_MAX];
                 Interop.Sys.NotifyEvents mask = (Interop.Sys.NotifyEvents)nextEvent.mask;
@@ -1032,7 +1064,7 @@ namespace System.IO
 
                     if (hasRootWatch)
                     {
-                        DequeueEvents();
+                        _ = DequeueEvents();
                     }
 
                     return hasRootWatch;
@@ -1051,7 +1083,7 @@ namespace System.IO
                     EmitEvents = true;
                 }
 
-                private async void DequeueEvents()
+                private async Task DequeueEvents()
                 {
                     char[] pathBuffer = new char[PATH_MAX];
                     try
@@ -1063,9 +1095,15 @@ namespace System.IO
                     }
                     catch (Exception ex)
                     {
-                        Fsw?.OnError(new ErrorEventArgs(ex));
+                        Stop();
+
+                        try
+                        {
+                            Fsw?.OnError(new ErrorEventArgs(ex));
+                        }
+                        catch
+                        { }
                     }
-                    Stop();
                 }
 
                 private void EmitEvent(WatcherEvent evnt, char[] pathBuffer)
