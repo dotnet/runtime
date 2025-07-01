@@ -638,11 +638,7 @@ namespace System
 
             for (int i = 0; i < length; i++)
             {
-#if NATIVEAOT
-                InvokeUtils.PrimitiveWiden(destElType, srcElType, ref data, ref srcData);
-#else
                 InvokeUtils.PrimitiveWiden(ref srcData, ref data, srcElType, destElType);
-#endif
                 srcData = ref Unsafe.AddByteOffset(ref srcData, srcElSize);
                 data = ref Unsafe.AddByteOffset(ref data, destElSize);
             }
