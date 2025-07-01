@@ -258,6 +258,83 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddCarryWideningUpper(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
 
+        // Add narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svaddhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddHighNarrowingEven(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svaddhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddHighNarrowingEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svaddhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddHighNarrowingEven(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svaddhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddHighNarrowingEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svaddhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddHighNarrowingEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svaddhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddHighNarrowingEven(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Add narrow high part (top)
+
+        /// <summary>
+        /// svuint8_t svaddhnt[_u16](svuint8_t even, svuint16_t op1, svuint16_t op2)
+        ///   ADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<byte> AddHighNarrowingOdd(Vector<byte> even, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svaddhnt[_s32](svint16_t even, svint32_t op1, svint32_t op2)
+        ///   ADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<short> AddHighNarrowingOdd(Vector<short> even, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svaddhnt[_s64](svint32_t even, svint64_t op1, svint64_t op2)
+        ///   ADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> AddHighNarrowingOdd(Vector<int> even, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svaddhnt[_s16](svint8_t even, svint16_t op1, svint16_t op2)
+        ///   ADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<sbyte> AddHighNarrowingOdd(Vector<sbyte> even, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svaddhnt[_u32](svuint16_t even, svuint32_t op1, svuint32_t op2)
+        ///   ADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<ushort> AddHighNarrowingOdd(Vector<ushort> even, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svaddhnt[_u64](svuint32_t even, svuint64_t op1, svuint64_t op2)
+        ///   ADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<uint> AddHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
@@ -1491,6 +1568,132 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UQRSHRNT Ztied.S, Zop1.D, #imm2
         /// </summary>
         public static Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateOdd(Vector<uint> even, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+
+        // Bit vector table lookups
+
+        /// <summary>
+        /// svuint8_t svtbl2[_u8](svuint8x2_t data, svuint8_t indices)
+        ///   TBL Zd.B, { Zn1.B, Zn2.B }, Zm.B
+        /// </summary>
+        public static unsafe Vector<byte> VectorTableLookup((Vector<byte> data1, Vector<byte> data2) table, Vector<byte> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svtbl2[_u16](svuint16x2_t data, svuint16_t indices)
+        ///   TBL Zd.H, { Zn1.H, Zn2.H }, Zm.H
+        /// </summary>
+        public static unsafe Vector<ushort> VectorTableLookup((Vector<ushort> data1, Vector<ushort> data2) table, Vector<ushort> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svtbl2[_u32](svuint32x2_t data, svuint32_t indices)
+        ///   TBL Zd.S, { Zn1.S, Zn2.S }, Zm.S
+        /// </summary>
+        public static unsafe Vector<uint> VectorTableLookup((Vector<uint> data1, Vector<uint> data2) table, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svtbl2[_u64](svuint64x2_t data, svuint64_t indices)
+        ///   TBL Zd.D, { Zn1.D, Zn2.D }, Zm.D
+        /// </summary>
+        public static unsafe Vector<ulong> VectorTableLookup((Vector<ulong> data1, Vector<ulong> data2) table, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtbl2[_f32](svfloat32x2_t data, svuint32_t indices)
+        ///   TBL Zd.S, { Zn1.S, Zn2.S }, Zm.S
+        /// </summary>
+        public static unsafe Vector<float> VectorTableLookup((Vector<float> data1, Vector<float> data2) table, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svtbl2[_f64](svfloat64x2_t data, svuint64_t indices)
+        ///   TBL Zd.D, { Zn1.D, Zn2.D }, Zm.D
+        /// </summary>
+        public static unsafe Vector<double> VectorTableLookup((Vector<double> data1, Vector<double> data2) table, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svtbl2[_s8](svint8x2_t data, svuint8_t indices)
+        ///   TBL Zd.B, { Zn1.B, Zn2.B }, Zm.B
+        /// </summary>
+        public static unsafe Vector<sbyte> VectorTableLookup((Vector<sbyte> data1, Vector<sbyte> data2) table, Vector<byte> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svtbl2[_s16](svint16x2_t data, svuint16_t indices)
+        ///   TBL Zd.H, { Zn1.H, Zn2.H }, Zm.H
+        /// </summary>
+        public static unsafe Vector<short> VectorTableLookup((Vector<short> data1, Vector<short> data2) table, Vector<ushort> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svtbl2[_s32](svint32x2_t data, svuint32_t indices)
+        ///   TBL Zd.S, { Zn1.S, Zn2.S }, Zm.S
+        /// </summary>
+        public static unsafe Vector<int> VectorTableLookup((Vector<int> data1, Vector<int> data2) table, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svtbl2[_s64](svint64x2_t data, svuint64_t indices)
+        ///   TBL Zd.D, { Zn1.D, Zn2.D }, Zm.D
+        /// </summary>
+        public static unsafe Vector<long> VectorTableLookup((Vector<long> data1, Vector<long> data2) table, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
+        // Bit vector table lookup extensions
+
+        /// <summary>
+        /// svuint8_t svtbx[_u8](svuint8_t fallback, svuint8_t data, svuint8_t indices)
+        ///   TBX Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static unsafe Vector<byte> VectorTableLookupExtension(Vector<byte> defaultValues, Vector<byte> data, Vector<byte> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svtbx[_u16](svuint16_t fallback, svuint16_t data, svuint16_t indices)
+        ///   TBX Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static unsafe Vector<ushort> VectorTableLookupExtension(Vector<ushort> defaultValues, Vector<ushort> data, Vector<ushort> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svtbx[_u32](svuint32_t fallback, svuint32_t data, svuint32_t indices)
+        ///   TBX Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static unsafe Vector<uint> VectorTableLookupExtension(Vector<uint> defaultValues, Vector<uint> data, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svtbx[_u64](svuint64_t fallback, svuint64_t data, svuint64_t indices)
+        ///   TBX Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static unsafe Vector<ulong> VectorTableLookupExtension(Vector<ulong> defaultValues, Vector<ulong> data, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtbx[_f32](svfloat32_t fallback, svfloat32_t data, svuint32_t indices)
+        ///   TBX Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static unsafe Vector<float> VectorTableLookupExtension(Vector<float> defaultValues, Vector<float> data, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svtbx[_f64](svfloat64_t fallback, svfloat64_t data, svuint64_t indices)
+        ///   TBX Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static unsafe Vector<double> VectorTableLookupExtension(Vector<double> defaultValues, Vector<double> data, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svtbx[_s8](svint8_t fallback, svint8_t data, svuint8_t indices)
+        ///   TBX Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static unsafe Vector<sbyte> VectorTableLookupExtension(Vector<sbyte> defaultValues, Vector<sbyte> data, Vector<byte> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svtbx[_s16](svint16_t fallback, svint16_t data, svuint16_t indices)
+        ///   TBX Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static unsafe Vector<short> VectorTableLookupExtension(Vector<short> defaultValues, Vector<short> data, Vector<ushort> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svtbx[_s32](svint32_t fallback, svint32_t data, svuint32_t indices)
+        ///   TBX Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static unsafe Vector<int> VectorTableLookupExtension(Vector<int> defaultValues, Vector<int> data, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svtbx[_s64](svint64_t fallback, svint64_t data, svuint64_t indices)
+        ///   TBX Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static unsafe Vector<long> VectorTableLookupExtension(Vector<long> defaultValues, Vector<long> data, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
 
 
         // Bitwise exclusive OR of three vectors

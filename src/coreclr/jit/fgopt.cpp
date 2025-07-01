@@ -1640,54 +1640,26 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         if (bNewDest != bDest)
         {
+            // Remove the flow into the old destination block
             //
-            // When we optimize a branch to branch we need to update the profile weight
-            // of bDest by subtracting out the block weight of the path that is being optimized.
-            //
-            FlowEdge* const oldEdge = *jmpTab;
-
             if (bDest->hasProfileWeight())
             {
-                weight_t const branchThroughWeight = oldEdge->getLikelyWeight();
-                bDest->decreaseBBProfileWeight(branchThroughWeight);
+                FlowEdge* const oldEdge = *jmpTab;
+                bDest->decreaseBBProfileWeight(oldEdge->getLikelyWeight());
             }
 
-            // Update the switch jump table
-            fgRemoveRefPred(oldEdge);
-            FlowEdge* const newEdge = fgAddRefPred(bNewDest, block, oldEdge);
-            *jmpTab                 = newEdge;
-
-            // Update edge likelihoods
-            // Note old edge may still be "in use" so we decrease its likelihood.
+            // Redirect the jump to the new target
             //
-
-            // We want to move this much likelihood from old->new
-            //
-            const weight_t likelihoodFraction = oldEdge->getLikelihood() / (oldEdge->getDupCount() + 1);
-
-            if (newEdge->getDupCount() == 1)
-            {
-                newEdge->setLikelihood(likelihoodFraction);
-            }
-            else
-            {
-                newEdge->addLikelihood(likelihoodFraction);
-            }
-
-            oldEdge->addLikelihood(-likelihoodFraction);
-
-            // we optimized a Switch label - goto REPEAT_SWITCH to follow this new jump
+            fgReplaceJumpTarget(block, bDest, bNewDest);
             modified = true;
 
+            // we optimized a Switch label - goto REPEAT_SWITCH to follow this new jump
             goto REPEAT_SWITCH;
         }
     } while (++jmpTab, --jmpCnt);
 
     if (modified)
     {
-        // Invalidate the set of unique targets for block, since we modified the targets
-        fgInvalidateSwitchDescMapEntry(block);
-
         JITDUMP(
             "fgOptimizeSwitchBranches: Optimized switch flow. Profile needs to be re-propagated. Data %s consistent.\n",
             fgPgoConsistent ? "is now" : "was already");

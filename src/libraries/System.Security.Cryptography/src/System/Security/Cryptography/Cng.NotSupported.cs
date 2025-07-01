@@ -93,6 +93,12 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
 
+        [SupportedOSPlatform("windows")]
+        public AesCng(CngKey key)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
         public override void GenerateKey() { }
         public override void GenerateIV() { }
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) => null!;

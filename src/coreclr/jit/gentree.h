@@ -4304,6 +4304,24 @@ inline GenTreeCallDebugFlags& operator &=(GenTreeCallDebugFlags& a, GenTreeCallD
 
 // clang-format on
 
+enum class ExecutionContextHandling
+{
+    // No special handling of execution context is required.
+    None,
+    // Always save and restore ExecutionContext around this await.
+    // Used for task awaits.
+    SaveAndRestore,
+    // Save and restore execution context on suspension/resumption only.
+    // Used for custom awaitables.
+    AsyncSaveAndRestore,
+};
+
+// Additional async call info.
+struct AsyncCallInfo
+{
+    ExecutionContextHandling ExecutionContextHandling = ExecutionContextHandling::None;
+};
+
 // Return type descriptor of a GT_CALL node.
 // x64 Unix, Arm64, Arm32 and x86 allow a value to be returned in multiple
 // registers. For such calls this struct provides the following info
@@ -4956,9 +4974,12 @@ struct GenTreeCall final : public GenTree
 
     union
     {
+        // Used for explicit tail prefixed calls
         TailCallSiteInfo* tailCallInfo;
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
+        // Used for async calls
+        const AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5016,12 +5037,22 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync()
+    void SetIsAsync(const AsyncCallInfo* info)
     {
+        assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;
+        asyncInfo = info;
     }
 
     bool IsAsync() const;
+
+    const AsyncCallInfo& GetAsyncInfo() const
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
+    bool IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.

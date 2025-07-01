@@ -118,6 +118,8 @@
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
@@ -144,8 +146,6 @@
              Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.MLKem.cs"
-             Link="Common\System\Security\Cryptography\PqcBlobHelpers.MLKem.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
@@ -154,6 +154,8 @@
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.Helpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ThreadSafety.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ThreadSafety.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaFactoryTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaFactoryTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaCngTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaCngTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaCngTests.Windows.cs"

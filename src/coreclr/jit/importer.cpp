@@ -6012,8 +6012,9 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// impMatchAwaitPattern: check if a method call starts an Await pattern
-//                       that can be optimized for runtime async
+// impMatchTaskAwaitPattern:
+//   Check if a method call starts an a task await pattern that can be
+//   optimized for runtime async
 //
 // Arguments:
 //   codeAddr - IL after call[virt]
@@ -6023,7 +6024,7 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 // Returns:
 //    true if this is an Await that we can optimize
 //
-bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+bool Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
 {
     // If we see the following code pattern in runtime async methods:
     //
@@ -6940,6 +6941,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         bool                 isExact       = false;
                         bool                 isNonNull     = false;
                         CORINFO_CLASS_HANDLE retCls        = gtGetClassHandle(call, &isExact, &isNonNull);
+
+                        if ((retCls == NO_CLASS_HANDLE) && call->IsGuardedDevirtualizationCandidate())
+                        {
+                            // Just check one of the GDV candidates (all should have the same original method handle)
+                            //
+                            InlineCandidateInfo* const inlineInfo = call->GetGDVCandidateInfo(0);
+                            CORINFO_SIG_INFO           sig;
+                            info.compCompHnd->getMethodSig(inlineInfo->originalMethodHandle, &sig);
+                            retCls = sig.retTypeClass;
+                        }
 
                         if ((retCls != NO_CLASS_HANDLE) && info.compCompHnd->isIntrinsicType(retCls))
                         {
@@ -9127,7 +9138,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     int configVal = -1; // -1 not configured, 0/1 configured to false/true
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
-                        isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
+                        if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
+                        {
+                            isAwait = true;
+                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                        }
                     }
 
                     if (isAwait)
@@ -9138,7 +9153,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // There is a runtime async variant that is implicitly awaitable, just call that.
                             // if configured, skip {ldc call ConfigureAwait}
                             if (configVal >= 0)
+                            {
                                 codeAddr += 2 + sizeof(mdToken);
+                            }
 
                             // Skip the call to `Await`
                             codeAddr += 1 + sizeof(mdToken);
@@ -9147,7 +9164,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // This can happen in rare cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
-                            // that as a regualr call that is Awaited
+                            // that as a regular call that is Awaited
                             _impResolveToken(CORINFO_TOKENKIND_Method);
                         }
                     }
