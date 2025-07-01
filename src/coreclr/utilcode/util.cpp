@@ -2371,9 +2371,9 @@ INT64 GetRiscv64AuipcItype(UINT32 * pCode)
 //*****************************************************************************
 void PutRiscv64AuipcItype(UINT32 * pCode, INT64 offset)
 {
-    INT64 lo12 = (offset << (64 - 12)) >> (64 - 12);
-    INT64 hi20 = INT32(offset - lo12);
-    _ASSERTE((hi20 + lo12) == offset);
+    INT32 lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+    INT32 hi20 = offset - lo12;
+    _ASSERTE(INT64(hi20) + INT64(lo12) == offset);
 
     _ASSERTE(GetRiscv64AuipcItype(pCode) == 0);
     pCode[0] |= hi20;

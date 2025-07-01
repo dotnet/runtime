@@ -1725,20 +1725,17 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
 
     /* Set the instruction - special case jumping a function */
-    instruction ins;
-
-    ins = INS_jalr; // jalr
-    id->idIns(ins);
+    id->idIns(INS_jalr);
 
     id->idInsOpt(INS_OPTS_C);
     // TODO-RISCV64: maybe optimize.
 
     // INS_OPTS_C: placeholders.  1/2-ins:
     //   if (callType == EC_INDIR_R)
-    //      jalr REG_R0/REG_RA, ireg, offset   <---- 1-ins
+    //      jalr zero/ra, ireg, offset
     //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
-    //      auipc t2, offset-hi20
-    //      jalr r0/1, t2, offset-lo12
+    //      auipc t2/ra, offset-hi20
+    //      jalr zero/ra, t2/ra, offset-lo12
 
     /* Record the address: method, indirection, or funcptr */
     if (params.callType == EC_INDIR_R)
@@ -1768,11 +1765,10 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         assert(params.callType == EC_FUNC_TOKEN);
         assert(params.addr != NULL);
 
-        void* addr =
-            (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
-        id->idAddr()->iiaAddr = (BYTE*)addr;
+        id->idReg1(params.isJump ? REG_ZERO : REG_RA);
+        id->idAddr()->iiaAddr = (BYTE*)params.addr;
         id->idCodeSize(2 * sizeof(code_t));
-        id->idSetIsDspReloc(emitComp->opts.compReloc);
+        id->idSetIsDspReloc();
     }
 
 #ifdef DEBUG
@@ -1857,25 +1853,17 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
     }
     else
     {
-        //   auipc t2, offset-hi20
-        //   jalr r0/1, t2, offset-lo12
+        regNumber linkReg = id->idReg1();
+        regNumber tempReg = (linkReg == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
+        assert(linkReg == REG_ZERO || linkReg == REG_RA);
 
-        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
+        dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, 0);
+        emitGCregDeadUpd(tempReg, dst);
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
 
-        regNumber regLink = (regNumber)(addr & 1);
-        assert(regLink == REG_ZERO || regLink == REG_RA);
-        addr -= regLink;
-        assert((addr & 1) == 0);
-        regNumber addrReg = (regLink == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
-
-        dst += emitOutput_UTypeInstr(dst, INS_auipc, addrReg, 0);
-        emitGCregDeadUpd(addrReg, dst);
-
-        dst += emitOutput_ITypeInstr(dst, INS_jalr, regLink, addrReg, 0);
-        if (regLink != addrReg)
-            emitGCregDeadUpd(regLink, dst);
-
-        emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
+        assert(id->idIsDspReloc());
+        assert(((size_t)id->idAddr()->iiaAddr & 1) == 0);
+        emitRecordRelocation(origDst, (BYTE*)id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
     }
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
