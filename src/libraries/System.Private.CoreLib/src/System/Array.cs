@@ -630,8 +630,8 @@ namespace System
             // Get appropriate sizes, which requires method tables.
 
 #if NATIVEAOT
-            EETypeElementType srcElType = RuntimeHelpers.GetMethodTable(sourceArray)->ElementType;
-            EETypeElementType destElType = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
+            EETypeElementType srcElType = sourceArray.ElementMethodTable->ElementType;
+            EETypeElementType destElType = destinationArray.ElementMethodTable->ElementType;
 #else
             CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
             CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
