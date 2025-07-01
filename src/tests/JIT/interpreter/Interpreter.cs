@@ -1885,13 +1885,18 @@ public class InterpreterTest
         return typeof(T);
     }
 
-    class GenericClass<T>
+    class GenericClass<T> : IGeneric<T>
     {
         public Type GetTypeOfTInstance()
         {
             return typeof(T);
         }
         public static Type GetTypeOfTStatic()
+        {
+            return typeof(T);
+        }
+
+        Type IGeneric<T>.Method()
         {
             return typeof(T);
         }
@@ -2135,6 +2140,11 @@ public class InterpreterTest
         return true;
     }
 
+    interface IGeneric<T>
+    {
+        Type Method();
+    }
+
     public static bool TestGenerics_CallsFrom<T>()
     {
         if (LoadType<T>() != typeof(T))
@@ -2144,6 +2154,9 @@ public class InterpreterTest
             return false;
 
         if (GenericClass<T>.GetTypeOfTStatic() != typeof(T))
+            return false;
+
+        if (((IGeneric<T>)new GenericClass<T>()).Method() != typeof(T))
             return false;
 
         return true;
