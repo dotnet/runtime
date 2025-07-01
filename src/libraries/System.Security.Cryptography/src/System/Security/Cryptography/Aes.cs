@@ -369,7 +369,7 @@ namespace System.Security.Cryptography
             }
 
             uint len = (uint)iv;
-            ulong header = iv >> 32;
+            uint header = (uint)(iv >> 32);
             int slen = (int)len;
 
             // Only 0..7 padding bytes are allowed.
@@ -380,7 +380,7 @@ namespace System.Security.Cryptography
             int maxOutput = source.Length - 8;
             uint pad = (uint)maxOutput - len;
 
-            if (header != 0xA65959A6UL || pad > 7 || destination.Slice(slen).IndexOfAnyExcept((byte)0) >= 0)
+            if (header != 0xA65959A6 || pad > 7 || destination.Slice(slen).IndexOfAnyExcept((byte)0) >= 0)
             {
                 throw new CryptographicException(SR.Cryptography_KeyWrap_DecryptFailed);
             }
