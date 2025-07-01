@@ -532,6 +532,7 @@ namespace System
             MethodTable* pDestMT = destinationArray.ElementMethodTable;
 
             Debug.Assert(!sourceArray.ElementMethodTable->IsValueType);
+            Debug.Assert(pDestMT->IsValueType);
 
             nuint destSize = pDestArrayMT->ComponentSize;
             ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
@@ -599,6 +600,9 @@ namespace System
         {
             MethodTable* pDestMT = destinationArray.ElementMethodTable;
 
+            Debug.Assert(!sourceArray.ElementMethodTable->IsValueType);
+            Debug.Assert(!pDestMT->IsValueType);
+
             ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
             ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
 
@@ -620,6 +624,9 @@ namespace System
         // Array.CopyImpl case: Primitive types that have a widening conversion
         private static unsafe void CopyImplPrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
+            Debug.Assert(sourceArray.ElementMethodTable->IsPrimitive);
+            Debug.Assert(destinationArray.ElementMethodTable->IsPrimitive);
+
             // Get appropriate sizes, which requires method tables.
 
 #if NATIVEAOT
