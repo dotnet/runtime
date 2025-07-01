@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,18 +21,14 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                //_output.WriteLine("SendAsync starting.");
                 await cws.SendAsync(
                     WebSocketData.GetBufferFromText(shutdownWebSocketMetaCommand),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
-                //_output.WriteLine("SendAsync done.");
 
                 var recvBuffer = new byte[256];
-                //_output.WriteLine("ReceiveAsync starting.");
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(new ArraySegment<byte>(recvBuffer), cts.Token);
-                //_output.WriteLine("ReceiveAsync done.");
 
                 // Verify received server-initiated close message.
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, recvResult.CloseStatus);
@@ -47,12 +41,10 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(shutdownWebSocketMetaCommand, cws.CloseStatusDescription);
 
                 // Send back close message to acknowledge server-initiated close.
-                //_output.WriteLine("Close starting.");
                 var closeStatus = PlatformDetection.IsNotBrowser ? WebSocketCloseStatus.InvalidMessageType : (WebSocketCloseStatus)3210;
                 await (useCloseOutputAsync ?
                     cws.CloseOutputAsync(closeStatus, string.Empty, cts.Token) :
                     cws.CloseAsync(closeStatus, string.Empty, cts.Token));
-                //_output.WriteLine("Close done.");
                 Assert.Equal(WebSocketState.Closed, cws.State);
 
                 // Verify that there is no follow-up echo close message back from the server by
@@ -433,6 +425,11 @@ namespace System.Net.WebSockets.Client.Tests
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     public abstract class CloseTest_External(ITestOutputHelper output) : CloseTestBase(output)
     {
+        [ConditionalTheory(nameof(PlatformDetection), nameof(PlatformDetection.IsBrowser))] // See https://github.com/dotnet/runtime/issues/28957
+        [MemberData(nameof(EchoServersAndBoolean))]
+        public Task CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
+            => RunClient_CloseAsync_ServerInitiatedClose_Success(server, useCloseOutputAsync);
+
         [Theory, MemberData(nameof(EchoServers))]
         public Task CloseAsync_ClientInitiatedClose_Success(Uri server)
             => RunClient_CloseAsync_ClientInitiatedClose_Success(server);
@@ -464,6 +461,21 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(Uri server)
             => RunClient_CloseOutputAsync_ClientInitiated_CanReceive_CanClose(server);
+
+        [ConditionalTheory(nameof(PlatformDetection), nameof(PlatformDetection.IsBrowser))] // See https://github.com/dotnet/runtime/issues/28957
+        [MemberData(nameof(EchoServersAndBoolean))]
+        public Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
+            => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving);
+
+        [ConditionalTheory(nameof(PlatformDetection), nameof(PlatformDetection.IsBrowser))] // See https://github.com/dotnet/runtime/issues/28957
+        [MemberData(nameof(EchoServers))]
+        public Task CloseOutputAsync_ServerInitiated_CanSend(Uri server)
+            => RunClient_CloseOutputAsync_ServerInitiated_CanSend(server);
+
+        [ConditionalTheory(nameof(PlatformDetection), nameof(PlatformDetection.IsBrowser))] // See https://github.com/dotnet/runtime/issues/28957
+        [MemberData(nameof(EchoServersAndBoolean))]
+        public Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
+            => RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(server, syncState);
 
         [Theory, MemberData(nameof(EchoServers))]
         public Task CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)

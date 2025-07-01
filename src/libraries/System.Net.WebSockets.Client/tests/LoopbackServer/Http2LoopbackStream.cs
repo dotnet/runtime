@@ -15,9 +15,7 @@ namespace System.Net.Test.Common
         private readonly int _streamId;
         private bool _readEnded;
         private ReadOnlyMemory<byte> _leftoverReadData;
-        private bool _sendEosOnDispose;
         private bool _sendResetOnDispose;
-        private readonly TextWriter? _logger;
 
         public override bool CanRead => true;
         public override bool CanSeek => false;
@@ -26,13 +24,11 @@ namespace System.Net.Test.Common
         public Http2LoopbackConnection Connection => _connection;
         public int StreamId => _streamId;
 
-        public Http2LoopbackStream(Http2LoopbackConnection connection, int streamId, bool sendEosOnDispose = true, bool sendResetOnDispose = true, TextWriter? logger = null)
+        public Http2LoopbackStream(Http2LoopbackConnection connection, int streamId, bool sendResetOnDispose = true)
         {
             _connection = connection;
             _streamId = streamId;
-            _sendEosOnDispose = sendEosOnDispose;
             _sendResetOnDispose = sendResetOnDispose;
-            _logger = logger;
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -47,7 +43,6 @@ namespace System.Net.Test.Common
 
             if (_readEnded)
             {
-                // _logger?.WriteLine($"[Http2LoopbackStream] Reached EOS");
                 return 0;
             }
 
@@ -76,19 +71,10 @@ namespace System.Net.Test.Common
         {
             try
             {
-                //_logger?.WriteLine($"[Http2LoopbackStream] Disposing");
-
-                // _logger?.WriteLine($"[Http2LoopbackStream] Disposing, _readEnded: {_readEnded}, _sendResetOnDispose: {_sendResetOnDispose}");
-
-                if (_sendEosOnDispose)
-                {
-                    // _logger?.WriteLine($"[Http2LoopbackStream] Sending EOS");
-                    await _connection.SendResponseDataAsync(_streamId, Memory<byte>.Empty, endStream: true).ConfigureAwait(false);
-                }
+                await _connection.SendResponseDataAsync(_streamId, Memory<byte>.Empty, endStream: true).ConfigureAwait(false);
 
                 if (!_readEnded && _sendResetOnDispose)
                 {
-                    // _logger?.WriteLine($"[Http2LoopbackStream] Sending RST_STREAM...");
                     var rstFrame = new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.NO_ERROR, _streamId);
                     await _connection.WriteFrameAsync(rstFrame).ConfigureAwait(false);
                 }
@@ -101,8 +87,6 @@ namespace System.Net.Test.Common
             {
                 // Ignore connection errors
             }
-            // _logger?.WriteLine($"[Http2LoopbackStream] Disposed");
-            //return default;
         }
 
         public override void Flush() { }

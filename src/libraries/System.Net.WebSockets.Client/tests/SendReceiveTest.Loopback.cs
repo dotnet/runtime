@@ -56,9 +56,10 @@ namespace System.Net.WebSockets.Client.Tests
             => RunClient_ZeroByteReceive_CompletesWhenDataAvailable(server);
     }
 
-        public class MemorySendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
-        {
-            protected override async Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
+#region Memory send/receive tests
+    public abstract class MemorySendReceiveTest_Loopback(ITestOutputHelper output) : SendReceiveTest_Loopback(output)
+    {
+        protected override async Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
         {
             ValueWebSocketReceiveResult r = await ws.ReceiveAsync(
                 (Memory<byte>)arraySegment,
@@ -74,7 +75,38 @@ namespace System.Net.WebSockets.Client.Tests
                 cancellationToken).AsTask();
     }
 
-    public class ArraySegmentSendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
+    public sealed class MemorySendReceiveTest_SharedHandler_Loopback(ITestOutputHelper output) : MemorySendReceiveTest_Loopback(output) { }
+
+    public sealed class MemorySendReceiveTest_Invoker_Loopback(ITestOutputHelper output) : MemorySendReceiveTest_Loopback(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class MemorySendReceiveTest_HttpClient_Loopback(ITestOutputHelper output) : MemorySendReceiveTest_Loopback(output)
+    {
+        protected override bool UseHttpClient => true;
+    }
+
+    // --- HTTP/2 WebSocket loopback tests ---
+
+    public abstract class MemorySendReceiveTest_Http2Loopback(ITestOutputHelper output) : MemorySendReceiveTest_Loopback(output)
+    {
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
+    }
+
+    public sealed class MemorySendReceiveTest_Invoker_Http2Loopback(ITestOutputHelper output) : MemorySendReceiveTest_Http2Loopback(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class MemorySendReceiveTest_HttpClient_Http2Loopback(ITestOutputHelper output) : MemorySendReceiveTest_Http2Loopback(output)
+    {
+        protected override bool UseHttpClient => true;
+    }
+#endregion
+
+#region ArraySegment send/receive tests
+    public abstract class ArraySegmentSendReceiveTest(ITestOutputHelper output) : SendReceiveTest_Loopback(output)
     {
         protected override Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken) =>
             ws.ReceiveAsync(arraySegment, cancellationToken);
@@ -82,4 +114,34 @@ namespace System.Net.WebSockets.Client.Tests
         protected override Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
             ws.SendAsync(arraySegment, messageType, endOfMessage, cancellationToken);
     }
+
+    public sealed class ArraySegmentSendReceiveTest_SharedHandler_Loopback(ITestOutputHelper output) : ArraySegmentSendReceiveTest_Loopback(output) { }
+
+    public sealed class ArraySegmentSendReceiveTest_Invoker_Loopback(ITestOutputHelper output) : ArraySegmentSendReceiveTest_Loopback(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class ArraySegmentSendReceiveTest_HttpClient_Loopback(ITestOutputHelper output) : ArraySegmentSendReceiveTest_Loopback(output)
+    {
+        protected override bool UseHttpClient => true;
+    }
+
+    // --- HTTP/2 WebSocket loopback tests ---
+
+    public abstract class ArraySegmentSendReceiveTest_Http2Loopback(ITestOutputHelper output) : ArraySegmentSendReceiveTest_Loopback(output)
+    {
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
+    }
+
+    public sealed class ArraySegmentSendReceiveTest_Invoker_Http2Loopback(ITestOutputHelper output) : ArraySegmentSendReceiveTest_Http2Loopback(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class ArraySegmentSendReceiveTest_HttpClient_Http2Loopback(ITestOutputHelper output) : ArraySegmentSendReceiveTest_Http2Loopback(output)
+    {
+        protected override bool UseHttpClient => true;
+    }
+#endregion
 }

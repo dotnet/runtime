@@ -87,7 +87,7 @@ namespace System.Net.WebSockets.Client.Tests
                     UseSsl = useSsl,
                     HttpInvoker = GetInvoker(),
                     DisposeServerWebSocket = true,
-                    TestOutputHelper = _output
+                    Output = _output
                 },
                 timeoutCts.Token);
         }
@@ -111,7 +111,7 @@ namespace System.Net.WebSockets.Client.Tests
                 UseSsl = useSsl,
                 HttpInvoker = null,
                 SkipServerHandshakeResponse = true,
-                TestOutputHelper = _output
+                Output = _output
             };
 
             var serverReceivedEosTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

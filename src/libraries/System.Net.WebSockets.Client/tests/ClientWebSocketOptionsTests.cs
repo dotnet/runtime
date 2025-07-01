@@ -7,7 +7,7 @@ using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -70,8 +70,7 @@ namespace System.Net.WebSockets.Client.Tests
             string proxyServerUri = System.Net.Test.Common.Configuration.WebSockets.ProxyServerUri;
             if (string.IsNullOrEmpty(proxyServerUri))
             {
-                _output.WriteLine("Skipping test...no proxy server defined.");
-                return;
+                throw new SkipTestException("No proxy server defined.");
             }
 
             _output.WriteLine($"ProxyServer: {proxyServerUri}");

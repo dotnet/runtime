@@ -30,7 +30,6 @@ namespace System.Net.Test.Common
         private bool _expectClientDisconnect;
         private readonly SemaphoreSlim? _readLock;
         private readonly SemaphoreSlim? _writeLock;
-        private readonly TextWriter? _logger;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -44,31 +43,34 @@ namespace System.Net.Test.Common
             _connectionStream = stream;
             _timeout = timeout;
             _transparentPingResponse = httpOptions.EnableTransparentPingResponse;
-            _logger = httpOptions.Logger;
 
             if (httpOptions.EnsureThreadSafeIO)
             {
                 _readLock = new SemaphoreSlim(1, 1);
                 _writeLock = new SemaphoreSlim(1, 1);
+                _connectionStream = CreateConcurrentConnectionStream(stream, _readLock, _writeLock);
+            }
 
-                _connectionStream = new DelegateStream(
+            static Stream CreateConcurrentConnectionStream(Stream stream, SemaphoreSlim readLock, SemaphoreSlim writeLock)
+            {
+                return new DelegateStream(
                     canReadFunc: () => true,
                     canWriteFunc: () => true,
                     readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
-                        await _readLock.WaitAsync(cancellationToken);
+                        await readLock.WaitAsync(cancellationToken);
                         try
                         {
                             return await stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
                         }
                         finally
                         {
-                            _readLock.Release();
+                            readLock.Release();
                         }
                     },
                     writeAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
-                        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+                        await writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                         try
                         {
                             await stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
@@ -76,16 +78,14 @@ namespace System.Net.Test.Common
                         }
                         finally
                         {
-                            _writeLock.Release();
+                            writeLock.Release();
                         }
                     },
                     disposeFunc: (disposing) =>
                     {
                         if (disposing)
                         {
-                            // _logger?.WriteLine($"[Http2LoopbackConnection] Disposing HTTP/2 connection");
                             stream.Dispose();
-                            // _logger?.WriteLine($"[Http2LoopbackConnection] Disposed");
                         }
                     }
                 );

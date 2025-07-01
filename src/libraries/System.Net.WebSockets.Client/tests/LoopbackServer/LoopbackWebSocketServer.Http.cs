@@ -19,8 +19,6 @@ namespace System.Net.WebSockets.Client.Tests
             CancellationToken clientExitCt,
             CancellationToken globalCt)
         {
-            //options.Logger?.WriteLine($"[Common - {nameof(RunClientAndServerAsync)}] HTTP version: {options.HttpVersion}");
-
             if (options.HttpVersion == HttpVersion.Version11)
             {
                 return LoopbackServer.CreateClientAndServerAsync(
@@ -32,7 +30,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (options.HttpVersion == HttpVersion.Version20)
             {
-                var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl, EnsureThreadSafeIO = true, Logger = options.Logger };
+                var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl, EnsureThreadSafeIO = true };
                 options.ConfigureHttp2Options?.Invoke(http2Options);
 
                 return Http2LoopbackServer.CreateClientAndServerAsync(
@@ -53,17 +51,13 @@ namespace System.Net.WebSockets.Client.Tests
             => http11server.AcceptConnectionAsync(
                 async connection =>
                 {
-                    //options.Logger?.WriteLine("[Server - Process HTTP/1.1] Processing handshake");
                     var requestData = await WebSocketHandshakeHelper.ProcessHttp11RequestAsync(
                         connection,
                         options.SkipServerHandshakeResponse,
                         options.ParseEchoOptions,
-                        options.Logger,
                         cancellationToken).ConfigureAwait(false);
 
-                //options.Logger?.WriteLine("[Server - Process HTTP/1.1] Running server callback");
                 await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
-                //options.Logger?.WriteLine("[Server - Process HTTP/1.1] Completed server callback");
         });
 
         private static async Task ProcessHttp2WebSocketRequest(
@@ -72,46 +66,40 @@ namespace System.Net.WebSockets.Client.Tests
             Options options,
             CancellationToken cancellationToken)
         {
-            //options.Logger?.WriteLine("[Server - Process HTTP/2] Processing handshake");
             var requestData = await WebSocketHandshakeHelper.ProcessHttp2RequestAsync(
                 http2Server,
                 options.SkipServerHandshakeResponse,
                 options.ParseEchoOptions,
-                sendEosOnDispose: true,//!options.AbortServerOnClientExit,
-                options.Logger,
                 cancellationToken).ConfigureAwait(false);
 
-            //options.Logger?.WriteLine("[Server - Process HTTP/2] Running server callback");
             await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
-            //options.Logger?.WriteLine("[Server - Process HTTP/2] Completed server callback");
+            var http2Connection = requestData.Http2Connection!;
 
-            if (options.AbortServerOnClientExit)
+            if (options.AbortServerOnClientExit) // we need to wait for the client to disconnect
             {
-                //options.Logger?.WriteLine("[Server - Process HTTP/2] Waiting for the client to exit...");
-                var h2conn = requestData.Http2Connection!;
-
-
-                Frame frame = await h2conn.ReadFrameAsync(cancellationToken).ConfigureAwait(false);
-                if (frame is not null)
+                // Due to the way Extended CONNECT is implemented, we might receive both EOS and RST_STREAM frames,
+                // so we might need to drain more than 1 frame before shutting down the connection
+                while (true)
                 {
-                    bool isRstStream = frame.Type == FrameType.RstStream;
-                    bool isLastAck = frame.Type == FrameType.Data && ((DataFrame)frame).AckFlag;
-                    if (!isRstStream && !isLastAck)
+                    var frame = await http2Connection.ReadFrameAsync(cancellationToken).ConfigureAwait(false);
+                    if (frame is null)
                     {
-                        options.Logger?.WriteLine($"[Server - Process HTTP/2] Drained frame: {frame}");
+                        // No more frames to read
+                        break;
+                    }
+
+                    if (!options.IgnoreServerErrors)
+                    {
+                        Assert.False(frame.Type == FrameType.Data && !((DataFrame)frame).EndStreamFlag, $"Unexpected DATA frame: {frame}");
                     }
                 }
 
-                // Wait for the client to exit
-                    await h2conn.WaitForConnectionShutdownAsync(ignoreUnexpectedFrames: true).ConfigureAwait(false);
+                await http2Connection.WaitForConnectionShutdownAsync(options.IgnoreServerErrors).ConfigureAwait(false);
             }
             else
             {
-                //options.Logger?.WriteLine("[Server - Process HTTP/2] Send GOAWAY and shutdown...");
-                // This will send GOAWAY
-                await requestData.Http2Connection!.ShutdownIgnoringErrorsAsync(requestData.Http2StreamId.Value).ConfigureAwait(false);
+                await http2Connection.ShutdownIgnoringErrorsAsync(requestData.Http2StreamId.Value).ConfigureAwait(false);
             }
-            //options.Logger?.WriteLine("[Server - Process HTTP/2] Shutdown completed");
         }
 
         private static async Task RunHttpServer<THttpServer>(
@@ -125,19 +113,14 @@ namespace System.Net.WebSockets.Client.Tests
         {
             try
             {
-                //options.Logger?.WriteLine("[Server - HTTP (generic)] Starting HTTP server...");
                 using CancellationTokenSource linkedCts =
                     CancellationTokenSource.CreateLinkedTokenSource(globalCt, clientExitCt);
 
                 await httpServerFunc(httpServer, wsServerFunc, options, linkedCts.Token)
                     .WaitAsync(linkedCts.Token).ConfigureAwait(false);
-
-                //options.Logger?.WriteLine("[Server - HTTP (generic)] Completed successfully.");
             }
             catch (Exception e) when (options.IgnoreServerErrors)
             {
-                //options.Logger?.WriteLine($"[Server - HTTP (generic)] Completed via IgnoreServerErrors ({e.GetType().Name})");
-
                 if (e is OperationCanceledException && clientExitCt.IsCancellationRequested)
                 {
                     return; // expected for aborting on client exit
@@ -156,12 +139,11 @@ namespace System.Net.WebSockets.Client.Tests
                         const string closeOnAbortedMsg = "The WebSocket is in an invalid state ('Aborted') for this operation. Valid states are: 'Open, CloseSent, CloseReceived'";
                         if (we.Message == closeOnClosedMsg || we.Message == closeOnAbortedMsg)
                         {
-                            return; // expected, see https://github.com/dotnet/runtime/issues/22000
+                            return; // expected (Close on a closed WebSocket is not no-op: see https://github.com/dotnet/runtime/issues/22000)
                         }
                     }
 
-                    Console.WriteLine($"[WARN] Server aborted on a WebSocketException ({we.WebSocketErrorCode}): {we.Message}");
-                    //options.Logger?.WriteLine($"[Server - HTTP (generic)][WARN] Server aborted on a WebSocketException ({we.WebSocketErrorCode}): {we.Message}");
+                    options.Output?.WriteLine($"[WARN] Server aborted on a WebSocketException ({we.WebSocketErrorCode}): {we}");
                     return; // ignore
                 }
 

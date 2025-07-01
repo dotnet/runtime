@@ -17,7 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
     public abstract class CloseTest_Loopback(ITestOutputHelper output) : CloseTestBase(output)
     {
-        [Theory, MemberData(nameof(UseSslAndBoolean))] // to move to loopback
+        [Theory, MemberData(nameof(UseSslAndBoolean))]
         public Task CloseAsync_ServerInitiatedClose_Success(bool useSsl, bool useCloseOutputAsync) => RunEchoAsync(
             server => RunClient_CloseAsync_ServerInitiatedClose_Success(server, useCloseOutputAsync), useSsl);
 
@@ -53,15 +53,15 @@ namespace System.Net.WebSockets.Client.Tests
         public Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_ClientInitiated_CanReceive_CanClose, useSsl);
 
-        [Theory, MemberData(nameof(UseSslAndBoolean))]// to move to loopback
+        [Theory, MemberData(nameof(UseSslAndBoolean))]
         public Task CloseOutputAsync_ServerInitiated_CanReceive(bool useSsl, bool delayReceiving) => RunEchoAsync(
             server => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving), useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]// to move to loopback
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task CloseOutputAsync_ServerInitiated_CanSend(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_ServerInitiated_CanSend, useSsl);
 
-        [Theory, MemberData(nameof(UseSslAndBoolean))]// to move to loopback
+        [Theory, MemberData(nameof(UseSslAndBoolean))]
         public Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(bool useSsl, bool syncState) => RunEchoAsync(
             server => RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(server, syncState), useSsl);
 

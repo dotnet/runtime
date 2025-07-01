@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
 using System.Net.Test.Common;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
@@ -84,7 +80,6 @@ namespace System.Net.WebSockets.Client.Tests
                 else
                 {
                     ConfigureCustomHandler = handler => handler.CookieContainer = cookies;
-                    UseSocketsHttpHandler = false;
                 }
 
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
@@ -110,8 +105,6 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
                 string headers = WebSocketData.GetTextFromBuffer(new ArraySegment<byte>(buffer, 0, recvResult.Count));
 
-                // Console.WriteLine(headers);
-
                 Assert.Contains("Cookies=Are Yummy", headers);
                 Assert.Contains("Especially=Chocolate Chip", headers);
                 Assert.Equal(server.Scheme == "wss", headers.Contains("Occasionally=Raisin"));
@@ -134,7 +127,7 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     ConnectAsync(cws, ub.Uri, cts.Token));
                 _output.WriteLine(ex.Message);
-                Assert.True(ex.WebSocketErrorCode == WebSocketError.UnsupportedProtocol || // TODO
+                Assert.True(ex.WebSocketErrorCode == WebSocketError.UnsupportedProtocol ||
                     ex.WebSocketErrorCode == WebSocketError.Faulted ||
                     ex.WebSocketErrorCode == WebSocketError.NotAWebSocket, $"Actual WebSocketErrorCode {ex.WebSocketErrorCode} {ex.InnerException?.Message} \n {ex}");
                 Assert.Equal(WebSocketState.Closed, cws.State);
@@ -172,12 +165,13 @@ namespace System.Net.WebSockets.Client.Tests
             using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
             {
-                ConfigureCustomHandler = handler => handler.Proxy = new WebProxy(proxyServer.Uri);
-                UseSocketsHttpHandler = false;
-
                 if (UseSharedHandler)
                 {
                     cws.Options.Proxy = new WebProxy(proxyServer.Uri);
+                }
+                else
+                {
+                    ConfigureCustomHandler = handler => handler.Proxy = new WebProxy(proxyServer.Uri);
                 }
 
                 await ConnectAsync(cws, server, cts.Token);

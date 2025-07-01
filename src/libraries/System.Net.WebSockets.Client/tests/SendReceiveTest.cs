@@ -531,10 +531,10 @@ namespace System.Net.WebSockets.Client.Tests
         public Task SendReceive_Concurrent_Success(Uri server)
             => RunClient_SendReceive_Concurrent_Success(server);
 
-        /*[ActiveIssue("https://github.com/dotnet/runtime/issues/54153", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54153", TestPlatforms.Browser)]
         [Fact]
         public Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
-            => RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated();*/
+            => RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated();
 
         [Theory, MemberData(nameof(EchoServers))]
         public Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
