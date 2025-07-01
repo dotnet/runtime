@@ -802,7 +802,6 @@ namespace System
         }
 #endif
 
-            // The various Get values...
         public object? GetValue(params int[] indices)
         {
             if (indices == null)
