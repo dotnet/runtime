@@ -4695,7 +4695,7 @@ void Compiler::impImportLeaveEHRegions(BasicBlock* block)
 
                 // callBlock calls the finally handler
                 assert(callBlock->HasInitializedTarget());
-                fgRedirectEdge(callBlock->GetTargetEdgeRef(), HBtab->ebdHndBeg);
+                fgRedirectEdge(callBlock->TargetEdgeRef(), HBtab->ebdHndBeg);
                 callBlock->SetKind(BBJ_CALLFINALLY);
 
                 if (endCatches)
@@ -4990,7 +4990,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert((step == block) || !step->HasInitializedTarget());
                 if (step == block)
                 {
-                    fgRedirectEdge(step->GetTargetEdgeRef(), exitBlock);
+                    fgRedirectEdge(step->TargetEdgeRef(), exitBlock);
                 }
                 else
                 {
@@ -5037,7 +5037,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
-                fgRedirectEdge(block->GetTargetEdgeRef(), callBlock);
+                fgRedirectEdge(block->TargetEdgeRef(), callBlock);
                 block->SetKind(BBJ_ALWAYS);
 
                 // The new block will inherit this block's weight.
@@ -5063,7 +5063,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 // callBlock calls the finally handler
                 assert(callBlock->HasInitializedTarget());
-                fgRedirectEdge(callBlock->GetTargetEdgeRef(), HBtab->ebdHndBeg);
+                fgRedirectEdge(callBlock->TargetEdgeRef(), HBtab->ebdHndBeg);
                 callBlock->SetKind(BBJ_CALLFINALLY);
 
 #ifdef DEBUG
@@ -5104,7 +5104,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     if (step == block)
                     {
-                        fgRedirectEdge(step->GetTargetEdgeRef(), step2);
+                        fgRedirectEdge(step->TargetEdgeRef(), step2);
                     }
                     else
                     {
@@ -5154,7 +5154,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
                 if (step == block)
                 {
-                    fgRedirectEdge(step->GetTargetEdgeRef(), callBlock);
+                    fgRedirectEdge(step->TargetEdgeRef(), callBlock);
                 }
                 else
                 {
@@ -5264,7 +5264,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (step == block)
                 {
-                    fgRedirectEdge(step->GetTargetEdgeRef(), catchStep);
+                    fgRedirectEdge(step->TargetEdgeRef(), catchStep);
                 }
                 else
                 {
@@ -5322,7 +5322,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         // leaveTarget is the ultimate destination of the LEAVE
         if (step == block)
         {
-            fgRedirectEdge(step->GetTargetEdgeRef(), leaveTarget);
+            fgRedirectEdge(step->TargetEdgeRef(), leaveTarget);
         }
         else
         {
@@ -5415,7 +5415,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgInitBBLookup();
 
-    fgRedirectEdge(block->GetTargetEdgeRef(), fgLookupBB(jmpAddr));
+    fgRedirectEdge(block->TargetEdgeRef(), fgLookupBB(jmpAddr));
     block->SetKind(BBJ_LEAVE);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
@@ -6012,8 +6012,9 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// impMatchAwaitPattern: check if a method call starts an Await pattern
-//                       that can be optimized for runtime async
+// impMatchTaskAwaitPattern:
+//   Check if a method call starts an a task await pattern that can be
+//   optimized for runtime async
 //
 // Arguments:
 //   codeAddr - IL after call[virt]
@@ -6023,7 +6024,7 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 // Returns:
 //    true if this is an Await that we can optimize
 //
-bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+bool Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
 {
     // If we see the following code pattern in runtime async methods:
     //
@@ -6940,6 +6941,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         bool                 isExact       = false;
                         bool                 isNonNull     = false;
                         CORINFO_CLASS_HANDLE retCls        = gtGetClassHandle(call, &isExact, &isNonNull);
+
+                        if ((retCls == NO_CLASS_HANDLE) && call->IsGuardedDevirtualizationCandidate())
+                        {
+                            // Just check one of the GDV candidates (all should have the same original method handle)
+                            //
+                            InlineCandidateInfo* const inlineInfo = call->GetGDVCandidateInfo(0);
+                            CORINFO_SIG_INFO           sig;
+                            info.compCompHnd->getMethodSig(inlineInfo->originalMethodHandle, &sig);
+                            retCls = sig.retTypeClass;
+                        }
 
                         if ((retCls != NO_CLASS_HANDLE) && info.compCompHnd->isIntrinsicType(retCls))
                         {
@@ -9107,7 +9118,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     int configVal = -1; // -1 not configured, 0/1 configured to false/true
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
-                        isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
+                        if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
+                        {
+                            isAwait = true;
+                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                        }
                     }
 
                     if (isAwait)
@@ -9118,7 +9133,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // There is a runtime async variant that is implicitly awaitable, just call that.
                             // if configured, skip {ldc call ConfigureAwait}
                             if (configVal >= 0)
+                            {
                                 codeAddr += 2 + sizeof(mdToken);
+                            }
 
                             // Skip the call to `Await`
                             codeAddr += 1 + sizeof(mdToken);
@@ -9127,7 +9144,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // This can happen in rare cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
-                            // that as a regualr call that is Awaited
+                            // that as a regular call that is Awaited
                             _impResolveToken(CORINFO_TOKENKIND_Method);
                         }
                     }

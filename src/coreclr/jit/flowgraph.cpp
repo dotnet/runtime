@@ -3035,7 +3035,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 case BBJ_CALLFINALLY:
                 {
                     noway_assert(predBlock->TargetIs(block));
-                    fgRedirectEdge(predBlock->GetTargetEdgeRef(), newHead);
+                    fgRedirectEdge(predBlock->TargetEdgeRef(), newHead);
                     incomingWeight += predBlock->bbWeight;
                     break;
                 }

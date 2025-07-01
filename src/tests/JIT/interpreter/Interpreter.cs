@@ -885,6 +885,10 @@ public class InterpreterTest
         if (!TestStaticVirtualGeneric_CodePointerCase())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestPreciseInitCctors");
+        if (!TestPreciseInitCctors())
+            Environment.FailFast(null);
+
 	Console.WriteLine("Empty string length: {0}", string.Empty.Length);
 
 	Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
@@ -1938,8 +1942,26 @@ public class InterpreterTest
         public T Value;
     }
 
+    public static int preciseInitCctorsRun = 0;
+
+    class MyPreciseInitClass<T>
+    {
+        static MyPreciseInitClass()
+        {
+            preciseInitCctorsRun++;
+        }
+
+        public static void TriggerCctorClass()
+        {
+        }
+
+        public static void TriggerCctorMethod<U>()
+        {}
+    }
+
     class MyClass<T>
     {
+        static Type staticVarType = typeof(MyClass<T>);
         public Type GetTypeOf()
         {
             return typeof(MyClass<T>);
@@ -1948,6 +1970,61 @@ public class InterpreterTest
         {
             return typeof(MyClass<T>);
         }
+
+        public static Type GetTypeThroughStaticVar()
+        {
+            return staticVarType;
+        }
+    }
+
+    public static bool TestPreciseInitCctors()
+    {
+        if (preciseInitCctorsRun != 0)
+        {
+            Console.WriteLine("preciseInitCctorsRun should be 0, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+        MyPreciseInitClass<int>.TriggerCctorClass();
+        if (preciseInitCctorsRun != 1)
+        {
+            Console.WriteLine("preciseInitCctorsRun should be 1, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+        MyPreciseInitClass<short>.TriggerCctorMethod<int>();
+        if (preciseInitCctorsRun != 2)
+        {
+            Console.WriteLine("TriggerCctorClass should return 2, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        object o = new MyPreciseInitClass<double>();
+        if (preciseInitCctorsRun != 3)
+        {
+            Console.WriteLine("TriggerCctorClass should return 3, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        MyPreciseInitClass<object>.TriggerCctorClass();
+        if (preciseInitCctorsRun != 4)
+        {
+            Console.WriteLine("preciseInitCctorsRun should be 4 but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+        MyPreciseInitClass<string>.TriggerCctorMethod<object>();
+        if (preciseInitCctorsRun != 5)
+        {
+            Console.WriteLine("TriggerCctorClass should return 5, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        o = new MyPreciseInitClass<Type>();
+        if (preciseInitCctorsRun != 6)
+        {
+            Console.WriteLine("TriggerCctorClass should return 6,  but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        return true;
     }
 
     public static bool TestSharedGenerics()
@@ -2101,12 +2178,16 @@ public class InterpreterTest
             return false;
         }
 
-        MyClass<string > mcString = new MyClass<string>();
+        MyClass<string> mcString = new MyClass<string>();
         if (mcString.GetTypeOf() != typeof(MyClass<string>))
         {
             return false;
         }
         if (MyClass<object>.GetTypeOfStatic() != typeof(MyClass<object>))
+        {
+            return false;
+        }
+        if (MyClass<object>.GetTypeThroughStaticVar() != typeof(MyClass<object>))
         {
             return false;
         }

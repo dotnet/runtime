@@ -279,6 +279,18 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(info.PrivateSeed, export(mldsa)));
         }
 
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void SignData_PublicKeyOnlyThrows(MLDsaKeyInfo info)
+        {
+            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
+            byte[] destination = new byte[info.Algorithm.SignatureSizeInBytes];
+            CryptographicException ce =
+                Assert.ThrowsAny<CryptographicException>(() => mldsa.SignData("hello"u8, destination));
+
+            Assert.DoesNotContain("unknown", ce.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
         protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context)
         {
             ReadOnlySpan<byte> buffer = [0, 1, 2, 3];

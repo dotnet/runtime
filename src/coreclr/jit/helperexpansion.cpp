@@ -386,7 +386,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     if (needsSizeCheck)
     {
         // sizeCheckBb is the first block after prevBb
-        fgRedirectEdge(prevBb->GetTargetEdgeRef(), sizeCheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), sizeCheckBb);
 
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         {
@@ -404,7 +404,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     else
     {
         // nullcheckBb is the first block after prevBb
-        fgRedirectEdge(prevBb->GetTargetEdgeRef(), nullcheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), nullcheckBb);
 
         // No size check, nullcheckBb jumps to fast path
         // fallbackBb is only reachable from nullcheckBb (jump destination)
@@ -746,7 +746,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     // fallback will just execute first time
     fallbackBb->inheritWeightPercentage(tlsRootNullCondBB, 0);
 
-    fgRedirectEdge(prevBb->GetTargetEdgeRef(), tlsRootNullCondBB);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), tlsRootNullCondBB);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1033,7 +1033,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         tlsBaseComputeBB->SetTargetEdge(newEdge);
 
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectEdge(prevBb->GetTargetEdgeRef(), tlsBaseComputeBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), tlsBaseComputeBB);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
@@ -1142,7 +1142,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Update preds in all new blocks
         //
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectEdge(prevBb->GetTargetEdgeRef(), maxThreadStaticBlocksCondBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), maxThreadStaticBlocksCondBB);
 
         {
             FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
@@ -1518,7 +1518,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     //
 
     // Redirect prevBb from block to isInitedBb
-    fgRedirectEdge(prevBb->GetTargetEdgeRef(), isInitedBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), isInitedBb);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1845,7 +1845,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Update preds in all new blocks
     //
     // Redirect prevBb to lengthCheckBb
-    fgRedirectEdge(prevBb->GetTargetEdgeRef(), lengthCheckBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), lengthCheckBb);
     lengthCheckBb->inheritWeight(prevBb);
     assert(prevBb->JumpsToNext());
 
@@ -2600,7 +2600,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         }
     }
 
-    fgRedirectEdge(firstBb->GetTargetEdgeRef(), nullcheckBb);
+    fgRedirectEdge(firstBb->TargetEdgeRef(), nullcheckBb);
 
     //
     // Re-distribute weights and set edge likelihoods.

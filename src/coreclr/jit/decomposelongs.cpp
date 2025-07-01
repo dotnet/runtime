@@ -684,7 +684,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             //
             // This creates roughly the equivalent of the following C# code:
             //   var nanMask = Avx.CompareScalar(srcVec, srcVec, FloatComparisonMode.OrderedNonSignaling);
-            //   var convert = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(fixupVal);
+            //   var convert = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(srcVec);
             //   convertResult = Vector128.ConditionalSelect(nanMask, convert, Vector128<long>.Zero);
 
             GenTree* srcClone = m_compiler->gtClone(srcVector);

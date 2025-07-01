@@ -9781,12 +9781,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 op1Intrin = op1->AsHWIntrinsic();
             }
 
-            bool        op1IsScalar = false;
-            genTreeOps  op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
-            var_types   op1RetType  = op1Intrin->TypeGet();
-            CorInfoType op1SimdBaseJitType = op1Intrin->GetSimdBaseJitType();
-            var_types   op1SimdBaseType    = op1Intrin->GetSimdBaseType();
-            unsigned    op1SimdSize        = op1Intrin->GetSimdSize();
+            bool       op1IsScalar = false;
+            genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+            var_types  op1RetType  = op1Intrin->TypeGet();
+
+            NamedIntrinsic op1Intrinsic       = op1Intrin->GetHWIntrinsicId();
+            CorInfoType    op1SimdBaseJitType = op1Intrin->GetSimdBaseJitType();
+            var_types      op1SimdBaseType    = op1Intrin->GetSimdBaseType();
+            unsigned       op1SimdSize        = op1Intrin->GetSimdSize();
 
             if (op1Oper == GT_NOT)
             {
@@ -9836,6 +9838,85 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     return fgMorphHWIntrinsicRequired(op1Intrin);
                 }
             }
+#if defined(TARGET_XARCH)
+            else
+            {
+                // We have some other comparison intrinsics that don't map to the simple forms
+
+                switch (op1Intrinsic)
+                {
+                    case NI_AVX_Compare:
+                    case NI_AVX512_Compare:
+                    case NI_AVX_CompareScalar:
+                    {
+                        assert(op1Intrin->GetOperandCount() == 3);
+
+                        GenTree* cmpOp3 = op1Intrin->Op(3);
+
+                        if (!cmpOp3->IsCnsIntOrI())
+                        {
+                            break;
+                        }
+
+                        FloatComparisonMode mode =
+                            static_cast<FloatComparisonMode>(cmpOp3->AsIntConCommon()->IntegralValue());
+
+                        FloatComparisonMode newMode = mode;
+
+                        switch (mode)
+                        {
+                            case FloatComparisonMode::UnorderedEqualNonSignaling:
+                            case FloatComparisonMode::UnorderedEqualSignaling:
+                            {
+                                newMode = FloatComparisonMode::OrderedNotEqualNonSignaling;
+                                break;
+                            }
+
+                            case FloatComparisonMode::OrderedFalseNonSignaling:
+                            case FloatComparisonMode::OrderedFalseSignaling:
+                            {
+                                newMode = FloatComparisonMode::UnorderedTrueNonSignaling;
+                                break;
+                            }
+
+                            case FloatComparisonMode::OrderedNotEqualNonSignaling:
+                            case FloatComparisonMode::OrderedNotEqualSignaling:
+                            {
+                                newMode = FloatComparisonMode::UnorderedEqualNonSignaling;
+                                break;
+                            }
+
+                            case FloatComparisonMode::UnorderedTrueNonSignaling:
+                            case FloatComparisonMode::UnorderedTrueSignaling:
+                            {
+                                newMode = FloatComparisonMode::OrderedFalseNonSignaling;
+                                break;
+                            }
+
+                            default:
+                            {
+                                // Other modes should either have been normalized or
+                                // will be out of range values and can't be handled
+                                break;
+                            }
+                        }
+
+                        if (newMode != mode)
+                        {
+                            ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(mode));
+                            return fgMorphHWIntrinsicRequired(op1Intrin);
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+#endif // TARGET_XARCH
             break;
         }
 
@@ -11457,10 +11538,11 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 //
 GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 {
-    var_types   retType         = tree->TypeGet();
-    CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
-    var_types   simdBaseType    = tree->GetSimdBaseType();
-    unsigned    simdSize        = tree->GetSimdSize();
+    NamedIntrinsic intrinsic       = tree->GetHWIntrinsicId();
+    var_types      retType         = tree->TypeGet();
+    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
+    var_types      simdBaseType    = tree->GetSimdBaseType();
+    unsigned       simdSize        = tree->GetSimdSize();
 
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
@@ -11510,6 +11592,64 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             }
         }
     }
+#if defined(TARGET_XARCH)
+    else
+    {
+        // We have some other comparison intrinsics that don't map to the simple forms
+
+        switch (intrinsic)
+        {
+            case NI_AVX_Compare:
+            case NI_AVX512_Compare:
+            {
+                assert(tree->GetOperandCount() == 3);
+
+                GenTree* op1 = tree->Op(1);
+                GenTree* op2 = tree->Op(2);
+                GenTree* op3 = tree->Op(3);
+
+                if (!op1->IsCnsVec() || !op3->IsCnsIntOrI())
+                {
+                    break;
+                }
+
+                FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+
+                FloatComparisonMode newMode = mode;
+
+                switch (mode)
+                {
+                    case FloatComparisonMode::UnorderedEqualNonSignaling:
+                    case FloatComparisonMode::OrderedFalseNonSignaling:
+                    case FloatComparisonMode::OrderedNotEqualNonSignaling:
+                    case FloatComparisonMode::UnorderedTrueNonSignaling:
+                    case FloatComparisonMode::UnorderedEqualSignaling:
+                    case FloatComparisonMode::OrderedFalseSignaling:
+                    case FloatComparisonMode::OrderedNotEqualSignaling:
+                    case FloatComparisonMode::UnorderedTrueSignaling:
+                    {
+                        tree->Op(1) = op2;
+                        tree->Op(2) = op1;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // Other modes should either have been normalized or
+                        // will be out of range values and can't be handled
+                        break;
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+#endif // TARGET_XARCH
 
     switch (oper)
     {
@@ -14453,7 +14593,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
     // Update flowgraph
-    fgRedirectEdge(block->GetTargetEdgeRef(), condBlock);
+    fgRedirectEdge(block->TargetEdgeRef(), condBlock);
     condBlock->SetTargetEdge(fgAddRefPred(elseBlock, condBlock));
     elseBlock->SetTargetEdge(fgAddRefPred(remainderBlock, elseBlock));
 
