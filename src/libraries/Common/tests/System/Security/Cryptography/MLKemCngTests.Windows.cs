@@ -92,7 +92,6 @@ namespace System.Security.Cryptography.Tests
             {
                 using (CngKey getKey2 = mlKemKey.GetKey())
                 {
-
                     Assert.NotSame(key, getKey1);
                     Assert.NotSame(getKey1, getKey2);
                 }
