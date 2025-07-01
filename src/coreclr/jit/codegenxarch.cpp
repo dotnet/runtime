@@ -1808,7 +1808,7 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
     const GenConditionDesc& desc = GenConditionDesc::Get(condition);
-    const bool useZU = compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxZU() && !varTypeIsByte(type);
+    const bool useZU = compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU() && !varTypeIsByte(type);
     insOpts instOptions = useZU ? INS_OPTS_EVEX_zu : INS_OPTS_NONE;
 
     inst_SET(desc.jumpKind1, dstReg, instOptions);
@@ -10357,7 +10357,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // DEBUG
 
 #ifdef TARGET_AMD64
-    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
     {
         genPushCalleeSavedRegistersFromMaskAPX(rsPushRegs);
         return;
@@ -10483,7 +10483,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         return;
     }
 
-    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
     {
         regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
         const unsigned popCount  = genPopCalleeSavedRegistersFromMaskAPX(rsPopRegs);

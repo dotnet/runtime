@@ -156,6 +156,26 @@ bool emitter::IsKMOVInstruction(instruction ins)
     }
 }
 
+
+//------------------------------------------------------------------------
+// IsSETZUccInstruction: Is this a SETcc instruction with APX-ZU feature?
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a SETcc instruction with APX-ZU feature.
+//
+bool emitter::IsSETZUccInstruction(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return ((ins >= INS_setzuo) && (ins <= INS_setzug));
+#else
+    return false;
+#endif
+}
+
+
 regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
@@ -432,7 +452,7 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return true;
     }
 
-    if (ins >= INS_setzuo && ins <= INS_setzug)
+    if (IsSETZUccInstruction(ins))
     {
         // SETcc can use EVEX.ZU feature.
         return true;
@@ -1985,7 +2005,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    if (ins >= INS_setzuo && ins <= INS_setzug)
+    if (IsSETZUccInstruction(ins))
     {
         // These are promoted forms of SETcc instruction with EVEX.ZU.
         // TODO-XArch-APX: maybe consider return true as we may only use those instructions with ZU set.
@@ -2134,7 +2154,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= ((size_t)GetCCFromCCMP(ins)) << 32;
         }
 
-        if (ins >= INS_setzuo && ins <= INS_setzug)
+        if (IsSETZUccInstruction(ins))
         {
             // SETcc in EVEX space are assigned with new opcode: EVEX.LLZ.F2.MAP4.IGNORED 4x.
             // Here we need to hard code the EVEX.pp for F2 prefix.
