@@ -46,7 +46,15 @@ namespace System.Security.Cryptography
         ///   The padded length of the key wrap for the specified plaintext.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="plaintextLengthInBytes"/> is less than or equal to zero.
+        ///   <para>
+        ///     <paramref name="plaintextLengthInBytes"/> is less than or equal to zero.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="plaintextLengthInBytes"/> represents a plaintext length
+        ///     that, when wrapped, has a length that cannot be represented as a signed
+        ///     32-bit integer.
+        ///   </para>
         /// </exception>
         public static int GetKeyWrapPaddedLength(int plaintextLengthInBytes)
         {
@@ -73,8 +81,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="plaintext">The data to wrap.</param>
         /// <returns>The wrapped data.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="plaintext"/> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException"><paramref name="plaintext"/> is empty.</exception>
+        /// <exception cref="ArgumentException"><paramref name="plaintext"/> is <see langword="null" /> or empty.</exception>
         /// <exception cref="CryptographicException">An error occurred during the cryptographic operation.</exception>
         public byte[] EncryptKeyWrapPadded(byte[] plaintext)
         {

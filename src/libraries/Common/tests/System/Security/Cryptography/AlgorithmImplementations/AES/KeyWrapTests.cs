@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 byte[] output = new byte[24];
 
-                AssertExtensions.Throws<ArgumentNullException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "plaintext",
                     () => key.EncryptKeyWrapPadded(null));
 
