@@ -2764,7 +2764,14 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            assert(blockPred->TargetIs(block));
+            if (!blockPred->TargetIs(block))
+            {
+                JITDUMP(FMT_BB " -> " FMT_BB " from pred links does not match " FMT_BB " -> " FMT_BB
+                               " from succ links\n",
+                        blockPred->bbNum, block->bbNum, blockPred->bbNum,
+                        blockPred->GetTarget() == nullptr ? 0 : blockPred->GetTarget()->bbNum);
+                assert(!"Invalid block preds");
+            }
             assert(blockPred->GetTargetEdge()->getLikelihood() == 1.0);
             return true;
 
