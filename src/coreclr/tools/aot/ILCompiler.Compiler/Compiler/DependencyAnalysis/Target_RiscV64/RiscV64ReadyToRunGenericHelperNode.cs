@@ -39,6 +39,16 @@ namespace ILCompiler.DependencyAnalysis
 
             // Load the generic dictionary cell
             encoder.EmitLD(result, context, dictionarySlot * factory.Target.PointerSize);
+
+            // If there's any invalid entries, we need to test for them
+            //
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // flag can change over the course of compilation and the bad slot helper dependency
+            // should be reported by someone else - the system should not rely on it coming from here.
+            if (!relocsOnly && _hasInvalidEntries)
+            {
+                encoder.EmitJMPIfZero(result, GetBadSlotHelper(factory));
+            }
         }
 
         protected sealed override void EmitCode(NodeFactory factory, ref RiscV64Emitter encoder, bool relocsOnly)
@@ -65,6 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADDI(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
+                            encoder.EmitFENCE_R_RW();
                             encoder.EmitRETIfZero(encoder.TargetRegister.Arg2);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -96,6 +107,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                            encoder.EmitFENCE_R_RW();
                             encoder.EmitRETIfZero(encoder.TargetRegister.Arg3);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

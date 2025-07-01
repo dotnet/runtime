@@ -28,7 +28,7 @@ private:
     PTR_PEImageLayout               m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
-    
+
 public:
     ReadyToRunCoreInfo();
     ReadyToRunCoreInfo(PEImageLayout * pLayout, READYTORUN_CORE_HEADER * pCoreHeader);
@@ -123,7 +123,7 @@ class ReadyToRunInfo
     PTR_READYTORUN_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
 
-    bool                            m_readyToRunCodeDisabled; // Is 
+    bool                            m_readyToRunCodeDisabled;
 
     NativeFormat::NativeReader      m_nativeReader;
     NativeFormat::NativeArray       m_methodDefEntryPoints;
@@ -335,8 +335,23 @@ private:
 
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
     void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
-    
+
     PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
+
+    friend struct ::cdac_data<ReadyToRunInfo>;
+};
+
+template<>
+struct cdac_data<ReadyToRunInfo>
+{
+    static constexpr size_t ReadyToRunHeader = offsetof(ReadyToRunInfo, m_pHeader);
+    static constexpr size_t CompositeInfo = offsetof(ReadyToRunInfo, m_pCompositeInfo);
+    static constexpr size_t NumRuntimeFunctions = offsetof(ReadyToRunInfo, m_nRuntimeFunctions);
+    static constexpr size_t RuntimeFunctions = offsetof(ReadyToRunInfo, m_pRuntimeFunctions);
+    static constexpr size_t NumHotColdMap = offsetof(ReadyToRunInfo, m_nHotColdMap);
+    static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
+    static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
+    static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
 };
 
 class DynamicHelpers
@@ -356,6 +371,22 @@ public:
     static PCODE CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target);
     static PCODE CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target);
     static PCODE CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule);
+};
+
+struct DynamicHelperStubArgs
+{
+    TADDR Constant1;
+    TADDR Constant2;
+    TADDR Helper;
+};
+
+struct GenericDictionaryDynamicHelperStubData
+{
+    UINT32 SecondIndir;
+    UINT32 LastIndir;
+    UINT32 SizeOffset;
+    UINT32 SlotOffset;
+    GenericHandleArgs *HandleArgs;
 };
 
 #endif // _READYTORUNINFO_H_

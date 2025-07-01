@@ -78,7 +78,6 @@ export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.
-    browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
     interopCleanupOnExit?: boolean
@@ -165,9 +164,7 @@ export type LoaderHelpers = {
 
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-    logDownloadStatsToConsole: () => void;
     installUnhandledErrorHandler: () => void;
-    purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
@@ -180,6 +177,7 @@ export type LoaderHelpers = {
     // from wasm-feature-detect npm package
     exceptions: () => Promise<boolean>,
     simd: () => Promise<boolean>,
+    relaxedSimd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     emscriptenBuildOptions: EmscriptenBuildOptions,
@@ -196,7 +194,6 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    enablePerfMeasure: boolean;
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
@@ -234,45 +231,33 @@ export type RuntimeHelpers = {
 
     featureWasmEh: boolean,
     featureWasmSimd: boolean,
+    featureWasmRelaxedSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
-    instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
-
-    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
-    stringToUTF16Ptr: (str: string) => VoidPtr,
-    utf16ToString: (startPtr: number, endPtr: number) => string,
-    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
-    localHeapViewU16: () => Uint16Array,
-    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
-    setI32: (offset: MemOffset, value: number) => void,
+    utf8ToString: (ptr: CharPtr) => string,
+    mono_background_exec: () => void,
+    mono_wasm_ds_exec: () => void,
+    mono_wasm_process_current_pid: () => number,
 }
-export type GlobalizationHelpers = {
 
-    mono_wasm_change_case: (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
-    mono_wasm_compare_string: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_starts_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_ends_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_index_of: (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_get_calendar_info: (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
-    mono_wasm_get_culture_info: (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
-    mono_wasm_get_first_day_of_week: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_get_first_week_of_year: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
-    setSegmentationRulesFromJson: (json: string) => void;
+export type DiagnosticHelpers = {
+    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
+    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
+    ds_rt_websocket_poll:(client_socket :number) => number,
+    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
+    ds_rt_websocket_close:(client_socket :number) => number,
 }
 
 export type AOTProfilerOptions = {
     writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
-}
-
-export type BrowserProfilerOptions = {
 }
 
 export type LogProfilerOptions = {
@@ -295,8 +280,9 @@ export type EmscriptenBuildOptions = {
     wasmEnableSIMD: boolean,
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
-    enableBrowserProfiler: boolean,
+    enableDevToolsProfiler: boolean,
     enableLogProfiler: boolean,
+    enableEventPipe: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
@@ -317,7 +303,7 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
-    globalizationHelpers: GlobalizationHelpers,
+    diagnosticHelpers: DiagnosticHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -513,12 +499,12 @@ export type RuntimeModuleExportsInternal = {
     passEmscriptenInternals: passEmscriptenInternalsType,
 }
 
-export type NativeModuleExportsInternal = {
-    default: (unificator: Function) => Promise<EmscriptenModuleInternal>
+export type DiagnosticModuleExportsInternal = {
+    setRuntimeGlobals: setGlobalObjectsType,
 }
 
-export type HybridGlobalizationModuleExportsInternal = {
-    initHybrid: (gh: GlobalizationHelpers, rh: RuntimeHelpers) => void;
+export type NativeModuleExportsInternal = {
+    default: (unificator: Function) => Promise<EmscriptenModuleInternal>
 }
 
 export type WeakRefInternal<T extends object> = WeakRef<T> & {

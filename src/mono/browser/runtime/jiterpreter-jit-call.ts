@@ -5,7 +5,8 @@ import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
-    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews,
+    free
 } from "./memory";
 import { WasmOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import {
@@ -152,7 +153,7 @@ class TrampolineInfo {
                 suffix = utf8ToString(pMethodName);
             } finally {
                 if (pMethodName)
-                    Module._free(<any>pMethodName);
+                    free(<any>pMethodName);
             }
         }
 

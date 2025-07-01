@@ -30,6 +30,23 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\zhello$", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End)]
         [InlineData(@"\zhi|\zhello", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End)]
 
+        [InlineData(@"(?=^abc)", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?=.*$)abc", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight)]
+        [InlineData(@"(?=^)abc", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft)]
+        [InlineData(@"abc(?=^)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft)]
+        [InlineData(@"(?<!42)(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?<=^)abc", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight)]
+        [InlineData(@"(?<=^)(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?=^)+abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?=^\w+)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?=\b)^abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?=\b)(?=^.*$)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        [InlineData(@"(?=\b)(?=\B)^abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
+        // The next two could be improved slightly to be LeadingString_LeftToRight.
+        [InlineData(@"(?=^.*def)?abc", 0, (int)FindNextStartingPositionMode.FixedDistanceChar_LeftToRight)] 
+        [InlineData(@"(?=^)?(?=^)abc", 0, (int)FindNextStartingPositionMode.FixedDistanceChar_LeftToRight)]
+
         [InlineData(@"^", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning)]
         [InlineData(@"hello^", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning)]
         [InlineData(@"$hello^", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning)]
@@ -89,7 +106,19 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(ab){2,4}(de){4,}", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "de")]
         [InlineData(@"ab|(abc)|(abcd)", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
         [InlineData(@"ab(?=cd)", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
+        [InlineData(@"ab(?=cd)ef", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abef")]
+        [InlineData(@"ab(?=cd){2}ef", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abef")]
+        [InlineData(@"(?=)ab", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
+        [InlineData(@"(?=a)bc", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "bc")]
+        [InlineData(@"(?=ab)cd", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "cd")]
+        [InlineData(@"(?=ab)", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
+        [InlineData(@"(?<=ab)cd", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "cd")]
+        [InlineData(@"(?!ab)cd", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "cd")]
+        [InlineData(@"(?<!ab)cd", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "cd")]
         [InlineData(@"ab(?=cd)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
+        [InlineData(@"ab(?<=cd)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
+        [InlineData(@"(?=cd)ab", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
+        [InlineData(@"(?<=cd)ab", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abc")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
         public void LeadingPrefix(string pattern, int options, int expectedMode, string expectedPrefix)
@@ -159,7 +188,7 @@ namespace System.Text.RegularExpressions.Tests
         private static RegexFindOptimizations ComputeOptimizations(string pattern, RegexOptions options)
         {
             RegexTree tree = RegexParser.Parse(pattern, options, CultureInfo.InvariantCulture);
-            return new RegexFindOptimizations(tree.Root, options);
+            return RegexFindOptimizations.Create(tree.Root, options);
         }
     }
 }

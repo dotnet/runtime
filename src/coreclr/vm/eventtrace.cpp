@@ -31,6 +31,7 @@
 #include "finalizerthread.h"
 #include "clrversion.h"
 #include "typestring.h"
+#include "exinfo.h"
 
 #define Win32EventWrite EventWrite
 
@@ -409,7 +410,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
             PrevSP = CurrentSP;
         }
 #endif //TARGET_X86
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
     pThread->MarkEtwStackWalkCompleted();
 #endif //!DACCESS_COMPILE
 
@@ -544,10 +545,7 @@ VOID ETW::GCLog::SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj)
             DefineFullyQualifiedNameForClassWOnStack();
             FireEtwPrvFinalizeObject(pMT, pObj, GetClrInstanceId(), GetFullyQualifiedNameForClassNestedAwareW(pMT));
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
     }
 }
 
@@ -961,19 +959,14 @@ BOOL ETW::TypeSystemLog::AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule 
 
     _ASSERTE(pLoggedTypesFromModule != NULL);
 
-    BOOL fSucceeded = FALSE;
     EX_TRY
     {
         pLoggedTypesFromModule->loggedTypesFromModuleHash.AddOrReplace(*pTypeLoggingInfo);
-        fSucceeded = TRUE;
+        return TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
 
-    return fSucceeded;
+    return FALSE;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1011,7 +1004,7 @@ void ETW::TypeSystemLog::SendObjectAllocatedEvent(Object * pObject)
     }
 
     SIZE_T nTotalSizeForTypeSample = size;
-    DWORD dwTickNow = GetTickCount();
+    DWORD dwTickNow = (DWORD)minipal_lowres_ticks();
     DWORD dwObjectCountForTypeSample = 0;
 
     // Get stats for type
@@ -1207,7 +1200,7 @@ void ETW::TypeSystemLog::TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 load
                 (UINT64)th.AsPtr(),
                 typeName
                 );
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -1429,11 +1422,8 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
             pThreadAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
+
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -1467,11 +1457,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
         pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
         fSucceeded = TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     if (!fSucceeded)
     {
         *pfCreatedNew = FALSE;
@@ -1572,11 +1558,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
                     s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
                     fSucceeded = TRUE;
                 }
-                EX_CATCH
-                {
-                    fSucceeded = FALSE;
-                }
-                EX_END_CATCH(RethrowTerminalExceptions);
+                EX_SWALLOW_NONTERMINAL
             }
             else
             {
@@ -1625,11 +1607,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -1928,7 +1906,7 @@ VOID ETW::EnumerationLog::ModuleRangeRundown()
         {
             ETW::EnumerationLog::EnumerationHelper(NULL, ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -2047,7 +2025,7 @@ VOID ETW::EnumerationLog::StartRundown()
             // end marker event will go to the rundown provider
             FireEtwDCStartComplete_V1(GetClrInstanceId());
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 //---------------------------------------------------------------------------------------
@@ -2135,7 +2113,7 @@ VOID ETW::EnumerationLog::EnumerateForCaptureState()
                 SendThreadRundownEvent();
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**************************************************************************************/
@@ -2243,7 +2221,7 @@ VOID ETW::EnumerationLog::EndRundown()
         }
     } EX_CATCH {
         STRESS_LOG1(LF_ALWAYS, LL_ERROR, "Exception during Rundown Enumeration, EIP of last AV = %p", g_LastAccessViolationEIP);
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 // #Registration
@@ -2328,16 +2306,88 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+enum SessionChange
+{
+    EventPipeSessionDisable = 0,
+    EventPipeSessionEnable = 1,
+    EtwSessionChangeUnknown = 2
+};
+
+#if !defined(HOST_UNIX)
+// EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
+enum EventFilterType
+{
+    // data should be pairs of UTF8 null terminated strings all concatenated together.
+    // The first element of the pair is the key and the 2nd is the value. We expect one of the
+    // keys to be the string "GCSeqNumber" and the value to be a number encoded as text.
+    // This is the standard way EventPipe encodes filter values
+    StringKeyValueEncoding = 0,
+    // data should be an 8 byte binary LONGLONG value
+    // this is the historic encoding defined by .NET Framework for use with ETW
+    LongBinaryClientSequenceNumber = 1
+};
+
+VOID ParseFilterDataClientSequenceNumber(
+    PEVENT_FILTER_DESCRIPTOR FilterData,
+    LONGLONG * pClientSequenceNumber)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (FilterData == NULL)
+        return;
+
+    if (FilterData->Type == LongBinaryClientSequenceNumber && FilterData->Size == sizeof(LONGLONG))
+    {
+        *pClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+    }
+    else if (FilterData->Type == StringKeyValueEncoding)
+    {
+        const char* buffer = reinterpret_cast<const char*>(FilterData->Ptr);
+        const char* buffer_end = buffer + FilterData->Size;
+
+        while (buffer < buffer_end)
+        {
+            const char* key = buffer;
+            size_t key_len = strnlen(key, buffer_end - buffer);
+            buffer += key_len + 1;
+
+            if (buffer >= buffer_end)
+                break;
+
+            const char* value = buffer;
+            size_t value_len = strnlen(value, buffer_end - buffer);
+            buffer += value_len + 1;
+
+            if (buffer > buffer_end)
+                break;
+
+            if (strcmp(key, "GCSeqNumber") != 0)
+                continue;
+
+            char* endPtr = nullptr;
+            long parsedValue = strtol(value, &endPtr, 10);
+            if (endPtr != value && *endPtr == '\0')
+            {
+                *pClientSequenceNumber = static_cast<LONGLONG>(parsedValue);
+                break;
+            }
+        }
+    }
+}
+#endif // !defined(HOST_UNIX)
+
 // Common handler for all ETW or EventPipe event notifications. Based on the provider that
 // was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
 // which will inform the GC to update its local state about what events are enabled.
+// NOTE: When multiple ETW or EventPipe sessions are enabled, the ControlCode will be
+// EVENT_CONTROL_CODE_ENABLE_PROVIDER even if the session invoking this callback is being disabled.
 VOID EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     PVOID pFilterData,
-    BOOL isEventPipeCallback)
+    SessionChange Change)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2373,20 +2423,17 @@ VOID EtwCallbackCommon(
     // This callback gets called on both ETW/EventPipe session enable/disable.
     // We need toupdate the EventPipe provider context if we are in a callback
     // from EventPipe, but not from ETW.
-    if (isEventPipeCallback)
+    if (Change == EventPipeSessionEnable || Change == EventPipeSessionDisable)
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
         ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
 
         // For EventPipe, ControlCode can only be either 0 or 1.
-        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+        _ASSERTE(ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
     }
 
-    if (
-#if !defined(HOST_UNIX)
-        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
-#endif
+    if ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
         (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
     {
 #if !defined(HOST_UNIX)
@@ -2403,22 +2450,29 @@ VOID EtwCallbackCommon(
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
-    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
-    // flick this to force a full GC.
-    if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
-        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
+    // Special check for a profiler requested GC.
+    // A full GC will be forced if:
+    // 1. The runtime has started and is not shutting down.
+    // 2. The public provider is requesting GC.
+    // 3. The provider's ManagedHeapCollectKeyword is enabled.
+    // 4. If it is an ETW provider, the control code is to enable or capture the state of the provider.
+    // 5. If it is an EventPipe provider, the session is not being disabled.
+    bool bValidGCRequest =
+        g_fEEStarted && !g_fEEShutDown &&
+        bIsPublicTraceHandle &&
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
+        ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
+         (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
+        ((Change == EtwSessionChangeUnknown) ||
+         (Change == EventPipeSessionEnable));
+
+    if (bValidGCRequest)
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
 #if !defined(HOST_UNIX)
-        PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
-        if ((FilterData != NULL) &&
-           (FilterData->Type == 1) &&
-           (FilterData->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
-        }
+        ParseFilterDataClientSequenceNumber((PEVENT_FILTER_DESCRIPTOR)pFilterData, &l64ClientSequenceNumber);
 #endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
@@ -2449,7 +2503,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeStress(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntime(
@@ -2463,7 +2519,9 @@ VOID EventPipeEtwCallbackDotNETRuntime(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimeRundown(
@@ -2477,7 +2535,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeRundown(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimePrivate(
@@ -2491,7 +2551,9 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 {
     WRAPPER_NO_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 
@@ -2612,7 +2674,7 @@ extern "C"
         } CONTRACTL_END;
 
         // Mark that we are the special ETWRundown thread.  Currently all this does
-        // is insure that AVs thrown in this thread are treated as normal exceptions.
+        // is ensure that AVs thrown in this thread are treated as normal exceptions.
         // This allows us to catch and swallow them.   We can do this because we have
         // a reasonably strong belief that doing ETW Rundown does not change runtime state
         // and thus if an AV happens it is better to simply give up logging ETW and
@@ -2647,7 +2709,7 @@ extern "C"
             return;
         }
 
-        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, false);
+        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
@@ -2705,10 +2767,7 @@ extern "C"
 
     }
 }
-#endif // FEATURE_NATIVEAOT
-
-#endif // HOST_UNIX
-#ifndef FEATURE_NATIVEAOT
+#endif // !defined(HOST_UNIX)
 
 /****************************************************************************/
 /* This is called by the runtime when an exception is thrown */
@@ -2755,11 +2814,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         gc.innerExceptionObj = ((EXCEPTIONREF)gc.exceptionObj)->GetInnerException();
 
         ThreadExceptionState *pExState = pThread->GetExceptionState();
-#ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
-#else
-        PTR_ExceptionTrackerBase pExInfo = NULL;
-#endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
@@ -2781,11 +2836,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 
         if (pCf->IsFrameless())
         {
-#ifndef HOST_64BIT
-            exceptionEIP = (PVOID)pCf->GetRegisterSet()->ControlPC;
-#else
-            exceptionEIP = (PVOID)GetIP(pCf->GetRegisterSet()->pContext);
-#endif //!HOST_64BIT
+            exceptionEIP = (PVOID)GetControlPC(pCf->GetRegisterSet());
         }
         else
         {
@@ -2818,7 +2869,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
                                   exceptionFlags,
                                   GetClrInstanceId());
         GCPROTECT_END();
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -2862,7 +2913,7 @@ VOID ETW::ExceptionLog::ExceptionCatchBegin(MethodDesc * pMethodDesc, PVOID pEnt
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionCatchEnd()
@@ -2902,7 +2953,7 @@ VOID ETW::ExceptionLog::ExceptionFinallyBegin(MethodDesc * pMethodDesc, PVOID pE
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionFinallyEnd()
@@ -2942,7 +2993,7 @@ VOID ETW::ExceptionLog::ExceptionFilterBegin(MethodDesc * pMethodDesc, PVOID pEn
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionFilterEnd()
@@ -2979,38 +3030,7 @@ VOID ETW::LoaderLog::DomainLoadReal(_In_opt_ LPWSTR wszFriendlyName)
             DWORD dwEventOptions = ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad;
             ETW::LoaderLog::SendDomainEvent(dwEventOptions, wszFriendlyName);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-/****************************************************************************/
-/* This is called by the runtime when an AppDomain is unloaded */
-/****************************************************************************/
-VOID ETW::LoaderLog::DomainUnload()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    EX_TRY
-    {
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        KEYWORDZERO))
-        {
-            DWORD enumerationOptions = ETW::EnumerationLog::GetEnumerationOptionsFromRuntimeKeywords();
-
-            // Domain unload also causes type unload events
-            if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                            TRACE_LEVEL_INFORMATION,
-                                            CLR_TYPE_KEYWORD))
-            {
-                enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::TypeUnload;
-            }
-
-            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
-        }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3041,7 +3061,7 @@ VOID ETW::LoaderLog::CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *p
 
             ETW::EnumerationLog::IterateCollectibleLoaderAllocator(pLoaderAllocator, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3127,7 +3147,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                 dllPath );
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /* Fires ETW events every time a pdb is dynamically loaded.
@@ -3198,7 +3218,7 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
                 }
             }
         }
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 #endif//  !defined(HOST_UNIX)
 }
 
@@ -3395,7 +3415,7 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
                     pEntryPoint,
                     GetClrInstanceId());
 
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -3493,7 +3513,7 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
                 data += chunkSizeToEmit;
                 cbData -= chunkSizeToEmit;
             }
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -3543,7 +3563,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
             ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
         }
 
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /*************************************************/
@@ -3566,7 +3586,7 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
             pMethodDesc->GetMethodInfo(*namespaceOrClassName, *methodName, *methodSignature);
             ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, methodDecoder, namespaceOrClassName, methodName, methodSignature);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**********************************************************************/
@@ -3590,28 +3610,7 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
             Stub::RecoverStubAndSize((TADDR)ullHelperStartAddress, &dwHelperSize);
             ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, dwHelperSize, pHelperName);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-/**********************************************************/
-/* This is called by the runtime when helpers with stubs are initialized */
-/**********************************************************/
-VOID ETW::MethodLog::StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG lNoOfHelpers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                    TRACE_LEVEL_INFORMATION,
-                                    CLR_JIT_KEYWORD))
-    {
-        for(int i=0; i<lNoOfHelpers; i++)
-        {
-            if(pHelperStartAddress[i])
-            {
-                StubInitialized((ULONGLONG)pHelperStartAddress[i], (LPCWSTR)pHelperNames[i]);
-            }
-        }
-    }
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3630,7 +3629,7 @@ VOID ETW::MethodLog::DynamicMethodDestroyed(MethodDesc *pMethodDesc)
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
             ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodUnload, TRUE);
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3653,178 +3652,7 @@ VOID ETW::MethodLog::MethodRestored(MethodDesc *pMethodDesc)
         {
             ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-/****************************************************************************/
-/* This is called by the runtime when a method table is restored */
-/****************************************************************************/
-VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-    EX_TRY
-    {
-        if(IsRuntimeNgenKeywordEnabledAndNotSuppressed()
-            &&
-            ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                         TRACE_LEVEL_INFORMATION,
-                                         CLR_STARTENUMERATION_KEYWORD))
-        {
-            {
-                MethodTable::MethodIterator iter(pMethodTable);
-                for (; iter.IsValid(); iter.Next())
-                {
-                    MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->GetMethodTable() == pMethodTable)
-                        ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
-                }
-            }
-        }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-
-/****************************************************************************/
-/* This is called by the runtime when a Strong Name Verification Starts */
-/****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName)
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-
-/****************************************************************************/
-/* This is called by the runtime when a Strong Name Verification Ends */
-/****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName)
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-/****************************************************************************/
-/* This is called by the runtime when field transparency calculations begin */
-/****************************************************************************/
-void ETW::SecurityLog::FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
-                                                             LPCWSTR wszModuleName,
-                                                             DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwFieldTransparencyComputationStart(wszFieldName, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when field transparency calculations end   */
-/****************************************************************************/
-void ETW::SecurityLog::FireFieldTransparencyComputationEnd(LPCWSTR wszFieldName,
-                                                           LPCWSTR wszModuleName,
-                                                           DWORD dwAppDomain,
-                                                           BOOL fIsCritical,
-                                                           BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwFieldTransparencyComputationEnd(wszFieldName, wszModuleName, dwAppDomain, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when method transparency calculations begin */
-/*****************************************************************************/
-void ETW::SecurityLog::FireMethodTransparencyComputationStart(LPCWSTR wszMethodName,
-                                                              LPCWSTR wszModuleName,
-                                                              DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwMethodTransparencyComputationStart(wszMethodName, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when method transparency calculations end   */
-/********************************************(********************************/
-void ETW::SecurityLog::FireMethodTransparencyComputationEnd(LPCWSTR wszMethodName,
-                                                            LPCWSTR wszModuleName,
-                                                            DWORD dwAppDomain,
-                                                            BOOL fIsCritical,
-                                                            BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwMethodTransparencyComputationEnd(wszMethodName, wszModuleName, dwAppDomain, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when module transparency calculations begin */
-/*****************************************************************************/
-void ETW::SecurityLog::FireModuleTransparencyComputationStart(LPCWSTR wszModuleName,
-                                                              DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwModuleTransparencyComputationStart(wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when module transparency calculations end  */
-/****************************************************************************/
-void ETW::SecurityLog::FireModuleTransparencyComputationEnd(LPCWSTR wszModuleName,
-                                                            DWORD dwAppDomain,
-                                                            BOOL fIsAllCritical,
-                                                            BOOL fIsAllTransparent,
-                                                            BOOL fIsTreatAsSafe,
-                                                            BOOL fIsOpportunisticallyCritical,
-                                                            DWORD dwSecurityRuleSet)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwModuleTransparencyComputationEnd(wszModuleName, dwAppDomain, fIsAllCritical, fIsAllTransparent, fIsTreatAsSafe, fIsOpportunisticallyCritical, dwSecurityRuleSet, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when token transparency calculations begin */
-/****************************************************************************/
-void ETW::SecurityLog::FireTokenTransparencyComputationStart(DWORD dwToken,
-                                                             LPCWSTR wszModuleName,
-                                                             DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTokenTransparencyComputationStart(dwToken, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when token transparency calculations end   */
-/****************************************************************************/
-void ETW::SecurityLog::FireTokenTransparencyComputationEnd(DWORD dwToken,
-                                                           LPCWSTR wszModuleName,
-                                                           DWORD dwAppDomain,
-                                                           BOOL fIsCritical,
-                                                           BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTokenTransparencyComputationEnd(dwToken, wszModuleName, dwAppDomain, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when type transparency calculations begin   */
-/*****************************************************************************/
-void ETW::SecurityLog::FireTypeTransparencyComputationStart(LPCWSTR wszTypeName,
-                                                            LPCWSTR wszModuleName,
-                                                            DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTypeTransparencyComputationStart(wszTypeName, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when type transparency calculations end    */
-/****************************************************************************/
-void ETW::SecurityLog::FireTypeTransparencyComputationEnd(LPCWSTR wszTypeName,
-                                                          LPCWSTR wszModuleName,
-                                                          DWORD dwAppDomain,
-                                                          BOOL fIsAllCritical,
-                                                          BOOL fIsAllTransparent,
-                                                          BOOL fIsCritical,
-                                                          BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTypeTransparencyComputationEnd(wszTypeName, wszModuleName, dwAppDomain, fIsAllCritical, fIsAllTransparent, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**********************************************************************************/
@@ -3890,7 +3718,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 ETW::LoaderLog::SendModuleRange(pModule, enumerationOptions);
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3912,7 +3740,7 @@ VOID ETW::EnumerationLog::ProcessShutdown()
             // Send unload events for all remaining modules
             ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -4467,11 +4295,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
                 }
                 fSucceeded = TRUE;
             }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL
             if (!fSucceeded)
                 goto done;
 
@@ -4494,7 +4318,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             rgTypeParameters.CloseRawBuffer();
         }
 done:;
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set)
@@ -4682,6 +4506,20 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
         // this method hasn't been jitted
         return;
     }
+
+#ifdef FEATURE_INTERPRETER
+    RangeSection * pRS = ExecutionManager::FindCodeRange(PINSTRToPCODE(start), ExecutionManager::GetScanFlags());
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (((StubPrecode*)start)->GetType() == PRECODE_INTERPRETER)
+            {
+                start = ((InterpreterPrecode*)start)->GetData()->ByteCodeAddr;
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
     // EECodeInfo is technically initialized by a "PCODE", but it can also be initialized
     // by a TADDR (i.e., w/out thumb bit set on ARM)
@@ -5149,6 +4987,14 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 
         PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
 
+#ifdef FEATURE_INTERPRETER
+        // Interpreter-TODO - If the code for this was generated by the interpreter, the native
+        // code start which will match up with the NativeCodeVersion/GetNativeCode result is the
+        // IntepreterPrecode, which is not what is found in the NativeCode portion of the MethodDesc
+        // or in the NativeCodeVersion. So we should build out the ability to get the right result
+        // as otherwise we will continue through the loop and skip all the interpreter data.
+#endif // FEATURE_INTERPRETER
+
         // Get info relevant to the native code version. In some cases, such as collectible loader
         // allocators, we don't support code versioning so we need to short circuit the call.
         // This also allows our caller to avoid having to pre-enter the relevant locks.
@@ -5325,7 +5171,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
                 fSendRichDebugInfoEvent,
                 FALSE);
         }
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 #endif // !DACCESS_COMPILE
 }
 
@@ -5403,7 +5249,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
         {
             ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -5438,7 +5284,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
 
-            Module* pModule = domainAssemblyIt->GetModule();
+            Module* pModule = domainAssemblyIt->GetAssembly()->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
@@ -5454,7 +5300,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /********************************************************************************/
@@ -5491,7 +5337,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         {
             ETW::LoaderLog::SendAssemblyEvent(pAssembly, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /********************************************************************************/
@@ -5547,7 +5393,7 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
         {
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 //---------------------------------------------------------------------------------------

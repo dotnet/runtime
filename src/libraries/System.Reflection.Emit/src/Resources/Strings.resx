@@ -160,7 +160,7 @@
     <value>The specified parameter index is not in range.</value>
   </data>
   <data name="Argument_InvalidArgumentForAttribute" xml:space="preserve">
-    <value>Invalid constructor argument {0} provided for MarshalAs atttribute.</value>
+    <value>Invalid constructor argument {0} provided for MarshalAs attribute.</value>
   </data>
   <data name="Argument_InvalidParameterForUnmanagedType" xml:space="preserve">
     <value>Named parameter {0} is not valid for UnmanagedType.{1} type.</value>
@@ -257,9 +257,6 @@
   </data>
   <data name="AmbiguousMatch_MemberInfo" xml:space="preserve">
     <value>Ambiguous match found for '{0} {1}'</value>
-  </data>
-  <data name="InvalidOperation_BadEmptyMethodBody" xml:space="preserve">
-    <value>Method '{0}' does not have a method body.</value>
   </data>
   <data name="Argument_RedefinedLabel" xml:space="preserve">
     <value>Label defined multiple times.</value>

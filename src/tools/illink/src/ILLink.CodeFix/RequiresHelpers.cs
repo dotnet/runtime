@@ -8,15 +8,15 @@ using Microsoft.CodeAnalysis.Editing;
 
 namespace ILLink.CodeFixProvider
 {
-	sealed class RequiresHelpers
-	{
-		internal static SyntaxNode[] GetAttributeArgumentsForRequires (ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, bool hasPublicAccessibility)
-		{
-			var symbolDisplayName = targetSymbol.GetDisplayName ();
-			if (string.IsNullOrEmpty (symbolDisplayName) || hasPublicAccessibility)
-				return Array.Empty<SyntaxNode> ();
+    sealed class RequiresHelpers
+    {
+        internal static SyntaxNode[] GetAttributeArgumentsForRequires(ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, bool hasPublicAccessibility)
+        {
+            var symbolDisplayName = targetSymbol.GetDisplayName();
+            if (string.IsNullOrEmpty(symbolDisplayName) || hasPublicAccessibility)
+                return Array.Empty<SyntaxNode>();
 
-			return new[] { syntaxGenerator.AttributeArgument (syntaxGenerator.LiteralExpression ($"Calls {symbolDisplayName}")) };
-		}
-	}
+            return [syntaxGenerator.AttributeArgument(syntaxGenerator.LiteralExpression($"Calls {symbolDisplayName}"))];
+        }
+    }
 }

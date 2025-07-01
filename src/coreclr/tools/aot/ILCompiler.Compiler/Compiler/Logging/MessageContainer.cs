@@ -128,6 +128,11 @@ namespace ILCompiler.Logging
             if (context.IsWarningSubcategorySuppressed(subcategory))
                 return null;
 
+            // If the warning comes from compiler-generated code, it would not be actionable. The assumption is that
+            // compiler-generated code doesn't have issues.
+            if (origin.MemberDefinition is MethodDesc originMethod && originMethod.GetTypicalMethodDefinition() is not EcmaMethod)
+                return null;
+
             if (TryLogSingleWarning(context, code, origin, subcategory))
                 return null;
 
@@ -143,6 +148,11 @@ namespace ILCompiler.Logging
                 return null;
 
             if (context.IsWarningSubcategorySuppressed(subcategory))
+                return null;
+
+            // If the warning comes from compiler-generated code, it would not be actionable. The assumption is that
+            // compiler-generated code doesn't have issues.
+            if (origin.MemberDefinition is MethodDesc originMethod && originMethod.GetTypicalMethodDefinition() is not EcmaMethod)
                 return null;
 
             if (TryLogSingleWarning(context, (int)id, origin, subcategory))

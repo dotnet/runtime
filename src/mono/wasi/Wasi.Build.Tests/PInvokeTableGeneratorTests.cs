@@ -21,7 +21,7 @@ public class PInvokeTableGeneratorTests : BuildTestBase
     [MemberData(nameof(TestDataForConsolePublishAndRunRelease))]
     public void InteropSupportForUnmanagedEntryPointWithoutDelegate(bool singleFileBundle, bool aot)
     {
-        if(aot)
+        if (aot)
         {
             // Active issue https://github.com/dotnet/runtime/issues/101276
             return;

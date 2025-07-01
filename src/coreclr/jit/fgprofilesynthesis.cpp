@@ -9,6 +9,107 @@
 
 #include "fgprofilesynthesis.h"
 
+//------------------------------------------------------------------------
+// AdjustThrowEdgeLikelihoods: Find throw blocks in the flowgraph, and propagate
+// their throwable state through their predecessors in postorder.
+// Then, adjust heuristic-based likelihoods of edges into paths known to throw.
+//
+// Arguments:
+//   compiler - the Compiler object
+//
+// Returns:
+//   Suitable phase status
+//
+/* static */ PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
+{
+    const FlowGraphDfsTree* dfsTree = compiler->m_dfsTree;
+    assert(dfsTree != nullptr);
+    BitVecTraits traits = dfsTree->PostOrderTraits();
+    BitVec       willThrow(BitVecOps::MakeEmpty(&traits));
+
+    // Adjusts the likelihoods out of a block that conditionally flows into a path that throws
+    auto tweakLikelihoods = [&](BasicBlock* block) {
+        assert(block->KindIs(BBJ_COND));
+        FlowEdge *throwEdge, *normalEdge;
+
+        if (BitVecOps::IsMember(&traits, willThrow, block->GetTrueTarget()->bbPostorderNum))
+        {
+            throwEdge  = block->GetTrueEdge();
+            normalEdge = block->GetFalseEdge();
+        }
+        else
+        {
+            throwEdge  = block->GetFalseEdge();
+            normalEdge = block->GetTrueEdge();
+        }
+
+        throwEdge->setLikelihood(throwLikelihood);
+        normalEdge->setLikelihood(1.0 - throwLikelihood);
+    };
+
+    bool modified = false;
+
+    // Walk the flowgraph in postorder, propagating throw state backwards
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i);
+        if (block->KindIs(BBJ_THROW))
+        {
+            JITDUMP(FMT_BB " will throw.\n", block->bbNum);
+            BitVecOps::AddElemD(&traits, willThrow, i);
+        }
+        // Avoid slightly more expensive successor iteration for blocks with one outgoing edge
+        else if ((block->GetUniqueSucc() != nullptr) &&
+                 BitVecOps::IsMember(&traits, willThrow, block->GetUniqueSucc()->bbPostorderNum))
+        {
+            JITDUMP(FMT_BB " flows into a throw block.\n", block->bbNum);
+            BitVecOps::AddElemD(&traits, willThrow, i);
+        }
+        else
+        {
+            bool anyPathThrows = false;
+            bool allPathsThrow = true;
+
+            for (BasicBlock* const succBlock : block->Succs(compiler))
+            {
+                if (BitVecOps::IsMember(&traits, willThrow, succBlock->bbPostorderNum))
+                {
+                    anyPathThrows = true;
+                }
+                else
+                {
+                    allPathsThrow = false;
+                }
+            }
+
+            if (anyPathThrows)
+            {
+                if (allPathsThrow)
+                {
+                    JITDUMP(FMT_BB " flows into a throw block.\n", block->bbNum);
+                    BitVecOps::AddElemD(&traits, willThrow, i);
+                }
+                else if (block->KindIs(BBJ_COND) && block->GetTrueEdge()->isHeuristicBased())
+                {
+                    JITDUMP(FMT_BB " can flow into a throw block.\n", block->bbNum);
+                    assert(block->GetFalseEdge()->isHeuristicBased());
+                    tweakLikelihoods(block);
+                    modified = true;
+                }
+            }
+        }
+    }
+
+    if (modified && compiler->fgIsUsingProfileWeights())
+    {
+        JITDUMP("Modified edge likelihoods. Data %s inconsistent.\n",
+                compiler->fgPgoConsistent ? "is now" : "was already");
+        compiler->fgPgoConsistent = false;
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 // TODO
 //
 // * vet against some real data
@@ -30,10 +131,6 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfsTree             = m_comp->fgComputeDfs();
-    m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
-    m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
-
     // Retain or compute edge likelihood information
     //
     switch (option)
@@ -71,13 +168,18 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             break;
     }
 
+    // Save entry block's weight.
+    // If the entry block is a loop header, its weight will be overwritten by ComputeCyclicProbabilities.
+    //
+    weight_t entryBlockWeight = m_entryBlock->bbWeight;
+
     // Determine cyclic probabilities
     //
     ComputeCyclicProbabilities();
 
     // Assign weights to entry points in the flow graph
     //
-    AssignInputWeights(option);
+    AssignInputWeights(entryBlockWeight);
 
     // Compute the block weights given the inputs and edge likelihoods
     //
@@ -98,7 +200,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // belief that the profile should be somewhat flatter.
     //
     unsigned retries = 0;
-    while (m_approximate && (retries < maxRepairRetries))
+    while ((option != ProfileSynthesisOption::RetainLikelihoods) && m_approximate && (retries < maxRepairRetries))
     {
         JITDUMP("\n\n[%d] Retrying reconstruction with blend factor " FMT_WT ", because %s\n", retries, m_blendFactor,
                 m_cappedCyclicProbabilities ? "capped cyclic probabilities" : "solver failed to converge");
@@ -108,12 +210,13 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         m_approximate               = false;
         m_overflow                  = false;
         m_cappedCyclicProbabilities = 0;
+        entryBlockWeight            = m_entryBlock->bbWeight;
 
         // Regularize the edge likelihoods...
         //
         BlendLikelihoods();
         ComputeCyclicProbabilities();
-        AssignInputWeights(option);
+        AssignInputWeights(entryBlockWeight);
         ComputeBlockWeights();
 
         // Increase blend factor and decrease synthetic loop likelihoods
@@ -146,12 +249,40 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    // A simple check whether the current method has more than one edge.
+    m_comp->fgPgoSingleEdge = true;
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        if (block->NumSucc() > 1)
+        {
+            m_comp->fgPgoSingleEdge = false;
+            break;
+        }
+    }
+
     m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
 
     if (m_approximate)
     {
         JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
-        m_comp->Metrics.ProfileInconsistentInitially++;
+        if (!m_comp->fgImportDone)
+        {
+            m_comp->Metrics.ProfileInconsistentInitially++;
+        }
+    }
+
+    // Derive the method's call count from the entry block's weight
+    //
+    if (m_comp->fgIsUsingProfileWeights() && !m_comp->compIsForInlining())
+    {
+        weight_t entryWeight = m_entryBlock->bbWeight;
+        for (FlowEdge* const predEdge : m_entryBlock->PredEdges())
+        {
+            entryWeight -= predEdge->getLikelyWeight();
+        }
+
+        m_comp->fgCalledCount = max(BB_ZERO_WEIGHT, entryWeight);
+        JITDUMP("fgCalledCount is " FMT_WT "\n", m_comp->fgCalledCount);
     }
 
 #ifdef DEBUG
@@ -177,7 +308,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         // Leave a note so we can bypass the post-phase check, and
         // instead assert at the end of fgImport, if we make it that far.
         //
-        if (!isConsistent)
+        if (!isConsistent && !m_comp->fgImportDone)
         {
             m_comp->fgPgoDeferredInconsistency = true;
             JITDUMP("Will defer asserting until after importation\n");
@@ -222,6 +353,8 @@ void ProfileSynthesis::AssignLikelihoods()
 
             case BBJ_COND:
                 // Two successor cases
+                block->GetTrueEdge()->setHeuristicBased(true);
+                block->GetFalseEdge()->setHeuristicBased(true);
                 AssignLikelihoodCond(block);
                 break;
 
@@ -714,13 +847,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
 //
 void ProfileSynthesis::ComputeCyclicProbabilities()
 {
-    m_cyclicProbabilities = nullptr;
-    if (m_loops->NumLoops() == 0)
-    {
-        return;
-    }
-
-    m_cyclicProbabilities = new (m_comp, CMK_Pgo) weight_t[m_loops->NumLoops()];
     // Walk loops in post order to visit inner loops before outer loops.
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
@@ -797,10 +923,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 
                 for (FlowEdge* const edge : nestedLoop->EntryEdges())
                 {
-                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
-                    {
-                        newWeight += edge->getLikelyWeight();
-                    }
+                    newWeight += edge->getLikelyWeight();
                 }
 
                 newWeight *= m_cyclicProbabilities[nestedLoop->GetIndex()];
@@ -816,10 +939,10 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                 {
                     BasicBlock* const sourceBlock = edge->getSourceBlock();
 
-                    // Ignore flow across EH, or from preds not in the loop.
-                    // Latter can happen if there are unreachable blocks that flow into the loop.
+                    // Ignore flow from preds not in the loop.
+                    // This can happen if there are unreachable blocks that flow into the loop.
                     //
-                    if (BasicBlock::sameHndRegion(block, sourceBlock) && loop->ContainsBlock(sourceBlock))
+                    if (loop->ContainsBlock(sourceBlock))
                     {
                         newWeight += edge->getLikelyWeight();
                     }
@@ -975,7 +1098,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 // fgAssignInputWeights: provide initial profile weights for all blocks
 //
 // Arguments:
-//   option - profile synthesis option
+//   entryBlockWeight - total flow (including method call count) into the entry block
 //
 // Notes:
 //   For finallys we will pick up new entry weights when we process
@@ -986,51 +1109,26 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 //
 //   Some parts of the jit are sensitive to the absolute weights.
 //
-void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
+void ProfileSynthesis::AssignInputWeights(weight_t entryBlockWeight)
 {
-    // Determine input weight for method entry
+    // Determine input weight for method entry.
+    // Ideally, we'd use fgCalledCount, but it may not be available yet.
     //
-    BasicBlock* const entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
-    weight_t          entryWeight = BB_UNITY_WEIGHT;
+    weight_t                    entryWeight = entryBlockWeight;
+    FlowGraphNaturalLoop* const loop        = m_loops->GetLoopByHeader(m_entryBlock);
 
-    switch (option)
+    if (loop != nullptr)
     {
-        case ProfileSynthesisOption::BlendLikelihoods:
-        case ProfileSynthesisOption::RepairLikelihoods:
-        {
-            // Try and retain entryBlock's weight.
-            // Easiest to do when the block has no preds.
-            //
-            if (entryBlock->hasProfileWeight())
-            {
-                weight_t currentEntryWeight = entryBlock->bbWeight;
+        const weight_t cyclicProbability = m_cyclicProbabilities[loop->GetIndex()];
+        assert(cyclicProbability != BB_ZERO_WEIGHT);
+        entryWeight /= cyclicProbability;
+    }
 
-                if (!Compiler::fgProfileWeightsEqual(currentEntryWeight, 0.0, epsilon))
-                {
-                    if (entryBlock->bbPreds == nullptr)
-                    {
-                        entryWeight = currentEntryWeight;
-                    }
-                    else
-                    {
-                        // TODO: something similar to how we compute fgCalledCount;
-                        // try and sum return weights?
-                    }
-                }
-                else
-                {
-                    // Entry weight was zero or nearly zero, just use default
-                }
-            }
-            else
-            {
-                // Entry was unprofiled, just use default
-            }
-            break;
-        }
-
-        default:
-            break;
+    // Fall back to BB_UNITY_WEIGHT if we have zero entry weight
+    //
+    if (Compiler::fgProfileWeightsEqual(entryWeight, BB_ZERO_WEIGHT, epsilon))
+    {
+        entryWeight = BB_UNITY_WEIGHT;
     }
 
     // Reset existing weights
@@ -1042,8 +1140,8 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 
     // Set entry weight
     //
-    JITDUMP("Synthesis: entry " FMT_BB " has input weight " FMT_WT "\n", entryBlock->bbNum, entryWeight);
-    entryBlock->setBBProfileWeight(entryWeight);
+    JITDUMP("Synthesis: entry " FMT_BB " has input weight " FMT_WT "\n", m_entryBlock->bbNum, entryWeight);
+    m_entryBlock->setBBProfileWeight(entryWeight);
 
     // Determine input weight for EH regions, if any.
     //
@@ -1202,17 +1300,15 @@ void ProfileSynthesis::GaussSeidelSolver()
     weight_t                      relResidual          = 0;
     weight_t                      oldRelResidual       = 0;
     weight_t                      eigenvalue           = 0;
-    weight_t const                stopRelResidual      = 0.002;
+    weight_t const                stopRelResidual      = 0.001;
     BasicBlock*                   residualBlock        = nullptr;
     BasicBlock*                   relResidualBlock     = nullptr;
     const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();
     unsigned const                blockCount           = dfs->GetPostOrderCount();
     bool                          checkEntryExitWeight = true;
-    bool                          showDetails          = false;
+    bool const                    showDetails          = false;
+    bool const                    callFinalliesCreated = m_comp->fgImportDone;
 
-    // Remember the entry block
-    //
-    BasicBlock* const entryBlock = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
     JITDUMP("Synthesis solver: flow graph has %u improper loop headers\n", m_improperLoopHeaders);
 
     // This is an iterative solver, and it may require a lot of iterations
@@ -1268,7 +1364,7 @@ void ProfileSynthesis::GaussSeidelSolver()
 
             // Some blocks have additional profile weights that don't come from flow edges.
             //
-            if (block == entryBlock)
+            if (block == m_entryBlock)
             {
                 newWeight   = block->bbWeight;
                 entryWeight = newWeight;
@@ -1287,9 +1383,10 @@ void ProfileSynthesis::GaussSeidelSolver()
                     {
                         newWeight = block->bbWeight;
 
-                        // Finallies also add in the weight of their try.
+                        // If we haven't added flow edges into/out of finallies yet,
+                        // add in the weight of their corresponding try regions.
                         //
-                        if (ehDsc->HasFinallyHandler())
+                        if (!callFinalliesCreated && ehDsc->HasFinallyHandler())
                         {
                             newWeight += countVector[ehDsc->ebdTryBeg->bbNum];
                         }
@@ -1315,11 +1412,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                     for (FlowEdge* const edge : loop->EntryEdges())
                     {
                         BasicBlock* const predBlock = edge->getSourceBlock();
-
-                        if (BasicBlock::sameHndRegion(block, predBlock))
-                        {
-                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
-                        }
+                        newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
                     }
 
                     // Scale by cyclic probability
@@ -1351,10 +1444,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                             continue;
                         }
 
-                        if (BasicBlock::sameHndRegion(block, predBlock))
-                        {
-                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
-                        }
+                        newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
                     }
 
                     if (selfEdge != nullptr)
@@ -1408,12 +1498,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             countVector[block->bbNum] = newWeight;
 
             // Remember max absolute and relative change
-            // (note rel residual will be infinite at times, that's ok)
+            // (note rel residual will be as large as 1e9 at times, that's ok)
             //
             // Note we are using a "point" bound here ("infinity norm") rather than say
             // computing the L2-norm of the entire residual vector.
             //
-            weight_t const blockRelResidual = change / oldWeight;
+            // Avoid dividing by zero if oldWeight is very small.
+            //
+            weight_t const blockRelResidual = change / max(oldWeight, 1e-12);
 
             if ((relResidualBlock == nullptr) || (blockRelResidual > relResidual))
             {
@@ -1434,12 +1526,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             }
         }
 
-        // If there were no improper headers, we will have converged in one pass.
+        // If there were no improper headers, we will have converged in one pass
         // (profile may still be inconsistent, if there were capped cyclic probabilities).
-        //
+        // If synthesis is running after the importer (in other words, we aren't building the initial profile),
+        // it has only one shot at establishing consistency until the profile is flagged as inconsistent,
+        // so check for entry/exit weight balance here to indicate if the profile converged.
         if (m_improperLoopHeaders == 0)
         {
-            converged = true;
+            converged = !m_comp->fgImportDone || m_comp->fgProfileWeightsConsistent(entryWeight, exitWeight);
             break;
         }
 
@@ -1459,7 +1553,7 @@ void ProfileSynthesis::GaussSeidelSolver()
             if (entryExitRelResidual > relResidual)
             {
                 relResidual      = entryExitRelResidual;
-                relResidualBlock = entryBlock;
+                relResidualBlock = m_entryBlock;
             }
         }
 

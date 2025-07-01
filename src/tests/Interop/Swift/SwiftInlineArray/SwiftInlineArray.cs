@@ -150,4 +150,31 @@ public class SwiftInlineArray
         Assert.Equal(-5808468912223652740, result);
         Console.WriteLine("OK");
     }
+
+    [InlineArray(2)]
+    struct F4
+    {
+        private static int _staticField1 = 1;
+        private uint _element0;
+        private static int _staticField2 = 2;
+    }
+
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc42a0SiAA2F4V_tF")]
+    private static extern nint SwiftFunc4(F4 a0);
+
+    [Fact]
+    public static unsafe void TestFuncWithStaticFields()
+    {
+        F4 a0 = default;
+        uint* ptr = (uint*)&a0;
+
+        ptr[0] = (uint)4043602764;
+        ptr[1] = (uint)1067483684;
+
+
+        long result = SwiftFunc4(a0);
+        Assert.Equal(8068158586497914580, result);
+        Console.WriteLine("OK");
+    }
 }

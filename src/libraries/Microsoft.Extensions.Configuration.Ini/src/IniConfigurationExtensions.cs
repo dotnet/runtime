@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="path">The path relative to the base path stored in
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
-        /// <param name="optional">Whether the file is optional.</param>
+        /// <param name="optional"><see langword="true"/> if the file is optional; otherwise, <see langword="false"/> .</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, string path, bool optional)
         {
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="path">Path relative to the base path stored in
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
         /// <param name="optional"><see langword="true"/> if the file is optional; otherwise, <see langword="false"/>.</param>
-        /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes; otherwise, <see langword="false"/>.</param>
+        /// <param name="reloadOnChange"><see langword="true"/> if the configuration should be reloaded if the file changes; otherwise, <see langword="false"/>.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange)
         {
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
 
             if (string.IsNullOrEmpty(path))
             {
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddIniStream(this IConfigurationBuilder builder, Stream stream)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
 
             return builder.Add<IniStreamConfigurationSource>(s => s.Stream = stream);
         }

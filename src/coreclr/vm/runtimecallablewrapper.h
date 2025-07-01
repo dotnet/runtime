@@ -34,7 +34,7 @@
 //  Cast operations: requires a QI, unless a QI for that interface was done previously
 //
 //  Threading : apartment model COM objects have thread affinity
-//              choices: COM+ can guarantee thread affinity by making sure
+//              choices: CLR can guarantee thread affinity by making sure
 //                       the calls are always made on the right thread
 //              Advantanges: avoid an extra marshalling
 //              Dis.Advt.  : need to make sure legacy apartment semantics are preserved
@@ -99,9 +99,6 @@ struct RCW
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
 
-    // List of RCW instances that have been freed since the last RCW cleanup.
-    static SLIST_HEADER s_RCWStandbyList;
-
     // Simple read-only iterator for all cached interface pointers.
     class CachedInterfaceEntryIterator
     {
@@ -161,9 +158,6 @@ struct RCW
         ZeroMemory(this, sizeof(*this));
     }
 
-    // Deletes all items in code:s_RCWStandbyList.
-    static void FlushStandbyList();
-
     // Create a new wrapper for given IUnk, IDispatch
     static RCW* CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
 
@@ -174,9 +168,8 @@ struct RCW
     enum MarshalingType
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
-         MarshalingType_Inhibit = 1,      /* This value is same as the MarshalingType.Inhibit*/
-         MarshalingType_FreeThreaded = 2, /* This value is same as the MarshalingType.FreeThreaded*/
-         MarshalingType_Standard = 3      /* This value is same as the MarshalingType.Standard*/
+         MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller */
      };
 
     //-------------------------------------------------
@@ -490,20 +483,11 @@ struct RCW
 
         if (InterlockedDecrement(&m_cbUseCount) == 0)
         {
-            // this was the final decrement, go ahead and delete/recycle the RCW
-            {
-                GCX_PREEMP();
-                m_UnkEntry.Free();
-            }
+            // this was the final decrement, go ahead and delete the RCW
+            GCX_PREEMP();
+            m_UnkEntry.Free();
 
-            if (g_fEEShutDown)
-            {
-                delete this;
-            }
-            else
-            {
-                InterlockedPushEntrySList(&RCW::s_RCWStandbyList, (PSLIST_ENTRY)this);
-            }
+            delete this;
         }
     }
 
@@ -557,8 +541,8 @@ public:
             static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
             DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
 
-            // Reserve 2 bits for marshaling behavior
-            DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
+            // Reserve 2 bits for marshaling type
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };
@@ -742,7 +726,7 @@ protected :
 private:
     //-------------------------------------------------------------
     // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-    // create a COM+ instance that aggregates a COM instance
+    // create a CLR instance that aggregates a COM instance
     OBJECTREF CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged);
 
     //--------------------------------------------------------------

@@ -2,14 +2,13 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, CrossGenTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Disabled for GCStress due to test failure tracked by https://github.com/dotnet/runtime/issues/58699 -->
+    <!-- Running Crossgen2 under GCStress takes too long -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>
     <!-- We skip the ReadyToRun tests when sanitized due to build complexity -->
     <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
-    <OldToolsVersion>2.0</OldToolsVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

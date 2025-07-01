@@ -15,7 +15,7 @@ public partial class LargeFilesTests
         Random.Shared.NextBytes(buffer);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [InlineData(false)]
     [InlineData(true)]
     [OuterLoop("It requires 5~6 GB of free disk space and a lot of CPU time for compressed tests")]

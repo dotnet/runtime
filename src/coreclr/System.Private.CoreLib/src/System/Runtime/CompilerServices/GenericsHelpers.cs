@@ -28,7 +28,7 @@ internal static unsafe partial class GenericsHelpers
     }
 
     [DebuggerHidden]
-    public static unsafe IntPtr MethodWithSlotAndModule(IntPtr methodHnd, GenericHandleArgs * pArgs)
+    public static IntPtr MethodWithSlotAndModule(IntPtr methodHnd, GenericHandleArgs * pArgs)
     {
         return GenericHandleWorker(methodHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
     }
@@ -40,7 +40,7 @@ internal static unsafe partial class GenericsHelpers
     }
 
     [DebuggerHidden]
-    public static unsafe IntPtr ClassWithSlotAndModule(IntPtr classHnd, GenericHandleArgs * pArgs)
+    public static IntPtr ClassWithSlotAndModule(IntPtr classHnd, GenericHandleArgs * pArgs)
     {
         return GenericHandleWorker(IntPtr.Zero, classHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
     }

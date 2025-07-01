@@ -21,8 +21,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Reciprocal<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPoint<T> =>
+            where T : IFloatingPoint<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, ReciprocalOperator<T>>(x, destination);
+        }
 
         /// <summary>Computes the element-wise reciprocal of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -36,8 +43,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ReciprocalEstimate<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalEstimateOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, ReciprocalEstimateOperator<T>>(x, destination);
+        }
 
         /// <summary>Computes the element-wise reciprocal of the square root of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -47,12 +61,19 @@ namespace System.Numerics.Tensors
         /// <exception cref="DivideByZeroException"><typeparamref name="T"/> is an integer type and an element in <paramref name="x"/> is equal to zero.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / <paramref name="x" />[i]</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / T.Sqrt(<paramref name="x" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void ReciprocalSqrt<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalSqrtOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, ReciprocalSqrtOperator<T>>(x, destination);
+        }
 
         /// <summary>Computes the element-wise reciprocal of the square root of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -62,12 +83,19 @@ namespace System.Numerics.Tensors
         /// <exception cref="DivideByZeroException"><typeparamref name="T"/> is an integer type and an element in <paramref name="x"/> is equal to zero.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / <paramref name="x" />[i]</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / T.Sqrt(<paramref name="x" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void ReciprocalSqrtEstimate<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalSqrtEstimateOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, ReciprocalSqrtEstimateOperator<T>>(x, destination);
+        }
 
         private readonly struct ReciprocalOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
         {

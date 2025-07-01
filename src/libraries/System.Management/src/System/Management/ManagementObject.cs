@@ -1629,7 +1629,7 @@ namespace System.Management
                     new InternalObjectPutEventHandler(this.HandleObjectPut);
 
                 SecurityHandler securityHandler = null;
-                // Assign to error initially to insure internal event handler cleanup
+                // Assign to error initially to ensure internal event handler cleanup
                 // on non-management exception.
                 int status = (int)ManagementStatus.Failed;
 

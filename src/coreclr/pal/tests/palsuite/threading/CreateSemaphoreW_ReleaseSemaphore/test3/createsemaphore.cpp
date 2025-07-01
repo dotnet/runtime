@@ -6,7 +6,7 @@
 ** Source: createsemaphorew_releasesemaphore/test3/createsemaphore.c
 **
 ** Purpose: Test attributes of CreateSemaphoreExW and ReleaseSemaphore.
-** Insure for CreateSemaphore that lInitialCount and lMaximumCount
+** Ensure for CreateSemaphore that lInitialCount and lMaximumCount
 ** constraints are respected.  Validate that CreateSemaphore rejects
 ** conditions where initial count and / or maximum count are negative
 ** and conditions where the initial count is greater than the maximum

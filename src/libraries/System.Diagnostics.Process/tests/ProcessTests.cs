@@ -603,20 +603,12 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Getting MaxWorkingSet is not supported on OSX, BSD, iOS, MacCatalyst, and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Getting MaxWorkingSet is not supported on iOS, MacCatalyst, and tvOS.")]
         public void MaxWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MaxWorkingSet);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD)]
-        public void MaxValueWorkingSet_GetSetMacos_ThrowsPlatformSupportedException()
-        {
-            var process = new Process();
-            Assert.Throws<PlatformNotSupportedException>(() => process.MaxWorkingSet);
-            Assert.Throws<PlatformNotSupportedException>(() => process.MaxWorkingSet = (IntPtr)1);
+            Assert.Throws<InvalidOperationException>(() => process.MaxWorkingSet = (IntPtr)1);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -659,19 +651,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Getting MinWorkingSet is not supported on OSX, BSD, iOS, MacCatalyst, and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Getting MinWorkingSet is not supported on iOS, MacCatalyst, and tvOS.")]
         public void MinWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MinWorkingSet);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD)]
-        public void MinWorkingSet_GetMacos_ThrowsPlatformSupportedException()
-        {
-            var process = new Process();
-            Assert.Throws<PlatformNotSupportedException>(() => process.MinWorkingSet);
         }
 
         [Fact]
@@ -2264,10 +2248,10 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53095", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29383", TestPlatforms.OSX)]
         public void LongProcessNamesAreSupported()
         {
             string sleepPath;
@@ -2294,6 +2278,10 @@ namespace System.Diagnostics.Tests
 
             using (Process px = Process.Start(sleepCommandPathFileName, "600"))
             {
+                // Reading of long process names is flaky during process startup and shutdown.
+                // Wait a bit to skip over the period where the ProcessName is not reliable.
+                Thread.Sleep(100);
+
                 Process[] runningProcesses = Process.GetProcesses();
                 try
                 {

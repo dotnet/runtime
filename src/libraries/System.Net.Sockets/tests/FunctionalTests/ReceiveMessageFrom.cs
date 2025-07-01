@@ -87,6 +87,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
             if (ipv6 && PlatformDetection.IsApplePlatform)
@@ -145,15 +146,15 @@ namespace System.Net.Sockets.Tests
             for (int i = 0; i < DatagramsToSend; i++)
             {
                 rnd.NextBytes(sendBuffer);
-                sender.SendTo(sendBuffer, receiver.LocalEndPoint);
+                await sender.SendToAsync(sendBuffer, receiver.LocalEndPoint);
 
                 SocketReceiveMessageFromResult result = await ReceiveMessageFromAsync(receiver, receiveBuffer, remoteEp);
-                IPPacketInformation packetInformation = result.PacketInformation;
 
                 Assert.Equal(DatagramSize, result.ReceivedBytes);
                 AssertExtensions.SequenceEqual(emptyBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, 0, Offset));
                 AssertExtensions.SequenceEqual(sendBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, Offset, DatagramSize));
                 Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
+                IPPacketInformation packetInformation = result.PacketInformation;
                 Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
             }
         }
@@ -272,6 +273,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows doesn't report MSG_TRUNC
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support MSG_TRUNC")]
         public async Task ReceiveTruncated_TruncatedFlagIsSetOnReceive()
         {
             using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -285,16 +287,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveMessageFrom_Sync : ReceiveMessageFrom<SocketHelperArraySync>
     {
         public ReceiveMessageFrom_Sync(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveMessageFrom_SyncForceNonBlocking : ReceiveMessageFrom<SocketHelperSyncForceNonBlocking>
     {
         public ReceiveMessageFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveMessageFrom_Apm : ReceiveMessageFrom<SocketHelperApm>
     {
         public ReceiveMessageFrom_Apm(ITestOutputHelper output) : base(output) { }
@@ -345,7 +350,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentException>("endPoint", () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void BeginReceiveMessageFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
         {
             EndPoint anyEp = new IPEndPoint(IPAddress.Any, 0);
@@ -412,7 +417,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() => socket.ReceiveMessageFromAsync(null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false, 0)]
         [InlineData(false, 1)]
         [InlineData(false, 2)]
@@ -493,11 +498,13 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveMessageFrom_SpanSync : ReceiveMessageFrom<SocketHelperSpanSync>
     {
         public ReceiveMessageFrom_SpanSync(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveMessageFrom_SpanSyncForceNonBlocking : ReceiveMessageFrom<SocketHelperSpanSyncForceNonBlocking>
     {
         public ReceiveMessageFrom_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }

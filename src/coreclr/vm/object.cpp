@@ -3,7 +3,7 @@
 //
 // OBJECT.CPP
 //
-// Definitions of a Com+ Object
+// Definitions of a CLR Object
 //
 
 #include "common.h"
@@ -162,7 +162,13 @@ BOOL Object::ValidateObjectWithPossibleAV()
     CANNOT_HAVE_CONTRACT;
     SUPPORTS_DAC;
 
-    return GetGCSafeMethodTable()->ValidateWithPossibleAV();
+    PTR_MethodTable table = GetGCSafeMethodTable();
+    if (table == NULL)
+    {
+        return FALSE;
+    }
+
+    return table->ValidateWithPossibleAV();
 }
 
 
@@ -295,18 +301,6 @@ STRINGREF AllocateString(SString sstr)
     return strObj;
 }
 
-CHARARRAYREF AllocateCharArray(DWORD dwArrayLength)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    return (CHARARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_CHAR, dwArrayLength);
-}
-
 void Object::ValidateHeap(BOOL bDeep)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -354,7 +348,7 @@ void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
     ErectWriteBarrier(dst, ref);
 }
 
-void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
+void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 {
 
     STATIC_CONTRACT_NOTHROW;
@@ -366,11 +360,12 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 
     if (pMT->ContainsGCPointers())
     {
-        memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
+        memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytesIfContainsGCPointers());
     }
     else
     {
-        switch (pMT->GetNumInstanceFieldBytes())
+        DWORD numInstanceFieldBytes = pMT->GetNumInstanceFieldBytes();
+        switch (numInstanceFieldBytes)
         {
         case 1:
             *(UINT8*)dest = *(UINT8*)src;
@@ -391,7 +386,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
             break;
 #endif // !ALIGN_ACCESS
         default:
-            memcpyNoGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
+            memcpyNoGCRefs(dest, src, numInstanceFieldBytes);
             break;
         }
     }
@@ -400,7 +395,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 // Copy value class into the argument specified by the argDest.
 // The destOffset is nonzero when copying values into Nullable<T>, it is the offset
 // of the T value inside of the Nullable<T>
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
+void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -630,7 +625,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         STRESS_LOG3(LF_ASSERT, LL_ALWAYS, "Detected use of corrupted OBJECTREF: %p [MT=%p] (lastTest=%d)", this, lastTest > 0 ? (*(size_t*)this) : 0, lastTest);
         CHECK_AND_TEAR_DOWN(!"Detected use of a corrupted OBJECTREF. Possible GC hole.");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 
@@ -890,71 +885,6 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
     EmptyStringRefPtr = SystemDomain::System()->DefaultDomain()->GetLoaderAllocator()->GetStringObjRefPtrFromUnicodeString(&data, &pinnedStr);
     EmptyStringIsFrozen = pinnedStr != nullptr;
     return EmptyStringRefPtr;
-}
-
-// strAChars must be null-terminated, with an appropriate aLength
-// strBChars must be null-terminated, with an appropriate bLength OR bLength == -1
-// If bLength == -1, we stop on the first null character in strBChars
-BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChars, _In_z_ INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(strAChars));
-        PRECONDITION(CheckPointer(strBChars));
-        PRECONDITION(CheckPointer(result));
-    } CONTRACTL_END;
-
-    WCHAR *strAStart = strAChars;
-    INT8  *strBStart = strBChars;
-    unsigned charA;
-    unsigned charB;
-
-    while (true)
-    {
-        charA = *strAChars;
-        charB = (unsigned) *strBChars;
-
-        //Case-insensitive comparison on chars greater than 0x7F
-        //requires a locale-aware casing operation and we're not going there.
-        if ((charA|charB)>0x7F) {
-            *result = 0;
-            return FALSE;
-        }
-
-        // uppercase both chars.
-        if (charA>='a' && charA<='z') {
-            charA ^= 0x20;
-        }
-        if (charB>='a' && charB<='z') {
-            charB ^= 0x20;
-        }
-
-        //Return the (case-insensitive) difference between them.
-        if (charA!=charB) {
-            *result = (int)(charA-charB);
-            return TRUE;
-        }
-
-
-        if (charA==0)   // both strings have null character
-        {
-            if (bLength == -1)
-            {
-                *result = aLength - static_cast<INT32>(strAChars - strAStart);
-                return TRUE;
-            }
-            if (strAChars==strAStart + aLength || strBChars==strBStart + bLength)
-            {
-                *result = aLength - bLength;
-                return TRUE;
-            }
-            // else both embedded zeros
-        }
-
-        // Next char
-        strAChars++; strBChars++;
-    }
 }
 
 /*============================InternalTrailByteCheck============================
@@ -1547,7 +1477,7 @@ uint32_t StackTraceArray::CopyDataFrom(StackTraceArray const & src)
 
 #ifdef _DEBUG
 //===============================================================================
-// Code that insures that our unmanaged version of Nullable is consistant with
+// Code that ensures that our unmanaged version of Nullable is consistant with
 // the managed version Nullable<T> for all T.
 
 void Nullable::CheckFieldOffsets(TypeHandle nullableType)
@@ -1564,7 +1494,7 @@ void Nullable::CheckFieldOffsets(TypeHandle nullableType)
 
     MethodTable* nullableMT = nullableType.GetMethodTable();
 
-        // insure that the managed version of the table is the same as the
+        // ensure that the managed version of the table is the same as the
         // unmanaged.  Note that we can't do this in corelib.h because this
         // class is generic and field layout depends on the instantiation.
 
@@ -1600,26 +1530,14 @@ BOOL Nullable::IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* par
 }
 
 //===============================================================================
-// Returns true if nullableMT is Nullable<T> for T == paramMT
-
-BOOL Nullable::IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (!nullableMT->IsNullable())
-        return FALSE;
-
-    // we require an exact match of the parameter types
-    return TypeHandle(paramMT) == nullableMT->GetInstantiation()[0];
-}
-
-//===============================================================================
 int32_t Nullable::GetValueAddrOffset(MethodTable* nullableMT)
 {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(IsNullableType(nullableMT));
     _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
-    return nullableMT->GetApproxFieldDescListRaw()[1].GetOffset();
+    _ASSERTE(nullableMT->GetApproxFieldDescListRaw()[1].GetOffset() == nullableMT->GetNullableValueAddrOffset());
+    return nullableMT->GetNullableValueAddrOffset();
 }
 
 CLR_BOOL* Nullable::HasValueAddr(MethodTable* nullableMT) {
@@ -1637,7 +1555,8 @@ void* Nullable::ValueAddr(MethodTable* nullableMT) {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
-    return (((BYTE*) this) + nullableMT->GetApproxFieldDescListRaw()[1].GetOffset());
+    _ASSERTE(nullableMT->GetApproxFieldDescListRaw()[1].GetOffset() == nullableMT->GetNullableValueAddrOffset());
+    return (((BYTE*) this) + nullableMT->GetNullableValueAddrOffset());
 }
 
 //===============================================================================
@@ -1738,53 +1657,6 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 
 //===============================================================================
 // Special Logic to unbox a boxed T as a nullable<T>
-// Does not handle type equivalence (may conservatively return FALSE)
-BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    Nullable* dest = (Nullable*) destPtr;
-
-    // We should only get here if we are unboxing a T as a Nullable<T>
-    _ASSERTE(IsNullableType(destMT));
-
-    // We better have a concrete instantiation, or our field offset asserts are not useful
-    _ASSERTE(!destMT->ContainsGenericVariables());
-
-    if (boxedVal == NULL)
-    {
-        // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure because it may contain GC references
-        // and these need to be initialized to zero.   (could optimize in the non-GC case)
-        InitValueClass(destPtr, destMT);
-    }
-    else
-    {
-        if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
-        {
-            // For safety's sake, also allow true nullables to be unboxed normally.
-            // This should not happen normally, but we want to be robust
-            if (destMT == boxedVal->GetMethodTable())
-            {
-                CopyValueClass(dest, boxedVal->GetData(), destMT);
-                return TRUE;
-            }
-            return FALSE;
-        }
-
-        *dest->HasValueAddr(destMT) = true;
-        CopyValueClass(dest->ValueAddr(destMT), boxedVal->UnBox(), boxedVal->GetMethodTable());
-    }
-    return TRUE;
-}
-
-//===============================================================================
-// Special Logic to unbox a boxed T as a nullable<T>
 // Does not do any type checks.
 void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 {
@@ -1817,6 +1689,7 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
             // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
             CopyValueClass(dest, boxedVal->GetData(), destMT);
+            return;
         }
 
         *dest->HasValueAddr(destMT) = true;
@@ -1917,7 +1790,7 @@ void ExceptionObject::SetStackTrace(OBJECTREF stackTrace)
 //   that both of these arrays are consistent. That means that the stack trace doesn't contain
 //   frames that need keep alive objects and that are not protected by entries in the keep alive
 //   array.
-void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray /*= NULL*/) const
+void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray, Thread *pCurrentThread) const
 {
     CONTRACTL
     {
@@ -1932,9 +1805,16 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
     ExceptionObject::GetStackTraceParts(_stackTrace, stackTrace, outKeepAliveArray);
 
 #ifndef DACCESS_COMPILE
-    Thread *pThread = GetThread();
+    if ((stackTrace.Get() != NULL) && (stackTrace.GetObjectThread() != pCurrentThread))
+    {
+        GetStackTraceClone(stackTrace, outKeepAliveArray);
+    }
+#endif // DACCESS_COMPILE
+}
 
-    if ((stackTrace.Get() != NULL) && (stackTrace.GetObjectThread() != pThread))
+#ifndef DACCESS_COMPILE
+void ExceptionObject::GetStackTraceClone(StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray)
+{
     {
         struct
         {
@@ -2014,8 +1894,8 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
         }
         GCPROTECT_END();
     }
-#endif // DACCESS_COMPILE
 }
+#endif // DACCESS_COMPILE
 
 // Get the stack trace and the dynamic method array from the stack trace object.
 // If the stack trace was created by another thread, it returns clones of both arrays.
@@ -2035,7 +1915,7 @@ void ExceptionObject::GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArra
     PTRARRAYREF keepAliveArray = NULL;
 
     // Extract the stack trace and keepAlive arrays from the stack trace object.
-    if ((stackTraceObj != NULL) && ((dac_cast<PTR_ArrayBase>(OBJECTREFToObject(stackTraceObj)))->GetArrayElementType() != ELEMENT_TYPE_I1))
+    if ((stackTraceObj != NULL) && ((dac_cast<PTR_ArrayBase>(OBJECTREFToObject(stackTraceObj)))->GetMethodTable()->ContainsGCPointers()))
     {
         // The stack trace object is the dynamic methods array with its first slot set to the stack trace I1Array.
         PTR_PTRArray combinedArray = dac_cast<PTR_PTRArray>(OBJECTREFToObject(stackTraceObj));

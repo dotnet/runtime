@@ -11,6 +11,7 @@
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
 #include <generatedumpflags.h>
+#include <minipal/log.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
@@ -89,7 +90,7 @@ ds_rt_auto_trace_init (void)
 		auto_trace_init ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -105,7 +106,7 @@ ds_rt_auto_trace_launch (void)
 		auto_trace_launch ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -121,7 +122,7 @@ ds_rt_auto_trace_signal (void)
 		auto_trace_signal ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -137,7 +138,7 @@ ds_rt_auto_trace_wait (void)
 		auto_trace_wait ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -209,7 +210,7 @@ ds_rt_generate_core_dump (
 		}
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 	return result;
 }
 
@@ -404,10 +405,10 @@ ds_rt_server_log_pause_message (void)
 
 	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend();
 
-	printf("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
-	printf("DOTNET_%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
-	printf("DOTNET_DefaultDiagnosticPortSuspend=%u\n", port_suspended);
-	fflush(stdout);
+	minipal_log_print_info("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
+	minipal_log_print_info("DOTNET_%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
+	minipal_log_print_info("DOTNET_DefaultDiagnosticPortSuspend=%u\n", port_suspended);
+	minipal_log_flush_info();
 }
 
 #endif /* ENABLE_PERFTRACING */

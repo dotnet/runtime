@@ -15,6 +15,7 @@
 #include "ex.h"
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
+#include "minipal/time.h"
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -58,15 +59,11 @@ uint64_t getTimeStamp() {
 }
 
 #else // HOST_X86
-uint64_t getTimeStamp() {
+uint64_t getTimeStamp()
+{
     STATIC_CONTRACT_LEAF;
 
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-
-    QueryPerformanceCounter(&ret);
-
-    return ret.QuadPart;
+    return (uint64_t)minipal_hires_ticks();
 }
 
 #endif // HOST_X86
@@ -127,10 +124,7 @@ uint64_t getTickFrequency()
 */
 uint64_t getTickFrequency()
 {
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    QueryPerformanceFrequency(&ret);
-    return ret.QuadPart;
+    return (uint64_t)minipal_hires_tick_frequency();
 }
 
 #endif // HOST_X86
@@ -389,9 +383,9 @@ void StressLog::Terminate(BOOL fProcessDetach) {
         lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
 
-                // This is not strictly threadsafe, since there is no way of insuring when all the
+                // This is not strictly threadsafe, since there is no way of ensuring when all the
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
-                // and there are no blocking operations in logMsg, simply sleeping will insure
+                // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
         ClrSleepEx(2, FALSE);
         lockh.Acquire();

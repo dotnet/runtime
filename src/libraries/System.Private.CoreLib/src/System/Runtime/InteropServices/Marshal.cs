@@ -1063,6 +1063,7 @@ namespace System.Runtime.InteropServices
         /// a PROGID in the metadata then it is returned otherwise a stable PROGID
         /// is generated based on the fully qualified name of the type.
         /// </summary>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static string? GenerateProgIdForType(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -1082,7 +1083,7 @@ namespace System.Runtime.InteropServices
                 return progIdAttribute.Value ?? string.Empty;
             }
 
-            // If there is no prog ID attribute then use the full name of the type as the prog id.
+            // If there is no prog ID attribute then use the full name of the type as the prog ID.
             return type.FullName;
         }
 
@@ -1171,7 +1172,7 @@ namespace System.Runtime.InteropServices
             FreeBSTR(s);
         }
 
-        public static unsafe void ZeroFreeCoTaskMemAnsi(IntPtr s)
+        public static void ZeroFreeCoTaskMemAnsi(IntPtr s)
         {
             ZeroFreeCoTaskMemUTF8(s);
         }

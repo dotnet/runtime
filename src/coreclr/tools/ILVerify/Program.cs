@@ -475,13 +475,14 @@ namespace ILVerify
             return null;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
-        private T Get<T>(CliArgument<T> argument) => _command.Result.GetValue(argument);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new ILVerifyRootCommand().UseVersion())
+            new CommandLineConfiguration(new ILVerifyRootCommand().UseVersion())
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableDefaultExceptionHandler = false,
             }.Invoke(args);
     }
 }

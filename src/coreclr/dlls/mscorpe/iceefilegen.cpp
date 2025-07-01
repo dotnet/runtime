@@ -150,14 +150,7 @@ HRESULT ICeeFileGen::AddSectionReloc (HCEESECTION section, ULONG offset, HCEESEC
     CeeSection *sec = reinterpret_cast<CeeSection*>(section);
     CeeSection *relSec = reinterpret_cast<CeeSection*>(relativeTo);
 
-    if (relSec)
-    {
-        return(sec->addSectReloc(offset, *relSec, relocType));
-    }
-    else
-    {
-        return(sec->addBaseReloc(offset, relocType));
-    }
+    return(sec->addSectReloc(offset, *relSec, relocType));
 }
 
 HRESULT ICeeFileGen::SetOutputFileName (HCEEFILE ceeFile, _In_ LPWSTR outputFileName)
@@ -446,12 +439,21 @@ HRESULT ICeeFileGen::SetVTableEntry64(HCEEFILE ceeFile, ULONG size, void* ptr)
     return gen->setVTableEntry64(size, ptr);
 }
 
-HRESULT ICeeFileGen::GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp)
+HRESULT ICeeFileGen::GetFileTimeStamp(HCEEFILE ceeFile, DWORD *pTimeStamp)
 {
     TESTANDRETURNPOINTER(ceeFile);
     TESTANDRETURNPOINTER(pTimeStamp);
 
     CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
     return(gen->getFileTimeStamp(pTimeStamp));
+}
+
+HRESULT ICeeFileGen::SetFileHeaderTimeStamp(HCEEFILE ceeFile, DWORD timeStamp)
+{
+    TESTANDRETURNPOINTER(ceeFile);
+
+    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
+    gen->setFileHeaderTimeStamp(timeStamp);
+    return S_OK;
 }
 

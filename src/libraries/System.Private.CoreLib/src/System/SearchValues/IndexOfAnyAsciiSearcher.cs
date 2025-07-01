@@ -1135,7 +1135,7 @@ namespace System.Buffers
 
                 // We use a shuffle to look up potential matches for each byte based on its low nibble.
                 // Since all values have a unique low nibble, there's at most one potential match per nibble.
-                Vector128<byte> values = Vector128.ShuffleUnsafe(bitmapLookup, lowNibbles);
+                Vector128<byte> values = SearchValues.ShuffleNativeModified(bitmapLookup, lowNibbles);
 
                 // Compare potential matches with the source to rule out false positives that have a different high nibble.
                 return Vector128.Equals(source, values);
@@ -1157,10 +1157,10 @@ namespace System.Buffers
 
                 // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
                 // Lookup the rows via the lower nibble and the column via the higher nibble.
-                Vector128<byte> bitMask = Vector128.ShuffleUnsafe(bitmapLookup, lowNibbles);
+                Vector128<byte> bitMask = SearchValues.ShuffleNativeModified(bitmapLookup, lowNibbles);
 
                 // For values above 127, the high nibble will be above 7. We construct the positions vector for the shuffle such that those values map to 0.
-                Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
+                Vector128<byte> bitPositions = SearchValues.ShuffleNativeModified(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
 
                 return bitMask & bitPositions;
             }
@@ -1212,10 +1212,10 @@ namespace System.Buffers
             Vector128<byte> lowNibbles = source & Vector128.Create((byte)0xF);
             Vector128<byte> highNibbles = source >>> 4;
 
-            Vector128<byte> row0 = Vector128.ShuffleUnsafe(bitmapLookup0, lowNibbles);
-            Vector128<byte> row1 = Vector128.ShuffleUnsafe(bitmapLookup1, lowNibbles);
+            Vector128<byte> row0 = Vector128.ShuffleNative(bitmapLookup0, lowNibbles);
+            Vector128<byte> row1 = Vector128.ShuffleNative(bitmapLookup1, lowNibbles);
 
-            Vector128<byte> bitmask = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
+            Vector128<byte> bitmask = Vector128.ShuffleNative(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
 
             Vector128<byte> mask = Vector128.GreaterThan(highNibbles.AsSByte(), Vector128.Create((sbyte)0x7)).AsByte();
             Vector128<byte> bitsets = Vector128.ConditionalSelect(mask, row1, row0);
@@ -1368,9 +1368,20 @@ namespace System.Buffers
                 Vector128<short> lowerMin = Vector128.Min(lower, Vector128.Create((ushort)255)).AsInt16();
                 Vector128<short> upperMin = Vector128.Min(upper, Vector128.Create((ushort)255)).AsInt16();
 
-                return Sse2.IsSupported
-                    ? Sse2.PackUnsignedSaturate(lowerMin, upperMin)
-                    : PackedSimd.ConvertNarrowingSaturateUnsigned(lowerMin, upperMin);
+                if (Sse2.IsSupported)
+                {
+                    return Sse2.PackUnsignedSaturate(lowerMin, upperMin);
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    return PackedSimd.ConvertNarrowingSaturateUnsigned(lowerMin, upperMin);
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    return default;
+                }
             }
 
             // Replace with Vector256.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
@@ -1392,10 +1403,24 @@ namespace System.Buffers
             [CompExactlyDependsOn(typeof(PackedSimd))]
             public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
             {
-                return
-                    Sse2.IsSupported ? Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()) :
-                    AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper) :
-                    PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
+                if (Sse2.IsSupported)
+                {
+                    return Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+                }
+                else if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper);
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    return PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    return default;
+                }
             }
 
             [CompExactlyDependsOn(typeof(Avx2))]

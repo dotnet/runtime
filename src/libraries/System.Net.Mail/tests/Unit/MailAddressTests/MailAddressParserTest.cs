@@ -32,8 +32,6 @@ namespace System.Net.Mail.Tests
         private const string UnicodeQuotedString = "I have \u3069 unicode";
         private const string ValidDotAtom = " a.something#-text";
         private const string ValidDotAtomResult = "a.something#-text";
-        private const string ValidDotAtomDoubleDots = " a.d....d";
-        private const string ValidDotAtomDoubleDotsResult = "a.d....d";
         private const string ValidDotAtomEndsInDot = "a.something.";
         private const string InvalidDotAtom = "a.something\"test";
         private const string InvalidDotAtomStartsWithDot = ".test";
@@ -267,15 +265,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void TryReadDotAtom_WithValidDotAtomAndDoubleDots_ShouldReadCorrectly()
-        {
-            int index = ValidDotAtomDoubleDots.Length - 1;
-            Assert.True(DotAtomReader.TryReadReverse(ValidDotAtomDoubleDots, index, out index, throwExceptionIfFail: true));
-
-            Assert.Equal(0, index);
-        }
-
-        [Fact]
         public void TryReadDotAtom_EndsInDot_ShouldReadCorrectly()
         {
             int index = ValidDotAtomEndsInDot.Length - 1;
@@ -379,16 +368,6 @@ namespace System.Net.Mail.Tests
             Assert.Equal("jeff\\\\@", result.DisplayName);
             Assert.Equal("\"jeff\\\"\"", result.User);
             Assert.Equal("[  ncl\\@bld-001 \t  ]", result.Host);
-        }
-
-        [Fact]
-        public void TryParseAddress_WithNoDisplayNameAndDotAtom_ShouldReadCorrectly()
-        {
-            Assert.True(MailAddressParser.TryParseAddress("a..b_b@example.com", out ParseAddressInfo result, throwExceptionIfFail: true));
-
-            Assert.Equal(string.Empty, result.DisplayName);
-            Assert.Equal("a..b_b", result.User);
-            Assert.Equal("example.com", result.Host);
         }
 
         [Fact]
@@ -518,18 +497,17 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void ParseAddresses_WithManyComplexAddresses_ShouldReadCorrectly()
         {
-            string addresses = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+            string addresses = string.Format("{0},{1},{2},{3},{4},{5}",
                 "\"Dr M\u00FCller\" test@mail.com",
                 "(comment)this.test.this(comment)@(comment)this.test.this(comment)",
                 "jeff@example.com",
                 "jeff2@example.org",
                 "(comment)this.test.this(comment)<(comment)this.test.this(comment)@(comment)[  test this ](comment)>",
-                "\"test\" <a..b_b@example.com>",
                 "(comment)\" asciin;,oqu o.tesws \"(comment)<(comment)\" asciin;,oqu o.tesws \"(comment)@(comment)this.test.this(comment)>");
 
             IList<MailAddress> result = MailAddressParser.ParseMultipleAddresses(addresses);
 
-            Assert.Equal(7, result.Count);
+            Assert.Equal(6, result.Count);
 
             Assert.Equal("Dr M\u00FCller", result[0].DisplayName);
             Assert.Equal("test", result[0].User);
@@ -551,13 +529,9 @@ namespace System.Net.Mail.Tests
             Assert.Equal("this.test.this", result[4].User);
             Assert.Equal("[  test this ]", result[4].Host);
 
-            Assert.Equal("test", result[5].DisplayName);
-            Assert.Equal("a..b_b", result[5].User);
-            Assert.Equal("example.com", result[5].Host);
-
-            Assert.Equal(" asciin;,oqu o.tesws ", result[6].DisplayName);
-            Assert.Equal("\" asciin;,oqu o.tesws \"", result[6].User);
-            Assert.Equal("this.test.this", result[6].Host);
+            Assert.Equal(" asciin;,oqu o.tesws ", result[5].DisplayName);
+            Assert.Equal("\" asciin;,oqu o.tesws \"", result[5].User);
+            Assert.Equal("this.test.this", result[5].Host);
         }
     }
 }

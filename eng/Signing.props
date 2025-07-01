@@ -1,21 +1,34 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" />
+  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />
+
   <PropertyGroup>
     <!--
-      Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
-      here and rely on overall signing validation.
+      By default, we will use RID-specific package publishing.
+      Every job will publish their RID-specific packages.
+      Some RIDs also have OS or arch-specific packages that are published by that RID.
 
-      During post build signing, there are no packages to sign during SignFinalPackages.
+      For jobs that don't meet the above rules, we have various controls:
+
+      - A job can specify EnableDefaultRidSpecificArtifacts=false as a global property to publish all packages it produces.
+        We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
+      - Mono AOT LLVM builds only publish LLVM-specific packages always.
+
+      The VMR orchestrator will set EnableDefaultRidSpecificArtifacts=true as a global property based on its configuration.
+
+      Packages that do not meet the above rules are added with Vertical visibility in the VMR and excluded in non-VMR builds.
     -->
-    <AllowEmptySignList>true</AllowEmptySignList>
+    <EnableDefaultArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableDefaultArtifacts>
+    <EnableBlobArtifacts>true</EnableBlobArtifacts>
+    <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
+
+    <!-- The final stage of the runtime official build should publish everything. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildFromVMR)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
+
+    <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      Replace the default items to sign with the specific set we want. This allows the build to call
-      Arcade's Sign.proj multiple times for different sets of files as the build progresses.
-    -->
-    <ItemsToSign Remove="@(ItemsToSign)" />
-
     <!-- apphost and comhost template files are not signed, by design. -->
     <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
 
@@ -25,6 +38,15 @@
     -->
     <FileSignInfo Include="mscordaccore.dll" CertificateName="None" />
     <FileSignInfo Include="mscordbi.dll" CertificateName="None" />
+
+    <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
+         Avoid doing this on Linux, which has the same executable names -->
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;createdump;singlefilehost;crossgen2" CertificateName="MacDeveloperHarden" />
+    <!-- Sign these Mac binaries without hardening enabled, making them compatible with hardening needs more work -->
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="corerun;ilc;ilasm;ildasm;mono-aot-cross;Mono;llc;opt" CertificateName="MacDeveloper" />
+    <!-- Additionally, we need to notarize any .pkg files -->
+    <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
+    <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
 
     <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
     <!-- WARNING: Needs to happed outside of any target -->
@@ -36,33 +58,93 @@
     <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
-
-    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
-         other feeds (in fact, that have identical identity to their non-symbol variant) -->
-    <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
-    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
-
-    <FileExtensionSignInfo Include=".msi" CertificateName="MicrosoftDotNet500" />
-    <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
-    <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
 
-  <!-- Update existing defaults from arcade that were using Microsoft400 to use the .NET-specific cert -->
   <ItemGroup>
-    <FileExtensionSignInfo Update="@(FileExtensionSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
-    <StrongNameSignInfo Update="@(StrongNameSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
-    <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
+    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                           $(ArtifactsPackagesDir)**\*.zip;
+                           $(ArtifactsPackagesDir)**\*.deb;
+                           $(ArtifactsPackagesDir)**\*.rpm;
+                           $(ArtifactsPackagesDir)**\*.pkg;
+                           $(ArtifactsPackagesDir)**\*.exe;
+                           $(ArtifactsPackagesDir)**\*.msi;"
+                  Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+                  Kind="Blob"
+                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+      <!-- Exclude wixpack.zip files from checksum generation -->
+      <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
+    </BlobArtifact>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true'">
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
+  <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
+    <Artifact Include="@(BlobArtifact)" />
 
-    <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" Condition="'$(PostBuildSign)' == 'true'" />
-    <ItemsToSign Include="@(ItemsToSignWithPaths->Distinct())" Condition="'$(PostBuildSign)' != 'true'" />
+    <!-- this is built in the SDK repo now -->
+    <!--
+    <Artifact Include="$(ArtifactsDir)VSSetup\**\*.zip"
+              Condition="Exists('$(ArtifactsDir)VSSetup')"
+              Kind="Blob"
+              ChecksumPath="%(FullPath).sha512"
+              IsVSSetup="true"
+              IsShipping="true"
+              SubBlobFolder="workloads/" />
+    -->
   </ItemGroup>
+
+  <!--
+    Filter out the RID-specific (Runtime) nupkgs for this RID.
+    Every job will publish their RID-specific packages.
+    For non-RID-specific packages, we have various rules:
+
+    - A job can specify EnableDefaultArtifacts=true as a global property to publish all packages it produces.
+      We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
+    - For some target RIDs, we also include specific RID-agnostic packages.
+    - For LLVM builds, we only publish LLVM-specific packages.
+  -->
+  <Choose>
+    <When Condition="'$(MonoAOTEnableLLVM)' == 'true'">
+      <ItemGroup>
+        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(TargetRid).*.nupkg" />
+        <Artifact Include="@(PackageArtifacts)"
+                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
+                  Kind="Package" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
+      <ItemGroup Condition="'$(TargetRid)' == 'ios-arm64'">
+        <PackageArtifacts
+          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.iOS.Sample.Mono.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoAOTCompiler.Task.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoTargets.Sdk.*.nupkg" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(TargetRid)' == 'android-arm64'">
+        <PackageArtifacts
+          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.Android.Sample.Mono.*.nupkg" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(TargetRid)' == 'wasi-wasm'">
+        <PackageArtifacts
+          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
+        <PackageArtifacts
+          Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NETCore.BrowserDebugHost.Transport.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Templates.net10.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
+                  $(ArtifactsPackagesDir)**\Microsoft.NET.Workload.Mono.ToolChain.*.nupkg" />
+      </ItemGroup>
+
+      <ItemGroup>
+        <!--
+          Include the non-RID-specific packages for this RID.
+        -->
+        <Artifact Include="@(PackageArtifacts)"
+                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
+                  Kind="Package" />
+      </ItemGroup>
+    </When>
+  </Choose>
 </Project>

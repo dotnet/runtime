@@ -35,7 +35,9 @@ using std::nothrow;
 
 #include "contract.h"
 
-#include <minipal/utils.h>
+#include <stddef.h>
+#include <minipal/guid.h>
+#include <minipal/log.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
@@ -47,12 +49,8 @@ using std::nothrow;
 
 #define CoreLibName_W W("System.Private.CoreLib")
 #define CoreLibName_IL_W W("System.Private.CoreLib.dll")
-#define CoreLibName_NI_W W("System.Private.CoreLib.ni.dll")
-#define CoreLibName_TLB_W W("System.Private.CoreLib.tlb")
 #define CoreLibName_A "System.Private.CoreLib"
 #define CoreLibName_IL_A "System.Private.CoreLib.dll"
-#define CoreLibName_NI_A "System.Private.CoreLib.ni.dll"
-#define CoreLibName_TLB_A "System.Private.CoreLib.tlb"
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
@@ -149,13 +147,9 @@ typedef LPSTR   LPUTF8;
 #endif
 #endif
 
-#include <stddef.h> // for offsetof
-#include <minipal/utils.h>
-
 #define IS_DIGIT(ch) (((ch) >= W('0')) && ((ch) <= W('9')))
 #define DIGIT_TO_INT(ch) ((ch) - W('0'))
 #define INT_TO_DIGIT(i) ((WCHAR)(W('0') + (i)))
-
 
 // Helper will 4 byte align a value, rounding up.
 #define ALIGN4BYTE(val) (((val) + 3) & ~0x3)
@@ -225,8 +219,10 @@ typedef LPSTR   LPUTF8;
     } \
     LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
 
+// ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE(ptrname, widestr) CQuickBytes _##ptrname; _##ptrname.ConvertUnicode_Utf8(widestr); LPSTR ptrname = (LPSTR) _##ptrname.Ptr();
 
+// ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname = (int)u16_strlen(widestr); \
@@ -483,7 +479,7 @@ public:
 void AddThreadPreferredUILanguages(StringArrayList* pArray);
 #endif
 //*****************************************************************************
-// CCompRC manages string Resource access for COM+. This includes loading
+// CCompRC manages string Resource access for CLR. This includes loading
 // the MsCorRC.dll for resources as well allowing each thread to use a
 // a different localized version.
 //*****************************************************************************
@@ -728,8 +724,6 @@ void    SplitPathInterior(
 
 
 #include "ostype.h"
-
-#define CLRGetTickCount64() GetTickCount64()
 
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
@@ -2885,7 +2879,6 @@ class MethodNamesListBase
 
     MethodName     *pNames;         // List of names
 
-    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, int numArgs);
 
 public:
     void Init()
@@ -2894,7 +2887,7 @@ public:
         pNames = 0;
     }
 
-    void Init(_In_ _In_z_ LPWSTR list)
+    void Init(_In_z_ LPWSTR list)
     {
         WRAPPER_NO_CONTRACT;
         pNames = 0;
@@ -2903,9 +2896,9 @@ public:
 
     void Destroy();
 
-    void Insert(_In_ _In_z_ LPWSTR list);
+    void Insert(_In_z_ LPWSTR list);
 
-    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
+    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, int numArgs = -1);
     bool IsInList(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
     bool IsEmpty()
     {
@@ -3009,7 +3002,7 @@ public:
         return m_list.IsEmpty();
     }
 
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
+    bool contains(LPCUTF8 methodName, LPCUTF8 className, int argCount = -1);
     bool contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
 
     inline void ensureInit(const CLRConfig::ConfigStringInfo & info)
@@ -3029,23 +3022,6 @@ private:
 
     BYTE m_inited;
 };
-
-// 38 characters + 1 null terminating.
-#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
-
-//*****************************************************************************
-// Convert a GUID into a pointer to a string
-//*****************************************************************************
-int GuidToLPSTR(
-    REFGUID guid,   // [IN] The GUID to convert.
-    LPSTR szGuid,   // [OUT] String into which the GUID is stored
-    DWORD cchGuid); // [IN] Size in chars of szGuid
-
-template<DWORD N>
-int GuidToLPSTR(REFGUID guid, CHAR (&s)[N])
-{
-    return GuidToLPSTR(guid, s, N);
-}
 
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
@@ -3098,35 +3074,58 @@ class RangeList
         return this->AddRangeWorker(start, end, id);
     }
 
-    void RemoveRanges(void *id, const BYTE *start = NULL, const BYTE *end = NULL)
+    void RemoveRanges(void *id)
     {
-        return this->RemoveRangesWorker(id, start, end);
+        return this->RemoveRangesWorker(id);
     }
 
-    BOOL IsInRange(TADDR address, TADDR *pID = NULL)
+    BOOL IsInRange(TADDR address)
     {
         SUPPORTS_DAC;
 
-        return this->IsInRangeWorker(address, pID);
+        return this->IsInRangeWorker(address);
     }
 
 #ifndef DACCESS_COMPILE
 
     // You can overload these two for synchronization (as LockedRangeList does)
     virtual BOOL AddRangeWorker(const BYTE *start, const BYTE *end, void *id);
-    // If both "start" and "end" are NULL, then this method deletes all ranges with
-    // the given id (i.e. the original behaviour).  Otherwise, it ignores the given
-    // id and deletes all ranges falling in the region [start, end).
-    virtual void RemoveRangesWorker(void *id, const BYTE *start = NULL, const BYTE *end = NULL);
+    // Deletes all ranges with the given id
+    virtual void RemoveRangesWorker(void *id);
 #else
     virtual BOOL AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     {
         return TRUE;
     }
-    virtual void RemoveRangesWorker(void *id, const BYTE *start = NULL, const BYTE *end = NULL) { }
+    virtual void RemoveRangesWorker(void *id) { }
 #endif // !DACCESS_COMPILE
 
-    virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL);
+    virtual BOOL IsInRangeWorker(TADDR address);
+
+    template<class F>
+    void ForEachInRangeWorker(TADDR address, F func) const
+    {
+        CONTRACTL
+        {
+            INSTANCE_CHECK;
+            NOTHROW;
+            FORBID_FAULT;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END
+
+        SUPPORTS_DAC;
+
+        for (const RangeListBlock* b = &m_starterBlock; b != nullptr; b = b->next)
+        {
+            for (const Range r : b->ranges)
+            {
+                if (r.id != (TADDR)nullptr && address >= r.start && address < r.end)
+                    func(r.id);
+            }
+        }
+    }
+
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
@@ -3197,14 +3196,6 @@ inline HRESULT FakeCoCreateInstance(REFCLSID   rclsid,
 };
 
 //*****************************************************************************
-// Gets the directory based on the location of the module. This routine
-// is called at COR setup time. Set is called during EEStartup and by the
-// MetaData dispenser.
-//*****************************************************************************
-HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
-LPCWSTR GetInternalSystemDirectory(_Out_opt_ DWORD * pdwLength = NULL);
-
-//*****************************************************************************
 // This function validates the given Method/Field/Standalone signature. (util.cpp)
 //*****************************************************************************
 struct IMDInternalImport;
@@ -3214,13 +3205,6 @@ HRESULT validateTokenSig(
     ULONG               cbSig,                  // [IN] Size in bytes of the signature.
     DWORD               dwFlags,                // [IN] Method flags.
     IMDInternalImport*  pImport);               // [IN] Internal MD Import interface ptr
-
-//*****************************************************************************
-// Determine the version number of the runtime that was used to build the
-// specified image. The pMetadata pointer passed in is the pointer to the
-// metadata contained in the image.
-//*****************************************************************************
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
 
 //*****************************************************************************
 // The registry keys and values that contain the information regarding

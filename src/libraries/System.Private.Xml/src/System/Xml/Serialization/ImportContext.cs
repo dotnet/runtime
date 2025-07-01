@@ -152,6 +152,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("creates SchemaGraph")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void GenerateSchemaGraph(XmlSchemas schemas)
         {
             SchemaGraph graph = new SchemaGraph(Graph, schemas);
@@ -198,6 +199,7 @@ namespace System.Xml.Serialization
         private readonly int _items;
 
         [RequiresUnreferencedCode("Calls Compile")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal SchemaGraph(Hashtable scope, XmlSchemas schemas)
         {
             _scope = scope;

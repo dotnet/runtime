@@ -3,7 +3,7 @@
 - [The Basics](#the-basics)
   - [Build Results](#build-results)
   - [What to do with the Build](#what-to-do-with-the-build)
-    - [The Core_Root for Testing Your Build](#the-core-root-for-testing-your-build)
+    - [The Core_Root for Testing Your Build](#the-core\_root-for-testing-your-build)
     - [The Dev Shipping Packs](#the-dev-shipping-packs)
   - [Cross Compilation](#cross-compilation)
 - [Other Features](#other-features)

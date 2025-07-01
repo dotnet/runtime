@@ -130,8 +130,6 @@ namespace System.Threading.Tasks
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
 
         private Task? ParentForDebugger => m_contingentProperties?.m_parent; // Private property used by a debugger to access this Task's parent
-        private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
-        private TaskStateFlags StateFlags => (TaskStateFlags)(m_stateFlags & ~(int)TaskStateFlags.OptionsMask); // Private property used to help with debugging
 
         [Flags]
         internal enum TaskStateFlags
@@ -176,7 +174,7 @@ namespace System.Threading.Tasks
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
         internal static bool s_asyncDebuggingEnabled; // false by default
 
-        // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
+        // This dictionary relates the task id, from an operation id located in the Async Causality log to the actual
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
@@ -1084,7 +1082,8 @@ namespace System.Threading.Tasks
                     // to the guideline that an exception implies that no state change took place),
                     // so it is safe to catch the exception and move the task to a final state.  The
                     // same cannot be said for Wait()/WaitAll()/FastWaitAll().
-                    if (!scheduler.TryRunInline(this, false))
+                    taskQueued = scheduler.TryRunInline(this, false);
+                    if (!taskQueued)
                     {
                         scheduler.InternalQueueTask(this);
                         taskQueued = true; // only mark this after successfully queuing the task.
@@ -1792,7 +1791,7 @@ namespace System.Threading.Tasks
         {
             //
             // WARNING: The Task/Task<TResult>/TaskCompletionSource classes
-            // have all been carefully crafted to insure that GetExceptions()
+            // have all been carefully crafted to ensure that GetExceptions()
             // is never called while AddException() is being called.  There
             // are locks taken on m_contingentProperties in several places:
             //
@@ -1804,7 +1803,7 @@ namespace System.Threading.Tasks
             //    is allowed to complete its operation before Task.Exception_get()
             //    can access GetExceptions().
             //
-            // -- Task.ThrowIfExceptional(): The lock insures that Wait() will
+            // -- Task.ThrowIfExceptional(): The lock ensures that Wait() will
             //    not attempt to call GetExceptions() while Task<TResult>.TrySetException()
             //    is in the process of calling AddException().
             //
@@ -2448,6 +2447,7 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <returns>An object used to await this task.</returns>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext)
         {
             return new ConfiguredTaskAwaitable(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
@@ -2457,6 +2457,7 @@ namespace System.Threading.Tasks
         /// <param name="options">Options used to configure how awaits on this task are performed.</param>
         /// <returns>An object used to await this task.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(ConfigureAwaitOptions options)
         {
             if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
@@ -3060,6 +3061,22 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
+                // We're about to block waiting for the task to complete, which is expensive, and if
+                // the task being waited on depends on some other work to run, this thread could end up
+                // waiting for some other thread to do work. If the two threads are part of the same scheduler,
+                // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
+                // it also leading to a possible priority inversion on previously queued work. Each thread in
+                // the thread pool has a local queue. A key motivator for this local queue is it allows this
+                // thread to create work items that it will then prioritize above all other work in the
+                // pool. However, while this thread makes its own local queue the top priority, that queue is
+                // every other thread's lowest priority. If this thread blocks, all of its created work that's
+                // supposed to be high priority becomes low priority, and work that's typically part of a
+                // currently in-flight operation gets deprioritized relative to new requests coming into the
+                // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
+                // just before we block, we move all local work into a global queue, so that it's at least
+                // prioritized by other threads more fairly with respect to other work.
+                ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
+
                 var mres = new SetOnInvokeMres();
                 try
                 {
@@ -5916,6 +5933,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
+            int? count = null;
             if (tasks is ICollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
@@ -5928,19 +5946,23 @@ namespace System.Threading.Tasks
                     return WhenAll(CollectionsMarshal.AsSpan(taskList));
                 }
 
-                taskArray = new Task[taskCollection.Count];
-                taskCollection.CopyTo(taskArray, 0);
-                return WhenAll((ReadOnlySpan<Task>)taskArray);
+                count = taskCollection.Count;
             }
-            else
+
+            // Buffer the tasks into a temporary span. Small sets of tasks are common,
+            // so for <= 8 we stack allocate.
+            ValueListBuilder<Task> builder = count is > 8 ?
+                new ValueListBuilder<Task>(count.Value) :
+                new ValueListBuilder<Task>([null, null, null, null, null, null, null, null]);
+            foreach (Task task in tasks)
             {
-                var taskList = new List<Task>();
-                foreach (Task task in tasks)
-                {
-                    taskList.Add(task);
-                }
-                return WhenAll(CollectionsMarshal.AsSpan(taskList));
+                builder.Append(task);
             }
+
+            Task t = WhenAll(builder.AsSpan());
+
+            builder.Dispose();
+            return t;
         }
 
         /// <summary>

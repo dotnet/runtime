@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
     // NOTE: It is ok if TKey contains references, but we want it to be a struct,
     //       so that equality is devirtualized.
-    internal unsafe struct GenericCache<TKey, TValue>
+    internal struct GenericCache<TKey, TValue>
         where TKey : struct, IEquatable<TKey>
     {
         private struct Entry
@@ -164,7 +164,7 @@ namespace System.Runtime.CompilerServices
                     value = pEntry._value;
 
                     // make sure the second read of 'version' happens after reading '_value'
-                    Interlocked.ReadMemoryBarrier();
+                    Volatile.ReadBarrier();
 
                     // mask the lower version bit to make it even.
                     // This way we can check if version is odd or changing in just one compare.

@@ -29,15 +29,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -64,6 +64,7 @@ namespace System.Formats.Asn1
         ///   the specified encoding rules, converting it to the
         ///   non-[<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TEnum"/>.
         /// </summary>
+        /// <typeparam name="TEnum">The destination enum type.</typeparam>
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="bytesConsumed">
@@ -73,31 +74,26 @@ namespace System.Formats.Asn1
         /// <param name="expectedTag">
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 10).
         /// </param>
-        /// <typeparam name="TEnum">Destination enum type</typeparam>
         /// <returns>
         ///   The Enumerated value converted to a <typeparamref name="TEnum"/>.
         /// </returns>
-        /// <remarks>
-        ///   This method does not validate that the return value is defined within
-        ///   <typeparamref name="TEnum"/>.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the encoded value is too big to fit in a <typeparamref name="TEnum"/> value.
+        ///   The encoded value is too big to fit in a <typeparamref name="TEnum"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <typeparamref name="TEnum"/> is not an enum type.
@@ -113,6 +109,10 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
+        /// <remarks>
+        ///   This method does not validate that the return value is defined within
+        ///   <typeparamref name="TEnum"/>.
+        /// </remarks>
         public static TEnum ReadEnumeratedValue<TEnum>(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
@@ -150,24 +150,20 @@ namespace System.Formats.Asn1
         /// <returns>
         ///   The Enumerated value converted to a <paramref name="enumType"/>.
         /// </returns>
-        /// <remarks>
-        ///   This method does not validate that the return value is defined within
-        ///   <paramref name="enumType"/>.
-        /// </remarks>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the encoded value is too big to fit in a <paramref name="enumType"/> value.
+        ///   The encoded value is too big to fit in a <paramref name="enumType"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="enumType"/> is not an enum type.
@@ -186,6 +182,10 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="enumType"/> is <see langword="null" />.
         /// </exception>
+        /// <remarks>
+        ///   This method does not validate that the return value is defined within
+        ///   <paramref name="enumType"/>.
+        /// </remarks>
         public static Enum ReadEnumeratedValue(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
@@ -275,15 +275,15 @@ namespace System.Formats.Asn1
         ///   The bytes of the Enumerated value, in signed big-endian form.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -307,31 +307,27 @@ namespace System.Formats.Asn1
         ///   Reads the next value as an Enumerated with a specified tag, converting it to the
         ///   non-[<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TEnum"/>.
         /// </summary>
+        /// <typeparam name="TEnum">The destination enum type.</typeparam>
         /// <param name="expectedTag">
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 10).
         /// </param>
-        /// <typeparam name="TEnum">Destination enum type</typeparam>
         /// <returns>
         ///   The Enumerated value converted to a <typeparamref name="TEnum"/>.
         /// </returns>
-        /// <remarks>
-        ///   This method does not validate that the return value is defined within
-        ///   <typeparamref name="TEnum"/>.
-        /// </remarks>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the encoded value is too big to fit in a <typeparamref name="TEnum"/> value.
+        ///   The encoded value is too big to fit in a <typeparamref name="TEnum"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <typeparamref name="TEnum"/> is not an enum type.
@@ -347,6 +343,10 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
+        /// <remarks>
+        ///   This method does not validate that the return value is defined within
+        ///   <typeparamref name="TEnum"/>.
+        /// </remarks>
         public TEnum ReadEnumeratedValue<TEnum>(Asn1Tag? expectedTag = null) where TEnum : Enum
         {
             TEnum ret = AsnDecoder.ReadEnumeratedValue<TEnum>(_data.Span, RuleSet, out int consumed, expectedTag);
@@ -365,24 +365,20 @@ namespace System.Formats.Asn1
         /// <returns>
         ///   The Enumerated value converted to a <paramref name="enumType"/>.
         /// </returns>
-        /// <remarks>
-        ///   This method does not validate that the return value is defined within
-        ///   <paramref name="enumType"/>.
-        /// </remarks>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the encoded value is too big to fit in a <paramref name="enumType"/> value.
+        ///   The encoded value is too big to fit in a <paramref name="enumType"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="enumType"/> is not an enum type.
@@ -401,6 +397,10 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="enumType"/> is <see langword="null" />.
         /// </exception>
+        /// <remarks>
+        ///   This method does not validate that the return value is defined within
+        ///   <paramref name="enumType"/>.
+        /// </remarks>
         public Enum ReadEnumeratedValue(Type enumType, Asn1Tag? expectedTag = null)
         {
             Enum ret = AsnDecoder.ReadEnumeratedValue(_data.Span, RuleSet, enumType, out int consumed, expectedTag);

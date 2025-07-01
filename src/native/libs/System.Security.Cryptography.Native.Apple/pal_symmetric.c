@@ -6,21 +6,21 @@
 
 #include <assert.h>
 
-c_static_assert(PAL_OperationEncrypt == kCCEncrypt);
-c_static_assert(PAL_OperationDecrypt == kCCDecrypt);
+c_static_assert((uint32_t)PAL_OperationEncrypt == (uint32_t)kCCEncrypt);
+c_static_assert((uint32_t)PAL_OperationDecrypt == (uint32_t)kCCDecrypt);
 
-c_static_assert(PAL_AlgorithmAES == kCCAlgorithmAES128);
-c_static_assert(PAL_AlgorithmDES == kCCAlgorithmDES);
-c_static_assert(PAL_Algorithm3DES == kCCAlgorithm3DES);
-c_static_assert(PAL_AlgorithmRC2 == kCCAlgorithmRC2);
+c_static_assert((uint32_t)PAL_AlgorithmAES == (uint32_t)kCCAlgorithmAES128);
+c_static_assert((uint32_t)PAL_AlgorithmDES == (uint32_t)kCCAlgorithmDES);
+c_static_assert((uint32_t)PAL_Algorithm3DES == (uint32_t)kCCAlgorithm3DES);
+c_static_assert((uint32_t)PAL_AlgorithmRC2 == (uint32_t)kCCAlgorithmRC2);
 
-c_static_assert(PAL_ChainingModeECB == kCCModeECB);
-c_static_assert(PAL_ChainingModeCBC == kCCModeCBC);
-c_static_assert(PAL_ChainingModeCFB == kCCModeCFB);
-c_static_assert(PAL_ChainingModeCFB8 == kCCModeCFB8);
+c_static_assert((uint32_t)PAL_ChainingModeECB == (uint32_t)kCCModeECB);
+c_static_assert((uint32_t)PAL_ChainingModeCBC == (uint32_t)kCCModeCBC);
+c_static_assert((uint32_t)PAL_ChainingModeCFB == (uint32_t)kCCModeCFB);
+c_static_assert((uint32_t)PAL_ChainingModeCFB8 == (uint32_t)kCCModeCFB8);
 
-c_static_assert(PAL_PaddingModeNone == ccNoPadding);
-c_static_assert(PAL_PaddingModePkcs7 == ccPKCS7Padding);
+c_static_assert((uint32_t)PAL_PaddingModeNone == (uint32_t)ccNoPadding);
+c_static_assert((uint32_t)PAL_PaddingModePkcs7 == (uint32_t)ccPKCS7Padding);
 
 // No PAL_SymmetricOptions are currently mapped, so no asserts required.
 

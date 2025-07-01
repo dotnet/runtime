@@ -105,6 +105,7 @@ parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action=
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
+parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -856,6 +857,11 @@ def run_tests(args,
         print("Running tests NativeAOT")
         os.environ["CLRCustomTestLauncher"] = args.nativeaottest_script_path
 
+    if args.interpreter:
+        print("Running tests with the interpreter")
+        print("Setting RunInterpreter=1")
+        os.environ["RunInterpreter"] = "1"
+
     if gc_stress:
         per_test_timeout *= 8
         print("Running GCStress, extending test timeout to cater for slower runtime.")
@@ -1009,6 +1015,11 @@ def setup_args(args):
                               "run_nativeaot_tests",
                               lambda arg: True,
                               "Error setting run_nativeaot_tests")
+
+    coreclr_setup_args.verify(args,
+                              "interpreter",
+                              lambda arg: True,
+                              "Error setting interpreter")
 
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")

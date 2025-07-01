@@ -42,6 +42,11 @@ namespace System.Collections.Concurrent
         /// extra branch when using a custom comparer with a reference type key.
         /// </remarks>
         private readonly bool _comparerIsDefaultForClasses;
+        /// <summary>The initial size of the _buckets array.</summary>
+        /// <remarks>
+        /// We store this to retain the initially specified growing behavior of the _buckets array even after clearing the collection.
+        /// </remarks>
+        private readonly int _initialCapacity;
 
         /// <summary>The default capacity, i.e. the initial # of buckets.</summary>
         /// <remarks>
@@ -220,6 +225,7 @@ namespace System.Collections.Concurrent
 
             _tables = new Tables(buckets, locks, countPerLock, comparer);
             _growLockArray = growLockArray;
+            _initialCapacity = capacity;
             _budget = buckets.Length / locks.Length;
         }
 
@@ -716,7 +722,7 @@ namespace System.Collections.Concurrent
                 }
 
                 Tables tables = _tables;
-                var newTables = new Tables(new VolatileNode[HashHelpers.GetPrime(DefaultCapacity)], tables._locks, new int[tables._countPerLock.Length], tables._comparer);
+                var newTables = new Tables(new VolatileNode[HashHelpers.GetPrime(_initialCapacity)], tables._locks, new int[tables._countPerLock.Length], tables._comparer);
                 _tables = newTables;
                 _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
             }
@@ -853,7 +859,7 @@ namespace System.Collections.Concurrent
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => new Enumerator(this);
 
         /// <summary>Provides an enumerator implementation for the dictionary.</summary>
-        private sealed class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        private sealed class Enumerator(ConcurrentDictionary<TKey, TValue> dictionary) : IEnumerator<KeyValuePair<TKey, TValue>>
         {
             // Provides a manually-implemented version of (approximately) this iterator:
             //     VolatileNodeWrapper[] buckets = _tables._buckets;
@@ -861,23 +867,11 @@ namespace System.Collections.Concurrent
             //         for (Node? current = buckets[i]._node; current is not null; current = current._next)
             //             yield return new KeyValuePair<TKey, TValue>(current._key, current._value);
 
-            private readonly ConcurrentDictionary<TKey, TValue> _dictionary;
+            private readonly ConcurrentDictionary<TKey, TValue> _dictionary = dictionary;
 
             private ConcurrentDictionary<TKey, TValue>.VolatileNode[]? _buckets;
             private Node? _node;
-            private int _i;
-            private int _state;
-
-            private const int StateUninitialized = 0;
-            private const int StateOuterloop = 1;
-            private const int StateInnerLoop = 2;
-            private const int StateDone = 3;
-
-            public Enumerator(ConcurrentDictionary<TKey, TValue> dictionary)
-            {
-                _dictionary = dictionary;
-                _i = -1;
-            }
+            private int _i = -1;
 
             public KeyValuePair<TKey, TValue> Current { get; private set; }
 
@@ -889,45 +883,32 @@ namespace System.Collections.Concurrent
                 _node = null;
                 Current = default;
                 _i = -1;
-                _state = StateUninitialized;
             }
 
             public void Dispose() { }
 
             public bool MoveNext()
             {
-                switch (_state)
+                while (true)
                 {
-                    case StateUninitialized:
-                        _buckets = _dictionary._tables._buckets;
-                        _i = -1;
-                        goto case StateOuterloop;
+                    if (_node is Node node)
+                    {
+                        Current = new KeyValuePair<TKey, TValue>(node._key, node._value);
+                        _node = node._next;
+                        return true;
+                    }
 
-                    case StateOuterloop:
-                        ConcurrentDictionary<TKey, TValue>.VolatileNode[]? buckets = _buckets;
-                        Debug.Assert(buckets is not null);
+                    ConcurrentDictionary<TKey, TValue>.VolatileNode[]? buckets = _buckets ??= _dictionary._tables._buckets;
+                    Debug.Assert(buckets is not null);
 
-                        int i = ++_i;
-                        if ((uint)i < (uint)buckets.Length)
-                        {
-                            _node = buckets[i]._node;
-                            _state = StateInnerLoop;
-                            goto case StateInnerLoop;
-                        }
-                        goto default;
-
-                    case StateInnerLoop:
-                        if (_node is Node node)
-                        {
-                            Current = new KeyValuePair<TKey, TValue>(node._key, node._value);
-                            _node = node._next;
-                            return true;
-                        }
-                        goto case StateOuterloop;
-
-                    default:
-                        _state = StateDone;
+                    int i = _i + 1;
+                    if ((uint)i >= (uint)buckets.Length)
+                    {
                         return false;
+                    }
+
+                    _node = buckets[i]._node;
+                    _i = i;
                 }
             }
         }
