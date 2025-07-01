@@ -243,6 +243,12 @@ public:
 
 #ifdef DEBUG
 
+// NOTE: The RL and Parameterized heuristic support has not
+// been updated to properly track enregistration for different
+// register types and still classifies simd/masks under the
+// integer budget. This and the relevant training scripts should
+// be updated to support this the next time they are touched.
+
 // General Reinforcement Learning CSE heuristic hook.
 //
 // Produces a wide set of data to train a RL model.
@@ -269,7 +275,6 @@ private:
         rlHookTypeDouble = 4,
         rlHookTypeStruct = 5,
         rlHookTypeSimd   = 6,
-        rlHookTypeMask   = 7,
     };
 
 public:

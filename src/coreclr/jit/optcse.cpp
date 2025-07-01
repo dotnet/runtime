@@ -2398,6 +2398,13 @@ void CSE_HeuristicParameterized::CaptureLocalWeights()
             continue;
         }
 
+        // Only consider for integral types
+        //
+        if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsMask(varDsc->TypeGet()))
+        {
+            continue;
+        }
+
         JITDUMP("V%02u," FMT_WT "\n", m_pCompiler->lvaGetLclNum(varDsc), varDsc->lvRefCntWtd());
         m_localWeights->push_back(varDsc->lvRefCntWtd() / BB_UNITY_WEIGHT);
     }
@@ -3131,9 +3138,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     assert(features != nullptr);
     CSE_Candidate candidate(this, cse);
 
-    int enregCountInt = 0;
-    int enregCountFlt = 0;
-    int enregCountMsk = 0;
+    int enregCount = 0;
 
     for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
     {
@@ -3152,25 +3157,16 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
             continue;
         }
 
-        if (varTypeUsesIntReg(varTyp))
+        if (!varTypeIsFloating(varTyp))
         {
-            enregCountInt++;
+            enregCount++;
 
 #ifndef TARGET_64BIT
             if (varTyp == TYP_LONG)
             {
-                enregCountInt++; // on 32-bit targets longs use two registers
+                enregCount++; // on 32-bit targets longs use two registers
             }
 #endif // TARGET_64BIT
-        }
-        else if (varTypeUsesMaskReg(varTyp))
-        {
-            enregCountMsk++;
-        }
-        else
-        {
-            assert(varTypeUsesFloatReg(varTyp));
-            enregCountFlt++;
         }
     }
 
@@ -3201,28 +3197,23 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 
     const unsigned blockSpread = maxPostorderNum - minPostorderNum;
 
-    int type       = rlHookTypeOther;
-    int enregCount = 0;
+    int type = rlHookTypeOther;
 
     if (candidate.Expr()->TypeIs(TYP_INT))
     {
-        type       = rlHookTypeInt;
-        enregCount = enregCountInt;
+        type = rlHookTypeInt;
     }
     else if (candidate.Expr()->TypeIs(TYP_LONG))
     {
-        type       = rlHookTypeLong;
-        enregCount = enregCountInt;
+        type = rlHookTypeLong;
     }
     else if (candidate.Expr()->TypeIs(TYP_FLOAT))
     {
-        type       = rlHookTypeFloat;
-        enregCount = enregCountFlt;
+        type = rlHookTypeFloat;
     }
     else if (candidate.Expr()->TypeIs(TYP_DOUBLE))
     {
-        type       = rlHookTypeDouble;
-        enregCount = enregCountFlt;
+        type = rlHookTypeDouble;
     }
     else if (candidate.Expr()->TypeIs(TYP_STRUCT))
     {
@@ -3230,13 +3221,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     }
     else if (varTypeIsSIMD(candidate.Expr()->TypeGet()))
     {
-        type       = rlHookTypeSimd;
-        enregCount = enregCountFlt;
-    }
-    else if (varTypeIsMask(candidate.Expr()->TypeGet()))
-    {
-        type       = rlHookTypeMask;
-        enregCount = enregCountMsk;
+        type = rlHookTypeSimd;
     }
 
     int i         = 0;
