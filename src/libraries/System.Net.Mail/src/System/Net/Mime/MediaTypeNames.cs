@@ -47,6 +47,9 @@ namespace System.Net.Mime
             /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in WASM format.</summary>
             public const string Wasm = "application/wasm";
 
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in YAML format.</summary>
+            public const string Yaml = "application/yaml";
+
             /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in XML format.</summary>
             public const string Xml = "application/xml";
 
