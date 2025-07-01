@@ -1,5 +1,5 @@
 #pragma once
-
+#include <mono/metadata/metadata.h>
 #include <stdio.h>
 
 static int MH_LOG_indent_level = 0;
@@ -22,3 +22,7 @@ static int MH_LOG_indent_level = 0;
 #define MH_LOG_UNINDENT() { \
   MH_LOG_indent_level--; \
 } 
+
+extern void log_mono_type(MonoType* type) ;
+extern void log_mono_type_enum(MonoTypeEnum type_enum);
+extern void log_mint_type(int value);
