@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+#if defined(DEBUG) && defined(_WIN32)
+#include <process.h>
+#include <windows.h>
+#endif
+
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
 // startup of the application.
