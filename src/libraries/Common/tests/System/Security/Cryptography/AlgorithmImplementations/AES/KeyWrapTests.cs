@@ -284,11 +284,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                         Assert.Equal(0, offset);
                     };
 
-                int bingo = Aes.GetKeyWrapPaddedLength(input.Length);
+                int correctLength = Aes.GetKeyWrapPaddedLength(input.Length);
 
                 for (int i = 0; i <= output.Length; i++)
                 {
-                    if (i == bingo)
+                    if (i == correctLength)
                     {
                         // Assert.NoThrow
                         key.EncryptKeyWrapPadded(input, output.AsSpan(0, i));
