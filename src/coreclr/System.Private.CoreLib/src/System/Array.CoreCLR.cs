@@ -304,15 +304,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern CorElementType GetCorElementTypeOfElementType();
 
-        private unsafe MethodTable* ElementMethodTable
-        {
-            get
-            {
-                TypeHandle elementTH = RuntimeHelpers.GetMethodTable(this)->GetArrayElementTypeHandle();
-                Debug.Assert(!elementTH.IsTypeDesc);
-                return elementTH.AsMethodTable();
-            }
-        }
+        private unsafe MethodTable* ElementMethodTable => RuntimeHelpers.GetMethodTable(this)->GetArrayElementTypeHandle().AsMethodTable();
 
         private unsafe bool IsValueOfElementType(object value)
         {
