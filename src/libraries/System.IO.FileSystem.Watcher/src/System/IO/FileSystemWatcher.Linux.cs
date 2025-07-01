@@ -361,7 +361,7 @@ namespace System.IO
             {
                 bool removeINotifyWatches = false;
 
-                RemoveWatchedDirectoryFromParentAndWatches(dir, ref removeINotifyWatches, ignoredFd);
+                RemoveWatchedDirectoryFromParentAndWatches(dir, ref removeINotifyWatches);
 
                 if (removeINotifyWatches)
                 {
@@ -449,7 +449,7 @@ namespace System.IO
                 }
             }
 
-            private static void RemoveWatchedDirectoryFromParentAndWatches(WatchedDirectory dir, ref bool removeINotifyWatches, int ignoredFd = -1)
+            private static void RemoveWatchedDirectoryFromParentAndWatches(WatchedDirectory dir, ref bool removeINotifyWatches)
             {
                 Watcher watcher = dir.Watcher;
                 lock (watcher)
@@ -473,27 +473,24 @@ namespace System.IO
                         dir.Parent.Children!.RemoveAt(idx);
                     }
 
-                    RemoveFromWatch(dir, ignoredFd, ref removeINotifyWatches);
+                    RemoveFromWatch(dir, ref removeINotifyWatches);
 
                     if (dir.Children is { } children)
                     {
                         foreach (var child in children)
                         {
-                            RemoveFromWatch(child, ignoredFd, ref removeINotifyWatches);
+                            RemoveFromWatch(child, ref removeINotifyWatches);
                         }
                     }
                 }
 
-                static void RemoveFromWatch(WatchedDirectory dir, int ignoredFd, ref bool removeINotifyWatches)
+                static void RemoveFromWatch(WatchedDirectory dir, ref bool removeINotifyWatches)
                 {
                     Watch watch = dir.Watch;
                     lock (watch)
                     {
                         watch.Watchers.Remove(dir);
-                        if (watch.WatchDescriptor != ignoredFd)
-                        {
-                            removeINotifyWatches |= watch.Watchers.Count == 0;
-                        }
+                        removeINotifyWatches |= watch.Watchers.Count == 0;
                     }
                 }
             }
@@ -715,6 +712,14 @@ namespace System.IO
                         }
 
                         RemoveWatchedDirectory(dir, ignoredFd: nextEvent.wd);
+
+                        // RemoveUnusedINotifyWatches sets IsStopped when the last watcher is removed.
+                        if (IsStopped)
+                        {
+                            Stop();
+                            return false;
+                        }
+
                         continue;
                     }
 
