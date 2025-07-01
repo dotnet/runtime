@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -49,24 +52,32 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (!options.AbortServerOnClientExit)
             {
+                //options.Logger?.WriteLine("[Common - RunAsyncPrivate] Starting independent client and server");
                 return RunClientAndServerAsync(
                     loopbackClientFunc, loopbackServerFunc, options, CancellationToken.None, globalCt);
             }
 
             CancellationTokenSource clientExitCts = new CancellationTokenSource();
 
+            //options.Logger?.WriteLine("[Common - RunAsyncPrivate] Starting client and server");
+
             return RunClientAndServerAsync(
                 async uri =>
                 {
                     try
                     {
-                        options.Output?.WriteLine("RunAsyncPrivate: starting client function");
+                        //options.Logger?.WriteLine("[Client] starting client function");
                         await loopbackClientFunc(uri);
-                        options.Output?.WriteLine("RunAsyncPrivate: client function completed");
+                        //options.Logger?.WriteLine("[Client] client function completed successfully");
                     }
+                    //catch (Exception ex)
+                    //{
+                        //options.Logger?.WriteLine($"[Client] client function failed with {ex}");
+                    //    throw;
+                    //}
                     finally
                     {
-                        options.Output?.WriteLine("RunAsyncPrivate: cancelling client exit token");
+                        //options.Logger?.WriteLine("[Client] cancelling client exit token");
                         clientExitCts.Cancel();
                     }
                 },
@@ -76,31 +87,40 @@ namespace System.Net.WebSockets.Client.Tests
                 globalCt);
         }
 
-        private static async Task RunServerWebSocketAsync(
+        private static async Task<WebSocket> RunServerWebSocketAsync(
             WebSocketRequestData requestData,
             Func<WebSocket, CancellationToken, Task> serverWebSocketFunc,
             Options options,
             CancellationToken cancellationToken)
         {
+            //options.Logger?.WriteLine("[Server - Run WS] Starting...");
+
             var wsOptions = new WebSocketCreationOptions { IsServer = true, SubProtocol = options.ServerSubProtocol };
 
             var serverWebSocket = WebSocket.CreateFromStream(requestData.TransportStream, wsOptions);
-            using var registration = cancellationToken.Register(() => {
-                options.Output?.WriteLine("RunServerWebSocketAsync: aborting server on cancellation");
+            using (var registration = cancellationToken.Register(() =>
+            {
+                //options.Logger?.WriteLine("[Server - Run WS] Aborting server on cancellation");
                 serverWebSocket.Abort();
-            });
-
-            options.Output?.WriteLine("RunServerWebSocketAsync: starting server function");
-
-            await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
-
-            options.Output?.WriteLine("RunServerWebSocketAsync: server function completed");
+            }))
+            {
+                //options.Logger?.WriteLine("[Server - Run WS] Starting server WS callback");
+                await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
+                //options.Logger?.WriteLine("[Server - Run WS] server WS callback completed");
+            }
 
             if (options.DisposeServerWebSocket)
             {
-                options.Output?.WriteLine("RunServerWebSocketAsync: disposing server WebSocket");
+                //options.Logger?.WriteLine("[Server - Run WS] Disposing WebSocket");
                 serverWebSocket.Dispose();
             }
+            else
+            {
+                //options.Logger?.WriteLine("[Server - Run WS] Not disposing WebSocket. State: " + serverWebSocket.State);
+            }
+
+            //options.Logger?.WriteLine("[Server - Run WS] Completed");
+            return serverWebSocket;
         }
 
         private static async Task RunClientWebSocketAsync(
@@ -161,7 +181,28 @@ namespace System.Net.WebSockets.Client.Tests
             public bool DisposeHttpInvoker { get; set; }
             public Action<ClientWebSocketOptions>? ConfigureClientOptions { get; set; }
 
-            public ITestOutputHelper? Output { get; set; }
+            private TestOutputWriter? _testOutputWriter;
+            public TextWriter? Logger => _testOutputWriter;
+            public ITestOutputHelper? TestOutputHelper {
+                get => _testOutputWriter;
+                set { _testOutputWriter = TestOutputWriter.Convert(value); }
+            }
+
+            private class TestOutputWriter(ITestOutputHelper inner) : TextWriter, ITestOutputHelper
+            {
+                public override Encoding Encoding => Encoding.Unicode;
+                public override void Write(char value) => throw new NotSupportedException("Use WriteLine instead");
+                public override void Write(char[] buffer, int index, int count) => throw new NotSupportedException("Use WriteLine instead");
+                public override void WriteLine(string value) => inner.WriteLine(value);
+                public override void WriteLine(string format, params object[] args) => inner.WriteLine(format, args);
+                void ITestOutputHelper.WriteLine(string message) => inner.WriteLine(message);
+                void ITestOutputHelper.WriteLine(string format, params object[] args) => inner.WriteLine(format, args);
+
+                public static TestOutputWriter? Convert(ITestOutputHelper? output)
+                    => output is TestOutputWriter tow ? tow
+                        : output is null ? null
+                            : new TestOutputWriter(output);
+            }
         }
     }
 }

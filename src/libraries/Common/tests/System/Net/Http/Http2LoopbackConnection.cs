@@ -30,6 +30,7 @@ namespace System.Net.Test.Common
         private bool _expectClientDisconnect;
         private readonly SemaphoreSlim? _readLock;
         private readonly SemaphoreSlim? _writeLock;
+        private readonly TextWriter? _logger;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -43,6 +44,7 @@ namespace System.Net.Test.Common
             _connectionStream = stream;
             _timeout = timeout;
             _transparentPingResponse = httpOptions.EnableTransparentPingResponse;
+            _logger = httpOptions.Logger;
 
             if (httpOptions.EnsureThreadSafeIO)
             {
@@ -66,21 +68,10 @@ namespace System.Net.Test.Common
                     },
                     writeAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
-                        await _writeLock.WaitAsync(cancellationToken);
+                        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                         try
                         {
-                            await stream.WriteAsync(buffer, offset, count, cancellationToken);
-                        }
-                        finally
-                        {
-                            _writeLock.Release();
-                        }
-                    },
-                    flushAsyncFunc: async (cancellationToken) =>
-                    {
-                        await _writeLock.WaitAsync(cancellationToken);
-                        try
-                        {
+                            await stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
                             await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                         }
                         finally
@@ -88,7 +79,15 @@ namespace System.Net.Test.Common
                             _writeLock.Release();
                         }
                     },
-                    disposeFunc: (disposing) => stream.Dispose()
+                    disposeFunc: (disposing) =>
+                    {
+                        if (disposing)
+                        {
+                            // _logger?.WriteLine($"[Http2LoopbackConnection] Disposing HTTP/2 connection");
+                            stream.Dispose();
+                            // _logger?.WriteLine($"[Http2LoopbackConnection] Disposed");
+                        }
+                    }
                 );
             }
         }

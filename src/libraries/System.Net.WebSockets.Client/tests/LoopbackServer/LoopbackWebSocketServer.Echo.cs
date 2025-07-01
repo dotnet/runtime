@@ -22,10 +22,10 @@ namespace System.Net.WebSockets.Client.Tests
                 IgnoreServerErrors = true,
                 AbortServerOnClientExit = true,
                 ParseEchoOptions = true,
-                Output = output
+                TestOutputHelper = output
             };
 
-            output.WriteLine("RunEchoAsync called with options: " + options);
+            //output.WriteLine("[Common - Run Echo WS] RunEchoAsync called with options: " + options);
 
             return RunAsyncPrivate(
                 loopbackClientFunc,
@@ -36,6 +36,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         private static async Task RunEchoServerWebSocketAsync(WebSocketRequestData data, Options options, CancellationToken cancellationToken)
         {
+            //options.Logger?.WriteLine($"[Server - Run Echo WS] Starting...");
+
             Assert.NotNull(data.EchoOptions);
             WebSocketEchoOptions echoOptions = data.EchoOptions.Value;
 
@@ -47,19 +49,20 @@ namespace System.Net.WebSockets.Client.Tests
 
             await SendNegotiatedServerResponseAsync(data, options, cancellationToken).ConfigureAwait(false);
 
-            options.Output?.WriteLine("EchoServer: connection established");
+            //options.Logger?.WriteLine($"[Server - Run Echo WS] Connection established");
 
-            await RunServerWebSocketAsync(
+            var webSocket = await RunServerWebSocketAsync(
                 data,
                 (serverWebSocket, token) => WebSocketEchoHelper.RunEchoAll(
                     serverWebSocket,
                     echoOptions.ReplyWithPartialMessages,
                     echoOptions.ReplyWithEnhancedCloseMessage,
+                    options.Logger,
                     token),
                 options,
                 cancellationToken).ConfigureAwait(false);
 
-            options.Output?.WriteLine("EchoServer: server function completed");
+            //options.Logger?.WriteLine($"[Server - Run Echo WS] Completed; Server WebSocket state: {webSocket.State}");
         }
     }
 }

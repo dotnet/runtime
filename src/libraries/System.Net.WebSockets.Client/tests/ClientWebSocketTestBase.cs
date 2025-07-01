@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
 using System.Threading;
@@ -128,6 +130,7 @@ namespace System.Net.WebSockets.Client.Tests
         protected bool UseSharedHandler => !UseCustomInvoker && !UseHttpClient;
 
         protected Action<HttpClientHandler>? ConfigureCustomHandler;
+        protected bool UseSocketsHttpHandler = true;//false;
 
         internal virtual Version HttpVersion => Net.HttpVersion.Version11;
 
@@ -138,14 +141,67 @@ namespace System.Net.WebSockets.Client.Tests
                 return null;
             }
 
-            var handler = new HttpClientHandler();
+            HttpMessageHandler handler;
 
-            if (PlatformDetection.IsNotBrowser)
+            if (UseSocketsHttpHandler && SocketsHttpHandler.IsSupported)
             {
-                handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+                if (ConfigureCustomHandler is not null)
+                {
+                    throw new InvalidOperationException("ConfigureCustomHandler is not supported when UseSocketsHttpHandler is true.");
+                }
+
+                var shh = new SocketsHttpHandler();
+                shh.SslOptions.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+                shh.ConnectCallback = async (context, ct) =>
+                {
+                    // Create and connect a socket using default settings.
+                    Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                    try
+                    {
+                        await socket.ConnectAsync(context.DnsEndPoint, ct).ConfigureAwait(false);
+                        Stream stream = new NetworkStream(socket, ownsSocket: true);
+/*#if !TARGET_BROWSER
+                        var networkStream = stream;
+                        var delegatingStream = new DelegateDelegatingStream(networkStream);
+                        delegatingStream.DisposeFunc = disposing =>
+                        {
+                            //_output.WriteLine($"[Client] NetworkStream.Dispose({disposing})");
+                            if (disposing)
+                            {
+                                networkStream.Dispose();
+                            }
+                        };
+                        delegatingStream.DisposeAsyncFunc = () =>
+                        {
+                            //_output.WriteLine($"[Client] NetworkStream.DisposeAsync()");
+                            return networkStream.DisposeAsync();
+                        };
+                        stream = delegatingStream;
+#endif*/
+                        return stream;
+                    }
+                    catch
+                    {
+                        socket.Dispose();
+                        throw;
+                    }
+                };
+                handler = shh;
+            }
+            else if (PlatformDetection.IsNotBrowser)
+            {
+                var httpClientHandler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+                };
+                ConfigureCustomHandler?.Invoke(httpClientHandler);
+                handler = httpClientHandler;
+            }
+            else
+            {
+                handler = new HttpClientHandler();
             }
 
-            ConfigureCustomHandler?.Invoke(handler);
 
             if (UseCustomInvoker)
             {
@@ -231,22 +287,30 @@ namespace System.Net.WebSockets.Client.Tests
                 HttpVersion = HttpVersion,
                 UseSsl = useSsl,
                 IgnoreServerErrors = true,
-                AbortServerOnClientExit = true
+                AbortServerOnClientExit = true,
+                TestOutputHelper = _output
             };
 
             return LoopbackWebSocketServer.RunAsync(
                 clientFunc,
                 async (requestData, token) =>
                 {
-                    // Console.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] WebSocket.CreateFromStream");
+                    // _output?.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] WebSocket.CreateFromStream");
                     var serverWebSocket = WebSocket.CreateFromStream(
                         requestData.TransportStream,
                         new WebSocketCreationOptions { IsServer = true });
 
-                    using var registration = token.Register(serverWebSocket.Abort);
-                    // Console.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] RunEchoHeaders");
-                    await WebSocketEchoHelper.RunEchoHeaders(serverWebSocket, requestData.Headers, token);
-                    // Console.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] RunEchoHeaders completed");
+                    using (var registration = token.Register(() => {
+                        // _output?.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] Aborting server WebSocket on cancellation");
+                        serverWebSocket.Abort();
+                    }))
+                    {
+                        // _output?.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] RunEchoHeaders");
+                        await WebSocketEchoHelper.RunEchoHeaders(serverWebSocket, requestData.Headers, options.Logger, token);
+                        // _output?.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] RunEchoHeaders completed");
+                    }
+
+                    // _output?.WriteLine($"[Server - Run Echo Headers WS] Completed; Server WebSocket state: {serverWebSocket.State}");
                 },
                 options,
                 timeoutCts.Token);

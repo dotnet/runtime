@@ -84,6 +84,7 @@ namespace System.Net.WebSockets.Client.Tests
                 else
                 {
                     ConfigureCustomHandler = handler => handler.CookieContainer = cookies;
+                    UseSocketsHttpHandler = false;
                 }
 
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
@@ -172,6 +173,7 @@ namespace System.Net.WebSockets.Client.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
             {
                 ConfigureCustomHandler = handler => handler.Proxy = new WebProxy(proxyServer.Uri);
+                UseSocketsHttpHandler = false;
 
                 if (UseSharedHandler)
                 {

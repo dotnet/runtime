@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -19,6 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
             LoopbackServer.Connection connection,
             bool skipServerHandshakeResponse = false,
             bool parseEchoOptions = false,
+            TextWriter? logger = null,
             CancellationToken cancellationToken = default)
         {
             List<string> headers = await connection.ReadRequestHeaderAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -42,7 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
                     // NOTE: ProcessOptions needs to be called before sending the server response
                     // because it may be configured to delay the response.
 
-                    data.EchoOptions = await WebSocketEchoHelper.ProcessOptions(query).ConfigureAwait(false);
+                    data.EchoOptions = await WebSocketEchoHelper.ProcessOptions(query, logger).ConfigureAwait(false);
                 }
                 else
                 {
@@ -96,6 +98,8 @@ namespace System.Net.WebSockets.Client.Tests
             Http2LoopbackServer server,
             bool skipServerHandshakeResponse = false,
             bool parseEchoOptions = false,
+            bool sendEosOnDispose = true,
+            TextWriter? logger = null,
             CancellationToken cancellationToken = default)
         {
             var connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 })
@@ -133,7 +137,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     // NOTE: ProcessOptions needs to be called before sending the server response
                     // because it may be configured to delay the response.
-                    data.EchoOptions = await WebSocketEchoHelper.ProcessOptions(query).ConfigureAwait(false);
+                    data.EchoOptions = await WebSocketEchoHelper.ProcessOptions(query, logger).ConfigureAwait(false);
                 }
                 else
                 {
@@ -154,7 +158,8 @@ namespace System.Net.WebSockets.Client.Tests
                 await SendHttp2ServerResponseAsync(connection, streamId, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
-            data.TransportStream = new Http2LoopbackStream(connection, streamId, sendResetOnDispose: false);
+            // logger?.WriteLine($"[Server - HTTP/2 WS Handshake] Created Http2LoopbackStream for streamId {streamId}, sendEosOnDispose: {sendEosOnDispose}");
+            data.TransportStream = new Http2LoopbackStream(connection, streamId, sendEosOnDispose: sendEosOnDispose, sendResetOnDispose: false, logger);
             return data;
         }
 
