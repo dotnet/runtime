@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using TestUtilities;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -73,6 +74,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
+            using var _ = new TestEventListener(Console.Out, TestEventListener.NetworkingEvents);
             var semaphore = new SemaphoreSlim(0);
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
@@ -97,7 +99,7 @@ namespace System.Net.Http.Functional.Tests
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
 #if !WINHTTPHANDLER_TEST
-                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) { }
 #endif
                 finally
                 {
@@ -114,6 +116,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(int.MaxValue / 800, 100 * 1024)] // Capped at int.MaxValue
         public async Task ThresholdExceeded_ThrowsException(int? maxResponseHeadersLength, int headersLengthEstimate)
         {
+            using var _ = new TestEventListener(Console.Out, TestEventListener.NetworkingEvents);
             var semaphore = new SemaphoreSlim(0);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
