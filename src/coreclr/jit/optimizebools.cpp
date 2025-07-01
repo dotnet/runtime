@@ -1581,8 +1581,8 @@ PhaseStatus Compiler::optOptimizeBools()
     unsigned numCond   = 0;
     unsigned numPasses = 0;
     unsigned stress    = false;
-    ccmp_traits = new BitVecTraits(fgBBNumMax + 1, this);
-    ccmp_vec = BitVecOps::MakeEmpty(ccmp_traits);
+    BitVecTraits* ccmp_traits = new BitVecTraits(fgBBNumMax + 1, this);
+    BitVec ccmp_vec = BitVecOps::MakeEmpty(ccmp_traits);
 
     do
     {
@@ -1658,7 +1658,7 @@ PhaseStatus Compiler::optOptimizeBools()
                 // trigger or not
                 // else if ((compOpportunisticallyDependsOn(InstructionSet_APX) || JitConfig.JitEnableApxIfConv()) &&
                 // optBoolsDsc.optOptimizeCompareChainCondBlock())
-                else if (JitConfig.EnableApxConditionalChaining() && !optSwitchDetectAndConvert(b1, true) &&
+                else if (JitConfig.EnableApxConditionalChaining() && !optSwitchDetectAndConvert(b1, true, &ccmp_vec) &&
                          optBoolsDsc.optOptimizeCompareChainCondBlock())
                 {
                     // The optimization will have merged b1 and b2. Retry the loop so that
