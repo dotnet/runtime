@@ -16,7 +16,7 @@ static dispatch_queue_t _inputQueue;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
-PALEXPORT nw_connection_t AppleNetNative_NwCreateContext(int32_t isServer)
+PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
 {
     if (isServer != 0)  // the current implementation only supports client
         return NULL;
@@ -115,7 +115,7 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
 
 // this takes encrypted input from underlying stream and feeds it to nw_connection.
-PALEXPORT int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength)
+PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength)
 {
     if (connection == NULL || framer == NULL)
     {
@@ -157,7 +157,7 @@ PALEXPORT int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, 
 
 // This starts TLS handshake. For client, it will produce ClientHello and call output handler (on thread pool)
 // important part here is the state handler that will get asynchronous n=notifications about progress.
-PALEXPORT int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, size_t state)
+PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, size_t state)
 {
     if (connection == NULL)
         return -1;
@@ -201,13 +201,13 @@ PALEXPORT int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, siz
 }
 
 // This will start connection cleanup
-PALEXPORT void AppleNetNative_NwCancelConnection(nw_connection_t connection)
+PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection)
 {
     nw_connection_cancel(connection);
 }
 
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
-PALEXPORT void AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
+PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
@@ -224,8 +224,8 @@ PALEXPORT void AppleNetNative_NwSendToConnection(nw_connection_t connection,  si
      });
 }
 
-// This is used by decrypt. We feed data in via AppleNetNative_NwProcessInputData and we try to read from the connection.
-PALEXPORT void AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t state)
+// This is used by decrypt. We feed data in via AppleCryptoNative_NwProcessInputData and we try to read from the connection.
+PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state)
 {
     nw_connection_receive(connection, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
@@ -277,7 +277,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 }
 
 // This configures TLS properties
-PALEXPORT void AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
+PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
     nw_protocol_options_t tlsOptions = nw_tls_create_options();
     sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
@@ -331,7 +331,7 @@ PALEXPORT void AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t
 }
 
 // This wil get TLS details after handshake is finished
-PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength)
+PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
     if (meta != NULL)
@@ -381,7 +381,7 @@ PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection,
     return -1;
 }
 
-PALEXPORT void AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* certificateCount)
+PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* certificateCount)
 {
     CFMutableArrayRef certs = NULL;
     __block int count = 0;
@@ -404,8 +404,8 @@ PALEXPORT void AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFArra
                 sec_protocol_metadata_access_peer_certificate_chain(secMeta, ^(sec_certificate_t certificate) {
                     CFArrayAppendValue(certs, sec_certificate_copy_ref(certificate));
                 });
-
             }
+
             sec_release(secMeta);
         }
     }
@@ -424,7 +424,7 @@ PALEXPORT void AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFArra
 #pragma clang diagnostic pop
 
 // this is called once to set everything up
-PALEXPORT int32_t AppleNetNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc)
+PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc)
 {
     assert(statusFunc != NULL);
     assert(writeFunc != NULL);

@@ -52,16 +52,16 @@ typedef int32_t (*ReadCallback)(void* context, uint8_t* buffer, size_t* length);
 typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, size_t length);
 
 // Only TLS-specific Network Framework functions are exported
-PALEXPORT nw_connection_t AppleNetNative_NwCreateContext(int32_t isServer);
-PALEXPORT int32_t AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHandle);
-PALEXPORT int32_t AppleNetNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc);
-PALEXPORT void AppleNetNative_NwSendToConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, int length);
-PALEXPORT void AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle);
-PALEXPORT int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);
-PALEXPORT void AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol);
-PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength);
-PALEXPORT void AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* count);
-PALEXPORT void AppleNetNative_NwCancelConnection(nw_connection_t connection);
+PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer);
+PALEXPORT int32_t AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHandle);
+PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc);
+PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, int length);
+PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle);
+PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);
+PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol);
+PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength);
+PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* count);
+PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection);
 
 #ifdef __cplusplus
 }

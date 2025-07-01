@@ -89,8 +89,6 @@
     <PlatformManifestFileEntry Include="libSystem.Net.Security.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Security.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Security.Native.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Net.Security.Native.Apple.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Net.Security.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
