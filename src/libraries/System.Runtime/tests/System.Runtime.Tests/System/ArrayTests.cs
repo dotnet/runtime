@@ -1589,6 +1589,9 @@ namespace System.Tests
 
             // ValueType[] -> ValueType[] never works
             yield return new object[] { new StructWithNonGenericInterface1[1], new StructWithNonGenericInterface1_2[1] };
+
+            // ValueType[] -> Nullable[] never works
+            yield return new object[] { new int[1], new int?[1] };
         }
 
         [Theory]
