@@ -109,7 +109,8 @@ namespace ILLink.Shared.TrimAnalysis
 
         private static bool ShouldWarnWhenAccessedForReflection(IFieldSymbol field)
         {
-            return GetFieldAnnotation(field) != DynamicallyAccessedMemberTypes.None;
+            return GetFieldAnnotation(field) != DynamicallyAccessedMemberTypes.None
+                && field.AssociatedSymbol is not IPropertySymbol;
         }
 
         internal static DynamicallyAccessedMemberTypes GetFieldAnnotation(IFieldSymbol field)
