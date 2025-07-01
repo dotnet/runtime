@@ -74,36 +74,58 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            using var _ = new TestEventListener(Console.Out, TestEventListener.NetworkingEvents);
             var semaphore = new SemaphoreSlim(0);
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using HttpClient client = CreateHttpClient(handler);
-
-                Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
-                if (!IsWinHttpHandler)
+                try
                 {
-                    Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    Console.WriteLine("Client before GET");
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    if (!IsWinHttpHandler)
+                    {
+                        Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                    }
+                    Console.WriteLine("Client after GET");
+                    await semaphore.WaitAsync();
+                    Console.WriteLine("Client semaphore DONE");
                 }
-                await semaphore.WaitAsync();
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Client error: " + ex);
+                }
             },
             async server =>
             {
+                Console.WriteLine("Server before request");
                 try
                 {
                     await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
-                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown)
+                {
+                    Console.WriteLine("Expected server error: " + ex);
+                }
 #if !WINHTTPHANDLER_TEST
-                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) { }
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad)
+                {
+                    Console.WriteLine("Expected server error: " + ex);
+                }
 #endif
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Server error: " + ex);
+                }
                 finally
                 {
+                    Console.WriteLine("Server after request");
                     semaphore.Release();
+                    Console.WriteLine("Server semaphore RELEASED");
                 }
             });
         }
@@ -116,32 +138,41 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(int.MaxValue / 800, 100 * 1024)] // Capped at int.MaxValue
         public async Task ThresholdExceeded_ThrowsException(int? maxResponseHeadersLength, int headersLengthEstimate)
         {
-            using var _ = new TestEventListener(Console.Out, TestEventListener.NetworkingEvents);
             var semaphore = new SemaphoreSlim(0);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using HttpClientHandler handler = CreateHttpClientHandler();
-
-                if (maxResponseHeadersLength.HasValue)
+                try
                 {
-                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
-                }
+                    using HttpClientHandler handler = CreateHttpClientHandler();
 
-                using HttpClient client = CreateHttpClient(handler);
-
-                if (headersLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
-                {
-                    await client.GetAsync(uri);
-                }
-                else
-                {
-                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
-                    if (!IsWinHttpHandler)
+                    if (maxResponseHeadersLength.HasValue)
                     {
-                        Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                        handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
                     }
+
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    Console.WriteLine("Client before GET");
+                    if (headersLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
+                    {
+                        await client.GetAsync(uri);
+                    }
+                    else
+                    {
+                        Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                        if (!IsWinHttpHandler)
+                        {
+                            Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                        }
+                    }
+                    Console.WriteLine("Client after GET");
+                    await semaphore.WaitAsync();
+                    Console.WriteLine("Client semaphore DONE");
                 }
-                await semaphore.WaitAsync();
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Client error: " + ex);
+                }
             },
             async server =>
             {
@@ -151,18 +182,31 @@ namespace System.Net.Http.Functional.Tests
                     headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
                 }
 
+                Console.WriteLine("Server before request");
                 try
                 {
                     await server.HandleRequestAsync(headers: headers);
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
-                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown)
+                {
+                    Console.WriteLine("Expected server error: " + ex);
+                }
 #if !WINHTTPHANDLER_TEST
-                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad)
+                {
+                    Console.WriteLine("Expected server error: " + ex);
+                }
 #endif
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Server error: " + ex);
+                }
                 finally
                 {
+                    Console.WriteLine("Server after request");
                     semaphore.Release();
+                    Console.WriteLine("Server semaphore RELEASED");
                 }
             });
         }
