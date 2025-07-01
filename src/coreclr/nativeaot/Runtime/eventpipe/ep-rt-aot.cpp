@@ -25,6 +25,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "eventtrace_context.h"
+#include "eventtracebase.h"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -75,7 +76,19 @@ bool
 ep_rt_aot_providers_validate_all_disabled (void)
 {
     return !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
-        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
+}
+
+void
+ep_rt_aot_provider_config_init (
+    EventPipeProviderConfiguration *provider_config)
+{
+    if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (uint8_t) ep_provider_config_get_logging_level (provider_config);
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
+    }
 }
 
 void
@@ -192,6 +205,12 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
     }
 
     return entrypoint_assembly_name;
+}
+
+void
+ep_rt_aot_execute_rundown (dn_vector_ptr_t* execution_checkpoints)
+{
+    ETW::EnumerationLog::EndRundown();
 }
 
 const ep_char8_t *

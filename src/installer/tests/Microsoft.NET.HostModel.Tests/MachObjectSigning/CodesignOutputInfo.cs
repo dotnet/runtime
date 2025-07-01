@@ -123,7 +123,6 @@ internal sealed record CodesignOutputInfo
             }
             return bytes;
         }
-
     }
 
     public const string SampleCodesignOutput = """

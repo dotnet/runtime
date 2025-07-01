@@ -1,4 +1,5 @@
-
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -153,29 +154,34 @@ public class MachObjectTests
     [PlatformSpecific(TestPlatforms.OSX)]
     public void EmbeddedSignatureBlobMatchesCodesignInfo(string filePath, TestArtifact _)
     {
-        if(!SigningTests.IsSigned(filePath))
+        if (!SigningTests.IsSigned(filePath))
         {
             return;
         }
-        using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        MachObjectFile machObjectFile;
+        EmbeddedSignatureBlob? embeddedSignatureBlob;
+        using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
+        using (var memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
         {
-            MachObjectFile machObjectFile = MachObjectFile.Create(new StreamBasedMachOFile(stream));
+            machObjectFile = MachObjectFile.Create(new MemoryMappedMachOViewAccessor(memoryMappedViewAccessor));
             Assert.True(machObjectFile.HasSignature, "Expected MachObjectFile to have a signature");
-            EmbeddedSignatureBlob? embeddedSignatureBlob = machObjectFile.EmbeddedSignatureBlob;
+            embeddedSignatureBlob = machObjectFile.EmbeddedSignatureBlob;
             Assert.NotNull(embeddedSignatureBlob);
-            var (exitcode, stderr) = Codesign.Run("--display --verbose=8", filePath);
-            if (exitcode != 0)
-            {
-                output.WriteLine($"Codesign command failed with exit code {exitcode}: {stderr}");
-                Assert.Fail("Codesign command failed");
-            }
-            output.WriteLine($"Codesign output for {filePath}:\n{stderr}");
-            CodesignOutputInfo codesignInfo = CodesignOutputInfo.ParseFromCodeSignOutput(stderr);
-            output.WriteLine($"Comparing {filePath} to codesign info: {codesignInfo}");
-            output.WriteLine($"specialSlotHashes: {string.Join(", ", codesignInfo.SpecialSlotHashes.Select(h => BitConverter.ToString(h).Replace("-", "")))}");
-            output.WriteLine($"machObjectFile specialSlotHashes: {string.Join(", ", embeddedSignatureBlob.CodeDirectoryBlob.SpecialSlotHashes.Select(h => BitConverter.ToString(h.ToArray()).Replace("-", "")))}");
-            AssertEqual(codesignInfo, embeddedSignatureBlob);
         }
+
+        var (exitcode, stderr) = Codesign.Run("--display --verbose=6", filePath);
+#pragma warning disable CS0162
+        if (exitcode != 0)
+        {
+            output.WriteLine($"Codesign command failed with exit code {exitcode}: {stderr}");
+            Assert.Fail("Codesign command failed");
+        }
+        output.WriteLine($"Codesign output for {filePath}:\n{stderr}");
+        CodesignOutputInfo codesignInfo = CodesignOutputInfo.ParseFromCodeSignOutput(stderr);
+        output.WriteLine($"Comparing {filePath} to codesign info: {codesignInfo}");
+        output.WriteLine($"specialSlotHashes: {string.Join(", ", codesignInfo.SpecialSlotHashes.Select(h => BitConverter.ToString(h).Replace("-", "")))}");
+        output.WriteLine($"machObjectFile specialSlotHashes: {string.Join(", ", embeddedSignatureBlob.CodeDirectoryBlob.SpecialSlotHashes.Select(h => BitConverter.ToString(h.ToArray()).Replace("-", "")))}");
+        AssertEqual(codesignInfo, embeddedSignatureBlob);
     }
 
     static void AssertEqual(CodesignOutputInfo csi, EmbeddedSignatureBlob b)
@@ -187,7 +193,22 @@ public class MachObjectTests
         Assert.True(csi.ExecutableSegmentLimit == b.CodeDirectoryBlob.ExecutableSegmentLimit, "ExecutableSegmentLimit do not match");
         Assert.True(csi.ExecutableSegmentFlags == b.CodeDirectoryBlob.ExecutableSegmentFlags, "ExecutableSegmentFlags do not match");
 
-        Assert.True(csi.SpecialSlotHashes.Zip(b.CodeDirectoryBlob.SpecialSlotHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x));
-        Assert.True(csi.CodeHashes.Zip(b.CodeDirectoryBlob.CodeHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x));
+        AssertEqual(csi.SpecialSlotHashes, b.CodeDirectoryBlob.SpecialSlotHashes);
+        AssertEqual(csi.CodeHashes, b.CodeDirectoryBlob.CodeHashes);
+
+        static void AssertEqual(byte[][] hashes1, IReadOnlyList<IReadOnlyList<byte>> hashes2)
+        {
+            Assert.Equal(hashes1.Length, hashes2.Count);
+
+            for (int i = 0; i < hashes1.Length; i++)
+            {
+                Assert.Equal(hashes1[i].Length, hashes2[i].Count);
+
+                for (int j = 0; j < hashes1[i].Length; j++)
+                {
+                    Assert.Equal(hashes1[i][j], hashes2[i][j]);
+                }
+            }
+        }
     }
 }

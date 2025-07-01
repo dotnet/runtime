@@ -427,6 +427,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
+                    // Make sure we consume the registers that are getting specially handled
+                    genConsumeReg(op1);
+
                     // We're merging with a non-zero value, so the target register is RMW
                     emitAttr attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
                     GetEmitter()->emitIns_Mov(INS_movaps, attr, targetReg, mergeReg, /* canSkip */ true);
@@ -451,12 +454,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 // We don't need to genProduceReg(node) since that will be handled by processing op2
                 // likewise, processing op2 will ensure its own registers are consumed
-
-                if (!mergeWithZero)
-                {
-                    // Make sure we consume the registers that are getting specially handled
-                    genConsumeReg(op1);
-                }
                 embMaskOp = op3;
             }
         }
@@ -816,8 +813,40 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                         emitSwCase);
                     }
                 }
+                else if (category == HW_Category_MemoryLoad)
+                {
+                    bool mergeWithZero = false;
+
+                    if (op3->isContained())
+                    {
+                        op3Reg        = targetReg;
+                        mergeWithZero = true;
+                    }
+
+                    assert(emitter::isMaskReg(op2Reg));
+                    assert(mergeWithZero == op3->IsVectorZero());
+
+                    // Until we improve the handling of addressing modes in the emitter, we'll create a
+                    // temporary GT_IND to generate code with.
+                    GenTreeIndir load = indirForm(node->TypeGet(), op1);
+                    emit->emitIns_Mov(INS_movaps, simdSize, targetReg, op3Reg, /* canSkip */ true);
+
+                    instOptions = AddEmbMaskingMode(instOptions, op2Reg, mergeWithZero);
+                    emit->emitIns_R_A(ins, simdSize, targetReg, &load, instOptions);
+                }
                 else if (category == HW_Category_MemoryStore)
                 {
+                    if (emitter::isMaskReg(op2Reg))
+                    {
+                        // Until we improve the handling of addressing modes in the emitter, we'll create a
+                        // temporary GT_STORE_IND to generate code with.
+                        GenTreeStoreInd store = storeIndirForm(node->TypeGet(), op1, op3);
+
+                        instOptions = AddEmbMaskingMode(instOptions, op2Reg, false);
+                        emit->emitInsStoreInd(ins, simdSize, &store, instOptions);
+                        break;
+                    }
+
                     // The Mask instructions do not currently support containment of the address.
                     assert(!op2->isContained());
 

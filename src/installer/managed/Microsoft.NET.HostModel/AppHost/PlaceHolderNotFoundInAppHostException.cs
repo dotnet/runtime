@@ -18,6 +18,7 @@ namespace Microsoft.NET.HostModel.AppHost
         }
         public PlaceHolderNotFoundInAppHostException(ReadOnlySpan<byte> pattern)
         {
+            MissingPattern = pattern.ToArray();
         }
     }
 }

@@ -14,7 +14,7 @@ namespace TestUnhandledException
 
     unsafe class Program
     {
-        [DllImport("foreignunhandled")]
+        [DllImport("unhandlednative")]
         public static extern void InvokeCallbackOnNewThread(delegate*unmanaged<void> callBack);
 
         private const string INTERNAL_CALL = "__internal";
@@ -48,11 +48,32 @@ namespace TestUnhandledException
             {
                 throw new Exception("Test");
             }
+            if (args[0] == "mainhardware")
+            {
+                string s = null;
+                Console.WriteLine(s.Length); // This will cause a NullReferenceException
+            }
             else if (args[0] == "foreign")
             {
                 InvokeCallbackOnNewThread(&ThrowException);
             }
             else if (args[0] == "secondary")
+            {
+                Thread t = new Thread(() => throw new Exception("Test"));
+                t.Start();
+                t.Join();
+            }
+            else if (args[0] == "secondaryhardware")
+            {
+                Thread t = new Thread(() =>
+                {
+                    string s = null;
+                    Console.WriteLine(s.Length); // This will cause a NullReferenceException
+                });
+                t.Start();
+                t.Join();
+            }
+            else if (args[0] == "secondaryunhandled")
             {
                 Thread t = new Thread(() => throw new Exception("Test"));
                 t.Start();

@@ -68,22 +68,31 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void Dispose()
         {
-            if (Directory.Exists(_backupPath))
+            RetryOnIOError(() =>
             {
-                CopyOverDirectory(_backupPath, _basePath);
+                if (Directory.Exists(_backupPath))
+                {
+                    // Copying may fail if the file is still mapped from a process that is exiting
+                    CopyOverDirectory(_backupPath, _basePath);
+                }
+                return true;
+            }, $"Failed to restore files from the backup directory {_backupPath} even after retries");
 
-                // Directory.Delete sometimes fails with error that the directory is not empty.
-                // This is a known problem where the actual Delete call is not 100% synchronous
-                // the OS reports a success but the file/folder is not fully removed yet.
-                // So implement a simple retry with a short timeout.
-                RetryOnIOError(() =>
+            RetryOnIOError(() =>
+                {
+                    if (Directory.Exists(_backupPath))
                     {
+                        // Directory.Delete sometimes fails with error that the directory is not empty.
+                        // This is a known problem where the actual Delete call is not 100% synchronous
+                        // the OS reports a success but the file/folder is not fully removed yet.
+                        // So implement a simple retry with a short timeout.
                         Directory.Delete(_backupPath, recursive: true);
                         return !Directory.Exists(_backupPath);
-                    },
-                    $"Failed to delete the backup folder {_backupPath} even after retries."
-                );
-            }
+                    }
+                    return true;
+                },
+                $"Failed to delete the backup folder {_backupPath} even after retries."
+            );
         }
 
         private static void CopyOverDirectory(string source, string destination)
@@ -119,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                         return;
                     }
                 }
-                catch (IOException e) 
+                catch (IOException e)
                 {
                     exception = e;
                 }

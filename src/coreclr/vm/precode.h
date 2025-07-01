@@ -364,6 +364,12 @@ struct InterpreterPrecode
         LIMITED_METHOD_CONTRACT;
         return PINSTRToPCODE(dac_cast<TADDR>(this));
     }
+
+    static InterpreterPrecode* FromEntryPoint(PCODE entryPoint)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (InterpreterPrecode*)PCODEToPINSTR(entryPoint);
+    }
 };
 #endif // FEATURE_INTERPRETER
 

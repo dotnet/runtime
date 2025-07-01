@@ -2293,7 +2293,7 @@ extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule
         {
             globalTypeHandle = TypeHandle(pModule->GetGlobalMethodTable());
         }
-        EX_SWALLOW_NONTRANSIENT;
+        EX_SWALLOW_NONTRANSIENT
 
         if (!globalTypeHandle.IsNull())
         {

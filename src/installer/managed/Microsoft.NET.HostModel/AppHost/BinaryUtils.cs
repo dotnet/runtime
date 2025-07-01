@@ -74,7 +74,7 @@ namespace Microsoft.NET.HostModel.AppHost
             }
         }
 
-        internal static unsafe int SearchInFile(MemoryMappedViewAccessor accessor, byte[] searchPattern)
+        internal static unsafe int SearchInFile(MemoryMappedViewAccessor accessor, ReadOnlySpan<byte> searchPattern)
         {
             var safeBuffer = accessor.SafeMemoryMappedViewHandle;
             return KMPSearch(searchPattern, (byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);

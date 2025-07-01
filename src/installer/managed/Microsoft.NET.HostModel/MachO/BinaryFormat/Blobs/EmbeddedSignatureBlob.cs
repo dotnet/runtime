@@ -159,8 +159,9 @@ internal sealed class EmbeddedSignatureBlob : IBlob
     internal static unsafe long GetSignatureSize(uint fileSize, string identifier, EmbeddedSignatureBlob? existingSignature = null, byte? hashSize = null)
     {
         byte usedHashSize = hashSize ?? CodeDirectoryBlob.DefaultHashType.GetHashSize();
+        // CodeDirectory, Requirements, CMS Wrapper are always present
         uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
-        uint embeddedSignatureSubBlobCount = 3; // CodeDirectory, Requirements, CMS Wrapper are always present
+        uint embeddedSignatureSubBlobCount = 3;
         uint entitlementsBlobSize = 0;
         uint derEntitlementsBlobSize = 0;
 
@@ -169,13 +170,16 @@ internal sealed class EmbeddedSignatureBlob : IBlob
             // We preserve Entitlements and DER Entitlements blobs if they exist in the old signature.
             // We need to update the relevant sizes and counts to reflect this.
             specialCodeSlotCount = Math.Max((uint)CodeDirectorySpecialSlot.Requirements, existingSignature.GetSpecialSlotHashCount());
-            entitlementsBlobSize = existingSignature.EntitlementsBlob?.Size ?? 0;
-            derEntitlementsBlobSize = existingSignature.DerEntitlementsBlob?.Size ?? 0;
-            // Requirements and CMSWrapper blobs are always overwritten as emtpy, but present.
             if (existingSignature.EntitlementsBlob is not null)
+            {
+                entitlementsBlobSize = existingSignature.EntitlementsBlob.Size;
                 embeddedSignatureSubBlobCount += 1;
+            }
             if (existingSignature.DerEntitlementsBlob is not null)
+            {
+                derEntitlementsBlobSize = existingSignature.DerEntitlementsBlob.Size;
                 embeddedSignatureSubBlobCount += 1;
+            }
         }
 
         // Calculate the size of the new signature
