@@ -21,8 +21,10 @@ namespace System.Numerics.Tensors
     /// <typeparam name="T">The type of the elements within the tensor span.</typeparam>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly ref struct ReadOnlyTensorSpan<T>
+#if NET9_0_OR_GREATER
+        : IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>
+#endif
     {
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Empty" />
         public static ReadOnlyTensorSpan<T> Empty => default;
@@ -55,12 +57,7 @@ namespace System.Numerics.Tensors
         ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length.
         /// </exception>
         public ReadOnlyTensorSpan(T[]? array, scoped ReadOnlySpan<nint> lengths)
-        {
-            _shape = TensorShape.Create(array, lengths);
-            _reference = ref (array is not null)
-                       ? ref MemoryMarshal.GetArrayDataReference(array)
-                       : ref Unsafe.NullRef<T>();
-        }
+            : this(array, lengths, strides: []) { }
 
         /// <summary>Creates a new tensor over the portion of the target array beginning at the specified start index and using the specified lengths and strides.</summary>
         /// <param name="array">The target array.</param>
@@ -114,7 +111,7 @@ namespace System.Numerics.Tensors
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span)
         {
             ref T reference = ref MemoryMarshal.GetReference(span);
-            _shape = TensorShape.Create(ref reference, span.Length);
+            _shape = TensorShape.Create(ref reference, span.Length, pinned: false);
             _reference = ref reference;
         }
 
@@ -127,11 +124,7 @@ namespace System.Numerics.Tensors
         ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="span" />.Length.
         /// </exception>
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span, scoped ReadOnlySpan<nint> lengths)
-        {
-            ref T reference = ref MemoryMarshal.GetReference(span);
-            _shape = TensorShape.Create(ref reference, span.Length, lengths);
-            _reference = ref reference;
-        }
+            : this(span, lengths, strides: []) { }
 
         /// <summary>Creates a new tensor span over the target span using the specified lengths and strides.</summary>
         /// <param name="span">The target span.</param>
@@ -148,7 +141,7 @@ namespace System.Numerics.Tensors
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             ref T reference = ref MemoryMarshal.GetReference(span);
-            _shape = TensorShape.Create(ref reference, span.Length, lengths, strides);
+            _shape = TensorShape.Create(ref reference, span.Length, lengths, strides, pinned: false);
             _reference = ref reference;
         }
 
@@ -220,10 +213,7 @@ namespace System.Numerics.Tensors
         /// </exception>
         [CLSCompliant(false)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths)
-        {
-            _shape = TensorShape.Create(data, dataLength, lengths);
-            _reference = ref Unsafe.AsRef<T>(data);
-        }
+            : this(data, dataLength, lengths, strides: []) { }
 
         /// <summary>Creates a new tensor span over the target unmanaged buffer using the specified lengths and strides.</summary>
         /// <param name="data">The pointer to the start of the target unmanaged buffer.</param>
@@ -248,28 +238,9 @@ namespace System.Numerics.Tensors
             _reference = ref Unsafe.AsRef<T>(data);
         }
 
-        // Constructor for internal use only. It is not safe to expose publicly.
-        internal ReadOnlyTensorSpan(ref T data, nint dataLength)
+        internal ReadOnlyTensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            _shape = TensorShape.Create(ref data, dataLength);
-            _reference = ref data;
-        }
-
-        internal ReadOnlyTensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths)
-        {
-            _shape = TensorShape.Create(ref data, dataLength, lengths);
-            _reference = ref data;
-        }
-
-        internal ReadOnlyTensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
-        {
-            _shape = TensorShape.Create(ref data, dataLength, lengths, strides);
-            _reference = ref data;
-        }
-
-        internal ReadOnlyTensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder)
-        {
-            _shape = TensorShape.Create(ref data, dataLength, lengths, strides, linearRankOrder);
+            _shape = TensorShape.Create(ref data, dataLength, lengths, strides, pinned);
             _reference = ref data;
         }
 
@@ -308,6 +279,9 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="IReadOnlyTensor.IsEmpty" />
         public bool IsEmpty => _shape.IsEmpty;
+
+        /// <inheritdoc cref="IReadOnlyTensor.IsPinned" />
+        public bool IsPinned => _shape.IsPinned;
 
         /// <inheritdoc cref="IReadOnlyTensor.Lengths" />
         [UnscopedRef]
@@ -464,11 +438,47 @@ namespace System.Numerics.Tensors
             return false;
         }
 
+#if NET9_0_OR_GREATER
+        //
+        // IReadOnlyTensor
+        //
+
+        object? IReadOnlyTensor.this[params scoped ReadOnlySpan<NIndex> indexes] => this[indexes];
+
+        object? IReadOnlyTensor.this[params scoped ReadOnlySpan<nint> indexes] => this[indexes];
+
+        //
+        // IReadOnlyTensor<TSelf, T>
+        //
+
+        ReadOnlyTensorSpan<T> IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>.AsReadOnlyTensorSpan() => this;
+
+        ReadOnlyTensorSpan<T> IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>.AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> startIndexes) => Slice(startIndexes);
+
+        ReadOnlyTensorSpan<T> IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>.AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NIndex> startIndexes) => Slice(startIndexes);
+
+        ReadOnlyTensorSpan<T> IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>.AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> ranges) => Slice(ranges);
+
+        ReadOnlyTensorSpan<T> IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>.ToDenseTensor()
+        {
+            ReadOnlyTensorSpan<T> result = this;
+
+            if (!IsDense)
+            {
+                Tensor<T> tmp = Tensor.Create<T>(Lengths, IsPinned);
+                CopyTo(tmp);
+                result = tmp;
+            }
+
+            return result;
+        }
+#endif
+
         /// <summary>Enumerates the elements of a tensor span.</summary>
         public ref struct Enumerator : IEnumerator<T>
         {
             private readonly ReadOnlyTensorSpan<T> _span;
-            private nint[] _indexes;
+            private readonly nint[] _indexes;
             private nint _linearOffset;
             private nint _itemsEnumerated;
 
@@ -514,7 +524,7 @@ namespace System.Numerics.Tensors
             // IDisposable
             //
 
-            void IDisposable.Dispose() { }
+            readonly void IDisposable.Dispose() { }
 
             //
             // IEnumerator

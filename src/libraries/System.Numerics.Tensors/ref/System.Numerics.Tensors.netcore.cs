@@ -6,7 +6,6 @@
 
 namespace System.Buffers
 {
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public readonly partial struct NIndex : System.IEquatable<System.Buffers.NIndex>
     {
         private readonly int _dummyPrimitive;
@@ -30,7 +29,6 @@ namespace System.Buffers
         public System.Index ToIndexUnchecked() { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public readonly partial struct NRange : System.IEquatable<System.Buffers.NRange>
     {
         private readonly int _dummyPrimitive;
@@ -55,7 +53,6 @@ namespace System.Buffers
 }
 namespace System.Numerics.Tensors
 {
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IReadOnlyTensor
     {
         nint FlattenedLength { get; }
@@ -70,10 +67,12 @@ namespace System.Numerics.Tensors
         int Rank { get; }
         [System.Diagnostics.CodeAnalysis.UnscopedRefAttribute]
         System.ReadOnlySpan<nint> Strides { get; }
-        System.Buffers.MemoryHandle GetPinnedHandle();
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    public partial interface IReadOnlyTensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Numerics.Tensors.IReadOnlyTensor where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
+    public partial interface IReadOnlyTensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor
+        where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         static abstract TSelf Empty { get; }
         new ref readonly T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get; }
@@ -94,7 +93,6 @@ namespace System.Numerics.Tensors
         bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination);
         bool TryFlattenTo(scoped System.Span<T> destination);
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public partial interface ITensor : System.Numerics.Tensors.IReadOnlyTensor
     {
         bool IsReadOnly { get; }
@@ -103,8 +101,11 @@ namespace System.Numerics.Tensors
         void Clear();
         void Fill(object value);
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    public partial interface ITensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>, System.Numerics.Tensors.ITensor where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>
+    public partial interface ITensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>, System.Numerics.Tensors.ITensor
+        where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         new ref T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get; }
         new TSelf this[params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges] { get; set; }
@@ -126,6 +127,7 @@ namespace System.Numerics.Tensors
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> this[nint index] { get { throw null; } }
+        public bool IsDense { get { throw null; } }
         public nint Length { get { throw null; } }
         public System.Numerics.Tensors.ReadOnlyTensorDimensionSpan<T>.Enumerator GetEnumerator() { throw null; }
         public ref partial struct Enumerator
@@ -137,7 +139,6 @@ namespace System.Numerics.Tensors
             public void Reset() { }
         }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public readonly ref partial struct ReadOnlyTensorSpan<T>
     {
         private readonly object _dummy;
@@ -162,6 +163,7 @@ namespace System.Numerics.Tensors
         public bool HasAnyDenseDimensions { get { throw null; } }
         public bool IsDense { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
+        public bool IsPinned { get { throw null; } }
         public ref readonly T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get { throw null; } }
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> this[params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges] { get { throw null; } }
         public ref readonly T this[params scoped System.ReadOnlySpan<nint> indexes] { get { throw null; } }
@@ -205,10 +207,9 @@ namespace System.Numerics.Tensors
             readonly object? System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
             public void Reset() { }
-            void System.IDisposable.Dispose() { }
+            readonly void System.IDisposable.Dispose() { }
         }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public static partial class Tensor
     {
         public static System.Numerics.Tensors.Tensor<T> Abs<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
@@ -578,7 +579,9 @@ namespace System.Numerics.Tensors
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Numerics.Tensors.TensorSpan<T> this[nint index] { get { throw null; } }
+        public bool IsDense { get { throw null; } }
         public nint Length { get { throw null; } }
+        public static implicit operator System.Numerics.Tensors.ReadOnlyTensorDimensionSpan<T>(scoped in System.Numerics.Tensors.TensorDimensionSpan<T> tensorDimension) { throw null; }
         public System.Numerics.Tensors.TensorDimensionSpan<T>.Enumerator GetEnumerator() { throw null; }
         public ref partial struct Enumerator
         {
@@ -823,7 +826,6 @@ namespace System.Numerics.Tensors
         public static void Xor<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
         public static void Xor<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public readonly ref partial struct TensorSpan<T>
     {
         private readonly object _dummy;
@@ -848,6 +850,7 @@ namespace System.Numerics.Tensors
         public bool HasAnyDenseDimensions { get { throw null; } }
         public bool IsDense { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
+        public bool IsPinned { get { throw null; } }
         public ref T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get { throw null; } }
         public System.Numerics.Tensors.TensorSpan<T> this[params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges] { get { throw null; } set { } }
         public ref T this[params scoped System.ReadOnlySpan<nint> indexes] { get { throw null; } }
@@ -897,11 +900,10 @@ namespace System.Numerics.Tensors
             readonly object? System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
             public void Reset() { }
-            void System.IDisposable.Dispose() { }
+            readonly void System.IDisposable.Dispose() { }
         }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    public sealed partial class Tensor<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>, System.Numerics.Tensors.ITensor, System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>
+    public sealed partial class Tensor<T> : System.Collections.IEnumerable, System.Collections.Generic.IEnumerable<T>, System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>, System.Numerics.Tensors.ITensor, System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>
     {
         internal Tensor() { }
         public static System.Numerics.Tensors.Tensor<T> Empty { get { throw null; } }
