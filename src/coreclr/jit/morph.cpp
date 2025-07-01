@@ -9065,6 +9065,14 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
         return cmp;
     }
 
+    GenTree* const op1 = cmp->gtGetOp1();
+    GenTree* const op2 = cmp->gtGetOp2();
+
+    if (!varTypeIsIntegral(op1->TypeGet()) || !varTypeIsIntegral(op2->TypeGet()))
+    {
+        return cmp;
+    }
+
     int64_t lhsMin;
     int64_t lhsMax;
     if (cmp->gtGetOp1()->IsIntegralConst())
