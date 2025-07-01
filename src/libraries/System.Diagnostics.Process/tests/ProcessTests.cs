@@ -81,7 +81,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(PosixSignal.SIGTSTP)]
         [InlineData(PosixSignal.SIGTTOU)]
         [InlineData(PosixSignal.SIGTTIN)]
