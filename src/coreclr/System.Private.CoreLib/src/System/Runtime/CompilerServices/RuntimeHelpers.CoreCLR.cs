@@ -766,7 +766,6 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
         private const uint enum_flag_Category_Array = 0x00080000;
         private const uint enum_flag_Category_Array_Mask = 0x000C0000;
-        private const uint enum_flag_Category_IfArrayThenSzArray = 0x00020000; // sub-category of Array
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_Category_Interface = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
@@ -825,10 +824,11 @@ namespace System.Runtime.CompilerServices
 
         public bool IsSzArray
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 Debug.Assert(IsArray);
-                return (Flags & enum_flag_Category_IfArrayThenSzArray) != 0;
+                return BaseSize == (uint)(3 * sizeof(IntPtr));
             }
         }
 
