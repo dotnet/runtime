@@ -8766,7 +8766,7 @@ VOID MethodTableBuilder::HandleCStructLayout(MethodTable** pByValueClassCache)
         pByValueClassCache,
         bmtEnumFields->dwNumDeclaredFields
     );
-    
+
     if (bmtFP->NumInlineArrayElements != 0)
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
@@ -12508,7 +12508,14 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
             pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
         }
 
-        CorExtendedLayoutKind kind = (CorExtendedLayoutKind)GET_UNALIGNED_VAL32((byte*)pVal + 2);
+        CustomAttributeParser parser(pVal, cbVal);
+
+        IfFailThrow(parser.ValidateProlog());
+
+        int32_t kindValue;
+        IfFailThrow(parser.GetI4(&kindValue));
+
+        CorExtendedLayoutKind kind = (CorExtendedLayoutKind)kindValue;
 
         if (kind == CorExtendedLayoutKind::CStruct)
         {

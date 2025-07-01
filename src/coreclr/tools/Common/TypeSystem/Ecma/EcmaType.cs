@@ -634,7 +634,10 @@ namespace Internal.TypeSystem.Ecma
 
         public override bool IsExtendedLayout
         {
-            get => (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout;
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout;
+            }
         }
 
         public override bool IsAutoLayout

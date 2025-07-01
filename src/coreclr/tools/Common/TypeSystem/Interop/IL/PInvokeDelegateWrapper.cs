@@ -84,7 +84,10 @@ namespace Internal.TypeSystem.Interop
 
         public override bool IsExtendedLayout
         {
-            get => false;
+            get
+            {
+                return false;
+            }
         }
 
         public override bool IsAutoLayout

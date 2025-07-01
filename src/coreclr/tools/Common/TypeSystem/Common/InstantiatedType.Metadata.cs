@@ -42,7 +42,10 @@ namespace Internal.TypeSystem
 
         public override bool IsExtendedLayout
         {
-            get => _typeDef.IsExtendedLayout;
+            get
+            {
+                return _typeDef.IsExtendedLayout;
+            }
         }
 
         public override bool IsAutoLayout

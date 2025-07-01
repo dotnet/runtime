@@ -608,35 +608,28 @@ namespace ILCompiler
         {
             ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
             MetadataLayoutKind layoutKind = layoutMetadata.Kind;
-            if (layoutKind == MetadataLayoutKind.CStruct)
+            switch (layoutKind)
             {
-                return ComputeCStructFieldLayout(type, numInstanceFields);
-            }
-            else if (layoutKind == MetadataLayoutKind.Explicit)
-            {
-                // Works around https://github.com/dotnet/runtime/issues/102868
-                if (!type.IsValueType &&
-                    (type.MetadataBaseType is MetadataType baseType && baseType.IsSequentialLayout))
-                {
-                    ThrowHelper.ThrowTypeLoadException(type);
-                }
+                case MetadataLayoutKind.CStruct:
+                    return ComputeCStructFieldLayout(type, numInstanceFields);
+                case MetadataLayoutKind.Explicit:
+                    // Works around https://github.com/dotnet/runtime/issues/102868
+                    if (type is { IsValueType: false, MetadataBaseType.IsSequentialLayout: true })
+                    {
+                        ThrowHelper.ThrowTypeLoadException(type);
+                    }
 
-                return ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata);
-            }
-            else if (layoutKind == MetadataLayoutKind.Sequential && !type.ContainsGCPointers)
-            {
-                // Works around https://github.com/dotnet/runtime/issues/102868
-                if (!type.IsValueType &&
-                    (type.MetadataBaseType is MetadataType baseType && baseType.IsExplicitLayout))
-                {
-                    ThrowHelper.ThrowTypeLoadException(type);
-                }
+                    return ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata);
+                case MetadataLayoutKind.Sequential when !type.ContainsGCPointers:
+                    // Works around https://github.com/dotnet/runtime/issues/102868
+                    if (type is { IsValueType: false, MetadataBaseType.IsExplicitLayout: true })
+                    {
+                        ThrowHelper.ThrowTypeLoadException(type);
+                    }
 
-                return ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata);
-            }
-            else
-            {
-                return ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata);
+                    return ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata);
+                default:
+                    return ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata);
             }
         }
 
