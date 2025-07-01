@@ -39242,7 +39242,7 @@ void gc_heap::background_mark_phase ()
 
         for (size_t obj_idx = start_index; obj_idx < end_index; obj_idx++)
         {
-            mark_object_simple (&global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
+            background_mark_simple (global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
         }
 
         drain_mark_queue();
