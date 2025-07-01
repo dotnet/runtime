@@ -28,8 +28,6 @@ public class Runtime_108612
     private static List<string> toPrint = new List<string>();
     private void Method0()
     {
-unsafe { *(int*)-0x12345 = 42; }
-
         unchecked
         {
             v128_int_81 = AdvSimd.NegateSaturate(s_v128_int_31 *= 15|4);
@@ -55,6 +53,8 @@ unsafe { *(int*)-0x12345 = 42; }
             new Runtime_108612().Method0();
         }
         catch (Exception e) { }
-        return string.Join(Environment.NewLine, toPrint).GetHashCode();
+int x = string.Join(Environment.NewLine, toPrint).GetHashCode();
+unsafe { *(int*)-0x12345 = 42; }
+        return x;
     }
 }
