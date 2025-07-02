@@ -87,19 +87,17 @@ namespace Internal.Reflection.Execution
                 NativeParser indexParser = new NativeParser(reader, 0);
                 NativeHashtable indexHashTable = new NativeHashtable(indexParser);
 
-                var entryEnumerator = indexHashTable.EnumerateAllEntries();
+                var lookup = indexHashTable.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(assemblyName));
                 NativeParser entryParser;
-                while (!(entryParser = entryEnumerator.GetNext()).IsNull)
+                while (!(entryParser = lookup.GetNext()).IsNull)
                 {
                     string entryAssemblyName = entryParser.GetString();
                     string entryResourceName = entryParser.GetString();
                     int resourceOffset = (int)entryParser.GetUnsigned();
                     int resourceLength = (int)entryParser.GetUnsigned();
 
-                    if (assemblyName == entryAssemblyName)
-                    {
-                        yield return new ResourceInfo(entryResourceName, resourceOffset, resourceLength, module);
-                    }
+                    Debug.Assert(assemblyName == entryAssemblyName);
+                    yield return new ResourceInfo(entryResourceName, resourceOffset, resourceLength, module);
                 }
             }
         }
