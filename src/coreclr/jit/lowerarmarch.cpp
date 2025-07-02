@@ -1176,28 +1176,44 @@ GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
 
     LABELEDDISPTREERANGE("lowering cns mask to cns vector (before)", BlockRange(), mask);
 
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(mask, &use))
-    {
-        unreached();
-    }
-    assert(use.User()->OperIsHWIntrinsic());
-    GenTreeHWIntrinsic* parent = use.User()->AsHWIntrinsic();
-
-    var_types   parentBaseType        = parent->GetSimdBaseType();
-    CorInfoType parentSimdBaseJitType = parent->GetSimdBaseJitType();
-    unsigned    parentSimdSize        = parent->GetSimdSize();
+    // Default values in case there is no user or the user is not a HWIntrinsic
+    var_types   parentBaseType        = TYP_BYTE;
+    CorInfoType parentSimdBaseJitType = CORINFO_TYPE_BYTE;
+    unsigned    parentSimdSize        = 16;
     assert(parentSimdSize == 16 || parentSimdSize == 0);
 
+    LIR::Use use;
+    bool     foundUse = BlockRange().TryGetUse(mask, &use);
+
+    if (use.User()->OperIsHWIntrinsic())
+    {
+        GenTreeHWIntrinsic* parent = use.User()->AsHWIntrinsic();
+
+        parentBaseType        = parent->GetSimdBaseType();
+        parentSimdBaseJitType = parent->GetSimdBaseJitType();
+        parentSimdSize        = parent->GetSimdSize();
+    }
+    assert(parentSimdSize == 16 || parentSimdSize == 0);
+
+    // Create a vector constant
     GenTreeVecCon* vecCon = comp->gtNewVconNode(TYP_SIMD16);
     EvaluateSimdCvtMaskToVector<simd16_t>(parentBaseType, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
     BlockRange().InsertBefore(mask, vecCon);
 
+    // Convert the vector constant to a mask
     GenTree* convertedVec = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, parentSimdBaseJitType, parentSimdSize);
     BlockRange().InsertBefore(mask, convertedVec->AsHWIntrinsic()->Op(1));
     BlockRange().InsertBefore(mask, convertedVec);
 
-    use.ReplaceWith(convertedVec);
+    // Update use
+    if (foundUse)
+    {
+        use.ReplaceWith(convertedVec);
+    }
+    else
+    {
+        convertedVec->SetUnusedValue();
+    }
 
     BlockRange().Remove(mask);
 
