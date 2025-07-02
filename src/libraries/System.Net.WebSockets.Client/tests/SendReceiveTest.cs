@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Sockets;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,59 +9,79 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-
-    public sealed class InvokerMemorySendReceiveTest(ITestOutputHelper output) : MemorySendReceiveTest(output)
-    {
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public sealed class HttpClientMemorySendReceiveTest(ITestOutputHelper output) : MemorySendReceiveTest(output)
-    {
-        protected override bool UseHttpClient => true;
-    }
-
-    public sealed class InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : ArraySegmentSendReceiveTest(output)
-    {
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public sealed class HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : ArraySegmentSendReceiveTest(output)
-    {
-        protected override bool UseHttpClient => true;
-    }
-
-    public class MemorySendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
-    {
-
-        protected override async Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
-        {
-            ValueWebSocketReceiveResult r = await ws.ReceiveAsync(
-                (Memory<byte>)arraySegment,
-                cancellationToken).ConfigureAwait(false);
-            return new WebSocketReceiveResult(r.Count, r.MessageType, r.EndOfMessage, ws.CloseStatus, ws.CloseStatusDescription);
-        }
-
-        protected override Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            ws.SendAsync(
-                (ReadOnlyMemory<byte>)arraySegment,
-                messageType,
-                endOfMessage,
-                cancellationToken).AsTask();
-    }
-
-    public class ArraySegmentSendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
-    {
-        protected override Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken) =>
-            ws.ReceiveAsync(arraySegment, cancellationToken);
-
-        protected override Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            ws.SendAsync(arraySegment, messageType, endOfMessage, cancellationToken);
-    }
+    //
+    // Class hierarchy:
+    //
+    // - SendReceiveTestBase                                 → file:SendReceiveTest.cs
+    //   ├─ SendReceiveTest_External
+    //   │  ├─ [*]SendReceiveTest_SharedHandler_External
+    //   │  ├─ [*]SendReceiveTest_Invoker_External
+    //   │  └─ [*]SendReceiveTest_HttpClient_External
+    //   └─ SendReceiveTest_LoopbackBase                      → file:SendReceiveTest.Loopback.cs
+    //      ├─ SendReceiveTest_Loopback
+    //      │  ├─ [*]SendReceiveTest_SharedHandler_Loopback
+    //      │  ├─ [*]SendReceiveTest_Invoker_Loopback
+    //      │  └─ [*]SendReceiveTest_HttpClient_Loopback
+    //      └─ SendReceiveTest_Http2Loopback                  → file:SendReceiveTest.Loopback.cs, SendReceiveTest.Http2.cs
+    //         ├─ [*]SendReceiveTest_Invoker_Http2Loopback
+    //         └─ [*]SendReceiveTest_HttpClient_Http2Loopback
+    // ---
+    // `[*]` - concrete runnable test classes
+    // `→ file:` - file containing the class and its concrete subclasses
 
     public abstract class SendReceiveTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        protected abstract Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken);
-        protected abstract Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken);
+        #region Send-receive type test setup
+
+        public enum SendReceiveType
+        {
+            ArraySegment,
+            Memory
+        }
+
+        public static readonly object[][] EchoServersAndSendReceiveType = ToMemberData(EchoServers_Values, Enum.GetValues<SendReceiveType>());
+
+        public static readonly object[][] UseSslAndSendReceiveType = ToMemberData(UseSsl_Values, Enum.GetValues<SendReceiveType>());
+        public static readonly object[][] SendReceiveTypes = ToMemberData(Enum.GetValues<SendReceiveType>());
+
+        protected SendReceiveType? SendReceiveTestType { get; set; }
+
+        protected Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+            => SendReceiveTestType switch
+            {
+                SendReceiveType.ArraySegment => ws.SendAsync(arraySegment, messageType, endOfMessage, cancellationToken),
+                SendReceiveType.Memory => ws.SendAsync((ReadOnlyMemory<byte>)arraySegment, messageType, endOfMessage, cancellationToken).AsTask(),
+                _ => throw new ArgumentException(nameof(SendReceiveTestType))
+            };
+
+        protected Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
+            => SendReceiveTestType switch
+            {
+                SendReceiveType.ArraySegment => ws.ReceiveAsync(arraySegment, cancellationToken),
+                SendReceiveType.Memory => Task.Run(async () =>
+                    {
+                        ValueWebSocketReceiveResult r = await ws.ReceiveAsync((Memory<byte>)arraySegment, cancellationToken).ConfigureAwait(false);
+                        return new WebSocketReceiveResult(r.Count, r.MessageType, r.EndOfMessage, ws.CloseStatus, ws.CloseStatusDescription);
+                    }),
+                _ => throw new ArgumentException(nameof(SendReceiveTestType))
+            };
+
+        protected Task RunSendReceive(Func<Task> sendReceiveFunc, SendReceiveType sendReceiveTestType)
+        {
+            SendReceiveTestType = sendReceiveTestType;
+            return sendReceiveFunc();
+        }
+
+
+        protected Task RunSendReceive(Func<Uri, Task> sendReceiveFunc, Uri uri, SendReceiveType sendReceiveTestType)
+        {
+            SendReceiveTestType = sendReceiveTestType;
+            return sendReceiveFunc(uri);
+        }
+
+        #endregion
+
+        #region Common (Echo Server) tests
 
         protected async Task RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
         {
@@ -260,7 +278,7 @@ namespace System.Net.WebSockets.Client.Tests
                                 "ReceiveAsync"),
                             ex.Message);
 
-                        Assert.True(WebSocketState.Aborted == cws.State, cws.State+" state when InvalidOperationException");
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State + " state when InvalidOperationException");
                     }
                     else if (ex is WebSocketException)
                     {
@@ -386,72 +404,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        protected async Task RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
-        {
-            var options = new LoopbackServer.Options { WebSocketEndpoint = true };
 
-            Func<ClientWebSocket, LoopbackServer, Uri, Task> connectToServerThatAbortsConnection = async (clientSocket, server, url) =>
-            {
-                var pendingReceiveAsyncPosted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                // Start listening for incoming connections on the server side.
-                Task acceptTask = server.AcceptConnectionAsync(async connection =>
-                {
-                    // Complete the WebSocket upgrade. After this is done, the client-side ConnectAsync should complete.
-                    Assert.NotNull(await LoopbackHelper.WebSocketHandshakeAsync(connection));
-
-                    // Wait for client-side ConnectAsync to complete and for a pending ReceiveAsync to be posted.
-                    await pendingReceiveAsyncPosted.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeOutMilliseconds));
-
-                    // Close the underlying connection prematurely (without sending a WebSocket Close frame).
-                    connection.Socket.Shutdown(SocketShutdown.Both);
-                    connection.Socket.Close();
-                });
-
-                // Initiate a connection attempt.
-                var cts = new CancellationTokenSource(TimeOutMilliseconds);
-                await ConnectAsync(clientSocket, url, cts.Token);
-
-                // Post a pending ReceiveAsync before the TCP connection is torn down.
-                var recvBuffer = new byte[100];
-                var recvSegment = new ArraySegment<byte>(recvBuffer);
-                Task pendingReceiveAsync = ReceiveAsync(clientSocket, recvSegment, cts.Token);
-                pendingReceiveAsyncPosted.SetResult();
-
-                // Wait for the server to close the underlying connection.
-                await acceptTask.WaitAsync(cts.Token);
-
-                WebSocketException pendingReceiveException = await Assert.ThrowsAsync<WebSocketException>(() => pendingReceiveAsync);
-
-                Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
-
-                if (PlatformDetection.IsInAppContainer)
-                {
-                    const uint WININET_E_CONNECTION_ABORTED = 0x80072EFE;
-
-                    Assert.NotNull(pendingReceiveException.InnerException);
-                    Assert.Equal(WININET_E_CONNECTION_ABORTED, (uint)pendingReceiveException.InnerException.HResult);
-                }
-
-                WebSocketException newReceiveException =
-                        await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
-
-                Assert.Equal(
-                    ResourceHelper.GetExceptionMessage("net_WebSockets_InvalidState", "Aborted", "Open, CloseSent"),
-                    newReceiveException.Message);
-
-                Assert.Equal(WebSocketState.Aborted, clientSocket.State);
-                Assert.Null(clientSocket.CloseStatus);
-            };
-
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (ClientWebSocket clientSocket = new ClientWebSocket())
-                {
-                    await connectToServerThatAbortsConnection(clientSocket, server, url);
-                }
-            }, options);
-        }
 
         protected async Task RunClient_ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {
@@ -476,7 +429,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var receiveBuffer = new byte[1];
                 t = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer), ctsDefault.Token);
                 // this is not synchronously possible when the WS client is on another WebWorker
-                if(!PlatformDetection.IsWasmThreadingSupported)
+                if (!PlatformDetection.IsWasmThreadingSupported)
                 {
                     Assert.Equal(TaskStatus.RanToCompletion, t.Status);
                 }
@@ -491,53 +444,70 @@ namespace System.Net.WebSockets.Client.Tests
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, nameof(RunClient_ZeroByteReceive_CompletesWhenDataAvailable), ctsDefault.Token);
             }
         }
+
+        #endregion
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public abstract class SendReceiveTest(ITestOutputHelper output) : SendReceiveTestBase(output)
+    public abstract class SendReceiveTest_External(ITestOutputHelper output) : SendReceiveTestBase(output)
     {
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
-            => RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(server);
+        #region Common (Echo Server) tests
+
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success, server, type);
 
         [SkipOnPlatform(TestPlatforms.Browser, "JS Websocket does not support see issue https://github.com/dotnet/runtime/issues/46983")]
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
-            => RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(server);
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success, server, type);
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
-            => RunClient_SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(server);
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage, server, type);
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
-            => RunClient_SendAsync_MultipleOutstandingSendOperations_Throws(server);
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_SendAsync_MultipleOutstandingSendOperations_Throws, server, type);
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
-            => RunClient_ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(server);
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_ReceiveAsync_MultipleOutstandingReceiveOperations_Throws, server, type);
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
-            => RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(server);
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success, server, type);
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task SendReceive_VaryingLengthBuffers_Success(Uri server)
-            => RunClient_SendReceive_VaryingLengthBuffers_Success(server);
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task SendReceive_VaryingLengthBuffers_Success(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_SendReceive_VaryingLengthBuffers_Success, server, type);
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task SendReceive_Concurrent_Success(Uri server)
-            => RunClient_SendReceive_Concurrent_Success(server);
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task SendReceive_Concurrent_Success(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_SendReceive_Concurrent_Success, server, type);
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54153", TestPlatforms.Browser)]
-        [Fact]
-        public Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
-            => RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated();
+        [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
+        public Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server, SendReceiveType type) => RunSendReceive(
+            RunClient_ZeroByteReceive_CompletesWhenDataAvailable, server, type);
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
-            => RunClient_ZeroByteReceive_CompletesWhenDataAvailable(server);
+        #endregion
     }
+
+    /*#region Runnable test classes: External/Outerloop
+
+    public sealed class SendReceiveTest_SharedHandler_External(ITestOutputHelper output) : SendReceiveTest_External(output) { }
+
+    public sealed class SendReceiveTest_Invoker_External(ITestOutputHelper output) : SendReceiveTest_External(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class SendReceiveTest_HttpClient_External(ITestOutputHelper output) : SendReceiveTest_External(output)
+    {
+        protected override bool UseHttpClient => true;
+    }
+
+    #endregion*/
 }

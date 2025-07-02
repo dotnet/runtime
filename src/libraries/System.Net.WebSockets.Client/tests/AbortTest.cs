@@ -7,18 +7,43 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
+using EchoControlMessage = System.Net.Test.Common.WebSocketEchoHelper.EchoControlMessage;
+using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
+
 namespace System.Net.WebSockets.Client.Tests
 {
+    //
+    // Class hierarchy:
+    //
+    // - AbortTestBase                                → file:AbortTest.cs
+    //   ├─ AbortTest_External
+    //   │  ├─ [*]AbortTest_SharedHandler_External
+    //   │  ├─ [*]AbortTest_Invoker_External
+    //   │  └─ [*]AbortTest_HttpClient_External
+    //   └─ AbortTest_LoopbackBase                    → file:AbortTest.Loopback.cs
+    //      ├─ AbortTest_Loopback
+    //      │  ├─ [*]AbortTest_SharedHandler_Loopback
+    //      │  ├─ [*]AbortTest_Invoker_Loopback
+    //      │  └─ [*]AbortTest_HttpClient_Loopback
+    //      └─ AbortTest_Http2Loopback
+    //         ├─ [*]AbortTest_Invoker_Http2Loopback
+    //         └─ [*]AbortTest_HttpClient_Http2Loopback
+    //
+    // ---
+    // `[*]` - concrete runnable test classes
+    // `→ file:` - file containing the class and its concrete subclasses
+
     public abstract class AbortTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
+        #region Common (Echo Server) tests
+
         protected async Task RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
             using (var cws = new ClientWebSocket())
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                var ub = new UriBuilder(server);
-                ub.Query = "delay10sec";
+                var ub = new UriBuilder(server) { Query = EchoQueryKey.Delay10Sec };
 
                 Task t = ConnectAsync(cws, ub.Uri, cts.Token);
 
@@ -39,7 +64,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 Task t = cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -57,7 +82,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -80,7 +105,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -102,7 +127,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -116,12 +141,16 @@ namespace System.Net.WebSockets.Client.Tests
                 await t;
             }, server);
         }
+
+        #endregion
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     public abstract class AbortTest_External(ITestOutputHelper output) : AbortTestBase(output)
     {
+        #region Common (Echo Server) tests
+
         [Theory, MemberData(nameof(EchoServers))]
         public Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(Uri server)
             => RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(server);
@@ -141,7 +170,11 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
             => RunClient_ClientWebSocket_Abort_CloseOutputAsync(server);
+
+        #endregion
     }
+
+    #region Runnable test classes: External/Outerloop
 
     public sealed class AbortTest_SharedHandler_External(ITestOutputHelper output) : AbortTest_External(output) { }
 
@@ -154,4 +187,6 @@ namespace System.Net.WebSockets.Client.Tests
     {
         protected override bool UseHttpClient => true;
     }
+
+    #endregion
 }

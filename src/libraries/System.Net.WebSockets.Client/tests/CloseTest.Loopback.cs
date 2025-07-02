@@ -11,45 +11,46 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    // --- Loopback Echo Server "overrides" ---
 
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
-    public abstract class CloseTest_Loopback(ITestOutputHelper output) : CloseTestBase(output)
+    public abstract class CloseTest_LoopbackBase(ITestOutputHelper output) : CloseTestBase(output)
     {
+        #region Common (Echo Server) tests
+
         [Theory, MemberData(nameof(UseSslAndBoolean))]
         public Task CloseAsync_ServerInitiatedClose_Success(bool useSsl, bool useCloseOutputAsync) => RunEchoAsync(
             server => RunClient_CloseAsync_ServerInitiatedClose_Success(server, useCloseOutputAsync), useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseAsync_ClientInitiatedClose_Success(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_ClientInitiatedClose_Success, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseAsync_CloseDescriptionIsMaxLength_Success(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_CloseDescriptionIsMaxLength_Success, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseAsync_CloseDescriptionHasUnicode_Success(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_CloseDescriptionHasUnicode_Success, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseAsync_CloseDescriptionIsNull_Success(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_CloseDescriptionIsNull_Success, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseOutputAsync_ExpectedStates(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_ExpectedStates, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseAsync_CloseOutputAsync_Throws(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_CloseOutputAsync_Throws, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_ClientInitiated_CanReceive_CanClose, useSsl);
 
@@ -57,7 +58,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task CloseOutputAsync_ServerInitiated_CanReceive(bool useSsl, bool delayReceiving) => RunEchoAsync(
             server => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving), useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseOutputAsync_ServerInitiated_CanSend(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_ServerInitiated_CanSend, useSsl);
 
@@ -65,24 +66,26 @@ namespace System.Net.WebSockets.Client.Tests
         public Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(bool useSsl, bool syncState) => RunEchoAsync(
             server => RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(server, syncState), useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseOutputAsync_CloseDescriptionIsNull_Success(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_CloseDescriptionIsNull_Success, useSsl);
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22000", TargetFrameworkMonikers.Netcoreapp)]
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates, useSsl);
 
-        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl))]
         public Task CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates, useSsl);
+
+        #endregion
     }
 
-    // --- HTTP/1.1 WebSocket loopback tests ---
-
-    public sealed class CloseTest_SharedHandler_Loopback(ITestOutputHelper output) : CloseTest_Loopback(output)
+    public abstract class CloseTest_Loopback(ITestOutputHelper output) : CloseTest_LoopbackBase(output)
     {
+        #region HTTP/1.1-only loopback tests
+
         [Fact]
         public async Task CloseAsync_CancelableEvenWhenPendingReceive_Throws()
         {
@@ -136,7 +139,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             await RemoteExecutor.Invoke(static (typeName) =>
             {
-                CloseTest_External test = (CloseTest_External)Activator.CreateInstance(typeof(CloseTest_External).Assembly.GetType(typeName), new object[] { null });
+                ClientWebSocketTestBase test = (ClientWebSocketTestBase)Activator.CreateInstance(typeof(ClientWebSocketTestBase).Assembly.GetType(typeName), new object[] { null });
                 using CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 Exception unobserved = null;
@@ -165,7 +168,18 @@ namespace System.Net.WebSockets.Client.Tests
                 }, new LoopbackWebSocketServer.Options { HttpVersion = Net.HttpVersion.Version11, UseSsl = true, HttpInvoker = test.GetInvoker() }, timeoutCts.Token);
             }, GetType().FullName).DisposeAsync();
         }
+
+        #endregion
     }
+
+    public abstract class CloseTest_Http2Loopback(ITestOutputHelper output) : CloseTest_LoopbackBase(output)
+    {
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
+    }
+
+    #region Runnable test classes: HTTP/1.1 Loopback
+
+    public sealed class CloseTest_SharedHandler_Loopback(ITestOutputHelper output) : CloseTest_Loopback(output) { }
 
     public sealed class CloseTest_Invoker_Loopback(ITestOutputHelper output) : CloseTest_Loopback(output)
     {
@@ -177,12 +191,9 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseHttpClient => true;
     }
 
-    // --- HTTP/2 WebSocket loopback tests ---
+    #endregion
 
-    public abstract class CloseTest_Http2Loopback(ITestOutputHelper output) : CloseTest_Loopback(output)
-    {
-        internal override Version HttpVersion => Net.HttpVersion.Version20;
-    }
+    #region Runnable test classes: HTTP/2 Loopback
 
     public sealed class CloseTest_Invoker_Http2Loopback(ITestOutputHelper output) : CloseTest_Http2Loopback(output)
     {
@@ -193,4 +204,5 @@ namespace System.Net.WebSockets.Client.Tests
     {
         protected override bool UseHttpClient => true;
     }
+    #endregion
 }

@@ -7,27 +7,23 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.XUnitExtensions;
-using System.Net.Test.Common;
 
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class ClientWebSocketTestBase
+    public partial class ClientWebSocketTestBase(ITestOutputHelper output)
     {
-        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
-        public static readonly object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoHeadersServers();
-        public static readonly object[][] EchoServersAndBoolean = EchoServers.SelectMany(o => new object[][]
-        {
-            [ o[0], false ],
-            [ o[0], true ]
-        }).ToArray();
-
+        public static readonly Uri[] EchoServers_Values = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
+        public static readonly Uri[] EchoHeadersServers_Values = System.Net.Test.Common.Configuration.WebSockets.GetEchoHeadersServers();
         public static readonly bool[] Bool_Values = [ false, true ];
         public static readonly bool[] UseSsl_Values = PlatformDetection.SupportsAlpn ? Bool_Values : [ false ];
-        public static readonly object[][] UseSsl_MemberData = ToMemberData(UseSsl_Values);
+
+        public static readonly object[][] EchoServers = ToMemberData(EchoServers_Values);
+        public static readonly object[][] EchoHeadersServers = ToMemberData(EchoHeadersServers_Values);
+        public static readonly object[][] EchoServersAndBoolean = ToMemberData(EchoServers_Values, Bool_Values);
+        public static readonly object[][] UseSsl = ToMemberData(UseSsl_Values);
         public static readonly object[][] UseSslAndBoolean = ToMemberData(UseSsl_Values, Bool_Values);
 
         public static object[][] ToMemberData<T>(IEnumerable<T> data)
@@ -41,12 +37,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         public const int TimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;
-        public readonly ITestOutputHelper _output;
-
-        public ClientWebSocketTestBase(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public readonly ITestOutputHelper _output = output;
 
         public static IEnumerable<object[]> UnavailableWebSocketServers
         {
@@ -81,22 +72,16 @@ namespace System.Net.WebSockets.Client.Tests
                 try
                 {
                     await action(cws);
-                    // Operation finished before CTS expired.
+                    _output.WriteLine($"Operation finished before CTS expired.");
                 }
-                catch (OperationCanceledException exception)
+                catch (Exception e) when (e is OperationCanceledException or ObjectDisposedException or WebSocketException)
                 {
-                    // Expected exception
-                    Assert.True(WebSocketState.Aborted == cws.State, $"Actual {cws.State} when {exception}");
-                }
-                catch (ObjectDisposedException exception)
-                {
-                    // Expected exception
-                    Assert.True(WebSocketState.Aborted == cws.State, $"Actual {cws.State} when {exception}");
-                }
-                catch (WebSocketException exception)
-                {
-                    Assert.True(WebSocketError.InvalidState == exception.WebSocketErrorCode, $"Actual WebSocketErrorCode {exception.WebSocketErrorCode} when {exception}");
-                    Assert.True(WebSocketState.Aborted == cws.State, $"Actual {cws.State} when {exception}");
+                    Assert.True(WebSocketState.Aborted == cws.State, $"Actual {cws.State} when {e}");
+
+                    if (e is WebSocketException wse)
+                    {
+                        Assert.True(WebSocketError.InvalidState == wse.WebSocketErrorCode, $"Actual WebSocketErrorCode {wse.WebSocketErrorCode} when {wse}");
+                    }
                 }
             }
         }
@@ -153,17 +138,11 @@ namespace System.Net.WebSockets.Client.Tests
             return new HttpClient(handler);
         }
 
-        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int timeOutMilliseconds, ITestOutputHelper output)
-            => WebSocketHelper.GetConnectedWebSocket(uri, timeOutMilliseconds, output, o => ConfigureHttpVersion(o, uri), GetInvoker());
-
         protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri)
-            => GetConnectedWebSocket(uri, TimeOutMilliseconds, _output);
+            => WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, _output, o => ConfigureHttpVersion(o, uri), GetInvoker());
 
         protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken)
-        {
-            ConfigureHttpVersion(cws.Options, uri);
-            return cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
-        }
+            => WebSocketHelper.ConnectAsync(cws, uri, o => ConfigureHttpVersion(o, uri), GetInvoker(), validateState: false, cancellationToken);
 
         protected Task TestEcho(Uri uri, WebSocketMessageType type)
             => WebSocketHelper.TestEcho(uri, type, TimeOutMilliseconds, _output, o => ConfigureHttpVersion(o, uri), GetInvoker());
@@ -172,20 +151,11 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsBrowser)
             {
-                if (HttpVersion != Net.HttpVersion.Version11)
-                {
-                    throw new SkipTestException($"HTTP version {HttpVersion} is not supported for WebSockets on Browser.");
-                }
                 return;
             }
 
             options.HttpVersion = HttpVersion;
             options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-            if (UseSharedHandler && uri.Scheme == "wss")
-            {
-                options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
-            }
 
             if (HttpVersion == Net.HttpVersion.Version20 && uri.Query is not (null or "" or "?"))
             {
@@ -200,64 +170,5 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
-
-#if !TARGET_BROWSER // Loopback server related functions
-
-        protected virtual bool SkipIfUseSsl => false;
-
-        protected Task RunEchoAsync(Func<Uri, Task> clientFunc, bool useSsl)
-        {
-            if (SkipIfUseSsl && useSsl)
-            {
-                throw new SkipTestException("SSL is not supported in this test.");
-            }
-
-            var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
-            var options = new LoopbackWebSocketServer.Options
-            {
-                HttpVersion = HttpVersion,
-                UseSsl = useSsl,
-                SkipServerHandshakeResponse = true,
-                IgnoreServerErrors = true,
-                AbortServerOnClientExit = true,
-                ParseEchoOptions = true,
-                Output = _output
-            };
-
-            return LoopbackWebSocketServer.RunEchoAsync(clientFunc, options, timeoutCts.Token);
-        }
-
-        protected Task RunEchoHeadersAsync(Func<Uri, Task> clientFunc, bool useSsl)
-        {
-            if (SkipIfUseSsl && useSsl)
-            {
-                throw new SkipTestException("SSL is not supported in this test.");
-            }
-
-            var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
-            var options = new LoopbackWebSocketServer.Options
-            {
-                HttpVersion = HttpVersion,
-                UseSsl = useSsl,
-                IgnoreServerErrors = true,
-                AbortServerOnClientExit = true,
-                Output = _output
-            };
-
-            return LoopbackWebSocketServer.RunAsync(
-                clientFunc,
-                async (requestData, token) =>
-                {
-                    var serverWebSocket = WebSocket.CreateFromStream(
-                        requestData.TransportStream,
-                        new WebSocketCreationOptions { IsServer = true });
-
-                    using var registration = token.Register(serverWebSocket.Abort);
-                    await WebSocketEchoHelper.RunEchoHeaders(serverWebSocket, requestData.Headers, token);
-                },
-                options,
-                timeoutCts.Token);
-        }
-#endif
     }
 }

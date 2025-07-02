@@ -5,6 +5,15 @@ namespace System.Net.Test.Common
 {
     public readonly struct WebSocketEchoOptions
     {
+        public static class EchoQueryKey
+        {
+            public const string ReplyWithPartialMessages = "replyWithPartialMessages";
+            public const string ReplyWithEnhancedCloseMessage = "replyWithEnhancedCloseMessage";
+            public const string SubProtocol = "subprotocol";
+            public const string Delay10Sec = "delay10sec";
+            public const string Delay20Sec = "delay20sec";
+        }
+
         public static readonly WebSocketEchoOptions Default = new();
 
         public bool ReplyWithPartialMessages { get; init; }
@@ -21,8 +30,8 @@ namespace System.Net.Test.Common
 
             return new WebSocketEchoOptions
             {
-                ReplyWithPartialMessages = query.Contains("replyWithPartialMessages"),
-                ReplyWithEnhancedCloseMessage = query.Contains("replyWithEnhancedCloseMessage"),
+                ReplyWithPartialMessages = query.Contains(EchoQueryKey.ReplyWithPartialMessages),
+                ReplyWithEnhancedCloseMessage = query.Contains(EchoQueryKey.ReplyWithEnhancedCloseMessage),
                 SubProtocol = ParseSubProtocol(query),
                 Delay = ParseDelay(query)
             };
@@ -30,23 +39,23 @@ namespace System.Net.Test.Common
 
         private static string ParseSubProtocol(string query)
         {
-            const string subProtocolKey = "subprotocol=";
+            const string subProtocolEquals = $"{EchoQueryKey.SubProtocol}=";
 
-            var index = query.IndexOf(subProtocolKey);
+            var index = query.IndexOf(subProtocolEquals);
             if (index == -1)
             {
                 return null;
             }
 
-            var subProtocol = query.Substring(index + subProtocolKey.Length);
+            var subProtocol = query.Substring(index + subProtocolEquals.Length);
             return subProtocol.Contains("&")
                 ? subProtocol.Substring(0, subProtocol.IndexOf("&"))
                 : subProtocol;
         }
 
         private static TimeSpan? ParseDelay(string query)
-            => query.Contains("delay10sec")
+            => query.Contains(EchoQueryKey.Delay10Sec)
                 ? TimeSpan.FromSeconds(10)
-                : query.Contains("delay20sec") ? TimeSpan.FromSeconds(20) : null;
+                : query.Contains(EchoQueryKey.Delay20Sec) ? TimeSpan.FromSeconds(20) : null;
     }
 }

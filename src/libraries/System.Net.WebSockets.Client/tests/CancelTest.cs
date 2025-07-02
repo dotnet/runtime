@@ -7,18 +7,45 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
+using EchoControlMessage = System.Net.Test.Common.WebSocketEchoHelper.EchoControlMessage;
+using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
+
 namespace System.Net.WebSockets.Client.Tests
 {
+    //
+    // Class hierarchy:
+    //
+    // - CancelTestBase                              → file:CancelTest.cs
+    //   ├─ CancelTest_External
+    //   │  ├─ [*]CancelTest_SharedHandler_External
+    //   │  ├─ [*]CancelTest_Invoker_External
+    //   │  └─ [*]CancelTest_HttpClient_External
+    //   └─ CancelTest_Loopback                      → file:CancelTest.Loopback.cs
+    //      ├─ [*]CancelTest_SharedHandler_Loopback
+    //      ├─ [*]CancelTest_Invoker_Loopback
+    //      ├─ [*]CancelTest_HttpClient_Loopback
+    //      └─ CancelTest_Http2Loopback
+    //         ├─ [*]CancelTest_Invoker_Http2Loopback
+    //         └─ [*]CancelTest_HttpClient_Http2Loopback
+    //
+    // ---
+    // `[*]` - concrete runnable test classes
+    // `→ file:` - file containing the class and its concrete subclasses
+
     public abstract class CancelTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
+        #region Common (Echo Server) tests
+
         protected async Task RunClient_ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
         {
             using (var cws = new ClientWebSocket())
             {
                 var cts = new CancellationTokenSource(100);
 
-                var ub = new UriBuilder(server);
-                ub.Query = PlatformDetection.IsBrowser ? "delay20sec" : "delay10sec";
+                var ub = new UriBuilder(server)
+                {
+                    Query = PlatformDetection.IsBrowser ? EchoQueryKey.Delay20Sec : EchoQueryKey.Delay10Sec
+                };
 
                 var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ConnectAsync(cws, ub.Uri, cts.Token));
                 Assert.True(WebSocketState.Closed == cws.State, $"Actual {cws.State} when {ex}");
@@ -31,7 +58,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(5);
                 return cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -46,7 +73,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(5);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -66,7 +93,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -87,7 +114,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketData.GetBufferFromText(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -146,12 +173,16 @@ namespace System.Net.WebSockets.Client.Tests
                     ex.Message);
             }
         }
+
+        #endregion
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public class CancelTest_External(ITestOutputHelper output) : CancelTestBase(output)
+    public abstract class CancelTest_External(ITestOutputHelper output) : CancelTestBase(output)
     {
+        #region Common (Echo Server) tests
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83579", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         [Theory, MemberData(nameof(EchoServers))]
         public Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
@@ -184,8 +215,11 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
             => RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(server);
+
+        #endregion
     }
 
+    #region Runnable test classes: External/Outerloop
     public sealed class CancelTest_SharedHandler_External(ITestOutputHelper output) : CancelTest_External(output) { }
 
     public sealed class CancelTest_Invoker_External(ITestOutputHelper output) : CancelTest_External(output)
@@ -197,4 +231,5 @@ namespace System.Net.WebSockets.Client.Tests
     {
         protected override bool UseHttpClient => true;
     }
+    #endregion
 }

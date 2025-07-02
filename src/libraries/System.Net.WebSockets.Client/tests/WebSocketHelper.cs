@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Http;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,32 +31,31 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[100];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, configureOptions, invoker))
-            {
-                await cws.SendAsync(WebSocketData.GetBufferFromText(message), type, true, cts.Token);
-                Assert.Equal(WebSocketState.Open, cws.State);
+            using ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, configureOptions, invoker);
 
-                WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cts.Token);
-                Assert.Equal(WebSocketState.Open, cws.State);
-                Assert.Equal(message.Length, recvRet.Count);
-                Assert.Equal(type, recvRet.MessageType);
-                Assert.True(recvRet.EndOfMessage);
-                Assert.Null(recvRet.CloseStatus);
-                Assert.Null(recvRet.CloseStatusDescription);
+            await cws.SendAsync(WebSocketData.GetBufferFromText(message), type, true, cts.Token);
+            Assert.Equal(WebSocketState.Open, cws.State);
 
-                var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
-                Assert.Equal(message, WebSocketData.GetTextFromBuffer(recvSegment));
+            WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cts.Token);
+            Assert.Equal(WebSocketState.Open, cws.State);
+            Assert.Equal(message.Length, recvRet.Count);
+            Assert.Equal(type, recvRet.MessageType);
+            Assert.True(recvRet.EndOfMessage);
+            Assert.Null(recvRet.CloseStatus);
+            Assert.Null(recvRet.CloseStatusDescription);
 
-                Task taskClose = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeMessage, cts.Token);
-                Assert.True(
-                    (cws.State == WebSocketState.Open) || (cws.State == WebSocketState.CloseSent) ||
-                    (cws.State == WebSocketState.CloseReceived) || (cws.State == WebSocketState.Closed),
-                    "State immediately after CloseAsync : " + cws.State);
-                await taskClose;
-                Assert.Equal(WebSocketState.Closed, cws.State);
-                Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
-                Assert.Equal(closeMessage, cws.CloseStatusDescription);
-            }
+            var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
+            Assert.Equal(message, WebSocketData.GetTextFromBuffer(recvSegment));
+
+            Task taskClose = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeMessage, cts.Token);
+            Assert.True(
+                (cws.State == WebSocketState.Open) || (cws.State == WebSocketState.CloseSent) ||
+                (cws.State == WebSocketState.CloseReceived) || (cws.State == WebSocketState.Closed),
+                "State immediately after CloseAsync : " + cws.State);
+            await taskClose;
+            Assert.Equal(WebSocketState.Closed, cws.State);
+            Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
+            Assert.Equal(closeMessage, cws.CloseStatusDescription);
         }
 
         public static Task<ClientWebSocket> GetConnectedWebSocket(
@@ -94,26 +92,47 @@ namespace System.Net.WebSockets.Client.Tests
             Retry(output, async () =>
             {
                 var cws = new ClientWebSocket();
-                configureOptions(cws.Options);
-                if (PlatformDetection.IsNotBrowser && invoker == null && server.Scheme == "wss")
+                using var cts = new CancellationTokenSource(timeOutMilliseconds);
+                await ConnectAsync(cws, server, configureOptions, invoker, validateState: true, cts.Token);
+                return cws;
+            });
+
+        public static async Task ConnectAsync(
+            ClientWebSocket cws,
+            Uri server,
+            Action<ClientWebSocketOptions> configureOptions,
+            HttpMessageInvoker? invoker = null,
+            bool validateState = true,
+            CancellationToken cancellationToken = default)
+            {
+                if (PlatformDetection.IsNotBrowser && server.Scheme == "wss" && invoker == null)
                 {
-                    cws.Options.RemoteCertificateValidationCallback ??= (_, _, _, _) => true;
+                    cws.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
                 }
 
-                using (var cts = new CancellationTokenSource(timeOutMilliseconds))
+                configureOptions(cws.Options);
+
+                Task taskConnect = invoker == null
+                    ? cws.ConnectAsync(server, cancellationToken)
+                    : cws.ConnectAsync(server, invoker, cancellationToken);
+
+                if (validateState)
                 {
-                    Task taskConnect = invoker == null ? cws.ConnectAsync(server, cts.Token) : cws.ConnectAsync(server, invoker, cts.Token);
                     Assert.True(
                         (cws.State == WebSocketState.None) ||
                         (cws.State == WebSocketState.Connecting) ||
                         (cws.State == WebSocketState.Open) ||
                         (cws.State == WebSocketState.Aborted),
                         "State immediately after ConnectAsync incorrect: " + cws.State);
-                    await taskConnect;
+                }
+
+                await taskConnect;
+
+                if (validateState)
+                {
                     Assert.Equal(WebSocketState.Open, cws.State);
                 }
-                return cws;
-            });
+            }
 
         public static async Task<T> Retry<T>(ITestOutputHelper output, Func<Task<T>> func)
         {

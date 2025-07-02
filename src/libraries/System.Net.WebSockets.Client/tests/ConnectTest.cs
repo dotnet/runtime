@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Http;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,10 +9,35 @@ using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
+using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
+
 namespace System.Net.WebSockets.Client.Tests
 {
+    //
+    // Class hierarchy:
+    //
+    // - ConnectTestBase                                  → file:ConnectTest.cs
+    //   ├─ ConnectTest_External
+    //   │  ├─ [*]ConnectTest_SharedHandler_External
+    //   │  ├─ [*]ConnectTest_Invoker_External
+    //   │  └─ [*]ConnectTest_HttpClient_External
+    //   └─ ConnectTest_LoopbackBase                      → file:ConnectTest.Loopback.cs
+    //      ├─ ConnectTest_Loopback
+    //      │  ├─ [*]ConnectTest_SharedHandler_Loopback   → file:ConnectTest.Loopback.cs, ConnectTest.SharedHandler.cs
+    //      │  ├─ [*]ConnectTest_Invoker_Loopback         → file:ConnectTest.Loopback.cs, ConnectTest.Invoker.cs
+    //      │  └─ [*]ConnectTest_HttpClient_Loopback
+    //      └─ ConnectTest_Http2Loopback                  → file:ConnectTest.Loopback.cs, ConnectTest.Http2.cs
+    //         ├─ [*]ConnectTest_Invoker_Http2Loopback
+    //         └─ [*]ConnectTest_HttpClient_Http2Loopback
+    //
+    // ---
+    // `[*]` - concrete runnable test classes
+    // `→ file:` - file containing the class and its concrete subclasses
+
     public abstract class ConnectTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
+        #region Common (Echo Server) tests
+
         protected async Task RunClient_EchoBinaryMessage_Success(Uri server)
         {
             await TestEcho(server, WebSocketMessageType.Binary);
@@ -121,8 +147,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                var ub = new UriBuilder(server);
-                ub.Query = "subprotocol=" + AcceptedProtocol;
+                var ub = new UriBuilder(server) { Query = $"{EchoQueryKey.SubProtocol}={AcceptedProtocol}" };
 
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     ConnectAsync(cws, ub.Uri, cts.Token));
@@ -145,8 +170,7 @@ namespace System.Net.WebSockets.Client.Tests
                 cws.Options.AddSubProtocol(OtherProtocol);
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                var ub = new UriBuilder(server);
-                ub.Query = "subprotocol=" + AcceptedProtocol;
+                var ub = new UriBuilder(server) { Query = $"{EchoQueryKey.SubProtocol}={AcceptedProtocol}" };
 
                 await ConnectAsync(cws, ub.Uri, cts.Token);
                 Assert.Equal(WebSocketState.Open, cws.State);
@@ -185,12 +209,16 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(1, proxyServer.Connections);
             }
         }
+
+        #endregion
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     public abstract class ConnectTest_External(ITestOutputHelper output) : ConnectTestBase(output)
     {
+        #region Common (Echo Server) tests
+
         [Theory, MemberData(nameof(EchoServers))]
         public Task EchoBinaryMessage_Success(Uri server)
             => RunClient_EchoBinaryMessage_Success(server);
@@ -223,8 +251,13 @@ namespace System.Net.WebSockets.Client.Tests
         public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(Uri server)
             => RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(server);
 
+        #endregion
+
+        #region External-only tests
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
-        [Theory, MemberData(nameof(UnavailableWebSocketServers))]
+        [Theory]
+        [MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
         {
             using (var cws = new ClientWebSocket())
@@ -247,11 +280,81 @@ namespace System.Net.WebSockets.Client.Tests
                 await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default));
             }
         }
+
+        [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
+        [ConditionalFact] // Uses SkipTestException
+        public async Task ConnectAsync_Http11Server_DowngradeFail()
+        {
+            if (UseSharedHandler)
+            {
+                throw new SkipTestException("HTTP/2 is not supported with SharedHandler");
+            }
+
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = Net.HttpVersion.Version20;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                Task t = cws.ConnectAsync(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, GetInvoker(), cts.Token);
+
+                var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
+                Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
+                HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                HttpRequestError expectedError = PlatformDetection.SupportsAlpn ?
+                    HttpRequestError.SecureConnectionError :
+                    HttpRequestError.VersionNegotiationError;
+                Assert.Equal(expectedError, inner.HttpRequestError);
+                Assert.Equal(WebSocketState.Closed, cws.State);
+            }
+        }
+
+        [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
+        [ConditionalTheory] // Uses SkipTestException
+        [MemberData(nameof(EchoServers))]
+        public async Task ConnectAsync_Http11Server_DowngradeSuccess(Uri server)
+        {
+            if (UseSharedHandler)
+            {
+                throw new SkipTestException("HTTP/2 is not supported with SharedHandler");
+            }
+
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = Net.HttpVersion.Version20;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                await cws.ConnectAsync(server, GetInvoker(), cts.Token);
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
+        }
+
+        [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
+        [ConditionalTheory] // Uses SkipTestException
+        [MemberData(nameof(EchoServers))]
+        public async Task ConnectAsync_Http11WithRequestVersionOrHigher_DowngradeSuccess(Uri server)
+        {
+            if (UseSharedHandler)
+            {
+                throw new SkipTestException("HTTP/2 is not supported with SharedHandler");
+            }
+
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = Net.HttpVersion.Version11;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+                await cws.ConnectAsync(server, GetInvoker(), cts.Token);
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
+        }
+
+        #endregion
     }
 
-    public sealed class ConnectTest_SharedHandler_External(ITestOutputHelper output) : ConnectTest_External(output)
-    {
-    }
+#region Runnable test classes: External/Outerloop
+
+    public sealed class ConnectTest_SharedHandler_External(ITestOutputHelper output) : ConnectTest_External(output) { }
 
     public sealed class ConnectTest_Invoker_External(ITestOutputHelper output) : ConnectTest_External(output)
     {
@@ -262,4 +365,6 @@ namespace System.Net.WebSockets.Client.Tests
     {
         protected override bool UseHttpClient => true;
     }
+
+#endregion
 }

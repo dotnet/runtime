@@ -14,18 +14,20 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerDeflateTests(ITestOutputHelper output) : DeflateTests(output)
-    {
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public sealed class HttpClientDeflateTests(ITestOutputHelper output) : DeflateTests(output)
-    {
-        protected override bool UseHttpClient => true;
-    }
+    //
+    // Class hierarchy:
+    //
+    // - DeflateTests                                 → file:DeflateTests.cs
+    //   ├─ [*]DeflateTests_SharedHandler_Loopback
+    //   ├─ [*]DeflateTests_Invoker_Loopback
+    //   └─ [*]DeflateTests_HttpClient_Loopback
+    //
+    // ---
+    // `[*]` - concrete runnable test classes
+    // `→ file:` - file containing the class and its concrete subclasses
 
     [PlatformSpecific(~TestPlatforms.Browser)]
-    public class DeflateTests(ITestOutputHelper output) : ClientWebSocketTestBase(output)
+    public abstract class DeflateTests(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
         [ConditionalTheory(nameof(WebSocketsSupported))]
         [InlineData(15, true, 15, true, "permessage-deflate; client_max_window_bits")]
@@ -191,4 +193,20 @@ namespace System.Net.WebSockets.Client.Tests
             return builder.ToString();
         }
     }
+
+    #region Runnable test classes: HTTP/1.1 Loopback
+
+    public sealed class DeflateTests_SharedHandler_Loopback(ITestOutputHelper output) : DeflateTests(output) { }
+
+    public sealed class DeflateTests_Invoker_Loopback(ITestOutputHelper output) : DeflateTests(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class DeflateTests_HttpClient_Loopback(ITestOutputHelper output) : DeflateTests(output)
+    {
+        protected override bool UseHttpClient => true;
+    }
+
+    #endregion
 }

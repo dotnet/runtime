@@ -5,18 +5,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class ConnectTest_SharedHandler_Loopback(ITestOutputHelper output) : ConnectTest_Loopback_Http11(output)
+    public partial class ConnectTest_SharedHandler_Loopback
     {
+        #region SharedHandler-only HTTP/1.1 loopback tests
+
         [Fact]
         public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
         {
@@ -173,5 +171,35 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(expectedHost, host);
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
+
+        #endregion
+
+        #region SharedHandler-only unsupported HTTP version tests
+        public static IEnumerable<object[]> ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData()
+        {
+            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version20);
+            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version30);
+            yield return Options(options => options.HttpVersion = new Version(2, 1));
+            yield return Options(options => options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher);
+
+            static object[] Options(Action<ClientWebSocketOptions> configureOptions) =>
+                new object[] { configureOptions };
+        }
+
+        [Theory]
+        [MemberData(nameof(ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
+        public async Task ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException(Action<ClientWebSocketOptions> configureOptions)
+        {
+            using var ws = new ClientWebSocket();
+            configureOptions(ws.Options);
+
+            Task connectTask = ws.ConnectAsync(new Uri("wss://dummy"), CancellationToken.None);
+
+            Assert.Equal(TaskStatus.Faulted, connectTask.Status);
+            await Assert.ThrowsAsync<ArgumentException>("options", () => connectTask);
+        }
+
+        #endregion
     }
 }

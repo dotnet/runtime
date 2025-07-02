@@ -11,6 +11,17 @@ namespace System.Net.Test.Common
 {
     public static class WebSocketEchoHelper
     {
+        public static class EchoControlMessage
+        {
+            public const string Close = ".close";
+            public const string Shutdown = ".shutdown";
+            public const string Abort = ".abort";
+            public const string Delay5Sec = ".delay5sec";
+            public const string ReceiveMessageAfterClose = ".receiveMessageAfterClose";
+            public const string CloseAfter = ".closeafter";
+            public const string ShutdownAfter = ".shutdownafter";
+        }
+
         public static async Task RunEchoAll(WebSocket socket, bool replyWithPartialMessages, bool replyWithEnhancedCloseMessage, CancellationToken cancellationToken = default)
         {
             const int MaxBufferSize = 128 * 1024;
@@ -79,23 +90,23 @@ namespace System.Net.Test.Common
                 if (receiveResult.MessageType == WebSocketMessageType.Text)
                 {
                     receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, offset);
-                    if (receivedMessage == ".close")
+                    if (receivedMessage == EchoControlMessage.Close)
                     {
                         await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                     }
-                    else if (receivedMessage == ".shutdown")
+                    else if (receivedMessage == EchoControlMessage.Shutdown)
                     {
                         await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                     }
-                    else if (receivedMessage == ".abort")
+                    else if (receivedMessage == EchoControlMessage.Abort)
                     {
                         socket.Abort();
                     }
-                    else if (receivedMessage == ".delay5sec")
+                    else if (receivedMessage == EchoControlMessage.Delay5Sec)
                     {
                         await Task.Delay(5000);
                     }
-                    else if (receivedMessage == ".receiveMessageAfterClose")
+                    else if (receivedMessage == EchoControlMessage.ReceiveMessageAfterClose)
                     {
                         string message = $"{receivedMessage} {DateTime.Now:HH:mm:ss}";
                         byte[] buffer = Encoding.UTF8.GetBytes(message);
@@ -124,11 +135,11 @@ namespace System.Net.Test.Common
                             !replyWithPartialMessages,
                             cancellationToken);
                 }
-                if (receivedMessage == ".closeafter")
+                if (receivedMessage == EchoControlMessage.CloseAfter)
                 {
                     await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                 }
-                else if (receivedMessage == ".shutdownafter")
+                else if (receivedMessage == EchoControlMessage.ShutdownAfter)
                 {
                     await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                 }

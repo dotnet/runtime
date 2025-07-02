@@ -8,24 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class HttpClientSendReceiveTest_Http2(ITestOutputHelper output) : SendReceiveTest_Http2(output)
+    public abstract partial class SendReceiveTest_Http2Loopback
     {
-        protected override bool UseHttpClient => true;
-    }
+        #region HTTP/2-only loopback tests
 
-    public sealed class InvokerSendReceiveTest_Http2(ITestOutputHelper output) : SendReceiveTest_Http2(output)
-    {
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public abstract class SendReceiveTest_Http2(ITestOutputHelper output) : ClientWebSocketTestBase(output)
-    {
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ReceiveNoThrowAfterSend_NoSsl()
         {
             var serverMessage = new byte[] { 4, 5, 6 };
@@ -63,7 +53,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
         public async Task ReceiveNoThrowAfterSend_WithSsl()
         {
             var serverMessage = new byte[] { 4, 5, 6 };
@@ -99,5 +88,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             }, new Http2Options() { WebSocketEndpoint = true });
         }
+
+        #endregion
     }
 }

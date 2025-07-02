@@ -65,8 +65,9 @@
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
     <Compile Include="CloseTest.Loopback.cs" />
-    <Compile Include="ConnectTest.Http2.cs" />
     <Compile Include="ConnectTest.cs" />
+    <Compile Include="ConnectTest.Http2.cs" />
+    <Compile Include="ConnectTest.Invoker.cs" />
     <Compile Include="ConnectTest.Loopback.cs" />
     <Compile Include="ConnectTest.SharedHandler.cs" />
     <Compile Include="KeepAliveTest.cs" />
@@ -81,10 +82,14 @@
     <Compile Include="LoopbackServer\WebSocketRequestData.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
+    <Compile Include="SendReceiveTest.Loopback.cs" />
     <Compile Include="SendReceiveTest.Http2.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'browser'">
+    <Compile Include="ClientWebSocketTestBase.Loopback.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
