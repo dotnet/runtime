@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            frame.Push(FieldData.GetValue(null, _field));
+            frame.Push(FieldData.GetRawObject(null, _field));
 
             return 1;
         }
@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Interpreter
             object? self = frame.PopRaw();
 
             NullCheck(self);
-            frame.Push(FieldData.GetValue(self, _field));
+            frame.Push(FieldData.GetRawObject(self, _field));
 
             return 1;
         }
@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Interpreter
             object? self = frame.PopRaw();
 
             NullCheck(self);
-            FieldData.SetValue(self!, _field, value);
+            FieldData.SetRawObjectValue(self!, _field, value);
 
             return 1;
         }
@@ -98,7 +98,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object? value = frame.Pop();
-            FieldData.SetValue(null, _field, value);
+            _field.SetValue(null, value);
             return 1;
         }
     }

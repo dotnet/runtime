@@ -3195,7 +3195,7 @@ namespace System.Linq.Expressions.Interpreter
         public override void Update(InterpretedFrame frame, object? value)
         {
             object? obj = _object == null ? null : frame.Data.GetRaw(_object.GetValueOrDefault().Index);
-            FieldData.SetValue(obj, _field, value);
+            FieldData.SetRawObjectValue(obj, _field, value);
         }
 
         public override void UndefineTemps(InstructionList instructions, LocalVariables locals)

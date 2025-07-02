@@ -5,54 +5,58 @@ using System.Reflection;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal sealed class FieldData(object _parent, FieldInfo _field)
+    internal sealed class FieldData
     {
-        public FieldData(FieldInfo field) : this(Static.Instance, field) { }
+        private readonly object? _parent;
+        private readonly FieldInfo _field;
 
-        private object Parent { get; } = _parent;
-        private FieldInfo Field { get; } = _field;
-
-        private sealed class Static
+        private FieldData(object? parent, FieldInfo field)
         {
-            private Static() {}
-            public static Static Instance { get; } = new Static();
+            _parent = parent;
+            _field = field;
         }
 
         private (FieldInfo? StaticField, object Root, FieldInfo[] FieldInfos) GetFieldAccessors(int count)
         {
-            if (Parent is Static)
+            switch (_parent)
             {
-                object root = Field.GetValue(null)!;
-                Assert.NotNull(root);
+                case null:
+                {
+                    object root = _field.GetValue(null)!;
+                    Assert.NotNull(root);
 
-                return (Field, root, []);
-            }
-            if (Parent is FieldData { Parent: Static, Field: FieldInfo staticField })
-            {
-                FieldInfo[] fieldInfos = new FieldInfo[count];
+                    return (_field, root, []);
+                }
 
-                fieldInfos[0] = Field;
+                case FieldData { _parent: null, _field: FieldInfo staticField }:
+                {
+                    FieldInfo[] fieldInfos = new FieldInfo[count];
 
-                object root = staticField.GetValue(null)!;
-                Assert.NotNull(root);
+                    fieldInfos[0] = _field;
 
-                return (staticField, root, fieldInfos);
-            }
-            else if (Parent is not FieldData parentField)
-            {
-                FieldInfo[] fieldInfos = new FieldInfo[count];
+                    object root = staticField.GetValue(null)!;
+                    Assert.NotNull(root);
 
-                fieldInfos[0] = Field;
+                    return (staticField, root, fieldInfos);
+                }
 
-                return (null, Parent, fieldInfos);
-            }
-            else
-            {
-                var accessors = parentField.GetFieldAccessors(count + 1);
+                case FieldData parentField:
+                {
+                    (FieldInfo? StaticField, object Root, FieldInfo[] FieldInfos) accessors = parentField.GetFieldAccessors(count + 1);
 
-                accessors.FieldInfos[^count] = Field!;
+                    accessors.FieldInfos[^count] = _field!;
 
-                return accessors;
+                    return accessors;
+                }
+
+                case object root:
+                {
+                    FieldInfo[] fieldInfos = new FieldInfo[count];
+
+                    fieldInfos[0] = _field;
+
+                    return (null, root, fieldInfos);
+                }
             }
         }
 
@@ -106,9 +110,9 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public static void SetValue(object? self, FieldInfo field, object? value)
+        public static void SetRawObjectValue(object? rawObject, FieldInfo field, object? value)
         {
-            switch (self, field.DeclaringType)
+            switch (rawObject, field.DeclaringType)
             {
                 case (FieldData fieldData, { IsPrimitive: false, IsValueType: true }):
                     fieldData.SetValueDirect(field, value);
@@ -119,17 +123,16 @@ namespace System.Linq.Expressions.Interpreter
                     break;
 
                 default:
-                    field.SetValue(self, value);
+                    field.SetValue(rawObject, value);
                     break;
             }
         }
 
-        public static object? GetValue(object? self, FieldInfo field)
+        public static object? GetRawObject(object? self, FieldInfo field)
         {
             return
                 (self, field.FieldType) switch
                 {
-                    (null, { IsPrimitive: false, IsValueType: true }) => new FieldData(field),
                     (_, { IsPrimitive: false, IsValueType: true }) => new FieldData(self, field),
                     (FieldData fieldData, _) => fieldData.GetValueDirect(field),
                     (_, _) => field.GetValue(self),
