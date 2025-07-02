@@ -15,7 +15,6 @@ parameters:
   condition: true
   displayNameArgs: ''
   runInUnloadableContext: false
-  runInterpreter: false
   tieringTest: false
   runtimeVariant: ''
   variables: {}
@@ -309,7 +308,6 @@ jobs:
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-        runInterpreter: ${{ parameters.runInterpreter }}
         tieringTest: ${{ parameters.tieringTest }}
         hotColdSplitting: ${{ parameters.hotColdSplitting }}
 
