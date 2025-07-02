@@ -163,11 +163,12 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
 //    testingForConversion - Test if its likely a switch conversion will happen.
 //    Used to prevent a pessimization when optimizing for conditional chaining.
 //    Done in this function to prevent maintaining the check in two places.
+//    ccmpVec - BitVec to use to track all the nodes participating in a single switch
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
 //
-bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion, BitVec* ccmp_vec)
+bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion, BitVec* ccmpVec)
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
@@ -194,16 +195,16 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
         }
         if (testingForConversion)
         {
-            assert(ccmp_vec != nullptr);
-            BitVecTraits* ccmp_traits = new BitVecTraits(fgBBNumMax + 1, this);
-            if (BitVecOps::IsMember(ccmp_traits, *ccmp_vec, firstBlock->bbNum))
+            assert(ccmpVec != nullptr);
+            BitVecTraits* ccmpTraits = new BitVecTraits(fgBBNumMax + 1, this);
+            if (BitVecOps::IsMember(ccmpTraits, *ccmpVec, firstBlock->bbNum))
             {
-                BitVecOps::RemoveElemD(ccmp_traits, *ccmp_vec, firstBlock->bbNum);
+                BitVecOps::RemoveElemD(ccmpTraits, *ccmpVec, firstBlock->bbNum);
                 return true;
             }
             else
             {
-                *ccmp_vec = BitVecOps::MakeEmpty(ccmp_traits);
+                *ccmpVec = BitVecOps::MakeEmpty(ccmpTraits);
             }
         }
         
@@ -289,7 +290,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
 
 optSwitchConvert:
     return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
-                            testingForConversion);
+                            testingForConversion, ccmpVec);
 }
 
 //------------------------------------------------------------------------------
@@ -304,6 +305,10 @@ optSwitchConvert:
 //    testValues - Array of constants that are tested against the variable
 //    falseLikelihood - Likelihood of control flow reaching the false block
 //    nodeToTest - Variable node that is tested against the constants
+//    testingForConversion - Test if its likely a switch conversion will happen.
+//    Used to prevent a pessimization when optimizing for conditional chaining.
+//    Done in this function to prevent maintaining the check in two places.
+//    ccmpVec - BitVec to use to track all the nodes participating in a single switch
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
@@ -314,7 +319,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
                                 weight_t    falseLikelihood,
                                 GenTree*    nodeToTest,
                                 bool        testingForConversion,
-                                BitVec*     ccmp_vec)
+                                BitVec*     ccmpVec)
 {
     assert(firstBlock->KindIs(BBJ_COND));
     assert(!varTypeIsSmall(nodeToTest));
@@ -400,14 +405,14 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
 
     if (testingForConversion)
     {
-        assert(ccmp_vec != nullptr);
-        BitVecTraits* ccmp_traits = new BitVecTraits(fgBBNumMax + 1, this);
+        assert(ccmpVec != nullptr);
+        BitVecTraits* ccmpTraits = new BitVecTraits(fgBBNumMax + 1, this);
         // Return if we are just checking for a possibility of a switch convert and not actually making the conversion
         // to switch here.
         BasicBlock* iterBlock = firstBlock;
         for (int i = 0; i < testsCount; i++)
         {
-            BitVecOps::AddElemD(ccmp_traits, *ccmp_vec, iterBlock->bbNum);
+            BitVecOps::AddElemD(ccmpTraits, *ccmpVec, iterBlock->bbNum);
             iterBlock = iterBlock->GetFalseTarget();
         }
         return true;
