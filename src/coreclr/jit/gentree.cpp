@@ -4212,8 +4212,6 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (!varTypeUsesIntReg(tree->TypeGet()))
-        return false;
     if (varTypeIsLong(tree->TypeGet()))
         return false;
 #endif
@@ -4246,6 +4244,18 @@ void Compiler::gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCost
             costEx += 1;
             costSz += 1;
         }
+#if defined(TARGET_XARCH)
+        if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+        {
+            costEx = 1;
+            costSz = 4;
+        }
+        else if (varTypeIsMask(node))
+        {
+            costEx = 1;
+            costSz = 5;
+        }
+#endif // TARGET_XARCH
     }
     else
     {
@@ -4263,6 +4273,18 @@ void Compiler::gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCost
             costEx += 2 * IND_COST_EX;
             costSz += 2 * 2;
         }
+#if defined(TARGET_XARCH)
+        if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+        {
+            costEx = IND_COST_EX_FLT;
+            costSz = 4 + IND_COST_SZ_FLT;
+        }
+        else if (varTypeIsMask(node))
+        {
+            costEx = IND_COST_EX_MSK;
+            costSz = 5 + IND_COST_SZ_MSK;
+        }
+#endif // TARGET_XARCH
     }
 #if defined(TARGET_AMD64)
     // increase costSz for floating point locals
@@ -4305,6 +4327,19 @@ void Compiler::gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCost
         costSz += 2 * 2;
     }
 
+#if defined(TARGET_XARCH)
+    if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+    {
+        costEx = IND_COST_EX_FLT;
+        costSz = 4 + IND_COST_SZ_FLT;
+    }
+    else if (varTypeIsMask(node))
+    {
+        costEx = IND_COST_EX_MSK;
+        costSz = 5 + IND_COST_SZ_MSK;
+    }
+#endif // TARGET_XARCH
+
     *pCostEx = costEx;
     *pCostSz = costSz;
 }
@@ -4344,6 +4379,19 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
         costSz += 2;
     }
 #endif // TARGET_ARM
+
+#if defined(TARGET_XARCH)
+    if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+    {
+        costEx = IND_COST_EX_FLT;
+        costSz = 4 + IND_COST_SZ_FLT;
+    }
+    else if (varTypeIsMask(node))
+    {
+        costEx = IND_COST_EX_MSK;
+        costSz = 5 + IND_COST_SZ_MSK;
+    }
+#endif // TARGET_XARCH
 
     // Can we form an addressing mode with this indirection?
     GenTree* addr = node->Addr();
