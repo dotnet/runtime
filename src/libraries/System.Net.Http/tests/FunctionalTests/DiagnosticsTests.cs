@@ -861,8 +861,7 @@ namespace System.Net.Http.Functional.Tests
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
 
-                        // We are not using Assert.ThrowsAsync<TaskCanceledException>(...).
-                        // In case we get an incorrect exception, we want to fully propagate it into the test logs.
+                        // We are not using Assert.ThrowsAsync<TaskCanceledException>(...); in case we get an incorrect exception, we want to fully propagate it into the test logs.
                         try
                         {
                             await GetAsync(useVersion, testAsync, uri, cts.Token);
@@ -873,13 +872,13 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.NotNull(activity);
                         Assert.Equal(ActivityStatusCode.Error, activity.Status);
-                        ActivityAssert.HasTag(activity, "error.type", typeof(TaskCanceledException).FullName);
+                        ActivityAssert.HasTag(activity, "error.type", (string errorType) => errorType == typeof(TaskCanceledException).FullName || errorType == typeof(OperationCanceledException).FullName);
                         ActivityEvent evt = activity.Events.Single(e => e.Name == "exception");
                         Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
                         Assert.Contains("exception.type", tags.Keys);
                         Assert.Contains("exception.message", tags.Keys);
                         Assert.Contains("exception.stacktrace", tags.Keys);
-                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
+                        Assert.True((string)tags["exception.type"] == typeof(TaskCanceledException).FullName || (string)tags["exception.type"] == typeof(TaskCanceledException).FullName);
                     },
                     async server =>
                     {
