@@ -50,7 +50,7 @@ namespace System.Threading
         [Intrinsic]
         [NonVersionable]
         public static double Read(ref readonly double location) =>
-            BitConverter.Int64BitsToDouble(Read(ref Unsafe.As<double, long>(ref Unsafe.AsRef(in location)));
+            BitConverter.Int64BitsToDouble(Read(ref Unsafe.As<double, long>(ref Unsafe.AsRef(in location))));
 
         [Intrinsic]
         [NonVersionable]
