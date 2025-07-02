@@ -641,13 +641,13 @@ namespace System
             nuint destElSize = RuntimeHelpers.GetMethodTable(destinationArray)->ComponentSize;
 
             ref byte srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElSize);
-            ref byte data = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElSize);
+            ref byte destData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElSize);
 
             for (int i = 0; i < length; i++)
             {
-                InvokeUtils.PrimitiveWiden(ref srcData, ref data, srcElType, destElType);
+                InvokeUtils.PrimitiveWiden(ref srcData, ref destData, srcElType, destElType);
                 srcData = ref Unsafe.AddByteOffset(ref srcData, srcElSize);
-                data = ref Unsafe.AddByteOffset(ref data, destElSize);
+                destData = ref Unsafe.AddByteOffset(ref destData, destElSize);
             }
         }
 
