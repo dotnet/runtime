@@ -179,7 +179,14 @@ namespace Microsoft.NET.HostModel.AppHost
                         }
                     }
                 });
-                Chmod755(appHostDestinationFilePath);
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // chmod +755
+                    File.SetUnixFileMode(appHostDestinationFilePath,
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                        UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                }
             }
             catch (Exception ex)
             {
@@ -219,28 +226,5 @@ namespace Microsoft.NET.HostModel.AppHost
 
             return searchOptionsBytes;
         }
-
-        internal static void Chmod755(string pathName)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-            var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
-            const int EINTR = 4;
-            int chmodReturnCode;
-
-            do
-            {
-                chmodReturnCode = chmod(pathName, filePermissionOctal);
-            }
-            while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
-
-            if (chmodReturnCode == -1)
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {pathName}.");
-            }
-        }
-
-        [LibraryImport("libc", SetLastError = true)]
-        private static partial int chmod([MarshalAs(UnmanagedType.LPStr)] string pathname, int mode);
     }
 }

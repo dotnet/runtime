@@ -316,7 +316,6 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         [Fact]
-        [Conditional("DEBUG")] // Relies on debug asserts in product code
         public void LongFileNames()
         {
             var app = sharedTestState.App;

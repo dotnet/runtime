@@ -402,7 +402,14 @@ namespace Microsoft.NET.HostModel.Bundle
                     }
                 }
             }
-            HostWriter.Chmod755(bundlePath);
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // chmod +755
+                File.SetUnixFileMode(bundlePath,
+                     UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                     UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                     UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            }
             return bundlePath;
         }
 
