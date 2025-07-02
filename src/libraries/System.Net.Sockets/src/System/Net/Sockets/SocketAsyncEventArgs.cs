@@ -672,15 +672,19 @@ namespace System.Net.Sockets
             }
         }
 
-        private static int GetNextAddress(IPAddress[] addresses, AddressFamily addressFamily, int index)
+        /// <summary>Gets the index of the next address in the specified family.</summary>
+        /// <param name="addresses">The array of IP addresses to search, typycally from DNS resolution</param>
+        /// <param name="addressFamily">The address family to match.</param>
+        /// <param name="lastIndex">The index of the last matched address or -1 on first round. </param>
+        /// <returns>The index of the next matching address, or -1 if none found.</returns>
+        private static int GetNextAddressIndex(IPAddress[] addresses, AddressFamily addressFamily, int lastIndex)
         {
-            for (int i = index + 1; i < addresses.Length; i++)
+            for (int i = lastIndex + 1; i < addresses.Length; i++)
             {
                 if (addresses[i].AddressFamily == addressFamily)
                 {
                     return i;
                 }
-
             }
 
             return -1;
@@ -736,19 +740,19 @@ namespace System.Net.Sockets
                     AddressFamily currentAddressFamily = AddressFamily.InterNetwork;
 
                     int nextAddressIndex = 0;
-                    int nextIPv6AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, -1);
-                    int nextUPv4AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetwork, -1);
+                    int nextIPv6AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetworkV6, -1);
+                    int nextUPv4AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetwork, -1);
 
 
-                    // We can do parallel connect only if siocket was not specified and when there is at least one address of each AF.
+                    // We can do parallel connect only if socket was not specified and when there is at least one address of each AF.
                     bool parallelConnect = connectAlgorithm == ConnectAlgorithm.Parallel && _currentSocket == null && RemoteEndPoint!.AddressFamily == AddressFamily.Unspecified &&
                                            nextIPv6AddressIndex >= 0 && nextUPv4AddressIndex >= 0;
 
                     if (parallelConnect)
                     {
-                        nextAddressIndex = GetNextAddress(addresses, AddressFamily.InterNetwork, -1);
-                        nextIPv6AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, -1);
-                        internalArgs.SecondarySaea = new SocketAsyncEventArgs();
+                        nextAddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetwork, -1);
+                        nextIPv6AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetworkV6, -1);
+                        internalArgs.SecondarySaea = new MultiConnectSocketAsyncEventArgs();
                     }
                     internalArgs.SocketError = SocketError.Success;
                     while (true)
@@ -776,7 +780,7 @@ namespace System.Net.Sockets
                                 if (nextAddressIndex >= 0)
                                 {
                                     address = addresses[nextAddressIndex];
-                                    nextAddressIndex = GetNextAddress(addresses, currentAddressFamily, nextAddressIndex);
+                                    nextAddressIndex = GetNextAddressIndex(addresses, currentAddressFamily, nextAddressIndex);
 
                                 }
                                 else
@@ -807,7 +811,7 @@ namespace System.Net.Sockets
                                         internalArgs.SecondarySaea!.SocketError = SocketError.IOPending;
                                     }
 
-                                    nextIPv6AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, nextIPv6AddressIndex);
+                                    nextIPv6AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetworkV6, nextIPv6AddressIndex);
                                 }
                                 else
                                 {
@@ -855,7 +859,7 @@ namespace System.Net.Sockets
                             {
                                 Debug.Assert(internalArgs.SecondarySaea != null);
 
-                                // if we have two addressess to connect to IPv4 is in address and IPv6 in address2
+                                // if we have two addressess to connect to: IPv4 is in address and IPv6 in address2
                                 Debug.Assert(address2.AddressFamily == AddressFamily.InterNetworkV6);
                                 attemptSocket2 = tempSocketIPv6 ??= (Socket.OSSupportsIPv6 ? new Socket(AddressFamily.InterNetworkV6, socketType, protocolType) : null);
                                 if (attemptSocket2 is not null && address2.IsIPv4MappedToIPv6)
@@ -936,7 +940,18 @@ namespace System.Net.Sockets
 
                             using (cancellationToken.UnsafeRegister(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), internalArgs))
                             {
-                                await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
+                                //var tasks = new List<ValueTask> { new ValueTask(internalArgs, internalArgs.Version) };
+                                if (internalArgs.SecondarySaea != null)
+                                {
+                                    //var tasks = new List<ValueTask> { new ValueTask(internalArgs, internalArgs.Version) };
+                                    var t1 = new ValueTask(internalArgs, internalArgs.Version).AsTask();
+                                    var t2 = new ValueTask(internalArgs.SecondarySaea, internalArgs.SecondarySaea.Version).AsTask();
+                                    await Task.WhenAny(t1, t2).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
+                                }
                             }
                         }
 
@@ -1038,7 +1053,7 @@ namespace System.Net.Sockets
             private ManualResetValueTaskSourceCore<bool> _mrvtsc;
             private bool _isCompleted;
             // used for parallel connect
-            public SocketAsyncEventArgs? SecondarySaea;
+            public MultiConnectSocketAsyncEventArgs? SecondarySaea;
 
             public MultiConnectSocketAsyncEventArgs() : base(unsafeSuppressExecutionContextFlow: false) { }
 

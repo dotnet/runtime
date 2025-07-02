@@ -3,13 +3,19 @@
 
 namespace System.Net.Sockets
 {
-    // Defines constants used by the Socket.Shutdown method.
+    /// <summary>
+    /// Specifies the algorithm used to establish a socket connection.
+    /// </summary>
     public enum ConnectAlgorithm
     {
-        // defaul mechanism e.g. sequential processing
+        /// <summary>
+        /// The default connection mechanism, typically sequential processing.
+        /// </summary>
         Default = 0,
 
-        // use a Happy Eyeballs-like algorithm to connect.
+        /// <summary>
+        /// Uses a Happy Eyeballs-like algorithm to connect, attempting connections in parallel to improve speed and reliability.
+        /// </summary>
         Parallel = 1,
     }
 }

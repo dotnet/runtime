@@ -2828,6 +2828,11 @@ namespace System.Net.Sockets
         public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e, ConnectAlgorithm connectAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(e);
+            if (connectAlgorithm != ConnectAlgorithm.Default &&
+                connectAlgorithm != ConnectAlgorithm.Parallel)
+            {
+                throw new ArgumentException(SR.Format(SR.net_sockets_invalid_connect_algorithm, connectAlgorithm), nameof(connectAlgorithm));
+            }
 
             if (e.HasMultipleBuffers)
             {
