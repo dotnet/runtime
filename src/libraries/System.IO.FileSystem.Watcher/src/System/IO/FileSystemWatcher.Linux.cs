@@ -375,10 +375,10 @@ namespace System.IO
                 bool addLockTaken = false;
                 try
                 {
-                    // If the user sets EnableRaisingEvents to false on the last Watcher,
-                    // instead of removing all the inotify watches, we'll only remove the root watch (to trigger an IN_IGNORED)
-                    // and then ProcessEvents will stop when it sees IsStopped was set.
-                    if (ignoredFd == -1 && removedDir.IsRootDir)
+                    // If we're removing the root directory of the last watcher,
+                    // we'll only remove the root watch (to trigger an IN_IGNORED if we got called through EnableRaisingEvents = false)
+                    // and ProcessEvents will stop when it sees IsStopped was set.
+                    if (removedDir.IsRootDir)
                     {
                         Monitor.Enter(_watchersLock, ref watchersLockTaken);
                     }
@@ -698,22 +698,6 @@ namespace System.IO
                     // IN_IGNORED: Watch was removed explicitly or automatically because the directory was deleted.
                     if ((mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0)
                     {
-                        // Stop tracking the watcher when its RootDirectory gets ignored.
-                        // When we're watching no more root directories, we can stop.
-                        if (dir.IsRootDir)
-                        {
-                            lock (_watchersLock)
-                            {
-                                _watchers.Remove(dir.Watcher);
-
-                                if (_watchers.Count == 0)
-                                {
-                                    Stop();
-                                    return false;
-                                }
-                            }
-                        }
-
                         RemoveWatchedDirectory(dir, ignoredFd: nextEvent.wd);
 
                         // RemoveUnusedINotifyWatches sets IsStopped when the last watcher is removed.
