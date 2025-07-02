@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
         {
             // Bug: https://github.com/dotnet/linker/issues/3078
             // ILLink should mark for DirectCall as well as OverrideOnInstantiatedType, not just OverrideOnInstantiatedType
-            //[KeptBy (typeof(A), nameof(Foo), DependencyKind.DirectCall)]
+            //[KeptBy(typeof(A), nameof(Foo), DependencyKind.DirectCall)]
             [KeptBy(typeof(A), "OverrideOnInstantiatedType")]
             public override void Foo()
             {

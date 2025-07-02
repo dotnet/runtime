@@ -5,8 +5,8 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [ExpectedWarning("IL2077", nameof(ByRefDataflow) + "." + nameof(MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2406")]
         [ExpectedWarning("IL2077", nameof(ByRefDataflow) + "." + nameof(MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2406")]
         [ExpectedWarning("IL2069", [nameof(s_typeWithPublicParameterlessConstructor), "parameter 'type'", nameof(MethodWithRefParameter)], Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101955")]
-        // MethodWithRefParameter (ref x)
+        // MethodWithRefParameter(ref x)
         [ExpectedWarning("IL2077", nameof(ByRefDataflow) + "." + nameof(MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2406")]
         [ExpectedWarning("IL2077", nameof(ByRefDataflow) + "." + nameof(MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2406")]
         public static void PassRefToField()
@@ -169,11 +169,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [Kept]
             static void TwoOutRefs(
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 out Type publicMethods,
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
                 out Type publicProperties)
             {
                 publicMethods = null;
@@ -215,11 +215,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [ExpectedWarning("IL2072", nameof(publicPropertiesParameter), nameof(GetUnknownType))]
             static void TestParameterAssignment(
                 bool b = true,
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type publicMethodsParameter = null,
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
                 Type publicPropertiesParameter = null)
             {
                 (b ? ref publicMethodsParameter : ref publicPropertiesParameter) = GetUnknownType();
@@ -280,8 +280,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [ExpectedWarning("IL2074", nameof(_publicPropertiesField), nameof(GetUnknownType))]
             static void TestDataFlowOnRightHandOfAssignment(
                 bool b = true,
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type type = null)
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type = null)
             {
                 (b ? ref _publicMethodsField : ref _publicPropertiesField) = (type = GetUnknownType());
             }

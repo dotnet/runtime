@@ -236,7 +236,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if NET
             return CompileCSharpAssemblyWithRoslyn(options);
 #else
-			return CompileCSharpAssemblyWithCsc (options);
+            return CompileCSharpAssemblyWithCsc(options);
 #endif
         }
 
@@ -346,7 +346,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if NET
             return CompileCSharpAssemblyWithRoslyn(options);
 #else
-			return CompileCSharpAssemblyWithExternalCompiler (LocateCscExecutable (), options, "/shared ");
+            return CompileCSharpAssemblyWithExternalCompiler(LocateCscExecutable(), options, "/shared ");
 #endif
         }
 

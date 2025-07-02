@@ -76,12 +76,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // === Method parameters ===
             // This does not check complicated inheritance cases as that is already validated by the return values
             public virtual void SingleParameterBaseWithDerivedWithout(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
             public virtual void SingleParameterBaseWithDerivedWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
@@ -90,15 +90,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public virtual void SingleParameterBaseWithoutDerivedWithout(Type p) { }
 
             public virtual void SingleParameterBaseWithDerivedWithDifferent(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type p)
             { }
 
             public virtual void MultipleParametersBaseWithDerivedWithout(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type p1BaseWithDerivedWithout,
                 Type p2BaseWithoutDerivedWithout,
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type p3BaseWithDerivedWithout)
             { }
 
@@ -109,18 +109,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             { }
 
             public virtual void MultipleParametersBaseWithDerivedWithMatch(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type p1BaseWithDerivedWith,
                 Type p2BaseWithoutDerivedWithout,
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p3BaseWithDerivedWith)
             { }
 
             public virtual void MultipleParametersBaseWithDerivedWithMismatch(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type p1BaseWithDerivedWithMismatch,
                 Type p2BaseWithoutDerivedWith,
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p3BaseWithDerivedWithMatch,
                 Type p4NoAnnotations)
             { }
@@ -176,7 +176,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [LogDoesNotContain("DerivedClass.SingleParameterBaseWithDerivedWith_")]
             public override void SingleParameterBaseWithDerivedWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
@@ -185,7 +185,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 "don't match overridden parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithoutDerivedWith_(Type)'. " +
                 "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
             public override void SingleParameterBaseWithoutDerivedWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
@@ -197,7 +197,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 "don't match overridden parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithDerivedWithDifferent(Type)'. " +
                 "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
             public override void SingleParameterBaseWithDerivedWithDifferent(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p)
             { }
 
@@ -215,19 +215,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [LogDoesNotContain(".*'p2BaseWithoutDerivedWithout'.*DerivedClass.*MultipleParametersBaseWithoutDerivedWith.*", regexMatch: true)]
             [LogContains(".*'p3BaseWithoutDerivedWith'.*DerivedClass.*MultipleParametersBaseWithoutDerivedWith.*", regexMatch: true)]
             public override void MultipleParametersBaseWithoutDerivedWith(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p1BaseWithoutDerivedWith,
                 Type p2BaseWithoutDerivedWithout,
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p3BaseWithoutDerivedWith)
             { }
 
             [LogDoesNotContain("DerivedClass.MultipleParametersBaseWithDerivedWithMatch")]
             public override void MultipleParametersBaseWithDerivedWithMatch(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type p1BaseWithDerivedWith,
                 Type p2BaseWithoutDerivedWithout,
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p3BaseWithDerivedWith)
             { }
 
@@ -236,11 +236,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [LogDoesNotContain(".*'p3BaseWithDerivedWithMatch'.*DerivedClass.*MultipleParametersBaseWithDerivedWithMismatch.*", regexMatch: true)]
             [LogDoesNotContain(".*'p4NoAnnotations'.*DerivedClass.*MultipleParametersBaseWithDerivedWithMismatch.*", regexMatch: true)]
             public override void MultipleParametersBaseWithDerivedWithMismatch(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p1BaseWithDerivedWithMismatch,
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p2BaseWithoutDerivedWith,
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p3BaseWithDerivedWithMatch,
                 Type p4NoAnnotations)
             { }
@@ -359,7 +359,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // === Method parameters ===
             [LogContains("DerivedOverNoAnnotations.SingleParameterBaseWithoutDerivedWith_")]
             public override void SingleParameterBaseWithoutDerivedWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
@@ -393,12 +393,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             // === Method parameters ===
             public virtual void SingleParameterBaseWithDerivedWithout(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
             public virtual void SingleParameterBaseWithDerivedWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
@@ -433,7 +433,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [LogDoesNotContain("DerivedWithNoAnnotations.SingleParameterBaseWithDerivedWith_")]
             public override void SingleParameterBaseWithDerivedWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
@@ -468,13 +468,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             // === Method parameters ===
             void SingleParameterBaseWithImplementationWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p);
 
             void SingleParameterBaseWithoutImplementationWith_(Type p);
 
             void SingleParameterBaseWithImplementationWithout(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p);
 
             void SingleParameterBaseWithoutImplementationWithout(Type p);
@@ -526,7 +526,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // === Method parameters ===
             [LogDoesNotContain("ImplementationClass.SingleParameterBaseWithImplementationWith_")]
             public void SingleParameterBaseWithImplementationWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 
@@ -535,7 +535,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [LogContains("ImplementationClass.SingleParameterBaseWithoutImplementationWith_")]
             public void SingleParameterBaseWithoutImplementationWith_(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
             { }
 

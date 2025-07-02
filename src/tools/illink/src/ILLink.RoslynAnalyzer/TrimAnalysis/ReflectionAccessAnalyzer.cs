@@ -42,10 +42,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                         break;
                     /* Skip Type and InterfaceImplementation marking since doesnt seem relevant for diagnostic generation
                     case ITypeSymbol nestedType:
-                        MarkType (location, nestedType);
+                        MarkType(location, nestedType);
                         break;
                     case InterfaceImplementation interfaceImplementation:
-                        MarkInterfaceImplementation (location, interfaceImplementation, dependencyKind);
+                        MarkInterfaceImplementation(location, interfaceImplementation, dependencyKind);
                         break;
                     */
                     case IEventSymbol @event:

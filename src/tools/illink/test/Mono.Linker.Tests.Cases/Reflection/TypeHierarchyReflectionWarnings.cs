@@ -122,8 +122,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [Kept]
             [ExpectedWarning("IL2114", nameof(AnnotatedAll), nameof(DAMMethod))]
             public void DAMMethod(
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type t
             )
             { }
@@ -184,8 +184,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [Kept]
             [ExpectedWarning("IL2114", nameof(AnnotatedPublicMethods), nameof(DAMMethod))]
             public void DAMMethod(
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type t
             )
             { }
@@ -199,8 +199,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [Kept]
             [ExpectedWarning("IL2114", nameof(AnnotatedPublicMethods), nameof(DAMVirtualMethod))]
             public virtual void DAMVirtualMethod(
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type type
             )
             { }

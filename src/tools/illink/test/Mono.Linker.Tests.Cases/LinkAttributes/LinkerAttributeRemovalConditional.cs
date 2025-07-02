@@ -124,7 +124,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
         {
         }
 
-        // Any usage with 100 key is removed	
+        // Any usage with 100 key is removed
         // Any usage with "remove1" key is removed
         public TestConditionalRemoveAttribute(object key, char value, int ivalue)
         {

@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
         [Kept]
         static void PointToTypeInFacade(
-            [KeptAttributeAttribute (typeof(DynamicallyAccessedMembersAttribute))]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string typeName)
         {
         }

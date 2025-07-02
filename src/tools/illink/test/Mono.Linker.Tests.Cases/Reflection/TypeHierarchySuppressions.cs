@@ -49,15 +49,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         static void RequireMethods(
-            [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             Type type)
         { }
 
         [Kept]
         static void RequireAll(
-            [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type)
         { }
 
@@ -189,8 +189,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
             [UnconditionalSuppressMessage("TrimAnalysis", "IL2114")]
             public void DAMTMethod(
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type t
             )
             { }

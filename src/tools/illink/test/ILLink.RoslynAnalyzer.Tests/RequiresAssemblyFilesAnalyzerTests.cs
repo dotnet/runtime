@@ -66,63 +66,63 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task NoDynamicallyAccessedMembersWarningsIfOnlySingleFileAnalyzerIsEnabled()
         {
             var TargetParameterWithAnnotations = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				public static void Main()
-				{
-					MethodCallPattern(typeof(int));
-					AssignmentPattern(typeof(int));
-					ReflectionAccessPattern();
-					FieldAccessPattern();
-					GenericRequirement<int>();
-				}
+            class C
+            {
+                public static void Main()
+                {
+                    MethodCallPattern(typeof(int));
+                    AssignmentPattern(typeof(int));
+                    ReflectionAccessPattern();
+                    FieldAccessPattern();
+                    GenericRequirement<int>();
+                }
 
-				private static void NeedsPublicMethodsOnParameter(
-					[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type parameter)
-				{
-				}
+                private static void NeedsPublicMethodsOnParameter(
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type parameter)
+                {
+                }
 
-				private static void MethodCallPattern(Type type)
-				{
-					NeedsPublicMethodsOnParameter(type);
-				}
+                private static void MethodCallPattern(Type type)
+                {
+                    NeedsPublicMethodsOnParameter(type);
+                }
 
-				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-				private static Type NeedsPublicMethosOnField;
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                private static Type NeedsPublicMethosOnField;
 
-				private static void AssignmentPattern(Type type)
-				{
-					NeedsPublicMethosOnField = type;
-				}
+                private static void AssignmentPattern(Type type)
+                {
+                    NeedsPublicMethosOnField = type;
+                }
 
-				private static void ReflectionAccessPattern()
-				{
-					Action<Type> action = NeedsPublicMethodsOnParameter;
-				}
+                private static void ReflectionAccessPattern()
+                {
+                    Action<Type> action = NeedsPublicMethodsOnParameter;
+                }
 
-				private static void FieldAccessPattern()
-				{
-					var i = BeforeFieldInit.StaticField;
-				}
+                private static void FieldAccessPattern()
+                {
+                    var i = BeforeFieldInit.StaticField;
+                }
 
-				[RequiresUnreferencedCode("BeforeFieldInit")]
-				class BeforeFieldInit {
-					public static int StaticField = 0;
-				}
+                [RequiresUnreferencedCode("BeforeFieldInit")]
+                class BeforeFieldInit {
+                    public static int StaticField = 0;
+                }
 
-				private static void GenericRequirement<T>()
-				{
-					new NeedsPublicMethodsOnTypeParameter<T>();
-				}
+                private static void GenericRequirement<T>()
+                {
+                    new NeedsPublicMethodsOnTypeParameter<T>();
+                }
 
-				class NeedsPublicMethodsOnTypeParameter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
-				{
-				}
-			}
-			""";
+                class NeedsPublicMethodsOnTypeParameter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+                {
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(TargetParameterWithAnnotations);
         }
 
@@ -130,21 +130,21 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task SimpleDiagnosticOnEvent()
         {
             var TestRequiresAssemblyFieldsOnEvent = $$"""
-			#nullable enable
-			using System.Diagnostics.CodeAnalysis;
+            #nullable enable
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				[RequiresAssemblyFiles]
-				event System.EventHandler? E;
+            class C
+            {
+                [RequiresAssemblyFiles]
+                event System.EventHandler? E;
 
-				void M()
-				{
-					E += (sender, e) => { };
-					var evt = E;
-				}
-			}
-			""";
+                void M()
+                {
+                    E += (sender, e) => { };
+                    var evt = E;
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(TestRequiresAssemblyFieldsOnEvent,
                 // (11,17): warning IL3002: Using member 'C.E' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
                 VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(11, 3, 11, 26).WithArguments("C.E.add", "", ""));
@@ -154,21 +154,21 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task SimpleDiagnosticOnProperty()
         {
             var TestRequiresAssemblyFilesOnProperty = $$"""
-			using System.Collections.Generic;
-			using System.Diagnostics.CodeAnalysis;
+            using System.Collections.Generic;
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				[RequiresAssemblyFiles]
-				bool P { get; set; }
+            class C
+            {
+                [RequiresAssemblyFiles]
+                bool P { get; set; }
 
-				void M()
-				{
-					P = false;
-					List<bool> b = new List<bool> { P };
-				}
-			}
-			""";
+                void M()
+                {
+                    P = false;
+                    List<bool> b = new List<bool> { P };
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(TestRequiresAssemblyFilesOnProperty,
                 // (11,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
                 VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(11, 3, 11, 12).WithArguments("C.P.set", "", ""),
@@ -180,32 +180,32 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task CallDangerousMethodInsideProperty()
         {
             var TestRequiresAssemblyFilesOnMethodInsideProperty = $$"""
-			using System.Diagnostics.CodeAnalysis;
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				bool @field;
+            class C
+            {
+                bool @field;
 
-				[RequiresAssemblyFiles]
-				bool P {
-					get {
-						return @field;
-					}
-					set {
-						CallDangerousMethod ();
-						@field = value;
-					}
-				}
+                [RequiresAssemblyFiles]
+                bool P {
+                    get {
+                        return @field;
+                    }
+                    set {
+                        CallDangerousMethod();
+                        @field = value;
+                    }
+                }
 
-				[RequiresAssemblyFiles]
-				void CallDangerousMethod () {}
+                [RequiresAssemblyFiles]
+                void CallDangerousMethod() {}
 
-				void M ()
-				{
-					P = false;
-				}
-			}
-			""";
+                void M()
+                {
+                    P = false;
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(TestRequiresAssemblyFilesOnMethodInsideProperty,
                 // (23,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
                 VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(23, 3, 23, 12).WithArguments("C.P.set", "", ""));
@@ -215,21 +215,21 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task RequiresAssemblyFilesWithUrlOnly()
         {
             var TestRequiresAssemblyFilesWithMessageAndUrl = $$"""
-			using System.Diagnostics.CodeAnalysis;
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				[RequiresAssemblyFiles (Url = "https://helpurl")]
-				void M1()
-				{
-				}
+            class C
+            {
+                [RequiresAssemblyFiles(Url = "https://helpurl")]
+                void M1()
+                {
+                }
 
-				void M2()
-				{
-					M1();
-				}
-			}
-			""";
+                void M2()
+                {
+                    M1();
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(TestRequiresAssemblyFilesWithMessageAndUrl,
                 // (12,3): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. https://helpurl
                 VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(12, 3, 12, 5).WithArguments("C.M1()", "", " https://helpurl"));
@@ -239,14 +239,14 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task NoDiagnosticIfMethodNotCalled()
         {
             var TestNoDiagnosticIfMethodNotCalled = $$"""
-			using System.Diagnostics.CodeAnalysis;
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				[RequiresAssemblyFiles]
-				void M() { }
-			}
-			""";
+            class C
+            {
+                [RequiresAssemblyFiles]
+                void M() { }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(TestNoDiagnosticIfMethodNotCalled);
         }
 
@@ -254,27 +254,27 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task NoDiagnosticIsProducedIfCallerIsAnnotated()
         {
             var TestNoDiagnosticIsProducedIfCallerIsAnnotated = $$"""
-			using System.Diagnostics.CodeAnalysis;
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				void M1()
-				{
-					M2();
-				}
+            class C
+            {
+                void M1()
+                {
+                    M2();
+                }
 
-				[RequiresAssemblyFiles ("Warn from M2")]
-				void M2()
-				{
-					M3();
-				}
+                [RequiresAssemblyFile("Warn from M2")]
+                void M2()
+                {
+                    M3();
+                }
 
-				[RequiresAssemblyFiles ("Warn from M3")]
-				void M3()
-				{
-				}
-			}
-			""";
+                [RequiresAssemblyFiles("Warn from M3")]
+                void M3()
+                {
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(TestNoDiagnosticIsProducedIfCallerIsAnnotated,
                 // (7,3): warning IL3002: Using member 'C.M2()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. Warn from M2.
                 VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(7, 3, 7, 5).WithArguments("C.M2()", " Warn from M2.", ""));
@@ -284,12 +284,12 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task GetExecutingAssemblyLocation()
         {
             const string src = $$"""
-			using System.Reflection;
-			class C
-			{
-				public string M() => Assembly.GetExecutingAssembly().Location;
-			}
-			""";
+            using System.Reflection;
+            class C
+            {
+                public string M() => Assembly.GetExecutingAssembly().Location;
+            }
+            """;
 
             return VerifyRequiresAssemblyFilesAnalyzer(src,
                 // (5,26): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
@@ -300,19 +300,19 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task GetAssemblyLocationViaAssemblyProperties()
         {
             var src = $$"""
-			using System.Reflection;
-			class C
-			{
-				public void M()
-				{
-					var a = Assembly.GetExecutingAssembly();
-					_ = a.Location;
-					// below methods are marked as obsolete in 5.0
-					// _ = a.CodeBase;
-					// _ = a.EscapedCodeBase;
-				}
-			}
-			""";
+            using System.Reflection;
+            class C
+            {
+                public void M()
+                {
+                    var a = Assembly.GetExecutingAssembly();
+                    _ = a.Location;
+                    // below methods are marked as obsolete in 5.0
+                    // _ = a.CodeBase;
+                    // _ = a.EscapedCodeBase;
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(src,
                 // (7,7): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
                 VerifyCS.Diagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan(7, 7, 7, 17).WithArguments("System.Reflection.Assembly.Location.get")
@@ -323,17 +323,17 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task CallKnownDangerousAssemblyMethods()
         {
             var src = $$"""
-			using System.Reflection;
-			class C
-			{
-				public void M()
-				{
-					var a = Assembly.GetExecutingAssembly();
-					_ = a.GetFile("/some/file/path");
-					_ = a.GetFiles();
-				}
-			}
-			""";
+            using System.Reflection;
+            class C
+            {
+                public void M()
+                {
+                    var a = Assembly.GetExecutingAssembly();
+                    _ = a.GetFile("/some/file/path");
+                    _ = a.GetFiles();
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(src,
                 // (7,7): warning IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
                 VerifyCS.Diagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan(7, 7, 7, 16).WithArguments("System.Reflection.Assembly.GetFile(String)"),
@@ -346,17 +346,17 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task CallKnownDangerousAssemblyNameAttributes()
         {
             var src = $$"""
-			using System.Reflection;
-			class C
-			{
-				public void M()
-				{
-					var a = Assembly.GetExecutingAssembly().GetName();
-					_ = a.CodeBase;
-					_ = a.EscapedCodeBase;
-				}
-			}
-			""";
+            using System.Reflection;
+            class C
+            {
+                public void M()
+                {
+                    var a = Assembly.GetExecutingAssembly().GetName();
+                    _ = a.CodeBase;
+                    _ = a.EscapedCodeBase;
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(src,
                 // (7,7): warning SYSLIB0044: 'AssemblyName.CodeBase' is obsolete: 'AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.'
                 DiagnosticResult.CompilerWarning("SYSLIB0044").WithSpan(7, 7, 7, 17).WithArguments("System.Reflection.AssemblyName.CodeBase", "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported."),
@@ -375,17 +375,17 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
             // This is an OK use of Location and GetFile since these assemblies were loaded from
             // a file, but the analyzer is conservative
             var src = $$"""
-			using System.Reflection;
-			class C
-			{
-				public void M()
-				{
-					var a = Assembly.LoadFrom("/some/path/not/in/bundle");
-					_ = a.Location;
-					_ = a.GetFiles();
-				}
-			}
-			""";
+            using System.Reflection;
+            class C
+            {
+                public void M()
+                {
+                    var a = Assembly.LoadFrom("/some/path/not/in/bundle");
+                    _ = a.Location;
+                    _ = a.GetFiles();
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesAnalyzer(src,
                 // (7,7): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
                 VerifyCS.Diagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan(7, 7, 7, 17).WithArguments("System.Reflection.Assembly.Location.get"),
@@ -398,15 +398,15 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task PublishSingleFileIsNotSet()
         {
             var src = $$"""
-			using System.Reflection;
-			class C
-			{
-				public void M()
-				{
-					var a = Assembly.GetExecutingAssembly().Location;
-				}
-			}
-			""";
+            using System.Reflection;
+            class C
+            {
+                public void M()
+                {
+                    var a = Assembly.GetExecutingAssembly().Location;
+                }
+            }
+            """;
             // If 'PublishSingleFile' is not set to true, no diagnostics should be produced by the analyzer. This will
             // effectively verify that the number of produced diagnostics matches the number of expected ones (zero).
             return VerifyCS.VerifyAnalyzerAsync(src, consoleApplication: false);
@@ -416,21 +416,21 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task SupressWarningsWithRequiresAssemblyFiles()
         {
             const string src = $$"""
-			using System.Reflection;
-			using System.Diagnostics.CodeAnalysis;
-			class C
-			{
-				[RequiresAssemblyFiles]
-				public void M()
-				{
-					var a = Assembly.GetExecutingAssembly();
-					_ = a.Location;
-					var b = Assembly.GetExecutingAssembly();
-					_ = b.GetFile("/some/file/path");
-					_ = b.GetFiles();
-				}
-			}
-			""";
+            using System.Reflection;
+            using System.Diagnostics.CodeAnalysis;
+            class C
+            {
+                [RequiresAssemblyFiles]
+                public void M()
+                {
+                    var a = Assembly.GetExecutingAssembly();
+                    _ = a.Location;
+                    var b = Assembly.GetExecutingAssembly();
+                    _ = b.GetFile("/some/file/path");
+                    _ = b.GetFiles();
+                }
+            }
+            """;
 
             return VerifyRequiresAssemblyFilesAnalyzer(src);
         }
@@ -439,69 +439,69 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task RequiresAssemblyFilesDiagnosticFix()
         {
             var test = $$"""
-			using System.Diagnostics.CodeAnalysis;
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
-				int M2() => M1();
-			}
-			class D
-			{
-				public int M3(C c) => c.M1();
-				public class E
-				{
-					public int M4(C c) => c.M1();
-				}
-			}
-			public class E
-			{
-				public class F
-				{
-					public int M5(C c) => c.M1();
-				}
-			}
-			""";
+            using System.Diagnostics.CodeAnalysis;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
+                int M2() => M1();
+            }
+            class D
+            {
+                public int M3(C c) => c.M1();
+                public class E
+                {
+                    public int M4(C c) => c.M1();
+                }
+            }
+            public class E
+            {
+                public class F
+                {
+                    public int M5(C c) => c.M1();
+                }
+            }
+            """;
             var fixtest = $$"""
-			using System.Diagnostics.CodeAnalysis;
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
-			    [RequiresAssemblyFiles("Calls C.M1()")]
-			    int M2() => M1();
-			}
-			class D
-			{
-			    [RequiresAssemblyFiles("Calls C.M1()")]
-			    public int M3(C c) => c.M1();
-				public class E
-				{
-			        [RequiresAssemblyFiles("Calls C.M1()")]
-			        public int M4(C c) => c.M1();
-				}
-			}
-			public class E
-			{
-				public class F
-				{
-			        [RequiresAssemblyFiles()]
-			        public int M5(C c) => c.M1();
-				}
-			}
-			""";
+            using System.Diagnostics.CodeAnalysis;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
+                [RequiresAssemblyFiles("Calls C.M1()")]
+                int M2() => M1();
+            }
+            class D
+            {
+                [RequiresAssemblyFiles("Calls C.M1()")]
+                public int M3(C c) => c.M1();
+                public class E
+                {
+                    [RequiresAssemblyFiles("Calls C.M1()")]
+                    public int M4(C c) => c.M1();
+                }
+            }
+            public class E
+            {
+                public class F
+                {
+                    [RequiresAssemblyFiles()]
+                    public int M5(C c) => c.M1();
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesCodeFix(
                 source: test,
                 fixedSource: fixtest,
                 baselineExpected: new[] {
-					// /0/Test0.cs(6,14): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(6, 14, 6, 16).WithArguments("C.M1()", " message.", ""),
-					// /0/Test0.cs(10,24): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(10, 24, 10, 28).WithArguments("C.M1()", " message.", ""),
-					// /0/Test0.cs(13,25): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 25, 13, 29).WithArguments("C.M1()", " message.", ""),
-					// /0/Test0.cs(20,25): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(20, 25, 20, 29).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(6,14): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(6, 14, 6, 16).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(10,24): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(10, 24, 10, 28).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(13,25): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 25, 13, 29).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(20,25): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(20, 25, 20, 29).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -510,41 +510,41 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task FixInSingleFileSpecialCases()
         {
             var test = $$"""
-			using System.Reflection;
-			using System.Diagnostics.CodeAnalysis;
-			public class C
-			{
-				public static Assembly assembly = Assembly.LoadFrom("/some/path/not/in/bundle");
-				public string M1() => assembly.Location;
-				public void M2() {
-					_ = assembly.GetFiles();
-				}
-			}
-			""";
+            using System.Reflection;
+            using System.Diagnostics.CodeAnalysis;
+            public class C
+            {
+                public static Assembly assembly = Assembly.LoadFrom("/some/path/not/in/bundle");
+                public string M1() => assembly.Location;
+                public void M2() {
+                    _ = assembly.GetFiles();
+                }
+            }
+            """;
             var fixtest = $$"""
-			using System.Reflection;
-			using System.Diagnostics.CodeAnalysis;
-			public class C
-			{
-				public static Assembly assembly = Assembly.LoadFrom("/some/path/not/in/bundle");
+            using System.Reflection;
+            using System.Diagnostics.CodeAnalysis;
+            public class C
+            {
+                public static Assembly assembly = Assembly.LoadFrom("/some/path/not/in/bundle");
 
-			    [RequiresAssemblyFiles()]
-			    public string M1() => assembly.Location;
+                [RequiresAssemblyFiles()]
+                public string M1() => assembly.Location;
 
-			    [RequiresAssemblyFiles()]
-			    public void M2() {
-					_ = assembly.GetFiles();
-				}
-			}
-			""";
+                [RequiresAssemblyFiles()]
+                public void M2() {
+                    _ = assembly.GetFiles();
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesCodeFix(
                 source: test,
                 fixedSource: fixtest,
                 baselineExpected: new[] {
-					// /0/Test0.cs(6,24): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (6, 24, 6, 41).WithArguments ("System.Reflection.Assembly.Location.get", "", ""),
-					// /0/Test0.cs(8,7): warning IL3001: 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app
-					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 24).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
+                    // /0/Test0.cs(6,24): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
+                    VerifyCS.Diagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan(6, 24, 6, 41).WithArguments("System.Reflection.Assembly.Location.get", "", ""),
+                    // /0/Test0.cs(8,7): warning IL3001: 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app
+                    VerifyCS.Diagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan(8, 7, 8, 24).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -553,36 +553,36 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task FixInPropertyDecl()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-				int M2 => M1();
-			}
-			""";
+                int M2 => M1();
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-			    [RequiresAssemblyFiles("Calls C.M1()")]
-			    int M2 => M1();
-			}
-			""";
+                [RequiresAssemblyFiles("Calls C.M1()")]
+                int M2 => M1();
+            }
+            """;
             return VerifyRequiresAssemblyFilesCodeFix(
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-					// /0/Test0.cs(9,12): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 12, 9, 14).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(9,12): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 12, 9, 14).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -591,47 +591,47 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task FixInPropertyAccessor()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFilesAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFilesAttribute("message")]
+                public int M1() => 0;
 
-				public int field;
+                public int field;
 
-				private int M2 {
-					get { return M1(); }
-					set { field = M1(); }
-				}
-			}
-			""";
+                private int M2 {
+                    get { return M1(); }
+                    set { field = M1(); }
+                }
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFilesAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFilesAttribute("message")]
+                public int M1() => 0;
 
-				public int field;
+                public int field;
 
-				private int M2 {
-			        [RequiresAssemblyFiles("Calls C.M1()")]
-			        get { return M1(); }
+                private int M2 {
+                    [RequiresAssemblyFiles("Calls C.M1()")]
+                    get { return M1(); }
 
-			        [RequiresAssemblyFiles("Calls C.M1()")]
-			        set { field = M1(); }
-				}
-			}
-			""";
+                    [RequiresAssemblyFiles("Calls C.M1()")]
+                    set { field = M1(); }
+                }
+            }
+            """;
             var diag = new[] {
-				// /0/Test0.cs(12,16): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(12, 16, 12, 18).WithArguments("C.M1()", " message.", ""),
-				// /0/Test0.cs(13,17): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 17, 13, 19).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(12,16): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(12, 16, 12, 18).WithArguments("C.M1()", " message.", ""),
+                // /0/Test0.cs(13,17): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 17, 13, 19).WithArguments("C.M1()", " message.", "")
             };
             return VerifyRequiresAssemblyFilesCodeFix(src, fix, diag, Array.Empty<DiagnosticResult>());
         }
@@ -640,24 +640,24 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task FixInField()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
-			class C
-			{
-				public static Lazy<C> _default = new Lazy<C>(InitC);
-				public static C Default => _default.Value;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+            class C
+            {
+                public static Lazy<C> _default = new Lazy<C>(InitC);
+                public static C Default => _default.Value;
 
-				[RequiresAssemblyFiles]
-				public static C InitC() {
-					C cObject = new C();
-					return cObject;
-				}
-			}
-			""";
+                [RequiresAssemblyFiles]
+                public static C InitC() {
+                    C cObject = new C();
+                    return cObject;
+                }
+            }
+            """;
 
             var diag = new[] {
-				// /0/Test0.cs(5,47): warning IL3002: Using member 'C.InitC()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (5, 47, 5, 52).WithArguments ("C.InitC()", "", ""),
+                // /0/Test0.cs(5,47): warning IL3002: Using member 'C.InitC()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(5, 47, 5, 52).WithArguments("C.InitC()", "", ""),
             };
             return VerifyRequiresAssemblyFilesCodeFix(src, src, diag, diag);
         }
@@ -666,45 +666,45 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task FixInLocalFunc()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-				Action M2()
-				{
-					void Wrapper () => M1();
-					return Wrapper;
-				}
-			}
-			""";
+                Action M2()
+                {
+                    void Wrapper() => M1();
+                    return Wrapper;
+                }
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-			    [RequiresAssemblyFiles("Calls Wrapper()")]
-			    Action M2()
-				{
-			        [RequiresAssemblyFiles("Calls C.M1()")] void Wrapper () => M1();
-					return Wrapper;
-				}
-			}
-			""";
+                [RequiresAssemblyFiles("Calls Wrapper()")]
+                Action M2()
+                {
+                    [RequiresAssemblyFiles("Calls C.M1()")] void Wrapper() => M1();
+                    return Wrapper;
+                }
+            }
+            """;
             // Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
             return VerifyRequiresAssemblyFilesCodeFix(
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-					// /0/Test0.cs(11,22): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(11,22): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>(),
                 numberOfIterations: 2);
@@ -714,36 +714,36 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task FixInCtor()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-				public C () => M1();
-			}
-			""";
+                public C() => M1();
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-			    [RequiresAssemblyFiles()]
-			    public C () => M1();
-			}
-			""";
+                [RequiresAssemblyFiles()]
+                public C() => M1();
+            }
+            """;
             return VerifyRequiresAssemblyFilesCodeFix(
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-					// /0/Test0.cs(9,17): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 17, 9, 19).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(9,17): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 17, 9, 19).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -752,50 +752,50 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
         public Task FixInEvent()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-				public event EventHandler E1
-				{
-					add
-					{
-						var a = M1();
-					}
-					remove { }
-				}
-			}
-			""";
+                public event EventHandler E1
+                {
+                    add
+                    {
+                        var a = M1();
+                    }
+                    remove { }
+                }
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresAssemblyFiles("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresAssemblyFiles("message")]
+                public int M1() => 0;
 
-				public event EventHandler E1
-				{
-			        [RequiresAssemblyFiles()]
-			        add
-					{
-						var a = M1();
-					}
-					remove { }
-				}
-			}
-			""";
+                public event EventHandler E1
+                {
+                    [RequiresAssemblyFiles()]
+                    add
+                    {
+                        var a = M1();
+                    }
+                    remove { }
+                }
+            }
+            """;
             return VerifyRequiresAssemblyFilesCodeFix(
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-					// /0/Test0.cs(13,12): warning IL3002: Using method 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 12, 13, 14).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(13,12): warning IL3002: Using method 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 12, 13, 14).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }

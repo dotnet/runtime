@@ -53,13 +53,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             WriteVolatileType();
             WriteVolatileTypeArray();
 #if IL_ASSEMBLY_AVAILABLE
-			Library.ModifierDataFlow.WriteModReqType ();
-			Library.ModifierDataFlow.WriteMultipleModReqType ();
-			Library.ModifierDataFlow.WriteModOptType ();
-			Library.ModifierDataFlow.WriteModReqModOptType ();
-			Library.ModifierDataFlow.WriteModOptModReqType ();
-			Library.ModifierDataFlow.WriteModReqArrayType ();
-			Library.ModifierDataFlow.WriteArrayModReqType ();
+            Library.ModifierDataFlow.WriteModReqType();
+            Library.ModifierDataFlow.WriteMultipleModReqType();
+            Library.ModifierDataFlow.WriteModOptType();
+            Library.ModifierDataFlow.WriteModReqModOptType();
+            Library.ModifierDataFlow.WriteModOptModReqType();
+            Library.ModifierDataFlow.WriteModReqArrayType();
+            Library.ModifierDataFlow.WriteArrayModReqType();
 #endif
         }
     }

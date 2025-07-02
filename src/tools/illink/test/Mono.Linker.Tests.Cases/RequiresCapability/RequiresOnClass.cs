@@ -409,7 +409,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [ExpectedWarning("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
         [ExpectedWarning("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
-        // Although we suppress the warning from RequiresOnMethod.MethodWithRequires () we still get a warning because we call CallRequiresMethod() which is an static method on a type with RUC
+        // Although we suppress the warning from RequiresOnMethod.MethodWithRequires() we still get a warning because we call CallRequiresMethod() which is an static method on a type with RUC
         [ExpectedWarning("IL2026", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--")]
         [ExpectedWarning("IL3050", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
         [ExpectedWarning("IL2026", "ClassWithRequires.Instance", "--ClassWithRequires--")]
@@ -480,7 +480,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             TestStaticCtorMarkingTriggeredOnSecondAccessWrite();
             TestStaticRequiresFieldAccessSuppressedByRequiresOnMethod();
             TestStaticCtorMarkingIsTriggeredByFieldAccessRead();
-            //TestStaticCtorTriggeredByMethodCall ();
+            //TestStaticCtorTriggeredByMethodCall();
             TestStaticCtorTriggeredByCtorCall();
             TestInstanceFieldCallDontWarn();
         }

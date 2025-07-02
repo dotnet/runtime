@@ -5,10 +5,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
-
+using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 using TypeName = System.Reflection.Metadata.TypeName;
 using TypeNameParseOptions = System.Reflection.Metadata.TypeNameParseOptions;
-using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 
 #nullable enable
 

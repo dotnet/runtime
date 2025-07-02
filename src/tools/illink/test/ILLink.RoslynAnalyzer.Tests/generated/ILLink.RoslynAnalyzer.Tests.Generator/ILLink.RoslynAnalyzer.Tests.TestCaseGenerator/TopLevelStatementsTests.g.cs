@@ -4,14 +4,14 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed partial class TopLevelStatementsTests : LinkerTestBase
-	{
+    public sealed partial class TopLevelStatementsTests : LinkerTestBase
+    {
 
-		[Fact]
-		public Task BasicKeptValidation ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task BasicKeptValidation()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-	}
+    }
 }

@@ -13,10 +13,10 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
     {
         static void Main()
         {
-#if IL_ASSEMBLY_AVAILABLE
-			var tmp = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition ().Method (1);
-			var tmp2 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition ().MethodWithoutParameters ();
-			var tmp3 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition ().MethodWithoutParametersNonNestedAttribute ();
+#if IL_ASSEMBLY_AVAIABLE
+            var tmp = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition().Method(1);
+            var tmp2 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition().MethodWithoutParameters();
+            var tmp3 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition().MethodWithoutParametersNonNestedAttribute();
 #endif
         }
     }

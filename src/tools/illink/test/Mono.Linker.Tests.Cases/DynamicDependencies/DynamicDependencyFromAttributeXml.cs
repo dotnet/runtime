@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 #if NET
     [SetupLinkAttributesFile("DynamicDependencyFromAttributeXml.netcore.Attributes.xml")]
 #else
-	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXml.mono.Attributes.xml")]
+    [SetupLinkAttributesFile("DynamicDependencyFromAttributeXml.mono.Attributes.xml")]
 #endif
     [IgnoreLinkAttributes(false)]
     [SetupLinkerArgument("--enable-opt", "unreachablebodies", "missing.dll")]

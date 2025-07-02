@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody
 #if NET
     [SetupLinkerArgument("-a", "other.dll", "visible")]
 #else
-	[SetupLinkerArgument ("-r", "other")]
+    [SetupLinkerArgument("-r", "other")]
 #endif
     [SetupCompileBefore("other.dll", new[] { "Dependencies/OtherAssemblyNoInstanceCtor.il" })]
     [KeptMemberInAssembly("other.dll", "Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor/Foo", "Method()")]
@@ -20,16 +20,16 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody
         public static void Main()
         {
 #if OTHER_INCLUDED
-			UsedToMarkMethod (null);
+            UsedToMarkMethod(null);
 #endif
         }
 
 #if OTHER_INCLUDED
-		[Kept]
-		static void UsedToMarkMethod (Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor.Foo f)
-		{
-			f.Method ();
-		}
+        [Kept]
+        static void UsedToMarkMethod(Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor.Foo f)
+        {
+            f.Method();
+        }
 #endif
     }
 }
