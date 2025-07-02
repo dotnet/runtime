@@ -376,8 +376,8 @@ namespace System.IO
                 try
                 {
                     // If we're removing the root directory of the last watcher,
-                    // we'll only remove the root watch (to trigger an IN_IGNORED if we got called through EnableRaisingEvents = false)
-                    // and ProcessEvents will stop when it sees IsStopped was set.
+                    // we'll only remove the root watch (to potentially trigger an IN_IGNORED if we got called through EnableRaisingEvents = false)
+                    // and let the other watches get cleaned up when the inotify gets closed.
                     if (removedDir.IsRootDir)
                     {
                         Monitor.Enter(_watchersLock, ref watchersLockTaken);
@@ -398,7 +398,7 @@ namespace System.IO
                     {
                         _watchers.Remove(removedDir.Watcher);
 
-                        // We'll return the watch to get an IN_IGNORE event that will stop the event loop.
+                        // Mark us as IsStopped to prevent new watchers from being added.
                         IsStopped = _watchers.Count == 0;
 
                         Monitor.Exit(_watchersLock);
@@ -558,13 +558,6 @@ namespace System.IO
                     Interop.Sys.NotifyEvents.IN_MODIFY |
                     Interop.Sys.NotifyEvents.IN_ATTRIB;
 
-                // When RemoveUnusedINotifyWatches removes the last watcher, it sets IsStopped and we get an IN_IGNORE event.
-                if (IsStopped)
-                {
-                    Stop();
-                    return false;
-                }
-
                 Span<char> pathBuffer = stackalloc char[PATH_MAX];
                 Interop.Sys.NotifyEvents mask = (Interop.Sys.NotifyEvents)nextEvent.mask;
 
@@ -699,14 +692,6 @@ namespace System.IO
                     if ((mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0)
                     {
                         RemoveWatchedDirectory(dir, ignoredFd: nextEvent.wd);
-
-                        // RemoveUnusedINotifyWatches sets IsStopped when the last watcher is removed.
-                        if (IsStopped)
-                        {
-                            Stop();
-                            return false;
-                        }
-
                         continue;
                     }
 
@@ -747,6 +732,20 @@ namespace System.IO
                                 watcher.QueueEvent(WatcherEvent.Created(dir, nextEvent.name));
                             }
                             break;
+                    }
+                }
+
+                // For each Watcher there is a root watch that will generate an IN_IGNORED when it is a removed.
+                // Check if we can stop because all Watchers were removed.
+                if ((mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0)
+                {
+                    lock (_watchersLock)
+                    {
+                        if (_watchers.Count == 0)
+                        {
+                            Stop();
+                            return false;
+                        }
                     }
                 }
 
