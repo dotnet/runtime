@@ -34,10 +34,9 @@ namespace System.Threading.RateLimiting
 
         private static readonly RateLimitLease SuccessfulLease = new SlidingWindowLease(true, null);
         private static readonly RateLimitLease FailedLease = new SlidingWindowLease(false, null);
-        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
+        public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
 
         /// <inheritdoc />
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
@@ -51,10 +50,7 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="SlidingWindowRateLimiter"/>.</param>
         public SlidingWindowRateLimiter(SlidingWindowRateLimiterOptions options)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
             if (options.PermitLimit <= 0)
             {
                 throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.PermitLimit)), nameof(options));
@@ -297,7 +293,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks && !_options.AutoReplenishment)
+                if (RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks) < ReplenishmentPeriod && !_options.AutoReplenishment)
                 {
                     return;
                 }

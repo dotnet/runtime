@@ -1950,6 +1950,13 @@ inline const char *Registers_ppc64::getRegisterName(int regNum) {
 /// process.
 class _LIBUNWIND_HIDDEN Registers_arm64;
 extern "C" void __libunwind_Registers_arm64_jumpto(Registers_arm64 *);
+
+#if defined(_LIBUNWIND_USE_GCS)
+extern "C" void *__libunwind_cet_get_jump_target() {
+  return reinterpret_cast<void *>(&__libunwind_Registers_arm64_jumpto);
+}
+#endif
+
 class _LIBUNWIND_HIDDEN Registers_arm64 {
 public:
   Registers_arm64();
@@ -4240,13 +4247,14 @@ public:
 
   bool        validRegister(int num) const;
   reg_t       getRegister(int num) const;
-  void        setRegister(int num, reg_t value);
+  void        setRegister(int num, reg_t value, uint64_t location);
   bool        validFloatRegister(int num) const;
   fp_t        getFloatRegister(int num) const;
   void        setFloatRegister(int num, fp_t value);
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
+  uint64_t    getRegisterLocation(int num) const;
   static const char *getRegisterName(int num);
   void        jumpto();
   static constexpr int lastDwarfRegNum() {
@@ -4255,13 +4263,14 @@ public:
   static int  getArch() { return REGISTERS_RISCV; }
 
   reg_t       getSP() const { return _registers[2]; }
-  void        setSP(reg_t value) { _registers[2] = value; }
+  void        setSP(reg_t value, uint64_t location) { _registers[2] = value; }
   reg_t       getIP() const { return _registers[0]; }
-  void        setIP(reg_t value) { _registers[0] = value; }
+  void        setIP(reg_t value, uint64_t location) { _registers[0] = value; }
 
 private:
   // _registers[0] holds the pc
   reg_t _registers[32];
+  reg_t _registerLocations[32];
 # if defined(__riscv_flen)
   fp_t _floats[32];
 # endif
@@ -4271,6 +4280,7 @@ inline Registers_riscv::Registers_riscv(const void *registers) {
   static_assert((check_fit<Registers_riscv, unw_context_t>::does_fit),
                 "riscv registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
+  memset(&_registerLocations, 0, sizeof(_registerLocations));
 # if __riscv_xlen == 32
   static_assert(sizeof(_registers) == 0x80,
                 "expected float registers to be at offset 128");
@@ -4290,6 +4300,7 @@ inline Registers_riscv::Registers_riscv(const void *registers) {
 
 inline Registers_riscv::Registers_riscv() {
   memset(&_registers, 0, sizeof(_registers));
+  memset(&_registerLocations, 0, sizeof(_registerLocations));
 # if defined(__riscv_flen)
   memset(&_floats, 0, sizeof(_floats));
 # endif
@@ -4326,18 +4337,39 @@ inline reg_t Registers_riscv::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported riscv register");
 }
 
-inline void Registers_riscv::setRegister(int regNum, reg_t value) {
-  if (regNum == UNW_REG_IP)
+inline void Registers_riscv::setRegister(int regNum, reg_t value, uint64_t location) {
+  if (regNum == UNW_REG_IP) {
     _registers[0] = value;
+    _registerLocations[0] = value;
+  }
   else if (regNum == UNW_REG_SP)
     _registers[2] = value;
   else if (regNum == UNW_RISCV_X0)
     /* x0 is hardwired to zero */
     return;
-  else if ((regNum > 0) && (regNum < 32))
+  else if ((regNum > 0) && (regNum < 32)) {
     _registers[regNum] = value;
+    _registerLocations[regNum - UNW_RISCV_X0] = location;
+  }
   else
     _LIBUNWIND_ABORT("unsupported riscv register");
+}
+
+inline uint64_t Registers_riscv::getRegisterLocation(int regNum) const {
+  if (regNum == UNW_REG_IP)
+    return _registerLocations[0];
+  if (regNum == UNW_REG_SP)
+    return _registerLocations[2];
+  if (regNum == UNW_RISCV_X0)
+    return 0;
+  if ((regNum > 0) && (regNum < 32))
+    return _registerLocations[regNum];
+  if (regNum == UNW_RISCV_VLENB) {
+    reg_t vlenb;
+    __asm__("csrr %0, 0xC22" : "=r"(vlenb));
+    return vlenb;
+  }
+  _LIBUNWIND_ABORT("unsupported riscv register");
 }
 
 inline const char *Registers_riscv::getRegisterName(int regNum) {

@@ -216,28 +216,28 @@ public:
     STDMETHOD(FindMember)(
         mdTypeDef   td,                     // [IN] given typedef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdToken     *pmb);             // [OUT] matching memberdef
 
     STDMETHOD(FindMethod)(
         mdTypeDef   td,                     // [IN] given typedef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodDef *pmb);             // [OUT] matching memberdef
 
     STDMETHOD(FindField)(
         mdTypeDef   td,                     // [IN] given typedef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdFieldDef  *pmb);             // [OUT] matching memberdef
 
     STDMETHOD(FindMemberRef)(
         mdTypeRef   td,                     // [IN] given typeRef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMemberRef *pmr);             // [OUT] matching memberref
 
@@ -544,7 +544,7 @@ public:
         mdTypeDef   td,                     // Parent TypeDef
         LPCWSTR     szName,                 // Name of member
         DWORD       dwMethodFlags,          // Member attributes
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         ULONG       ulCodeRVA,
         DWORD       dwImplFlags,
@@ -572,7 +572,7 @@ public:
     STDMETHOD(DefineMemberRef)(             // S_OK or error
         mdToken     tkImport,               // [IN] ClassRef or ClassDef importing a member.
         LPCWSTR     szName,                 // [IN] member's name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMemberRef *pmr);             // [OUT] memberref token
 
@@ -716,7 +716,7 @@ public:
         mdTypeDef   td,                     // Parent TypeDef
         LPCWSTR     szName,                 // Name of member
         DWORD       dwFieldFlags,           // Member attributes
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value

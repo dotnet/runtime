@@ -80,6 +80,30 @@ namespace System.Security.Cryptography.X509Certificates
             );
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            return GetPrivateKey<MLDsa>(
+                _ =>
+                {
+                    Debug.Fail("CryptoApi does not support ML-DSA.");
+                    throw new PlatformNotSupportedException();
+                },
+                cngKey => new MLDsaCng(cngKey, transferOwnership: true)
+            );
+        }
+
+        public MLKem? GetMLKemPrivateKey()
+        {
+            // MLKem is not supported on Windows.
+            return null;
+        }
+
+        public SlhDsa? GetSlhDsaPrivateKey()
+        {
+            // SlhDsa is not supported on Windows.
+            return null;
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
             DSACng? dsaCng = dsa as DSACng;
@@ -168,6 +192,59 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            if (privateKey is MLDsaCng mldsaCng)
+            {
+                CngKey key = mldsaCng.Key;
+
+                ICertificatePal? clone = CopyWithPersistedCngKey(key);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            if (privateKey is MLDsaImplementation mldsaImplementation)
+            {
+                using (CngKey clonedKey = mldsaImplementation.CreateEphemeralCng())
+                {
+                    return CopyWithEphemeralKey(clonedKey);
+                }
+            }
+
+            // MLDsaCng and third-party implementations can be copied by exporting the PKCS#8 and importing it into
+            // a new MLDsaCng. An alternative to PKCS#8 would be to try the private seed and fall back to secret key,
+            // but that potentially requires two calls and wouldn't allow implementations to do anything smarter internally.
+            // Blobs may also be an option for MLDsaCng, but for now we will stick with PKCS#8.
+            byte[] exportedPkcs8 = privateKey.ExportPkcs8PrivateKey();
+
+            using (PinAndClear.Track(exportedPkcs8))
+            using (MLDsaCng clonedKey = MLDsaCng.ImportPkcs8PrivateKey(exportedPkcs8, out _))
+            {
+                CngKey clonedCngKey = clonedKey.Key;
+
+                if (clonedCngKey.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
+                {
+                    Debug.Fail($"{nameof(MLDsaCng)} should only give ML-DSA keys.");
+                    throw new CryptographicException();
+                }
+
+                return CopyWithEphemeralKey(clonedCngKey);
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+        }
+
+        public ICertificatePal CopyWithPrivateKey(SlhDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
+        }
+
         public ICertificatePal CopyWithPrivateKey(RSA rsa)
         {
             RSACng? rsaCng = rsa as RSACng;
@@ -211,7 +288,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng) where T : AsymmetricAlgorithm
+        private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng)
+            where T : class, IDisposable
         {
             using (SafeCertContextHandle certContext = GetCertContext())
             {

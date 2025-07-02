@@ -14,6 +14,7 @@ using Xunit.Abstractions;
 namespace System.Net.Sockets.Tests
 {
     [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class SendPacketsAsync : IDisposable
     {
         private readonly ITestOutputHelper _log;

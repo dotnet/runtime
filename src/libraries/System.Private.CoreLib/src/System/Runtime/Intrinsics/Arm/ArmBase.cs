@@ -28,74 +28,58 @@ namespace System.Runtime.Intrinsics.Arm
             /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static bool IsSupported { get => IsSupported; }
 
-            /// <summary>
-            ///   A64: CLS Wd, Wn
-            /// </summary>
+            /// <summary>  A64: CLS Wd, Wn</summary>
             public static int LeadingSignCount(int value) => LeadingSignCount(value);
 
-            /// <summary>
-            ///   A64: CLS Xd, Xn
-            /// </summary>
+            /// <summary>  A64: CLS Xd, Xn</summary>
             public static int LeadingSignCount(long value) => LeadingSignCount(value);
 
-            /// <summary>
-            ///   A64: CLZ Xd, Xn
-            /// </summary>
+            /// <summary>  A64: CLZ Xd, Xn</summary>
             public static int LeadingZeroCount(long value) => LeadingZeroCount(value);
 
-            /// <summary>
-            ///   A64: CLZ Xd, Xn
-            /// </summary>
+            /// <summary>  A64: CLZ Xd, Xn</summary>
             public static int LeadingZeroCount(ulong value) => LeadingZeroCount(value);
 
-            /// <summary>
-            ///   A64: SMULH Xd, Xn, Xm
-            /// </summary>
+            /// <summary>  A64: SMULH Xd, Xn, Xm</summary>
             public static long MultiplyHigh(long left, long right) => MultiplyHigh(left, right);
 
-            /// <summary>
-            ///   A64: UMULH Xd, Xn, Xm
-            /// </summary>
+            /// <summary>  A64: UMULH Xd, Xn, Xm</summary>
             public static ulong MultiplyHigh(ulong left, ulong right) => MultiplyHigh(left, right);
 
-            /// <summary>
-            ///   A64: RBIT Xd, Xn
-            /// </summary>
+            /// <summary>  A64: RBIT Xd, Xn</summary>
             public static long ReverseElementBits(long value) => ReverseElementBits(value);
 
-            /// <summary>
-            ///   A64: RBIT Xd, Xn
-            /// </summary>
+            /// <summary>  A64: RBIT Xd, Xn</summary>
             public static ulong ReverseElementBits(ulong value) => ReverseElementBits(value);
         }
 
         /// <summary>
-        ///   A32: CLZ Rd, Rm
-        ///   A64: CLZ Wd, Wn
+        ///   <para>  A32: CLZ Rd, Rm</para>
+        ///   <para>  A64: CLZ Wd, Wn</para>
         /// </summary>
         public static int LeadingZeroCount(int value) => LeadingZeroCount(value);
 
         /// <summary>
-        ///   A32: CLZ Rd, Rm
-        ///   A64: CLZ Wd, Wn
+        ///   <para>  A32: CLZ Rd, Rm</para>
+        ///   <para>  A64: CLZ Wd, Wn</para>
         /// </summary>
         public static int LeadingZeroCount(uint value) => LeadingZeroCount(value);
 
         /// <summary>
-        ///   A32: RBIT Rd, Rm
-        ///   A64: RBIT Wd, Wn
+        ///   <para>  A32: RBIT Rd, Rm</para>
+        ///   <para>  A64: RBIT Wd, Wn</para>
         /// </summary>
         public static int ReverseElementBits(int value) => ReverseElementBits(value);
 
         /// <summary>
-        ///   A32: RBIT Rd, Rm
-        ///   A64: RBIT Wd, Wn
+        ///   <para>  A32: RBIT Rd, Rm</para>
+        ///   <para>  A64: RBIT Wd, Wn</para>
         /// </summary>
         public static uint ReverseElementBits(uint value) => ReverseElementBits(value);
 
         /// <summary>
-        ///   A32: YIELD
-        ///   A64: YIELD
+        ///   <para>  A32: YIELD</para>
+        ///   <para>  A64: YIELD</para>
         /// </summary>
         public static void Yield() => Yield();
     }

@@ -95,7 +95,7 @@ namespace System.Collections.Frozen
                             }
                             else
                             {
-                                // -1 is used to indicate a null, when it's casted to unit it becomes > items.Length
+                                // -1 is used to indicate a null, when it's casted to uint it becomes > items.Length
                                 break;
                             }
                         }

@@ -300,15 +300,6 @@ inline BOOL MethodTable::IsValueType()
 }
 
 //==========================================================================================
-inline CorElementType MethodTable::GetArrayElementType()
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE (IsArray());
-    return dac_cast<PTR_ArrayClass>(GetClass())->GetArrayElementType();
-}
-
-//==========================================================================================
 inline DWORD MethodTable::GetRank()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -443,7 +434,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
 
     if (pCode == (PCODE)NULL)
     {
-        // This code path should only be hit for methods which have not been overriden
+        // This code path should only be hit for methods which have not been overridden
         MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
         while (pMTToSearchForMethodDesc != NULL)
         {
@@ -1110,7 +1101,7 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
     if (id == OptionalMember_##NAME) { \
         return offset; \
     } \
-    C_ASSERT(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To insure proper alignment */ \
+    C_ASSERT(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
     if (Has##NAME()) { \
         offset += sizeof(TYPE); \
     }
@@ -1239,7 +1230,7 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     }
     CONTRACTL_END;
 
-    // we know an instance of this class already exists in the same appdomain
+    // We know an instance of this class already exists
     // therefore, some checks become redundant.
     // this currently only happens for Delegate.Combine
 
@@ -1248,33 +1239,7 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     return AllocateObject(this);
 }
 
-
 #ifndef DACCESS_COMPILE
-//==========================================================================================
-// unbox src into dest, making sure src is of the correct type.
-
-inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (Nullable::IsNullableType(TypeHandle(this)))
-        return Nullable::UnBoxNoGC(dest, src, this);
-    else
-    {
-        if (src == NULL || src->GetMethodTable() != this)
-            return FALSE;
-
-        CopyValueClass(dest, src->UnBox(), this);
-    }
-    return TRUE;
-}
-
 //==========================================================================================
 // unbox src into dest, No checks are done
 
@@ -1289,9 +1254,7 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
     CONTRACTL_END;
 
     if (Nullable::IsNullableType(TypeHandle(this))) {
-        BOOL ret;
-        ret = Nullable::UnBoxNoGC(dest, src, this);
-        _ASSERTE(ret);
+        Nullable::UnBoxNoCheck(dest, src, this);
     }
     else
     {

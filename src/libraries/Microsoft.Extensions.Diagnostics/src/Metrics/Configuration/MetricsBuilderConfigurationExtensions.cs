@@ -17,22 +17,16 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         /// <summary>
         /// Reads metrics configuration from the provided <see cref="IConfiguration"/> section and configures
-        /// which <see cref="Meter"/>'s, <see cref="Instrument"/>'s, and <see cref="IMetricsListener"/>'s are enabled.
+        /// which <see cref="Meter">Meters</see>, <see cref="Instrument">Instruments</see>, and <see cref="IMetricsListener">IMetricsListeners</see> are enabled.
         /// </summary>
         /// <param name="builder">The <see cref="IMetricsBuilder"/>.</param>
         /// <param name="configuration">The <see cref="IConfiguration"/> section to load.</param>
         /// <returns>The original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder AddConfiguration(this IMetricsBuilder builder, IConfiguration configuration)
         {
-            if (builder is null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ArgumentNullException.ThrowIfNull(builder);
 
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             builder.Services.AddSingleton<IConfigureOptions<MetricsOptions>>(new MetricsConfigureOptions(configuration));
             builder.Services.AddSingleton<IOptionsChangeTokenSource<MetricsOptions>>(new ConfigurationChangeTokenSource<MetricsOptions>(configuration));

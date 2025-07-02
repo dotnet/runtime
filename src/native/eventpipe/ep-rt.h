@@ -206,6 +206,18 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sa
 
 static
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event);
+
+static
+void
+ep_rt_sample_profiler_session_enabled (void);
+
+static
+void
+ep_rt_sample_profiler_disabled (void);
+
+static
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider);
 
 /*
@@ -271,12 +283,6 @@ bool
 ep_rt_process_shutdown (void);
 
 static
-void
-ep_rt_create_activity_id (
-	uint8_t *activity_id,
-	uint32_t activity_id_len);
-
-static
 bool
 ep_rt_is_running (void);
 
@@ -313,6 +319,12 @@ ep_rt_thread_create (
 	void *params,
 	EventPipeThreadType thread_type,
 	void *id);
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params);
 
 static
 void

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 /**************************************************************************/
-/* asmParse is basically a wrapper around a YACC grammer COM+ assembly  */
+/* asmParse is basically a wrapper around a YACC grammer IL assembly  */
 
 #ifndef asmparse_h
 #define asmparse_h

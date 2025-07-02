@@ -109,7 +109,9 @@ namespace System.Net.Security.Tests
             _serverOptions.ServerCertificate = null;
 
             Assert.Null(_serverOptions.ServerCertificate);
+#pragma warning disable SYSLIB0057
             X509Certificate cert = new X509Certificate2(stackalloc byte[0]);
+#pragma warning restore SYSLIB0057
             _serverOptions.ServerCertificate = cert;
 
             Assert.Equal(cert, _serverOptions.ServerCertificate);
@@ -131,13 +133,13 @@ namespace System.Net.Security.Tests
         [Fact]
         public void CheckCertificateRevocation_Get_Set_Succeeds()
         {
-            Assert.Equal(X509RevocationMode.NoCheck, _clientOptions.CertificateRevocationCheckMode);
-            Assert.Equal(X509RevocationMode.NoCheck, _serverOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.Online, _clientOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.Online, _serverOptions.CertificateRevocationCheckMode);
 
-            _clientOptions.CertificateRevocationCheckMode = X509RevocationMode.Online;
+            _clientOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
             _serverOptions.CertificateRevocationCheckMode = X509RevocationMode.Offline;
 
-            Assert.Equal(X509RevocationMode.Online, _clientOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.NoCheck, _clientOptions.CertificateRevocationCheckMode);
             Assert.Equal(X509RevocationMode.Offline, _serverOptions.CertificateRevocationCheckMode);
 
             Assert.Throws<ArgumentException>(() => _clientOptions.CertificateRevocationCheckMode = (X509RevocationMode)3);

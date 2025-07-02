@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] DeriveKey(HashAlgorithmName hash, byte[] ikm, int outputLength, byte[] salt, byte[] info);
 
         internal static bool MD5Supported => !PlatformDetection.IsBrowser && !PlatformDetection.IsAzureLinux;
+        internal static bool EmptyKeysSupported => !PlatformDetection.IsAzureLinux;
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
@@ -72,7 +73,7 @@ namespace System.Security.Cryptography.Tests
                 () => Extract(new HashAlgorithmName("foo"), 20, ikm, salt));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(EmptyKeysSupported))]
         public void ExtractEmptyIkm()
         {
             byte[] salt = new byte[20];

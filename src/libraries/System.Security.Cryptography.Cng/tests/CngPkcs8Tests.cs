@@ -17,11 +17,32 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 SetExportPolicy(cngKey, CngExportPolicies.AllowExport);
 
-                Assert.ThrowsAny<CryptographicException>(
-                    () => key.ExportPkcs8PrivateKey());
+                byte[] exported = key.ExportPkcs8PrivateKey();
 
-                Assert.ThrowsAny<CryptographicException>(
-                    () => key.TryExportPkcs8PrivateKey(Span<byte>.Empty, out _));
+                using (T imported = CreateKey(out _))
+                {
+                    imported.ImportPkcs8PrivateKey(exported, out int importRead);
+                    Assert.Equal(exported.Length, importRead);
+                    VerifyMatch(key, imported);
+                }
+
+                byte[] tryExported = new byte[exported.Length];
+
+                int written;
+
+                while (!key.TryExportPkcs8PrivateKey(tryExported, out written))
+                {
+                    Array.Resize(ref tryExported, checked(tryExported.Length * 2));
+                }
+
+                using (T imported = CreateKey(out _))
+                {
+                    imported.ImportPkcs8PrivateKey(tryExported.AsSpan(0, written), out int tryImportRead);
+                    Assert.Equal(written, tryImportRead);
+                    VerifyMatch(key, imported);
+                }
+
+
             }
         }
 

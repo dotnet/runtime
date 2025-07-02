@@ -64,7 +64,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Append <paramref name="count"/> bytes of <paramref name="data"/>, starting at <paramref name="offset"/>,
+        /// Appends <paramref name="count"/> bytes of <paramref name="data"/>, starting at <paramref name="offset"/>,
         /// to the data already processed in the hash or HMAC.
         /// </summary>
         /// <param name="data">The data to process.</param>
@@ -113,9 +113,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Retrieve the hash or HMAC for the data accumulated from prior calls to
-        /// <see cref="AppendData(byte[])"/>, and return to the state the object
-        /// was in at construction.
+        /// Retrieves the hash or HMAC for the data accumulated from prior calls to
+        /// <see cref="AppendData(byte[])"/>, and resets the object to its initial state.
         /// </summary>
         /// <returns>The computed hash or HMAC.</returns>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
@@ -239,7 +238,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the hash or HMAC value.
         /// </param>
         /// <param name="bytesWritten">
-        ///   When this method returns, the total number of bytes written into <paramref name="destination" />.
+        ///   When this method returns, contains the total number of bytes written into <paramref name="destination" />.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <returns>
@@ -275,7 +274,7 @@ namespace System.Security.Cryptography
         /// Creates a new instance of <see cref="IncrementalHash" /> with the existing appended data preserved.
         /// </summary>
         /// <returns>A clone of the current instance.</returns>
-        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="CryptographicException">An error occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public IncrementalHash Clone()
         {
@@ -309,7 +308,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Create an <see cref="IncrementalHash"/> for the algorithm specified by <paramref name="hashAlgorithm"/>.
+        /// Creates an <see cref="IncrementalHash"/> for the algorithm specified by <paramref name="hashAlgorithm"/>.
         /// </summary>
         /// <param name="hashAlgorithm">The name of the hash algorithm to perform.</param>
         /// <returns>
@@ -330,15 +329,15 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Create an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
-        /// algorithm utilizing the hash algorithm specified by <paramref name="hashAlgorithm"/>, and a
+        /// Creates an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
+        /// algorithm using the hash algorithm specified by <paramref name="hashAlgorithm"/> and a
         /// key specified by <paramref name="key"/>.
         /// </summary>
         /// <param name="hashAlgorithm">The name of the hash algorithm to perform within the HMAC.</param>
         /// <param name="key">
         ///     The secret key for the HMAC. The key can be any length, but a key longer than the output size
         ///     of the hash algorithm specified by <paramref name="hashAlgorithm"/> will be hashed (using the
-        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly-sized key. Therefore,
+        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly sized key. Therefore,
         ///     the recommended size of the secret key is the output size of the hash specified by
         ///     <paramref name="hashAlgorithm"/>.
         /// </param>
@@ -359,15 +358,15 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Create an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
-        /// algorithm utilizing the hash algorithm specified by <paramref name="hashAlgorithm"/>, and a
+        /// Creates an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
+        /// algorithm using the hash algorithm specified by <paramref name="hashAlgorithm"/> and a
         /// key specified by <paramref name="key"/>.
         /// </summary>
         /// <param name="hashAlgorithm">The name of the hash algorithm to perform within the HMAC.</param>
         /// <param name="key">
         ///     The secret key for the HMAC. The key can be any length, but a key longer than the output size
         ///     of the hash algorithm specified by <paramref name="hashAlgorithm"/> will be hashed (using the
-        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly-sized key. Therefore,
+        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly sized key. Therefore,
         ///     the recommended size of the secret key is the output size of the hash specified by
         ///     <paramref name="hashAlgorithm"/>.
         /// </param>

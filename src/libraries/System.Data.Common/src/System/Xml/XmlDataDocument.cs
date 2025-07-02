@@ -17,9 +17,10 @@ namespace System.Xml
     /// data or relational data (DataSet).
     /// </summary>
     [Obsolete("XmlDataDocument has been deprecated and is not supported.")]
+    [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
     public class XmlDataDocument : XmlDocument
     {
-        private const string RequiresUnreferencedCodeMessage = "XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.";
         private DataSet _dataSet;
 
         private DataSetMapper _mapper;
@@ -95,7 +96,6 @@ namespace System.Xml
         // We can set-up listeners and track each change in schema, but it is more perf-friendly to do it laizily, all at once, when the first DataRow is created
         // (we rely on the fact that DataRowCreated is a DataSet wide event, rather than a DataTable event)
         [MemberNotNull(nameof(_dataSet))]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void AttachDataSet(DataSet ds)
         {
             // You should not have already an associated dataset
@@ -111,7 +111,6 @@ namespace System.Xml
 
         // after loading, all detached DataRows are synchronized with the xml tree and inserted to their tables
         // or after setting the innerxml, synchronize the rows and if created new and detached, will be inserted.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SyncRows(DataRow? parentRow, XmlNode node, bool fAddRowsToTable)
         {
             XmlBoundElement? be = node as XmlBoundElement;
@@ -145,7 +144,6 @@ namespace System.Xml
 
         // All detached DataRows are synchronized with the xml tree and inserted to their tables.
         // Synchronize the rows and if created new and detached, will be inserted.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SyncTree(XmlNode node)
         {
             XmlBoundElement? be;
@@ -190,7 +188,6 @@ namespace System.Xml
             set { _autoFoliationState = value; }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BindForLoad()
         {
             Debug.Assert(_ignoreXmlEvents);
@@ -205,7 +202,6 @@ namespace System.Xml
             _ignoreDataSetEvents = false;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void Bind(bool fLoadFromDataSet)
         {
             // If we have a DocumentElement then it is illegal to call this func to load from data-set
@@ -240,7 +236,6 @@ namespace System.Xml
         }
 
         // Binds special listeners to catch the 1st data-row created. When the 1st DataRow is created, XmlDataDocument will automatically bind all regular listeners.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BindSpecialListeners()
         {
             Debug.Assert(_fDataRowCreatedSpecial == false);
@@ -249,7 +244,6 @@ namespace System.Xml
             _fDataRowCreatedSpecial = true;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UnBindSpecialListeners()
         {
             Debug.Assert(_fDataRowCreatedSpecial);
@@ -257,14 +251,12 @@ namespace System.Xml
             _fDataRowCreatedSpecial = false;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BindListeners()
         {
             BindToDocument();
             BindToDataSet();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BindToDataSet()
         {
             // We could be already bound to DataSet in this scenario:
@@ -303,7 +295,6 @@ namespace System.Xml
             _fBoundToDataSet = true;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BindToDocument()
         {
             if (!_fBoundToDocument)
@@ -318,7 +309,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BindToTable(DataTable t)
         {
             t.ColumnChanged += new DataColumnChangeEventHandler(OnColumnChanged);
@@ -340,8 +330,6 @@ namespace System.Xml
         /// Creates an element with the specified Prefix, LocalName, and
         /// NamespaceURI.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlElement CreateElement(string? prefix, string localName, string? namespaceURI)
         {
             // There are three states for the document:
@@ -465,7 +453,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlElement EnsureDocumentElement()
         {
             XmlElement? docelem = DocumentElement;
@@ -484,7 +471,6 @@ namespace System.Xml
             return docelem;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlElement EnsureNonRowDocumentElement()
         {
             XmlElement? docElem = DocumentElement;
@@ -498,7 +484,6 @@ namespace System.Xml
             return DemoteDocumentElement();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlElement DemoteDocumentElement()
         {
             // Changes of Xml here should not affect ROM
@@ -519,7 +504,6 @@ namespace System.Xml
         // CreateElement will attach DataRows to newly created XmlBoundElement.
         // It should be called when we have special listeners hooked and we need to change from the special-listeners mode to the
         // populated/permanenet mode where all listeners are correctly hooked up and the mapper is correctly set-up.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void EnsurePopulatedMode()
         {
             // Unbind special listeners, bind permanent ones, setup the mapping, etc
@@ -586,7 +570,6 @@ namespace System.Xml
         }
 
         // This function accepts node params that are not row-elements. In this case, calling this function is a no-op
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Foliate(XmlBoundElement node, ElementState newState)
         {
             Debug.Assert(newState == ElementState.WeakFoliation || newState == ElementState.StrongFoliation);
@@ -628,7 +611,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void Foliate(XmlElement element)
         {
             if (element is XmlBoundElement)
@@ -636,7 +618,6 @@ namespace System.Xml
         }
 
         // Foliate rowElement region if there are DataPointers that points into it
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void FoliateIfDataPointers(XmlElement rowElement)
         {
             if (!IsFoliated(rowElement) && HasPointers(rowElement))
@@ -654,7 +635,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void EnsureFoliation(XmlBoundElement rowElem, ElementState foliation)
         {
             if (rowElem.IsFoliated) //perf reason, avoid unnecessary lock.
@@ -662,7 +642,6 @@ namespace System.Xml
             ForceFoliation(rowElem, foliation);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ForceFoliation(XmlBoundElement node, ElementState newState)
         {
             lock (_foliationLock)
@@ -775,7 +754,7 @@ namespace System.Xml
             // insert location must be after free text
             for (node = rowElement.FirstChild; node != null; prev = node, node = node.NextSibling)
             {
-                if (!IsTextLikeNode(node))
+                if (!Helpers.IsTextLikeNode(node))
                     break;
             }
 
@@ -964,7 +943,6 @@ namespace System.Xml
         // This creates a tree and synchronize ROM w/ the created tree.
         // It requires the populated mode to be on - in case we are not in populated mode, it will make the XmlDataDocument be in populated mode.
         // It takes advantage of the fAssociateDataRow flag for populated mode, which allows creation of XmlBoundElement w/o associating DataRow objects.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlNode CloneTree(DataPointer other)
         {
             EnsurePopulatedMode();
@@ -1003,7 +981,6 @@ namespace System.Xml
             return newNode;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlNode CloneTreeInternal(DataPointer other)
         {
             Debug.Assert(_ignoreDataSetEvents);
@@ -1043,8 +1020,6 @@ namespace System.Xml
             return newNode;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlNode CloneNode(bool deep)
         {
             XmlDataDocument clone = (XmlDataDocument)(base.CloneNode(false));
@@ -1077,7 +1052,6 @@ namespace System.Xml
             return clone;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlNode CloneNode(DataPointer dp) =>
             dp.NodeType switch
             {
@@ -1102,22 +1076,42 @@ namespace System.Xml
                 _ => throw new InvalidOperationException(SR.Format(SR.DataDom_CloneNode, dp.NodeType.ToString())),
             };
 
-        internal static bool IsTextLikeNode(XmlNode n)
+        // Some of the static methods are in a separate class so that the
+        // RequiresUnreferencedCode annotation on XmlDataDocument doesn't apply
+        // to them.
+        internal static class Helpers
         {
-            switch (n.NodeType)
+            internal static bool IsTextLikeNode(XmlNode n)
             {
-                case XmlNodeType.Text:
-                case XmlNodeType.CDATA:
-                case XmlNodeType.Whitespace:
-                case XmlNodeType.SignificantWhitespace:
-                    return true;
+                switch (n.NodeType)
+                {
+                    case XmlNodeType.Text:
+                    case XmlNodeType.CDATA:
+                    case XmlNodeType.Whitespace:
+                    case XmlNodeType.SignificantWhitespace:
+                        return true;
 
-                case XmlNodeType.EntityReference:
-                    Debug.Fail("Found entity reference");
-                    return false;
+                    case XmlNodeType.EntityReference:
+                        Debug.Fail("Found entity reference");
+                        return false;
 
-                default:
-                    return false;
+                    default:
+                        return false;
+                }
+            }
+
+            internal static bool IsTextNode(XmlNodeType nt)
+            {
+                switch (nt)
+                {
+                    case XmlNodeType.Text:
+                    case XmlNodeType.CDATA:
+                    case XmlNodeType.Whitespace:
+                    case XmlNodeType.SignificantWhitespace:
+                        return true;
+                    default:
+                        return false;
+                }
             }
         }
 
@@ -1173,8 +1167,6 @@ namespace System.Xml
         /// <summary>
         /// Loads the XML document from the specified XmlReader.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override void Load(XmlReader reader)
         {
             if (FirstChild != null)
@@ -1211,7 +1203,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadDataSetFromTree()
         {
             _ignoreDataSetEvents = true;
@@ -1237,7 +1228,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadTreeFromDataSet(DataSet ds)
         {
             _ignoreDataSetEvents = true;
@@ -1294,7 +1284,6 @@ namespace System.Xml
         }
 
         // load all data from tree structure into datarows
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadRows(XmlBoundElement? rowElem, XmlNode node)
         {
             Debug.Assert(node != null);
@@ -1332,7 +1321,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void OnDataRowCreated(object oDataSet, DataRow row)
         {
             Debug.Assert(row.RowState == DataRowState.Detached);
@@ -1344,7 +1332,6 @@ namespace System.Xml
             throw new NotSupportedException(SR.DataDom_NotSupport_Clear);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void OnDataRowCreatedSpecial(object oDataSet, DataRow row)
         {
             Debug.Assert(row.RowState == DataRowState.Detached);
@@ -1356,7 +1343,6 @@ namespace System.Xml
         }
 
         // Called when a new DataRow is created
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void OnNewRow(DataRow row)
         {
             Debug.Assert(row.Element == null);
@@ -1366,7 +1352,6 @@ namespace System.Xml
             AttachBoundElementToDataRow(row);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlBoundElement AttachBoundElementToDataRow(DataRow row)
         {
             Debug.Assert(row.Element == null);
@@ -1389,7 +1374,6 @@ namespace System.Xml
             return (Convert.IsDBNull(value));
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnAddRow(DataRow row)
         {
             // Xml operations in this func should not trigger ROM operations
@@ -1417,7 +1401,6 @@ namespace System.Xml
             OnNestedParentChange(row, rowElement, null);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnColumnValueChanged(DataRow row, DataColumn col, XmlBoundElement rowElement)
         {
             if (IsNotMapped(col))
@@ -1598,7 +1581,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnColumnChanged(object sender, DataColumnChangeEventArgs args)
         {
             // You should not be able to make DataRow field changes if the DataRow is deleted
@@ -1635,7 +1617,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnColumnValuesChanged(DataRow row, XmlBoundElement rowElement)
         {
             Debug.Assert(row != null);
@@ -1664,7 +1645,6 @@ namespace System.Xml
             _columnChangeList.Clear();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnDeleteRow(XmlBoundElement rowElement)
         {
             // IgnoreXmlEvents s/b on since we are manipulating the XML tree and we not want this to reflect in ROM view.
@@ -1678,7 +1658,6 @@ namespace System.Xml
             rowElement.ParentNode!.RemoveChild(rowElement);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnDeletingRow(XmlBoundElement rowElement)
         {
             // Note that this function is being called even if ignoreDataSetEvents == true.
@@ -1740,7 +1719,6 @@ namespace System.Xml
         }
 
         // Change the childElement position in the tree to conform to the parent nested relationship in ROM
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNestedParentChange(DataRow child, XmlBoundElement childElement, DataColumn? childCol)
         {
             Debug.Assert(child.Element == childElement && childElement.Row == child);
@@ -1794,7 +1772,6 @@ namespace System.Xml
 #endif
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNodeChanged(object sender, XmlNodeChangedEventArgs args)
         {
             if (_ignoreXmlEvents)
@@ -1838,7 +1815,6 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.DataDom_EnforceConstraintsShouldBeOff);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNodeInserted(object sender, XmlNodeChangedEventArgs args)
         {
             if (_ignoreXmlEvents)
@@ -1893,7 +1869,6 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.DataDom_EnforceConstraintsShouldBeOff);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNodeRemoved(object sender, XmlNodeChangedEventArgs args)
         {
             if (_ignoreXmlEvents)
@@ -1946,7 +1921,6 @@ namespace System.Xml
         }
 
         // Node was removed from connected tree to disconnected tree
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNodeRemovedFromTree(XmlNode node, XmlNode? oldParent)
         {
             XmlBoundElement? oldRowElem;
@@ -1971,7 +1945,6 @@ namespace System.Xml
         }
 
         // Node was removed from the disconnected tree to disconnected tree
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNodeRemovedFromFragment(XmlNode node, XmlNode? oldParent)
         {
             XmlBoundElement? oldRowElem;
@@ -2008,7 +1981,6 @@ namespace System.Xml
             AssertNonLiveRows(node);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnRowChanged(object sender, DataRowChangeEventArgs args)
         {
             if (_ignoreDataSetEvents)
@@ -2075,7 +2047,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnRowChanging(object sender, DataRowChangeEventArgs args)
         {
             // We foliate the region each time the associated row gets deleted
@@ -2254,7 +2225,6 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.DataDom_DataSetNestedRelationsChange);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnUndeleteRow(DataRow row, XmlElement rowElement)
         {
             XmlNode? refRow;
@@ -2299,7 +2269,6 @@ namespace System.Xml
         }
 
         // Promote child regions under parent as next siblings of parent
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void PromoteInnerRegions(XmlNode parent)
         {
             Debug.Assert(parent != null);
@@ -2332,7 +2301,7 @@ namespace System.Xml
             while (child != null)
             {
                 nextSibling = child.NextSibling;
-                if (!bTextLikeNode || !IsTextLikeNode(child))
+                if (!bTextLikeNode || !Helpers.IsTextLikeNode(child))
                 {
                     bTextLikeNode = false;
                     nextSibling = child.NextSibling;
@@ -2345,7 +2314,7 @@ namespace System.Xml
 
         private void RemoveInitialTextNodes(XmlNode? node)
         {
-            while (node != null && IsTextLikeNode(node))
+            while (node != null && Helpers.IsTextLikeNode(node))
             {
                 XmlNode? sibling = node.NextSibling;
                 node.ParentNode!.RemoveChild(node);
@@ -2405,7 +2374,6 @@ namespace System.Xml
                 return n.PreviousSibling;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal static void SetRowValueToNull(DataRow row, DataColumn col)
         {
             Debug.Assert(col.ColumnMapping != MappingType.Hidden);
@@ -2416,7 +2384,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal static void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
         {
             Debug.Assert(xmlText != null);
@@ -2439,7 +2406,6 @@ namespace System.Xml
                 row[col] = oVal;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SynchronizeRowFromRowElement(XmlBoundElement rowElement)
         {
             SynchronizeRowFromRowElement(rowElement, null);
@@ -2447,7 +2413,6 @@ namespace System.Xml
 
         // Sync row fields w/ values from rowElem region.
         // If rowElemList is != null, all subregions of rowElem are appended to it.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SynchronizeRowFromRowElement(XmlBoundElement rowElement, ArrayList? rowElemList)
         {
             DataRow? row = rowElement.Row;
@@ -2486,7 +2451,6 @@ namespace System.Xml
 #endif
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SynchronizeRowFromRowElementEx(XmlBoundElement rowElement, ArrayList? rowElemList)
         {
             Debug.Assert(rowElement != null);
@@ -2585,7 +2549,6 @@ namespace System.Xml
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UpdateAllColumns(DataRow row, XmlBoundElement rowElement)
         {
             foreach (DataColumn c in row.Table.Columns)
@@ -2597,7 +2560,6 @@ namespace System.Xml
         /// <summary>
         /// Initializes a new instance of the XmlDataDocument class.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlDataDocument() : base(new XmlDataImplementation())
         {
             Init();
@@ -2609,13 +2571,11 @@ namespace System.Xml
         /// Initializes a new instance of the XmlDataDocument class with the specified
         /// DataSet.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlDataDocument(DataSet dataset) : base(new XmlDataImplementation())
         {
             Init(dataset);
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal XmlDataDocument(XmlImplementation imp) : base(imp)
         {
             // This constructor is used by XmlDataImplementation.CreateDocument(), which
@@ -2658,7 +2618,6 @@ namespace System.Xml
         [MemberNotNull(nameof(_foliationLock))]
         [MemberNotNull(nameof(_attrXml))]
         [MemberNotNull(nameof(_dataSet))]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void Init(DataSet ds)
         {
             if (ds == null)
@@ -2692,7 +2651,6 @@ namespace System.Xml
             return (row.RowState & (DataRowState.Added | DataRowState.Unchanged | DataRowState.Modified)) != 0;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static void SetNestedParentRow(DataRow childRow, DataRow? parentRow)
         {
             DataRelation? rel = GetNestedParentRelation(childRow);
@@ -2707,7 +2665,6 @@ namespace System.Xml
         }
 
         // A node (node) was inserted into the main tree (connected) from oldParent==null state
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNodeInsertedInTree(XmlNode node)
         {
             XmlBoundElement? be;
@@ -2746,7 +2703,6 @@ namespace System.Xml
             AssertLiveRows(node);
         }
         // "node" was inserting into a disconnected tree from oldParent==null state
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNodeInsertedInFragment(XmlNode node)
         {
             XmlBoundElement? be;
@@ -2784,7 +2740,6 @@ namespace System.Xml
         }
 
         // A row-elem was inserted into the connected tree (connected) from oldParent==null state
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnRowElementInsertedInTree(XmlBoundElement rowElem, ArrayList rowElemList)
         {
             Debug.Assert(rowElem.Row != null);
@@ -2847,7 +2802,6 @@ namespace System.Xml
         }
 
         // Disconnect the DataRow associated w/ the rowElem region
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void EnsureDisconnectedDataRow(XmlBoundElement rowElem)
         {
             Debug.Assert(rowElem.Row != null);
@@ -2900,7 +2854,6 @@ namespace System.Xml
 
 
         // A non-row-elem was inserted into the connected tree (connected) from oldParent==null state
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNonRowElementInsertedInTree(XmlNode node, XmlBoundElement rowElement, ArrayList rowElemList)
         {
             // non-row-elem is being inserted
@@ -2917,7 +2870,6 @@ namespace System.Xml
         }
 
         // A non-row-elem was inserted into disconnected tree (fragment) from oldParent==null state (i.e. was disconnected)
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNonRowElementInsertedInFragment(XmlBoundElement rowElement, ArrayList rowElemList)
         {
             // non-row-elem is being inserted
@@ -2932,7 +2884,6 @@ namespace System.Xml
             // Nothing to do if the row is deleted (there is no sync-ing from XML to ROM for deleted rows)
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SetNestedParentRegion(XmlBoundElement childRowElem)
         {
             Debug.Assert(childRowElem.Row != null);
@@ -2942,7 +2893,6 @@ namespace System.Xml
             SetNestedParentRegion(childRowElem, parentRowElem);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SetNestedParentRegion(XmlBoundElement childRowElem, XmlBoundElement? parentRowElem)
         {
             DataRow childRow = childRowElem.Row!;
@@ -2966,19 +2916,6 @@ namespace System.Xml
             }
         }
 
-        internal static bool IsTextNode(XmlNodeType nt)
-        {
-            switch (nt)
-            {
-                case XmlNodeType.Text:
-                case XmlNodeType.CDATA:
-                case XmlNodeType.Whitespace:
-                case XmlNodeType.SignificantWhitespace:
-                    return true;
-                default:
-                    return false;
-            }
-        }
 
         /*
         internal static bool IsWhiteSpace(char ch) {
@@ -3003,8 +2940,6 @@ namespace System.Xml
             return true;
         }
         */
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         protected override XPathNavigator? CreateNavigator(XmlNode node)
         {
             Debug.Assert(node.OwnerDocument == this || node == this);
@@ -3012,7 +2947,7 @@ namespace System.Xml
             if (XPathNodePointer.XmlNodeTypeToXpathNodeTypeMap[(int)(node.NodeType)] == -1)
                 return null;
 
-            if (IsTextNode(node.NodeType))
+            if (Helpers.IsTextNode(node.NodeType))
             {
                 XmlNode? parent = node.ParentNode;
                 if (parent != null && parent.NodeType == XmlNodeType.Attribute)
@@ -3028,7 +2963,7 @@ namespace System.Xml
                         Debug.Assert(be.IsFoliated);
 #endif
                     XmlNode? prevSib = node.PreviousSibling;
-                    while (prevSib != null && IsTextNode(prevSib.NodeType))
+                    while (prevSib != null && Helpers.IsTextNode(prevSib.NodeType))
                     {
                         node = prevSib;
                         prevSib = SafePreviousSibling(node);

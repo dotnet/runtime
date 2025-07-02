@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -13,7 +14,6 @@ namespace System.Diagnostics
     // VM\DebugDebugger.h. The binder will catch some of these layout problems.
     internal sealed class StackFrameHelper
     {
-        private Thread? targetThread;
         private int[]? rgiOffset;
         private int[]? rgiILOffset;
 
@@ -39,18 +39,24 @@ namespace System.Diagnostics
         private int iFrameCount;
 #pragma warning restore 414
 
-        private delegate void GetSourceLineInfoDelegate(Assembly? assembly, string assemblyPath, IntPtr loadedPeAddress,
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        private static extern object CreateStackTraceSymbols();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method)]
+        private static extern void GetSourceLineInfo(
+            [UnsafeAccessorType("System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")] object target,
+            Assembly? assembly, string assemblyPath, IntPtr loadedPeAddress,
             int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
-        private static GetSourceLineInfoDelegate? s_getSourceLineInfo;
+        private static object? s_stackTraceSymbolsCache;
 
         [ThreadStatic]
         private static int t_reentrancy;
 
-        public StackFrameHelper(Thread? target)
+        public StackFrameHelper()
         {
-            targetThread = target;
             rgMethodHandle = null;
             rgiMethodToken = null;
             rgiOffset = null;
@@ -85,9 +91,9 @@ namespace System.Diagnostics
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
 
-        internal void InitializeSourceInfo(int iSkip, bool fNeedFileInfo, Exception? exception)
+        internal void InitializeSourceInfo(bool fNeedFileInfo, Exception? exception)
         {
-            StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);
+            StackTrace.GetStackFramesInternal(this, fNeedFileInfo, exception);
 
             if (!fNeedFileInfo)
                 return;
@@ -99,38 +105,11 @@ namespace System.Diagnostics
             t_reentrancy++;
             try
             {
-                if (s_getSourceLineInfo == null)
+                if (s_stackTraceSymbolsCache == null)
                 {
-                    Type? symbolsType = Type.GetType(
-                        "System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
-                        throwOnError: false);
-
-                    if (symbolsType == null)
-                    {
-                        return;
-                    }
-
-                    Type[] parameterTypes =
-                    [
-                        typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(bool), typeof(IntPtr),
-                        typeof(int), typeof(int), typeof(int),
-                        typeof(string).MakeByRefType(), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()
-                    ];
-                    MethodInfo? symbolsMethodInfo = symbolsType.GetMethod("GetSourceLineInfo", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, parameterTypes, null);
-                    if (symbolsMethodInfo == null)
-                    {
-                        return;
-                    }
-
-                    // Create an instance of System.Diagnostics.Stacktrace.Symbols
-                    object? target = Activator.CreateInstance(symbolsType);
-
-                    // Create an instance delegate for the GetSourceLineInfo method
-                    GetSourceLineInfoDelegate getSourceLineInfo = symbolsMethodInfo.CreateDelegate<GetSourceLineInfoDelegate>(target);
-
                     // We could race with another thread. It doesn't matter if we win or lose, the losing instance will be GC'ed and all threads including this one will
                     // use the winning instance
-                    Interlocked.CompareExchange(ref s_getSourceLineInfo, getSourceLineInfo, null);
+                    Interlocked.CompareExchange(ref s_stackTraceSymbolsCache, CreateStackTraceSymbols(), null);
                 }
 
                 for (int index = 0; index < iFrameCount; index++)
@@ -139,7 +118,7 @@ namespace System.Diagnostics
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken![index] != 0)
                     {
-                        s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
+                        GetSourceLineInfo(s_stackTraceSymbolsCache!, rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
                             rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
                             rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
                     }
@@ -166,7 +145,7 @@ namespace System.Diagnostics
             if (mh == IntPtr.Zero)
                 return null;
 
-            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(mh, this));
+            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(new RuntimeMethodHandleInternal(mh), this));
 
             return RuntimeType.GetMethodBase(mhReal);
         }
@@ -179,7 +158,7 @@ namespace System.Diagnostics
 
         public bool IsLastFrameFromForeignExceptionStackTrace(int i)
         {
-            return (rgiLastFrameFromForeignExceptionStackTrace == null) ? false : rgiLastFrameFromForeignExceptionStackTrace[i];
+            return rgiLastFrameFromForeignExceptionStackTrace != null && rgiLastFrameFromForeignExceptionStackTrace[i];
         }
 
         public int GetNumberOfFrames() { return iFrameCount; }

@@ -255,7 +255,9 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not directly correspond to a <see cref="VarEnum"/> variant type.</exception>
         public static ComVariant Create<T>([DisallowNull] T value)
         {
-            Unsafe.SkipInit(out ComVariant variant);
+            // Although unused bits of native VARIANT is undefined, our managed test
+            // for Marshal.GetNativeVariantForObject asserts for its whole content.
+            ComVariant variant = default;
             if (typeof(T) == typeof(DBNull))
             {
                 variant = Null;
@@ -393,7 +395,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 throw new PlatformNotSupportedException(SR.ComVariant_SafeArray_PlatformNotSupported);
             }
 
-            Unsafe.SkipInit(out ComVariant value);
+            ComVariant value = default;
             value.VarType = vt;
             value.GetRawDataRef<T>() = (vt, sizeof(T)) switch
             {

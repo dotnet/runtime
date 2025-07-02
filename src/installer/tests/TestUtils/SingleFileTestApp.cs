@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.NET.HostModel.Bundle;
 
 namespace Microsoft.DotNet.CoreSetup.Test
@@ -96,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 bundleDirectory,
                 options,
                 targetFrameworkVersion: bundleVersion,
-                macosCodesign: true);
+                macosCodesign: RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
 
             // Get all files in the source directory and all sub-directories.
             string[] sources = Directory.GetFiles(builtApp.Location, searchPattern: "*", searchOption: SearchOption.AllDirectories);

@@ -1,18 +1,41 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Formats.Nrbf.Utils;
 
 internal static class BinaryReaderExtensions
 {
+    private static object? s_baseAmbiguousDstDateTime;
+
+    internal static SerializationRecordType ReadSerializationRecordType(this BinaryReader reader, AllowedRecordTypes allowed)
+    {
+        byte nextByte = reader.ReadByte();
+        if (nextByte > (byte)SerializationRecordType.MethodReturn // MethodReturn is the last defined value.
+            || (nextByte > (byte)SerializationRecordType.ArraySingleString && nextByte < (byte)SerializationRecordType.MethodCall) // not part of the spec
+            || ((uint)allowed & (1u << nextByte)) == 0) // valid, but not allowed
+        {
+            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
+        }
+
+        return (SerializationRecordType)nextByte;
+    }
+
     internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
+        // To simplify the behavior and security review of the BinaryArrayRecord type, we
+        // do not support reading non-zero-offset arrays. If this should change in the
+        // future, the NrbfDecoder.DecodeBinaryArrayRecord method and supporting infrastructure
+        // will need re-review.
+
         byte arrayType = reader.ReadByte();
         // Rectangular is the last defined value.
         if (arrayType > (byte)BinaryArrayType.Rectangular)
@@ -43,8 +66,8 @@ internal static class BinaryReaderExtensions
     internal static PrimitiveType ReadPrimitiveType(this BinaryReader reader)
     {
         byte primitiveType = reader.ReadByte();
-        // String is the last defined value, 4 is not used at all.
-        if (primitiveType is 4 or > (byte)PrimitiveType.String)
+        // Boolean is the first valid value (1), UInt64 (16) is the last one. 4 is not used at all.
+        if (primitiveType is 4 or < (byte)PrimitiveType.Boolean or > (byte)PrimitiveType.UInt64)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }
@@ -60,7 +83,7 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Boolean => reader.ReadBoolean(),
             PrimitiveType.Byte => reader.ReadByte(),
             PrimitiveType.SByte => reader.ReadSByte(),
-            PrimitiveType.Char => reader.ReadChar(),
+            PrimitiveType.Char => reader.ParseChar(),
             PrimitiveType.Int16 => reader.ReadInt16(),
             PrimitiveType.UInt16 => reader.ReadUInt16(),
             PrimitiveType.Int32 => reader.ReadInt32(),
@@ -69,41 +92,130 @@ internal static class BinaryReaderExtensions
             PrimitiveType.UInt64 => reader.ReadUInt64(),
             PrimitiveType.Single => reader.ReadSingle(),
             PrimitiveType.Double => reader.ReadDouble(),
-            PrimitiveType.Decimal => decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture),
-            PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadInt64()),
-            _ => new TimeSpan(reader.ReadInt64()),
+            PrimitiveType.Decimal => reader.ParseDecimal(),
+            PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadUInt64()),
+            PrimitiveType.TimeSpan => new TimeSpan(reader.ReadInt64()),
+            _ => throw new InvalidOperationException(),
         };
 
-    // TODO: fix https://github.com/dotnet/runtime/issues/102826
+    // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
+    internal static decimal ParseDecimal(this BinaryReader reader)
+    {
+        // The spec (MS NRBF 2.1.1.6, https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/10b218f5-9b2b-4947-b4b7-07725a2c8127)
+        // says that the length of LengthPrefixedString must be of optimal size (using as few bytes as possible).
+        // BinaryReader.ReadString does not enforce that and we are OK with that,
+        // as it takes care of handling multiple edge cases and we don't want to re-implement it.
+
+        string text = reader.ReadString();
+        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal result))
+        {
+            ThrowHelper.ThrowInvalidFormat();
+        }
+
+        return result;
+    }
+
+    internal static char ParseChar(this BinaryReader reader)
+    {
+        try
+        {
+            return reader.ReadChar();
+        }
+        catch (ArgumentException) // A surrogate character was read.
+        {
+            throw new SerializationException(SR.Serialization_SurrogateCharacter);
+        }
+    }
+
+    internal static char[] ParseChars(this BinaryReader reader, int count)
+    {
+        char[]? result;
+        try
+        {
+            result = reader.ReadChars(count);
+        }
+        catch (ArgumentException) // A surrogate character was read.
+        {
+            throw new SerializationException(SR.Serialization_SurrogateCharacter);
+        }
+
+        if (result.Length != count)
+        {
+            // We might hit EOF before fully reading the requested
+            // number of chars. This means that ReadChars(count) could return a char[] with
+            // *fewer* than 'count' elements.
+            ThrowHelper.ThrowEndOfStreamException();
+        }
+
+        return result;
+    }
+
     /// <summary>
     ///  Creates a <see cref="DateTime"/> object from raw data with validation.
     /// </summary>
-    /// <exception cref="SerializationException"><paramref name="data"/> was invalid.</exception>
-    internal static DateTime CreateDateTimeFromData(long data)
+    /// <exception cref="SerializationException"><paramref name="dateData"/> was invalid.</exception>
+    internal static DateTime CreateDateTimeFromData(ulong dateData)
     {
-        // Copied from System.Runtime.Serialization.Formatters.Binary.BinaryParser
-
-        // Use DateTime's public constructor to validate the input, but we
-        // can't return that result as it strips off the kind. To address
-        // that, store the value directly into a DateTime via an unsafe cast.
-        // See BinaryFormatterWriter.WriteDateTime for details.
+        ulong ticks = dateData & 0x3FFFFFFF_FFFFFFFFUL;
+        DateTimeKind kind = (DateTimeKind)(dateData >> 62);
 
         try
         {
-            const long TicksMask = 0x3FFFFFFFFFFFFFFF;
-            _ = new DateTime(data & TicksMask);
+            return ((uint)kind <= (uint)DateTimeKind.Local) ? new DateTime((long)ticks, kind) : CreateFromAmbiguousDst(ticks);
         }
         catch (ArgumentException ex)
         {
-            // Bad data
             throw new SerializationException(ex.Message, ex);
         }
 
-        return Unsafe.As<long, DateTime>(ref data);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static DateTime CreateFromAmbiguousDst(ulong ticks)
+        {
+            // There's no public API to create a DateTime from an ambiguous DST, and we
+            // can't use private reflection to access undocumented .NET Framework APIs.
+            // However, the ISerializable pattern *is* a documented protocol, so we can
+            // use DateTime's serialization ctor to create a zero-tick "ambiguous" instance,
+            // then keep reusing it as the base to which we can add our tick offsets.
+
+            if (s_baseAmbiguousDstDateTime is not DateTime baseDateTime)
+            {
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
+                SerializationInfo si = new(typeof(DateTime), new FormatterConverter());
+                // We don't know the value of "ticks", so we don't specify it.
+                // If the code somehow runs on a very old runtime that does not know the concept of "dateData"
+                // (it should not be possible as the library targets .NET Standard 2.0)
+                // the ctor is going to throw rather than silently return an invalid value.
+                si.AddValue("dateData", 0xC0000000_00000000UL); // new value (serialized as ulong)
+
+#if NET
+                baseDateTime = CallPrivateSerializationConstructor(si, new StreamingContext(StreamingContextStates.All));
+#else
+                ConstructorInfo ci = typeof(DateTime).GetConstructor(
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    binder: null,
+                    new Type[] { typeof(SerializationInfo), typeof(StreamingContext) },
+                    modifiers: null);
+
+                baseDateTime = (DateTime)ci.Invoke(new object[] { si, new StreamingContext(StreamingContextStates.All) });
+#endif
+
+#pragma warning restore SYSLIB0050 // Type or member is obsolete
+                Volatile.Write(ref s_baseAmbiguousDstDateTime, baseDateTime); // it's ok if two threads race here
+            }
+
+            return baseDateTime.AddTicks((long)ticks);
+        }
+
+#if NET
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        extern static DateTime CallPrivateSerializationConstructor(SerializationInfo si, StreamingContext ct);
+#endif
     }
 
     internal static bool? IsDataAvailable(this BinaryReader reader, long requiredBytes)
     {
+        Debug.Assert(requiredBytes >= 0);
+
         if (!reader.BaseStream.CanSeek)
         {
             return null;

@@ -18,14 +18,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLibCreator>lib</CppLibCreator>
     <ObjectSuffix>.obj</ObjectSuffix>
     <LibrarySuffix>.lib</LibrarySuffix>
-    <ObjectSuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.obj</ObjectSuffix>
-    <LibrarySuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.lib</LibrarySuffix>
     <FullRuntimeName>Runtime.WorkstationGC</FullRuntimeName>
-    <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
+    <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">Runtime.ServerGC</FullRuntimeName>
     <BootstrapperName>bootstrapper</BootstrapperName>
     <BootstrapperName Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'">bootstrapperdll</BootstrapperName>
     <VxSortSupportName>Runtime.VxsortEnabled</VxSortSupportName>
-    <VxSortSupportName Condition="'$(ControlFlowGuard)' != 'Guard' and ('$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true')">Runtime.VxsortDisabled</VxSortSupportName>
+    <VxSortSupportName Condition="'$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true'">Runtime.VxsortDisabled</VxSortSupportName>
     <StandaloneGCSupportName>standalonegc-disabled</StandaloneGCSupportName>
     <StandaloneGCSupportName Condition="'$(IlcStandaloneGCSupport)' == 'true'">standalonegc-enabled</StandaloneGCSupportName>
     <EntryPointSymbol Condition="'$(EntryPointSymbol)' == ''">wmainCRTStartup</EntryPointSymbol>
@@ -40,13 +38,18 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <ItemGroup>
+      <NativeLibrary Condition="'$(NativeLib)' != ''" Include="$(IlcSdkPath)dllmain$(ObjectSuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(ObjectSuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)aotminipal$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)zlibstatic$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlicommon$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlienc$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlidec$(LibFileExt)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -85,6 +88,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
+      <LinkerArg Condition="$(IlcMultiModule) != 'true' and $(EnableSourceLink) == 'true' and $(NativeDebugSymbols) == 'true'" Include="/SOURCELINK:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).sourcelink" />
       <LinkerArg Condition="'$(NativeLib)' == 'Shared'" Include="/DLL" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="@(SdkNativeLibrary->'&quot;%(Identity)&quot;')" />

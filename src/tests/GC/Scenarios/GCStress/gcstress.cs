@@ -1,15 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace DefaultNamespace {
     using System;
 
-    internal class GCStress
+    public class GCStress
     {
         internal GCStress next;
         internal byte[] data;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             GCStress obj= new GCStress();

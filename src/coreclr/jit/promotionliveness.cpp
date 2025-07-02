@@ -4,6 +4,42 @@
 #include "jitpch.h"
 #include "promotion.h"
 
+//
+// This file implements a specialized liveness analysis for physically promoted struct fields
+// and remainders. Unlike standard JIT liveness analysis, it focuses on accurately tracking
+// which fields are live at specific program points to optimize physically promoted struct operations.
+//
+// Key characteristics:
+//
+// 1. Separate Bit Vectors:
+//    - Maintains its own liveness bit vectors separate from the main compiler's bbLiveIn/bbLiveOut
+//    - Uses "dense" indices: bit vectors only contain entries for the remainder and replacement
+//      fields of physically promoted structs (allocating 1 + num_fields indices per local)
+//    - Does not update BasicBlock::bbLiveIn or other standard liveness storage, as this would
+//      require allocating regular tracked indices (lvVarIndex) for all new fields
+//
+// 2. Liveness Representation:
+//    - Writes liveness into IR using normal GTF_VAR_DEATH flags
+//    - Important: After liveness is computed but before replacement phase completes,
+//      GTF_VAR_DEATH semantics temporarily differ from the rest of the JIT
+//      (e.g., "LCL_FLD int V16 [+8] (last use)" indicates that specific field is dying,
+//      not the whole variable)
+//    - For struct uses that can indicate deaths of multiple fields or remainder parts,
+//      maintains side information accessed via GetDeathsForStructLocal()
+//
+// 3. Analysis Process:
+//    - Single-pass dataflow computation (no DCE iterations, unlike other liveness passes)
+//    - Handles QMark nodes specially for conditional execution
+//    - Accounts for implicit exception flow
+//    - Distinguishes between full definitions and partial definitions
+//
+// The liveness information is critical for:
+// - Avoiding creation of dead stores (especially to remainders, which the SSA liveness
+//   pass handles very conservatively as partial definitions)
+// - Marking replacement fields with proper liveness flags for subsequent compiler phases
+// - Optimizing read-back operations by determining when they're unnecessary
+//
+
 struct BasicBlockLiveness
 {
     // Variables used before a full definition.
@@ -21,54 +57,6 @@ struct BasicBlockLiveness
 //------------------------------------------------------------------------
 // Run:
 //   Compute liveness information pertaining the promoted structs.
-//
-// Remarks:
-//   For each promoted aggregate we compute the liveness for its remainder and
-//   all of its fields. Unlike regular liveness we currently do not do any DCE
-//   here and so only do the dataflow computation once.
-//
-//   The liveness information is written into the IR using the normal
-//   GTF_VAR_DEATH flag. Note that the semantics of GTF_VAR_DEATH differs from
-//   the rest of the JIT for a short while between the liveness is computed and
-//   the replacement phase has run: in particular, after this liveness pass you
-//   may see a node like:
-//
-//       LCL_FLD   int    V16 tmp9         [+8] (last use)
-//
-//   that indicates that this particular field (or the remainder if it wasn't
-//   promoted) is dying, not that V16 itself is dying. After replacement has
-//   run the semantics align with the rest of the JIT: in the promoted case V16
-//   [+8] would be replaced by its promoted field local, and in the remainder
-//   case all non-remainder uses of V16 would also be.
-//
-//   There is one catch which is struct uses of the local. These can indicate
-//   deaths of multiple fields and also the remainder, so this information is
-//   stored on the side. PromotionLiveness::GetDeathsForStructLocal is used to
-//   query this information.
-//
-//   The liveness information is used by decomposition to avoid creating dead
-//   stores, and also to mark the replacement field uses/defs with proper
-//   up-to-date liveness information to be used by future phases (forward sub
-//   and morph, as of writing this). It is also used to avoid creating
-//   unnecessary read-backs; this is mostly just a TP optimization as future
-//   liveness passes would be expected to DCE these anyway.
-//
-//   Avoiding the creation of dead stores to the remainder is especially
-//   important as these otherwise would often end up looking like partial
-//   definitions, and the other liveness passes handle partial definitions very
-//   conservatively and are not able to DCE them.
-//
-//   Unlike the other liveness passes we keep the per-block liveness
-//   information on the side and we do not update BasicBlock::bbLiveIn et al.
-//   This relies on downstream phases not requiring/wanting to use per-basic
-//   block live-in/live-out/var-use/var-def sets. To be able to update these we
-//   would need to give the new locals "regular" tracked indices (i.e. allocate
-//   a lvVarIndex).
-//
-//   The indices allocated and used internally within the liveness computation
-//   are "dense" in the sense that the bit vectors only have indices for
-//   remainders and the replacement fields introduced by this pass. In other
-//   words, we allocate 1 + num_fields indices for each promoted struct local).
 //
 void PromotionLiveness::Run()
 {
@@ -234,7 +222,7 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
             }
 
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
-            bool isUseOfRemainder     = isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size));
+            bool isUseOfRemainder     = isUse && agg->Unpromoted.Intersects(SegmentList::Segment(offs, offs + size));
             MarkIndex(baseIndex, isUseOfRemainder, isFullDefOfRemainder, useSet, defSet);
         }
     }
@@ -580,7 +568,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
             {
                 BitVecOps::AddElemD(&aggTraits, aggDeaths, 0);
 
-                if (isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size)))
+                if (isUse && agg->Unpromoted.Intersects(SegmentList::Segment(offs, offs + size)))
                 {
                     BitVecOps::AddElemD(m_bvTraits, life, baseIndex);
                 }

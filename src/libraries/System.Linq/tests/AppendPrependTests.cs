@@ -16,7 +16,7 @@ namespace System.Linq.Tests
                      select x1;
 
             Assert.Equal(q1.Append(42), q1.Append(42));
-            Assert.Equal(q1.Append(42), q1.Concat(new int?[] { 42 }));
+            Assert.Equal(q1.Append(42), q1.Concat([42]));
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace System.Linq.Tests
                      select x1;
 
             Assert.Equal(q1.Append("hi"), q1.Append("hi"));
-            Assert.Equal(q1.Append("hi"), q1.Concat(new string[] { "hi" }));
+            Assert.Equal(q1.Append("hi"), q1.Concat(["hi"]));
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyAppend()
         {
-            int[] first = { };
+            int[] first = [];
             Assert.All(CreateSources(first), first =>
             {
                 Assert.Single(first.Append(42), 42);
@@ -71,7 +71,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyPrepend()
         {
-            string[] first = { };
+            string[] first = [];
             Assert.All(CreateSources(first), first =>
             {
                 Assert.Single(first.Prepend("aa"), "aa");
@@ -150,12 +150,12 @@ namespace System.Linq.Tests
             var app1ba = app0b.Append(9);
             var app1bb = app0b.Append(10);
 
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 5 }, app0a);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 6 }, app0b);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 5, 7 }, app1aa);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 5, 8 }, app1ab);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 6, 9 }, app1ba);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 6, 10 }, app1bb);
+            Assert.Equal([0, 1, 2, 3, 4, 5], app0a);
+            Assert.Equal([0, 1, 2, 3, 4, 6], app0b);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 7], app1aa);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 8], app1ab);
+            Assert.Equal([0, 1, 2, 3, 4, 6, 9], app1ba);
+            Assert.Equal([0, 1, 2, 3, 4, 6, 10], app1bb);
         }
 
         [Fact]
@@ -169,12 +169,12 @@ namespace System.Linq.Tests
             var pre1ba = pre0b.Prepend(9);
             var pre1bb = pre0b.Prepend(10);
 
-            Assert.Equal(new[] { 5, 0, 1, 2, 3 }, pre0a);
-            Assert.Equal(new[] { 6, 0, 1, 2, 3 }, pre0b);
-            Assert.Equal(new[] { 7, 5, 0, 1, 2, 3 }, pre1aa);
-            Assert.Equal(new[] { 8, 5, 0, 1, 2, 3 }, pre1ab);
-            Assert.Equal(new[] { 9, 6, 0, 1, 2, 3 }, pre1ba);
-            Assert.Equal(new[] { 10, 6, 0, 1, 2, 3 }, pre1bb);
+            Assert.Equal([5, 0, 1, 2, 3], pre0a);
+            Assert.Equal([6, 0, 1, 2, 3], pre0b);
+            Assert.Equal([7, 5, 0, 1, 2, 3], pre1aa);
+            Assert.Equal([8, 5, 0, 1, 2, 3], pre1ab);
+            Assert.Equal([9, 6, 0, 1, 2, 3], pre1ba);
+            Assert.Equal([10, 6, 0, 1, 2, 3], pre1bb);
         }
 
         [Fact]

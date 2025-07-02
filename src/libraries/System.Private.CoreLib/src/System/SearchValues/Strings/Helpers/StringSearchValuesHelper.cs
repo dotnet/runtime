@@ -62,47 +62,166 @@ namespace System.Buffers
                 return false;
             }
 
-            return TCaseSensitivity.Equals<ValueLength8OrLongerOrUnknown>(ref matchStart, candidate);
+            return UnknownLengthEquals<TCaseSensitivity>(ref matchStart, candidate);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ScalarEquals<TCaseSensitivity>(ref char matchStart, string candidate)
+        private static bool UnknownLengthEquals<TCaseSensitivity>(ref char matchStart, string candidate)
             where TCaseSensitivity : struct, ICaseSensitivity
         {
-            for (int i = 0; i < candidate.Length; i++)
+            if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
-                if (TCaseSensitivity.TransformInput(Unsafe.Add(ref matchStart, i)) != candidate[i])
+                return SpanHelpers.SequenceEqual(
+                    ref Unsafe.As<char, byte>(ref matchStart),
+                    ref candidate.GetRawStringDataAsUInt8(),
+                    (uint)candidate.Length * sizeof(char));
+            }
+
+            if (typeof(TCaseSensitivity) == typeof(CaseInsensitiveAscii) ||
+                typeof(TCaseSensitivity) == typeof(CaseInsensitiveAsciiLetters))
+            {
+                return Ascii.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), (uint)candidate.Length);
+            }
+
+            Debug.Assert(typeof(TCaseSensitivity) == typeof(CaseInsensitiveUnicode));
+            return Ordinal.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
+        }
+
+        public interface IValueLength { }
+
+        public readonly struct ValueLengthLessThan4 : IValueLength { }
+
+        public readonly struct ValueLength4To8 : IValueLength { }
+
+        public readonly struct ValueLength9To16 : IValueLength { }
+
+        // "Unknown" is currently only used by Teddy when confirming matches.
+        public readonly struct ValueLengthLongOrUnknown : IValueLength { }
+
+        public readonly struct SingleValueState
+        {
+            public readonly string Value;
+            public readonly nint SecondReadByteOffset;
+            public readonly Vector256<ushort> Value256;
+            public readonly Vector256<ushort> ToUpperMask256;
+
+            public readonly ulong Value64_0 => Value256.AsUInt64()[0];
+            public readonly ulong Value64_1 => Value256.AsUInt64()[1];
+            public readonly uint Value32_0 => Value256.AsUInt32()[0];
+            public readonly uint Value32_1 => Value256.AsUInt32()[1];
+
+            public readonly ulong ToUpperMask64_0 => ToUpperMask256.AsUInt64()[0];
+            public readonly ulong ToUpperMask64_1 => ToUpperMask256.AsUInt64()[1];
+            public readonly uint ToUpperMask32_0 => ToUpperMask256.AsUInt32()[0];
+            public readonly uint ToUpperMask32_1 => ToUpperMask256.AsUInt32()[1];
+
+            public SingleValueState(string value, bool ignoreCase)
+            {
+                Debug.Assert(value.Length >= 2);
+
+                Value = value;
+
+                // We precompute vectors specific to this value to speed up later comparisons.
+                // We group values depending on their length (2-3, 4-8, 9-16).
+                // For any of those lengths, we can load the whole value with two overlapped reads (e.g. 2x 8 characters for lengths 9-16).
+                // For a string "Hello World", we would load
+                //              [Hello Wo]
+                //                 [lo World]
+                // SecondReadByteOffset: 6 bytes (3 characters)
+                // We then precompute a mask that converts any potential input to the uppercase variant, specific to this value.
+                // We must ensure that the ASCII letter mask only applies to the letters, not the space character.
+                // Value256:       [HELLO WOLO WORLD] (note that the value is already converted to uppercase if we're ignoring casing)
+                // ToUpperMask256: [xxxxx xxxx xxxxx] (x = ~0x20 for ASCII letters, 0xFFFF otherwise)
+                //
+                // Given a potential match, we can now confirm whether we found a match by loading the candidate in the same way and applying this mask:
+                // Vector256 input = [Vector128.Load(candidate), Vector128.Load(candidate + 6 bytes)];
+                // bool matches = (input & ToUpperMask256) == Value256;
+
+                // The two vectors may overlap completely for Length == 2 or Length == 4, and that's fine.
+                // The second comparison during validation is redundant in such cases, but the alternative is to introduce more IValueLength specializations.
+
+                if (value.Length <= 16)
                 {
-                    return false;
+                    if (value.Length > 8)
+                    {
+                        SecondReadByteOffset = (value.Length - 8) * sizeof(char);
+                        Value256 = Vector256.Create(
+                            Vector128.LoadUnsafe(ref value.GetRawStringDataAsUInt16()),
+                            Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref value.GetRawStringDataAsUInt16(), SecondReadByteOffset)));
+                    }
+                    else if (value.Length >= 4)
+                    {
+                        SecondReadByteOffset = (value.Length - 4) * sizeof(char);
+                        Value256 = Vector256.Create(Vector128.Create(
+                            Unsafe.ReadUnaligned<ulong>(ref value.GetRawStringDataAsUInt8()),
+                            Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref value.GetRawStringDataAsUInt8(), SecondReadByteOffset))
+                            )).AsUInt16();
+                    }
+                    else
+                    {
+                        Debug.Assert(value.Length is 2 or 3);
+
+                        SecondReadByteOffset = (value.Length - 2) * sizeof(char);
+                        Value256 = Vector256.Create(Vector128.Create(Vector64.Create(
+                            Unsafe.ReadUnaligned<uint>(ref value.GetRawStringDataAsUInt8()),
+                            Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref value.GetRawStringDataAsUInt8(), SecondReadByteOffset))
+                            ))).AsUInt16();
+                    }
+
+                    if (ignoreCase)
+                    {
+                        Vector256<ushort> isAsciiLetter =
+                            Vector256.GreaterThanOrEqual(Value256, Vector256.Create((ushort)'A')) &
+                            Vector256.LessThanOrEqual(Value256, Vector256.Create((ushort)'Z'));
+
+                        ToUpperMask256 = Vector256.ConditionalSelect(isAsciiLetter, Vector256.Create(unchecked((ushort)~0x20)), Vector256.Create(ushort.MaxValue));
+                    }
                 }
             }
 
-            return true;
-        }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MatchesLength9To16_CaseSensitive(ref char matchStart)
+            {
+                Debug.Assert(Value.Length is >= 9 and <= 16);
+                Debug.Assert(ToUpperMask256 == default);
 
-        public interface IValueLength
-        {
-            static abstract bool AtLeast4Chars { get; }
-            static abstract bool AtLeast8CharsOrUnknown { get; }
-        }
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    Vector256<ushort> input = Vector256.Create(
+                        Vector128.LoadUnsafe(ref matchStart),
+                        Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)));
 
-        public readonly struct ValueLengthLessThan4 : IValueLength
-        {
-            public static bool AtLeast4Chars => false;
-            public static bool AtLeast8CharsOrUnknown => false;
-        }
+                    return input == Value256;
+                }
+                else
+                {
+                    Vector128<ushort> different = Vector128.LoadUnsafe(ref matchStart) ^ Value256.GetLower();
+                    different |= Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)) ^ Value256.GetUpper();
+                    return different == Vector128<ushort>.Zero;
+                }
+            }
 
-        public readonly struct ValueLength4To7 : IValueLength
-        {
-            public static bool AtLeast4Chars => true;
-            public static bool AtLeast8CharsOrUnknown => false;
-        }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MatchesLength9To16_CaseInsensitiveAscii(ref char matchStart)
+            {
+                Debug.Assert(Value.Length is >= 9 and <= 16);
+                Debug.Assert(ToUpperMask256 != default);
 
-        // "Unknown" is currently only used by Teddy when confirming matches.
-        public readonly struct ValueLength8OrLongerOrUnknown : IValueLength
-        {
-            public static bool AtLeast4Chars => true;
-            public static bool AtLeast8CharsOrUnknown => true;
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    Vector256<ushort> input = Vector256.Create(
+                        Vector128.LoadUnsafe(ref matchStart),
+                        Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)));
+
+                    return (input & ToUpperMask256) == Value256;
+                }
+                else
+                {
+                    Vector128<ushort> different = (Vector128.LoadUnsafe(ref matchStart) & ToUpperMask256.GetLower()) ^ Value256.GetLower();
+                    different |= (Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)) & ToUpperMask256.GetUpper()) ^ Value256.GetUpper();
+                    return different == Vector128<ushort>.Zero;
+                }
+            }
         }
 
         public interface ICaseSensitivity
@@ -111,7 +230,7 @@ namespace System.Buffers
             static abstract Vector128<byte> TransformInput(Vector128<byte> input);
             static abstract Vector256<byte> TransformInput(Vector256<byte> input);
             static abstract Vector512<byte> TransformInput(Vector512<byte> input);
-            static abstract bool Equals<TValueLength>(ref char matchStart, string candidate) where TValueLength : struct, IValueLength;
+            static abstract bool Equals<TValueLength>(ref char matchStart, ref readonly SingleValueState state) where TValueLength : struct, IValueLength;
         }
 
         // Performs no case transformations.
@@ -130,39 +249,33 @@ namespace System.Buffers
             public static Vector512<byte> TransformInput(Vector512<byte> input) => input;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
+            public static bool Equals<TValueLength>(ref char matchStart, ref readonly SingleValueState state)
                 where TValueLength : struct, IValueLength
             {
-                Debug.Assert(candidate.Length > 1);
-
-                ref byte first = ref Unsafe.As<char, byte>(ref matchStart);
-                ref byte second = ref Unsafe.As<char, byte>(ref candidate.GetRawStringData());
-                nuint byteLength = (nuint)(uint)candidate.Length * 2;
-
-                if (TValueLength.AtLeast8CharsOrUnknown)
+                if (typeof(TValueLength) == typeof(ValueLengthLongOrUnknown))
                 {
-                    return SpanHelpers.SequenceEqual(ref first, ref second, byteLength);
+                    return UnknownLengthEquals<CaseSensitive>(ref matchStart, state.Value);
                 }
-
-                Debug.Assert(matchStart == candidate[0], "This should only be called after the first character has been checked");
-
-                if (TValueLength.AtLeast4Chars)
+                else if (typeof(TValueLength) == typeof(ValueLength9To16))
                 {
-                    nuint offset = byteLength - sizeof(ulong);
-                    ulong differentBits = Unsafe.ReadUnaligned<ulong>(ref first) - Unsafe.ReadUnaligned<ulong>(ref second);
-                    differentBits |= Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref first, offset)) - Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref second, offset));
+                    return state.MatchesLength9To16_CaseSensitive(ref matchStart);
+                }
+                else if (typeof(TValueLength) == typeof(ValueLength4To8))
+                {
+                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                    ulong differentBits = Unsafe.ReadUnaligned<ulong>(ref matchByteStart) - state.Value64_0;
+                    differentBits |= Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) - state.Value64_1;
                     return differentBits == 0;
                 }
                 else
                 {
-                    Debug.Assert(candidate.Length is 2 or 3);
+                    Debug.Assert(state.Value.Length is 2 or 3);
+                    Debug.Assert(matchStart == state.Value[0], "This should only be called after the first character has been checked");
 
                     // We know that the candidate is 2 or 3 characters long, and that the first character has already been checked.
-                    // We only have to to check the last 2 characters also match.
-                    nuint offset = byteLength - sizeof(uint);
-
-                    return Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref first, offset))
-                        == Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref second, offset));
+                    // We only have to to check whether the last 2 characters also match.
+                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                    return Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) == state.Value32_1;
                 }
             }
         }
@@ -184,36 +297,35 @@ namespace System.Buffers
             public static Vector512<byte> TransformInput(Vector512<byte> input) => input & Vector512.Create(unchecked((byte)~0x20));
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
+            public static bool Equals<TValueLength>(ref char matchStart, ref readonly SingleValueState state)
                 where TValueLength : struct, IValueLength
             {
-                Debug.Assert(candidate.Length > 1);
-                Debug.Assert(candidate.ToUpperInvariant() == candidate);
-
-                if (TValueLength.AtLeast8CharsOrUnknown)
+                if (typeof(TValueLength) == typeof(ValueLengthLongOrUnknown))
                 {
-                    return Ascii.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), (uint)candidate.Length);
+                    return UnknownLengthEquals<CaseInsensitiveAsciiLetters>(ref matchStart, state.Value);
                 }
-
-                ref byte first = ref Unsafe.As<char, byte>(ref matchStart);
-                ref byte second = ref Unsafe.As<char, byte>(ref candidate.GetRawStringData());
-                nuint byteLength = (nuint)(uint)candidate.Length * 2;
-
-                if (TValueLength.AtLeast4Chars)
+                else if (typeof(TValueLength) == typeof(ValueLength9To16))
+                {
+                    return state.MatchesLength9To16_CaseInsensitiveAscii(ref matchStart);
+                }
+                else if (typeof(TValueLength) == typeof(ValueLength4To8))
                 {
                     const ulong CaseMask = ~0x20002000200020u;
-                    nuint offset = byteLength - sizeof(ulong);
-                    ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref first) & CaseMask) - Unsafe.ReadUnaligned<ulong>(ref second);
-                    differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref first, offset)) & CaseMask) - Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref second, offset));
+                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                    ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref matchByteStart) & CaseMask) - state.Value64_0;
+                    differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & CaseMask) - state.Value64_1;
                     return differentBits == 0;
                 }
                 else
                 {
+                    Debug.Assert(state.Value.Length is 2 or 3);
+                    Debug.Assert(TransformInput(matchStart) == state.Value[0], "This should only be called after the first character has been checked");
+
+                    // We know that the candidate is 2 or 3 characters long, and that the first character has already been checked.
+                    // We only have to to check whether the last 2 characters also match.
                     const uint CaseMask = ~0x200020u;
-                    nuint offset = byteLength - sizeof(uint);
-                    uint differentBits = (Unsafe.ReadUnaligned<uint>(ref first) & CaseMask) - Unsafe.ReadUnaligned<uint>(ref second);
-                    differentBits |= (Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref first, offset)) & CaseMask) - Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref second, offset));
-                    return differentBits == 0;
+                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                    return (Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & CaseMask) == state.Value32_1;
                 }
             }
         }
@@ -259,15 +371,34 @@ namespace System.Buffers
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
+            public static bool Equals<TValueLength>(ref char matchStart, ref readonly SingleValueState state)
                 where TValueLength : struct, IValueLength
             {
-                if (TValueLength.AtLeast8CharsOrUnknown)
+                if (typeof(TValueLength) == typeof(ValueLengthLongOrUnknown))
                 {
-                    return Ascii.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), (uint)candidate.Length);
+                    return UnknownLengthEquals<CaseInsensitiveAscii>(ref matchStart, state.Value);
                 }
+                else if (typeof(TValueLength) == typeof(ValueLength9To16))
+                {
+                    return state.MatchesLength9To16_CaseInsensitiveAscii(ref matchStart);
+                }
+                else if (typeof(TValueLength) == typeof(ValueLength4To8))
+                {
+                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                    ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref matchByteStart) & state.ToUpperMask64_0) - state.Value64_0;
+                    differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & state.ToUpperMask64_1) - state.Value64_1;
+                    return differentBits == 0;
+                }
+                else
+                {
+                    Debug.Assert(state.Value.Length is 2 or 3);
+                    Debug.Assert((matchStart & ~0x20) == (state.Value[0] & ~0x20));
 
-                return ScalarEquals<CaseInsensitiveAscii>(ref matchStart, candidate);
+                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                    uint differentBits = (Unsafe.ReadUnaligned<uint>(ref matchByteStart) & state.ToUpperMask32_0) - state.Value32_0;
+                    differentBits |= (Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & state.ToUpperMask32_1) - state.Value32_1;
+                    return differentBits == 0;
+                }
             }
         }
 
@@ -281,15 +412,17 @@ namespace System.Buffers
             public static Vector512<byte> TransformInput(Vector512<byte> input) => throw new UnreachableException();
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
+            public static bool Equals<TValueLength>(ref char matchStart, ref readonly SingleValueState state)
                 where TValueLength : struct, IValueLength
             {
-                if (TValueLength.AtLeast8CharsOrUnknown)
+                if (typeof(TValueLength) == typeof(ValueLengthLongOrUnknown))
                 {
-                    return Ordinal.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
+                    return UnknownLengthEquals<CaseInsensitiveUnicode>(ref matchStart, state.Value);
                 }
-
-                return Ordinal.EqualsIgnoreCase_Scalar(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
+                else
+                {
+                    return Ordinal.EqualsIgnoreCase_Scalar(ref matchStart, ref state.Value.GetRawStringData(), state.Value.Length);
+                }
             }
         }
     }

@@ -380,7 +380,6 @@ namespace IDynamicInterfaceCastableTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/1442", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         public static void ValidateGenericInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");
@@ -423,13 +422,16 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(expectedStr, testStr.ReturnArg(expectedStr));
             Assert.Equal(expectedStr, testVar.ReturnArg(expectedStr));
 
-            Console.WriteLine(" -- Validate generic method call");
-            Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
-            Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
-            Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
+            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108228
+            {
+                Console.WriteLine(" -- Validate generic method call");
+                Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
+                Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
+                Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
+            }
 
             Console.WriteLine(" -- Validate delegate call");
             Func<int, int> funcInt = new Func<int, int>(testInt.ReturnArg);

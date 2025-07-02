@@ -2,63 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
+using TempFileHolder = System.Security.Cryptography.X509Certificates.Tests.TempFileHolder;
 
 namespace System.Security.Cryptography.Tests
 {
     // See osslplugins/README.md for instructions on how to build and install the test engine and setup for TPM tests.
     public class OpenSslNamedKeysTests
     {
-        private const string EnvVarPrefix = "DOTNET_CRYPTOGRAPHY_TESTS_";
-
-        private const string EngineEnvVarPrefix = EnvVarPrefix + "ENGINE_";
-        private const string TestEngineEnabledEnvVarName = EngineEnvVarPrefix + "ENABLE";
-
-        private const string TpmEnvVarPrefix = EnvVarPrefix + "TPM_";
-        private const string TpmEcDsaKeyHandleEnvVarName = TpmEnvVarPrefix + "ECDSA_KEY_HANDLE";
-        private const string TpmEcDhKeyHandleEnvVarName = TpmEnvVarPrefix + "ECDH_KEY_HANDLE";
-        private const string TpmRsaSignKeyHandleEnvVarName = TpmEnvVarPrefix + "RSA_SIGN_KEY_HANDLE";
-        private const string TpmRsaDecryptKeyHandleEnvVarName = TpmEnvVarPrefix + "RSA_DECRYPT_KEY_HANDLE";
-
-        private const string NonExistingEngineName = "dntestnonexisting";
-        private const string NonExistingEngineOrProviderKeyName = "nonexisting";
-
-        private const string TestEngineName = "dntest";
-        private const string TestEngineKeyId = "first";
-        private const string TpmTssEngineName = "tpm2tss";
-
-        private const string Tpm2ProviderName = "tpm2";
-
-        private static string TpmEcDsaKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmEcDsaKeyHandleEnvVarName);
-        private static string TpmEcDsaKeyHandleUri { get; } = GetHandleKeyUri(TpmEcDsaKeyHandle);
-
-        private static string TpmEcDhKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmEcDhKeyHandleEnvVarName);
-        private static string TpmEcDhKeyHandleUri { get; } = GetHandleKeyUri(TpmEcDhKeyHandle);
-
-        private static string TpmRsaSignKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmRsaSignKeyHandleEnvVarName);
-        private static string TpmRsaSignKeyHandleUri { get; } = GetHandleKeyUri(TpmRsaSignKeyHandle);
-
-        private static string TpmRsaDecryptKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmRsaDecryptKeyHandleEnvVarName);
-        private static string TpmRsaDecryptKeyHandleUri { get; } = GetHandleKeyUri(TpmRsaDecryptKeyHandle);
-
-        public static bool ShouldRunEngineTests { get; } = PlatformDetection.OpenSslPresentOnSystem && StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
-        public static bool ShouldRunProviderEcDsaTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmEcDsaKeyHandleUri);
-        public static bool ShouldRunProviderEcDhTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmEcDhKeyHandleUri);
-        public static bool ShouldRunProviderRsaSignTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmRsaSignKeyHandleUri);
-        public static bool ShouldRunProviderRsaDecryptTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmRsaDecryptKeyHandleUri);
-        public static bool ShouldRunAnyProviderTests => ShouldRunProviderEcDsaTests || ShouldRunProviderEcDhTests || ShouldRunProviderRsaSignTests || ShouldRunProviderRsaDecryptTests;
-
-        public static bool ShouldRunTpmTssTests => ShouldRunEngineTests && !string.IsNullOrEmpty(TpmEcDsaKeyHandle);
-
-        private static readonly string AnyProviderKeyUri = TpmEcDsaKeyHandleUri ?? TpmEcDhKeyHandleUri ?? TpmRsaSignKeyHandleUri ?? TpmRsaDecryptKeyHandleUri ?? "test";
-
-        private static bool StringToBool(string? value)
-            => "true".Equals(value, StringComparison.OrdinalIgnoreCase) || value == "1";
-
-        private static string GetHandleKeyUri(string handle)
-            => handle != null ? $"handle:{handle}" : null;
-
         // PKCS#1 format
         private static readonly byte[] s_rsaPrivateKey = (
             "3082025C02010002818100BF67168485215A6AB89BCAB9331F6F5F360F4300BE5CF282F77042957E" +
@@ -86,24 +40,43 @@ namespace System.Security.Cryptography.Tests
             "B27434FA544BDAC679E1E16581D0E90203010001").HexToByteArray();
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslNotPresentOnSystem))]
-        public static void NotSupported()
+        public static void EngineNotSupported_ThrowsPlatformNotSupported()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, TestEngineKeyId));
-            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, TestEngineKeyId));
-            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, AnyProviderKeyUri));
+            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.TestEngineKeyId));
+            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.TestEngineKeyId));
+        }
+
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersNotSupported))]
+        public static void ProvidersNotSupported_ThrowsPlatformNotSupported()
+        {
+            try
+            {
+                using SafeEvpPKeyHandle key = SafeEvpPKeyHandle.OpenKeyFromProvider("default", OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName);
+                Assert.Fail("We expected an exception to be thrown");
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // Expected
+            }
+            catch (CryptographicException) when (PlatformDetection.IsApplePlatform)
+            {
+                // Our tests detect providers using PlatformDetection.IsOpenSsl3 which is always false for Apple platforms.
+                // Product on the other hand does feature detection and that might end up working
+                // in which case we should still throw any CryptographicException because the keyUri does not exist.
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void NullArguments()
         {
-            Assert.Throws<ArgumentNullException>("engineName", () => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(null, TestEngineKeyId));
-            Assert.Throws<ArgumentNullException>("keyId", () => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, null));
+            Assert.Throws<ArgumentNullException>("engineName", () => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(null, OpenSslNamedKeysHelpers.TestEngineKeyId));
+            Assert.Throws<ArgumentNullException>("keyId", () => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, null));
 
-            Assert.Throws<ArgumentNullException>("engineName", () => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(null, TestEngineKeyId));
-            Assert.Throws<ArgumentNullException>("keyId", () => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, null));
+            Assert.Throws<ArgumentNullException>("engineName", () => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(null, OpenSslNamedKeysHelpers.TestEngineKeyId));
+            Assert.Throws<ArgumentNullException>("keyId", () => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, null));
 
-            Assert.Throws<ArgumentNullException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(null, AnyProviderKeyUri));
-            Assert.Throws<ArgumentNullException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, null));
+            Assert.Throws<ArgumentNullException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(null, OpenSslNamedKeysHelpers.AnyProviderKeyUri));
+            Assert.Throws<ArgumentNullException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, null));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
@@ -111,10 +84,14 @@ namespace System.Security.Cryptography.Tests
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine("\0", "foo"));
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine("\0", "foo"));
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("\0", "foo"));
+
+            if (OpenSslNamedKeysHelpers.ProvidersSupported)
+            {
+                Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("\0", "foo"));
+            }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
         public static void EmptyUriThroughNullCharacter()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("default", "\0"));
@@ -123,43 +100,100 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void Engine_NonExisting()
         {
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(NonExistingEngineOrProviderKeyName, TestEngineKeyId));
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(NonExistingEngineOrProviderKeyName, TestEngineKeyId));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName, OpenSslNamedKeysHelpers.TestEngineKeyId));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName, OpenSslNamedKeysHelpers.TestEngineKeyId));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
         public static void Provider_NonExisting()
         {
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(NonExistingEngineOrProviderKeyName, AnyProviderKeyUri));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName, OpenSslNamedKeysHelpers.AnyProviderKeyUri));
         }
 
-        [ConditionalFact(nameof(ShouldRunEngineTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunEngineTests))]
         public static void Engine_NonExistingKey()
         {
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, NonExistingEngineOrProviderKeyName));
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, NonExistingEngineOrProviderKeyName));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName));
         }
 
-        [ConditionalFact(nameof(ShouldRunAnyProviderTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunAnyProviderTests))]
         public static void Provider_NonExistingKey()
         {
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, NonExistingEngineOrProviderKeyName));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName));
         }
 
-        [ConditionalFact(nameof(ShouldRunEngineTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
+        public static void Provider_Default_RSASignAndDecrypt()
+        {
+            using RSA originalKey = RSA.Create();
+            string pem = originalKey.ExportRSAPrivateKeyPem();
+
+            using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
+            Uri fileUri = new Uri(pemFile.FilePath);
+            string keyUri = fileUri.AbsoluteUri;
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
+            byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
+            byte[] signature = rsaPri.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+            Assert.True(originalKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "signature does not verify with the right key");
+
+            byte[] encrypted = originalKey.Encrypt(data, RSAEncryptionPadding.OaepSHA256);
+            byte[] decrypted = rsaPri.Decrypt(encrypted, RSAEncryptionPadding.OaepSHA256);
+            Assert.Equal(data, decrypted);
+        }
+
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
+        public static void Provider_Default_ECDsaSignAndVerify()
+        {
+            using ECDsa originalKey = ECDsa.Create();
+            string pem = originalKey.ExportECPrivateKeyPem();
+
+            using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
+            Uri fileUri = new Uri(pemFile.FilePath);
+            string keyUri = fileUri.AbsoluteUri;
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
+            byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
+            byte[] signature = ecdsaPri.SignData(data, HashAlgorithmName.SHA256);
+            Assert.True(originalKey.VerifyData(data, signature, HashAlgorithmName.SHA256), "signature does not verify with the right key");
+        }
+
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
+        public static void Provider_Default_ECDHKeyExchange()
+        {
+            using ECDiffieHellman originalAliceKey = ECDiffieHellman.Create();
+            string pem = originalAliceKey.ExportECPrivateKeyPem();
+
+            using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
+            Uri fileUri = new Uri(pemFile.FilePath);
+            string keyUri = fileUri.AbsoluteUri;
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using ECDiffieHellman alicePri = new ECDiffieHellmanOpenSsl(priKeyHandle);
+            using ECDiffieHellman bobPri = ECDiffieHellman.Create(alicePri.ExportParameters(false).Curve);
+
+            byte[] sharedSecret1 = originalAliceKey.DeriveRawSecretAgreement(bobPri.PublicKey);
+            byte[] sharedSecret2 = alicePri.DeriveRawSecretAgreement(bobPri.PublicKey);
+            byte[] sharedSecret3 = bobPri.DeriveRawSecretAgreement(alicePri.PublicKey);
+
+            Assert.Equal(sharedSecret1, sharedSecret2);
+            Assert.Equal(sharedSecret1, sharedSecret3);
+        }
+
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunEngineTests))]
         public static void Engine_OpenExistingPrivateKey()
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, TestEngineKeyId);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.TestEngineKeyId);
             using RSA priKey = new RSAOpenSsl(priKeyHandle);
             RSAParameters rsaParams = priKey.ExportParameters(includePrivateParameters: true);
             Assert.NotNull(rsaParams.D);
             Assert.Equal(s_rsaPubKey, priKey.ExportRSAPublicKey());
         }
 
-        [ConditionalFact(nameof(ShouldRunEngineTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunEngineTests))]
         public static void Engine_OpenExistingPublicKey()
         {
-            using SafeEvpPKeyHandle pubKeyHandle = SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, TestEngineKeyId);
+            using SafeEvpPKeyHandle pubKeyHandle = SafeEvpPKeyHandle.OpenPublicKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.TestEngineKeyId);
             using RSA pubKey = new RSAOpenSsl(pubKeyHandle);
             Assert.ThrowsAny<CryptographicException>(() => pubKey.ExportParameters(includePrivateParameters: true));
             RSAParameters rsaParams = pubKey.ExportParameters(includePrivateParameters: false);
@@ -167,10 +201,10 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(s_rsaPubKey, pubKey.ExportRSAPublicKey());
         }
 
-        [ConditionalFact(nameof(ShouldRunEngineTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunEngineTests))]
         public static void Engine_UsePrivateKey()
         {
-            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, TestEngineKeyId))
+            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.TestEngineKeyId))
             using (RSA rsaPri = new RSAOpenSsl(priKeyHandle))
             using (RSA rsaPub = RSA.Create())
             {
@@ -193,10 +227,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(ShouldRunEngineTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunEngineTests))]
         public static void Engine_UsePublicKey()
         {
-            using (SafeEvpPKeyHandle pubKeyHandle = SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, TestEngineKeyId))
+            using (SafeEvpPKeyHandle pubKeyHandle = SafeEvpPKeyHandle.OpenPublicKeyFromEngine(OpenSslNamedKeysHelpers.TestEngineName, OpenSslNamedKeysHelpers.TestEngineKeyId))
             using (RSA rsaPub = new RSAOpenSsl(pubKeyHandle))
             using (RSA rsaPri = RSA.Create())
             {
@@ -219,10 +253,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(ShouldRunTpmTssTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunTpmTssTests))]
         public static void Engine_OpenExistingTPMPrivateKey()
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TpmTssEngineName, TpmEcDsaKeyHandle);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(OpenSslNamedKeysHelpers.TpmTssEngineName, OpenSslNamedKeysHelpers.TpmEcDsaKeyHandle);
             using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
             using ECDsa ecdsaBad = ECDsa.Create();
             ecdsaBad.KeySize = ecdsaPri.KeySize;
@@ -236,10 +270,10 @@ namespace System.Security.Cryptography.Tests
             Assert.False(ecdsaPri.VerifyData(data, badSignature, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderEcDsaTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderEcDsaTests))]
         public static void Provider_TPM2ECDSA()
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDsaKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmEcDsaKeyHandleUri);
             using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
 
             byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
@@ -274,10 +308,10 @@ namespace System.Security.Cryptography.Tests
             Assert.ThrowsAny<CryptographicException>(() => ecdsaPri.ExportParameters(includePrivateParameters: true));
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderEcDsaTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderEcDsaTests))]
         public static void Provider_TPM2ECDSA_ExportParameters()
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDsaKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmEcDsaKeyHandleUri);
             using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
 
             ECDsa ecdsaPub = ECDsa.Create();
@@ -289,10 +323,10 @@ namespace System.Security.Cryptography.Tests
             Assert.True(ecdsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderEcDsaTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderEcDsaTests))]
         public static void Provider_TPM2ECDSA_ExportExplicitParameters()
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDsaKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmEcDsaKeyHandleUri);
             using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
 
             ECDsa ecdsaPub = ECDsa.Create();
@@ -304,10 +338,10 @@ namespace System.Security.Cryptography.Tests
             Assert.True(ecdsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderEcDhTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderEcDhTests))]
         public static void Provider_TPM2ECDH()
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDhKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmEcDhKeyHandleUri);
             using ECDiffieHellman alicePri = new ECDiffieHellmanOpenSsl(priKeyHandle);
             using ECDiffieHellman alicePub = ECDiffieHellman.Create();
 
@@ -341,13 +375,18 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderRsaSignTests))]
-        [ActiveIssue("https://github.com/tpm2-software/tpm2-openssl/issues/115")]
-        // or a workaround API proposal
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/104080")]
-        public static void Provider_TPM2SignRsa()
+        [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderRsaTests))]
+        [MemberData(nameof(OpenSslNamedKeysHelpers.RSASignaturePaddingValues), MemberType = typeof(OpenSslNamedKeysHelpers))]
+        public static void Provider_TPM2SignRsa(RSASignaturePadding signaturePadding)
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaSignKeyHandleUri);
+            if (signaturePadding == RSASignaturePadding.Pss)
+            {
+                //[ActiveIssue("https://github.com/dotnet/runtime/issues/104080")]
+                //[ActiveIssue("https://github.com/tpm2-software/tpm2-openssl/issues/115")]
+                throw new SkipTestException("Salt Length is ignored by tpm2 provider and differs from .NET defaults");
+            }
+
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmRsaKeyHandleUri);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
             byte[] rsaPubBytes = rsaPri.ExportSubjectPublicKeyInfo();
             RSA rsaPub = RSA.Create();
@@ -358,26 +397,26 @@ namespace System.Security.Cryptography.Tests
             rsaBad.KeySize = rsaPri.KeySize;
 
             byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
-            byte[] badSignature = rsaBad.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+            byte[] badSignature = rsaBad.SignData(data, HashAlgorithmName.SHA256, signaturePadding);
 
             // can use same key more than once
             for (int i = 0; i < 10; i++)
             {
                 data[0] = (byte)i;
-                byte[] signature = rsaPri.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-                Assert.True(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "signature does not verify with the right key");
-                Assert.False(rsaPub.VerifyData(data, badSignature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "signature should not verify with the wrong key");
+                byte[] signature = rsaPri.SignData(data, HashAlgorithmName.SHA256, signaturePadding);
+                Assert.True(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding), "signature does not verify with the right key");
+                Assert.False(rsaPub.VerifyData(data, badSignature, HashAlgorithmName.SHA256, signaturePadding), "signature should not verify with the wrong key");
 
                 signature[12] ^= 1;
-                Assert.False(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "tampered signature should not verify");
+                Assert.False(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding), "tampered signature should not verify");
 
                 // TPM key is intended for sign only, we could theoretically make verify work without needing to export/import by forcing 'default' provider
                 // for this operation it's most likely misusage on user part and tpm2 provider intentionally didn't allow it so we will follow this logic.
-                Assert.ThrowsAny<CryptographicException>(() => rsaPri.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+                Assert.ThrowsAny<CryptographicException>(() => rsaPri.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding));
             }
         }
 
-        [ConditionalTheory(nameof(ShouldRunProviderRsaDecryptTests))]
+        [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderRsaTests))]
         [InlineData(RSAEncryptionPaddingMode.Pkcs1)]
         [InlineData(RSAEncryptionPaddingMode.Oaep)]
         public static void Provider_TPM2DecryptRsa(RSAEncryptionPaddingMode mode)
@@ -396,7 +435,7 @@ namespace System.Security.Cryptography.Tests
                     throw new ArgumentOutOfRangeException(nameof(mode));
             }
 
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaDecryptKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmRsaKeyHandleUri);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
             byte[] rsaPubBytes = rsaPri.ExportSubjectPublicKeyInfo();
             RSA rsaPub = RSA.Create();
@@ -432,13 +471,13 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderRsaDecryptTests))]
+        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderRsaTests))]
         public static void Provider_TPM2DecryptRsa_ExportParameters()
         {
             // TPM2 OAEP support was added in the second half of 2023 therefore we only test Pkcs1 padding
             // See: https://github.com/tpm2-software/tpm2-openssl/issues/89
             RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaDecryptKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.TpmRsaKeyHandleUri);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
 
             RSA rsaPub = RSA.Create();

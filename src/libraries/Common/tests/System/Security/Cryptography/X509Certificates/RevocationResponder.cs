@@ -340,7 +340,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
             else if (kind == AiaResponseKind.Pkcs12)
             {
-                using X509Certificate2 cert = new X509Certificate2(authority.GetCertData());
+                using X509Certificate2 cert = X509CertificateLoader.LoadCertificate(authority.GetCertData());
                 return cert.Export(X509ContentType.Pkcs12);
             }
             else

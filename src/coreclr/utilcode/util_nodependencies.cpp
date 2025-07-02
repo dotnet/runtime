@@ -45,7 +45,7 @@ void InitRunningOnVersionStatus ()
     else
     {
         // The current platform isn't supported. Display a message to this effect and exit.
-        fprintf(stderr, "Platform not supported: Windows 7 is the minimum supported version\n");
+        minipal_log_print_error("Platform not supported: Windows 7 is the minimum supported version\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
 #endif // HOST_WINDOWS
@@ -281,7 +281,7 @@ void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
             *pfAuto = FALSE;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 } // GetDebuggerSettingInfo
 
 //---------------------------------------------------------------------------------------
@@ -426,34 +426,13 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
             *pfAuto = FALSE;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return S_OK;
 } // GetDebuggerSettingInfoWorker
 #endif // TARGET_UNIX
 
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
-
-
-//*****************************************************************************
-// Convert a GUID into a pointer to a string
-//*****************************************************************************
-int
-GuidToLPSTR(
-                          REFGUID   guid,   // The GUID to convert.
-    _Out_writes_(cchGuid) LPSTR szGuid,     // String into which the GUID is stored
-                          DWORD  cchGuid)   // Count in chars
-{
-    if (cchGuid < GUID_STR_BUFFER_LEN)
-        return 0;
-
-    return sprintf_s(szGuid, cchGuid, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-            guid.Data1, guid.Data2, guid.Data3,
-            guid.Data4[0], guid.Data4[1],
-            guid.Data4[2], guid.Data4[3],
-            guid.Data4[4], guid.Data4[5],
-            guid.Data4[6], guid.Data4[7]) + 1;
-}
 
 //*****************************************************************************
 // Convert hex value into a wide string of hex digits
@@ -508,7 +487,7 @@ GuidToLPWSTR(
     // successive fields break the GUID into the form DWORD-WORD-WORD-WORD-WORD.DWORD
     // covering the 128-bit GUID. The string includes enclosing braces, which are an OLE convention.
 
-    if (cchGuid < GUID_STR_BUFFER_LEN)
+    if (cchGuid < MINIPAL_GUID_BUFFER_LEN)
         return 0;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}

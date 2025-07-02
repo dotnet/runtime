@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <!-- Publish uses the LKG compiler, which is the tool compiler. -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AssemblyName>crossgen2</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
@@ -44,19 +46,21 @@
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
 
-    <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
+    <JitInterfaceLibraryName>$(_LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)</JitInterfaceLibraryName>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
 
-    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
+    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
   </ItemGroup>
@@ -65,6 +69,7 @@
     <Content Include="$(RuntimeBinDir)/pgort*.dll"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       Condition="'$(PgoInstrument)' != ''"
       />
@@ -90,6 +95,7 @@
     <Content Include="$(DiaSymReaderTargetArchPath)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
   </ItemGroup>

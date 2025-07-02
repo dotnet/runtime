@@ -217,7 +217,7 @@ namespace System
             // The only SpecialFolderOption defines we have are equivalent to KnownFolderFlags.
 
             string folderGuid;
-
+            string? fallbackEnv = null;
             switch (folder)
             {
                 // Special-cased values to not use SHGetFolderPath when we have a more direct option available.
@@ -230,12 +230,15 @@ namespace System
                 // Map the SpecialFolder to the appropriate Guid
                 case SpecialFolder.ApplicationData:
                     folderGuid = Interop.Shell32.KnownFolders.RoamingAppData;
+                    fallbackEnv = "APPDATA";
                     break;
                 case SpecialFolder.CommonApplicationData:
                     folderGuid = Interop.Shell32.KnownFolders.ProgramData;
+                    fallbackEnv = "ProgramData";
                     break;
                 case SpecialFolder.LocalApplicationData:
                     folderGuid = Interop.Shell32.KnownFolders.LocalAppData;
+                    fallbackEnv = "LOCALAPPDATA";
                     break;
                 case SpecialFolder.Cookies:
                     folderGuid = Interop.Shell32.KnownFolders.Cookies;
@@ -292,9 +295,11 @@ namespace System
                     break;
                 case SpecialFolder.ProgramFiles:
                     folderGuid = Interop.Shell32.KnownFolders.ProgramFiles;
+                    fallbackEnv = "ProgramFiles";
                     break;
                 case SpecialFolder.CommonProgramFiles:
                     folderGuid = Interop.Shell32.KnownFolders.ProgramFilesCommon;
+                    fallbackEnv = "CommonProgramFiles";
                     break;
                 case SpecialFolder.AdminTools:
                     folderGuid = Interop.Shell32.KnownFolders.AdminTools;
@@ -346,12 +351,15 @@ namespace System
                     break;
                 case SpecialFolder.UserProfile:
                     folderGuid = Interop.Shell32.KnownFolders.Profile;
+                    fallbackEnv = "USERPROFILE";
                     break;
                 case SpecialFolder.CommonProgramFilesX86:
                     folderGuid = Interop.Shell32.KnownFolders.ProgramFilesCommonX86;
+                    fallbackEnv = "CommonProgramFiles(x86)";
                     break;
                 case SpecialFolder.ProgramFilesX86:
                     folderGuid = Interop.Shell32.KnownFolders.ProgramFilesX86;
+                    fallbackEnv = "ProgramFiles(x86)";
                     break;
                 case SpecialFolder.Resources:
                     folderGuid = Interop.Shell32.KnownFolders.ResourceDir;
@@ -364,18 +372,17 @@ namespace System
                     break;
                 case SpecialFolder.Windows:
                     folderGuid = Interop.Shell32.KnownFolders.Windows;
+                    fallbackEnv = "windir";
                     break;
             }
 
             Guid folderId = new Guid(folderGuid);
-
             int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out string path);
-            if (hr != 0) // Not S_OK
-            {
-                return string.Empty;
-            }
+            if (hr == 0)
+                return path;
 
-            return path;
+            // Fallback logic if SHGetKnownFolderPath failed (nanoserver)
+            return fallbackEnv != null ? Environment.GetEnvironmentVariable(fallbackEnv) ?? string.Empty : string.Empty;
         }
 
         // Separate type so a .cctor is not created for Environment which then would be triggered during startup

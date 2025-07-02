@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Mime;
 using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mail
 {
@@ -139,7 +141,9 @@ namespace System.Net.Mail
                     // extract the encoding from =?encoding?BorQ?blablalba?=
                     inputEncoding = MimeBasePart.DecodeEncoding(value);
                 }
-                catch (ArgumentException) { };
+                catch (ArgumentException)
+                {
+                }
 
                 if (inputEncoding != null && value != null)
                 {
@@ -240,94 +244,8 @@ namespace System.Net.Mail
 
         #region Sending
 
-        internal void EmptySendCallback(IAsyncResult result)
-        {
-            Exception? e = null;
-
-            if (result.CompletedSynchronously)
-            {
-                return;
-            }
-
-            EmptySendContext context = (EmptySendContext)result.AsyncState!;
-            try
-            {
-                BaseWriter.EndGetContentStream(result).Close();
-            }
-            catch (Exception ex)
-            {
-                e = ex;
-            }
-            context._result.InvokeCallback(e);
-        }
-
-        internal sealed class EmptySendContext
-        {
-            internal EmptySendContext(BaseWriter writer, LazyAsyncResult result)
-            {
-                _writer = writer;
-                _result = result;
-            }
-
-            internal LazyAsyncResult _result;
-            internal BaseWriter _writer;
-        }
-
-        internal IAsyncResult BeginSend(BaseWriter writer, bool allowUnicode,
-            AsyncCallback? callback, object? state)
-        {
-            PrepareHeaders(allowUnicode);
-            writer.WriteHeaders(Headers, allowUnicode);
-
-            if (Content != null)
-            {
-                return Content.BeginSend(writer, callback, allowUnicode, state);
-            }
-            else
-            {
-                LazyAsyncResult result = new LazyAsyncResult(this, state, callback);
-                IAsyncResult newResult = writer.BeginGetContentStream(EmptySendCallback, new EmptySendContext(writer, result));
-                if (newResult.CompletedSynchronously)
-                {
-                    BaseWriter.EndGetContentStream(newResult).Close();
-                    result.InvokeCallback();
-                }
-                return result;
-            }
-        }
-
-        internal void EndSend(IAsyncResult asyncResult)
-        {
-            ArgumentNullException.ThrowIfNull(asyncResult);
-
-            if (Content != null)
-            {
-                Content.EndSend(asyncResult);
-            }
-            else
-            {
-                LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
-
-                if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-                {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult);
-                }
-
-                if (castedAsyncResult.EndCalled)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndSend)));
-                }
-
-                castedAsyncResult.InternalWaitForCompletion();
-                castedAsyncResult.EndCalled = true;
-                if (castedAsyncResult.Result is Exception e)
-                {
-                    ExceptionDispatchInfo.Throw(e);
-                }
-            }
-        }
-
-        internal void Send(BaseWriter writer, bool sendEnvelope, bool allowUnicode)
+        internal async Task SendAsync<TIOAdapter>(BaseWriter writer, bool sendEnvelope, bool allowUnicode, CancellationToken cancellationToken = default)
+            where TIOAdapter : IReadWriteAdapter
         {
             if (sendEnvelope)
             {
@@ -340,10 +258,11 @@ namespace System.Net.Mail
 
             if (Content != null)
             {
-                Content.Send(writer, allowUnicode);
+                await Content.SendAsync<TIOAdapter>(writer, allowUnicode, cancellationToken).ConfigureAwait(false);
             }
             else
             {
+                // No content to write, just close the stream
                 writer.GetContentStream().Close();
             }
         }

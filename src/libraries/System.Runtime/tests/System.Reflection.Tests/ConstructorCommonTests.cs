@@ -163,5 +163,22 @@ namespace System.Reflection.Tests
             Assert.Equal(1, obj.x);
             Assert.Equal(2, obj.y);
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
+        public static void VerifyInnerException()
+        {
+            ConstructorInfo ctor = typeof(TestClassThatThrows).GetConstructor(Type.EmptyTypes)!;
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(null));
+            Assert.Contains("Here", ex.InnerException.ToString());
+        }
+
+        private class TestClassThatThrows
+        {
+            public TestClassThatThrows()
+            {
+                throw new Exception("Here");
+            }
+        }
     }
 }

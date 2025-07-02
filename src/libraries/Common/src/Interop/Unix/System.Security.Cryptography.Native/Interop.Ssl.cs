@@ -83,6 +83,24 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
         internal static partial int SslRead(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDefaultSignatureAlgorithms")]
+        private static unsafe partial int GetDefaultSignatureAlgorithms(Span<ushort> algorithms, ref int algorithmCount);
+
+        internal static ushort[] GetDefaultSignatureAlgorithms()
+        {
+            // 256 algorithms should be more than enough for any use case.
+            Span<ushort> algorithms = stackalloc ushort[256];
+            int algorithmCount = algorithms.Length;
+            int res = GetDefaultSignatureAlgorithms(algorithms, ref algorithmCount);
+
+            if (res != 0 || algorithmCount > algorithms.Length)
+            {
+                throw Interop.OpenSsl.CreateSslException(SR.net_ssl_get_default_sigalgs_failed);
+            }
+
+            return algorithms.Slice(0, algorithmCount).ToArray();
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRenegotiate")]
         internal static partial int SslRenegotiate(SafeSslHandle ssl, out SslErrorCode error);
 
@@ -123,7 +141,14 @@ internal static partial class Interop
         internal static partial IntPtr SslGetCertificate(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertChain")]
-        internal static partial SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl);
+        private static partial SafeSharedX509StackHandle SslGetPeerCertChain_private(SafeSslHandle ssl);
+
+        internal static SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl)
+        {
+            return SafeInteriorHandle.OpenInteriorHandle(
+                SslGetPeerCertChain_private,
+                ssl);
+        }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerFinished")]
         internal static partial int SslGetPeerFinished(SafeSslHandle ssl, IntPtr buf, int count);
@@ -178,6 +203,12 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetPostHandshakeAuth")]
         internal static partial void SslSetPostHandshakeAuth(SafeSslHandle ssl, int value);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSigalgs")]
+        internal static unsafe partial int SslSetSigalgs(SafeSslHandle ssl, byte* str);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetClientSigalgs")]
+        internal static unsafe partial int SslSetClientSigalgs(SafeSslHandle ssl, byte* str);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
         private static partial int Tls13SupportedImpl();
@@ -236,7 +267,7 @@ internal static partial class Interop
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> applicationProtocols)
         {
             int length = GetAlpnProtocolListSerializedLength(applicationProtocols);
-            Span<byte> buffer = length <= 256 ? stackalloc byte[256].Slice(0, length) : new byte[length];
+            Span<byte> buffer = (uint)length <= 256 ? stackalloc byte[256].Slice(0, length) : new byte[length];
             SerializeAlpnProtocolList(applicationProtocols, buffer);
             return SslSetAlpnProtos(ssl, buffer);
         }
@@ -352,6 +383,8 @@ namespace Microsoft.Win32.SafeHandles
         private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
+        // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
+        // refcount management.
         public SafeSslContextHandle? SslContextHandle;
 
         public bool IsServer
@@ -445,8 +478,6 @@ namespace Microsoft.Win32.SafeHandles
                 Disconnect();
             }
 
-            // drop reference to any SSL_CTX handle, any handle present here is being
-            // rented from (client) SSL_CTX cache.
             SslContextHandle?.Dispose();
 
             if (AlpnHandle.IsAllocated)

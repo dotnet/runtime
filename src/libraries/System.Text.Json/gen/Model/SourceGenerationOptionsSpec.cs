@@ -52,6 +52,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonCommentHandling? ReadCommentHandling { get; init; }
 
+        public required JsonKnownReferenceHandler? ReferenceHandler { get; init; }
+
         public required JsonUnknownTypeHandling? UnknownTypeHandling { get; init; }
 
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
@@ -63,6 +65,8 @@ namespace System.Text.Json.SourceGeneration
         public required char? IndentCharacter { get; init; }
 
         public required int? IndentSize { get; init; }
+
+        public required bool? AllowDuplicateProperties { get; init; }
 
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);

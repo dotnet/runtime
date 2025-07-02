@@ -10,10 +10,7 @@ namespace System.CodeDom.Compiler
     {
         CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -27,10 +24,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFile(CompilerParameters options, string fileName)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -44,10 +38,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSource(CompilerParameters options, string source)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -61,10 +52,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -78,14 +66,8 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileNames is null)
-            {
-                throw new ArgumentNullException(nameof(fileNames));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(fileNames);
 
             try
             {
@@ -105,10 +87,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -126,24 +105,15 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             return FromDomBatch(options, new CodeCompileUnit[1] { e });
         }
 
         protected virtual CompilerResults FromFile(CompilerParameters options, string fileName)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileName is null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(fileName);
 
             // Try opening the file to make sure it exists.  This will throw an exception if it doesn't
             File.OpenRead(fileName).Dispose();
@@ -153,24 +123,15 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromSource(CompilerParameters options, string source)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             return FromSourceBatch(options, new string[1] { source });
         }
 
         protected virtual CompilerResults FromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (ea is null)
-            {
-                throw new ArgumentNullException(nameof(ea));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(ea);
 
             var filenames = new string[ea.Length];
 
@@ -210,14 +171,8 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileNames is null)
-            {
-                throw new ArgumentNullException(nameof(fileNames));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(fileNames);
 
             throw new PlatformNotSupportedException();
         }
@@ -242,14 +197,8 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (sources is null)
-            {
-                throw new ArgumentNullException(nameof(sources));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(sources);
 
             var filenames = new string[sources.Length];
 

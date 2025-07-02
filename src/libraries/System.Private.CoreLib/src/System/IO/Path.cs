@@ -700,7 +700,7 @@ namespace System.IO
             return JoinInternal(first.AsSpan(), second.AsSpan(), third.AsSpan(), fourth.AsSpan());
         }
 
-        private static unsafe string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
+        private static string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0, "should have dealt with empty paths");
 
@@ -711,7 +711,7 @@ namespace System.IO
                 string.Concat(first, PathInternal.DirectorySeparatorCharAsString, second);
         }
 
-        private static unsafe string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
+        private static string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0, "should have dealt with empty paths");
 

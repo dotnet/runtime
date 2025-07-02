@@ -44,6 +44,7 @@ namespace System.Net.Mime
         internal const char EndSquareBracket = ']';
         internal const char Comma = ',';
         internal const char Dot = '.';
+        internal const string ConsecutiveDots = "..";
 
         // NOTE: See RFC 2822 for more detail.  By default, every value in the array is false and only
         // those values which are allowed in that particular set are then set to true.  The numbers

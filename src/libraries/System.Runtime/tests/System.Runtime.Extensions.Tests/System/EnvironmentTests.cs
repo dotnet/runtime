@@ -94,7 +94,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android, "Throws PNSE")]
         public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
@@ -139,7 +139,7 @@ namespace System.Tests
         public void OSVersion_MatchesPlatform()
         {
             PlatformID id = Environment.OSVersion.Platform;
-            PlatformID expected = OperatingSystem.IsWindows() ? PlatformID.Win32NT : OperatingSystem.IsBrowser() ? PlatformID.Other : PlatformID.Unix;
+            PlatformID expected = OperatingSystem.IsWindows() ? PlatformID.Win32NT : (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) ? PlatformID.Other : PlatformID.Unix;
             Assert.Equal(expected, id);
         }
 
@@ -154,7 +154,7 @@ namespace System.Tests
 
             Assert.Contains(version.ToString(2), versionString);
 
-            string expectedOS = OperatingSystem.IsWindows() ? "Windows " : OperatingSystem.IsBrowser() ? "Other " : "Unix ";
+            string expectedOS = OperatingSystem.IsWindows() ? "Windows " : (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) ? "Other " : "Unix ";
             Assert.Contains(expectedOS, versionString);
         }
 

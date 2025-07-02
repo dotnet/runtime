@@ -9,13 +9,14 @@
 // RewriteNodeAsCall : Replace the given tree node by a GT_CALL.
 //
 // Arguments:
-//    use          - A pointer-to-a-pointer for the tree node
-//    sig          - The signature info for callHnd
-//    parents      - A pointer to tree walk data providing the context
-//    callHnd      - The method handle of the call to be generated
-//    entryPoint   - The method entrypoint of the call to be generated
-//    operands     - The operand  list of the call to be generated
-//    operandCount - The number of operands in the operand list
+//    use                - A pointer-to-a-pointer for the tree node
+//    sig                - The signature info for callHnd
+//    parents            - A pointer to tree walk data providing the context
+//    callHnd            - The method handle of the call to be generated
+//    entryPoint         - The method entrypoint of the call to be generated
+//    operands           - The operand  list of the call to be generated
+//    operandCount       - The number of operands in the operand list
+//    isSpecialIntrinsic - true if the GT_CALL should be marked as a special intrinsic
 //
 // Return Value:
 //    None.
@@ -29,7 +30,8 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif // FEATURE_READYTORUN
                                      GenTree** operands,
-                                     size_t    operandCount)
+                                     size_t    operandCount,
+                                     bool      isSpecialIntrinsic)
 {
     GenTree* const tree           = *use;
     GenTree* const treeFirstNode  = comp->fgGetFirstNode(tree);
@@ -39,6 +41,18 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->TypeGet());
+
+    if (isSpecialIntrinsic)
+    {
+#if defined(TARGET_XARCH)
+        // Mark this as having been a special intrinsic node
+        //
+        // This is used on xarch to track that it may need vzeroupper inserted to
+        // avoid the perf penalty on some hardware.
+
+        call->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+#endif // TARGET_XARCH
+    }
 
     assert(sig != nullptr);
     var_types retType = JITtype2varType(sig->retType);
@@ -117,7 +131,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 unreached();
 #endif // FEATURE_HW_INTRINSICS
             }
-            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
+            arg = NewCallArg::Struct(operand, sigTyp, comp->typGetObjLayout(clsHnd));
         }
         else
         {
@@ -143,7 +157,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         tmpNum = comp->lvaGrabTemp(true DEBUGARG("return buffer for hwintrinsic"));
         comp->lvaSetStruct(tmpNum, sig->retTypeClass, false);
 
-        GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
+        GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_I_IMPL);
         NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
 
         call->gtArgs.InsertAfterThisOrFirst(comp, newArg);
@@ -285,11 +299,15 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
     CORINFO_SIG_INFO sigInfo;
     comp->eeGetMethodSig(callHnd, &sigInfo);
 
+    // Regular Intrinsics often have their fallback in native and so
+    // should be treated as "special" once they become calls.
+    bool isSpecialIntrinsic = true;
+
     RewriteNodeAsCall(use, &sigInfo, parents, callHnd,
 #if defined(FEATURE_READYTORUN)
                       intrinsic->gtEntryPoint,
 #endif // FEATURE_READYTORUN
-                      operands, operandCount);
+                      operands, operandCount, isSpecialIntrinsic);
 }
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -322,12 +340,50 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
     switch (intrinsicId)
     {
+#if defined(TARGET_XARCH)
+        case NI_AVX_Compare:
+        case NI_AVX_CompareScalar:
+        case NI_AVX512_Compare:
+        {
+            assert(operandCount == 3);
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+            GenTree* op3 = operands[2];
+
+            if (!op3->IsCnsIntOrI())
+            {
+                break;
+            }
+
+            FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+            NamedIntrinsic      id =
+                HWIntrinsicInfo::lookupIdForFloatComparisonMode(intrinsicId, mode, simdBaseType, simdSize);
+
+            if (id == intrinsicId)
+            {
+                break;
+            }
+
+            result = comp->gtNewSimdHWIntrinsicNode(retType, op1, op2, id, simdBaseJitType, simdSize);
+            break;
+        }
+#endif // TARGET_XARCH
+
         case NI_Vector128_Shuffle:
+        case NI_Vector128_ShuffleNative:
+        case NI_Vector128_ShuffleNativeFallback:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Shuffle:
+        case NI_Vector256_ShuffleNative:
+        case NI_Vector256_ShuffleNativeFallback:
         case NI_Vector512_Shuffle:
+        case NI_Vector512_ShuffleNative:
+        case NI_Vector512_ShuffleNativeFallback:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Shuffle:
+        case NI_Vector64_ShuffleNative:
+        case NI_Vector64_ShuffleNativeFallback:
 #endif
         {
             assert(operandCount == 2);
@@ -336,65 +392,26 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #else
             assert((simdSize == 8) || (simdSize == 16));
 #endif
+            assert(((*use)->gtFlags & GTF_REVERSE_OPS) == 0); // gtNewSimdShuffleNode with reverse ops is not supported
 
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            if (op2->IsCnsVec() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
-            {
-                result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
-            break;
-        }
-
-        case NI_Vector128_WithElement:
+            bool isShuffleNative = intrinsicId != NI_Vector128_Shuffle;
 #if defined(TARGET_XARCH)
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
+            isShuffleNative =
+                isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) && (intrinsicId != NI_Vector512_Shuffle);
 #elif defined(TARGET_ARM64)
-        case NI_Vector64_WithElement:
+            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector64_Shuffle);
 #endif
-        {
-            assert(operandCount == 3);
 
-            GenTree* op1 = operands[0];
-            GenTree* op2 = operands[1];
-            GenTree* op3 = operands[2];
-
-            if (op2->OperIsConst())
+            // Check if the required intrinsics to emit are available.
+            if (!comp->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr, isShuffleNative))
             {
-                ssize_t imm8  = op2->AsIntCon()->IconValue();
-                ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-                if ((imm8 >= count) || (imm8 < 0))
-                {
-                    // Using software fallback if index is out of range (throw exception)
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                if (varTypeIsIntegral(simdBaseType))
-                {
-                    if (varTypeIsLong(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
-                        {
-                            break;
-                        }
-                    }
-                    else if (!varTypeIsShort(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                        {
-                            break;
-                        }
-                    }
-                }
-#endif // TARGET_XARCH
-
-                result = comp->gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
                 break;
             }
+
+            result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             break;
         }
 
@@ -544,11 +561,15 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         return;
     }
 
+    // Hardware Intrinsics have their fallback in managed and so
+    // shouldn't be treated as "special" once they become calls.
+    bool isSpecialIntrinsic = false;
+
     RewriteNodeAsCall(use, &sigInfo, parents, callHnd,
 #if defined(FEATURE_READYTORUN)
                       hwintrinsic->GetEntryPoint(),
 #endif // FEATURE_READYTORUN
-                      operands, operandCount);
+                      operands, operandCount, isSpecialIntrinsic);
 }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -696,6 +717,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_GCPOLL:
+        {
+            // GCPOLL is essentially a no-op, we used it as a hint for fgCreateGCPoll
+            node->gtBashToNOP();
+            return Compiler::WALK_CONTINUE;
+        }
+
         case GT_COMMA:
         {
             GenTree*           op1         = node->gtGetOp1();
@@ -768,6 +796,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_BSWAP16:
+            if (node->gtGetOp1()->OperIs(GT_CAST))
+            {
+                comp->fgSimpleLowerBswap16(BlockRange(), node);
+            }
+            break;
+
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);
@@ -811,7 +846,7 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 {
     GenTree* const node = *use;
 
-    if (node->OperGet() == GT_INTRINSIC)
+    if (node->OperIs(GT_INTRINSIC))
     {
         if (m_rationalizer.comp->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
         {

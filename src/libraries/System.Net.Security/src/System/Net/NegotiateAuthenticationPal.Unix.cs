@@ -21,6 +21,8 @@ namespace System.Net
     {
         private static readonly Lazy<bool> _hasSystemNetSecurityNative = new Lazy<bool>(CheckHasSystemNetSecurityNative);
         internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
+
+        [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
         private static bool UseManagedNtlm { get; } =
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :

@@ -7,6 +7,35 @@
 
 // sets up vars for GC
 
+#include "common.h"
+#include "gcenv.h"
+
+#include "gc.h"
+#include "gcscan.h"
+#include "gchandletableimpl.h"
+#include "gceventstatus.h"
+
+#ifdef __INTELLISENSE__
+#if defined(FEATURE_SVR_GC)
+
+#define SERVER_GC 1
+
+#else // defined(FEATURE_SVR_GC)
+
+#ifdef SERVER_GC
+#undef SERVER_GC
+#endif
+
+#endif // defined(FEATURE_SVR_GC)
+#endif // __INTELLISENSE__
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
+#include "gcimpl.h"
 #include "gcpriv.h"
 
 #ifndef DACCESS_COMPILE
@@ -220,8 +249,6 @@ size_t GCHeap::GetLastGCDuration(int generation)
 
     return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
-
-uint64_t GetHighPrecisionTimeStamp();
 
 size_t GCHeap::GetNow()
 {
@@ -540,4 +567,4 @@ uint64_t GCHeap::GetGenerationBudget(int generation)
 
 #endif // !DACCESS_COMPILE
 
-
+}

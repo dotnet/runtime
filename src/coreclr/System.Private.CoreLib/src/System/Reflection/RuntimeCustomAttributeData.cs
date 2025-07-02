@@ -82,7 +82,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-            return GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target.GetNativeHandle()));
+            return GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
@@ -1085,7 +1085,7 @@ namespace System.Reflection
 
             if (encodedType == CustomAttributeEncoding.Array)
             {
-                parameterType = (RuntimeType)parameterType.GetElementType();
+                parameterType = (RuntimeType)parameterType.GetElementType()!;
                 encodedArrayType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
             }
 
@@ -1227,7 +1227,7 @@ namespace System.Reflection
             Debug.Assert(caType is not null);
 
             // No pseudo attributes for RuntimeAssembly
-            return IsCustomAttributeDefined((assembly.ManifestModule as RuntimeModule)!, RuntimeAssembly.GetToken(assembly.GetNativeHandle()), caType);
+            return IsCustomAttributeDefined((assembly.ManifestModule as RuntimeModule)!, RuntimeAssembly.GetToken(assembly), caType);
         }
 
         internal static bool IsDefined(RuntimeModule module, RuntimeType caType)
@@ -1388,7 +1388,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-            int assemblyToken = RuntimeAssembly.GetToken(assembly.GetNativeHandle());
+            int assemblyToken = RuntimeAssembly.GetToken(assembly);
             return GetCustomAttributes((assembly.ManifestModule as RuntimeModule)!, assemblyToken, 0, caType);
         }
 
@@ -1641,13 +1641,6 @@ namespace System.Reflection
             // Ensure that to consider a duplicate attribute type AllowMultiple is true
             if (!AttributeUsageCheck(attributeType, mustBeInheritable, ref derivedAttributes))
                 return false;
-
-            // Windows Runtime attributes aren't real types - they exist to be read as metadata only, and as such
-            // should be filtered out of the GetCustomAttributes path.
-            if ((attributeType.Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime)
-            {
-                return false;
-            }
 
             // Resolve the attribute ctor
             ConstArray ctorSig = scope.GetMethodSignature(caCtorToken);

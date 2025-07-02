@@ -6,6 +6,7 @@ include_directories(
   ${PROJECT_BINARY_DIR}/../../mono/eglib
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
+  ${PROJECT_SOURCE_DIR}/../../../native/public
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
 
@@ -46,5 +47,19 @@ if(NOT DISABLE_LIBS)
     target_link_libraries(mono-profiler-browser-static PRIVATE monoapi)
     set_target_properties(mono-profiler-browser-static PROPERTIES OUTPUT_NAME mono-profiler-browser)
     install(TARGETS mono-profiler-browser-static LIBRARY)
+  endif()
+
+  if(HOST_BROWSER)
+    add_library(mono-profiler-log-static STATIC helper.c log.c log-args.c)
+    set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log)
+    install(TARGETS mono-profiler-log-static LIBRARY)
+    
+    if(NOT DISABLE_LOG_PROFILER_GZ)
+      if (CLR_CMAKE_USE_SYSTEM_ZLIB)
+        target_link_libraries(mono-profiler-log-static PRIVATE ${Z_LIBS})
+      else()
+        target_link_libraries(mono-profiler-log-static PRIVATE zlib)
+      endif()
+    endif()
   endif()
 endif()

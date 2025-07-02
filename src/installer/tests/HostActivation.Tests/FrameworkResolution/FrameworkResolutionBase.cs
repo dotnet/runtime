@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 
@@ -11,8 +12,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
     public abstract partial class FrameworkResolutionBase
     {
-        protected const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
-
         public static class ResolvedFramework
         {
             public const string NotFound = "[not found]";
@@ -23,8 +22,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             DotNetCli dotnet,
             TestApp app,
             TestSettings settings,
-            Action<CommandResult> resultAction = null,
-            bool? multiLevelLookup = false)
+            bool? multiLevelLookup = false,
+            [CallerMemberName] string caller = "")
         {
             using (DotNetCliExtensions.DotNetCliCustomizer dotnetCustomizer = settings.DotnetCustomizer == null ? null : dotnet.Customize())
             {
@@ -51,9 +50,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .EnableTracingAndCaptureOutputs()
                     .MultilevelLookup(multiLevelLookup)
                     .Environment(settings.Environment)
-                    .Execute();
-
-                resultAction?.Invoke(result);
+                    .Execute(caller);
 
                 return result;
             }
@@ -61,7 +58,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         protected CommandResult RunSelfContainedTest(
             TestApp app,
-            TestSettings settings)
+            TestSettings settings,
+            [CallerMemberName] string caller = "")
         {
             if (settings.RuntimeConfigCustomizer != null)
             {
@@ -80,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             CommandResult result = command
                 .EnableTracingAndCaptureOutputs()
                 .Environment(settings.Environment)
-                .Execute();
+                .Execute(caller);
 
             return result;
         }

@@ -506,47 +506,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(nint_t))
+            if (BinaryPrimitives.TryWriteIntPtrBigEndian(destination, _value))
             {
-                nint_t value = (nint_t)_value;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    value = BinaryPrimitives.ReverseEndianness(value);
-                }
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
                 bytesWritten = sizeof(nint_t);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(nint_t))
+            if (BinaryPrimitives.TryWriteIntPtrLittleEndian(destination, _value))
             {
-                nint_t value = (nint_t)_value;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    value = BinaryPrimitives.ReverseEndianness(value);
-                }
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
                 bytesWritten = sizeof(nint_t);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -1014,15 +994,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1060,8 +1048,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else
@@ -1091,15 +1083,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1135,8 +1135,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else

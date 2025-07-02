@@ -29,16 +29,16 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
-            /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
-            ///   POPCNT r64, r/m64
-            /// This intrinsic is only available on 64-bit processes
+            ///   <para>__int64 _mm_popcnt_u64 (unsigned __int64 a)</para>
+            ///   <para>  POPCNT r64, r/m64</para>
+            ///   <para>This intrinsic is only available on 64-bit processes</para>
             /// </summary>
             public static ulong PopCount(ulong value) => PopCount(value);
         }
 
         /// <summary>
-        /// int _mm_popcnt_u32 (unsigned int a)
-        ///   POPCNT r32, r/m32
+        ///   <para>int _mm_popcnt_u32 (unsigned int a)</para>
+        ///   <para>  POPCNT r32, r/m32</para>
         /// </summary>
         public static uint PopCount(uint value) => PopCount(value);
     }

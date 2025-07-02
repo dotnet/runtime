@@ -16,6 +16,8 @@
       with system C++ runtime library (-lstdc++).
     -->
     <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
   <ItemGroup>

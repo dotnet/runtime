@@ -18,7 +18,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToArray_CreateACopyWhenNotEmpty()
         {
-            int[] sourceArray = new int[] { 1, 2, 3, 4, 5 };
+            int[] sourceArray = [1, 2, 3, 4, 5];
             int[] resultArray = sourceArray.ToArray();
 
             Assert.NotSame(sourceArray, resultArray);
@@ -28,7 +28,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToArray_UseArrayEmptyWhenEmpty()
         {
-            int[] emptySourceArray = Array.Empty<int>();
+            int[] emptySourceArray = [];
 
             Assert.Same(emptySourceArray.ToArray(), emptySourceArray.ToArray());
 
@@ -71,7 +71,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToArray_ProduceCorrectArray()
         {
-            int[] sourceArray = new int[] { 1, 2, 3, 4, 5, 6, 7 };
+            int[] sourceArray = [1, 2, 3, 4, 5, 6, 7];
             RunToArrayOnAllCollectionTypes(sourceArray,
                 resultArray =>
                 {
@@ -79,7 +79,7 @@ namespace System.Linq.Tests
                     Assert.Equal(sourceArray, resultArray);
                 });
 
-            string[] sourceStringArray = new string[] { "1", "2", "3", "4", "5", "6", "7", "8" };
+            string[] sourceStringArray = ["1", "2", "3", "4", "5", "6", "7", "8"];
             RunToArrayOnAllCollectionTypes(sourceStringArray,
                 resultStringArray =>
                 {
@@ -101,7 +101,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToArray_TouchCountWithICollection()
         {
-            TestCollection<int> source = new TestCollection<int>(new int[] { 1, 2, 3, 4 });
+            TestCollection<int> source = new TestCollection<int>([1, 2, 3, 4]);
             var resultArray = source.ToArray();
 
             Assert.Equal(source, resultArray);
@@ -120,7 +120,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToArray_UseCopyToWithICollection()
         {
-            TestCollection<int> source = new TestCollection<int>(new int[] { 1, 2, 3, 4 });
+            TestCollection<int> source = new TestCollection<int>([1, 2, 3, 4]);
             var resultArray = source.ToArray();
 
             Assert.Equal(source, resultArray);
@@ -225,7 +225,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceIsEmptyICollectionT()
         {
-            int[] source = { };
+            int[] source = [];
 
             ICollection<int> collection = source as ICollection<int>;
 
@@ -236,8 +236,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceIsICollectionTWithFewElements()
         {
-            int?[] source = { -5, null, 0, 10, 3, -1, null, 4, 9 };
-            int?[] expected = { -5, null, 0, 10, 3, -1, null, 4, 9 };
+            int?[] source = [-5, null, 0, 10, 3, -1, null, 4, 9];
+            int?[] expected = [-5, null, 0, 10, 3, -1, null, 4, 9];
 
             ICollection<int?> collection = source as ICollection<int?>;
 
@@ -259,7 +259,7 @@ namespace System.Linq.Tests
         public void SourceNotICollectionAndHasElements()
         {
             IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 10);
-            int[] expected = { -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
+            int[] expected = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
 
             Assert.Null(source as ICollection<int>);
 
@@ -270,7 +270,7 @@ namespace System.Linq.Tests
         public void SourceNotICollectionAndAllNull()
         {
             IEnumerable<int?> source = RepeatedNullableNumberGuaranteedNotCollectionType(null, 5);
-            int?[] expected = { null, null, null, null, null };
+            int?[] expected = [null, null, null, null, null];
 
             Assert.Null(source as ICollection<int>);
 
@@ -363,25 +363,25 @@ namespace System.Linq.Tests
         [Fact]
         public void ToArray_Cast()
         {
-            Enum0[] source = { Enum0.First, Enum0.Second, Enum0.Third };
+            Enum0[] source = [Enum0.First, Enum0.Second, Enum0.Third];
             var cast = source.Cast<Enum1>();
             Assert.IsType<Enum0[]>(cast);
             var castArray = cast.ToArray();
             Assert.IsType<Enum1[]>(castArray);
-            Assert.Equal(new[] { Enum1.First, Enum1.Second, Enum1.Third }, castArray);
+            Assert.Equal([Enum1.First, Enum1.Second, Enum1.Third], castArray);
         }
 
         public static IEnumerable<object[]> ToArrayShouldWorkWithSpecialLengthLazyEnumerables_MemberData()
         {
             // Return array sizes that should be small enough not to OOM
             int MaxPower = PlatformDetection.IsBrowser ? 15 : 18;
-            yield return new object[] { 1 };
-            yield return new object[] { 2 };
+            yield return [1];
+            yield return [2];
             for (int i = 2; i <= MaxPower; i++)
             {
-                yield return new object[] { (i << i) - 1 };
-                yield return new object[] { (i << i) };
-                yield return new object[] { (i << i) + 1 };
+                yield return [(i << i) - 1];
+                yield return [(i << i)];
+                yield return [(i << i) + 1];
             }
         }
     }

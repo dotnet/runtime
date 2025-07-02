@@ -4,6 +4,7 @@
 #include "common.h"
 #include "gctoclreventsink.h"
 #include "thread.h"
+#include "eventtracebase.h"
 
 GCToCLREventSink g_gcToClrEventSink;
 
@@ -173,6 +174,14 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
         uint64_t objectSize)
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_EVENT_TRACE
+    if (IsRuntimeProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_ALLOCATIONSAMPLING_KEYWORD))
+    {
+        // skip AllocationTick if AllocationSampled is emitted
+        return;
+    }
+#endif // FEATURE_EVENT_TRACE
 
     void * typeId = GetLastAllocEEType();
     WCHAR * name = nullptr;

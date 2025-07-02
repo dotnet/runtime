@@ -110,33 +110,6 @@ BOOL TypeHandle::HasTypeParam() const {
     return(CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE);
 }
 
-Module *TypeHandle::GetDefiningModuleForOpenType() const
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    Module* returnValue = NULL;
-
-    if (IsGenericVariable())
-    {
-        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
-        returnValue = pTyVar->GetModule();
-        goto Exit;
-    }
-
-    if (HasTypeParam())
-    {
-        returnValue = GetTypeParam().GetDefiningModuleForOpenType();
-    }
-    else if (HasInstantiation())
-    {
-        returnValue = GetMethodTable()->GetDefiningModuleForOpenType();
-    }
-Exit:
-
-    return returnValue;
-}
-
 BOOL TypeHandle::ContainsGenericVariables(BOOL methodOnly /*=FALSE*/) const
 {
     STATIC_CONTRACT_NOTHROW;
@@ -342,7 +315,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
     {
         // Allocate RuntimeType on a frozen segment
         // Take a lock here since we don't want to allocate redundant objects which won't be collected
-        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+        CrstHolder exposedClassLock(AppDomain::GetCurrentDomain()->GetMethodTableExposedClassObjectLock());
 
         if (VolatileLoad(pDest) == 0)
         {
@@ -411,7 +384,7 @@ BOOL TypeHandle::IsInterface() const
 BOOL TypeHandle::IsAbstract() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsAbstract();
 }
 
@@ -502,42 +475,42 @@ BOOL TypeHandle::HasLayout() const
 TypeHandle TypeHandle::GetCoClassForInterface() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetCoClassForInterface();
 }
 
 DWORD TypeHandle::IsComClassInterface() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComClassInterface();
 }
 
 BOOL TypeHandle::IsComObjectType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComObjectType();
 }
 
 BOOL TypeHandle::IsComEventItfType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComEventItfType();
 }
 
 CorIfaceAttr TypeHandle::GetComInterfaceType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetComInterfaceType();
 }
 
 TypeHandle TypeHandle::GetDefItfForComClassItf() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetDefItfForComClassItf();
 }
 

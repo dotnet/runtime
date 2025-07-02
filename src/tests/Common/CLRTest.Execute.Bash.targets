@@ -127,6 +127,19 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(SuperPmiCollectIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$SuperPMIShimPath" ]
+then
+  echo SKIPPING EXECUTION BECAUSE SuperPMIShimPath IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+if [ ! -z "$spmi_enable_collection" ]
+then
+  echo SKIPPING EXECUTION BECAUSE spmi_enable_collection IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[
@@ -383,6 +396,11 @@ fi
 
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
+fi
+
+if [ ! -z "$RunInterpreter" ]; then
+# $(InputAssemblyName)
+  export DOTNET_Interpreter='$(AssemblyName)!*'
 fi
 
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")

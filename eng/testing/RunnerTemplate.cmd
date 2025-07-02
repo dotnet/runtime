@@ -109,15 +109,12 @@ if NOT "%__IsXUnitLogCheckerSupported%"=="1" (
 echo ----- start ===============  XUnitLogChecker Output =====================================================
 
 set DOTNET_EXE=%RUNTIME_PATH%\dotnet.exe
-set XUNITLOGCHECKER_DLL=%HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.dll
-set XUNITLOGCHECKER_COMMAND=%DOTNET_EXE% --roll-forward Major %XUNITLOGCHECKER_DLL% --dumps-path %HELIX_DUMP_FOLDER%
+set XUNITLOGCHECKER_EXE=%HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.exe
+set XUNITLOGCHECKER_COMMAND=%XUNITLOGCHECKER_EXE% --dumps-path %HELIX_DUMP_FOLDER%
 set XUNITLOGCHECKER_EXIT_CODE=1
 
-if NOT EXIST %DOTNET_EXE% (
-  echo dotnet.exe does not exist in the expected location: %DOTNET_EXE%
-  GOTO XUNITLOGCHECKER_END
-) else if NOT EXIST %XUNITLOGCHECKER_DLL% (
-  echo XUnitLogChecker.dll does not exist in the expected location: %XUNITLOGCHECKER_DLL%
+if NOT EXIST %XUNITLOGCHECKER_EXE% (
+  echo XUnitLogChecker does not exist in the expected location: %XUNITLOGCHECKER_EXE%
   GOTO XUNITLOGCHECKER_END
 )
 

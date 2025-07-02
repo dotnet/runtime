@@ -16,6 +16,7 @@ using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
 using Debug = System.Diagnostics.Debug;
+using Internal.NativeFormat;
 
 namespace ILCompiler
 {
@@ -137,6 +138,20 @@ namespace ILCompiler
 
         ILScanResults IILScanner.Scan()
         {
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.BulkWriteBarrier), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemCpy), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemSet), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemZero), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastAny), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastInterface), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastClass), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastClassSpecial), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceAny), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceInterface), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceClass), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.IsInstanceOfException), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(_nodeFactory.MethodEntrypoint(_nodeFactory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved")), "Substitution for methods removed based on scanning");
+
             _dependencyGraph.ComputeMarkedNodes();
 
             _nodeFactory.SetMarkingComplete();
@@ -262,6 +277,39 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
+        public BodyAndFieldSubstitutions GetBodyAndFieldSubstitutions()
+        {
+            Dictionary<MethodDesc, BodySubstitution> bodySubstitutions = [];
+
+            bool hasIDynamicInterfaceCastableType = false;
+
+            foreach (var type in ConstructedEETypes)
+            {
+                if (type.IsIDynamicInterfaceCastable)
+                {
+                    hasIDynamicInterfaceCastableType = true;
+                    break;
+                }
+            }
+
+            if (!hasIDynamicInterfaceCastableType)
+            {
+                // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because
+                // the callers do type checks based on flags on the MethodTable instead of an actual type cast.
+                // Trim out the logic that we can't do easily here.
+                TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
+                MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetKnownMethod("GetDynamicInterfaceImplementation", null);
+                bodySubstitutions.Add(getDynamicInterfaceImplementationMethod, BodySubstitution.ThrowingBody);
+            }
+
+            return new BodyAndFieldSubstitutions(bodySubstitutions, []);
+        }
+
+        public TypeMapManager GetTypeMapManager()
+        {
+            return new ScannedTypeMapManager(_factory);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private readonly Dictionary<TypeDesc, MethodDesc[]> _vtableSlices = new Dictionary<TypeDesc, MethodDesc[]>();
@@ -384,7 +432,7 @@ namespace ILCompiler
                     // only exists in the compiler's graph. That's the place to focus the investigation on.
                     // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
                     Debug.Assert(false);
-                    throw new ScannerFailedException($"A dictionary layout was not computed by the IL scanner.");
+                    throw new ScannerFailedException($"Dictionary layout of '{methodOrType}' was not computed by the IL scanner.");
                 }
                 return new PrecomputedDictionaryLayoutNode(methodOrType, layout.Slots, layout.DiscardedSlots);
             }
@@ -423,17 +471,20 @@ namespace ILCompiler
         private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
-            private HashSet<MethodDesc> _overridenMethods = new();
+            private HashSet<MethodDesc> _overriddenMethods = new();
             private HashSet<MethodDesc> _generatedVirtualMethods = new();
+            private readonly bool _canHaveDynamicInterfaceImplementations;
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
+                var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();
 
                 foreach (var node in markedNodes)
                 {
@@ -441,6 +492,11 @@ namespace ILCompiler
                     if (node is IMethodBodyNode { Method.IsVirtual: true, Method.HasInstantiation: false } virtualMethodBody)
                     {
                         _generatedVirtualMethods.Add(virtualMethodBody.Method);
+                    }
+
+                    if (node is ReflectionVisibleGenericDefinitionEETypeNode reflectionVisibleMT)
+                    {
+                        _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
                     }
 
                     TypeDesc type = node switch
@@ -468,7 +524,7 @@ namespace ILCompiler
                                     // If the interface is implemented through IDynamicInterfaceCastable, there might be
                                     // no real upper bound on the number of actual classes implementing it.
                                     if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
-                                        _disqualifiedTypes.Add(baseInterface);
+                                        dynamicInterfaceCastableImplementationTargets.Add(baseInterface);
                                 }
                             }
                         }
@@ -541,16 +597,27 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            TypeDesc baseType;
 
-                            if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                            if (canonType is not MetadataType { IsAbstract: true })
+                            {
                                 _canonConstructedTypes.Add(canonType.GetClosestDefType());
+                                baseType = canonType.BaseType;
+                                while (baseType != null)
+                                {
+                                    baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                    if (!_canonConstructedTypes.Add(baseType))
+                                        break;
+                                    baseType = baseType.BaseType;
+                                }
+                            }
 
-                            TypeDesc baseType = canonType.BaseType;
-                            bool added = true;
-                            while (baseType != null && added)
+                            baseType = canonType.BaseType;
+                            while (baseType != null)
                             {
                                 baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                                added = _unsealedTypes.Add(baseType);
+                                if (!_unsealedTypes.Add(baseType))
+                                    break;
                                 baseType = baseType.BaseType;
                             }
 
@@ -559,7 +626,7 @@ namespace ILCompiler
                                 if (currentType == null)
                                     return vtable;
 
-                                BuildVTable(factory, currentType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific), implType, vtable);
+                                BuildVTable(factory, currentType.BaseType, implType, vtable);
 
                                 IReadOnlyList<MethodDesc> slice = factory.VTable(currentType).Slots;
                                 foreach (MethodDesc decl in slice)
@@ -571,23 +638,30 @@ namespace ILCompiler
                                 return vtable;
                             }
 
-                            baseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            if (!canonType.IsArray && baseType != null)
+                            baseType = type.BaseType;
+                            if (!type.IsArray && baseType != null)
                             {
                                 if (!vtables.TryGetValue(baseType, out List<MethodDesc> baseVtable))
                                     vtables.Add(baseType, baseVtable = BuildVTable(factory, baseType, baseType, new List<MethodDesc>()));
 
-                                if (!vtables.TryGetValue(canonType, out List<MethodDesc> vtable))
-                                    vtables.Add(canonType, vtable = BuildVTable(factory, canonType, canonType, new List<MethodDesc>()));
+                                if (!vtables.TryGetValue(type, out List<MethodDesc> vtable))
+                                    vtables.Add(type, vtable = BuildVTable(factory, type, type, new List<MethodDesc>()));
 
                                 for (int i = 0; i < baseVtable.Count; i++)
                                 {
                                     if (baseVtable[i] != vtable[i])
-                                        _overridenMethods.Add(baseVtable[i]);
+                                        _overriddenMethods.Add(baseVtable[i].GetCanonMethodTarget(CanonicalFormKind.Specific));
                                 }
                             }
+
+                            _canHaveDynamicInterfaceImplementations |= type.IsIDynamicInterfaceCastable;
                         }
                     }
+                }
+
+                if (_canHaveDynamicInterfaceImplementations)
+                {
+                    _disqualifiedTypes.UnionWith(dynamicInterfaceCastableImplementationTargets);
                 }
             }
 
@@ -606,8 +680,7 @@ namespace ILCompiler
                 }
 
                 if (baseType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType
-                    || baseType.Context.SupportsUniversalCanon)
+                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType)
                 {
                     // If the interface has a canonical form, we might not have a full view of all implementers.
                     // E.g. if we have:
@@ -681,25 +754,21 @@ namespace ILCompiler
                     return false;
 
                 // If we haven't seen any other method override this, this method is sealed
-                return !_overridenMethods.Contains(canonMethod);
+                return !_overriddenMethods.Contains(canonMethod);
             }
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
             {
-                MethodDesc result = base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
-                if (result != null)
+                // If we would resolve into a type that wasn't seen as allocated, don't allow devirtualization.
+                // It would go past what we scanned in the scanner and that doesn't lead to good things.
+                if (!_canonConstructedTypes.Contains(implType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                 {
-                    // If we would resolve into a type that wasn't seen as allocated, don't allow devirtualization.
-                    // It would go past what we scanned in the scanner and that doesn't lead to good things.
-                    if (!_canonConstructedTypes.Contains(result.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
-                    {
-                        // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
-                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
-                        return null;
-                    }
+                    // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
+                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
+                    return null;
                 }
 
-                return result;
+                return base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
             }
 
             public override bool CanReferenceConstructedMethodTable(TypeDesc type)
@@ -714,6 +783,12 @@ namespace ILCompiler
                 Debug.Assert(type.NormalizeInstantiation() == type);
                 Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
                 return _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
+            }
+
+            public override bool IsGenericDefinitionMethodTableReflectionVisible(TypeDesc type)
+            {
+                Debug.Assert(type.IsGenericDefinition);
+                return _reflectionVisibleGenericDefinitionMethodTables.Contains(type);
             }
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
@@ -743,6 +818,8 @@ namespace ILCompiler
                 }
                 return null;
             }
+
+            public override bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => _canHaveDynamicInterfaceImplementations;
         }
 
         private sealed class ScannedInliningPolicy : IInliningPolicy
@@ -951,6 +1028,50 @@ namespace ILCompiler
 
                 return !_writtenFields.Contains(field);
             }
+        }
+
+        private sealed class ScannedTypeMapManager : TypeMapManager
+        {
+            private ImmutableArray<IExternalTypeMapNode> _externalTypeMapNodes;
+            private ImmutableArray<IProxyTypeMapNode> _proxyTypeMapNodes;
+
+            public ScannedTypeMapManager(NodeFactory factory)
+            {
+                ImmutableArray<IExternalTypeMapNode>.Builder externalTypeMapNodes = ImmutableArray.CreateBuilder<IExternalTypeMapNode>();
+                ImmutableArray<IProxyTypeMapNode>.Builder proxyTypeMapNodes = ImmutableArray.CreateBuilder<IProxyTypeMapNode>();
+                foreach (var externalTypeMapNode in factory.TypeMapManager.GetExternalTypeMaps())
+                {
+                    externalTypeMapNodes.Add(externalTypeMapNode.ToAnalysisBasedNode(factory));
+                }
+
+                foreach (var proxyTypeMapNode in factory.TypeMapManager.GetProxyTypeMaps())
+                {
+                    proxyTypeMapNodes.Add(proxyTypeMapNode.ToAnalysisBasedNode(factory));
+                }
+
+                _externalTypeMapNodes = externalTypeMapNodes.ToImmutable();
+                _proxyTypeMapNodes = proxyTypeMapNodes.ToImmutable();
+            }
+
+            protected override bool IsEmpty => _externalTypeMapNodes.Length == 0 && _proxyTypeMapNodes.Length == 0;
+
+            public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+            {
+                const string reason = "Used Type Map Group";
+
+                foreach (IExternalTypeMapNode externalTypeMap in _externalTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(externalTypeMap, reason);
+                }
+
+                foreach (IProxyTypeMapNode proxyTypeMap in _proxyTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(proxyTypeMap, reason);
+                }
+            }
+
+            internal override IEnumerable<IExternalTypeMapNode> GetExternalTypeMaps() => _externalTypeMapNodes;
+            internal override IEnumerable<IProxyTypeMapNode> GetProxyTypeMaps() => _proxyTypeMapNodes;
         }
     }
 }

@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Block the calling thread until shutdown is triggered via Ctrl+C or SIGTERM.
+        /// Blocks the calling thread until shutdown is triggered via Ctrl+C or SIGTERM.
         /// </summary>
         /// <param name="host">The running <see cref="IHost"/>.</param>
         public static void WaitForShutdown(this IHost host)
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Runs an application and block the calling thread until host shutdown.
+        /// Runs an application and blocks the calling thread until host shutdown is triggered and all <see cref="T:Microsoft.Extensions.Hosting.IHostedService" /> instances are stopped.
         /// </summary>
         /// <param name="host">The <see cref="IHost"/> to run.</param>
         public static void Run(this IHost host)

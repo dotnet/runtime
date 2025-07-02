@@ -164,7 +164,7 @@ namespace System.Buffers.Text
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
 
-            Span<byte> destination = upperBound <= MaxStackallocThreshold
+            Span<byte> destination = (uint)upperBound <= MaxStackallocThreshold
                 ? stackalloc byte[MaxStackallocThreshold]
                 : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
@@ -380,7 +380,7 @@ namespace System.Buffers.Text
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
 
-            Span<byte> destination = upperBound <= MaxStackallocThreshold
+            Span<byte> destination = (uint)upperBound <= MaxStackallocThreshold
                 ? stackalloc byte[MaxStackallocThreshold]
                 : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
@@ -675,7 +675,11 @@ namespace System.Buffers.Text
                     return false;
                 }
 
+#if NET9_0_OR_GREATER
+                str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
+#else
                 str = Vector512.Narrow(utf16VectorLower, utf16VectorUpper).AsSByte();
+#endif
                 return true;
             }
 
@@ -699,7 +703,11 @@ namespace System.Buffers.Text
                     return false;
                 }
 
+#if NET9_0_OR_GREATER
+                str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
+#else
                 str = Vector256.Narrow(utf16VectorLower, utf16VectorUpper).AsSByte();
+#endif
                 return true;
             }
 

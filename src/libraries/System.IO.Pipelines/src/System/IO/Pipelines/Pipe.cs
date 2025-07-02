@@ -458,8 +458,6 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
             }
 
-            // TODO: Use new SequenceMarshal.TryGetReadOnlySequenceSegment to get the correct data
-            // directly casting only works because the type value in ReadOnlySequenceSegment is 0
             AdvanceReader((BufferSegment?)consumed.GetObject(), consumed.GetInteger(), (BufferSegment?)examined.GetObject(), examined.GetInteger());
         }
 
@@ -486,13 +484,10 @@ namespace System.IO.Pipelines
 
                 if (examinedSegment != null && _lastExaminedIndex >= 0)
                 {
+                    // This can be negative resulting in _unconsumedBytes increasing, this should be safe because we've already checked that
+                    // examined >= consumed above, so we can't get into a state where we un-examine too much
                     long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
                     long oldLength = _unconsumedBytes;
-
-                    if (examinedBytes < 0)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidExaminedPosition();
-                    }
 
                     _unconsumedBytes -= examinedBytes;
 
@@ -505,6 +500,8 @@ namespace System.IO.Pipelines
                     if (oldLength >= ResumeWriterThreshold &&
                         _unconsumedBytes < ResumeWriterThreshold)
                     {
+                        // Should only release backpressure if we made forward progress
+                        Debug.Assert(examinedBytes > 0);
                         _writerAwaitable.Complete(out completionData);
                     }
                 }
@@ -570,7 +567,7 @@ namespace System.IO.Pipelines
                 // but only if writer is not completed yet
                 if (examinedEverything && !_writerCompletion.IsCompleted)
                 {
-                    Debug.Assert(_writerAwaitable.IsCompleted, "PipeWriter.FlushAsync is isn't completed and will deadlock");
+                    Debug.Assert(_writerAwaitable.IsCompleted, "PipeWriter.FlushAsync isn't completed and will deadlock");
 
                     _readerAwaitable.SetUncompleted();
                 }

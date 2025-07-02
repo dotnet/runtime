@@ -33,6 +33,12 @@ namespace Internal.IL
             return helperMethod;
         }
 
+        public static MethodDesc GetCoreLibEntryPoint(this TypeSystemContext context, string namespaceName, string typeName, string methodName, MethodSignature signature)
+        {
+            MetadataType owningType = context.SystemModule.GetKnownType(namespaceName, typeName);
+            return owningType.GetKnownMethod(methodName, signature);
+        }
+
         public static MethodDesc GetOptionalHelperEntryPoint(this TypeSystemContext context, string typeName, string methodName)
         {
             MetadataType helperType = context.GetOptionalHelperType(typeName);

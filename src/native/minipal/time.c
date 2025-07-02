@@ -3,33 +3,46 @@
 
 #include <assert.h>
 #include <minipal/time.h>
+#include "minipalconfig.h"
 
-#ifdef HOST_WINDOWS
+#if HOST_WINDOWS
 
 #include <Windows.h>
 
 int64_t minipal_hires_ticks()
 {
     LARGE_INTEGER ts;
-    QueryPerformanceCounter(&ts);
+    BOOL ret;
+    ret = QueryPerformanceCounter(&ts);
+    assert(ret); // The function is documented to never fail on Windows XP+.
     return ts.QuadPart;
 }
 
 int64_t minipal_hires_tick_frequency()
 {
     LARGE_INTEGER ts;
-    QueryPerformanceFrequency(&ts);
+    BOOL ret;
+    ret = QueryPerformanceFrequency(&ts);
+    assert(ret); // The function is documented to never fail on Windows XP+.
     return ts.QuadPart;
+}
+
+int64_t minipal_lowres_ticks()
+{
+    return GetTickCount64();
 }
 
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
 
-#include <time.h> // nanosleep
+#include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 
-inline static void YieldProcessor()
+inline static void YieldProcessor(void);
+
+inline static void YieldProcessor(void)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
     __asm__ __volatile__(
@@ -53,16 +66,18 @@ inline static void YieldProcessor()
 }
 
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
-int64_t minipal_hires_tick_frequency()
+#define tccSecondsToMilliSeconds 1000           // 10^3
+#define tccMilliSecondsToNanoSeconds 1000000    // 10^6
+int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
 }
 
-int64_t minipal_hires_ticks()
+int64_t minipal_hires_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#else
+#elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
     if (result != 0)
@@ -71,20 +86,56 @@ int64_t minipal_hires_ticks()
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
+#else
+    #error "minipal_hires_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
 }
 
-#endif // !HOST_WINDOWS
+int64_t minipal_lowres_ticks(void)
+{
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
+#elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+
+    // emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it
+#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
+    // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
+    // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
+    // overall higher throughput. See dotnet/coreclr#2257 for more details.
+
+    const clockid_t clockType = CLOCK_MONOTONIC_COARSE;
+#else
+    const clockid_t clockType = CLOCK_MONOTONIC;
+#endif
+
+    int result = clock_gettime(clockType, &ts);
+    if (result != 0)
+    {
+#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
+        assert(!"clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
+#else
+        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
+#endif
+    }
+
+    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMilliSecondsToNanoSeconds));
+#else
+    #error "minipal_lowres_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
+#endif
+}
+
+#endif // HOST_WINDOWS
 
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
-#ifdef HOST_WINDOWS
+#if HOST_WINDOWS
     if (usecs > 1000)
     {
         SleepEx(usecs / 1000, FALSE);
         if (usecsSinceYield)
         {
-            usecsSinceYield = 0;
+            *usecsSinceYield = 0;
         }
 
         return;
@@ -104,7 +155,7 @@ void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 
         if (usecsSinceYield)
         {
-            usecsSinceYield = 0;
+            *usecsSinceYield = 0;
         }
 
         return;

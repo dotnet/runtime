@@ -143,7 +143,9 @@ namespace Tests.System
             state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan);
             state.TokenSource.Dispose();
 
-            Assert.Equal(4, state.Counter);
+            // In normal conditions, the timer callback should be called 4 times. Sometimes the timer callback could be queued and fired after the timer was disposed.
+            Assert.True(state.Counter >= 4, $"The timer callback was expected to be called at least 4 times, but was called {state.Counter} times");
+
             Assert.Equal(400, state.Period);
             Assert.True(minMilliseconds <= state.Stopwatch.ElapsedMilliseconds, $"The total fired periods {state.Stopwatch.ElapsedMilliseconds}ms expected to be greater then the expected min {minMilliseconds}ms");
         }
@@ -310,18 +312,25 @@ namespace Tests.System
             }
             catch (Exception e)
             {
-                Assert.Fail(string.Format("RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {0}", e));
+                Assert.Fail($"RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {e}");
             }
 
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider) to run to completion");
             Assert.True(task2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider, uncanceledToken) to run to completion");
 
-            // This should take some time
-            Task task3 = taskFactory.Delay(provider, TimeSpan.FromMilliseconds(20000));
+            // This should complete quickly with a CANCELED status.
+            Task task3 = taskFactory.Delay(provider, new TimeSpan(0), new CancellationToken(true));
+            var canceledException = Record.Exception(task3.Wait);
+            Assert.True(canceledException is AggregateException { InnerException: OperationCanceledException },
+                $"RunDelayTests:    > FAILED.  Unexpected exception on canceled task Wait(): {canceledException}");
+            Assert.True(task3.Status == TaskStatus.Canceled, "    > FAILED.  Expected Delay(timeProvider, TimeSpan(0), canceledToken) to be canceled");
 
-            Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(20000) appears to have completed too soon(1).");
+            // This should take some time
+            Task task4 = taskFactory.Delay(provider, TimeSpan.FromMilliseconds(20000));
+
+            Assert.False(task4.IsCompleted, "RunDelayTests:    > FAILED.  Delay(20000) appears to have completed too soon(1).");
             Task t2 = Task.Delay(TimeSpan.FromMilliseconds(10));
-            Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
+            Assert.False(task4.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -359,6 +368,7 @@ namespace Tests.System
 
             cts.Cancel();
             await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.FromMilliseconds(10), provider, cts.Token));
+            await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.Zero, provider, cts.Token));
 
             using CancellationTokenSource cts1 = new CancellationTokenSource();
             Task task5 = Task.Run(() => { while (!cts1.Token.IsCancellationRequested) { Thread.Sleep(10); } });

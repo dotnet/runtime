@@ -79,7 +79,7 @@
     <RemoveDir Directories="$(_SdkWithNoWorkloadPath)" />
     <MakeDir Directories="$(_SdkWithNoWorkloadPath)" />
 
-    <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
+    <DownloadFile SourceUrl="https://builds.dotnet.microsoft.com/dotnet/scripts/v1/$(_DotNetInstallScriptName)"
                   DestinationFolder="$(ArtifactsObjDir)"
                   Retries="3"
                   Condition="!Exists($(_DotNetInstallScriptPath))"/>
@@ -110,7 +110,7 @@
     <Exec Condition="$(_DotNetVersionExitCode) != '0'" Command="$(_DotNetVersionCommand)" CustomErrorRegularExpression=".*" />
 
     <PropertyGroup>
-      <SdkBandVersionForWorkload_ComputedFromInstaller>$(SdkBandVersion)$([System.Text.RegularExpressions.Regex]::Match($(_DotNetVersionOutput), `-[A-z]*[\.]*\d*`))</SdkBandVersionForWorkload_ComputedFromInstaller>
+      <SdkBandVersionForWorkload_ComputedFromInstaller>$(SdkBandVersion)$([System.Text.RegularExpressions.Regex]::Match($(_DotNetVersionOutput), `-(?!rtm)[A-z]*[\.]*\d*`))</SdkBandVersionForWorkload_ComputedFromInstaller>
       <VersionBandForSdkManifestsDir Condition="'$(VersionBandForSdkManifestsDir)' == ''">$(SdkBandVersionForWorkload_ComputedFromInstaller)</VersionBandForSdkManifestsDir>
       <VersionBandForManifestPackages Condition="'$(VersionBandForManifestPackages)' == ''">$(VersionBandForSdkManifestsDir)</VersionBandForManifestPackages>
     </PropertyGroup>
@@ -136,7 +136,7 @@
     <PropertyGroup>
       <!-- Used for workload testing -->
       <PackageVersionForWorkloadManifests>$(PackageVersion)</PackageVersionForWorkloadManifests>
-      <PackageVersionForWorkloadManifests Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersionForWorkloadManifests>
+      <PackageVersionForWorkloadManifests Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</PackageVersionForWorkloadManifests>
     </PropertyGroup>
 
     <Error Condition="'$(PackageVersionForWorkloadManifests)' == ''"

@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     /// Represents a buffered log record to be written in batch to an <see cref="IBufferedLogger" />.
     /// </summary>
     /// <remarks>
-    /// Instances of this type may be pooled and reused. Implementations of <see cref="IBufferedLogger" /> must
+    /// Instances of this type can be pooled and reused. Implementations of <see cref="IBufferedLogger" /> must
     /// not hold onto instance of <see cref="BufferedLogRecord" /> passed to its <see cref="IBufferedLogger.LogRecords" /> method
     /// beyond the invocation of that method.
     /// </remarks>
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public abstract LogLevel LogLevel { get; }
 
         /// <summary>
-        /// Gets the record's event id.
+        /// Gets the record's event ID.
         /// </summary>
         public abstract EventId EventId { get; }
 

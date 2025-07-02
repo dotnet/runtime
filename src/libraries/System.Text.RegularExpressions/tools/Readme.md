@@ -2,7 +2,7 @@
 
 ## Overview
 
-This tool is used for generating RegexCaseEquivalences.Data.cs which contains the three tables that will be used for performing matching operations when using RegexOptions.IgnoreCase. This tool will need to be used every time that we are ingesting a new version of Unicode in the repo. The current table contains the Unicode data from version 15.0.0.
+This tool is used for generating RegexCaseEquivalences.Data.cs which contains the three tables that will be used for performing matching operations when using RegexOptions.IgnoreCase. This tool will need to be used every time that we are ingesting a new version of Unicode in the repo. The current table contains the Unicode data from version 16.0.0.
 
 ## Updating the version of Unicode used
 

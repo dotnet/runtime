@@ -183,7 +183,7 @@ public class ResourceUpdaterTests
         tempFile.Stream.Seek(0, SeekOrigin.Begin);
 
         using (var modified = new PEReader(tempFile.Stream, PEStreamOptions.LeaveOpen))
-        using (var assembly = new PEReader(File.Open(Assembly.GetExecutingAssembly().Location, FileMode.Open, FileAccess.Read, FileShare.Read)))
+        using (var assembly = new PEReader(File.OpenRead(Assembly.GetExecutingAssembly().Location)))
         {
             var modifiedReader = new ResourceData(modified);
             var assemblyReader = new ResourceData(assembly);

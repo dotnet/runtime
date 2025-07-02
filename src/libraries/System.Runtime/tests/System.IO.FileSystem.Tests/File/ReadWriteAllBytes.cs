@@ -111,9 +111,11 @@ namespace System.IO.Tests
             {
                 if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
-                    File.WriteAllBytes(path, "text"u8.ToArray());
-                    File.WriteAllBytes(path, "text"u8);
-                    Assert.Equal("texttext"u8.ToArray(), File.ReadAllBytes(path));
+                    File.WriteAllBytes(path, "text1"u8.ToArray());
+                    Assert.Equal("text1"u8.ToArray(), File.ReadAllBytes(path));
+                    
+                    File.WriteAllBytes(path, "text2"u8);
+                    Assert.Equal("text2"u8.ToArray(), File.ReadAllBytes(path));
                 }
                 else
                 {

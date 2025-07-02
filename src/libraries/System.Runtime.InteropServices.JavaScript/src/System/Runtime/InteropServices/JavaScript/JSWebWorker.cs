@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // We don't want the continuations of that task to run on JSWebWorker
                 // only the tasks created inside of the callback should run in JSWebWorker
                 // TODO TaskCreationOptions.HideScheduler ?
-                _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _taskCompletionSource = new TaskCompletionSource<T>(this, TaskCreationOptions.RunContinuationsAsynchronously);
                 _thread = new Thread(ThreadMain);
                 _thread.Name = "JSWebWorker";
                 _resultTask = null;

@@ -4,7 +4,7 @@
 
 /*
  *
- * COM+99 EE to Debugger Interface Implementation
+ * EE to Debugger Interface Implementation
  *
  */
 
@@ -592,7 +592,7 @@ StackFrame EEDbgInterfaceImpl::FindParentStackFrame(CrawlFrame* pCF)
     return StackFrame();
 
 #else  // !DACCESS_COMPILE
-    return ExceptionTracker::FindParentStackFrameForStackWalk(pCF);
+    return ExInfo::FindParentStackFrameForStackWalk(pCF);
 
 #endif // !DACCESS_COMPILE
 }
@@ -1266,7 +1266,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
         _ASSERTE(!"Fail to trace a stub through TraceManager()");
         fResult = false;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #ifdef _DEBUG
     StubManager::DbgWriteLog("Doing TraceManager on %s (0x%p) for IP=0x%p, yields:\n", stubManager->DbgGetName(), stubManager, GetIP(context));
@@ -1331,7 +1331,7 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
 
 #ifdef TARGET_WINDOWS
     *pTLSIndex = _tls_index;
-    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo.m_pThread);
+    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo.m_pThread);
     *pTLSIsSpecialOffset = Thread::GetOffsetOfThreadStatic(&t_ThreadType);
     *pTLSCantStopOffset = Thread::GetOffsetOfThreadStatic(&t_CantStopCount);
 #else

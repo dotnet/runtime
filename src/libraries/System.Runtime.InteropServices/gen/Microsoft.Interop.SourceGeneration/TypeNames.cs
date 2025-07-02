@@ -39,6 +39,15 @@ namespace Microsoft.Interop
 
         private static NameSyntax? _UnmanagedCallersOnlyAttribute;
         public static NameSyntax UnmanagedCallersOnlyAttribute => _UnmanagedCallersOnlyAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.UnmanagedCallersOnlyAttribute);
+
+        private static NameSyntax? _WasmImportLinkageAttribute;
+        public static NameSyntax WasmImportLinkageAttribute => _WasmImportLinkageAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.WasmImportLinkageAttribute);
+
+        private static NameSyntax? _System_Runtime_CompilerServices_FixedAddressValueTypeAttribute;
+        public static NameSyntax System_Runtime_CompilerServices_FixedAddressValueTypeAttribute => _System_Runtime_CompilerServices_FixedAddressValueTypeAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Runtime_CompilerServices_FixedAddressValueTypeAttribute);
+
+        private static NameSyntax? _System_Runtime_InteropServices_StructLayoutAttribute;
+        public static NameSyntax System_Runtime_InteropServices_StructLayoutAttribute => _System_Runtime_InteropServices_StructLayoutAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_StructLayoutAttribute);
     }
 
     public static class TypeSyntaxes
@@ -122,6 +131,9 @@ namespace Microsoft.Interop
 
         private static TypeSyntax? _System_Runtime_CompilerServices_Unsafe;
         public static TypeSyntax System_Runtime_CompilerServices_Unsafe => _System_Runtime_CompilerServices_Unsafe ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.System_Runtime_CompilerServices_Unsafe);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_LayoutKind;
+        public static TypeSyntax System_Runtime_InteropServices_LayoutKind => _System_Runtime_InteropServices_LayoutKind ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_LayoutKind);
 
         private static TypeSyntax? _CallConvCdecl;
         private static TypeSyntax? _CallConvFastcall;
@@ -243,6 +255,8 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute = "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute";
 
+        public const string System_Runtime_CompilerServices_FixedAddressValueTypeAttribute = "System.Runtime.CompilerServices.FixedAddressValueTypeAttribute";
+
         public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
@@ -304,6 +318,8 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_NFloat = "System.Runtime.InteropServices.NFloat";
 
+        public const string System_Runtime_InteropServices_LayoutKind = "System.Runtime.InteropServices.LayoutKind";
+
         public const string CallConvCdeclName = "System.Runtime.CompilerServices.CallConvCdecl";
         public const string CallConvFastcallName = "System.Runtime.CompilerServices.CallConvFastcall";
         public const string CallConvStdcallName = "System.Runtime.CompilerServices.CallConvStdcall";
@@ -312,5 +328,6 @@ namespace Microsoft.Interop
         public const string CallConvMemberFunctionName = "System.Runtime.CompilerServices.CallConvMemberFunction";
         public const string Nint = "nint";
         public const string ComVariantMarshaller = "System.Runtime.InteropServices.Marshalling.ComVariantMarshaller";
+        public const string WasmImportLinkageAttribute = "System.Runtime.InteropServices.WasmImportLinkageAttribute";
     }
 }

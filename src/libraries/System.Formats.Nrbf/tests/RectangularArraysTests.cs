@@ -64,11 +64,18 @@ public class RectangularArraysTests : ReadTests
         using MemoryStream stream = Serialize(array);
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
+        SerializationRecord[,] output = (SerializationRecord[,])arrayRecord.GetArray(array.GetType());
 
         Verify(array, arrayRecord);
         Assert.True(arrayRecord.TypeNameMatches(typeof(object[,])));
         Assert.False(arrayRecord.TypeNameMatches(typeof(int[,])));
-        Assert.Equal(array, arrayRecord.GetArray(typeof(object[,])));
+
+        for (int i = 0; i < array.GetLength(0); i++)
+        {
+            Assert.Equal(array[i, 0], ((PrimitiveTypeRecord)output[i, 0]).Value);
+            Assert.Equal(array[i, 1], ((PrimitiveTypeRecord)output[i, 1]).Value);
+            Assert.Null(output[i, 2]);
+        }
     }
 
     [Serializable]
@@ -176,7 +183,14 @@ public class RectangularArraysTests : ReadTests
         Assert.True(arrayRecord.TypeNameMatches(typeof(object[,,])));
         Assert.False(arrayRecord.TypeNameMatches(typeof(object[,])));
         Assert.False(arrayRecord.TypeNameMatches(typeof(int[,,])));
-        Assert.Equal(array, arrayRecord.GetArray(typeof(object[,,])));
+        SerializationRecord[,,] output = (SerializationRecord[,,])arrayRecord.GetArray(typeof(object[,,]));
+
+        for (int i = 0; i < array.GetLength(0); i++)
+        {
+            Assert.Equal(array[i, 0, 0], ((PrimitiveTypeRecord)output[i, 0, 0]).Value);
+            Assert.Equal(array[i, 1, 0], ((PrimitiveTypeRecord)output[i, 1, 0]).Value);
+            Assert.Null(output[i, 2, 0]);
+        }
     }
 
     [Serializable]

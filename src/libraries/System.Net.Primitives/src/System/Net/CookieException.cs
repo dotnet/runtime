@@ -14,11 +14,21 @@ namespace System.Net
         {
         }
 
-        internal CookieException(string? message) : base(message)
+        /// <summary>
+        /// Initializes a new instance of the <see cref='CookieException'/> class with the specified error message.
+        /// </summary>
+        /// <param name="message">A <see cref="string"/> that describes the error that occurred.</param>
+        public CookieException(string? message) : base(message)
         {
         }
 
-        internal CookieException(string? message, Exception? inner) : base(message, inner)
+        /// <summary>
+        /// Initializes a new instance of the <see cref='CookieException'/> class with the specified error message
+        /// and a reference to the inner exception that is the cause of this exception.
+        /// </summary>
+        /// <param name="message">A <see cref="string"/> that describes the error that occurred.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception.</param>
+        public CookieException(string? message, Exception? innerException) : base(message, innerException)
         {
         }
 
