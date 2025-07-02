@@ -3,28 +3,22 @@
 
 using System;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace Internal.Runtime
+namespace System.Runtime.InteropServices
 {
-    internal static unsafe class IDynamicCastableSupport
+    public unsafe partial interface IDynamicInterfaceCastable
     {
-        [RuntimeExport("IDynamicCastableIsInterfaceImplemented")]
-        internal static bool IDynamicCastableIsInterfaceImplemented(IDynamicInterfaceCastable instance, MethodTable* interfaceType, bool throwIfNotImplemented)
-        {
-            return instance.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
-        }
-
         private static readonly object s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
 
-        [RuntimeExport("IDynamicCastableGetInterfaceImplementation")]
-        internal static IntPtr IDynamicCastableGetInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
+        internal static nint GetDynamicInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
         {
             RuntimeTypeHandle handle = instance.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType));
             MethodTable* implType = handle.ToMethodTable();
@@ -38,10 +32,10 @@ namespace Internal.Runtime
             }
 
             MethodTable* genericContext = null;
-            IntPtr result = RuntimeImports.RhResolveDynamicInterfaceCastableDispatchOnType(implType, interfaceType, slot, &genericContext);
-            if (result == IntPtr.Zero)
+            nint result = RuntimeImports.RhResolveDynamicInterfaceCastableDispatchOnType(implType, interfaceType, slot, &genericContext);
+            if (result == nint.Zero)
             {
-                IDynamicCastableGetInterfaceImplementationFailure(instance, interfaceType, implType);
+                GetInterfaceImplementationFailure(instance, interfaceType, implType);
             }
 
             if (genericContext != null)
@@ -73,7 +67,7 @@ namespace Internal.Runtime
             throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_NotInterface, Type.GetTypeFromMethodTable(resolvedImplType)));
         }
 
-        private static void IDynamicCastableGetInterfaceImplementationFailure(object instance, MethodTable* interfaceType, MethodTable* resolvedImplType)
+        private static void GetInterfaceImplementationFailure(object instance, MethodTable* interfaceType, MethodTable* resolvedImplType)
         {
             if (resolvedImplType->DispatchMap == null)
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_MissingImplementationAttribute, Type.GetTypeFromMethodTable(resolvedImplType), nameof(DynamicInterfaceCastableImplementationAttribute)));
