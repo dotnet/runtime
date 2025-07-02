@@ -58,7 +58,7 @@ void MulticoreJitFireEtwA(const WCHAR * pAction, const char * pTarget, int p1, i
     }
     EX_CATCH
     { }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // FEATURE_EVENT_TRACE
 }
 
@@ -86,7 +86,7 @@ void MulticoreJitFireEtwMethodCodeReturned(MethodDesc * pMethod)
     }
     EX_CATCH
     { }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 #ifdef MULTICOREJIT_LOGGING
@@ -164,7 +164,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     }
     EX_CATCH
     { }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -280,7 +280,7 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
     {
         hr = E_FAIL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return SUCCEEDED(hr);
 }
@@ -417,7 +417,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(FILE * fp)
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             if (!fSuccess)
             {
@@ -1304,7 +1304,7 @@ void MulticoreJitManager::StopProfile(bool appDomainShutdown)
         {
             MulticoreJitTrace(("StopProfile(%d) throws exception", appDomainShutdown));
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         delete pRecorder;
     }

@@ -78,11 +78,9 @@ HELPER(READYTORUN_HELPER_Mod,                       CORINFO_HELP_MOD,           
 HELPER(READYTORUN_HELPER_UDiv,                      CORINFO_HELP_UDIV,                              )
 HELPER(READYTORUN_HELPER_UMod,                      CORINFO_HELP_UMOD,                              )
 
-HELPER(READYTORUN_HELPER_Dbl2Int,                   CORINFO_HELP_DBL2INT,                           )
 HELPER(READYTORUN_HELPER_Dbl2IntOvf,                CORINFO_HELP_DBL2INT_OVF,                       )
 HELPER(READYTORUN_HELPER_Dbl2Lng,                   CORINFO_HELP_DBL2LNG,                           )
 HELPER(READYTORUN_HELPER_Dbl2LngOvf,                CORINFO_HELP_DBL2LNG_OVF,                       )
-HELPER(READYTORUN_HELPER_Dbl2UInt,                  CORINFO_HELP_DBL2UINT,                          )
 HELPER(READYTORUN_HELPER_Dbl2UIntOvf,               CORINFO_HELP_DBL2UINT_OVF,                      )
 HELPER(READYTORUN_HELPER_Dbl2ULng,                  CORINFO_HELP_DBL2ULNG,                          )
 HELPER(READYTORUN_HELPER_Dbl2ULngOvf,               CORINFO_HELP_DBL2ULNG_OVF,                      )

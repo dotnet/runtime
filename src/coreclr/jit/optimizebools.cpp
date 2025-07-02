@@ -824,6 +824,9 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     FlowEdge* const newEdge      = m_comp->fgAddRefPred(inRangeBb, m_b1);
     FlowEdge* const oldFalseEdge = m_b1->GetFalseEdge();
     FlowEdge* const oldTrueEdge  = m_b1->GetTrueEdge();
+    newEdge->setHeuristicBased(oldTrueEdge->isHeuristicBased());
+    newEdge->setLikelihood(inRangeLikelihood);
+    oldTrueEdge->setLikelihood(1.0 - inRangeLikelihood);
 
     if (!cmp2IsReversed)
     {
@@ -831,18 +834,12 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         m_b1->SetTrueEdge(newEdge);
         assert(m_b1->TrueTargetIs(inRangeBb));
         assert(m_b1->FalseTargetIs(notInRangeBb));
-
-        newEdge->setLikelihood(inRangeLikelihood);
-        oldTrueEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
     else
     {
         m_b1->SetFalseEdge(newEdge);
         assert(m_b1->TrueTargetIs(notInRangeBb));
         assert(m_b1->FalseTargetIs(inRangeBb));
-
-        oldTrueEdge->setLikelihood(inRangeLikelihood);
-        newEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
 
     // Remove the 2nd condition block as we no longer need it
@@ -1242,7 +1239,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             // We will now reach via B1 true.
             // Modify flow for true side of B1
             //
-            m_comp->fgRedirectTrueEdge(m_b1, m_b2->GetTrueTarget());
+            m_comp->fgRedirectEdge(m_b1->TrueEdgeRef(), m_b2->GetTrueTarget());
+            origB1TrueEdge->setHeuristicBased(origB2TrueEdge->isHeuristicBased());
 
             newB1TrueLikelihood =
                 (1.0 - origB1TrueLikelihood) + origB1TrueLikelihood * origB2FalseEdge->getLikelihood();
@@ -1267,6 +1265,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         // Fix B1 false edge likelihood
         //
         newB1FalseEdge->setLikelihood(1.0 - newB1TrueLikelihood);
+        newB1FalseEdge->setHeuristicBased(origB1TrueEdge->isHeuristicBased());
 
         // Update profile
         if (m_b1->hasProfileWeight())
