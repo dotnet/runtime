@@ -75,7 +75,7 @@ namespace Internal.Reflection.Execution
 
         private static IEnumerable<ResourceInfo> ExtractResources(Assembly assembly)
         {
-            ArgumentNullException.ThrowIfNull(assembly);
+            Debug.Assert(assembly != null);
             string assemblyName = assembly.GetName().FullName;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
