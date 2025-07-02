@@ -212,7 +212,7 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
     nw_connection_set_queue(connection, _tlsQueue);
     nw_connection_start(connection);
 
-    return PAL_TlsHandshakeState_WouldBlock;
+    return 0;
 }
 
 // This will start connection cleanup

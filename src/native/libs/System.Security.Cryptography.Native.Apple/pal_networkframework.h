@@ -19,18 +19,6 @@
 extern "C" {
 #endif
 
-// Handshake state enumeration matching other Apple SSL implementations
-typedef enum
-{
-    PAL_TlsHandshakeState_Unknown = 0,
-    PAL_TlsHandshakeState_Complete = 1,
-    PAL_TlsHandshakeState_WouldBlock = 2,
-    PAL_TlsHandshakeState_ServerAuthCompleted = 3,
-    PAL_TlsHandshakeState_ClientAuthCompleted = 4,
-    PAL_TlsHandshakeState_ClientCertRequested = 5,
-    PAL_TlsHandshakeState_ClientHelloReceived = 6,
-} PAL_TlsHandshakeState;
-
 // Status update enumeration for TLS operations
 typedef enum
 {
