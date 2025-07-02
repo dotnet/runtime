@@ -52,12 +52,6 @@ namespace ILCompiler.ObjectWriter
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
                 CFI_OPCODE opcode = (CFI_OPCODE)blobData[offset++];
 
-                if (opcode == CFI_OPCODE.CFI_NEGATE_RA_STATE)
-                {
-                    cfiCode[cfiCodeOffset++] = DW_CFA_AARCH64_negate_ra_state;
-                    continue;
-                }
-
                 short dwarfReg = BitConverter.ToInt16(blobData, offset);
                 offset += sizeof(short);
                 int cfiOffset = BitConverter.ToInt32(blobData, offset);

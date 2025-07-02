@@ -790,6 +790,13 @@ namespace ILCompiler.ObjectWriter
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
                 CFI_OPCODE opcode = (CFI_OPCODE)blobData[offset++];
+
+                if (opcode == CFI_OPCODE.CFI_NEGATE_RA_STATE)
+                {
+                    // Falling back to DWARF
+                    return UNWIND_ARM64_MODE_DWARF;
+                }
+
                 short dwarfReg = BinaryPrimitives.ReadInt16LittleEndian(blobData.AsSpan(offset));
                 offset += sizeof(short);
                 int cfiOffset = BinaryPrimitives.ReadInt32LittleEndian(blobData.AsSpan(offset));
@@ -843,10 +850,6 @@ namespace ILCompiler.ObjectWriter
                                 if (registerOffset[i] != int.MinValue)
                                     registerOffset[i] += cfiOffset;
                         }
-                        break;
-
-                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
-                        // Nothing to compress here. It just has the code.
                         break;
                 }
             }

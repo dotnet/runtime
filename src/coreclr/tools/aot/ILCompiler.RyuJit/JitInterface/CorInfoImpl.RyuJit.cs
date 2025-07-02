@@ -90,7 +90,7 @@ namespace Internal.JitInterface
             CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
             CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
             CFI_DEF_CFA,              // Take address from register and add offset to it.
-            CFI_NEGATE_RA_STATE,      // Sign the return address in lr with pacibsp
+            CFI_NEGATE_RA_STATE,      // Sign the return address in lr with paciaz
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
@@ -175,8 +175,8 @@ namespace Internal.JitInterface
                             }
                         }
                         break;
+
                     case CFI_OPCODE.CFI_NEGATE_RA_STATE:
-                        // Nothing to compress here. It just has the code.
                         shouldAddPACOpCode = true;
                         break;
                 }
@@ -192,6 +192,8 @@ namespace Internal.JitInterface
                     {
                         cfiWriter.Write((byte)codeOffset);
                         cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
+                        cfiWriter.Write((short)-1);
+                        cfiWriter.Write(cfaOffset);
                     }
 
                     if (cfaRegister != -1)
