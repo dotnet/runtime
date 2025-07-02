@@ -27,8 +27,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Lerp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> amount, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, LerpOperator<float>>(x, y, amount, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanSpanIntoSpan<T, LerpOperator<T>>(x, y, amount, destination);
+        }
 
         /// <summary>Computes the element-wise linear interpolation between two values based on the given weight in the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -48,8 +55,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Lerp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T amount, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, LerpOperator<float>>(x, y, amount, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanScalarIntoSpan<T, LerpOperator<T>>(x, y, amount, destination);
+        }
 
         /// <summary>Computes the element-wise linear interpolation between two values based on the given weight in the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -69,12 +83,21 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Lerp<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> amount, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, LerpOperator<float>>(x, y, amount, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarSpanIntoSpan<T, LerpOperator<T>>(x, y, amount, destination);
+        }
 
         /// <summary>(x * (1 - z)) + (y * z)</summary>
         private readonly struct LerpOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
         {
+            public static bool Vectorizable => true;
+
             public static T Invoke(T x, T y, T amount) => T.Lerp(x, y, amount);
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> amount)
