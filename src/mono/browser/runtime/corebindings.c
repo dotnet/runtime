@@ -15,6 +15,8 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/mh_log.h>
+
 #include <mono/jit/jit.h>
 
 #include "wasm-config.h"
@@ -108,9 +110,9 @@ static MonoAssembly* _mono_wasm_assembly_load (char *assembly_name)
 {
 	assert (assembly_name);
 	MonoImageOpenStatus status;
+    MH_LOG("Got assembly name %s", assembly_name);
 	MonoAssemblyName* aname = mono_assembly_name_new (assembly_name);
 	assert (aname);
-
 	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
 	mono_assembly_name_free (aname);
 	free (assembly_name);

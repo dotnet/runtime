@@ -12,7 +12,7 @@
  * Copyright 2012 Xamarin Inc
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
-#include "mh_log.h"
+
 #include <config.h>
 #include <glib.h>
 #include <string.h>
@@ -57,6 +57,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/components.h>
+#include <mono/metadata/mh_log.h>
 
 #ifdef HOST_WIN32
 #include <direct.h>

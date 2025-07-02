@@ -39,6 +39,7 @@
 #if HOST_BROWSER
 #include "jiterpreter.h"
 #endif
+#include "mono/metadata/mh_log.h"
 
 MonoInterpStats mono_interp_stats;
 
@@ -311,20 +312,11 @@ enum_type:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return MINT_TYPE_I4;
-#if SIZEOF_VOID_P == 8
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		return MINT_TYPE_I4; // should still be I4 on 64 bit platforms.
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		return MINT_TYPE_I; // will be I8 on 64-bit platforms, I4 otherwise
-#else
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-		return MINT_TYPE_I;
-#endif
 	case MONO_TYPE_R4:
 		return MINT_TYPE_R4;
 	case MONO_TYPE_I8:
@@ -436,6 +428,12 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 		td->vars = (InterpVar*) g_realloc (td->vars, td->vars_capacity * sizeof (InterpVar));
 	}
 	int mt = mono_mint_type (type);
+	
+	/*MH_LOG("Got mono_mint_type %d for type %s\n", mt, mono_type_get_name (type));
+	MH_LOG_INDENT();
+	log_mint_type (mt);
+	MH_LOG_UNINDENT();*/
+
 	InterpVar *local = &td->vars [td->vars_size];
 	// FIXME: We don't need to do this memset unless we realloc'd, since we malloc0 vars initially
 	memset (local, 0, sizeof (InterpVar));
@@ -3088,9 +3086,9 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			td->aggressive_inlining = TRUE;
 	}
 	if (td->verbose_level)
-		g_print ("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
-
-	td->inline_depth++;
+		g_print ("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);	
+	MH_LOG("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
+	td->inline_depth++;	
 	ret = generate_code (td, target_method, header, generic_context, error);
 	td->inline_depth--;
 
@@ -5274,7 +5272,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	original_bb = bb = mono_basic_block_split (method, error, header);
 	goto_if_nok (error, exit);
 	g_assert (bb);
-
+	
+	MH_LOG("Generating code for method %s\n", mono_method_full_name (method, TRUE));
+	
 	td->il_code = header->code;
 	td->in_start = td->ip = header->code;
 	end = td->ip + header->code_size;
@@ -5409,13 +5409,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		int local;
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
+		MH_LOG_INDENT();
 		for (int i = signature->param_count - 1; i >= 0; i--) {
 			MonoType *type = get_type_from_stack (td->sp [-1].type, td->sp [-1].klass);
+
+			MH_LOG("Creating local for inlined arg %d: %s\n", i, mono_type_full_name (type));
+
 			local = interp_create_var (td, type);
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);
 		}
-
+		MH_LOG_UNINDENT();
 		if (signature->hasthis) {
 			/*
 			 * If this is value type, it is passed by address and not by value.

@@ -44,6 +44,7 @@
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
 #include <mono/metadata/webcil-loader.h>
+#include <mono/metadata/mh_log.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -2855,6 +2856,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 {
 	MonoAssembly *result = NULL;
 	MONO_ENTER_GC_UNSAFE;
+	MH_LOG("Loading assembly %s from basedir %s", aname->name, basedir ? basedir : "NULL");
 	MonoAssemblyByNameRequest req;
 	mono_assembly_request_prepare_byname (&req, mono_alc_get_default ());
 	req.requesting_assembly = NULL;
