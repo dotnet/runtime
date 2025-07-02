@@ -121,6 +121,7 @@ namespace Internal.JitInterface
             }
 
             int offset = 0;
+            bool shouldAddPACOpCode = false;
             while (offset < blobData.Length)
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
@@ -176,6 +177,7 @@ namespace Internal.JitInterface
                         break;
                     case CFI_OPCODE.CFI_NEGATE_RA_STATE:
                         // Nothing to compress here. It just has the code.
+                        shouldAddPACOpCode = true;
                         break;
                 }
             }
@@ -186,6 +188,12 @@ namespace Internal.JitInterface
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
+                    if (shouldAddPACOpCode)
+                    {
+                        cfiWriter.Write((byte)codeOffset);
+                        cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
+                    }
+
                     if (cfaRegister != -1)
                     {
                         cfiWriter.Write((byte)codeOffset);

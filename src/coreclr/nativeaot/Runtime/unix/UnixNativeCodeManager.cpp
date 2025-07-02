@@ -40,7 +40,6 @@ struct UnixNativeMethodInfo
     // Subset of unw_proc_info_t required for unwinding
     unw_word_t start_ip;
     unw_word_t unwind_info;
-    uint32_t unwind_info_size;
     uint32_t format;
 
     bool executionAborted;
@@ -85,7 +84,14 @@ bool UnixNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
 {
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
     const uint8_t *p = (uint8_t *) pNativeMethodInfo->unwind_info;
-    const uint8_t *end = p + pNativeMethodInfo->unwind_info_size;
+    const uint8_t *end = p + *((uint32_t *)p);
+    p += 4; // Skip length
+    assert(*((uint32_t *)p) != 0); // Ensure it's FDE entry
+    p += 4; // Skip offset to CIE
+    p += 4; // Skip PC start
+    p += 4; // Skip function length
+    size_t augmentationLength = readULEB(p, end);
+    p += augmentationLength;    // skip augmentation data
 
     while (p < end) {
         uint8_t op = *p++;
@@ -99,7 +105,7 @@ bool UnixNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
         {
             continue;
         }
-        if ((op & 0x3F) == DW_CFA_offset)
+        if ((op & ~(0x3F)) == DW_CFA_offset)
         {
             readULEB(p, end);  // offset
             continue;
@@ -171,7 +177,6 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->start_ip = procInfo.start_ip;
     pMethodInfo->format = procInfo.format;
     pMethodInfo->unwind_info = procInfo.unwind_info;
-    pMethodInfo->unwind_info_size = procInfo.unwind_info_size;
 
     uintptr_t lsda = procInfo.lsda;
 
