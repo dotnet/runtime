@@ -27,6 +27,7 @@ int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode)
     modeU8[ret] = '\0';
 
     FILE* result = fopen(pathU8, modeU8);
+    int err = errno;
 
     delete[] pathU8;
     delete[] modeU8;
@@ -39,7 +40,7 @@ int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode)
     else
     {
         *stream = NULL;
-        return errno;
+        return err;
     }
 }
 
