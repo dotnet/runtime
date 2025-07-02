@@ -4014,7 +4014,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* op3 = intrin.op3;
 
                 // Handle op1
-                if (op1->IsFalseMask())
+                if (op1->IsMaskZero())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.

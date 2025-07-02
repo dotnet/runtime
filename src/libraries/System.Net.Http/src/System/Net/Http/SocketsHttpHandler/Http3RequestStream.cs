@@ -319,6 +319,12 @@ namespace System.Net.Http
 
                 throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
             }
+            catch (QuicException ex)
+            {
+                // Any other QuicException means transport error, and should be treated as a connection failure.
+                _connection.Abort(ex);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_http3_connection_quic_error, ex);
+            }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
             {
@@ -560,14 +566,9 @@ namespace System.Net.Http
                 switch (frameType)
                 {
                     case Http3FrameType.Headers:
-                        // Pick up any trailing headers.
-                        _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
-                        await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                        // Pick up any trailing headers and stop processing.
+                        await ProcessTrailersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // Stop looping after a trailing header.
-                        // There may be extra frames after this one, but they would all be unknown extension
-                        // frames that can be safely ignored. Just stop reading here.
-                        // Note: this does leave us open to a bad server sending us an out of order DATA frame.
                         goto case null;
                     case null:
                         // Done receiving: copy over trailing headers.
@@ -592,6 +593,25 @@ namespace System.Net.Http
                         Debug.Fail($"Received unexpected frame type {frameType}.");
                         return;
                 }
+            }
+        }
+
+        private async ValueTask ProcessTrailersAsync(long payloadLength, CancellationToken cancellationToken)
+        {
+            _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
+            await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+
+            // In typical cases, there should be no more frames. Make sure to read the EOS.
+            _recvBuffer.EnsureAvailableSpace(1);
+            int bytesRead = await _stream.ReadAsync(_recvBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
+            if (bytesRead > 0)
+            {
+                // The server may send us frames of unknown types after the trailer. Ideally we should drain the response by eating and ignoring them
+                // but this is a rare case so we just stop reading and let Dispose() send an ABORT_RECEIVE.
+                // Note: if a server sends additional HEADERS or DATA frames at this point, it
+                // would be a connection error -- not draining the stream also means we won't catch this.
+                _recvBuffer.Commit(bytesRead);
+                _recvBuffer.Discard(bytesRead);
             }
         }
 
@@ -1361,15 +1381,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining = payloadLength;
                         return true;
                     case Http3FrameType.Headers:
-                        // Read any trailing headers.
-                        _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
-                        await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                        // Pick up any trailing headers and stop processing.
+                        await ProcessTrailersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // There may be more frames after this one, but they would all be unknown extension
-                        // frames that we are allowed to skip. Just close the stream early.
-
-                        // Note: if a server sends additional HEADERS or DATA frames at this point, it
-                        // would be a connection error -- not draining the stream means we won't catch this.
                         goto case null;
                     case null:
                         // End of stream.

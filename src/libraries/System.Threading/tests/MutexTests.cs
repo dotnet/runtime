@@ -13,6 +13,26 @@ namespace System.Threading.Tests
 {
     public class MutexTests : FileCleanupTestBase
     {
+        private static bool IsCrossProcessNamedMutexSupported
+        {
+            get
+            {
+                if (PlatformDetection.IsWindows)
+                    return true;
+
+                 // Mobile platforms are constrained environments
+                 if (PlatformDetection.IsMobile)
+                    return false;
+
+                 // Cross-process named mutex support is not implemented on NativeAOT and Mono
+                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/48720")]
+                 if (PlatformDetection.IsMonoRuntime || PlatformDetection.IsNativeAot)
+                     return false;
+
+                 return true;
+            }
+        }
+
         [Fact]
         public void ConstructorAndDisposeTest()
         {
@@ -225,9 +245,7 @@ namespace System.Threading.Tests
             m.ReleaseMutex();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15159", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70127", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {
@@ -344,7 +362,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15158", TestRuntimes.Mono)]
         public void OpenExisting_InvalidNames()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null, options: default));
@@ -769,8 +786,10 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
+        private static bool IsRemoteExecutorAndCrossProcessNamedMutexSupported =>
+            RemoteExecutor.IsSupported && IsCrossProcessNamedMutexSupported;
+
+        [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [MemberData(nameof(NameOptionCombinations_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(bool currentUserOnly, bool currentSessionOnly)
         {
@@ -956,7 +975,10 @@ namespace System.Threading.Tests
         {
             var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
 
-            if (PlatformDetection.IsWindows)
+            // Windows native named mutexes and in-proc named mutexes support very long (1000+ char) names.
+            // Non-Windows cross-process named mutexes are emulated using file system. It imposes limit
+            // on maximum name length.
+            if (PlatformDetection.IsWindows || !IsCrossProcessNamedMutexSupported)
                 names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
 
             return names;

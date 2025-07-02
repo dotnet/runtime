@@ -3,14 +3,14 @@
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies
 {
-	public class ImplementationLibrary
-	{
-		public class NestedType
-		{
-		}
-	}
+    public class ImplementationLibrary
+    {
+        public class NestedType
+        {
+        }
+    }
 
-	public class ImplementationLibraryGenericType<T, S>
-	{
-	}
+    public class ImplementationLibraryGenericType<T, S>
+    {
+    }
 }

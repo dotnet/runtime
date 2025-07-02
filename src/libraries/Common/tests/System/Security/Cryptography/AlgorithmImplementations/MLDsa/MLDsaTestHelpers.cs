@@ -23,6 +23,8 @@ namespace System.Security.Cryptography.Tests
         // DER encoding of ASN.1 BitString "foo"
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };
 
+        private const int NTE_NOT_SUPPORTED = unchecked((int)0x80090029);
+
         internal static void VerifyDisposed(MLDsa mldsa)
         {
             PbeParameters pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 10);
@@ -62,9 +64,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, publicKey));
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, publicKey.AsSpan()));
             }
 
@@ -107,9 +111,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey));
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey.AsSpan()));
             }
 
@@ -145,9 +151,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, privateSeed));
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, privateSeed.AsSpan()));
             }
 
@@ -461,6 +469,15 @@ namespace System.Security.Cryptography.Tests
             }
 
             return buffer.AsSpan(0, written).ToArray();
+        }
+
+        // CryptographicException can only have both HRESULT and Message set starting in .NET Core 3.0+.
+        // To work around this, the product code throws an exception derived from CryptographicException
+        // that has both set. This assert checks for that instead.
+        internal static void AssertThrowsCryptographicExceptionWithHResult(Action export)
+        {
+            CryptographicException ce = Assert.ThrowsAny<CryptographicException>(export);
+            Assert.Equal(NTE_NOT_SUPPORTED, ce.HResult);
         }
 
         internal static CngProperty GetCngProperty(MLDsaAlgorithm algorithm)

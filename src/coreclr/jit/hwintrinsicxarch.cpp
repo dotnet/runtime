@@ -527,95 +527,6 @@ bool HWIntrinsicInfo::isAVX2GatherIntrinsic(NamedIntrinsic id)
 }
 
 //------------------------------------------------------------------------
-// lookupFloatComparisonModeForSwappedArgs: Get the floating-point comparison
-//      mode to use when the operands are swapped.
-//
-// Arguments:
-//    comparison -- The comparison mode used for (op1, op2)
-//
-// Return Value:
-//     The comparison mode to use for (op2, op1)
-//
-FloatComparisonMode HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison)
-{
-    switch (comparison)
-    {
-            // These comparison modes are the same even if the operands are swapped
-
-        case FloatComparisonMode::OrderedEqualNonSignaling:
-            return FloatComparisonMode::OrderedEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNonSignaling:
-            return FloatComparisonMode::UnorderedNonSignaling;
-        case FloatComparisonMode::UnorderedNotEqualNonSignaling:
-            return FloatComparisonMode::UnorderedNotEqualNonSignaling;
-        case FloatComparisonMode::OrderedNonSignaling:
-            return FloatComparisonMode::OrderedNonSignaling;
-        case FloatComparisonMode::UnorderedEqualNonSignaling:
-            return FloatComparisonMode::UnorderedEqualNonSignaling;
-        case FloatComparisonMode::OrderedFalseNonSignaling:
-            return FloatComparisonMode::OrderedFalseNonSignaling;
-        case FloatComparisonMode::OrderedNotEqualNonSignaling:
-            return FloatComparisonMode::OrderedNotEqualNonSignaling;
-        case FloatComparisonMode::UnorderedTrueNonSignaling:
-            return FloatComparisonMode::UnorderedTrueNonSignaling;
-        case FloatComparisonMode::OrderedEqualSignaling:
-            return FloatComparisonMode::OrderedEqualSignaling;
-        case FloatComparisonMode::UnorderedSignaling:
-            return FloatComparisonMode::UnorderedSignaling;
-        case FloatComparisonMode::UnorderedNotEqualSignaling:
-            return FloatComparisonMode::UnorderedNotEqualSignaling;
-        case FloatComparisonMode::OrderedSignaling:
-            return FloatComparisonMode::OrderedSignaling;
-        case FloatComparisonMode::UnorderedEqualSignaling:
-            return FloatComparisonMode::UnorderedEqualSignaling;
-        case FloatComparisonMode::OrderedFalseSignaling:
-            return FloatComparisonMode::OrderedFalseSignaling;
-        case FloatComparisonMode::OrderedNotEqualSignaling:
-            return FloatComparisonMode::OrderedNotEqualSignaling;
-        case FloatComparisonMode::UnorderedTrueSignaling:
-            return FloatComparisonMode::UnorderedTrueSignaling;
-
-            // These comparison modes need a different mode if the operands are swapped
-
-        case FloatComparisonMode::OrderedLessThanSignaling:
-            return FloatComparisonMode::OrderedGreaterThanSignaling;
-        case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
-            return FloatComparisonMode::OrderedGreaterThanOrEqualSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanSignaling;
-        case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
-            return FloatComparisonMode::OrderedLessThanOrEqualSignaling;
-        case FloatComparisonMode::OrderedGreaterThanSignaling:
-            return FloatComparisonMode::OrderedLessThanSignaling;
-        case FloatComparisonMode::OrderedLessThanNonSignaling:
-            return FloatComparisonMode::OrderedGreaterThanNonSignaling;
-        case FloatComparisonMode::OrderedLessThanOrEqualNonSignaling:
-            return FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanNonSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanNonSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanNonSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanNonSignaling;
-        case FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling:
-            return FloatComparisonMode::OrderedLessThanOrEqualNonSignaling;
-        case FloatComparisonMode::OrderedGreaterThanNonSignaling:
-            return FloatComparisonMode::OrderedLessThanNonSignaling;
-
-        default:
-            unreached();
-    }
-}
-
-//------------------------------------------------------------------------
 // lookupIdForFloatComparisonMode: Get the intrinsic ID to use for a given float comparison mode
 //
 // Arguments:
@@ -635,9 +546,14 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
     assert(varTypeIsFloating(simdBaseType));
     assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
+    // .NET doesn't differentiate between signalling and non-signalling
+    // we disable IEEE 754 exceptions on startup and make it undefined
+    // behavior to enable it, so we'll just normalize to the same form
+
     switch (comparison)
     {
         case FloatComparisonMode::OrderedEqualNonSignaling:
+        case FloatComparisonMode::OrderedEqualSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -658,6 +574,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedGreaterThanSignaling:
+        case FloatComparisonMode::OrderedGreaterThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -678,6 +595,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
+        case FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -698,6 +616,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedLessThanSignaling:
+        case FloatComparisonMode::OrderedLessThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -718,6 +637,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
+        case FloatComparisonMode::OrderedLessThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -738,6 +658,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotEqualNonSignaling:
+        case FloatComparisonMode::UnorderedNotEqualSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -758,6 +679,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
+        case FloatComparisonMode::UnorderedNotGreaterThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -778,6 +700,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
+        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -798,6 +721,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotLessThanSignaling:
+        case FloatComparisonMode::UnorderedNotLessThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -818,6 +742,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
+        case FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -838,6 +763,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedNonSignaling:
+        case FloatComparisonMode::OrderedSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -858,6 +784,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNonSignaling:
+        case FloatComparisonMode::UnorderedSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -1287,6 +1214,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     emptyEntryPoint.addr       = nullptr;
     emptyEntryPoint.accessType = IAT_VALUE;
 #endif // FEATURE_READYTORUN
+
+    bool isMinMaxIntrinsic = false;
+    bool isMax             = false;
+    bool isMagnitude       = false;
+    bool isNative          = false;
+    bool isNumber          = false;
 
     switch (intrinsic)
     {
@@ -3150,16 +3083,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Max:
         case NI_Vector512_Max:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            break;
+        }
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
+        case NI_Vector128_MaxMagnitude:
+        case NI_Vector256_MaxMagnitude:
+        case NI_Vector512_MaxMagnitude:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isMagnitude       = true;
+            break;
+        }
 
-                retNode = gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MaxMagnitudeNumber:
+        case NI_Vector256_MaxMagnitudeNumber:
+        case NI_Vector512_MaxMagnitudeNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isMagnitude       = true;
+            isNumber          = true;
             break;
         }
 
@@ -3167,21 +3113,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_MaxNative:
         case NI_Vector512_MaxNative:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isNative          = true;
+            break;
+        }
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MaxNumber:
+        case NI_Vector256_MaxNumber:
+        case NI_Vector512_MaxNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isNumber          = true;
             break;
         }
 
@@ -3189,16 +3133,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Min:
         case NI_Vector512_Min:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            break;
+        }
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
+        case NI_Vector128_MinMagnitude:
+        case NI_Vector256_MinMagnitude:
+        case NI_Vector512_MinMagnitude:
+        {
+            isMinMaxIntrinsic = true;
+            isMagnitude       = true;
+            break;
+        }
 
-                retNode = gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MinMagnitudeNumber:
+        case NI_Vector256_MinMagnitudeNumber:
+        case NI_Vector512_MinMagnitudeNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMagnitude       = true;
+            isNumber          = true;
             break;
         }
 
@@ -3206,21 +3160,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_MinNative:
         case NI_Vector512_MinNative:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isNative          = true;
+            break;
+        }
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdMinNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MinNumber:
+        case NI_Vector256_MinNumber:
+        case NI_Vector512_MinNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isNumber          = true;
             break;
         }
 
@@ -3501,14 +3451,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
 
+                    // This does a clamp which is defined as: Min(Max(value, min), max)
+                    // which means that we do a max computation if a minimum constant is specified
+                    // There will be none specified for unsigned to unsigned narrowing since
+                    // they share a lower bound (0) and will already be correct.
+
                     if (minCns != nullptr)
                     {
-                        op1 = gtNewSimdMaxNode(retType, op1, minCns, simdBaseJitType, simdSize);
-                        op2 = gtNewSimdMaxNode(retType, op2, gtCloneExpr(minCns), simdBaseJitType, simdSize);
+                        op1 = gtNewSimdMinMaxNode(retType, op1, minCns, simdBaseJitType, simdSize, /* isMax */ true,
+                                                  /* isMagnitude */ false, /* isNumber */ false);
+                        op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(minCns), simdBaseJitType, simdSize,
+                                                  /* isMax */ true, /* isMagnitude */ false, /* isNumber */ false);
                     }
 
-                    op1 = gtNewSimdMinNode(retType, op1, maxCns, simdBaseJitType, simdSize);
-                    op2 = gtNewSimdMinNode(retType, op2, gtCloneExpr(maxCns), simdBaseJitType, simdSize);
+                    op1 = gtNewSimdMinMaxNode(retType, op1, maxCns, simdBaseJitType, simdSize, /* isMax */ false,
+                                              /* isMagnitude */ false, /* isNumber */ false);
+                    op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(maxCns), simdBaseJitType, simdSize,
+                                              /* isMax */ false, /* isMagnitude */ false, /* isNumber */ false);
 
                     retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseJitType, simdSize);
                 }
@@ -5412,6 +5371,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         default:
         {
             return nullptr;
+        }
+    }
+
+    if (isMinMaxIntrinsic)
+    {
+        assert(sig->numArgs == 2);
+        assert(retNode == nullptr);
+
+        if (isNative && BlockNonDeterministicIntrinsics(mustExpand))
+        {
+            return nullptr;
+        }
+
+        op2 = impSIMDPopStack();
+        op1 = impSIMDPopStack();
+
+        if (isNative)
+        {
+            assert(!isMagnitude && !isNumber);
+            retNode = gtNewSimdMinMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize, isMax);
+        }
+        else if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
+                 compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            retNode = gtNewSimdMinMaxNode(retType, op1, op2, simdBaseJitType, simdSize, isMax, isMagnitude, isNumber);
         }
     }
 

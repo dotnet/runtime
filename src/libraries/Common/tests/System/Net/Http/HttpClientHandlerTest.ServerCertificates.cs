@@ -267,6 +267,14 @@ namespace System.Net.Http.Functional.Tests
 
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
+                    // https://github.com/dotnet/corefx/issues/21922#issuecomment-315555237
+                    X509ChainStatusFlags flags = chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (cur, status) => cur | status.Status);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
+                        flags == X509ChainStatusFlags.RevocationStatusUnknown)
+                    {
+                        expectedErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
+                    }
+
                     callbackCalled = true;
                     Assert.NotNull(request);
                     Assert.NotNull(cert);

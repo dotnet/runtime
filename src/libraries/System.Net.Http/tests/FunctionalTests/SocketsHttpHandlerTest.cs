@@ -7,11 +7,9 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
@@ -1284,6 +1282,69 @@ namespace System.Net.Http.Functional.Tests
 
             await stream.SendResponseHeadersAsync(statusCode: null, headers: trailers);
             stream.Stream.CompleteWrites();
+        }
+
+        [Theory]
+        [InlineData(false, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(false, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(true, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(true, HttpCompletionOption.ResponseHeadersRead)]
+        public async Task GetAsync_TrailersWithoutServerStreamClosure_Success(bool emptyResponse, HttpCompletionOption httpCompletionOption)
+        {
+            SemaphoreSlim serverCompleted = new SemaphoreSlim(0);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+
+                // Avoid drain timeout if CI is slow.
+                GetUnderlyingSocketsHttpHandler(handler).ResponseDrainTimeout = TimeSpan.FromSeconds(10);
+                using HttpClient client = CreateHttpClient(handler);
+
+                using (HttpResponseMessage response = await client.GetAsync(uri, httpCompletionOption))
+                {
+                    if (httpCompletionOption == HttpCompletionOption.ResponseHeadersRead)
+                    {
+                        using Stream stream = await response.Content.ReadAsStreamAsync();
+                        byte[] buffer = new byte[512];
+                        // Consume the stream
+                        while ((await stream.ReadAsync(buffer)) > 0) ;
+                    }
+
+                    Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
+                }
+
+                await serverCompleted.WaitAsync();
+            },
+            async server =>
+            {
+                try
+                {
+                    await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                    await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                    _ = await stream.ReadRequestDataAsync();
+
+                    HttpHeaderData[] headers = emptyResponse ? [new HttpHeaderData("Content-Length", "0")] : null;
+
+                    await stream.SendResponseHeadersAsync(statusCode: HttpStatusCode.OK, headers);
+                    if (!emptyResponse)
+                    {
+                        await stream.SendResponseBodyAsync(new byte[16384], isFinal: false);
+                    }
+
+                    await stream.SendResponseHeadersAsync(statusCode: null, headers: TrailingHeaders);
+
+                    // Small delay to make sure we do test if the client is waiting for EOS.
+                    await Task.Delay(15);
+
+                    await stream.DisposeAsync();
+                    await stream.Stream.WritesClosed;
+                }
+                finally
+                {
+                    serverCompleted.Release();
+                }
+            }).WaitAsync(TimeSpan.FromSeconds(30));
         }
     }
 
