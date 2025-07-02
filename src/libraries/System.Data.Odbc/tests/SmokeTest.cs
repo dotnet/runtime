@@ -7,6 +7,7 @@ namespace System.Data.Odbc.Tests
 {
     public class SmokeTest : IntegrationTestBase
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void CreateInsertSelectTest()
         {
