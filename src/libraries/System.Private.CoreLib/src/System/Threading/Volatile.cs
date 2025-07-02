@@ -50,11 +50,13 @@ namespace System.Threading
         [Intrinsic]
         [NonVersionable]
         public static double Read(ref readonly double location) =>
+            // Delegate to long overload to ensure atomicity on 32-bit platforms.
             BitConverter.Int64BitsToDouble(Read(ref Unsafe.As<double, long>(ref Unsafe.AsRef(in location))));
 
         [Intrinsic]
         [NonVersionable]
         public static void Write(ref double location, double value) =>
+            // Delegate to long overload to ensure atomicity on 32-bit platforms.
             Write(ref Unsafe.As<double, long>(ref location), BitConverter.DoubleToInt64Bits(value));
 
         [Intrinsic]
@@ -100,7 +102,7 @@ namespace System.Threading
             ReadBarrier();
             return value;
 #else
-            // On 32-bit machines, we use Interlocked, since an ordinary volatile read would not be atomic.
+            // On 32-bit, we use Interlocked, since an ordinary volatile read would not be atomic.
             return Interlocked.CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
 #endif
         }
@@ -213,12 +215,14 @@ namespace System.Threading
         [Intrinsic]
         [NonVersionable]
         public static ulong Read(ref readonly ulong location) =>
+            // Delegate to long overload to ensure atomicity on 32-bit platforms.
             (ulong)Read(ref Unsafe.As<ulong, long>(ref Unsafe.AsRef(in location)));
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
         public static void Write(ref ulong location, ulong value) =>
+            // Delegate to long overload to ensure atomicity on 32-bit platforms.
             Write(ref Unsafe.As<ulong, long>(ref location), (long)value);
 
         [CLSCompliant(false)]
