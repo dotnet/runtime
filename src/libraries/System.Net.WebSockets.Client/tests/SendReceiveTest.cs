@@ -3,7 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -121,6 +121,11 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
+            if (HttpVersion == Net.HttpVersion.Version20)
+            {
+                throw new SkipTestException("[ActiveIssue] -- temporarily skipping on HTTP/2");
+            }
+
             var sendBuffer = new byte[ushort.MaxValue + 1];
             Random.Shared.NextBytes(sendBuffer);
             var sendSegment = new ArraySegment<byte>(sendBuffer);
@@ -241,11 +246,14 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        protected const int SmallTimeoutMs = 200;
+        protected virtual int MultipleOutstandingReceiveOperations_TimeoutMs => SmallTimeoutMs;
+
         protected async Task RunClient_ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
-                var cts = new CancellationTokenSource(PlatformDetection.LocalEchoServerIsNotAvailable ? TimeOutMilliseconds : 200);
+                var cts = new CancellationTokenSource(MultipleOutstandingReceiveOperations_TimeoutMs);
 
                 Task[] tasks = new Task[2];
 
@@ -342,6 +350,11 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
+            if (HttpVersion == Net.HttpVersion.Version20)
+            {
+                throw new SkipTestException("[ActiveIssue] -- temporarily skipping on HTTP/2");
+            }
+
             using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var rand = new Random();
@@ -469,6 +482,8 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]
         public Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server, SendReceiveType type) => RunSendReceive(
             RunClient_SendAsync_MultipleOutstandingSendOperations_Throws, server, type);
+
+        protected override int MultipleOutstandingReceiveOperations_TimeoutMs => PlatformDetection.LocalEchoServerIsNotAvailable ? TimeOutMilliseconds : SmallTimeoutMs;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         [Theory, MemberData(nameof(EchoServersAndSendReceiveType))]

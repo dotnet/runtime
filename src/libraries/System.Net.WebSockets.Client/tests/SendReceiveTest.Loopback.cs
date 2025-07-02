@@ -22,7 +22,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success, server, type), useSsl);
 
-        [Theory, MemberData(nameof(UseSslAndSendReceiveType))]
+        [ConditionalTheory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
         public Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success, server, type), useSsl);
 
@@ -42,7 +42,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success, server, type), useSsl);
 
-        [Theory, MemberData(nameof(UseSslAndSendReceiveType))]
+        [ConditionalTheory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
         public Task SendReceive_VaryingLengthBuffers_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_VaryingLengthBuffers_Success, server, type), useSsl);
 
@@ -142,7 +142,7 @@ namespace System.Net.WebSockets.Client.Tests
         // #region HTTP/2-only loopback tests -> extracted to SendReceiveTest.Http2.cs
     }
 
-    /*#region Runnable test classes: HTTP/1.1 Loopback
+    #region Runnable test classes: HTTP/1.1 Loopback
 
     public sealed class SendReceiveTest_SharedHandler_Loopback(ITestOutputHelper output) : SendReceiveTest_Loopback(output) { }
 
@@ -156,9 +156,9 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseHttpClient => true;
     }
 
-    #endregion*/
+    #endregion
 
-    /*#region Runnable test classes: HTTP/2 Loopback
+    #region Runnable test classes: HTTP/2 Loopback
 
     public sealed class SendReceiveTest_Invoker_Http2Loopback(ITestOutputHelper output) : SendReceiveTest_Http2Loopback(output)
     {
@@ -170,5 +170,5 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseHttpClient => true;
     }
 
-    #endregion*/
+    #endregion
 }
