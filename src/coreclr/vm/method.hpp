@@ -1440,11 +1440,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#if defined(FEATURE_JIT_PITCHING)
-        if (IsPitchable())
-            return false;
-#endif
-
         return !IsVersionable() && !InEnCEnabledModule();
     }
 
@@ -1582,11 +1577,6 @@ public:
     // Perf warning: takes the CodeVersionManagerLock on every call
     PCODE GetNativeCodeAnyVersion();
 
-#if defined(FEATURE_JIT_PITCHING)
-    bool IsPitchable();
-    void PitchNativeCode();
-#endif
-
     //================================================================
     // FindOrCreateAssociatedMethodDesc
     //
@@ -1692,18 +1682,13 @@ public:
     // corresponding instantiation of the target of a call.
     MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
 
-
-private:
-    ReturnKind ParseReturnKindFromSig(INDEBUG(bool supportStringConstructors = false));
-
+#if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 public:
-    // This method is used to restore ReturnKind using the class handle, it is fully supported only on x64 Ubuntu,
-    // other platforms do not support multi-reg return case with pointers.
-    // Use this method only when you can't hit this case
-    // (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
-    // Also, on the other platforms for a single field struct return case
-    // the function can't distinguish RT_Object and RT_ByRef.
-    ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
+    // This method is used to restore ReturnKind using the class handle. It will return
+    // RT_Illegal for rare cases like byref-like types. Use this method only when you can tolerate
+    // RT_Illegal return.
+    ReturnKind GetReturnKind();
+#endif // TARGET_X86 && HAVE_GCCOVER
 
 public:
     // In general you don't want to call GetCallTarget - you want to
@@ -2092,7 +2077,7 @@ private:
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     PCODE JitCompileCode(PrepareCodeConfig* pConfig);
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, bool *pIsInterpreterCode);
 
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
@@ -2283,20 +2268,6 @@ public:
         m_jitSwitchedToMinOpt = true;
     }
 
-#ifdef FEATURE_INTERPRETER
-    void SetIsInterpreterCode()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_isInterpreterCode = true;
-    }
-
-    bool IsInterpreterCode() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_isInterpreterCode;
-    }
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_TIERED_COMPILATION
 public:
     bool JitSwitchedToOptimized() const
@@ -2365,9 +2336,6 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
-#ifdef FEATURE_INTERPRETER
-    bool m_isInterpreterCode; // The generated code is interpreter IR
-#endif // FEATURE_INTERPRETER
     PrepareCodeConfig *m_nextInSameThread;
 };
 
