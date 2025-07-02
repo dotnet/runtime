@@ -1172,41 +1172,24 @@ GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
 
     // Not a valid pattern, so cannot be created using ptrue/pfalse. Instead the mask will require
     // loading from memory. There is no way to load to a predicate from memory using a PC relative
-    // address, so instead use a constant vector plus conversion to mask.
+    // address, so instead use a constant vector plus conversion to mask. Using basetype byte will
+    // ensure every entry in the mask is converted.
 
     LABELEDDISPTREERANGE("lowering cns mask to cns vector (before)", BlockRange(), mask);
 
-    // Default values in case there is no user or the user is not a HWIntrinsic
-    var_types   parentBaseType        = TYP_BYTE;
-    CorInfoType parentSimdBaseJitType = CORINFO_TYPE_BYTE;
-    unsigned    parentSimdSize        = 16;
-    assert(parentSimdSize == 16 || parentSimdSize == 0);
-
-    LIR::Use use;
-    bool     foundUse = BlockRange().TryGetUse(mask, &use);
-
-    if (use.User()->OperIsHWIntrinsic())
-    {
-        GenTreeHWIntrinsic* parent = use.User()->AsHWIntrinsic();
-
-        parentBaseType        = parent->GetSimdBaseType();
-        parentSimdBaseJitType = parent->GetSimdBaseJitType();
-        parentSimdSize        = parent->GetSimdSize();
-    }
-    assert(parentSimdSize == 16 || parentSimdSize == 0);
-
     // Create a vector constant
     GenTreeVecCon* vecCon = comp->gtNewVconNode(TYP_SIMD16);
-    EvaluateSimdCvtMaskToVector<simd16_t>(parentBaseType, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
+    EvaluateSimdCvtMaskToVector<simd16_t>(TYP_BYTE, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
     BlockRange().InsertBefore(mask, vecCon);
 
     // Convert the vector constant to a mask
-    GenTree* convertedVec = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, parentSimdBaseJitType, parentSimdSize);
+    GenTree* convertedVec = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, CORINFO_TYPE_BYTE, 16);
     BlockRange().InsertBefore(mask, convertedVec->AsHWIntrinsic()->Op(1));
     BlockRange().InsertBefore(mask, convertedVec);
 
     // Update use
-    if (foundUse)
+    LIR::Use use;
+    if (BlockRange().TryGetUse(mask, &use))
     {
         use.ReplaceWith(convertedVec);
     }
