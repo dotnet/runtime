@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Reflection;
 
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), By = Tool.Trimmer)]
@@ -18,30 +20,30 @@ using Mono.Linker.Tests.Cases.Reflection;
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckStruct", typeof(TargetType3), typeof(AllocatedNoTypeCheckStruct))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnreferenced", typeof(UnreferencedTargetType), typeof(UnreferencedTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TypeMapEntryOnly", typeof(TypeMapEntryOnly))]
+[assembly: TypeMap<UsedTypeMap>("UnboxedOnlyType", typeof(TargetType6), typeof(UnboxedOnly))]
+[assembly: TypeMap<UsedTypeMap>("TypedRefSource", typeof(TargetType7), typeof(TypedRefSource))]
+[assembly: TypeMap<UsedTypeMap>("TypedRefTarget", typeof(TargetType8), typeof(TypedRefTarget))]
+[assembly: TypeMap<UsedTypeMap>("Constrained", typeof(TargetType9), typeof(Constrained))]
+[assembly: TypeMap<UsedTypeMap>("ConstrainedStatic", typeof(TargetType10), typeof(ConstrainedStatic))]
+[assembly: TypeMap<UsedTypeMap>("Ldobj", typeof(TargetType11), typeof(LdobjType))]
+[assembly: TypeMap<UsedTypeMap>("ArrayElement", typeof(TargetType12), typeof(ArrayElement))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(TargetType13), typeof(ConstructedNoTypeCheckNoBoxStruct))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(TypeCheckOnlyClass), typeof(ProxyType2))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(AllocatedNoBoxStructType), typeof(ProxyType3))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(I), typeof(IImpl))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(IInterfaceWithDynamicImpl), typeof(IDynamicImpl))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(ArrayElement), typeof(ProxyType4))]
 
 [assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
-[assembly: TypeMap<UsedTypeMap>("TrimTargetIsKeptButNoTypeCheck", typeof(TargetType4), typeof(OnlyKeptClass))]
+[assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
+[assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
-    class TargetType4
-    {
-    }
-
     [Kept]
-    class OnlyKeptClass
-    {
-        [Kept]
-        public static void KeepThisType() { }
-    }
-
-    [Kept]
+    [SetupCompileArgument("/unsafe")]
     class TypeMap
     {
         [Kept]
@@ -52,6 +54,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             CheckTargetAndTrimTarget(t);
             CheckTrimTarget(t);
             CheckTypeCheckOnlyClass(t);
+            Unbox(t);
             if (t is IInterfaceWithDynamicImpl d)
             {
                 d.Method();
@@ -70,7 +73,47 @@ namespace Mono.Linker.Tests.Cases.Reflection
             AllocatedNoBoxStructType allocatedNoBoxStructType = new AllocatedNoBoxStructType(Random.Shared.Next());
             Console.WriteLine("AllocatedNoBoxStructType value: " + allocatedNoBoxStructType.Value);
             Console.WriteLine(proxyMap[typeof(AllocatedNoBoxStructType)]);
-            OnlyKeptClass.KeepThisType();
+            ClassWithStaticMethod.StaticMethod();
+
+            Console.WriteLine(ClassWithStaticMethodAndField.StaticMethod());
+
+            unsafe
+            {
+                delegate*<void> staticMethodPtr = &ClassWithStaticMethod.StaticMethod;
+                staticMethodPtr();
+            }
+
+            TypedRefSource s = default;
+
+            TypedReference r = __makeref(s);
+
+            TypedRefTarget t2 = __refvalue(r, TypedRefTarget);
+
+            ConstrainedCall<Constrained>(default);
+
+            static void ConstrainedCall<[KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint | GenericParameterAttributes.NotNullableValueTypeConstraint)] T>(T t) where T : struct, IInterface
+            {
+                t.Method();
+            }
+
+            ConstrainedStaticCall<ConstrainedStatic>(default);
+
+            static void ConstrainedStaticCall<T>(T t) where T : IStaticInterface
+            {
+                T.Method();
+            }
+
+            unsafe
+            {
+                LdobjType* ptr = (LdobjType*)NativeMemory.AllocZeroed((nuint)sizeof(LdobjType));
+                LdobjType val = *ptr;
+                Console.WriteLine(val.Value);
+                NativeMemory.Free(ptr);
+            }
+
+            Console.WriteLine(new ArrayElement[1]);
+
+            Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
         }
 
         [Kept]
@@ -132,6 +175,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
             {
                 Console.WriteLine("Type deriving from TrimTarget instantiated.");
             }
+        }
+
+        [Kept]
+        private static UnboxedOnly Unbox(object o)
+        {
+            return (UnboxedOnly) o;
         }
 
         [Kept]
@@ -216,6 +265,122 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
     class TypeCheckOnlyClass;
+
+    class TargetType4;
+
+    [Kept]
+    class ClassWithStaticMethod
+    {
+        [Kept]
+        public static void StaticMethod() { }
+    }
+
+    class TargetType5;
+
+    [Kept]
+    class ClassWithStaticMethodAndField
+    {
+        [Kept]
+        private static int i;
+        [Kept]
+        public static int StaticMethod() => i;
+    }
+
+    [Kept]
+    class TargetType6;
+
+    [Kept]
+    struct UnboxedOnly;
+
+    [Kept]
+    class TargetType7;
+
+    [Kept]
+    class TargetType8;
+
+    [Kept]
+    struct TypedRefSource;
+
+    [Kept]
+    struct TypedRefTarget;
+
+    [Kept(By = Tool.Trimmer)] // NativeAOT can devirtualize the constrained call, so it can remove the interface entirely.
+    class TargetType9;
+
+    [Kept(By = Tool.Trimmer)]
+    interface IInterface
+    {
+        [Kept(By = Tool.Trimmer)]
+        void Method();
+    }
+
+    [Kept]
+    [KeptInterface(typeof(IInterface), By = Tool.Trimmer)]
+    struct Constrained : IInterface
+    {
+        [Kept]
+        void IInterface.Method()
+        {
+            Console.WriteLine("Constrained.Method called");
+        }
+    }
+
+    [Kept(By = Tool.Trimmer)] // NativeAot can devirtualize the constrained call, so it can remove the interface entirely.
+    class TargetType10;
+
+    [Kept(By = Tool.Trimmer)]
+    interface IStaticInterface
+    {
+        [Kept(By = Tool.Trimmer)]
+        static abstract void Method();
+    }
+
+    [Kept]
+    [KeptInterface(typeof(IStaticInterface), By = Tool.Trimmer)]
+    struct ConstrainedStatic : IStaticInterface
+    {
+        [Kept]
+        static void IStaticInterface.Method()
+        {
+            Console.WriteLine("Constrained.Method called");
+        }
+    }
+
+    [Kept(By = Tool.Trimmer)] // If LdobjType is never boxed or unboxed, it can be removed by NativeAot.
+    class TargetType11;
+
+    [Kept(By = Tool.Trimmer)]
+    struct LdobjType
+    {
+        [Kept(By = Tool.Trimmer)]
+        public int Value;
+    }
+
+    [Kept]
+    class TargetType12;
+
+    [Kept]
+    class ProxyType4;
+
+    [Kept]
+    struct ArrayElement;
+
+    [Kept(By = Tool.Trimmer)] // If ConstructedNoTypeCheckNoBoxStruct is never boxed or unboxed, it can be removed by NativeAot.
+    class TargetType13;
+
+    [Kept]
+    struct ConstructedNoTypeCheckNoBoxStruct
+    {
+        [Kept]
+        public ConstructedNoTypeCheckNoBoxStruct(int i)
+        {
+            Value = i;
+        }
+
+        [Kept]
+        [KeptBackingField]
+        public int Value { [Kept] get; }
+    }
 
     class ProxyType2;
 
