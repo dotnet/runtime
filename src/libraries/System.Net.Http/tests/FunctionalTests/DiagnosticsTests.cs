@@ -871,7 +871,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains("exception.type", tags.Keys);
                         Assert.Contains("exception.message", tags.Keys);
                         Assert.Contains("exception.stacktrace", tags.Keys);
-                        Assert.True((string)tags["exception.type"] == typeof(TaskCanceledException).FullName || (string)tags["exception.type"] == typeof(TaskCanceledException).FullName);
+                        Assert.True((string)tags["exception.type"] == typeof(TaskCanceledException).FullName || (string)tags["exception.type"] == typeof(OperationCanceledException).FullName);
                     },
                     async server =>
                     {
