@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            frame.Push(_field.GetValue(obj: null));
+            frame.Push(FieldData.GetValue(null, _field));
 
             return 1;
         }
@@ -43,6 +43,7 @@ namespace System.Linq.Expressions.Interpreter
         public LoadFieldInstruction(FieldInfo field)
             : base(field)
         {
+            System.IO.File.AppendAllText("/home/stickman/runtime.txt", $"LoadFieldInstruction({field})\n");
         }
 
         public override string InstructionName => "LoadField";
@@ -54,7 +55,7 @@ namespace System.Linq.Expressions.Interpreter
             object? self = frame.PopRaw();
             NullCheck(self);
 
-            frame.Push(FieldData.GetValue(self!, _field));
+            frame.Push(FieldData.GetValue(self, _field));
 
             return 1;
         }
@@ -74,10 +75,9 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object? value = frame.Pop();
-
             object? self = frame.PopRaw();
-            NullCheck(self);
 
+            NullCheck(self);
             FieldData.SetValue(self!, _field, value);
 
             return 1;
@@ -99,7 +99,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object? value = frame.Pop();
-            _field.SetValue(null, value);
+            FieldData.SetValue(null, _field, value);
             return 1;
         }
     }

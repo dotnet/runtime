@@ -5,66 +5,108 @@ using System.Reflection;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal sealed class FieldData
+    internal sealed class FieldData(object _parent, FieldInfo _field)
     {
-        private readonly object _parent;
-        private readonly FieldInfo _field;
+        public FieldData(FieldInfo field) : this(Static.Instance, field) { }
 
-        public FieldData(object parent, FieldInfo field)
+        private object Parent { get; } = _parent;
+        private FieldInfo Field { get; } = _field;
+
+        private sealed class Static
         {
-            _parent = parent;
-            _field = field;
+            private Static() {}
+            public static Static Instance { get; } = new Static();
         }
 
-        private (object Root, FieldInfo[] FieldInfos) GetFieldAccessors(int count)
+        private (FieldInfo? StaticField, object Root, FieldInfo[] FieldInfos) GetFieldAccessors(int count)
         {
-            if (_parent is FieldData parentField)
+            if (Parent is Static)
             {
-                var accessors = parentField.GetFieldAccessors(count + 1);
+                object root = Field.GetValue(null)!;
+                Assert.NotNull(root);
 
-                accessors.FieldInfos[^count] = _field;
-
-                return accessors;
+                return (Field, root, []);
             }
-            else
+            if (Parent is FieldData { Parent: Static, Field: FieldInfo staticField })
             {
                 FieldInfo[] fieldInfos = new FieldInfo[count];
 
-                fieldInfos[0] = _field;
+                fieldInfos[0] = Field;
 
-                return (_parent, fieldInfos);
+                object root = staticField.GetValue(null)!;
+                Assert.NotNull(root);
+
+                return (staticField, root, fieldInfos);
+            }
+            else if (Parent is not FieldData parentField)
+            {
+                FieldInfo[] fieldInfos = new FieldInfo[count];
+
+                fieldInfos[0] = Field;
+
+                return (null, Parent, fieldInfos);
+            }
+            else
+            {
+                var accessors = parentField.GetFieldAccessors(count + 1);
+
+                accessors.FieldInfos[^count] = Field!;
+
+                return accessors;
             }
         }
 
         public object? ToObject()
         {
-            (object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
+            (_, object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
 
-            var typedReference = TypedReference.MakeTypedReference(root, fieldInfos);
+            if (fieldInfos is [])
+            {
+                return root;
+            }
+            else
+            {
+                var typedReference = TypedReference.MakeTypedReference(root, fieldInfos);
 
-            return TypedReference.ToObject(typedReference);
+                return TypedReference.ToObject(typedReference);
+            }
         }
 
         private void SetValueDirect(FieldInfo field, object? value)
         {
-            (object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
+            (FieldInfo? staticField, object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
 
-            var typedReference = TypedReference.MakeTypedReference(root, fieldInfos);
+            if (fieldInfos is [])
+            {
+                field.SetValue(root, value);
+            }
+            else
+            {
+                var typedReference = TypedReference.MakeTypedReference(root, fieldInfos);
 
-            field.SetValueDirect(typedReference, value!);
+                field.SetValueDirect(typedReference, value!);
+            }
+
+            staticField?.SetValue(null, root);
         }
 
         private object? GetValueDirect(FieldInfo field)
         {
-            (object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
+            (_, object root, FieldInfo[] fieldInfos) = GetFieldAccessors(1);
 
-            var typedReference = TypedReference.MakeTypedReference(root, fieldInfos);
+            if (fieldInfos is [])
+            {
+                return field.GetValue(root);
+            }
+            else
+            {
+                var typedReference = TypedReference.MakeTypedReference(root, fieldInfos);
 
-            return field.GetValueDirect(typedReference);
+                return field.GetValueDirect(typedReference);
+            }
         }
 
-
-        public static void SetValue(object self, FieldInfo field, object? value)
+        public static void SetValue(object? self, FieldInfo field, object? value)
         {
             switch (self, field.DeclaringType)
             {
@@ -82,12 +124,13 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public static object? GetValue(object self, FieldInfo field)
+        public static object? GetValue(object? self, FieldInfo field)
         {
             return
                 (self, field.FieldType) switch
                 {
-                    (_, { IsPrimitive: false, IsValueType: true }) => new FieldData(self!, field),
+                    (null, { IsPrimitive: false, IsValueType: true }) => new FieldData(field),
+                    (_, { IsPrimitive: false, IsValueType: true }) => new FieldData(self, field),
                     (FieldData fieldData, _) => fieldData.GetValueDirect(field),
                     (_, _) => field.GetValue(self),
                 };

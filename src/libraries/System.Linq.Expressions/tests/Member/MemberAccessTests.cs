@@ -1040,5 +1040,40 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Equal(42, StaticClass.Item.Item);
         }
+
+        static class StaticClass2
+        {
+            public static Struct<Struct<int>> Item;
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypeInStaticClass2Test(bool useInterpreter)
+        {
+            Expression<Action> e =
+                Expression.Lambda<Action>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                Expression.Field(
+                                    null,
+                                    typeof(StaticClass2),
+                                    "Item"
+                                ),
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.Constant(42)
+                    ));
+
+            Action f = e.Compile(useInterpreter);
+
+            StaticClass2.Item.Item.Item = 0;
+
+            f();
+
+            Assert.Equal(42, StaticClass2.Item.Item.Item);
+        }
     }
 }
