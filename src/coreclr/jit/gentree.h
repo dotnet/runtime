@@ -763,8 +763,22 @@ public:
     bool gtCostsInitialized;
 #endif // DEBUG
 
-#define MAX_COST    UCHAR_MAX
+#define MAX_COST UCHAR_MAX
+
+#if defined(TARGET_XARCH)
+    // The costs for xarch are averaged based on their ranges
+
+#define IND_COST_EX 3 // 0-5 cycles
+#define IND_COST_SZ 3 // 0-5 bytes, depending on addressing mode complexity
+
+#define IND_COST_EX_FLT 6 // 4-8 cycles
+#define IND_COST_SZ_FLT 4 // 0-5 bytes, but with less addressing mode flexibility
+
+#define IND_COST_EX_MSK 3 // 0-5 cycles
+#define IND_COST_SZ_MSK 4 // 0-5 bytes, but with less addressing mode flexibility
+#else
 #define IND_COST_EX 3 // execution cost for an indirection
+#endif
 
     unsigned char GetCostEx() const
     {

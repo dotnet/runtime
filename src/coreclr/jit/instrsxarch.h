@@ -56,9 +56,13 @@ INST5(invalid,          "INVALID",          IUM_RD, BAD_CODE,     BAD_CODE,     
 
 INST5(push,             "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Encoding_REX2)
 INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Encoding_REX2)
+
 // Does not affect the stack tracking in the emitter
 INST5(push_hide,        "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Encoding_REX2)
 INST5(pop_hide,         "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Encoding_REX2)
+
+INST5(push2,            "push2",            IUM_RD, 0x0030FF,     BAD_CODE,     0x0030FF,     BAD_CODE,     0x0030FF,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_Flags_Has_NDD)
+INST5(pop2,             "pop2",             IUM_WR, 0x00008F,     BAD_CODE,     0x00008F,     BAD_CODE,     0x00008F,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_Flags_Has_NDD)
 
 INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     0x0000FE,     BAD_CODE,     0x000040,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD | INS_Flags_Has_NF)
 INST5(inc_l,            "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C0FE,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | Encoding_REX2 | INS_Flags_Has_NF)
@@ -1127,8 +1131,6 @@ INST3(vucomxss,         "ucomxss",          IUM_RD, BAD_CODE,               BAD_
 
 //    id                nm                  um      mr            mi            rm                                       lat                tp          tt              flags
 #define FIRST_APX_INSTRUCTION INS_ccmpo
-INST5(push2,            "push2",            IUM_RD, 0x0030FF,     BAD_CODE,     0x0030FF,     BAD_CODE,     0x0030FF,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_Flags_Has_NDD)
-INST5(pop2,             "pop2",             IUM_WR, 0x00008F,     BAD_CODE,     0x00008F,     BAD_CODE,     0x00008F,    ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_Flags_Has_NDD)
 #define FIRST_CCMP_INSTRUCTION INS_ccmpo
 INST3(ccmpo,            "ccmpo",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
 INST3(ccmpno,           "ccmpno",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
