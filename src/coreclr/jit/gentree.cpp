@@ -5692,16 +5692,28 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_NOT:
                 case GT_NEG:
-                    // We need to ensure that -x is evaluated before x or else
-                    // we get burned while adjusting genFPstkLevel in x*-x where
-                    // the rhs x is the last use of the enregistered x.
-                    //
-                    // Even in the integer case we want to prefer to
-                    // evaluate the side without the GT_NEG node, all other things
-                    // being equal.  Also a GT_NOT requires a scratch register
+                {
+#if defined(TARGET_XARCH)
+                    if (isFlt)
+                    {
+                        // ex, sz: ins
+                        // +1, +4: vxorp* xmm0, xmmword ptr [reloc @RWD00]
+
+                        costEx = 1 + IND_COST_EX_FLT;
+                        costSz = 4 + IND_COST_SZ_FLT;
+                    }
+#endif // TARGET_XARCH
+       // We need to ensure that -x is evaluated before x or else
+       // we get burned while adjusting genFPstkLevel in x*-x where
+       // the rhs x is the last use of the enregistered x.
+       //
+       // Even in the integer case we want to prefer to
+       // evaluate the side without the GT_NEG node, all other things
+       // being equal.  Also a GT_NOT requires a scratch register
 
                     level++;
                     break;
+                }
 
                 case GT_ARR_LENGTH:
                 case GT_MDARR_LENGTH:
@@ -5823,7 +5835,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         {
             case GT_MOD:
             case GT_UMOD:
-
+            {
                 /* Modulo by a power of 2 is easy */
 
                 if (op2->IsCnsIntOrI())
@@ -5837,15 +5849,35 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
 
                 FALLTHROUGH;
+            }
 
             case GT_DIV:
             case GT_UDIV:
-
+            {
                 if (isFlt)
                 {
+#if defined(TARGET_XARCH)
+                    if (tree->TypeIs(TYP_DOUBLE))
+                    {
+                        // ex, sz: ins
+                        // 14,  4: vdivsd xmm0, xmm0, xmm1
+
+                        costEx = 14;
+                        costSz = 4;
+                    }
+                    else
+                    {
+                        // ex, sz: ins
+                        // 11,  4: vdivss xmm0, xmm0, xmm1
+
+                        costEx = 11;
+                        costSz = 4;
+                    }
+#else
                     /* fp division is very expensive to execute */
                     costEx = 36; // TYP_DOUBLE
                     costSz += 3;
+#endif
                 }
                 else
                 {
@@ -5857,14 +5889,23 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     level += 3;
                 }
                 break;
+            }
 
             case GT_MUL:
-
+            {
                 if (isFlt)
                 {
+#if defined(TARGET_XARCH)
+                    // ex, sz: ins
+                    //  4,  4: vmuls* xmm0, xmm0, xmm1
+
+                    costEx = 4;
+                    costSz = 4;
+#else
                     /* FP multiplication instructions are more expensive */
                     costEx += 4;
                     costSz += 3;
+#endif
                 }
                 else
                 {
@@ -5892,14 +5933,26 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif //  TARGET_X86
                 }
                 break;
+            }
 
             case GT_ADD:
             case GT_SUB:
+            {
                 if (isFlt)
                 {
+#if defined(TARGET_XARCH)
+                    // ex, sz: ins
+                    //  4,  4: vadds* xmm0, xmm0, xmm1
+                    // -or-
+                    //  4,  4: vsubs* xmm0, xmm0, xmm1
+
+                    costEx = 4;
+                    costSz = 4;
+#else
                     /* FP instructions are a bit more expensive */
                     costEx += 4;
                     costSz += 3;
+#endif
                     break;
                 }
 
@@ -5910,6 +5963,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz += 3;
                 }
                 break;
+            }
 
             case GT_LSH:
             case GT_RSH:
@@ -5941,9 +5995,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_LE:
             case GT_GE:
             case GT_GT:
-                /* Float compares remove both operands from the FP stack */
-                /* Also FP comparison uses EAX for flags */
-
+            {
                 if (varTypeIsFloating(op1->TypeGet()))
                 {
                     level++;
@@ -5955,6 +6007,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx += 3;
                 }
                 break;
+            }
 
             case GT_BOUNDS_CHECK:
                 costEx = 4; // cmp reg,reg and jae throw (not taken)
