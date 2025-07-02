@@ -32,11 +32,12 @@ typedef enum
     PAL_NwStatusUpdates_ConnectionWriteFinished = 101,
     PAL_NwStatusUpdates_ConnectionWriteFailed = 102,
     PAL_NwStatusUpdates_ConnectionCancelled = 103,
+    PAL_NwStatusUpdates_DebugLog = 200,
 } PAL_NwStatusUpdates;
 
 // Callback type definitions that match the implementation usage
 typedef void (*StatusUpdateCallback)(size_t context, PAL_NwStatusUpdates status, size_t data1, size_t data2);
-typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, size_t length);
+typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, void** length);
 
 // Only TLS-specific Network Framework functions are exported
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer);

@@ -239,7 +239,6 @@ PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection)
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
 PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
 {
-    dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
     nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t  error) {
@@ -313,8 +312,8 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
     (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 30, (size_t)minTlsProtocol); // 30 = minTlsProtocol
     (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 31, (size_t)maxTlsProtocol); // 31 = maxTlsProtocol
     
-    nw_protocol_options_t tlsOptions = nw_tls_create_options();
-    sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
+    nw_protocol_options_t tls_options = nw_tls_create_options();
+    sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tls_options);
     if (targetName != NULL)
     {
         sec_protocol_options_set_tls_server_name(sec_options, targetName);
@@ -469,10 +468,12 @@ PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFA
 #pragma clang diagnostic pop
 
 // this is called once to set everything up
-PALEXPORT int32_t AppleNetNative_NwInit(StatusUpdateCallback statusFunc, WriteCallback writeFunc)
+PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, WriteCallback writeFunc)
 {
     assert(statusFunc != NULL);
     assert(writeFunc != NULL);
+
+    printf("%s:%d: AppleCryptoNative_NwInit called\n", __func__, __LINE__);
 
     if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
     {
