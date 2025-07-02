@@ -1140,7 +1140,7 @@ void InsertIntoNativeToILCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset
         {
             cacheSize = 1; // Ensure cache size is at least 1 to prevent division-by-zero
         }
-        s_stackWalkCacheSize = cacheSize;
+        VolatileStore(&s_stackWalkCacheSize, cacheSize);
         VolatileStore(&s_stackWalkCache, new(nothrow)StackWalkNativeToILCacheEntry[cacheSize]);
 
         if (s_stackWalkCache == NULL)
