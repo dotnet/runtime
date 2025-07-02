@@ -172,13 +172,13 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
-    GenTree*    variableNode = nullptr;
-    ssize_t     cns          = 0;
-    BasicBlock* trueTarget   = nullptr;
-    BasicBlock* falseTarget  = nullptr;
-    int     testValueIndex                  = 0;
-    ssize_t testValues[SWITCH_MAX_DISTANCE] = {};
-    weight_t          falseLikelihood       = firstBlock->GetFalseEdge()->getLikelihood();
+    GenTree*    variableNode                    = nullptr;
+    ssize_t     cns                             = 0;
+    BasicBlock* trueTarget                      = nullptr;
+    BasicBlock* falseTarget                     = nullptr;
+    int         testValueIndex                  = 0;
+    ssize_t     testValues[SWITCH_MAX_DISTANCE] = {};
+    weight_t    falseLikelihood                 = firstBlock->GetFalseEdge()->getLikelihood();
 
     // The algorithm is simple - we check that the given block is a constant test block
     // and then try to accumulate as many constant test blocks as possible. Once we hit
@@ -207,17 +207,16 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
                 *ccmpVec = BitVecOps::MakeEmpty(ccmpTraits);
             }
         }
-        
 
         // No more than SWITCH_MAX_TABLE_SIZE blocks are allowed (arbitrary limit in this context)
-        testValueIndex                          = 0;
-        testValues[testValueIndex]              = cns;
+        testValueIndex             = 0;
+        testValues[testValueIndex] = cns;
         testValueIndex++;
 
         // Track likelihood of reaching the false block
         //
-        falseLikelihood = firstBlock->GetFalseEdge()->getLikelihood();
-        const BasicBlock* prevBlock       = firstBlock;
+        falseLikelihood             = firstBlock->GetFalseEdge()->getLikelihood();
+        const BasicBlock* prevBlock = firstBlock;
 
         // Now walk the chain of test blocks, and see if they are basically the same type of test
         for (BasicBlock *currBb = falseTarget, *currFalseTarget; currBb != nullptr; currBb = currFalseTarget)
@@ -289,8 +288,8 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
     return false;
 
 optSwitchConvert:
-    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
-                            testingForConversion, ccmpVec);
+    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode, testingForConversion,
+                            ccmpVec);
 }
 
 //------------------------------------------------------------------------------
