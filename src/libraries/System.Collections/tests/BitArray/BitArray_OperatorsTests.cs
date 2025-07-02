@@ -245,12 +245,32 @@ namespace System.Collections.Tests
 
         public static IEnumerable<object[]> Shift_Data()
         {
-            foreach (int size in new[] { 0, 1, BitsPerInt32 / 2, BitsPerInt32, BitsPerInt32 + 1, 2 * BitsPerInt32, 2 * BitsPerInt32 + 1 })
+            Random random = new Random(0);
+            foreach (int size in new[] {
+                0,
+                1,
+                BitsPerInt32 / 2,
+                BitsPerInt32,
+                BitsPerInt32 + 1,
+                2 * BitsPerInt32 - 1,
+                2 * BitsPerInt32 + 1,
+                1023,
+                1024,
+                1025,
+            })
             {
-                foreach (int shift in new[] { 0, 1, size / 2, size - 1, size }.Where(s => s >= 0).Distinct())
+                foreach (int shift in new[] {
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                    30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+                    size / 3, size / 2, size / 2 + 1, size - 1, size,
+                }.Where(s => s >= 0).Distinct())
                 {
                     yield return new object[] { size, new int[] { /* deliberately empty */ }, shift };
                     yield return new object[] { size, Enumerable.Range(0, size), shift };
+
+                    int[] nums = Enumerable.Range(0, size).ToArray();
+                    random.Shuffle(nums);
+                    yield return new object[] { size, nums.Take(size / 2), shift };
 
                     if (size > 1)
                     {
