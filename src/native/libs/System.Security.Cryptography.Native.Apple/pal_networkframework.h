@@ -36,13 +36,12 @@ typedef enum
 
 // Callback type definitions that match the implementation usage
 typedef void (*StatusUpdateCallback)(size_t context, PAL_NwStatusUpdates status, size_t data1, size_t data2);
-typedef int32_t (*ReadCallback)(void* context, uint8_t* buffer, size_t* length);
 typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, size_t length);
 
 // Only TLS-specific Network Framework functions are exported
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer);
 PALEXPORT int32_t AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHandle);
-PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc);
+PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, WriteCallback writeFunc);
 PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, int length);
 PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle);
 PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);

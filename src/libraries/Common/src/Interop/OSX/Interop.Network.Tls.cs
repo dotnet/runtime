@@ -16,58 +16,48 @@ internal static partial class Interop
     {
         internal static partial class Tls
         {
-            // Initialize internal shim for NetworkFramework integration
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwInit")]
+            // Core TLS functions for Network Framework integration
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwInit")]
             [return: MarshalAs(UnmanagedType.I4)]
             internal static unsafe partial bool Init(
                 delegate* unmanaged<IntPtr, StatusUpdates, IntPtr, IntPtr, void> statusCallback,
-                delegate* unmanaged<IntPtr, byte*, void**, int> readCallback,
                 delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
 
-            // Create a new connection context
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCreateContext")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwCreateContext")]
             internal static partial SafeNwHandle CreateContext([MarshalAs(UnmanagedType.I4)] bool isServer);
 
-            // Set TLS options for a connection
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
             private static partial void SetTlsOptions(SafeNwHandle connection, IntPtr state,
             string targetName, Span<byte> alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol);
 
             internal static void SetTlsOptions(SafeNwHandle nwHandle, IntPtr state, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
             {
                 int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
-                Span<byte> alpn = stackalloc byte[256];
+                Span<byte> alpn = stackalloc byte[alpnLength];
                 SerializeAlpnProtocolList(applicationProtocols, alpn);
 
                 SetTlsOptions(nwHandle, state, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
             }
 
-            // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwStartTlsHandshake")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwStartTlsHandshake")]
             internal static partial int StartTlsHandshake(SafeNwHandle connection, IntPtr state);
 
-            // takes encrypted input from underlying stream and feed it to the connection.
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwProcessInputData")]
             internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength);
 
-            // sends plaintext data to the connection.
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSendToConnection")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwSendToConnection")]
             internal static unsafe partial void SendToConnection(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength);
 
-            // read plaintext data from the connection.
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwReadFromConnection")]
             internal static partial void ReadFromConnection(SafeNwHandle connection, IntPtr state);
 
-            // starts connection cleanup
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwCancelConnection")]
             internal static partial void CancelConnection(SafeNwHandle connection);
 
-            // gets TLS connection information
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwGetConnectionInfo")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwGetConnectionInfo")]
             internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, ref byte* negotiatedAlpn, out int negotiatedAlpnLength);
 
-            // copies the certificate chain from the connection
-            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]
+            [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwCopyCertChain")]
             internal static partial void CopyCertChain(SafeNwHandle connection, out SafeCFArrayHandle certificates, out int count);
 
             internal static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
@@ -121,6 +111,16 @@ internal static partial class Interop
             ConnectionCancelled = 103,
             DebugLog = 200,
         }
+
+        internal enum OSStatus
+        {
+            NoError = 0,
+            ReadError = -19,
+            WriteError = -20,
+            EOFError = -39,
+            SecUserCanceled = -128,
+            WouldBlock = -9803
+        }
     }
 
     // Safe handle classes for Network Framework TLS resources
@@ -135,7 +135,6 @@ internal static partial class Interop
 
         protected override bool ReleaseHandle()
         {
-            NetworkFramework.Release(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

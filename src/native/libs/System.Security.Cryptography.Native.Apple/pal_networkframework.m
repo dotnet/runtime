@@ -6,7 +6,6 @@
 #include <Network/Network.h>
 
 static WriteCallback _writeFunc;
-static ReadCallback _readFunc;
 static StatusUpdateCallback _statusFunc;
 static nw_protocol_definition_t _framerDefinition;
 static nw_protocol_definition_t _tlsDefinition;
@@ -61,15 +60,21 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
         [num getValue:&ptr];
         size_t size = message_length;
 
+        // Log through callback system instead of printf
+        (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 1, message_length); // 1 = framer_output_handler called
+        
         nw_framer_parse_output(framer, 1, message_length, NULL, ^size_t(uint8_t *buffer, size_t buffer_length, bool is_complete2) {
-            size_t length = buffer_length;
-            (_writeFunc)(ptr, buffer, length);
+            (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 2, buffer_length); // 2 = calling writeFunc
+            void* length = (void*)buffer_length;
+            (_writeFunc)(ptr, buffer, &length);
+            (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 3, 0); // 3 = writeFunc completed
             (void)is_complete2;
             (void)message;
             return buffer_length;
         });
 
         nw_release(framer_options);
+        (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 4, 0); // 4 = parse output completed
     }
     else
     {
@@ -113,16 +118,22 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
     [num getValue:&state];
 
+    // Log through callback system
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 10, 0); // 10 = framer_start called
+
     // Notify SafeHandle with framer instance so we can submit to it directly.
     (_statusFunc)(state, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0);
 
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 11, 0); // 11 = setting output handler
     nw_framer_set_output_handler(framer, framer_output_handler);
 
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 12, 0); // 12 = setting stop/cleanup handlers
     nw_framer_set_stop_handler(framer, framer_stop_handler);
     nw_framer_set_cleanup_handler(framer, framer_cleanup_handler);
 
     nw_release(framer_options);
 
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 13, 0); // 13 = returning ready
     return nw_framer_start_result_ready;
 };
 
@@ -176,8 +187,10 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
         return -1;
 
     nw_retain(connection); // hold a reference until canceled
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 20, 0); // 20 = StartTlsHandshake called
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
+        (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 21, status); // 21 = status changed
         switch (status)
         {
             case nw_connection_state_preparing:
@@ -209,8 +222,10 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
         }
     });
 
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 22, 0); // 22 = setting queue and starting
     nw_connection_set_queue(connection, _tlsQueue);
     nw_connection_start(connection);
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 23, 0); // 23 = connection started
 
     return 0;
 }
@@ -225,6 +240,7 @@ PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection)
 PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+    dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
     nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t  error) {
         if (error != NULL)
@@ -294,19 +310,24 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 // This configures TLS properties
 PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
-    nw_protocol_options_t tls_options = nw_tls_create_options();
-    sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tls_options);
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 30, (size_t)minTlsProtocol); // 30 = minTlsProtocol
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 31, (size_t)maxTlsProtocol); // 31 = maxTlsProtocol
+    
+    nw_protocol_options_t tlsOptions = nw_tls_create_options();
+    sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
     if (targetName != NULL)
     {
         sec_protocol_options_set_tls_server_name(sec_options, targetName);
     }
 
     tls_protocol_version_t version = PalSslProtocolToTlsProtocolVersion(minTlsProtocol);
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 32, (size_t)version); // 32 = native min version
     if ((int)version != 0)
     {
         sec_protocol_options_set_min_tls_protocol_version(sec_options, version);
     }
     version = PalSslProtocolToTlsProtocolVersion(maxTlsProtocol);
+    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 33, (size_t)version); // 33 = native max version
     if ((int)version != 0)
     {
         sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
@@ -397,7 +418,6 @@ PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connecti
 
         nw_release(meta);
         nw_release(secMeta);
-
         return 0;
     }
 
@@ -449,16 +469,14 @@ PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFA
 #pragma clang diagnostic pop
 
 // this is called once to set everything up
-PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc)
+PALEXPORT int32_t AppleNetNative_NwInit(StatusUpdateCallback statusFunc, WriteCallback writeFunc)
 {
     assert(statusFunc != NULL);
     assert(writeFunc != NULL);
-    assert(readFunc != NULL);
 
     if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
     {
         _writeFunc = writeFunc;
-        _readFunc = readFunc;
         _statusFunc = statusFunc;
         _framerDefinition = nw_framer_create_definition("com.dotnet.networkframework.tlsframer",
             NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);

@@ -50,7 +50,13 @@ namespace System.Net.Security
 
 
         private SafeFreeCredentials? _credentialsHandle;
+
+#if TARGET_OSX
+        // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
+        private SafeDeleteContext? _securityContext;
+#else
         private SafeDeleteSslContext? _securityContext;
+#endif
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;

@@ -15,7 +15,7 @@ using PAL_TlsIo = Interop.AppleCrypto.PAL_TlsIo;
 
 namespace System.Net.Security
 {
-    internal static class SslStreamPal
+    internal static partial class SslStreamPal
     {
         public static Exception GetException(SecurityStatusPal status)
         {
@@ -35,7 +35,7 @@ namespace System.Net.Security
 
         public static SecurityStatusPal SelectApplicationProtocol(
             SafeFreeCredentials? _,
-            SafeDeleteSslContext context,
+            SafeDeleteContext securityContext,
             SslAuthenticationOptions sslAuthenticationOptions,
             ReadOnlySpan<byte> clientProtocols)
         {
@@ -45,6 +45,8 @@ namespace System.Net.Security
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
             }
+
+            SafeDeleteSslContext context = (SafeDeleteSslContext)securityContext;
 
             // We do server side ALPN e.g. walk the intersect in server order
             foreach (SslApplicationProtocol applicationProtocol in sslAuthenticationOptions.ApplicationProtocols)
@@ -88,7 +90,7 @@ namespace System.Net.Security
 #pragma warning disable IDE0060
         public static ProtocolToken AcceptSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteSslContext? context,
+            ref SafeDeleteContext? context,
             ReadOnlySpan<byte> inputBuffer,
             out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
@@ -98,7 +100,7 @@ namespace System.Net.Security
 
         public static ProtocolToken InitializeSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteSslContext? context,
+            ref SafeDeleteContext? context,
             string? _ /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,
             out int consumed,
@@ -109,7 +111,7 @@ namespace System.Net.Security
 
         public static ProtocolToken Renegotiate(
             ref SafeFreeCredentials? credentialsHandle,
-            ref SafeDeleteSslContext? context,
+            ref SafeDeleteContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             throw new PlatformNotSupportedException();
@@ -123,6 +125,22 @@ namespace System.Net.Security
 #pragma warning restore IDE0060
 
         public static ProtocolToken EncryptMessage(
+            SafeDeleteContext securityContext,
+            ReadOnlyMemory<byte> input,
+            int headerSize,
+            int trailerSize)
+        {
+            Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
+
+            return securityContext switch
+            {
+                SafeDeleteSslContext sslContext => EncryptMessageSecureTransport(sslContext, input, headerSize, trailerSize),
+                SafeDeleteNwContext nwContext => EncryptMessageNetworkFramework(nwContext, input, headerSize, trailerSize),
+                _ => throw new PlatformNotSupportedException()
+            };
+        }
+
+        public static ProtocolToken EncryptMessageSecureTransport(
             SafeDeleteSslContext securityContext,
             ReadOnlyMemory<byte> input,
             int _ /*headerSize*/,
@@ -130,11 +148,10 @@ namespace System.Net.Security
         {
             ProtocolToken token = default;
 
-            Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
-
             try
             {
-                SafeSslHandle sslHandle = securityContext.SslContext;
+                SafeDeleteSslContext context = (SafeDeleteSslContext)securityContext;
+                SafeSslHandle sslHandle = context.SslContext;
 
                 unsafe
                 {
@@ -169,7 +186,7 @@ namespace System.Net.Security
                                 break;
                         }
 
-                        securityContext.ReadPendingWrites(ref token);
+                        context.ReadPendingWrites(ref token);
                     }
                     finally
                     {
@@ -186,6 +203,20 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal DecryptMessage(
+            SafeDeleteContext securityContext,
+            Span<byte> buffer,
+            out int offset,
+            out int count)
+        {
+            return securityContext switch
+            {
+                SafeDeleteSslContext sslContext => DecryptMessageSecureTransport(sslContext, buffer, out offset, out count),
+                SafeDeleteNwContext nwContext => DecryptMessageNetworkFramework(nwContext, buffer, out offset, out count),
+                _ => throw new PlatformNotSupportedException()
+            };
+        }
+
+        public static SecurityStatusPal DecryptMessageSecureTransport(
             SafeDeleteSslContext securityContext,
             Span<byte> buffer,
             out int offset,
@@ -196,8 +227,10 @@ namespace System.Net.Security
 
             try
             {
-                SafeSslHandle sslHandle = securityContext.SslContext;
-                securityContext.Write(buffer);
+                SafeDeleteSslContext context = (SafeDeleteSslContext)securityContext;
+                SafeSslHandle sslHandle = context.SslContext;
+
+                context.Write(buffer);
 
                 unsafe
                 {
@@ -261,7 +294,7 @@ namespace System.Net.Security
         }
 
         public static void QueryContextConnectionInfo(
-            SafeDeleteSslContext securityContext,
+            SafeDeleteContext securityContext,
             ref SslConnectionInfo connectionInfo)
         {
             connectionInfo.UpdateSslConnectionInfo(securityContext);
@@ -269,7 +302,7 @@ namespace System.Net.Security
 
         public static bool TryUpdateClintCertificate(
             SafeFreeCredentials? _,
-            SafeDeleteSslContext? context,
+            SafeDeleteContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
@@ -283,7 +316,7 @@ namespace System.Net.Security
         }
 
         private static ProtocolToken HandshakeInternal(
-            ref SafeDeleteSslContext? context,
+            ref SafeDeleteContext? context,
             ReadOnlySpan<byte> inputBuffer,
             out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
@@ -293,23 +326,58 @@ namespace System.Net.Security
 
             try
             {
-                SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
+                SafeDeleteContext securityContext = context!;
 
                 if ((null == context) || context.IsInvalid)
                 {
-                    sslContext = new SafeDeleteSslContext(sslAuthenticationOptions);
-                    context = sslContext;
+                    bool useNetworkFramework = false;
+                    switch (sslAuthenticationOptions.EnabledSslProtocols)
+                    {
+                        case SslProtocols.None:
+                        case SslProtocols.Tls12:
+                        case SslProtocols.Tls13:
+                        case SslProtocols.Tls12 | SslProtocols.Tls13:
+                            useNetworkFramework = sslAuthenticationOptions.CipherSuitesPolicy == null &&
+                            sslAuthenticationOptions.ClientCertificates == null &&
+                            sslAuthenticationOptions.CertificateContext == null &&
+                            sslAuthenticationOptions.CertSelectionDelegate == null;
+                            break;
+                    }
+
+                    if (sslAuthenticationOptions.IsClient && !sslAuthenticationOptions.IsServer &&
+                        useNetworkFramework &&
+                        SafeDeleteNwContext.IsNetworkFrameworkAvailable)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                            NetEventSource.Info(null, $"Using Network Framework (SafeDeleteNwContext) for TLS connection - Protocols: {sslAuthenticationOptions.EnabledSslProtocols}");
+                        securityContext = new SafeDeleteNwContext(sslAuthenticationOptions);
+                    }
+                    else
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                            NetEventSource.Info(null, $"Using SecureTransport (SafeDeleteSslContext) for TLS connection - Protocols: {sslAuthenticationOptions.EnabledSslProtocols}, IsClient: {sslAuthenticationOptions.IsClient}, NetworkFrameworkAvailable: {SafeDeleteNwContext.IsNetworkFrameworkAvailable}");
+                        // Server side, we can't use Network Framework, so we use Secure Transport.
+                        securityContext = new SafeDeleteSslContext(sslAuthenticationOptions);
+                    }
+                    context = securityContext;
                 }
 
                 if (inputBuffer.Length > 0)
                 {
-                    sslContext!.Write(inputBuffer);
+                    switch (securityContext)
+                    {
+                        case SafeDeleteSslContext sslContext:
+                            sslContext.Write(inputBuffer);
+                            break;
+                        case SafeDeleteNwContext nwContext:
+                            nwContext.Write(inputBuffer);
+                            break;
+                    }
                 }
 
                 consumed = inputBuffer.Length;
 
-                SafeSslHandle sslHandle = sslContext!.SslContext;
-                token.Status = PerformHandshake(sslHandle);
+                token.Status = PerformHandshake(securityContext!);
 
                 if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
@@ -318,7 +386,15 @@ namespace System.Net.Security
                     return token;
                 }
 
-                sslContext.ReadPendingWrites(ref token);
+                switch (securityContext)
+                {
+                    case SafeDeleteSslContext sslContext:
+                        sslContext.ReadPendingWrites(ref token);
+                        break;
+                    case SafeDeleteNwContext nwContext:
+                        nwContext.ReadPendingWrites(ref token);
+                        break;
+                }
                 return token;
             }
             catch (Exception exc)
@@ -326,6 +402,16 @@ namespace System.Net.Security
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
                 return token;
             }
+        }
+
+        private static SecurityStatusPal PerformHandshake(SafeDeleteContext sslContext)
+        {
+            return sslContext switch
+            {
+                SafeDeleteSslContext secureTransportContext => PerformHandshake(secureTransportContext.SslContext),
+                SafeDeleteNwContext nwContext => nwContext.PerformHandshake(),
+                _ => throw new PlatformNotSupportedException()
+            };
         }
 
         private static SecurityStatusPal PerformHandshake(SafeSslHandle sslHandle)
@@ -375,9 +461,10 @@ namespace System.Net.Security
 #pragma warning restore IDE0060
 
         public static SecurityStatusPal ApplyShutdownToken(
-            SafeDeleteSslContext securityContext)
+            SafeDeleteContext securityContext)
         {
-            SafeSslHandle sslHandle = securityContext.SslContext;
+            SafeDeleteSslContext context = (SafeDeleteSslContext)securityContext;
+            SafeSslHandle sslHandle = context.SslContext;
 
             int osStatus = Interop.AppleCrypto.SslShutdown(sslHandle);
 
