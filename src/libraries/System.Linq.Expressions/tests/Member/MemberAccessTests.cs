@@ -1075,5 +1075,112 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Equal(42, StaticClass2.Item.Item.Item);
         }
+
+
+        class PassStaticStructMembersMemberToRefFunctionClassA
+        {
+            public static Tuple2Ints Tuple2Ints;
+
+            public static void SetIntToFortyTwo(ref int value) => value = 42;
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PassStaticStructMembersMemberToRefFunction(bool useInterpreter)
+        {
+            MethodInfo m = typeof(PassStaticStructMembersMemberToRefFunctionClassA).GetMethod(nameof(PassStaticStructMembersMemberToRefFunctionClassA.SetIntToFortyTwo));
+
+            Expression<Action> e =
+                Expression.Lambda<Action>(
+                    Expression.Call(
+                        m!,
+                        Expression.Field(
+                            Expression.Field(
+                                null,
+                                typeof(PassStaticStructMembersMemberToRefFunctionClassA),
+                                nameof(PassStaticStructMembersMemberToRefFunctionClassA.Tuple2Ints)),
+                            "Item1")
+                    )
+                );
+
+            Action f = e.Compile(useInterpreter);
+
+            PassStaticStructMembersMemberToRefFunctionClassA.Tuple2Ints.Item1 = 0;
+
+            f();
+
+            Assert.Equal(42, PassStaticStructMembersMemberToRefFunctionClassA.Tuple2Ints.Item1);
+        }
+
+        class PassStaticStructMembersMemberToRefFunctionClassB
+        {
+            public static Tuple2Ints Tuple2Ints;
+
+            public static void SetIntToFortyTwo(ref int value) => value = 42;
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PassStaticStructMembersMemberToRefDelegate(bool useInterpreter)
+        {
+            SetIntToFortyTwo d = (ref int value) => value = 42;
+
+            Expression<Action> e =
+                Expression.Lambda<Action>(
+                    Expression.Invoke(
+                        Expression.Constant(d),
+                        Expression.Field(
+                            Expression.Field(
+                                null,
+                                typeof(PassStaticStructMembersMemberToRefFunctionClassB),
+                                nameof(PassStaticStructMembersMemberToRefFunctionClassB.Tuple2Ints)),
+                            "Item1")
+                    )
+                );
+
+            Action f = e.Compile(useInterpreter);
+
+            PassStaticStructMembersMemberToRefFunctionClassB.Tuple2Ints.Item1 = 0;
+
+            f();
+
+            Assert.Equal(42, PassStaticStructMembersMemberToRefFunctionClassB.Tuple2Ints.Item1);
+        }
+
+        class PassStaticStructMembersMemberToRefFunctionClassC
+        {
+            public static Tuple2Ints Tuple2Ints;
+
+            public static void SetIntToFortyTwo(ref int value) => value = 42;
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PassStaticStructMembersMemberToRefConstructor(bool useInterpreter)
+        {
+            System.Reflection.ConstructorInfo c = typeof(SetIntToFortyTwoOnConstructor).GetConstructor([typeof(int).MakeByRefType()])!;
+
+            Expression<Action> e =
+                Expression.Lambda<Action>(
+                    Expression.New(
+                        c,
+                        Expression.Field(
+                            Expression.Field(
+                                null,
+                                typeof(PassStaticStructMembersMemberToRefFunctionClassC),
+                                nameof(PassStaticStructMembersMemberToRefFunctionClassC.Tuple2Ints)),
+                            "Item1")
+                    )
+                );
+
+            Action f = e.Compile(useInterpreter);
+
+            PassStaticStructMembersMemberToRefFunctionClassC.Tuple2Ints.Item1 = 0;
+
+            f();
+
+            Assert.Equal(42, PassStaticStructMembersMemberToRefFunctionClassC.Tuple2Ints.Item1);
+        }
+
     }
 }
