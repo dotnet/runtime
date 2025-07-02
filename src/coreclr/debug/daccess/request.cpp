@@ -3347,6 +3347,9 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+#if defined(FEATURE_JAVAMARSHAL)
+                            HNDTYPE_CROSSREFERENCE,
+#endif // FEATURE_JAVAMARSHAL
                             };
 
     return GetHandleEnumForTypes(types, ARRAY_SIZE(types), ppHandleEnum);

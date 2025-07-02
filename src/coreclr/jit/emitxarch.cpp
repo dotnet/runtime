@@ -3845,11 +3845,54 @@ unsigned const emitter::emitInsModeFmtCnt = ArrLen(emitInsModeFmtTab);
  *  Combine the given base format with the update mode of the instruction.
  */
 
-inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat base)
+inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat base, bool useNDD)
 {
     assert(IF_RRD + IUM_RD == IF_RRD);
     assert(IF_RRD + IUM_WR == IF_RWR);
     assert(IF_RRD + IUM_RW == IF_RRW);
+
+#ifdef TARGET_AMD64
+    if (useNDD)
+    {
+        assert(IsApxNDDEncodableInstruction(ins));
+        if (ins == INS_rcl_N || ins == INS_rcr_N || ins == INS_rol_N || ins == INS_ror_N || ins == INS_shl_N ||
+            ins == INS_shr_N || ins == INS_sar_N)
+        {
+            // shift instructions has its own instruction format.
+            return IF_RWR_RRD_SHF;
+        }
+        // NDD instructions have the following operand encoding:
+        // 1. (w, r, r) for binary
+        // 2. (w, r) for unary
+        // These format are not properly tracked by the original IF table, we need to fix them here.
+        switch (base)
+        {
+            case IF_RRD_RRD_RRD:
+                return IF_RWR_RRD_RRD;
+
+            case IF_RRD_RRD_ARD:
+                return IF_RWR_RRD_ARD;
+
+            case IF_RRD_RRD_CNS:
+                return IF_RWR_RRD_CNS;
+
+            case IF_RRD_RRD_SRD:
+                return IF_RWR_RRD_SRD;
+
+            // we only apply NDD on unary instructions with register uses.
+            case IF_RRD_RRD:
+                return IF_RWR_RRD;
+
+            default:
+                // There should not be any other instruction format with NDD feature.
+                unreached();
+        }
+    }
+    else
+    {
+        return (insFormat)(base + emitInsUpdateMode(ins));
+    }
+#endif
 
     return (insFormat)(base + emitInsUpdateMode(ins));
 }
@@ -6494,7 +6537,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         }
                         else
                         {
-                            fmt = useNDD ? emitInsModeFormat(ins, IF_RWR_RRD_ARD) : emitInsModeFormat(ins, IF_RRD_ARD);
+                            // NDD allow instructions have different register on dst and src1.
+                            insFormat base = useNDD ? IF_RRD_RRD_ARD : IF_RRD_ARD;
+                            fmt            = emitInsModeFormat(ins, base, useNDD);
                         }
                     }
                     else
@@ -7809,7 +7854,8 @@ bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, reg
 //    srcReg    -- The source register
 //    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
 //
-void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
+bool emitter::emitIns_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, bool useApxNdd)
 {
     // Only move instructions can use emitIns_Mov
     assert(IsMovInstruction(ins));
@@ -7898,13 +7944,23 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
     if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
     {
-        return;
+        // Move is redundant, no need to emit anything
+        return false;
     }
 
     if (EmitMovsxAsCwde(ins, size, dstReg, srcReg))
     {
-        return;
+        // Move is redundant, no need to emit anything
+        return false;
     }
+
+#ifdef TARGET_AMD64
+    if (useApxNdd)
+    {
+        // Move is required, but the caller is APX NDD aware
+        return true;
+    }
+#endif // TARGET_AMD64
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -7917,6 +7973,9 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
     dispIns(id);
     emitCurIGsize += sz;
+
+    // Move is required and the caller is not APX NDD aware, we emitted the move
+    return true;
 }
 
 /*****************************************************************************
@@ -7932,13 +7991,16 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         emitIns_Mov(ins, attr, reg1, reg2, /* canSkip */ false);
     }
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     emitAttr size = EA_SIZE(attr);
 
     assert(size <= EA_64BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
 
     /* Special case: "XCHG" uses a different format */
-    insFormat fmt = (ins == INS_xchg) ? IF_RRW_RRW : emitInsModeFormat(ins, IF_RRD_RRD);
+    insFormat fmt = (ins == INS_xchg) ? IF_RRW_RRW : emitInsModeFormat(ins, IF_RRD_RRD, useNDD);
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -7950,11 +8012,6 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     SetEvexNfIfNeeded(id, instOptions);
     SetEvexDFVIfNeeded(id, instOptions);
     SetApxPpxIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        id->idInsFmt(IF_RWR_RRD);
-    }
 
     if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
     {
@@ -7987,8 +8044,11 @@ void emitter::emitIns_R_R_I(
 
     instrDesc* id = emitNewInstrSC(attr, ival);
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     id->idIns(ins);
-    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_CNS));
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_CNS, useNDD));
     id->idReg1(reg1);
     id->idReg2(reg2);
 
@@ -8010,31 +8070,6 @@ void emitter::emitIns_R_R_I(
     assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        // need to fix the instruction opcode for legacy instructions as they has different opcode for RI form.
-        code = insCodeMI(ins);
-        // need to fix the instructions format for NDD legacy instructions.
-        insFormat fmt;
-        switch (ins)
-        {
-            case INS_shl_N:
-            case INS_shr_N:
-            case INS_sar_N:
-            case INS_ror_N:
-            case INS_rol_N:
-            case INS_rcr_N:
-            case INS_rcl_N:
-                fmt = IF_RWR_RRD_SHF;
-                break;
-
-            default:
-                fmt = IF_RWR_RRD_CNS;
-                break;
-        }
-        id->idInsFmt(fmt);
-    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
     id->idCodeSize(sz);
@@ -8407,9 +8442,12 @@ void emitter::emitIns_R_R_R(
     assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
-    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_RRD : emitInsModeFormat(ins, IF_RRD_RRD_RRD));
+    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_RRD : emitInsModeFormat(ins, IF_RRD_RRD_RRD, useNDD));
     id->idReg1(targetReg);
     id->idReg2(reg1);
     id->idReg3(reg2);
@@ -8423,12 +8461,6 @@ void emitter::emitIns_R_R_R(
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
     SetEvexNfIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        // need to fix the instructions format for NDD legacy instructions.
-        id->idInsFmt(IF_RWR_RRD_RRD);
-    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8445,8 +8477,11 @@ void emitter::emitIns_R_R_S(
 
     instrDesc* id = emitNewInstr(attr);
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     id->idIns(ins);
-    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_SRD : emitInsModeFormat(ins, IF_RRD_RRD_SRD));
+    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_SRD : emitInsModeFormat(ins, IF_RRD_RRD_SRD, useNDD));
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
@@ -8454,11 +8489,6 @@ void emitter::emitIns_R_R_S(
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        id->idInsFmt(IF_RWR_RRD_SRD);
-    }
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -10652,17 +10682,15 @@ regNumber emitter::emitIns_BASE_R_R_RM(
     regNumber r                     = REG_NA;
     assert(regOp->isUsedFromReg());
 
-    if (DoJitUseApxNDD(ins) && regOp->GetRegNum() != targetReg)
+    bool useApxNdd = DoJitUseApxNDD(ins);
+
+    if (emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), true, useApxNdd) && useApxNdd)
     {
-        r = emitInsBinary(ins, attr, regOp, rmOp, targetReg);
-    }
-    else
-    {
-        emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), /*canSkip*/ true);
-        r = emitInsBinary(ins, attr, treeNode, rmOp);
+        return emitInsBinary(ins, attr, regOp, rmOp, targetReg);
     }
 
-    return r;
+    return emitInsBinary(ins, attr, treeNode, rmOp);
+    ;
 }
 
 //----------------------------------------------------------------------------------------
@@ -11794,13 +11822,8 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
             {
                 return emitXMMregName(reg);
             }
-
+            assert(isGeneralRegister(reg));
 #if defined(TARGET_AMD64)
-            if (reg > REG_R15)
-            {
-                break;
-            }
-
             if (reg > REG_RDI)
             {
                 suffix = 'd';
@@ -12559,13 +12582,25 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
 {
     instruction ins = id->idIns();
 
-    if ((ins == INS_cmppd) || (ins == INS_cmpps) || (ins == INS_cmpsd) || (ins == INS_cmpss) ||
-        (ins == INS_pclmulqdq) || (ins == INS_vpcmpb) || (ins == INS_vpcmpd) || (ins == INS_vpcmpq) ||
-        (ins == INS_vpcmpw) || (ins == INS_vpcmpub) || (ins == INS_vpcmpud) || (ins == INS_vpcmpuq) ||
-        (ins == INS_vpcmpuw))
+    if (CodeGenInterface::instHasPseudoName(ins))
     {
-        // These instructions have pseudo-names for each possible immediate value
-        return;
+        switch (ins)
+        {
+            case INS_roundpd:
+            case INS_roundps:
+            case INS_roundsd:
+            case INS_roundss:
+            {
+                // These instructions have pseudo-names, but still need to display the immediate
+                break;
+            }
+
+            default:
+            {
+                // These instructions have pseudo-names for each possible immediate value
+                return;
+            }
+        }
     }
 
     CnsVal cnsVal;
