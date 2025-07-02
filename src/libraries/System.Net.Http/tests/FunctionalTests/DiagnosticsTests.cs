@@ -861,14 +861,7 @@ namespace System.Net.Http.Functional.Tests
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
 
-                        // We are not using Assert.ThrowsAsync<TaskCanceledException>(...); in case we get an incorrect exception, we want to fully propagate it into the test logs.
-                        try
-                        {
-                            await GetAsync(useVersion, testAsync, uri, cts.Token);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                        }
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
 
                         Assert.NotNull(activity);
                         Assert.Equal(ActivityStatusCode.Error, activity.Status);
