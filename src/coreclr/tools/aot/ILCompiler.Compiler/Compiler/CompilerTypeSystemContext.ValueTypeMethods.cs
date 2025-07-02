@@ -103,7 +103,7 @@ namespace ILCompiler
                 return false;
 
             // ValueTuples override Equals/GetHashCode and don't have a `base.GetHashCode` call. So avoid the infrastructure.
-            if (valueType.Module == SystemModule && valueType.Name.StartsWith("ValueTuple`", StringComparison.OrdinalIgnoreCase) && valueType.Namespace == "System")
+            if (valueType.Module == SystemModule && valueType.Name.StartsWith("ValueTuple`", StringComparison.Ordinal) && valueType.Namespace == "System")
                 return false;
 
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
