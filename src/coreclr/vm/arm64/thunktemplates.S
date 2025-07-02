@@ -121,8 +121,8 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
 
     LEAF_ENTRY StubPrecodeCode\STUB_PAGE_SIZE
 // Experiment with alternate barrier approach (This model provides the needed barrier semantics when examined by the Arm memory model tool https://developer.arm.com/herd7)
-        ldr x11, [sp]
-        stlr x11, [sp]
+        sub x11, sp, #16
+        stlr x11, [x11]
         ldar x11, [sp]
 //        dmb ishld
         ldr x10, DATA_SLOT(StubPrecode, Target)
