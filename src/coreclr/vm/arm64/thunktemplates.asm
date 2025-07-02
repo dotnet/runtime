@@ -11,7 +11,11 @@
 #define DATA_SLOT(stub, field) (stub##Code + STUB_PAGE_SIZE + stub##Data__##field)
 
     LEAF_ENTRY StubPrecodeCode
-        dmb ishld
+; Experiment with alternate barrier approach (This model provides the needed barrier semantics when examined by the Arm memory model tool https://developer.arm.com/herd7)
+        ldr x11, [sp]
+        stlr x11, [sp]
+        ldar x11, [sp]
+;        dmb ishld
         ldr x10, DATA_SLOT(StubPrecode, Target)
         ldr x12, DATA_SLOT(StubPrecode, SecretParam)
         br x10

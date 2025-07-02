@@ -120,12 +120,16 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
     .irp STUB_PAGE_SIZE, 16384, 32768, 65536
 
     LEAF_ENTRY StubPrecodeCode\STUB_PAGE_SIZE
-        dmb ishld
+// Experiment with alternate barrier approach (This model provides the needed barrier semantics when examined by the Arm memory model tool https://developer.arm.com/herd7)
+        ldr x11, [sp]
+        stlr x11, [sp]
+        ldar x11, [sp]
+//        dmb ishld
         ldr x10, DATA_SLOT(StubPrecode, Target)
         ldr x12, DATA_SLOT(StubPrecode, SecretParam)
         br x10
-        brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
-        brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
+//        brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
+//        brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
     LEAF_END_MARKED StubPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY FixupPrecodeCode\STUB_PAGE_SIZE
