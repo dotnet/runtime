@@ -23,12 +23,12 @@ int64_t ftell_64(FILE* stream)
 {
     fpos_t pos;
     fgetpos(stream, &pos);
-    return (int64_t)pos;
+    return pos;
 }
 
 int fsetpos_64(FILE* stream, int64_t pos)
 {
-    fpos_t fpos = (fpos_t)pos;
+    fpos_t fpos = pos;
     return fsetpos(stream, &fpos);
 }
 
