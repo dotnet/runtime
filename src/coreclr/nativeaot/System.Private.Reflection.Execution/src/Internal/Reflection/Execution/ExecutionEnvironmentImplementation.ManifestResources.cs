@@ -91,13 +91,21 @@ namespace Internal.Reflection.Execution
                 NativeParser entryParser;
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
-                    string entryAssemblyName = entryParser.GetString();
-                    string entryResourceName = entryParser.GetString();
-                    int resourceOffset = (int)entryParser.GetUnsigned();
-                    int resourceLength = (int)entryParser.GetUnsigned();
-
-                    Debug.Assert(assemblyName == entryAssemblyName);
-                    yield return new ResourceInfo(entryResourceName, resourceOffset, resourceLength, module);
+                    if (entryParser.StringEquals(assemblyName))
+                    {
+                        entryParser.SkipString();
+                        string entryResourceName = entryParser.GetString();
+                        int resourceOffset = (int)entryParser.GetUnsigned();
+                        int resourceLength = (int)entryParser.GetUnsigned();
+                        yield return new ResourceInfo(entryResourceName, resourceOffset, resourceLength, module);
+                    }
+                    else
+                    {
+                        entryParser.SkipString();
+                        entryParser.SkipString();
+                        entryParser.SkipInteger();
+                        entryParser.SkipInteger();
+                    }
                 }
             }
         }
