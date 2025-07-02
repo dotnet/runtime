@@ -43,7 +43,6 @@ namespace System.Linq.Expressions.Interpreter
         public LoadFieldInstruction(FieldInfo field)
             : base(field)
         {
-            System.IO.File.AppendAllText("/home/stickman/runtime.txt", $"LoadFieldInstruction({field})\n");
         }
 
         public override string InstructionName => "LoadField";
