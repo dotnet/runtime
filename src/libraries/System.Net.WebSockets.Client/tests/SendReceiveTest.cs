@@ -31,7 +31,11 @@ namespace System.Net.WebSockets.Client.Tests
 
     public abstract class SendReceiveTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        #region Send-receive type test setup
+        #region Send-receive type setup
+
+        public static readonly object[][] EchoServersAndSendReceiveType = ToMemberData(EchoServers_Values, Enum.GetValues<SendReceiveType>());
+        public static readonly object[][] UseSslAndSendReceiveType = ToMemberData(UseSsl_Values, Enum.GetValues<SendReceiveType>());
+        public static readonly object[][] SendReceiveTypes = ToMemberData(Enum.GetValues<SendReceiveType>());
 
         public enum SendReceiveType
         {
@@ -39,43 +43,40 @@ namespace System.Net.WebSockets.Client.Tests
             Memory
         }
 
-        public static readonly object[][] EchoServersAndSendReceiveType = ToMemberData(EchoServers_Values, Enum.GetValues<SendReceiveType>());
+        protected Func<WebSocket, ArraySegment<byte>, WebSocketMessageType, bool, CancellationToken, Task> SendAsync { get; private set; } = null!;
+        protected Func<WebSocket, ArraySegment<byte>, CancellationToken, Task<WebSocketReceiveResult>> ReceiveAsync { get; private set; } = null!;
 
-        public static readonly object[][] UseSslAndSendReceiveType = ToMemberData(UseSsl_Values, Enum.GetValues<SendReceiveType>());
-        public static readonly object[][] SendReceiveTypes = ToMemberData(Enum.GetValues<SendReceiveType>());
-
-        protected SendReceiveType? SendReceiveTestType { get; set; }
-
-        protected Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
-            => SendReceiveTestType switch
+        private void SelectSendReceive(SendReceiveType sendReceiveTestType)
+        {
+            SendAsync = sendReceiveTestType switch
             {
-                SendReceiveType.ArraySegment => ws.SendAsync(arraySegment, messageType, endOfMessage, cancellationToken),
-                SendReceiveType.Memory => ws.SendAsync((ReadOnlyMemory<byte>)arraySegment, messageType, endOfMessage, cancellationToken).AsTask(),
-                _ => throw new ArgumentException(nameof(SendReceiveTestType))
+                SendReceiveType.ArraySegment => static (ws, buf, opcode, eom, ct) => ws.SendAsync(buf, opcode, eom, ct),
+                SendReceiveType.Memory => static (ws, buf, opcode, eom, ct) => ws.SendAsync((ReadOnlyMemory<byte>)buf, opcode, eom, ct).AsTask(),
+                _ => throw new ArgumentException(nameof(sendReceiveTestType))
             };
 
-        protected Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
-            => SendReceiveTestType switch
+            ReceiveAsync = sendReceiveTestType switch
             {
-                SendReceiveType.ArraySegment => ws.ReceiveAsync(arraySegment, cancellationToken),
-                SendReceiveType.Memory => Task.Run(async () =>
+                SendReceiveType.ArraySegment => static (ws, buf, ct) => ws.ReceiveAsync(buf, ct),
+                SendReceiveType.Memory => static async (ws, buf, ct) =>
                     {
-                        ValueWebSocketReceiveResult r = await ws.ReceiveAsync((Memory<byte>)arraySegment, cancellationToken).ConfigureAwait(false);
+                        ValueWebSocketReceiveResult r = await ws.ReceiveAsync((Memory<byte>)buf, ct).ConfigureAwait(false);
                         return new WebSocketReceiveResult(r.Count, r.MessageType, r.EndOfMessage, ws.CloseStatus, ws.CloseStatusDescription);
-                    }),
-                _ => throw new ArgumentException(nameof(SendReceiveTestType))
+                    },
+                _ => throw new ArgumentException(nameof(sendReceiveTestType))
             };
+        }
 
         protected Task RunSendReceive(Func<Task> sendReceiveFunc, SendReceiveType sendReceiveTestType)
         {
-            SendReceiveTestType = sendReceiveTestType;
+            SelectSendReceive(sendReceiveTestType);
             return sendReceiveFunc();
         }
 
 
         protected Task RunSendReceive(Func<Uri, Task> sendReceiveFunc, Uri uri, SendReceiveType sendReceiveTestType)
         {
-            SendReceiveTestType = sendReceiveTestType;
+            SelectSendReceive(sendReceiveTestType);
             return sendReceiveFunc(uri);
         }
 
@@ -404,8 +405,6 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-
-
         protected async Task RunClient_ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server))
@@ -495,7 +494,7 @@ namespace System.Net.WebSockets.Client.Tests
         #endregion
     }
 
-    /*#region Runnable test classes: External/Outerloop
+    #region Runnable test classes: External/Outerloop
 
     public sealed class SendReceiveTest_SharedHandler_External(ITestOutputHelper output) : SendReceiveTest_External(output) { }
 
@@ -509,5 +508,5 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseHttpClient => true;
     }
 
-    #endregion*/
+    #endregion
 }
