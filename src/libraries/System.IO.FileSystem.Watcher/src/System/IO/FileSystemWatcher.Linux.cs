@@ -28,9 +28,9 @@ namespace System.IO
     //   - if the path now refers to a different directory, another wd will be returned.
     //
     //   For each FileSystemWatcher we use a Watcher object that represents all inotify operations performed for that FileSystemWatcher.
-    //   To represent the difference explained above (path vs directory) we use a WatchDirectory object to represent a path that is watched
+    //   To represent the difference explained above (path vs directory) we use a WatchedDirectory object to represent a path that is watched
     //   and a separate Watch object that represent the wd returned by the inotify_add_watch.
-    //   Each WatchDirectory has a single Watch, while a Watch may be used by several WatchDirectories.
+    //   Each WatchedDirectory has a single Watch, while a Watch may be used by several WatchDirectories.
     //   When there are no more WatchDirectories using the Watch, we can remove it.
     //
     // Locking:
@@ -375,8 +375,10 @@ namespace System.IO
                 bool addLockTaken = false;
                 try
                 {
-                    // If this is a root watch we need to take the watchers lock.
-                    if (removedDir.Parent is null)
+                    // If the user sets EnableRaisingEvents to false on the last Watcher,
+                    // instead of removing all the inotify watches, we'll only remove the root watch (to trigger an IN_IGNORED)
+                    // and then ProcessEvents will stop when it sees IsStopped was set.
+                    if (ignoredFd == -1 && removedDir.IsRootDir)
                     {
                         Monitor.Enter(_watchersLock, ref watchersLockTaken);
                     }
@@ -454,7 +456,7 @@ namespace System.IO
                 Watcher watcher = dir.Watcher;
                 lock (watcher)
                 {
-                    if (dir.Parent is null)
+                    if (dir.IsRootDir)
                     {
                         if (watcher.RootDirectory == null)
                         {
@@ -464,6 +466,7 @@ namespace System.IO
                     }
                     else
                     {
+                        Debug.Assert(dir.Parent is not null); // !IsRootDirectory
                         int idx = dir.Parent.FindChild(dir.Name);
                         Debug.Assert(idx != -1);
                         if (idx == -1)
@@ -697,7 +700,7 @@ namespace System.IO
                     {
                         // Stop tracking the watcher when its RootDirectory gets ignored.
                         // When we're watching no more root directories, we can stop.
-                        if (dir.Parent is null)
+                        if (dir.IsRootDir)
                         {
                             lock (_watchersLock)
                             {
@@ -724,7 +727,7 @@ namespace System.IO
                     }
 
                     // To match Windows, don't emit events for the root directory.
-                    if (dir.Parent is null && nextEvent.name.Length == 0)
+                    if (dir.IsRootDir && nextEvent.name.Length == 0)
                     {
                         continue;
                     }
@@ -1324,6 +1327,7 @@ namespace System.IO
                 public Watcher Watcher { get; }
                 public string Name { get; }
                 public WatchedDirectory? Parent { get; }
+                public bool IsRootDir => Parent is null;
 
                 public WatchedDirectory(Watch watch, Watcher watcher, string name, WatchedDirectory? parent)
                 {
