@@ -97,6 +97,7 @@ internal static class ReflectionTest
         TestGenericAttributesOnEnum.Run();
         TestLdtokenWithSignaturesDifferingInModifiers.Run();
         TestActivatingThingsInSignature.Run();
+        TestDelegateInvokeFromEvent.Run();
 
         return 100;
     }
@@ -2945,6 +2946,23 @@ internal static class ReflectionTest
         public struct MyStruct;
 
         public struct MyArrayElementStruct;
+    }
+
+    class TestDelegateInvokeFromEvent
+    {
+        class MyClass
+        {
+            public event EventHandler<int> MyEvent;
+        }
+
+        static EventInfo s_eventInfo = typeof(MyClass).GetEvent("MyEvent");
+
+        public static unsafe void Run()
+        {
+            var invokeMethod = s_eventInfo.EventHandlerType.GetMethod("Invoke");
+            if (invokeMethod.Name != "Invoke")
+                throw new Exception();
+        }
     }
 
     #region Helpers
