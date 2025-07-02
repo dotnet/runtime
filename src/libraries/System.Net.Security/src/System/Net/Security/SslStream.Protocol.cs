@@ -822,7 +822,7 @@ namespace System.Net.Security
         }
 
         //
-        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer, out int consumed)
+        internal ProtocolToken NextMessage(ReadOnlyMemory<byte> incomingBuffer, out int consumed)
         {
             ProtocolToken token = GenerateToken(incomingBuffer, out consumed);
             if (NetEventSource.Log.IsEnabled())
@@ -849,7 +849,7 @@ namespace System.Net.Security
             Return:
                 token - ProtocolToken with status and optionally buffer.
         --*/
-        private ProtocolToken GenerateToken(ReadOnlySpan<byte> inputBuffer, out int consumed)
+        private ProtocolToken GenerateToken(ReadOnlyMemory<byte> inputBuffer, out int consumed)
         {
             bool cachedCreds = false;
             bool sendTrustList = false;
@@ -901,7 +901,7 @@ namespace System.Net.Security
                                 token = SslStreamPal.AcceptSecurityContext(
                                         ref _credentialsHandle!,
                                         ref _securityContext,
-                                        ReadOnlySpan<byte>.Empty,
+                                        ReadOnlyMemory<byte>.Empty,
                                         out _,
                                         _sslAuthenticationOptions);
                             }
@@ -930,7 +930,7 @@ namespace System.Net.Security
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        hostName,
-                                       ReadOnlySpan<byte>.Empty,
+                                       ReadOnlyMemory<byte>.Empty,
                                        out _,
                                        _sslAuthenticationOptions);
                         }

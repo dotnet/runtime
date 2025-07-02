@@ -38,6 +38,7 @@ typedef enum
 // Callback type definitions that match the implementation usage
 typedef void (*StatusUpdateCallback)(size_t context, PAL_NwStatusUpdates status, size_t data1, size_t data2);
 typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, void** length);
+typedef void (*CompletionCallback)(void* context);
 
 // Only TLS-specific Network Framework functions are exported
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer);
@@ -45,7 +46,7 @@ PALEXPORT int32_t AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connecti
 PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, WriteCallback writeFunc);
 PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, int length);
 PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle);
-PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);
+PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength, void* context, CompletionCallback completionCallback);
 PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol);
 PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength);
 PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* count);

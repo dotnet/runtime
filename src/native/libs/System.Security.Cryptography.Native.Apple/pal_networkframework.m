@@ -139,7 +139,7 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
 
 // this takes encrypted input from underlying stream and feeds it to nw_connection.
-PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength)
+PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength, void* context, CompletionCallback completionCallback)
 {
     if (connection == NULL || framer == NULL)
     {
@@ -157,6 +157,7 @@ PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connectio
     uint8_t * copy = NULL;
     if (bufferLength > 0)
     {
+        // TODO:
         copy = malloc((size_t)bufferLength);
         if (copy == NULL)
         {
@@ -171,6 +172,9 @@ PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connectio
     nw_framer_async(framer, ^(void) 
     {
         nw_framer_deliver_input(framer, copy, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
+
+        completionCallback(context);
+
         nw_release(message);
     });
 
@@ -345,6 +349,8 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
 
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete) {
+        printf("Cert validation callback called\n");
+
         (void)metadata;
         (void)trust_ref;
         complete(true);

@@ -48,7 +48,7 @@ internal static partial class Interop
 
             // takes encrypted input from underlying stream and feed it to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
-            internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength);
+            internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, void> completionCallback);
 
             // sends plaintext data to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSendToConnection")]

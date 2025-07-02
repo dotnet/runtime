@@ -9,6 +9,7 @@ using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 using PAL_TlsHandshakeState = Interop.AppleCrypto.PAL_TlsHandshakeState;
 using PAL_TlsIo = Interop.AppleCrypto.PAL_TlsIo;
@@ -91,22 +92,28 @@ namespace System.Net.Security
         public static ProtocolToken AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteContext? context,
-            ReadOnlySpan<byte> inputBuffer,
+            ReadOnlyMemory<byte> inputBuffer,
             out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(ref context, inputBuffer, out consumed, sslAuthenticationOptions);
+            var (token, ctx) = HandshakeInternal(context, inputBuffer, sslAuthenticationOptions).AsTask().GetAwaiter().GetResult();
+            consumed = inputBuffer.Length;
+            context = ctx;
+            return token;
         }
 
         public static ProtocolToken InitializeSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteContext? context,
             string? _ /*targetName*/,
-            ReadOnlySpan<byte> inputBuffer,
+            ReadOnlyMemory<byte> inputBuffer,
             out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(ref context, inputBuffer, out consumed, sslAuthenticationOptions);
+            var (token, ctx) = HandshakeInternal(context, inputBuffer, sslAuthenticationOptions).AsTask().GetAwaiter().GetResult();
+            consumed = inputBuffer.Length;
+            context = ctx;
+            return token;
         }
 
         public static ProtocolToken Renegotiate(
@@ -315,14 +322,12 @@ namespace System.Net.Security
             return true;
         }
 
-        private static ProtocolToken HandshakeInternal(
-            ref SafeDeleteContext? context,
-            ReadOnlySpan<byte> inputBuffer,
-            out int consumed,
+        private static async ValueTask<(ProtocolToken, SafeDeleteContext? context)> HandshakeInternal(
+            SafeDeleteContext? context,
+            ReadOnlyMemory<byte> inputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             ProtocolToken token = default;
-            consumed = 0;
 
             try
             {
@@ -367,23 +372,30 @@ namespace System.Net.Security
                     switch (securityContext)
                     {
                         case SafeDeleteSslContext sslContext:
-                            sslContext.Write(inputBuffer);
+                            sslContext.Write(inputBuffer.Span);
                             break;
                         case SafeDeleteNwContext nwContext:
-                            nwContext.Write(inputBuffer);
+                            await nwContext.WriteInboundWireDataAsync(inputBuffer).ConfigureAwait(false);
                             break;
                     }
                 }
 
-                consumed = inputBuffer.Length;
+                switch (securityContext)
+                {
+                    case SafeDeleteSslContext secureTransportContext:
+                        token.Status = PerformHandshake(secureTransportContext.SslContext);
+                        break;
 
-                token.Status = PerformHandshake(securityContext!);
+                    case SafeDeleteNwContext nwContext:
+                        token.Status = await nwContext.PerformHandshakeAsync().ConfigureAwait(false);
+                        break;
+                }
 
                 if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
                     // this should happen only for clients
                     Debug.Assert(sslAuthenticationOptions.IsClient);
-                    return token;
+                    return (token, context);
                 }
 
                 switch (securityContext)
@@ -392,26 +404,17 @@ namespace System.Net.Security
                         sslContext.ReadPendingWrites(ref token);
                         break;
                     case SafeDeleteNwContext nwContext:
+                        // token = await nwContext.ReadPendingWritesAsync(token);
                         nwContext.ReadPendingWrites(ref token);
                         break;
                 }
-                return token;
+                return (token, context);
             }
             catch (Exception exc)
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
-                return token;
+                return (token, context);
             }
-        }
-
-        private static SecurityStatusPal PerformHandshake(SafeDeleteContext sslContext)
-        {
-            return sslContext switch
-            {
-                SafeDeleteSslContext secureTransportContext => PerformHandshake(secureTransportContext.SslContext),
-                SafeDeleteNwContext nwContext => nwContext.PerformHandshake(),
-                _ => throw new PlatformNotSupportedException()
-            };
         }
 
         private static SecurityStatusPal PerformHandshake(SafeSslHandle sslHandle)

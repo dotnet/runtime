@@ -489,14 +489,14 @@ namespace System.Net.Security
         {
             int chunkSize = frameSize;
 
-            ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
+            ReadOnlyMemory<byte> availableData = _buffer.EncryptedReadOnlyMemory;
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
             while (_buffer.EncryptedLength - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
-                if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize), ref nextHeader))
+                if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize).Span, ref nextHeader))
                 {
                     break;
                 }

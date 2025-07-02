@@ -15,10 +15,11 @@ internal static partial class SslStreamPal
 
     public static int GetAvailableDecryptedBytes(SafeDeleteContext context)
     {
-        if (context is SafeDeleteSslContext) return 0;
-        var result = ((SafeDeleteNwContext)context).BytesReadyFromConnection;
-        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(context, $"result: {result}", "GetAvailableDecryptedBytes");
-        return result;
+        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(context, $"result: {0}", "GetAvailableDecryptedBytes");
+        return 0;
+        // if (context is SafeDeleteSslContext) return 0;
+        // var result = ((SafeDeleteNwContext)context).BytesReadyFromConnection;
+        // return result;
     }
 
     public static int ReadDecryptedData(SafeDeleteContext context, Span<byte> buffer)
@@ -26,17 +27,6 @@ internal static partial class SslStreamPal
         var result = ((SafeDeleteNwContext)context).Read(buffer);
         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(context, $"result: {result} bytes", "ReadDecryptedData");
         return result;
-    }
-
-    public static Task<SecurityStatusPalErrorCode>? ExtractDecryptionTask(SafeDeleteContext context)
-    {
-        var nwContext = (SafeDeleteNwContext)context;
-        var bytesReady = nwContext.BytesReadyFromConnection;
-        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(context, $"BytesReadyFromConnection: {bytesReady}", "ExtractDecryptionTask");
-        lock (context)
-        {
-            return bytesReady > 0 ? Task.FromResult(SecurityStatusPalErrorCode.OK) : nwContext.DecryptTask?.Task;
-        }
     }
 
     public static ProtocolToken EncryptMessageNetworkFramework(

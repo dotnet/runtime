@@ -70,7 +70,6 @@ namespace System.Net.Security
 
         // Buffers
         private const int InitialBufferSize = 2 * 1024;
-        private ArrayBuffer _inputBuffer = new(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new(InitialBufferSize);
 
         private bool _disposed;
@@ -84,7 +83,7 @@ namespace System.Net.Security
             }
 
             ValidateSslAuthenticationOptions(sslAuthenticationOptions);
-            _thisHandle = GCHandle.Alloc(this, GCHandleType.Weak);
+            _thisHandle = GCHandle.Alloc(this, GCHandleType.Normal);
             SetTlsOptions(sslAuthenticationOptions);
         }
 
@@ -143,7 +142,7 @@ namespace System.Net.Security
                 {
                     // Call Init with null callbacks to check if Network Framework is available
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Checking Network Framework availability...");
-                    return !Interop.NetworkFramework.Tls.Init(&StatusUpdateCallback, &WriteToConnection, &WriteToConnection);
+                    return !Interop.NetworkFramework.Tls.Init(&StatusUpdateCallback, &WriteOutboundWireData, &WriteOutboundWireData);
                 }
             }
             catch
@@ -226,7 +225,6 @@ namespace System.Net.Security
                         _disposed = true;
                         _connectionHandle.Dispose();
                         _framerHandle?.Dispose();
-                        _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
                         _readWaiter.Dispose();
                         _writeWaiter.Dispose();
@@ -247,7 +245,7 @@ namespace System.Net.Security
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int WriteToConnection(IntPtr thisHandle, byte* data, void** dataLength)
+        private static unsafe int WriteOutboundWireData(IntPtr thisHandle, byte* data, void** dataLength)
         {
             SafeDeleteNwContext? nwContext = ResolveThisHandle(thisHandle);
             if (nwContext == null || nwContext._disposed)
@@ -261,7 +259,7 @@ namespace System.Net.Security
                 ulong length = (ulong)*dataLength;
                 Debug.Assert(length <= int.MaxValue);
 
-                nwContext.WriteToConnection(new ReadOnlySpan<byte>(data, (int)length));
+                nwContext.WriteOutboundWireData(new ReadOnlySpan<byte>(data, (int)length));
 
                 return (int)NwOSStatus.NoErr;
             }
@@ -269,7 +267,7 @@ namespace System.Net.Security
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(nwContext, $"WriteFromConnection Failed: {e.Message}");
+                    NetEventSource.Error(nwContext, $"WriteOutboundWireData Failed: {e.Message}");
                 }
                 return (int)NwOSStatus.WritErr;
             }
@@ -279,43 +277,65 @@ namespace System.Net.Security
             }
         }
 
-        private void WriteToConnection(ReadOnlySpan<byte> data)
+        private void WriteOutboundWireData(ReadOnlySpan<byte> data)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {data.Length} bytes", "WriteToConnection");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {data.Length} bytes", "WriteOutboundWireData");
             lock (_lockObject)
             {
                 _outputBuffer.EnsureAvailableSpace(data.Length);
                 data.CopyTo(_outputBuffer.AvailableSpan);
                 _outputBuffer.Commit(data.Length);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Buffered {data.Length} bytes, total output buffer: {_outputBuffer.ActiveLength}", "WriteToConnection");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Buffered {data.Length} bytes, total output buffer: {_outputBuffer.ActiveLength}", "WriteOutboundWireData");
             }
 
             // Signal that data is available
             _writeWaiter.Set();
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Signaled _writeWaiter", "WriteToConnection");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Signaled _writeWaiter", "WriteOutboundWireData");
         }
 
 
-        internal void Write(ReadOnlySpan<byte> buf)
+        internal unsafe Task WriteInboundWireDataAsync(ReadOnlyMemory<byte> buf)
         {
-            lock (_lockObject)
-            {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buf.Length} bytes", "WriteInboundWireDataAsync");
 
-                _inputBuffer.EnsureAvailableSpace(buf.Length);
-                buf.CopyTo(_inputBuffer.AvailableSpan);
-                _inputBuffer.Commit(buf.Length);
+            if (_framerHandle != null && buf.Length > 0)
+            {
+                TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
+                fixed (byte* ptr = &MemoryMarshal.GetReference(buf.Span))
+                {
+                    Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, ptr, buf.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+
+                }
+
+                return tcs.Task;
+            }
+
+            return Task.CompletedTask;
+
+            [UnmanagedCallersOnly]
+            static void CompletionCallback(IntPtr context)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing", "WriteInboundWireDataAsync");
+                GCHandle handle = GCHandle.FromIntPtr(context);
+                TaskCompletionSource tcs = (TaskCompletionSource)handle.Target!;
+
+                tcs.SetResult(); // Signal completion
+                handle.Free();
             }
         }
 
+
         internal int Read(Span<byte> buf)
         {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buf.Length} bytes", "Read");
+
             lock (_lockObject)
             {
-                int length = Math.Min(_inputBuffer.ActiveLength, buf.Length);
-                _inputBuffer.ActiveSpan.Slice(0, length).CopyTo(buf);
-                _inputBuffer.Discard(length);
-                return length;
+                // int length = Math.Min(_inputBuffer.ActiveLength, buf.Length);
+                // _inputBuffer.ActiveSpan.Slice(0, length).CopyTo(buf);
+                // _inputBuffer.Discard(length);
+                return 0;
             }
         }
 
@@ -323,24 +343,26 @@ namespace System.Net.Security
 
         internal unsafe int Decrypt(Span<byte> buffer)
         {
-            if (_framerHandle is null || _framerHandle.IsInvalid)
-            {
-                // We are shutting down
-                return -1;
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", "Decrypt");
+            return -1;
+            // if (_framerHandle is null || _framerHandle.IsInvalid)
+            // {
+            //     // We are shutting down
+            //     return -1;
+            // }
 
-            // notify TLS we received EOF
-            if (buffer.Length == 0)
-            {
-                Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, null, 0);
-                return 0;
-            }
+            // // notify TLS we received EOF
+            // if (buffer.Length == 0)
+            // {
+            //     Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, null, 0);
+            //     return 0;
+            // }
 
-            fixed (byte* ptr = buffer)
-            {
-                Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, ptr, buffer.Length);
-            }
-            return 0;
+            // fixed (byte* ptr = buffer)
+            // {
+            //     Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, ptr, buffer.Length);
+            // }
+            // return 0;
         }
 
         internal unsafe void Encrypt(void* buffer, int bufferLength, ref ProtocolToken token)
@@ -362,22 +384,22 @@ namespace System.Net.Security
             }
         }
 
-        // returns of available decrypted bytes or -1 if EOF was reached
-        internal int BytesReadyFromConnection
-        {
-            get
-            {
-                lock (_lockObject)
-                {
-                    if (_inputBuffer.ActiveLength > 0)
-                    {
-                        return _inputBuffer.ActiveLength;
-                    }
+        // // returns of available decrypted bytes or -1 if EOF was reached
+        // internal int BytesReadyFromConnection
+        // {
+        //     get
+        //     {
+        //         lock (_lockObject)
+        //         {
+        //             if (_inputBuffer.ActiveLength > 0)
+        //             {
+        //                 return _inputBuffer.ActiveLength;
+        //             }
 
-                    return _readStatus == (int)NwOSStatus.NoErr ? 0 : -1;
-                }
-            }
-        }
+        //             return _readStatus == (int)NwOSStatus.NoErr ? 0 : -1;
+        //         }
+        //     }
+        // }
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
@@ -415,8 +437,10 @@ namespace System.Net.Security
             return DecryptTask.Task;
         }
 
-        public unsafe SecurityStatusPal PerformHandshake()
+        public async ValueTask<SecurityStatusPal> PerformHandshakeAsync()
         {
+            await Task.Yield();
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State: {_handshakeState}", "PerformHandshake");
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -426,10 +450,11 @@ namespace System.Net.Security
                     return StartHandshake();
 
                 case HandshakeState.InProgress:
+                    // return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
                     return ContinueHandshake();
 
                 case HandshakeState.WaitingForPeer:
-                    return ProcessPeerData();
+                // return await ProcessPeerDataAsync().ConfigureAwait(false);
 
                 case HandshakeState.Completed:
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake already completed", "PerformHandshake");
@@ -509,34 +534,6 @@ namespace System.Net.Security
 
             // Still in progress
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake still in progress", "ContinueHandshake");
-            return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
-        }
-
-        private unsafe SecurityStatusPal ProcessPeerData()
-        {
-            ReadOnlySpan<byte> inputBuffer = _inputBuffer.ActiveSpan;
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Processing peer data, buffer length: {inputBuffer.Length}", "ProcessPeerData");
-
-            if (_framerHandle != null && inputBuffer.Length > 0)
-            {
-                ObjectDisposedException.ThrowIf(_disposed, this);
-
-                fixed (byte* ptr = &MemoryMarshal.GetReference(inputBuffer))
-                {
-                    Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, ptr, inputBuffer.Length);
-                }
-
-                _inputBuffer.Discard(inputBuffer.Length);
-
-                // Start new handshake continuation
-                _pendingHandshakeTask = Task.FromResult(SecurityStatusPalErrorCode.ContinueNeeded);
-                _handshakeState = HandshakeState.InProgress;
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Peer data processed, continuing handshake", "ProcessPeerData");
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
-            }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "No peer data to process", "ProcessPeerData");
             return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
         }
 
@@ -679,7 +676,7 @@ namespace System.Net.Security
             {
                 if (data.Length > 0)
                 {
-                    Write(data);
+                    WriteInboundWireDataAsync(data.ToArray()).AsTask().GetAwaiter().GetResult();
                 }
                 else if (_readStatus == (int)NwOSStatus.NoErr)
                 {
