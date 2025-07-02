@@ -921,6 +921,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_unmanagedThreads(11),
 #endif
     m_appDomains(11),
+    m_sharedAppDomain(0),
     m_steppers(11),
     m_continueCounter(1),
     m_flushCounter(0),
@@ -955,6 +956,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_iFirstPatch(0),
     m_hHelperThread(NULL),
     m_dispatchedEvent(DB_IPCE_DEBUGGER_INVALID),
+    m_pDefaultAppDomain(NULL),
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
     m_pEventChannel(NULL),
@@ -1056,6 +1058,8 @@ CordbProcess::~CordbProcess()
 
     // We shouldn't still be in Cordb's list of processes. Unfortunately, our root Cordb object
     // may have already been deleted b/c we're at the mercy of ref-counting, so we can't check.
+
+	_ASSERTE(m_sharedAppDomain == NULL);
 
     m_processMutex.Destroy();
     m_StopGoLock.Destroy();
@@ -1284,8 +1288,16 @@ void CordbProcess::NeuterChildren()
 
     m_userThreads.NeuterAndClear(GetProcessLock());
 
+    m_pDefaultAppDomain = NULL;
+
     // Frees per-appdomain left-side resources. See assumptions above.
     m_appDomains.NeuterAndClear(GetProcessLock());
+    if (m_sharedAppDomain != NULL)
+    {
+        m_sharedAppDomain->Neuter();
+        m_sharedAppDomain->InternalRelease();
+        m_sharedAppDomain = NULL;
+    }
 
     m_steppers.NeuterAndClear(GetProcessLock());
 
@@ -2294,10 +2306,10 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
 HRESULT CordbProcess::GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue **ppObject)
 {
-    return this->GetObjectInternal(addr, ppObject);
+    return this->GetObjectInternal(addr, nullptr, ppObject);
 }
 
-HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject)
+HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject)
 {
     HRESULT hr = S_OK;
 
@@ -2321,7 +2333,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
 
             CordbAppDomain *cdbAppDomain = NULL;
             CordbType *pType = NULL;
-            hr = GetTypeForObject(addr, &pType, &cdbAppDomain);
+            hr = GetTypeForObject(addr, pAppDomainOverride, &pType, &cdbAppDomain);
 
             if (SUCCEEDED(hr))
             {
@@ -2429,7 +2441,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
         GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, VMPTR_AppDomain::NullPtr(), id, &data);
 
         CordbType *type = 0;
-        hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);
+        hr = CordbType::TypeDataToType(GetSharedAppDomain(), &data, &type);
 
         if (SUCCEEDED(hr))
             hr = type->QueryInterface(IID_ICorDebugType, (void**)ppType);
@@ -2557,7 +2569,7 @@ COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEn
     return hr;
 }
 
-HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
+HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
     VMPTR_AppDomain appDomain;
     VMPTR_Module mod;
@@ -2566,7 +2578,11 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
     HRESULT hr = E_FAIL;
     if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly))
     {
-        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
+        if (pAppDomainOverride)
+        {
+            appDomain = pAppDomainOverride->GetADToken();
+        }
+        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetSharedAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);
 
@@ -5352,6 +5368,19 @@ void CordbProcess::RawDispatchEvent(
                 break;
             }
             _ASSERTE (pAppDomain != NULL);
+
+            // See if this is the default AppDomain exiting.  This should only happen very late in
+            // the shutdown cycle, and so we shouldn't do anything significant with m_pDefaultDomain==NULL.
+            // We should try and remove m_pDefaultDomain entirely since we can't count on it always existing.
+            if (pAppDomain == m_pDefaultAppDomain)
+            {
+                m_pDefaultAppDomain = NULL;
+            }
+
+            // Update any threads which were last seen in this AppDomain.  We don't
+            // get any notification when a thread leaves an AppDomain, so our idea
+            // of what AppDomain the thread is in may be out of date.
+            UpdateThreadsForAdUnload( pAppDomain );
 
             // This will still maintain weak references so we could call Continue.
             AddToNeuterOnContinueList(pAppDomain);
@@ -8688,23 +8717,19 @@ CordbAppDomain * CordbProcess::LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDoma
     return CacheAppDomain(vmAppDomain);
 }
 
-CordbAppDomain * CordbProcess::GetAppDomain()
+CordbAppDomain * CordbProcess::GetSharedAppDomain()
 {
-    // Return the one and only app domain
-    HASHFIND find;
-    CordbAppDomain* appDomain = m_appDomains.FindFirst(&find);
-    if (appDomain != NULL)
+    if (m_sharedAppDomain == NULL)
     {
-        const ULONG appDomainId = 1; // DefaultADID in appdomain.hpp
-        ULONG32 id;
-        HRESULT hr = appDomain->GetID(&id);
-        TargetConsistencyCheck(SUCCEEDED(hr) && id == appDomainId);
-        return appDomain;
+        CordbAppDomain *pAD = new CordbAppDomain(this, VMPTR_AppDomain::NullPtr());
+        if (InterlockedCompareExchangeT<CordbAppDomain*>(&m_sharedAppDomain, pAD, NULL) != NULL)
+        {
+            delete pAD;
+        }
+		m_sharedAppDomain->InternalAddRef();
     }
 
-    VMPTR_AppDomain vmAppDomain = GetDAC()->GetCurrentAppDomain();
-    appDomain = LookupOrCreateAppDomain(vmAppDomain);
-    return appDomain;
+    return m_sharedAppDomain;
 }
 
 //---------------------------------------------------------------------------------------
@@ -8739,6 +8764,10 @@ CordbAppDomain * CordbProcess::CacheAppDomain(VMPTR_AppDomain vmAppDomain)
     // Caller ensures we're not already cached.
     // The cache will take ownership.
     m_appDomains.AddBaseOrThrow(pAppDomain);
+
+    // If this assert fires, then it likely means the target is corrupted.
+    TargetConsistencyCheck(m_pDefaultAppDomain == NULL);
+    m_pDefaultAppDomain = pAppDomain;
 
     CordbAppDomain * pReturn = pAppDomain;
     pAppDomain.ClearAndMarkDontNeuter();
@@ -15232,6 +15261,46 @@ HRESULT CordbProcess::IsReadyForDetach()
     }
 
     return S_OK;
+}
+
+
+/*
+ * Look for any thread which was last seen in the specified AppDomain.
+ * The CordbAppDomain object is about to be neutered due to an AD Unload
+ * So the thread must no longer be considered to be in that domain.
+ * Note that this is a workaround due to the existence of the (possibly incorrect)
+ * cached AppDomain value.  Ideally we would remove the cached value entirely
+ * and there would be no need for this.
+ *
+ * @dbgtodo: , appdomain: We should remove CordbThread::m_pAppDomain in the V3 architecture.
+ * If we need the thread's current domain, we should get it accurately with DAC.
+ */
+void CordbProcess::UpdateThreadsForAdUnload(CordbAppDomain * pAppDomain)
+{
+    INTERNAL_API_ENTRY(this);
+
+    // If we're doing an AD unload then we should have already seen the ATTACH
+    // notification for the default domain.
+    //_ASSERTE( m_pDefaultAppDomain != NULL );
+    // @dbgtodo appdomain: fix Default domain invariants with DAC-izing Appdomain work.
+
+    RSLockHolder lockHolder(GetProcessLock());
+
+    CordbThread* t;
+    HASHFIND find;
+
+    // We don't need to prepopulate here (to collect LS state) because we're just updating RS state.
+    for (t =  m_userThreads.FindFirst(&find);
+         t != NULL;
+         t =  m_userThreads.FindNext(&find))
+    {
+        if( t->GetAppDomain() == pAppDomain )
+        {
+            // This thread cannot actually be in this AppDomain anymore (since it's being
+            // unloaded).  Reset it to point to the default AppDomain
+            t->m_pAppDomain = m_pDefaultAppDomain;
+        }
+    }
 }
 
 // CordbProcess::LookupClass
