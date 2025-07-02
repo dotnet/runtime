@@ -7868,28 +7868,6 @@ ValueNum EvaluateSimdCvtVectorToMask(ValueNumStore* vns, var_types simdType, var
     return vns->VNForSimdMaskCon(result);
 }
 
-#if defined(TARGET_ARM64)
-ValueNum EvaluateBinarySimdAndMask(ValueNumStore* vns,
-                                   genTreeOps     oper,
-                                   bool           scalar,
-                                   var_types      simdType,
-                                   var_types      baseType,
-                                   ValueNum       arg0VN,
-                                   ValueNum       arg1VNMask)
-{
-    assert(simdType == TYP_SIMD16);
-
-    simd16_t arg0 = GetConstantSimd16(vns, baseType, arg0VN);
-
-    ValueNum arg1VNSimd = EvaluateSimdCvtMaskToVector(vns, simdType, baseType, arg1VNMask);
-    simd16_t arg1       = GetConstantSimd16(vns, baseType, arg1VNSimd);
-
-    simd16_t result = {};
-    EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, arg0, arg1);
-    return vns->VNForSimd16Con(result);
-}
-#endif // TARGET_ARM64
-
 ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                                                 VNFunc              func,
                                                 ValueNum            arg0VN,
@@ -9171,11 +9149,21 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                     if (ni == NI_Sve_ConditionalSelect)
                     {
                         assert(TypeOfVN(arg0VN) == TYP_MASK);
+                        assert(type == TYP_SIMD16);
 
-                        ValueNum trueVN =
-                            EvaluateBinarySimdAndMask(this, GT_AND, false, type, baseType, arg1VN, arg0VN);
-                        ValueNum falseVN =
-                            EvaluateBinarySimdAndMask(this, GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
+                        ValueNum maskVNSimd = EvaluateSimdCvtMaskToVector(this, type, baseType, arg0VN);
+                        simd16_t maskVal    = ::GetConstantSimd16(this, baseType, maskVNSimd);
+
+                        simd16_t arg1 = ::GetConstantSimd16(this, baseType, arg1VN);
+                        simd16_t arg2 = ::GetConstantSimd16(this, baseType, arg2VN);
+
+                        simd16_t result = {};
+                        EvaluateBinarySimd<simd16_t>(GT_AND, false, baseType, &result, arg1, maskVal);
+                        ValueNum trueVN = VNForSimd16Con(result);
+
+                        result = {};
+                        EvaluateBinarySimd<simd16_t>(GT_AND_NOT, false, baseType, &result, arg2, maskVal);
+                        ValueNum falseVN = VNForSimd16Con(result);
 
                         return EvaluateBinarySimd(this, GT_OR, false, type, baseType, trueVN, falseVN);
                     }
