@@ -52,8 +52,8 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object? self = frame.PopRaw();
-            NullCheck(self);
 
+            NullCheck(self);
             frame.Push(FieldData.GetValue(self, _field));
 
             return 1;
