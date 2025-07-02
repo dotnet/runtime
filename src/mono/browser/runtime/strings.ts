@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
-
+import isWasm64 from "consts:isWasm64";
 import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
@@ -10,6 +10,7 @@ import cwraps from "./cwraps";
 import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region, malloc, free } from "./memory";
 import { NativePointer, CharPtr, VoidPtr } from "./types/emscripten";
 import { safeBigIntToNumber } from "./invoke-js";
+import { mono_log_debug } from "./logging";
 
 export const interned_js_string_table = new Map<string, MonoString>();
 export const mono_wasm_empty_string = "";
@@ -51,7 +52,8 @@ export function stringToUTF8 (str: string): Uint8Array {
 export function stringToUTF8Ptr (str: string): CharPtr {
     const size = Module.lengthBytesUTF8(str) + 1;
     const ptr = malloc(size) as any;
-    const buffer = localHeapViewU8().subarray(ptr, ptr + size);
+    const idx = typeof ptr === "bigint" ? safeBigIntToNumber(ptr) : ptr as number;
+    const buffer = localHeapViewU8().subarray(idx, idx + size);
     Module.stringToUTF8Array(str, buffer, 0, size);
     buffer[size - 1] = 0;
     return ptr;
@@ -59,12 +61,19 @@ export function stringToUTF8Ptr (str: string): CharPtr {
 
 export function utf8ToStringRelaxed (buffer: Uint8Array): string {
     if (_text_decoder_utf8_relaxed === undefined) {
-        return Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
+        const retval = Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
+        mono_log_debug("utf8ToStringRelaxed: UTF8ArrayToString got " + retval);
+        return retval;
     }
-    return _text_decoder_utf8_relaxed.decode(buffer);
+    const retval = _text_decoder_utf8_relaxed.decode(buffer);
+    mono_log_debug("utf8ToStringRelaxed: _text_decoder_utf8_relaxed.decode got " + retval);
+    return retval;
 }
 
 export function utf8ToString (ptr: CharPtr): string {
+    if (!ptr) {
+        return "";
+    }
     const heapU8 = localHeapViewU8();
     let idx: number;
     if (typeof ptr === "bigint") {
@@ -73,6 +82,8 @@ export function utf8ToString (ptr: CharPtr): string {
         // @ts-expect-error TS2352
         idx = ptr as number;
     }
+    if (idx === 0)
+        return "";
     return utf8BufferToString(heapU8, idx, heapU8.length - idx);
 }
 
@@ -81,13 +92,19 @@ export function utf8BufferToString (heapOrArray: Uint8Array, idx: number, maxByt
     let endPtr = idx;
     while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
     if (endPtr - idx <= 16) {
-        return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+        const retval = Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+        mono_log_debug("utf8BufferToString: Module.UTF8ArrayToStrin got " + retval);
+        return retval;
     }
     if (_text_decoder_utf8_validating === undefined) {
-        return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+        const retval = Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+        mono_log_debug("utf8BufferToString: Module.UTF8ArrayToString got " + retval);
+        return retval;
     }
     const view = viewOrCopy(heapOrArray, idx as any, endPtr as any);
-    return _text_decoder_utf8_validating.decode(view);
+    const retval = _text_decoder_utf8_validating.decode(view);
+    mono_log_debug("utf8BufferToString: _text_decoder_utf8_validating.decode got " + retval);
+    return retval;
 }
 
 export function utf16ToString (startPtr: number, endPtr: number): string {
@@ -123,7 +140,10 @@ export function stringToUTF16Ptr (str: string): VoidPtr {
     const bytes = (str.length + 1) * 2;
     const ptr = malloc(bytes) as any;
     _zero_region(ptr, str.length * 2);
-    stringToUTF16(ptr, ptr + bytes, str);
+    const ptrEnd = isWasm64
+        ? BigInt(ptr) + BigInt(bytes)
+        : (ptr as unknown as number) + bytes;
+    stringToUTF16(ptr, ptrEnd as any, str);
     return ptr;
 
 }
@@ -135,10 +155,10 @@ export function monoStringToString (root: WasmRoot<MonoString>): string | null {
 
     if (root.value === MonoStringNull)
         return null;
-
+    const ptrSize = isWasm64 ? 8 : 4;
     const ppChars = <any>mono_wasm_string_decoder_buffer + 0,
-        pLengthBytes = <any>mono_wasm_string_decoder_buffer + 4,
-        pIsInterned = <any>mono_wasm_string_decoder_buffer + 8;
+        pLengthBytes = <any>mono_wasm_string_decoder_buffer + ptrSize,
+        pIsInterned = <any>mono_wasm_string_decoder_buffer + 2 * ptrSize;
 
     cwraps.mono_wasm_string_get_data_ref(root.address, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
@@ -169,6 +189,8 @@ export function monoStringToString (root: WasmRoot<MonoString>): string | null {
 export function stringToMonoStringRoot (string: string, result: WasmRoot<MonoString>): void {
     if (WasmEnableThreads) return;
     result.clear();
+
+    mono_log_debug("Have input string: " + string);
 
     if (string === null)
         return;
@@ -273,8 +295,13 @@ function stringToMonoStringNewRoot (string: string, result: WasmRoot<MonoString>
     // or temp_malloc/alloca for large strings
     // or skip the scratch buffer entirely, and make a new MonoString of size string.length, pin it, and then call stringToUTF16 to write directly into the MonoString's chars
     const buffer = malloc(bufferLen);
-    stringToUTF16(buffer as any, buffer as any + bufferLen, string);
-    cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
+    _zero_region(buffer, bufferLen);
+    //FIXME: will need to use BigInt when emscripten returns BigInt from malloc
+    const bufferEnd = isWasm64
+        ? buffer as any as number + bufferLen
+        : (buffer as any as number) + bufferLen;
+    stringToUTF16(buffer as any, bufferEnd as any, string);
+    cwraps.mono_wasm_string_from_utf16_ref(buffer as any, bufferEnd as any, result.address);
     free(buffer);
 }
 
