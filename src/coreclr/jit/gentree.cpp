@@ -5400,6 +5400,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_CAST:
+                {
 #if defined(TARGET_ARM)
                     costEx = 1;
                     costSz = 1;
@@ -5420,11 +5421,151 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 2;
 
-                    if (isFlt || varTypeIsFloating(op1->TypeGet()))
+                    var_types fromType = tree->CastFromType();
+                    var_types toType   = tree->CastToType();
+
+                    if (varTypeIsFloating(fromType))
                     {
-                        /* cast involving floats always go through memory */
-                        costEx = IND_COST_EX * 2;
-                        costSz = 6;
+                        if (isFlt)
+                        {
+                            // ex, sz: ins
+                            //  3,  4: vcvts*2s* xmm0, xmm0, xmm0
+
+                            costEx = 3;
+                            costSz = 4;
+                        }
+                        else if (varTypeIsUnsigned(toType))
+                        {
+                            if (canUseEvexEncoding())
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*      xmm1, xmm1, xmm1
+                                //  3,  4: vmaxs*      xmm0, xmm0, xmm1
+                                //  8,  6: vcvtts*2usi  rax, xmm0
+
+                                costEx = 12;
+                                costSz = 14;
+                            }
+                            else if (varTypeIsLong(toType))
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*     xmm1, xmm1, xmm1
+                                //  3,  4: vmaxs*     xmm1, xmm0, xmm1
+                                //  +, +4: vmovs*     xmm2, dword ptr [reloc @RWD00]
+                                //  4,  4: vsubs*     xmm3, xmm0, xmm2
+                                //  8,  5: vcvtts*2si rdx,  xmm1
+                                //  8,  5: vcvtts*2si rcx,  xmm3
+                                //  1,  3: mov        rax,  rdx
+                                //  1,  4: sar        rax,  63
+                                //  1,  3: and        rcx,  rax
+                                //  1, 10: mov        rax,  -1
+                                //  1,  3: or         rdx,  rcx
+                                //  5,  4: vucomis*   xmm0, xmm2
+                                //  1,  4: cmovb      rax,  rdx
+
+                                costEx = 35 + IND_COST_EX_FLT;
+                                costSz = 57 + IND_COST_SZ_FLT;
+                            }
+                            else
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*     xmm1, xmm1, xmm1
+                                //  3,  4: vmaxs*     xmm1, xmm0, xmm1
+                                //  1,  5: mov        eax,  0xFFFFFFFF
+                                //  8,  5: vcvtts*2si rcx,  xmm1
+                                // +5, +4: vucomis*   xmm0, dword ptr [reloc @RWD00]
+                                //  1,  3: cmovb      eax,  ecx
+
+                                costEx = 19 + IND_COST_EX_FLT;
+                                costSz = 25 + IND_COST_SZ_FLT;
+                            }
+                        }
+                        else if (varTypeIsLong(toType))
+                        {
+                            // ex, sz: ins
+                            //  3,  5: vcmpords*  xmm1, xmm0, xmm0
+                            //  1,  4: vandp*     xmm1, xmm1, xmm0
+                            //  1, 10: mov        rax, 0x7FFFFFFFFFFFFFFF
+                            //  8,  5: vcvtts*2si rcx, xmm1
+                            // +5, +4: vucomis*   xmm0, dword ptr [reloc @RWD00]
+                            //  1,  4: cmovb      rax, rcx
+
+                            costEx = 19 + IND_COST_EX_FLT;
+                            costSz = 32 + IND_COST_SZ_FLT;
+                        }
+                        else
+                        {
+                            // ex, sz: ins
+                            //  3,  5: vcmpordss  xmm1, xmm0, xmm0
+                            //  1,  4: vandps     xmm1, xmm1, xmm0
+                            //  1,  5: mov         eax, 0x7FFFFFFF
+                            //  8,  4: vcvttss2si  ecx, xmm1
+                            // +5,  4: vucomiss   xmm0, dword ptr [reloc @RWD00]
+                            //  1,  3: cmovb       eax, ecx
+
+                            costEx = 19 + IND_COST_EX_FLT;
+                            costSz = 25 + IND_COST_SZ_FLT;
+                        }
+                    }
+                    else if (isFlt)
+                    {
+                        if (tree->IsUnsigned())
+                        {
+                            if (canUseEvexEncoding())
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                                //  4,  6: vcvtsi2s* xmm0, xmm0, rcx
+
+                                costEx = 5;
+                                costSz = 10;
+                            }
+                            else if (varTypeIsLong(fromType))
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                                //  1,  3: mov       rdx,  rcx
+                                //  1,  3: shr       rdx,  1
+                                //  1,  2: mov       eax,  ecx
+                                //  1,  3: and       eax,  1
+                                //  1,  3: or        rax,  rdx
+                                //  1,  3: test      rcx,  rcx
+                                //  1,  4: cmovns    rax,  rcx
+                                //  4,  5: vcvtsi2s* xmm0, rax
+                                //  3,  2: jns       SHORT ...
+                                //  4,  4: vadds*    xmm0, xmm0
+
+                                costEx = 19;
+                                costSz = 36;
+                            }
+                            else
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                                //  4,  5: vcvtsi2s* xmm0, xmm0, rcx
+
+                                costEx = 5;
+                                costSz = 9;
+                            }
+                        }
+                        else if (varTypeIsLong(fromType))
+                        {
+                            // ex, sz: ins
+                            //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                            //  4,  5: vcvtsi2s* xmm0, xmm0, rcx
+
+                            costEx = 5;
+                            costSz = 9;
+                        }
+                        else
+                        {
+                            // ex, sz: ins
+                            //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                            //  4,  4: vcvtsi2s* xmm0, xmm0, ecx
+
+                            costEx = 5;
+                            costSz = 8;
+                        }
                     }
 #elif defined(TARGET_LOONGARCH64)
                     // TODO-LoongArch64-CQ: tune the costs.
@@ -5444,8 +5585,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costEx += 6;
                         costSz += 6;
                     }
-
                     break;
+                }
 
                 case GT_INTRINSIC:
                     intrinsic = tree->AsIntrinsic();
