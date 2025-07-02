@@ -84,7 +84,6 @@
     <Compile Include="SendReceiveTest.cs" />
     <Compile Include="SendReceiveTest.Loopback.cs" />
     <Compile Include="SendReceiveTest.Http2.cs" />
-    <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />
   </ItemGroup>

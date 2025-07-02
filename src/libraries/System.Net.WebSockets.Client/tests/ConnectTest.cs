@@ -75,7 +75,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
-                string headers = WebSocketData.GetTextFromBuffer(new ArraySegment<byte>(buffer, 0, recvResult.Count));
+                string headers = FromUtf8(new ArraySegment<byte>(buffer, 0, recvResult.Count));
                 Assert.Contains("X-CustomHeader1:Value1", headers, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("X-CustomHeader2:Value2", headers, StringComparison.OrdinalIgnoreCase);
 
@@ -129,7 +129,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
-                string headers = WebSocketData.GetTextFromBuffer(new ArraySegment<byte>(buffer, 0, recvResult.Count));
+                string headers = FromUtf8(new ArraySegment<byte>(buffer, 0, recvResult.Count));
 
                 Assert.Contains("Cookies=Are Yummy", headers);
                 Assert.Contains("Especially=Chocolate Chip", headers);

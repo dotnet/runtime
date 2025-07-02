@@ -7,6 +7,9 @@ using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
+using EchoControlMessage = System.Net.Test.Common.WebSocketEchoHelper.EchoControlMessage;
+using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
+
 namespace System.Net.WebSockets.Client.Tests
 {
     //
@@ -131,8 +134,7 @@ namespace System.Net.WebSockets.Client.Tests
             var sendSegment = new ArraySegment<byte>(sendBuffer);
 
             // Ask the remote server to echo back received messages without ever signaling "end of message".
-            var ub = new UriBuilder(server);
-            ub.Query = "replyWithPartialMessages";
+            var ub = new UriBuilder(server) { Query = EchoQueryKey.ReplyWithPartialMessages };
 
             using (ClientWebSocket cws = await GetConnectedWebSocket(ub.Uri))
             {
@@ -203,7 +205,7 @@ namespace System.Net.WebSockets.Client.Tests
                     {
                         tasks[i] = SendAsync(
                             cws,
-                            WebSocketData.GetBufferFromText("hello"),
+                            ToUtf8("hello"),
                             WebSocketMessageType.Text,
                             true,
                             cts.Token);
@@ -259,7 +261,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await SendAsync(
                     cws,
-                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    ToUtf8(EchoControlMessage.Delay5Sec),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -319,7 +321,7 @@ namespace System.Net.WebSockets.Client.Tests
                 string message = "hello";
                 await SendAsync(
                     cws,
-                    WebSocketData.GetBufferFromText(message),
+                    ToUtf8(message),
                     WebSocketMessageType.Text,
                     false,
                     cts.Token);
@@ -344,7 +346,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Null(recvRet.CloseStatusDescription);
 
                 var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
-                Assert.Equal(message, WebSocketData.GetTextFromBuffer(recvSegment));
+                Assert.Equal(message, FromUtf8(recvSegment));
             }
         }
 

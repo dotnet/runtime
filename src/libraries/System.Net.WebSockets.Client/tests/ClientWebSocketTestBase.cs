@@ -39,6 +39,9 @@ namespace System.Net.WebSockets.Client.Tests
         public const int CloseDescriptionMaxLength = 123;
         public readonly ITestOutputHelper _output = output;
 
+        public static ArraySegment<byte> ToUtf8(string text) => WebSocketHelper.ToUtf8(text);
+        public static string FromUtf8(ArraySegment<byte> buffer) => WebSocketHelper.FromUtf8(buffer);
+
         public static IEnumerable<object[]> UnavailableWebSocketServers
         {
             get
@@ -58,7 +61,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     server = System.Net.Test.Common.Configuration.Http.RemoteEchoServer;
                     var ub = new UriBuilder("ws", server.Host, server.Port, server.PathAndQuery);
-                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_ConnectStatusExpected", (int) HttpStatusCode.OK, (int) HttpStatusCode.SwitchingProtocols);
+                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_ConnectStatusExpected", (int)HttpStatusCode.OK, (int)HttpStatusCode.SwitchingProtocols);
 
                     yield return new object[] { ub.Uri, exceptionMessage, WebSocketError.NotAWebSocket };
                 }

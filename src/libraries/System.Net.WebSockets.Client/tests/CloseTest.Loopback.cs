@@ -50,18 +50,25 @@ namespace System.Net.WebSockets.Client.Tests
         public Task CloseAsync_CloseOutputAsync_Throws(bool useSsl) => RunEchoAsync(
             RunClient_CloseAsync_CloseOutputAsync_Throws, useSsl);
 
+        [OuterLoop("Uses Task.Delay")]
         [Theory, MemberData(nameof(UseSsl))]
         public Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_ClientInitiated_CanReceive_CanClose, useSsl);
 
-        [Theory, MemberData(nameof(UseSslAndBoolean))]
-        public Task CloseOutputAsync_ServerInitiated_CanReceive(bool useSsl, bool delayReceiving) => RunEchoAsync(
-            server => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving), useSsl);
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task CloseOutputAsync_ServerInitiated_CanReceive(bool useSsl) => RunEchoAsync(
+            server => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving: false), useSsl);
+
+        [OuterLoop("Uses Task.Delay")]
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task CloseOutputAsync_ServerInitiated_DelayReceiving_CanReceive(bool useSsl) => RunEchoAsync(
+            server => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving: true), useSsl);
 
         [Theory, MemberData(nameof(UseSsl))]
         public Task CloseOutputAsync_ServerInitiated_CanSend(bool useSsl) => RunEchoAsync(
             RunClient_CloseOutputAsync_ServerInitiated_CanSend, useSsl);
 
+        [OuterLoop("Uses Task.Delay")]
         [Theory, MemberData(nameof(UseSslAndBoolean))]
         public Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(bool useSsl, bool syncState) => RunEchoAsync(
             server => RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(server, syncState), useSsl);

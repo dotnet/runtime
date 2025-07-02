@@ -43,7 +43,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(EchoControlMessage.Shutdown),
+                    ToUtf8(EchoControlMessage.Shutdown),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -212,7 +212,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var closeStatus = PlatformDetection.IsNotBrowser ? WebSocketCloseStatus.InvalidPayloadData : (WebSocketCloseStatus)3210;
                 string closeDescription = "CloseOutputAsync_Client_InvalidPayloadData";
 
-                await cws.SendAsync(WebSocketData.GetBufferFromText(message), WebSocketMessageType.Text, true, cts.Token);
+                await cws.SendAsync(ToUtf8(message), WebSocketMessageType.Text, true, cts.Token);
                 // Need a short delay as per WebSocket rfc6455 section 5.5.1 there isn't a requirement to receive any
                 // data fragments after a close has been sent. The delay allows the received data fragment to be
                 // available before calling close. The WinRT MessageWebSocket implementation doesn't allow receiving
@@ -226,7 +226,7 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(segmentRecv, cts.Token);
                 Assert.Equal(message.Length, recvResult.Count);
                 segmentRecv = new ArraySegment<byte>(segmentRecv.Array, 0, recvResult.Count);
-                Assert.Equal(message, WebSocketData.GetTextFromBuffer(segmentRecv));
+                Assert.Equal(message, FromUtf8(segmentRecv));
                 Assert.Null(recvResult.CloseStatus);
                 Assert.Null(recvResult.CloseStatusDescription);
 
@@ -247,7 +247,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(expectedCloseDescription),
+                    ToUtf8(expectedCloseDescription),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -262,7 +262,7 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(segmentRecv, cts.Token);
                 Assert.Equal(expectedCloseDescription.Length, recvResult.Count);
                 segmentRecv = new ArraySegment<byte>(segmentRecv.Array, 0, recvResult.Count);
-                Assert.Equal(expectedCloseDescription, WebSocketData.GetTextFromBuffer(segmentRecv));
+                Assert.Equal(expectedCloseDescription, FromUtf8(segmentRecv));
                 Assert.Null(recvResult.CloseStatus);
                 Assert.Null(recvResult.CloseStatusDescription);
 
@@ -302,7 +302,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(EchoControlMessage.Shutdown),
+                    ToUtf8(EchoControlMessage.Shutdown),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -322,7 +322,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.CloseReceived, cws.State);
 
                 // Should be able to send.
-                await cws.SendAsync(WebSocketData.GetBufferFromText(message), WebSocketMessageType.Text, true, cts.Token);
+                await cws.SendAsync(ToUtf8(message), WebSocketMessageType.Text, true, cts.Token);
 
                 // Cannot change the close status/description with the final close.
                 var closeStatus = PlatformDetection.IsNotBrowser ? WebSocketCloseStatus.InvalidPayloadData : (WebSocketCloseStatus)3210;
@@ -342,7 +342,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(EchoControlMessage.ReceiveMessageAfterClose),
+                    ToUtf8(EchoControlMessage.ReceiveMessageAfterClose),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -358,7 +358,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 var recvBuffer = new ArraySegment<byte>(new byte[1024]);
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
-                var message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
+                var recvSegment = new ArraySegment<byte>(recvBuffer.ToArray(), 0, recvResult.Count);
+                var message = FromUtf8(recvSegment);
 
                 Assert.Contains(EchoControlMessage.ReceiveMessageAfterClose, message);
             }

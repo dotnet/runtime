@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +34,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             using ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, configureOptions, invoker);
 
-            await cws.SendAsync(WebSocketData.GetBufferFromText(message), type, true, cts.Token);
+            await cws.SendAsync(ToUtf8(message), type, true, cts.Token);
             Assert.Equal(WebSocketState.Open, cws.State);
 
             WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cts.Token);
@@ -45,7 +46,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Null(recvRet.CloseStatusDescription);
 
             var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
-            Assert.Equal(message, WebSocketData.GetTextFromBuffer(recvSegment));
+            Assert.Equal(message, FromUtf8(recvSegment));
 
             Task taskClose = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeMessage, cts.Token);
             Assert.True(
@@ -104,35 +105,35 @@ namespace System.Net.WebSockets.Client.Tests
             HttpMessageInvoker? invoker = null,
             bool validateState = true,
             CancellationToken cancellationToken = default)
+        {
+            if (PlatformDetection.IsNotBrowser && server.Scheme == "wss" && invoker == null)
             {
-                if (PlatformDetection.IsNotBrowser && server.Scheme == "wss" && invoker == null)
-                {
-                    cws.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
-                }
-
-                configureOptions(cws.Options);
-
-                Task taskConnect = invoker == null
-                    ? cws.ConnectAsync(server, cancellationToken)
-                    : cws.ConnectAsync(server, invoker, cancellationToken);
-
-                if (validateState)
-                {
-                    Assert.True(
-                        (cws.State == WebSocketState.None) ||
-                        (cws.State == WebSocketState.Connecting) ||
-                        (cws.State == WebSocketState.Open) ||
-                        (cws.State == WebSocketState.Aborted),
-                        "State immediately after ConnectAsync incorrect: " + cws.State);
-                }
-
-                await taskConnect;
-
-                if (validateState)
-                {
-                    Assert.Equal(WebSocketState.Open, cws.State);
-                }
+                cws.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
             }
+
+            configureOptions(cws.Options);
+
+            Task taskConnect = invoker == null
+                ? cws.ConnectAsync(server, cancellationToken)
+                : cws.ConnectAsync(server, invoker, cancellationToken);
+
+            if (validateState)
+            {
+                Assert.True(
+                    (cws.State == WebSocketState.None) ||
+                    (cws.State == WebSocketState.Connecting) ||
+                    (cws.State == WebSocketState.Open) ||
+                    (cws.State == WebSocketState.Aborted),
+                    "State immediately after ConnectAsync incorrect: " + cws.State);
+            }
+
+            await taskConnect;
+
+            if (validateState)
+            {
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
+        }
 
         public static async Task<T> Retry<T>(ITestOutputHelper output, Func<Task<T>> func)
         {
@@ -183,6 +184,17 @@ namespace System.Net.WebSockets.Client.Tests
                     cws.Dispose();
                 }
             }
+        }
+
+        public static ArraySegment<byte> ToUtf8(string text)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(text);
+            return new ArraySegment<byte>(buffer);
+        }
+
+        public static string FromUtf8(ArraySegment<byte> buffer)
+        {
+            return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
         }
     }
 }
