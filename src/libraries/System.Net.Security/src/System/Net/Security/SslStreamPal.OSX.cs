@@ -141,13 +141,13 @@ namespace System.Net.Security
 
             return securityContext switch
             {
-                SafeDeleteSslContext sslContext => EncryptMessageSecureTransport(sslContext, input, headerSize, trailerSize),
-                SafeDeleteNwContext nwContext => EncryptMessageNetworkFramework(nwContext, input, headerSize, trailerSize),
+                SafeDeleteSslContext sslContext => EncryptMessage(sslContext, input, headerSize, trailerSize),
+                SafeDeleteNwContext nwContext => NetworkFramework.EncryptAsync(nwContext, input, headerSize, trailerSize).GetAwaiter().GetResult(),
                 _ => throw new PlatformNotSupportedException()
             };
         }
 
-        public static ProtocolToken EncryptMessageSecureTransport(
+        public static ProtocolToken EncryptMessage(
             SafeDeleteSslContext securityContext,
             ReadOnlyMemory<byte> input,
             int _ /*headerSize*/,
@@ -211,19 +211,28 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteContext securityContext,
-            Span<byte> buffer,
+            Memory<byte> buffer,
             out int offset,
             out int count)
         {
-            return securityContext switch
+            switch (securityContext)
             {
-                SafeDeleteSslContext sslContext => DecryptMessageSecureTransport(sslContext, buffer, out offset, out count),
-                SafeDeleteNwContext nwContext => DecryptMessageNetworkFramework(nwContext, buffer, out offset, out count),
-                _ => throw new PlatformNotSupportedException()
-            };
+                case SafeDeleteSslContext sslContext:
+                    return DecryptMessage(sslContext, buffer.Span, out offset, out count);
+
+                case SafeDeleteNwContext nwContext:
+                    (SecurityStatusPal status, int o, int c) = NetworkFramework.DecryptAsync(nwContext, buffer).GetAwaiter().GetResult();
+                    offset = o;
+                    count = c;
+
+                    return status;
+
+                default:
+                    throw new PlatformNotSupportedException();
+            }
         }
 
-        public static SecurityStatusPal DecryptMessageSecureTransport(
+        public static SecurityStatusPal DecryptMessage(
             SafeDeleteSslContext securityContext,
             Span<byte> buffer,
             out int offset,

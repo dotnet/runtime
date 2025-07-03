@@ -1026,12 +1026,12 @@ namespace System.Net.Security
             return token;
         }
 
-        internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
+        internal SecurityStatusPal Decrypt(Memory<byte> buffer, out int outputOffset, out int outputCount)
         {
             SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
-                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
+                NetEventSource.DumpBuffer(this, buffer.Span.Slice(outputOffset, outputCount));
             }
 
             return status;

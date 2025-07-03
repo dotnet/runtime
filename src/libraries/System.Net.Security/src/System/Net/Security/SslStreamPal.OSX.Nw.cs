@@ -11,59 +11,25 @@ namespace System.Net.Security;
 
 internal static partial class SslStreamPal
 {
-    internal const bool UseAsyncDecrypt = true;
-
-    public static int GetAvailableDecryptedBytes(SafeDeleteContext context)
+    internal static class NetworkFramework
     {
-        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(context, $"result: {0}", "GetAvailableDecryptedBytes");
-        return 0;
-        // if (context is SafeDeleteSslContext) return 0;
-        // var result = ((SafeDeleteNwContext)context).BytesReadyFromConnection;
-        // return result;
-    }
-
-    public static int ReadDecryptedData(SafeDeleteContext context, Span<byte> buffer)
-    {
-        var result = ((SafeDeleteNwContext)context).Read(buffer);
-        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(context, $"result: {result} bytes", "ReadDecryptedData");
-        return result;
-    }
-
-    public static ProtocolToken EncryptMessageNetworkFramework(
-            SafeDeleteNwContext securityContext,
-            ReadOnlyMemory<byte> input,
-            int _/*headerSize*/,
-            int _1/*trailerSize*/)
-    {
-        ProtocolToken token = default;
-        Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
-
-        unsafe
+        public static Task<ProtocolToken> EncryptAsync(
+                SafeDeleteNwContext securityContext,
+                ReadOnlyMemory<byte> input,
+                int _/*headerSize*/,
+                int _1/*trailerSize*/)
         {
-            MemoryHandle memHandle = input.Pin();
-            try
-            {
-                securityContext.Encrypt(memHandle.Pointer, input.Length, ref token);
-                return token;
-            }
-            finally
-            {
-                memHandle.Dispose();
-            }
+            Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
+
+            return securityContext.EncryptAsync(input);
         }
-    }
-    public static SecurityStatusPal DecryptMessageNetworkFramework(
-            SafeDeleteNwContext securityContext,
-            Span<byte> buffer,
-            out int offset,
-            out int count)
-    {
-        offset = 0;
-        count = securityContext.Decrypt(buffer);
-        if (GetAvailableDecryptedBytes(securityContext) == 0 && securityContext.DecryptTask?.Task == null)
+        public static async Task<(SecurityStatusPal, int, int)> DecryptAsync(
+                SafeDeleteNwContext securityContext,
+                Memory<byte> buffer)
         {
-            securityContext.StartDecrypt();
+            int offset = 0;
+            int count = await securityContext.DecryptAsync(buffer).ConfigureAwait(false);
+            return (new SecurityStatusPal(SecurityStatusPalErrorCode.OK), offset, count);
         }
-        return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
     }
 }

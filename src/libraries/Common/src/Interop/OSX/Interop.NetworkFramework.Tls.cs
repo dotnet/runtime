@@ -48,15 +48,15 @@ internal static partial class Interop
 
             // takes encrypted input from underlying stream and feed it to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
-            internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, void> completionCallback);
+            internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, long, void> completionCallback);
 
             // sends plaintext data to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSendToConnection")]
-            internal static unsafe partial void SendToConnection(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength);
+            internal static unsafe partial void SendToConnection(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, long, void> completionCallback);
 
             // read plaintext data from the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
-            internal static partial void ReadFromConnection(SafeNwHandle connection, IntPtr state);
+            internal static unsafe partial void ReadFromConnection(SafeNwHandle connection, IntPtr state, IntPtr context, delegate* unmanaged<IntPtr, long, byte*, int, void> readCompletionCallback);
 
             // starts connection cleanup
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]

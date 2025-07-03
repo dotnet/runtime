@@ -293,7 +293,6 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Signaled _writeWaiter", "WriteOutboundWireData");
         }
 
-
         internal unsafe Task WriteInboundWireDataAsync(ReadOnlyMemory<byte> buf)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buf.Length} bytes", "WriteInboundWireDataAsync");
@@ -314,8 +313,10 @@ namespace System.Net.Security
             return Task.CompletedTask;
 
             [UnmanagedCallersOnly]
-            static void CompletionCallback(IntPtr context)
+            static void CompletionCallback(IntPtr context, long status)
             {
+                Debug.Assert(status == 0, $"CompletionCallback called with status {status}");
+
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing", "WriteInboundWireDataAsync");
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 TaskCompletionSource tcs = (TaskCompletionSource)handle.Target!;
@@ -341,10 +342,37 @@ namespace System.Net.Security
 
         public override bool IsInvalid => _connectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
 
-        internal unsafe int Decrypt(Span<byte> buffer)
+        internal async Task<int> DecryptAsync(Memory<byte> buffer)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", "Decrypt");
-            return -1;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", "DecryptAsync");
+
+            await WriteInboundWireDataAsync(buffer).ConfigureAwait(false);
+
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Tuple<TaskCompletionSource<int>, Memory<byte>> state = new(tcs, buffer);
+            GCHandle handle = GCHandle.Alloc(state, GCHandleType.Normal);
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Waiting for read from connection", "DecryptAsync");
+            unsafe
+            {
+                Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), GCHandle.ToIntPtr(handle), &CompletionCallback);
+            }
+
+            return await tcs.Task.ConfigureAwait(false);
+
+            [UnmanagedCallersOnly]
+            static unsafe void CompletionCallback(IntPtr context, long status, byte* buffer, int length)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing DecryptAsync", "DecryptAsync");
+                GCHandle handle = GCHandle.FromIntPtr(context);
+                (TaskCompletionSource<int> tcs, Memory<byte> state) = (Tuple<TaskCompletionSource<int>, Memory<byte>>)handle.Target!;
+
+                new Span<byte>(buffer, length).CopyTo(state.Span);
+
+                tcs.SetResult(length);
+                handle.Free();
+            }
             // if (_framerHandle is null || _framerHandle.IsInvalid)
             // {
             //     // We are shutting down
@@ -365,10 +393,24 @@ namespace System.Net.Security
             // return 0;
         }
 
-        internal unsafe void Encrypt(void* buffer, int bufferLength, ref ProtocolToken token)
+        internal async Task<ProtocolToken> EncryptAsync(ReadOnlyMemory<byte> buffer)
         {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Encrypting {buffer.Length} bytes", "EncryptAsync");
+            ProtocolToken token = default;
+
             _writeWaiter!.Reset();
-            Interop.NetworkFramework.Tls.SendToConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), buffer, bufferLength);
+
+            TaskCompletionSource<long> tcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+            GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
+
+            using MemoryHandle memoryHandle = buffer.Pin();
+            unsafe
+            {
+                Interop.NetworkFramework.Tls.SendToConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+            }
+
+            long status = await tcs.Task.ConfigureAwait(false);
+
             // this will be updated by WriteCompleted
             _writeWaiter!.Wait();
 
@@ -381,6 +423,19 @@ namespace System.Net.Security
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError,
                                         Interop.AppleCrypto.CreateExceptionForOSStatus(_writeStatus));
+            }
+
+            return token;
+
+            [UnmanagedCallersOnly]
+            static void CompletionCallback(IntPtr context, long status)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing", "EncryptAsync");
+                GCHandle handle = GCHandle.FromIntPtr(context);
+                TaskCompletionSource<long> tcs = (TaskCompletionSource<long>)handle.Target!;
+
+                tcs.SetResult(status);
+                handle.Free();
             }
         }
 
@@ -424,17 +479,6 @@ namespace System.Net.Security
                 _outputBuffer.Discard(_outputBuffer.ActiveLength);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Token size: {token.Size}", "ReadPendingWrites");
             }
-        }
-
-        public unsafe Task<SecurityStatusPalErrorCode> StartDecrypt()
-        {
-            if (DecryptTask == null)
-            {
-                DecryptTask = new TaskCompletionSource<SecurityStatusPalErrorCode>(TaskCreationOptions.RunContinuationsAsynchronously);
-                Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle));
-            }
-
-            return DecryptTask.Task;
         }
 
         public async ValueTask<SecurityStatusPal> PerformHandshakeAsync()
@@ -592,7 +636,7 @@ namespace System.Net.Security
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionReadFinished:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, $"ConnectionReadFinished - dataLength: {data.ToInt32()}", "StatusUpdateCallback");
-                        nwContext.ConnectionReadFinished(new ReadOnlySpan<byte>((void*)data2, data.ToInt32()));
+                        //nwContext.ConnectionReadFinished(new ReadOnlySpan<byte>((void*)data2, data.ToInt32()));
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionWriteFinished:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "ConnectionWriteFinished", "StatusUpdateCallback");
@@ -666,30 +710,6 @@ namespace System.Net.Security
             _handshakeState = HandshakeState.Failed;
             _pendingHandshakeTask = null;
             _readStatus = errorCode;
-        }
-
-        private void ConnectionReadFinished(ReadOnlySpan<byte> data)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Received {data.Length} bytes from connection", "ConnectionReadFinished");
-            TaskCompletionSource<SecurityStatusPalErrorCode>? completion;
-            lock (_lockObject)
-            {
-                if (data.Length > 0)
-                {
-                    WriteInboundWireDataAsync(data.ToArray()).GetAwaiter().GetResult();
-                }
-                else if (_readStatus == (int)NwOSStatus.NoErr)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "EOF reached", "ConnectionReadFinished");
-                    _readStatus = (int)NwOSStatus.EOFErr;
-                }
-
-                completion = DecryptTask;
-                DecryptTask = null;
-            }
-
-            completion?.TrySetResult(SecurityStatusPalErrorCode.OK);
-            _readWaiter.Set();
         }
 
         private void SetConnectionWriteStatus(int statusCode)

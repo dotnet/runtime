@@ -93,7 +93,7 @@ namespace System.Net.Security
 
             public int ActiveLength => _buffer.ActiveLength;
 
-            public Span<byte> EncryptedSpanSliced(int length) => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding, length);
+            public Memory<byte> EncryptedMemorySliced(int length) => _buffer.ActiveMemory.Slice(_decryptedLength + _decryptedPadding, length);
 
             public ReadOnlySpan<byte> EncryptedReadOnlySpan => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding);
             public ReadOnlyMemory<byte> EncryptedReadOnlyMemory => _buffer.ActiveMemory.Slice(_decryptedLength + _decryptedPadding);

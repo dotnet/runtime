@@ -154,26 +154,11 @@ PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connectio
         return -1;
     }
 
-    uint8_t * copy = NULL;
-    if (bufferLength > 0)
-    {
-        // TODO:
-        copy = malloc((size_t)bufferLength);
-        if (copy == NULL)
-        {
-            return -1;
-        }
-        memcpy(copy, buffer, bufferLength);
-        nw_framer_message_set_value(message, "DATA", copy,  ^(void* ptr) {
-            free(ptr);
-        });
-    }
-
     nw_framer_async(framer, ^(void) 
     {
-        nw_framer_deliver_input(framer, copy, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
+        nw_framer_deliver_input(framer, buffer, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
 
-        completionCallback(context);
+        completionCallback(context, 0);
 
         nw_release(message);
     });
@@ -241,32 +226,29 @@ PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection)
 }
 
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
-PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
+PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length, void* context, CompletionCallback completionCallback)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
+    (void)state;
+
     nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t  error) {
-        if (error != NULL)
-        {
-            int errorCode  = nw_error_get_error_code(error);
-            (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionWriteFailed, (size_t)errorCode, 0);
-        }
-        else
-        {
-            (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionWriteFinished, 0, 0);
-        }
-     });
+        completionCallback(context, error ? nw_error_get_error_code(error) : 0);
+    });
 }
 
 // This is used by decrypt. We feed data in via AppleCryptoNative_NwProcessInputData and we try to read from the connection.
-PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state)
+PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state, void* context, ReadCompletionCallback readCompletionCallback)
 {
-    nw_connection_receive(connection, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
+    nw_connection_receive(connection, 0, 65536, ^(dispatch_data_t content, nw_content_context_t ctx, bool is_complete, nw_error_t error) {
         int errorCode = error ? nw_error_get_error_code(error) : 0;
+
+        printf("%s:%d: AppleCryptoNative_NwReadFromConnection called\n", __func__, __LINE__);
 
         if (error != NULL)
         {
             errorCode  = nw_error_get_error_code(error);
+            readCompletionCallback(context, errorCode, NULL, 0);
             return;
         }
 
@@ -275,15 +257,19 @@ PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection
             const void *buffer;
             size_t bufferLength;
             dispatch_data_t tmp = dispatch_data_create_map(content, &buffer, &bufferLength);
-            (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionReadFinished, bufferLength, (size_t)buffer);
+            readCompletionCallback(context, 0, (const uint8_t*)buffer, bufferLength);
             dispatch_release(tmp);
+            return;
          }
 
          if (is_complete || content == NULL)
          {
-             (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionReadFinished, 0, 0);
+            readCompletionCallback(context, 0, NULL, 0);
+            return;
          }
-        (void)context;
+
+        (void)state;
+        (void)ctx;
     });
 }
 
@@ -489,7 +475,8 @@ PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, Writ
             NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
         _tlsDefinition = nw_protocol_copy_tls_definition();
         _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
-        _inputQueue = dispatch_queue_create("com.dotnet.networkframework.inputqueue", NULL);
+        _inputQueue = _tlsQueue;
+        //_inputQueue = dispatch_queue_create("com.dotnet.networkframework.inputqueue", NULL);
 
         return 0;
    }
