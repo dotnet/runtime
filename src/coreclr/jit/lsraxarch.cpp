@@ -2489,17 +2489,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(isRMW);
                 assert(!op1->isContained());
 
-                SingleTypeRegSet apxAwareRegCandidates =
-                    ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+                if ((baseType == TYP_ULONG || baseType == TYP_UINT) &&
+                    compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    isRMW = false;
 
-                // mulEAX always use EAX, if one operand is contained, specify other op with fixed EAX register
-                // otherwise dont force any register, we might get the second parameter in EAX
-                srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
-                srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    // mulx, place op1 in implicit EDX register since op2 might be contained
+                    srcCount = BuildOperandUses(op1, SRBM_EDX);
+                    srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
-                // result put in EAX and EDX
-                BuildDef(intrinsicTree, SRBM_EAX, 0);
-                BuildDef(intrinsicTree, SRBM_EDX, 1);
+                    // result in any register
+                    SingleTypeRegSet apxAwareDestCandidates =
+                        ForceLowGprForApxIfNeeded(intrinsicTree, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    BuildDef(intrinsicTree, apxAwareDestCandidates, 0);
+                    BuildDef(intrinsicTree, apxAwareDestCandidates, 1);
+                }
+                else // Signed multiply or normal unsigned multiply in one operand form
+                {
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                    // mulEAX always use EAX, if one operand is contained, specify other op with fixed EAX register
+                    // otherwise dont force any register, we might get the second parameter in EAX
+                    srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
+                    srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+
+                    // result put in EAX and EDX
+                    BuildDef(intrinsicTree, SRBM_EAX, 0);
+                    BuildDef(intrinsicTree, SRBM_EDX, 1);
+                }
 
                 buildUses = false;
                 break;

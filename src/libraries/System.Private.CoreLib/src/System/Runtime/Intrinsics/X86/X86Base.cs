@@ -71,10 +71,11 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             ///   <para>unsigned _umul128(unsigned __int64 Multiplier, unsigned __int64  Multiplicand, unsigned __int64 * HighProduct)</para>
             ///   <para>  MUL reg/m64</para>
+            ///   <para>  MULX reg reg reg/m64 (if BMI2 is supported)</para>
             /// </summary>
             /// <remarks>
             ///   <para>Its functionality is exposed by the public <see cref="Math.BigMul(ulong, ulong, out ulong)" />.</para>
-            ///   <para>In the future it might emit mulx on compatible hardware</para>
+            ///   <para>Can emit either mul or mulx depending on hardware</para>
             /// </remarks>
             internal static (ulong Lower, ulong Upper) BigMul(ulong left, ulong right) => BigMul(left, right);
 
@@ -146,6 +147,7 @@ namespace System.Runtime.Intrinsics.X86
 #if !MONO
         /// <summary>
         ///   <para>  MUL reg/m32</para>
+        ///   <para>  MULX reg reg reg/m32 (if BMI2 is supported)</para>
         /// </summary>
         internal static (uint Lower, uint Upper) BigMul(uint left, uint right) => BigMul(left, right);
 
@@ -154,7 +156,10 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         internal static (int Lower, int Upper) BigMul(int left, int right) => BigMul(left, right);
 
-        /// <summary>  MUL reg/m</summary>
+        /// <summary>
+        ///   <para>  MUL reg/m</para>
+        ///   <para>  MULX reg reg reg/m (if BMI2 is supported)</para>
+        /// </summary>
         /// <remarks>Intented for UIntPtr.Bigmul https://github.com/dotnet/runtime/issues/114731 </remarks>
         internal static (nuint Lower, nuint Upper) BigMul(nuint left, nuint right) => BigMul(left, right);
 

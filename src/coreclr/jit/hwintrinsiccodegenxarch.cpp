@@ -2364,20 +2364,37 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             emitAttr attr = emitTypeSize(targetType);
             emitter* emit = GetEmitter();
 
-            if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EAX)
+            // Unsigned multiplication can use mulx on BMI2-capable CPUs
+            if (ins == INS_mulEAX && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                std::swap(rmOp, regOp);
+                // op1: EDX, op2: reg/mem (operand 3) => hiRes: (operand 1), lowReg: (operand 2)
+                assert((regOp->GetRegNum() == REG_EDX) || (rmOp->GetRegNum() != REG_EDX));
+
+                // mov the first operand into implicit source operand EDX/RDX
+                emit->emitIns_Mov(INS_mov, attr, REG_EDX, regOp->GetRegNum(), /* canSkip */ true);
+
+                // emit MULX instruction
+                regNumber lowReg = node->GetRegByIndex(0);
+                regNumber hiReg  = node->GetRegByIndex(1);
+                inst_RV_RV_TT(INS_mulx, attr, hiReg, lowReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
             }
+            else
+            {
+                if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EAX)
+                {
+                    std::swap(rmOp, regOp);
+                }
 
-            // op1: EAX, op2: reg/mem
-            emit->emitIns_Mov(INS_mov, attr, REG_EAX, regOp->GetRegNum(), /* canSkip */ true);
+                // op1: EAX, op2: reg/mem
+                emit->emitIns_Mov(INS_mov, attr, REG_EAX, regOp->GetRegNum(), /* canSkip */ true);
 
-            // emit the MUL/IMUL instruction
-            emit->emitInsBinary(ins, attr, node, rmOp);
+                // emit the MUL/IMUL instruction
+                emit->emitInsBinary(ins, attr, node, rmOp);
 
-            // verify target registers are as expected
-            assert(node->GetRegByIndex(0) == REG_EAX);
-            assert(node->GetRegByIndex(1) == REG_EDX);
+                // verify target registers are as expected
+                assert(node->GetRegByIndex(0) == REG_EAX);
+                assert(node->GetRegByIndex(1) == REG_EDX);
+            }
 
             break;
         }
