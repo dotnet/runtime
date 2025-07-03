@@ -11,7 +11,6 @@
 #define DATA_SLOT(stub, field) (stub##Code + STUB_PAGE_SIZE + stub##Data__##field)
 
     LEAF_ENTRY StubPrecodeCode
-        dmb ishld
         ldr x10, DATA_SLOT(StubPrecode, Target)
         ldr x12, DATA_SLOT(StubPrecode, SecretParam)
         br x10
@@ -26,7 +25,6 @@
     LEAF_END_MARKED FixupPrecodeCode
 
     LEAF_ENTRY CallCountingStubCode
-        dmb ishld
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
         ldrh w10, [x9]
         subs w10, w10, #1

@@ -7,8 +7,7 @@
 // Note that the offsets specified in pcaddi must match the behavior of GetStubCodePageSize() on this architecture/os.
 
 LEAF_ENTRY StubPrecodeCode
-    dbar 0
-    pcaddi  $r21, 0xFFF
+    pcaddi  $r21, 0x1000
     ld.d  $t2,$r21, StubPrecodeData__SecretParam
     ld.d  $r21,$r21, StubPrecodeData__Target
     jirl  $r0,$r21,0
@@ -28,8 +27,7 @@ LEAF_END_MARKED FixupPrecodeCode
 // NOTE: For LoongArch64 `CallCountingStubData__RemainingCallCountCell` must be zero !!!
 // Because the stub-identifying token is $t1 within the `OnCallCountThresholdReachedStub`.
 LEAF_ENTRY CallCountingStubCode
-    dbar 0
-    pcaddi  $t2, 0xFFF
+    pcaddi  $t2, 0x1000
     ld.d  $t1, $t2, CallCountingStubData__RemainingCallCountCell
     ld.h  $r21, $t1, 0
     addi.w  $r21, $r21, -1

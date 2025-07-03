@@ -263,6 +263,15 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     allocationAddressHolder.SuppressRelease();
     stub->Initialize(targetForMethod, remainingCallCountCell);
 
+#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+    // While the allocation of a precode will use a memory mapping technique, and not actually write to the set of instructions,
+    // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
+    // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
+    // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
+    // happened in the Init routine above.
+    ClrFlushInstructionCache(stub, CallCountingStub::CodeSize);
+#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+
     return stub;
 }
 

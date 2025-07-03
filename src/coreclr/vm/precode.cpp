@@ -229,6 +229,16 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
 
     InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
     pPrecode->Init(pPrecode, byteCode);
+
+#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+    // While the allocation of a precode will use a memory mapping technique, and not actually write to the set of instructions,
+    // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
+    // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
+    // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
+    // happened in the Init routine above.
+    ClrFlushInstructionCache(pPrecode->GetCode(), Precode::SizeOf(t));
+#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, sizeof(InterpreterPrecode), PerfMapStubType::IndividualWithinBlock);
 #endif
@@ -265,6 +275,16 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         ThisPtrRetBufPrecodeData *pData = (ThisPtrRetBufPrecodeData*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ThisPtrRetBufPrecodeData))));
         pThisPtrRetBufPrecode->Init(pData, pMD, pLoaderAllocator);
         pPrecode = (Precode*)pThisPtrRetBufPrecode;
+
+#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+        // While the allocation of a precode will use a memory mapping technique, and not actually write to the set of instructions,
+        // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
+        // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
+        // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
+        // happened in the Init routine above.
+        ClrFlushInstructionCache(pPrecode->GetCode(), Precode::SizeOf(t));
+#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "ThisPtrRetBuf", (PCODE)pPrecode, sizeof(ThisPtrRetBufPrecodeData), PerfMapStubType::IndividualWithinBlock);
 #endif
@@ -275,6 +295,16 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         _ASSERTE(t == PRECODE_STUB || t == PRECODE_NDIRECT_IMPORT);
         pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
+
+#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+        // While the allocation of a precode will use a memory mapping technique, and not actually write to the set of instructions,
+        // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
+        // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
+        // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
+        // happened in the Init routine above.
+        ClrFlushInstructionCache(pPrecode->GetCode(), Precode::SizeOf(t));
+#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, t == PRECODE_STUB ? "StubPrecode" : "PInvokeImportPrecode", (PCODE)pPrecode, sizeof(StubPrecode), PerfMapStubType::IndividualWithinBlock);
 #endif
