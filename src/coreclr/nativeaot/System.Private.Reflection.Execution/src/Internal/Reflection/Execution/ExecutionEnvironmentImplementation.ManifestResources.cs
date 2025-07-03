@@ -21,12 +21,9 @@ namespace Internal.Reflection.Execution
     {
         public sealed override ManifestResourceInfo GetManifestResourceInfo(Assembly assembly, string resourceName)
         {
-            foreach (string name in ExtractResources(assembly))
+            if (FindResourceWithName(assembly, resourceName).Module != null)
             {
-                if (name == resourceName)
-                {
-                    return new ManifestResourceInfo(null, null, ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile);
-                }
+                return new ManifestResourceInfo(null, null, ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile);
             }
 
             return null;
@@ -34,17 +31,64 @@ namespace Internal.Reflection.Execution
 
         public sealed override string[] GetManifestResourceNames(Assembly assembly)
         {
+            string assemblyName = assembly.GetName().FullName;
             ArrayBuilder<string> arrayBuilder = default;
 
-            foreach (string name in ExtractResources(assembly))
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                arrayBuilder.Add(name);
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out NativeReader reader))
+                {
+                    continue;
+                }
+                NativeParser indexParser = new NativeParser(reader, 0);
+                NativeHashtable indexHashTable = new NativeHashtable(indexParser);
+
+                var lookup = indexHashTable.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(assemblyName));
+                NativeParser entryParser;
+                while (!(entryParser = lookup.GetNext()).IsNull)
+                {
+                    if (entryParser.StringEquals(assemblyName))
+                    {
+                        entryParser.SkipString(); // assemblyName
+                        arrayBuilder.Add(entryParser.GetString());
+                    }
+                    else
+                    {
+                        entryParser.SkipString(); // assemblyName
+                        entryParser.SkipString(); // resourceName
+                    }
+                    entryParser.SkipInteger(); // offset
+                    entryParser.SkipInteger(); // length
+                }
             }
 
             return arrayBuilder.ToArray();
         }
 
         public sealed override Stream GetManifestResourceStream(Assembly assembly, string name)
+        {
+            ResourceInfo resourceInfo = FindResourceWithName(assembly, name);
+            if (resourceInfo.Module != null)
+            {
+                return ReadResourceFromBlob(resourceInfo);
+            }
+
+            return null;
+        }
+
+        private static unsafe UnmanagedMemoryStream ReadResourceFromBlob(ResourceInfo resourceInfo)
+        {
+            if (!resourceInfo.Module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out byte* pBlob, out uint cbBlob))
+            {
+                throw new BadImageFormatException();
+            }
+
+            // resourceInfo is read from the executable image, so check it only in debug builds
+            Debug.Assert(resourceInfo.Index >= 0 && resourceInfo.Length >= 0 && (uint)(resourceInfo.Index + resourceInfo.Length) <= cbBlob);
+            return new UnmanagedMemoryStream(pBlob + resourceInfo.Index, resourceInfo.Length);
+        }
+
+        private static ResourceInfo FindResourceWithName(Assembly assembly, string resourceName)
         {
             string assemblyName = assembly.GetName().FullName;
 
@@ -64,12 +108,12 @@ namespace Internal.Reflection.Execution
                     if (entryParser.StringEquals(assemblyName))
                     {
                         entryParser.SkipString(); // assemblyName
-                        if (entryParser.StringEquals(name))
+                        if (entryParser.StringEquals(resourceName))
                         {
                             entryParser.SkipString(); // resourceName
                             int resourceOffset = (int)entryParser.GetUnsigned();
                             int resourceLength = (int)entryParser.GetUnsigned();
-                            return ReadResourceFromBlob(resourceOffset, resourceLength, module);
+                            return new ResourceInfo(resourceOffset, resourceLength, module);
                         }
                     }
                     else
@@ -82,53 +126,21 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            return null;
+            return default;
         }
 
-        private static unsafe UnmanagedMemoryStream ReadResourceFromBlob(int resourceOffset, int resourceLength, NativeFormatModuleInfo module)
+        private struct ResourceInfo
         {
-            if (!module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out byte* pBlob, out uint cbBlob))
+            public ResourceInfo(int index, int length, NativeFormatModuleInfo module)
             {
-                throw new BadImageFormatException();
+                Index = index;
+                Length = length;
+                Module = module;
             }
 
-            // resourceInfo is read from the executable image, so check it only in debug builds
-            Debug.Assert(resourceOffset >= 0 && resourceLength >= 0 && (uint)(resourceOffset + resourceLength) <= cbBlob);
-            return new UnmanagedMemoryStream(pBlob + resourceOffset, resourceLength);
-        }
-
-        private static IEnumerable<string> ExtractResources(Assembly assembly)
-        {
-            Debug.Assert(assembly != null);
-            string assemblyName = assembly.GetName().FullName;
-
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
-            {
-                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out NativeReader reader))
-                {
-                    continue;
-                }
-                NativeParser indexParser = new NativeParser(reader, 0);
-                NativeHashtable indexHashTable = new NativeHashtable(indexParser);
-
-                var lookup = indexHashTable.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(assemblyName));
-                NativeParser entryParser;
-                while (!(entryParser = lookup.GetNext()).IsNull)
-                {
-                    if (entryParser.StringEquals(assemblyName))
-                    {
-                        entryParser.SkipString(); // assemblyName
-                        yield return entryParser.GetString();
-                    }
-                    else
-                    {
-                        entryParser.SkipString(); // assemblyName
-                        entryParser.SkipString(); // resourceName
-                    }
-                    entryParser.SkipInteger(); // offset
-                    entryParser.SkipInteger(); // length
-                }
-            }
+            public int Index { get; }
+            public int Length { get; }
+            public NativeFormatModuleInfo Module { get; }
         }
     }
 }
