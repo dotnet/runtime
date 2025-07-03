@@ -343,6 +343,7 @@ if ($env:BUILD_SOURCESDIRECTORY) {
     Add-MpPreference -ExclusionPath $env:BUILD_SOURCESDIRECTORY
     Add-MpPreference -ExclusionPath $env:TMP
     Add-MpPreference -ExclusionPath $env:TEMP
+    Add-MpPreference -ExclusionPath "C:\python3"
     Write-Host "Disable defender temporarily"
     Set-MpPreference -DisableRealtimeMonitoring $true
     Write-Host "Check the exclusions"
