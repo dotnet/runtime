@@ -676,6 +676,7 @@ namespace System.Collections
             }
 
             thisSpan.Slice(0, lengthToClear).Clear();
+            ClearHighExtraBits();
             _version++;
             return this;
 

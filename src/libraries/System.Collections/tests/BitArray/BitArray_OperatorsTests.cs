@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -310,6 +311,14 @@ namespace System.Collections.Tests
 
             int index = 0;
             Assert.All(ba.Cast<bool>(), bit => Assert.Equal(expected[index++], bit));
+
+            (int byteIndex, int bitOffeset) = Math.DivRem(length, BitsPerByte);
+            if (bitOffeset != 0)
+            {
+                Span<byte> bs = CollectionsMarshal.AsBytes(ba);
+                Assert.Equal(byteIndex + 1, bs.Length);
+                Assert.Equal(0, bs[byteIndex] >> bitOffeset);
+            }
         }
 
         private static bool[] GetBoolArray(int length, IEnumerable<int> set)
