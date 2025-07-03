@@ -32252,7 +32252,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     // We shouldn't find AND_NOT nodes since it should only be produced in lowering
     assert(oper != GT_AND_NOT);
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
     if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
     {
         // Comparisons that produce masks lead to more verbose trees than
@@ -32370,7 +32371,66 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         }
     }
-#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
+#elif defined(TARGET_ARM64)
+    // Check if the tree can be folded into a mask variant
+    if (HWIntrinsicInfo::HasAllMaskVariant(tree->GetHWIntrinsicId()))
+    {
+        NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(tree->GetHWIntrinsicId());
+
+        assert(opCount == (size_t)HWIntrinsicInfo::lookupNumArgs(maskVariant));
+
+        // Check all operands are valid
+        bool canFold = true;
+        for (size_t i = 1; i <= opCount && canFold; i++)
+        {
+            canFold &=
+                (varTypeIsMask(tree->Op(i)) || tree->Op(i)->OperIsConvertMaskToVector() || tree->Op(i)->IsVectorZero());
+        }
+
+        if (canFold)
+        {
+            // Convert all the operands to masks
+            for (size_t i = 1; i <= opCount; i++)
+            {
+                if (tree->Op(i)->OperIsConvertMaskToVector())
+                {
+                    // Replace with op1.
+                    tree->Op(i) = tree->Op(i)->AsHWIntrinsic()->Op(1);
+                }
+                else if (tree->Op(i)->IsVectorZero())
+                {
+                    // Replace the vector of zeroes with a mask of zeroes.
+                    tree->Op(i) = gtNewSimdFalseMaskByteNode();
+                    tree->Op(i)->SetMorphed(this);
+                }
+                assert(varTypeIsMask(tree->Op(i)));
+            }
+
+            // Switch to the mask variant
+            switch (opCount)
+            {
+                case 1:
+                    tree->ResetHWIntrinsicId(maskVariant, tree->Op(1));
+                    break;
+                case 2:
+                    tree->ResetHWIntrinsicId(maskVariant, tree->Op(1), tree->Op(2));
+                    break;
+                case 3:
+                    tree->ResetHWIntrinsicId(maskVariant, this, tree->Op(1), tree->Op(2), tree->Op(3));
+                    break;
+                default:
+                    unreached();
+            }
+
+            tree->gtType = TYP_MASK;
+            tree->SetMorphed(this);
+            tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseJitType, simdSize)->AsHWIntrinsic();
+            tree->SetMorphed(this);
+            return tree;
+        }
+    }
+#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     switch (ni)
     {
@@ -33605,7 +33665,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     assert(op2->gtType == TYP_SIMD16);
                     assert(op3->gtType == TYP_SIMD16);
 
-                    simd16_t op1SimdVal;
+                    simd16_t op1SimdVal = {};
                     EvaluateSimdCvtMaskToVector<simd16_t>(simdBaseType, &op1SimdVal, op1->AsMskCon()->gtSimdMaskVal);
 
                     // op2 = op2 & op1
