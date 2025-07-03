@@ -137,7 +137,7 @@ namespace System.IO
             /// </summary>
             private const int c_INotifyEventSize = 16;
 
-            public bool IsStopped { get; private set; }
+            public bool IsStopped => _isClosingHandle || _allWatchersStopped;
 
             private readonly object _watchersLock;
             private readonly List<Watcher> _watchers = new();
@@ -145,6 +145,7 @@ namespace System.IO
             private readonly SafeFileHandle _inotifyHandle;
             private readonly ConcurrentDictionary<int, Watch> _wdToWatch = new ConcurrentDictionary<int, Watch>();
             private readonly ReaderWriterLockSlim _addLock = new(LockRecursionPolicy.NoRecursion);
+            private bool _isClosingHandle;
             private bool _allWatchersStopped;
 
             private int _bufferAvailable;
@@ -225,8 +226,8 @@ namespace System.IO
             {
                 // This method gets called only on the ProcessEvents thread, or when that thread fails to start.
                 // It closes the inotify handle.
-                Debug.Assert(!IsStopped);
-                IsStopped = true;
+                Debug.Assert(!_isClosingHandle);
+                _isClosingHandle = true;
 
                 // Sync with AddOrUpdateWatchedDirectory and RemoveUnusedINotifyWatches.
                 _addLock.EnterWriteLock();
@@ -251,7 +252,7 @@ namespace System.IO
                     // This ensures the WatchedDirectory matches with the most recent INotifyAddWatch directory.
                     lock (watcher)
                     {
-                        if (IsStopped || watcher.IsStopped)
+                        if (_isClosingHandle || watcher.IsStopped)
                         {
                             return null;
                         }
@@ -378,7 +379,7 @@ namespace System.IO
                 _addLock.EnterWriteLock();
                 try
                 {
-                    if (IsStopped)
+                    if (_isClosingHandle)
                     {
                         return;
                     }
@@ -1107,7 +1108,7 @@ namespace System.IO
 
                 internal void Restart()
                 {
-                    Debug.Assert(_inotify.IsStopped);
+                    Debug.Assert(_inotify._isClosingHandle);
 
                     lock (this)
                     {
