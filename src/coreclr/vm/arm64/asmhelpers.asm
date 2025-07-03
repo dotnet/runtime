@@ -523,7 +523,7 @@ COMToCLRDispatchHelper_RegSetup
         ;
         ; X0 = throwable
         ; X1 = PC to invoke
-        ; X2 = address of X19 register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; X2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
@@ -545,12 +545,12 @@ COMToCLRDispatchHelper_RegSetup
         mov fp, sp
         str fp, [x3]
 
-        ldp x19, x20, [x2, #0]
-        ldp x21, x22, [x2, #16]
-        ldp x23, x24, [x2, #32]
-        ldp x25, x26, [x2, #48]
-        ldp x27, x28, [x2, #64]
-        ldr fp, [x2, #80] ; offset of fp in CONTEXT relative to X19
+        ldp x19, x20, [x2, #OFFSETOF__CONTEXT__R19]
+        ldp x21, x22, [x2, #(OFFSETOF__CONTEXT__R19 + 16)]
+        ldp x23, x24, [x2, #(OFFSETOF__CONTEXT__R19 + 32)]
+        ldp x25, x26, [x2, #(OFFSETOF__CONTEXT__R19 + 48)]
+        ldp x27, x28, [x2, #(OFFSETOF__CONTEXT__R19 + 64)]
+        ldr fp, [x2, #OFFSETOF__CONTEXT__Fp]
 
         ; Invoke the funclet
         blr x1
