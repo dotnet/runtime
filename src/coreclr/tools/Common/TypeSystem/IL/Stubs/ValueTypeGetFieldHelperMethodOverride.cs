@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+
 using ILCompiler;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -105,7 +107,7 @@ namespace Internal.IL.Stubs
                 getFieldStream.EmitLabel(label);
                 getFieldStream.EmitLdArg(2);
 
-                // We need something we can instantiate EETypePtrOf over. Also, the classlib
+                // We need something we can instantiate MethodTable.Of over. Also, the classlib
                 // code doesn't handle pointers.
                 TypeDesc boxableFieldType = field.FieldType;
                 if (boxableFieldType.IsPointer || boxableFieldType.IsFunctionPointer)
@@ -123,7 +125,7 @@ namespace Internal.IL.Stubs
                     boxableFieldType = Context.GetWellKnownType(WellKnownType.Object);
 
                 // If this is an enum, it's okay to Equals/GetHashCode the underlying type.
-                // Don't unnecessarily create an MethodTable for the enum.
+                // Don't unnecessarily create a MethodTable for the enum.
                 if (fieldTypeForOptimizationChecks.IsEnum)
                     boxableFieldType = fieldTypeForOptimizationChecks.UnderlyingType;
 
