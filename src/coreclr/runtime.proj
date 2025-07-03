@@ -28,7 +28,6 @@
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
-      <_CoreClrBuildArg Condition="'$(KeepNativeSymbols)' != 'false'" Include="-keepnativesymbols" />
       <_CoreClrBuildArg Include="-os $(_BuildNativeTargetOS)" />
       <_CoreClrBuildArg Condition="'$(CoreclrVerbose)' == 'true'" Include="-verbose" />
 
@@ -101,7 +100,7 @@
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_CMAKE_ESRP_CLIENT=$(DotNetEsrpToolPath)&quot;" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <ItemGroup Condition="'$(KeepNativeSymbols)' == 'true' or '$(TargetsWindows)' != 'true'">
       <_CoreClrBuildArg Include="-keepnativesymbols" />
     </ItemGroup>
 

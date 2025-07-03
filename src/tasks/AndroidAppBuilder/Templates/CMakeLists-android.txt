@@ -10,6 +10,8 @@ endif()
 
 add_compile_options(-Werror=missing-prototypes -Werror=missing-declarations -Wall -std=c99)
 
+%Defines%
+
 add_library(
     monodroid
     SHARED
@@ -18,8 +20,6 @@ add_library(
 )
 
 %AotSources%
-
-%Defines%
 
 include_directories(%RuntimeInclude%)
 
