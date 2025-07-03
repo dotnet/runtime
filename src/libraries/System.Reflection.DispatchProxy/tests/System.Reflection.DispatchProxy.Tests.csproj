@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="TestDependency\System.Reflection.DispatchProxy.TestDependency.csproj" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
   </ItemGroup>
-  
+
 </Project>
