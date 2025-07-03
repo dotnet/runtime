@@ -137,7 +137,7 @@ namespace System.IO
             /// </summary>
             private const int c_INotifyEventSize = 16;
 
-            public bool IsStopped => _isClosingHandle || _allWatchersStopped;
+            public bool IsStopped => _isProcessThreadStopping || _allWatchersStopped;
 
             private readonly object _watchersLock;
             private readonly List<Watcher> _watchers = new();
@@ -145,7 +145,7 @@ namespace System.IO
             private readonly SafeFileHandle _inotifyHandle;
             private readonly ConcurrentDictionary<int, Watch> _wdToWatch = new ConcurrentDictionary<int, Watch>();
             private readonly ReaderWriterLockSlim _addLock = new(LockRecursionPolicy.NoRecursion);
-            private bool _isClosingHandle;
+            private bool _isProcessThreadStopping;
             private bool _allWatchersStopped;
 
             private int _bufferAvailable;
@@ -226,8 +226,8 @@ namespace System.IO
             {
                 // This method gets called only on the ProcessEvents thread, or when that thread fails to start.
                 // It closes the inotify handle.
-                Debug.Assert(!_isClosingHandle);
-                _isClosingHandle = true;
+                Debug.Assert(!_isProcessThreadStopping);
+                _isProcessThreadStopping = true;
 
                 // Sync with AddOrUpdateWatchedDirectory and RemoveUnusedINotifyWatches.
                 _addLock.EnterWriteLock();
@@ -252,7 +252,7 @@ namespace System.IO
                     // This ensures the WatchedDirectory matches with the most recent INotifyAddWatch directory.
                     lock (watcher)
                     {
-                        if (_isClosingHandle || watcher.IsStopped)
+                        if (_isProcessThreadStopping || watcher.IsStopped)
                         {
                             return null;
                         }
@@ -379,7 +379,7 @@ namespace System.IO
                 _addLock.EnterWriteLock();
                 try
                 {
-                    if (_isClosingHandle)
+                    if (_isProcessThreadStopping)
                     {
                         return;
                     }
@@ -1108,7 +1108,7 @@ namespace System.IO
 
                 internal void Restart()
                 {
-                    Debug.Assert(_inotify._isClosingHandle);
+                    Debug.Assert(_inotify._isProcessThreadStopping);
 
                     lock (this)
                     {
