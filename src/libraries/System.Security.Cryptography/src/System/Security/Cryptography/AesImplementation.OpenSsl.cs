@@ -84,6 +84,17 @@ namespace System.Security.Cryptography
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
+
+                Debug.Assert(written > 0);
+
+                // Experimentation and code insepection show that EVP_CipherFinal_ex is not needed here,
+                // the work is done in EVP_CipherUpdate.
+                // Since AES-KW(P) involves multiple passes over the data, where the end of each pass
+                // stores a tag/checksum back in the beginning of the buffer, it makes sense that only
+                // one of Update or Final could write data, and they chose to go with Update.
+                //
+                // As the call to Final does not yield more data, and we're about to dispose the context,
+                // don't bother making the call.
             }
 
             return written;
