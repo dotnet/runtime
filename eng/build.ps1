@@ -336,6 +336,25 @@ if ($env:TreatWarningsAsErrors -eq 'false') {
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
 $arguments += " /tl:false"
 
+# Exclude the source directory from Windows Defender scanning if running on Windows and in Azure Pipelines
+if ($env:BUILD_SOURCESDIRECTORY) {
+  try {
+    Write-Host "Excluding $env:BUILD_SOURCESDIRECTORY from Windows Defender scanning..."
+    Add-MpPreference -ExclusionPath $env:BUILD_SOURCESDIRECTORY
+    Add-MpPreference -ExclusionPath $env:TMP
+    Add-MpPreference -ExclusionPath $env:TEMP
+    Add-MpPreference -ExclusionPath "C:\python3"
+    Write-Host "Disable defender temporarily"
+    Set-MpPreference -DisableRealtimeMonitoring $true
+    Write-Host "Check the exclusions"
+    Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
+  } catch {
+    Write-Warning "Failed to add Windows Defender exclusion for $env:BUILD_SOURCESDIRECTORY: $_"
+  }
+}
+
+Get-Process | Where-Object {$_.Path -like "*Microsoft.Azure.Geneva.GenevaMonitoring*" } | Stop-Process -Force
+
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
@@ -346,12 +365,34 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
-    if ($lastExitCode -ne 0) {
-        $failedBuilds += "Configuration: $config, Architecture: $singleArch"
+    try {
+      Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
+    } finally {
+      Write-Host "Check windows events for defender related messages"
+      
+      $StartTime = (Get-Date).AddMinutes(-5)
+      Get-WinEvent -FilterHashtable @{LogName="*"; StartTime=$StartTime} |
+      ForEach-Object {
+        [xml]$eventXml = [xml]$_.ToXml()
+        [PSCustomObject]@{
+          TimeCreated = $_.TimeCreated
+          Id          = $_.Id
+          Provider    = $_.ProviderName
+          Message     = $_.Message
+          Computer    = $_.MachineName
+          ActionData  = ($eventXml.Event.EventData.Data | ForEach-Object { "$($_.Name): $($_.'#text')" }) -join "`n"
+        }
+      }
+
+      if ($lastExitCode -ne 0) {
+          $failedBuilds += "Configuration: $config, Architecture: $singleArch"
+      }
     }
   }
 }
+
+Write-Host "Enable defender again"
+Set-MpPreference -DisableRealtimeMonitoring $false
 
 if ($failedBuilds.Count -ne 0) {
     Write-Host "Some builds failed:"
