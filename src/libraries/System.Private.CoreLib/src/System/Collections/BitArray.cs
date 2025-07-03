@@ -540,21 +540,25 @@ namespace System.Collections
                     }
                     fromIndex += toIndex;
 
+                    int carryCount = BitsPerByte - shiftCount;
+
                     ref byte p = ref MemoryMarshal.GetReference(thisSpan);
 
-                    int carry32Count = BitsPerInt32 - shiftCount;
+                    const uint shiftUnit = 0x01010101u;
+                    uint shiftMask = (shiftUnit << carryCount) - shiftUnit;
+                    uint carryMask = ~shiftMask;
+
                     while (fromIndex < thisSpan.Length - 4)
                     {
-                        int lo = ReverseIfBE(Unsafe.ReadUnaligned<int>(ref Unsafe.AddByteOffset(ref p, (uint)fromIndex))) >>> shiftCount;
-                        int hi = Unsafe.AddByteOffset(ref p, (uint)(fromIndex + 4)) << carry32Count;
-                        int result = ReverseIfBE(hi | lo);
+                        uint lo = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)fromIndex)) >>> shiftCount) & shiftMask;
+                        uint hi = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex + 1))) << carryCount) & carryMask;
+                        uint result = hi | lo;
                         Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref p, toIndex), result);
 
                         fromIndex += 4;
                         toIndex += 4;
                     }
 
-                    int carryCount = BitsPerByte - shiftCount;
                     while (fromIndex < thisSpan.Length)
                     {
                         int lo = thisSpan[fromIndex] >>> shiftCount;
@@ -645,14 +649,19 @@ namespace System.Collections
                     }
                     fromIndex = toIndex - lengthToClear;
 
+                    int carryCount = BitsPerByte - shiftCount;
+
                     ref byte p = ref MemoryMarshal.GetReference(thisSpan);
 
-                    int carryCount = BitsPerByte - shiftCount;
+                    const uint shiftUnit = 0x01010101u;
+                    uint carryMask = (shiftUnit << shiftCount) - shiftUnit;
+                    uint shiftMask = ~carryMask;
+
                     while (fromIndex >= 5)
                     {
-                        int hi = ReverseIfBE(Unsafe.ReadUnaligned<int>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex -= 4)))) << shiftCount;
-                        int lo = Unsafe.AddByteOffset(ref p, (uint)(fromIndex - 1)) >>> carryCount;
-                        int result = ReverseIfBE(hi | lo);
+                        uint lo = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex -= 4))) << shiftCount) & shiftMask;
+                        uint hi = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex - 1))) >>> carryCount) & carryMask;
+                        uint result = hi | lo;
                         Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref p, toIndex -= 4), result);
                     }
 
