@@ -20,12 +20,12 @@
 enum instruction : uint32_t
 {
 #if defined(TARGET_XARCH)
-    #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST1(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST2(id, nm, um, mr, mi,             tt, flags) INS_##id,
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) INS_##id,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) INS_##id,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) INS_##id,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) INS_##id,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) INS_##id,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) INS_##id,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) INS_##id,
     #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -235,6 +235,9 @@ enum insFlags : uint64_t
     KMask_Base8    = 1ULL << 50,
     KMask_Base16   = 1ULL << 51,
     KMask_BaseMask = (0x1FULL) << 47,
+
+    // The instruction has a pseudo name that should be used for disasm display
+    INS_FLAGS_HasPseudoName = 1ULL << 52,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,

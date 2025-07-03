@@ -126,9 +126,27 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Module-Lattice-Based Digital Signature
+        ///   Algorithm (ML-DSA) family of algorithms.
+        /// </summary>
+        /// <value>
+        ///   An object that specifies the ML-DSA family of algorithms.
+        /// </value>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithmGroup MLDsa =>
             field ??= new CngAlgorithmGroup("MLDSA"); // NCRYPT_MLDSA_ALGORITHM_GROUP
+
+        /// <summary>
+        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (ML-KEM) family of algorithms.
+        /// </summary>
+        /// <value>
+        ///   An object that specifies the ML-KEM family of algorithms.
+        /// </value>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithmGroup MLKem =>
+            field ??= new CngAlgorithmGroup("MLKEM"); // NCRYPT_MLKEM_ALGORITHM_GROUP
 
         private static CngAlgorithmGroup? s_dh;
         private static CngAlgorithmGroup? s_dsa;

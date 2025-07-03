@@ -4178,9 +4178,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetSwitchTargets()->bbsHasDominantCase  = true;
-    block->GetSwitchTargets()->bbsDominantCase     = dominantCase;
-    block->GetSwitchTargets()->bbsDominantFraction = fraction;
+    block->GetSwitchTargets()->bbsHasDominantCase = true;
+    block->GetSwitchTargets()->bbsDominantCase    = dominantCase;
 }
 
 //------------------------------------------------------------------------

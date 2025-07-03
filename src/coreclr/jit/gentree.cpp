@@ -2237,6 +2237,24 @@ bool GenTreeCall::IsAsync() const
 }
 
 //-------------------------------------------------------------------------
+// IsAsyncAndAlwaysSavesAndRestoresExecutionContext:
+//   Check if this is an async call that always saves and restores the
+//   ExecutionContext around it.
+//
+// Return Value:
+//   True if so.
+//
+// Remarks:
+//   Normal user await calls have this behavior, while custom awaiters (via
+//   AsyncHelpers.AwaitAwaiter) only saves and restores the ExecutionContext if
+//   actual suspension happens.
+//
+bool GenTreeCall::IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const
+{
+    return IsAsync() && (GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore);
+}
+
+//-------------------------------------------------------------------------
 // HasNonStandardAddedArgs: Return true if the method has non-standard args added to the call
 // argument list during argument morphing (fgMorphArgs), e.g., passed in R10 or R11 on AMD64.
 // See also GetNonStandardAddedArgCount().
@@ -9887,9 +9905,20 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // because the inlinee still uses the inliner's memory allocator anyway.)
     INDEBUG(copy->callSig = tree->callSig;)
 
-    // The tail call info does not change after it is allocated, so for the same reasons as above
-    // a shallow copy suffices.
-    copy->tailCallInfo = tree->tailCallInfo;
+    if (tree->IsUnmanaged())
+    {
+        copy->unmgdCallConv = tree->unmgdCallConv;
+    }
+    else if (tree->IsAsync())
+    {
+        copy->asyncInfo = tree->asyncInfo;
+    }
+    else if (tree->IsTailPrefixedCall())
+    {
+        // The tail call info does not change after it is allocated, so for the same reasons as above
+        // a shallow copy suffices.
+        copy->tailCallInfo = tree->tailCallInfo;
+    }
 
     copy->gtRetClsHnd        = tree->gtRetClsHnd;
     copy->gtControlExpr      = gtCloneExpr(tree->gtControlExpr);
@@ -32083,10 +32112,8 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    if (!opts.Tier0OptimizationEnabled())
-    {
-        return tree;
-    }
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
 
     NamedIntrinsic ni              = tree->GetHWIntrinsicId();
     var_types      retType         = tree->TypeGet();
@@ -32224,6 +32251,165 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     // We shouldn't find AND_NOT nodes since it should only be produced in lowering
     assert(oper != GT_AND_NOT);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_XARCH)
+    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
+    {
+        // Comparisons that produce masks lead to more verbose trees than
+        // necessary in many scenarios due to requiring a CvtMaskToVector
+        // node to be inserted over them and this can block various opts
+        // that are dependent on tree height and similar. So we want to
+        // fold the unnecessary back and forth conversions away where possible.
+
+        genTreeOps effectiveOper = oper;
+        GenTree*   actualOp2     = op2;
+
+        if (oper == GT_NOT)
+        {
+            assert(op2 == nullptr);
+            op2 = op1;
+        }
+
+        // We need both operands to be ConvertMaskToVector in
+        // order to optimize this to a direct mask operation
+
+        if (op1->OperIsConvertMaskToVector())
+        {
+            if (!op2->OperIsHWIntrinsic())
+            {
+                if ((oper == GT_XOR) && op2->IsVectorAllBitsSet())
+                {
+                    // We want to explicitly recognize op1 ^ AllBitsSet as
+                    // some platforms don't have direct support for ~op1
+
+                    effectiveOper = GT_NOT;
+                    op2           = op1;
+                }
+            }
+
+            if (op2->OperIsConvertMaskToVector())
+            {
+                GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
+                GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
+
+                unsigned simdBaseTypeSize = genTypeSize(simdBaseType);
+
+                if ((genTypeSize(cvtOp1->GetSimdBaseType()) == simdBaseTypeSize) &&
+                    (genTypeSize(cvtOp2->GetSimdBaseType()) == simdBaseTypeSize))
+                {
+                    // We need both operands to be the same kind of mask; otherwise
+                    // the bitwise operation can differ in how it performs
+
+                    NamedIntrinsic maskIntrinsicId = NI_Illegal;
+
+                    switch (effectiveOper)
+                    {
+                        case GT_AND:
+                        {
+                            maskIntrinsicId = NI_AVX512_AndMask;
+                            break;
+                        }
+
+                        case GT_NOT:
+                        {
+                            maskIntrinsicId = NI_AVX512_NotMask;
+                            break;
+                        }
+
+                        case GT_OR:
+                        {
+                            maskIntrinsicId = NI_AVX512_OrMask;
+                            break;
+                        }
+
+                        case GT_XOR:
+                        {
+                            maskIntrinsicId = NI_AVX512_XorMask;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    assert(maskIntrinsicId != NI_Illegal);
+
+                    if (effectiveOper == oper)
+                    {
+                        tree->ChangeHWIntrinsicId(maskIntrinsicId);
+                        tree->Op(1) = cvtOp1->Op(1);
+                    }
+                    else
+                    {
+                        assert(effectiveOper == GT_NOT);
+                        tree->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
+                        tree->gtFlags &= ~GTF_REVERSE_OPS;
+                    }
+
+                    tree->gtType = TYP_MASK;
+                    DEBUG_DESTROY_NODE(op1);
+
+                    if (effectiveOper != GT_NOT)
+                    {
+                        tree->Op(2) = cvtOp2->Op(1);
+                    }
+
+                    if (actualOp2 != nullptr)
+                    {
+                        DEBUG_DESTROY_NODE(actualOp2);
+                    }
+                    tree->SetMorphed(this);
+
+                    tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                    tree->SetMorphed(this);
+
+                    return tree;
+                }
+            }
+        }
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
+
+    switch (ni)
+    {
+        // There's certain IR simplifications that are possible and which
+        // unblock other constant folding, so do those early here.
+
+#if defined(TARGET_XARCH)
+        case NI_AVX_Compare:
+        case NI_AVX512_Compare:
+        case NI_AVX_CompareScalar:
+        {
+            assert(tree->GetOperandCount() == 3);
+
+            if (!op3->IsCnsIntOrI())
+            {
+                break;
+            }
+
+            FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+            NamedIntrinsic      id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(ni, mode, simdBaseType, simdSize);
+
+            if (id == ni)
+            {
+                break;
+            }
+
+            tree->ResetHWIntrinsicId(id, op1, op2);
+            DEBUG_DESTROY_NODE(op3);
+
+            tree->SetMorphed(this);
+            return gtFoldExprHWIntrinsic(tree);
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            break;
+        }
+    }
 
     GenTree* cnsNode   = nullptr;
     GenTree* otherNode = nullptr;
@@ -32762,10 +32948,28 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             oper = GT_NONE;
         }
 
+        // For mask nodes in particular, the foldings below are done under the presumption
+        // that we only produce something like `AddMask(op1, op2)` if op1 and op2 are compatible
+        // masks. On xarch, for example, this means that it'd be adding 8, 16, 32, or 64-bits
+        // together with the same size. We wouldn't ever encounter something like an 8 and 16 bit
+        // masks being added. This ensures that we don't end up with a case where folding would
+        // cause a different result to be produced, such as because the remaining upper bits are
+        // no longer zeroed.
+
         switch (oper)
         {
             case GT_ADD:
             {
+                if (varTypeIsMask(retType))
+                {
+                    // Handle `x + 0 == x` and `0 + x == x`
+                    if (cnsNode->IsMaskZero())
+                    {
+                        resultNode = otherNode;
+                    }
+                    break;
+                }
+
                 if (varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x + NaN == NaN` and `NaN + x == NaN`
@@ -32799,6 +33003,23 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_AND:
             {
+                if (varTypeIsMask(retType))
+                {
+                    // Handle `x & 0 == 0` and `0 & x == 0`
+                    if (cnsNode->IsMaskZero())
+                    {
+                        resultNode = otherNode;
+                        break;
+                    }
+
+                    // Handle `x & AllBitsSet == x` and `AllBitsSet & x == x`
+                    if (cnsNode->IsMaskAllBitsSet())
+                    {
+                        resultNode = otherNode;
+                    }
+                    break;
+                }
+
                 // Handle `x & 0 == 0` and `0 & x == 0`
                 if (cnsNode->IsVectorZero())
                 {
@@ -33032,6 +33253,23 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_OR:
             {
+                if (varTypeIsMask(retType))
+                {
+                    // Handle `x | 0 == x` and `0 | x == x`
+                    if (cnsNode->IsMaskZero())
+                    {
+                        resultNode = otherNode;
+                        break;
+                    }
+
+                    // Handle `x | AllBitsSet == AllBitsSet` and `AllBitsSet | x == AllBitsSet`
+                    if (cnsNode->IsMaskAllBitsSet())
+                    {
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                    }
+                    break;
+                }
+
                 // Handle `x | 0 == x` and `0 | x == x`
                 if (cnsNode->IsVectorZero())
                 {
@@ -33058,6 +33296,27 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x <<  0 == x` and `0 <<  x == 0`
                 // Handle `x >>  0 == x` and `0 >>  x == 0`
                 // Handle `x >>> 0 == x` and `0 >>> x == 0`
+
+                if (varTypeIsMask(retType))
+                {
+                    if (cnsNode->IsMaskZero())
+                    {
+                        if (cnsNode == op2)
+                        {
+                            resultNode = otherNode;
+                        }
+                        else
+                        {
+                            resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        }
+                    }
+                    else if (cnsNode->IsIntegralConst(0))
+                    {
+                        assert(cnsNode == op2);
+                        resultNode = otherNode;
+                    }
+                    break;
+                }
 
                 if (cnsNode->IsVectorZero())
                 {
@@ -33104,7 +33363,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_XOR:
             {
-                // Handle `x | 0 == x` and `0 | x == x`
+                if (varTypeIsMask(retType))
+                {
+                    // Handle `x ^ 0 == x` and `0 ^ x == x`
+                    if (cnsNode->IsMaskZero())
+                    {
+                        resultNode = otherNode;
+                    }
+                    break;
+                }
+
+                // Handle `x ^ 0 == x` and `0 ^ x == x`
                 if (cnsNode->IsVectorZero())
                 {
                     resultNode = otherNode;
@@ -33273,7 +33542,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
                 else
                 {
-                    assert(!op1->IsTrueMask(simdBaseType) && !op1->IsFalseMask());
+                    assert(!op1->IsTrueMask(simdBaseType) && !op1->IsMaskZero());
                 }
 #endif
 
@@ -33291,7 +33560,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     return op2;
                 }
 
-                if (op1->IsVectorZero() || op1->IsFalseMask())
+                if (op1->IsVectorZero() || op1->IsMaskZero())
                 {
                     return gtWrapWithSideEffects(op3, op2, GTF_ALL_EFFECT);
                 }

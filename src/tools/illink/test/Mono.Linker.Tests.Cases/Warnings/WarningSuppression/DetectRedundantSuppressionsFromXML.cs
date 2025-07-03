@@ -6,30 +6,30 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	[ExpectedWarning ("IL2121", "IL2026", Tool.Trimmer, "",  FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 7)]
-	[ExpectedWarning ("IL2121", "IL2109", Tool.Trimmer, "",  FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 12)]
-	[SetupLinkAttributesFile ("DetectRedundantSuppressionsFromXML.xml")]
-	public class DetectRedundantSuppressionsFromXML
-	{
-		public static void Main ()
-		{
-			DetectRedundantSuppressions.Test ();
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    [ExpectedWarning("IL2121", "IL2026", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117170", FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 7)]
+    [ExpectedWarning("IL2121", "IL2109", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117170", FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 12)]
+    [SetupLinkAttributesFile("DetectRedundantSuppressionsFromXML.xml")]
+    public class DetectRedundantSuppressionsFromXML
+    {
+        public static void Main()
+        {
+            DetectRedundantSuppressions.Test();
+        }
 
-		public class DetectRedundantSuppressions
-		{
-			public static void Test ()
-			{
-				DoNotTriggerWarning ();
-			}
+        public class DetectRedundantSuppressions
+        {
+            public static void Test()
+            {
+                DoNotTriggerWarning();
+            }
 
-			class SuppressedOnType : DoNotTriggerWarningType { }
+            class SuppressedOnType : DoNotTriggerWarningType { }
 
-			static void DoNotTriggerWarning () { }
+            static void DoNotTriggerWarning() { }
 
-			class DoNotTriggerWarningType { }
-		}
-	}
+            class DoNotTriggerWarningType { }
+        }
+    }
 }
