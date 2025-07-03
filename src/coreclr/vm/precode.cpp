@@ -236,7 +236,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
     // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
     // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
     // happened in the Init routine above.
-    ClrFlushInstructionCache(pPrecode->GetCode(), Precode::SizeOf(t));
+    ClrFlushInstructionCache(pPrecode, sizeof(InterpreterPrecode));
 #endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
 
 #ifdef FEATURE_PERFMAP
@@ -282,7 +282,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
         // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
         // happened in the Init routine above.
-        ClrFlushInstructionCache(pPrecode->GetCode(), Precode::SizeOf(t));
+        ClrFlushInstructionCache(pPrecode, sizeof(ThisPtrRetBufPrecode));
 #endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
 
 #ifdef FEATURE_PERFMAP
@@ -302,7 +302,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
         // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
         // happened in the Init routine above.
-        ClrFlushInstructionCache(pPrecode->GetCode(), Precode::SizeOf(t));
+        ClrFlushInstructionCache(pPrecode, sizeof(StubPrecode));
 #endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
 
 #ifdef FEATURE_PERFMAP
