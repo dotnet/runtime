@@ -113,7 +113,7 @@ namespace Internal.IL.Stubs
 
                 // We're trying to do some optimizations below that can benefit from knowing the concrete
                 // type after substitutions.
-                TypeDesc fieldTypeForOptimizationChecks = boxableFieldType.IsSignatureVariable && contextMethod != null
+                TypeDesc fieldTypeForOptimizationChecks = boxableFieldType.IsSignatureVariable
                     ? boxableFieldType.InstantiateSignature(contextMethod.OwningType.Instantiation, default)
                     : boxableFieldType;
 
