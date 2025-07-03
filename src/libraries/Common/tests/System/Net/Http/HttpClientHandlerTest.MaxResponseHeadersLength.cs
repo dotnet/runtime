@@ -84,24 +84,24 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using HttpClient client = CreateHttpClient(handler);
 
-                    Console.WriteLine("Client before GET");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Client before GET");
                     Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
                     if (!IsWinHttpHandler)
                     {
                         Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                     }
-                    Console.WriteLine("Client after GET");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Client after GET");
                     await semaphore.WaitAsync();
-                    Console.WriteLine("Client semaphore DONE");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Client semaphore DONE");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Client error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Client error: " + ex);
                 }
             },
             async server =>
             {
-                Console.WriteLine("Server before request");
+                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Server before request");
                 try
                 {
                     await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
@@ -109,23 +109,23 @@ namespace System.Net.Http.Functional.Tests
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown)
                 {
-                    Console.WriteLine("Expected server error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Expected server error: " + ex);
                 }
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad)
                 {
-                    Console.WriteLine("Expected server error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Expected server error: " + ex);
                 }
 #endif
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Server error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Server error: " + ex);
                 }
                 finally
                 {
-                    Console.WriteLine("Server after request");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Server after request");
                     semaphore.Release();
-                    Console.WriteLine("Server semaphore RELEASED");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} LargeSingleHeader_ThrowsException({maxResponseHeadersLength}) - Server semaphore RELEASED");
                 }
             });
         }
@@ -152,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpClient client = CreateHttpClient(handler);
 
-                    Console.WriteLine("Client before GET");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Client before GET");
                     if (headersLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
                     {
                         await client.GetAsync(uri);
@@ -165,13 +165,13 @@ namespace System.Net.Http.Functional.Tests
                             Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                         }
                     }
-                    Console.WriteLine("Client after GET");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Client after GET");
                     await semaphore.WaitAsync();
-                    Console.WriteLine("Client semaphore DONE");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Client semaphore DONE");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Client error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Client error: " + ex);
                 }
             },
             async server =>
@@ -182,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
                     headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
                 }
 
-                Console.WriteLine("Server before request");
+                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Server before request");
                 try
                 {
                     await server.HandleRequestAsync(headers: headers);
@@ -190,23 +190,23 @@ namespace System.Net.Http.Functional.Tests
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown)
                 {
-                    Console.WriteLine("Expected server error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Expected server error: " + ex);
                 }
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad)
                 {
-                    Console.WriteLine("Expected server error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Expected server error: " + ex);
                 }
 #endif
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Server error: " + ex);
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Server error: " + ex);
                 }
                 finally
                 {
-                    Console.WriteLine("Server after request");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Server after request");
                     semaphore.Release();
-                    Console.WriteLine("Server semaphore RELEASED");
+                    Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fffffff} ThresholdExceeded_ThrowsException({maxResponseHeadersLength}, {headersLengthEstimate}) - Server semaphore RELEASED");
                 }
             });
         }
