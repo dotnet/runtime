@@ -982,7 +982,7 @@ namespace System.Net.Sockets
                         lastError = internalArgs.SocketError;
 
                         // If multi-connect is no longer possible, terminate propagating the last error.
-                        if (!attemptSocket.CanProceedWithMultiConnect)
+                        if (!attemptSocket!.CanProceedWithMultiConnect)
                         {
                             break;
                         }
