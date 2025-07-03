@@ -306,6 +306,12 @@
   <data name="CantUseEnvVars" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to use environment variables.</value>
   </data>
+  <data name="CantDisableHandleInheritanceAndUseShellExecute" xml:space="preserve">
+    <value>The Process object must have the UseShellExecute property set to false in order to disable handle inheritance.</value>
+  </data>
+  <data name="CantDisableHandleInheritanceAndUseUserName" xml:space="preserve">
+    <value>The Process object must have the InheritHandles property set to true in order to start a process as a user.</value>
+  </data>
   <data name="UseShellExecuteNotSupported" xml:space="preserve">
     <value>UseShellExecute is not supported on this platform.</value>
   </data>

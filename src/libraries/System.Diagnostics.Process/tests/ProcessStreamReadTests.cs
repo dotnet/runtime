@@ -16,11 +16,18 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStreamReadTests : ProcessTestBase
     {
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestSyncErrorStream()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestSyncErrorStream(bool inheritHandles)
         {
             Process p = CreateProcessPortable(RemotelyInvokable.ErrorProcessBody);
             p.StartInfo.RedirectStandardError = true;
+            if (OperatingSystem.IsWindows())
+            {
+                // Ensure redirecting works regardless of the InheritHandles setting.
+                p.StartInfo.InheritHandles = inheritHandles;
+            }
             p.Start();
             string expected = RemotelyInvokable.TestConsoleApp + " started error stream" + Environment.NewLine +
                               RemotelyInvokable.TestConsoleApp + " closed error stream" + Environment.NewLine;
@@ -86,11 +93,18 @@ namespace System.Diagnostics.Tests
             Assert.Equal(invokeRequired ? 3 : 0, invokeCalled);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestSyncOutputStream()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestSyncOutputStream(bool inheritHandles)
         {
             Process p = CreateProcessPortable(RemotelyInvokable.StreamBody);
             p.StartInfo.RedirectStandardOutput = true;
+            if (OperatingSystem.IsWindows())
+            {
+                // Ensure redirecting works regardless of the InheritHandles setting.
+                p.StartInfo.InheritHandles = inheritHandles;
+            }
             p.Start();
             string s = p.StandardOutput.ReadToEnd();
             Assert.True(p.WaitForExit(WaitInMS));
@@ -380,13 +394,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestSyncStreams()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestSyncStreams(bool inheritHandles)
         {
             const string expected = "This string should come as output";
             Process p = CreateProcessPortable(RemotelyInvokable.ReadLine);
             p.StartInfo.RedirectStandardInput = true;
             p.StartInfo.RedirectStandardOutput = true;
+            if (OperatingSystem.IsWindows())
+            {
+                // Ensure redirecting works regardless of the InheritHandles setting.
+                p.StartInfo.InheritHandles = inheritHandles;
+            }
             p.OutputDataReceived += (s, e) => { Assert.Equal(expected, e.Data); };
             p.Start();
             using (StreamWriter writer = p.StandardInput)
