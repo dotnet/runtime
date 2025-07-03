@@ -396,10 +396,54 @@ void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
     }
 }
 
+static BIO* bio_stdout = NULL;
+
+static void apps_ssl_info_callback(const SSL *s, int where, int ret)
+{
+    const char *str;
+    int w = where & ~SSL_ST_MASK;
+
+    if (w & SSL_ST_CONNECT)
+        str = "SSL_connect";
+    else if (w & SSL_ST_ACCEPT)
+        str = "SSL_accept";
+    else
+        str = "undefined";
+
+    if (where & SSL_CB_LOOP) {
+        BIO_printf(bio_stdout, "%s:%s\n", str, SSL_state_string_long(s));
+    } else if (where & SSL_CB_ALERT) {
+        str = (where & SSL_CB_READ) ? "read" : "write";
+        BIO_printf(bio_stdout, "SSL3 alert %s:%s:%s\n", str,
+                SSL_alert_type_string_long(ret),
+                SSL_alert_desc_string_long(ret));
+    } else if (where & SSL_CB_EXIT) {
+        if (ret == 0) {
+            BIO_printf(bio_stdout, "%s:failed in %s\n",
+                    str, SSL_state_string_long(s));
+        } else if (ret < 0) {
+            BIO_printf(bio_stdout, "%s:error in %s\n",
+                    str, SSL_state_string_long(s));
+        }
+    }
+}
+
 void CryptoNative_SslSetConnectState(SSL* ssl)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_connect_state(ssl);
+    // SSL_set_msg_callback(ssl, SSL_trace);
+    // if (bio_stdout == NULL)
+    // {
+    //     bio_stdout = BIO_new_fp(stdout, BIO_NOCLOSE);
+    //     if (bio_stdout == NULL)
+    //     {
+    //         ERR_clear_error();
+    //         return;
+    //     }
+    // }
+    // SSL_set_msg_callback_arg(ssl, bio_stdout);
+    // SSL_set_info_callback(ssl, apps_ssl_info_callback);
 }
 
 void CryptoNative_SslSetAcceptState(SSL* ssl)
@@ -479,6 +523,7 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
 {
     (void)preverify_ok;
     (void)store;
+    printf("Store: %p, preverify_ok: %d\n", (void*)store, preverify_ok);
     // We don't care. Real verification happens in managed code.
     return 1;
 }
@@ -514,7 +559,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     int pending = SSL_renegotiate_pending(ssl);
     if (!pending)
     {
-        SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+        CryptoNative_SslSetVerifyPeer(ssl);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
         {
@@ -657,7 +702,7 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
 void CryptoNative_SslSetVerifyPeer(SSL* ssl)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
-    SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+    SSL_set_verify(ssl, SSL_VERIFY_PEER, NULL);
 }
 
 int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
@@ -1404,4 +1449,48 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
     {
         OPENSSL_free(copy);
     }
+}
+
+static int CertVerifyCallback(X509_STORE_CTX* store, void* param)
+{
+    (void)param;
+    SslCtxCertValidationCallback callback = (SslCtxCertValidationCallback) param;
+    SSL *ssl = X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
+
+    int verifyResult = callback(ssl, store);
+
+    X509_STORE_CTX_set_error(store, verifyResult);
+    return verifyResult == X509_V_OK;
+}
+
+void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertValidationCallback callback)
+{
+    if (ctx != NULL)
+    {
+        SSL_CTX_set_cert_verify_callback(ctx, CertVerifyCallback, (void*)callback);
+    }
+}
+
+void CryptoNative_SslSetVerifyResult(SSL* ssl, int64_t verifyResult)
+{
+    (void)ssl;
+    (void)verifyResult;
+    SSL_set_verify_result(ssl, verifyResult);
+}
+
+/*
+Shims the SSL_get_verify_result method.
+*/
+int64_t CryptoNative_SslGetVerifyResult(SSL* ssl)
+{
+    return SSL_get_verify_result(ssl);
+}
+
+/*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+PALEXPORT SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl)
+{
+    // No error queue impact.
+    return SSL_get_SSL_CTX(ssl);
 }
