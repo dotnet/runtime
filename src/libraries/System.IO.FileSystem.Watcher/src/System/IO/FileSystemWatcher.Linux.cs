@@ -554,7 +554,6 @@ namespace System.IO
                         foreach (var watcher in _watchers)
                         {
                             watcher.QueueError(CreateBufferOverflowException(watcher.BasePath));
-                            watcher.Restart();
                         }
                     }
                     return false;
@@ -1059,19 +1058,26 @@ namespace System.IO
                     {
                         await foreach (WatcherEvent evnt in _eventQueue.Reader.ReadAllAsync().ConfigureAwait(false))
                         {
+                            if (IsStopped)
+                            {
+                                break;
+                            }
                             EmitEvent(evnt, pathBuffer);
                         }
                     }
                     catch (Exception ex)
                     {
-                        Stop();
-
-                        try
+                        if (!IsStopped)
                         {
-                            Fsw?.OnError(new ErrorEventArgs(ex));
+                            Stop();
+
+                            try
+                            {
+                                Fsw?.OnError(new ErrorEventArgs(ex));
+                            }
+                            catch
+                            { }
                         }
-                        catch
-                        { }
                     }
                 }
 
@@ -1087,6 +1093,20 @@ namespace System.IO
                     {
                         case WatcherEvent.ErrorType:
                             fsw.OnError(new ErrorEventArgs(evnt.Exception!));
+
+                            // On InternalBufferOverflowException, the inotify is stopped.
+                            // If the Watcher wasn't stopped, Restart it against a new inotify instance.
+                            if (evnt.Exception is InternalBufferOverflowException)
+                            {
+                                lock (this)
+                                {
+                                    if (!IsStopped)
+                                    {
+                                        fsw.Restart();
+                                    }
+                                }
+                            }
+
                             break;
                         case WatcherChangeTypes.Created:
                         case WatcherChangeTypes.Deleted:
@@ -1103,23 +1123,6 @@ namespace System.IO
                                 fsw.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
                             }
                             break;
-                    }
-                }
-
-                internal void Restart()
-                {
-                    Debug.Assert(_inotify._isProcessThreadStopping);
-
-                    lock (this)
-                    {
-                        if (IsStopped)
-                        {
-                            return;
-                        }
-
-                        // This will call Stop.
-                        // Because our INotify instance is stopped, the Fsw will restart against a new INotify instance.
-                        Fsw?.Restart();
                     }
                 }
 
