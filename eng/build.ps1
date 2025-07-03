@@ -215,11 +215,9 @@ if ($vs) {
       # Search for the solution in coreclr
       $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
       
+      # Also, search for the solution in coreclr\tools\aot
       if (-Not (Test-Path $vs)) {
         $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\tools\aot\$solution.slnx"
-        if (-Not (Test-Path $vs)) {
-          $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\nativeaot\$solution.slnx"
-        }
       }
     }
 
