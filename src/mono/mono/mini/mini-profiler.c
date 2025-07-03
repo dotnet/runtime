@@ -107,7 +107,6 @@ mini_profiler_emit_samplepoint (MonoCompile *cfg)
 	if (cfg->current_method != cfg->method)
 		return;
 
-	// call to mono_trace_samplepoint_method is not implemented because it needs MonoProfilerCallContext
 	if (!MONO_CFG_PROFILE (cfg, SAMPLEPOINT) || (cfg->compile_aot && !can_encode_method_ref (cfg->method)))
 		return;
 

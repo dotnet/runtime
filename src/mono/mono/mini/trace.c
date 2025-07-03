@@ -140,12 +140,6 @@ frame_kind (MonoJitInfo *ji)
 }
 
 void
-mono_trace_samplepoint_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
-{
-	// not implemented because MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT is not implemented
-}
-
-void
 mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
 {
 	int i;
