@@ -14,6 +14,8 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+export MSBUILDUSESERVER=1
+
 usage()
 {
   echo "Common settings:"
