@@ -558,11 +558,12 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, Mono
 		return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
 	}
 #elif defined(TARGET_S390X)
-    MonoInst* cmp = emit_xcompare (cfg, klass, element_type, arg1, arg2);
-    MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
-    ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
-    ret->inst_c1 = cmp->inst_c0;
-    return ret;
+	MonoInst* cmp = emit_xcompare (cfg, klass, element_type, arg1, arg2);
+	MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_S390_XEXTRACT, cmp->dreg, -1);
+	ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
+	ret->inst_c0 |= ((cmp->inst_c0 << 4) & 0xf0);
+	ret->inst_c1 = cmp->opcode;
+	return ret;
 #else
 	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
 	if (!COMPILE_LLVM (cfg))
@@ -697,57 +698,51 @@ static int type_to_extract_op (MonoTypeEnum type);
 static MonoInst*
 emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
 {
-MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
-
-        int op = -1;
-    MonoInst *tmp = emit_xzero (cfg, vector_class);
-    MonoInst *ins = arg;
-    int index = -1;
-        switch (element_type) {
-        case MONO_TYPE_R4:
-                op = -1;
-                return NULL;
-        break;
-        case MONO_TYPE_R8:
-                op = -1;
-        return NULL;
-                break;
-        case MONO_TYPE_I1:
-        case MONO_TYPE_U1:
-        op = OP_VSUMB;
-        ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,tmp->dreg);
-        ins = emit_simd_ins (cfg, vector_class, OP_VSUMQF, ins->dreg,tmp->dreg);
-        index = 16;
-        break;
-        case MONO_TYPE_I2:
-        case MONO_TYPE_U2:
-                op = OP_VSUMH;
-        ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,tmp->dreg);
-        ins = emit_simd_ins (cfg, vector_class, OP_VSUMQF, ins->dreg,tmp->dreg);
-                index = 8;
-        break;
-        case MONO_TYPE_I4:
-        case MONO_TYPE_U4:
-                op = OP_VSUMQF;
-        ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,tmp->dreg);
-        index = 4;
-                break;
-        case MONO_TYPE_I:
-        case MONO_TYPE_U:
-        case MONO_TYPE_I8:
-        case MONO_TYPE_U8: {
-        op = OP_VSUMQG;
-        ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,tmp->dreg);
-        index = 2;
-        break;
-        }
-        default:
-         return NULL;
-        }
-        op = type_to_extract_op(element_type);
-    ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,-1);
-    ins->inst_c0 = index - 1;
-    return ins;
+	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
+	int op = -1;
+	MonoInst *tmp = emit_xzero (cfg, vector_class);
+	MonoInst *ins = arg;
+	int index = -1;
+	switch (element_type) {
+	case MONO_TYPE_R4:
+		return NULL;
+		break;
+	case MONO_TYPE_R8:
+		return NULL;
+		break;
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		ins = emit_simd_ins (cfg, vector_class, OP_VSUMB, ins->dreg,tmp->dreg);
+		ins = emit_simd_ins (cfg, vector_class, OP_VSUMQF, ins->dreg,tmp->dreg);
+		index = 16;
+		break;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		ins = emit_simd_ins (cfg, vector_class, OP_VSUMH, ins->dreg,tmp->dreg);
+		ins = emit_simd_ins (cfg, vector_class, OP_VSUMQF, ins->dreg,tmp->dreg);
+		index = 8;
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		op = OP_VSUMQF;
+		ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,tmp->dreg);
+		index = 4;
+		break;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8: 
+		op = OP_VSUMQG;
+		ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,tmp->dreg);
+		index = 2;
+		break;
+	default:
+		return NULL;
+	}
+	op = type_to_extract_op(element_type);
+	ins = emit_simd_ins (cfg, vector_class, op, ins->dreg,-1);
+	ins->inst_c0 = index - 1;
+	return ins;
 }
 #endif
 #ifdef TARGET_ARM64
@@ -2087,7 +2082,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
 		}
 #elif defined(TARGET_S390X)
-        return emit_simd_ins_for_sig (cfg, klass, OP_VEC_ABS, -1, arg0_type, fsig, args);
+		return emit_simd_ins_for_sig (cfg, klass, OP_VEC_ABS, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
@@ -2246,8 +2241,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int ceil_or_floor = id == SN_Ceiling ? 10 : 9;
 		return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_ROUNDP, ceil_or_floor, arg0_type, fsig, args);
 #elif defined(TARGET_S390X)
-        int ceil_or_floor = id == SN_Ceiling ? 6 : 7;
-        return emit_simd_ins_for_sig (cfg, klass, OP_CEIL_FLOOR, ceil_or_floor, arg0_type, fsig, args);
+		int ceil_or_floor = id == SN_Ceiling ? 6 : 7;
+		switch (arg0_type){
+		case MONO_TYPE_R4:
+			return emit_simd_ins_for_sig (cfg, klass, OP_VFISB, ceil_or_floor, arg0_type, fsig, args);
+		case MONO_TYPE_R8:
+			return emit_simd_ins_for_sig (cfg, klass, OP_VFISB, ceil_or_floor, arg0_type, fsig, args);
+		default:
+			g_assert_not_reached ();
+		}
 #else
 		return NULL;
 #endif
@@ -2452,12 +2454,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			}
 		} else {
 			MonoInst* cmp = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
+#ifndef TARGET_S390X
 			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
 			ret->inst_c0 = (id == SN_EqualsAll) ? SIMD_EXTR_ARE_ALL_SET : SIMD_EXTR_IS_ANY_SET;
-#ifdef TARGET_S390X
-            ret->inst_c1 = cmp->inst_c0;
+			ret->inst_c1 = mono_class_value_size (klass, NULL);
 #else
-            ret->inst_c1 = mono_class_value_size (klass, NULL);
+			/* we need XCOMPARE(_FP), SIMD_EXTR_ARE_ALL/ANY_SET and CMP_* ops in the same ins to emit correct*/
+			/* load on condition instructions								 */
+			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_S390_XEXTRACT, cmp->dreg, -1);
+			ret->inst_c0 = (id == SN_EqualsAll) ? SIMD_EXTR_ARE_ALL_SET : SIMD_EXTR_IS_ANY_SET;
+			ret->inst_c0 |= ((cmp->inst_c0 << 4) & 0xf0);
+			ret->inst_c1 = cmp->opcode;
 #endif
 			return ret;
 		}
@@ -2590,7 +2597,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVMSK, -1, type, fsig, args);
 #endif
-        return NULL;
 	}
 	case SN_GetElement: {
 		int elems;
@@ -2741,12 +2747,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			}
 		} else {
 			MonoInst* cmp = emit_xcompare_for_intrinsic (cfg, arg_class, id, arg0_type, args [0], args [1]);
+#ifndef TARGET_S390X
 			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
 			ret->inst_c0 = is_all ? SIMD_EXTR_ARE_ALL_SET : SIMD_EXTR_IS_ANY_SET;
-#if defined(TARGET_S390X)
-			ret->inst_c1 = cmp->inst_c0;
-#else
 			ret->inst_c1 = mono_class_value_size (klass, NULL);
+#else
+			/* we need XCOMPARE(_FP), SIMD_EXTR_ARE_ALL/ANY_SET and CMP_* ops in the same ins to emit correct*/
+			/* load on condition instructions								 */
+			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_S390_XEXTRACT, cmp->dreg, -1);
+			ret->inst_c0 = is_all ? SIMD_EXTR_ARE_ALL_SET : SIMD_EXTR_IS_ANY_SET;
+			ret->inst_c0 |= ((cmp->inst_c0 << 4) & 0xf0);
+			ret->inst_c1 = cmp->opcode;
 #endif
 			return ret;
 		}
@@ -3063,19 +3074,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		return NULL;
 #elif defined(TARGET_S390X)
-        switch (arg0_type) {
-        case MONO_TYPE_I2:
-        case MONO_TYPE_U2:
-            return emit_simd_ins_for_sig (cfg, klass, OP_VPKH, -1, -1, fsig, args);
-        case MONO_TYPE_I4:
-        case MONO_TYPE_U4:
-            return emit_simd_ins_for_sig (cfg, klass, OP_VPKF, -1, -1, fsig, args);
-        case MONO_TYPE_I8:
-        case MONO_TYPE_U8:
-            return emit_simd_ins_for_sig (cfg, klass, OP_VPKG, -1, -1, fsig, args);
-        }
-
-        return NULL;
+		switch (arg0_type) {
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+			return emit_simd_ins_for_sig (cfg, klass, OP_VPKH, -1, -1, fsig, args);
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+			return emit_simd_ins_for_sig (cfg, klass, OP_VPKF, -1, -1, fsig, args);
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			return emit_simd_ins_for_sig (cfg, klass, OP_VPKG, -1, -1, fsig, args);
+		}
+		return NULL;
 #else
 		return NULL;
 #endif
@@ -3250,8 +3260,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, instc0, arg0_type, fsig, args);
 #elif defined(TARGET_S390X)
-        int instc0 = arg0_type == MONO_TYPE_R4 ? OP_VFSQSB : OP_VFSQDB;
-        return emit_simd_ins_for_sig (cfg, klass, instc0, 0, arg0_type, fsig, args);
+		int instc0 = arg0_type == MONO_TYPE_R4 ? OP_VFSQSB : OP_VFSQDB;
+		return emit_simd_ins_for_sig (cfg, klass, instc0, 0, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
@@ -3410,43 +3420,42 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		// FIXME:
 		return NULL;
 #elif defined(TARGET_S390X)
-        if (id == SN_WidenLower)
-        {
-            switch (arg0_type){
-            case MONO_TYPE_I1:
-                return emit_simd_ins (cfg, klass, OP_VUPHB, args[0]->dreg, -1);
-            case MONO_TYPE_U1:
-                return emit_simd_ins (cfg, klass, OP_VUPLHB, args[0]->dreg, -1);
-            case MONO_TYPE_I2:
-                return emit_simd_ins (cfg, klass, OP_VUPHH, args[0]->dreg, -1);
-            case MONO_TYPE_U2:
-                return emit_simd_ins (cfg, klass, OP_VUPLHH, args[0]->dreg, -1);
-            case MONO_TYPE_I4:
-                return emit_simd_ins (cfg, klass, OP_VUPHF, args[0]->dreg, -1);
-            case MONO_TYPE_U4:
-                return emit_simd_ins (cfg, klass, OP_VUPLHF, args[0]->dreg, -1);
-            default:
-                return NULL;
-            }
-        }
-        else{
-            switch (arg0_type){
-	    case MONO_TYPE_I1:
-	        return emit_simd_ins (cfg, klass, OP_VUPLB, args[0]->dreg, -1);
-	    case MONO_TYPE_U1:
-	        return emit_simd_ins (cfg, klass, OP_VUPLLB, args[0]->dreg, -1);
-	    case MONO_TYPE_I2:
-	         return emit_simd_ins (cfg, klass, OP_VUPLH, args[0]->dreg, -1);
-	    case MONO_TYPE_U2:
-	         return emit_simd_ins (cfg, klass, OP_VUPLLH, args[0]->dreg, -1);
-	    case MONO_TYPE_I4:
-	         return emit_simd_ins (cfg, klass, OP_VUPLF, args[0]->dreg, -1);
-	    case MONO_TYPE_U4:
-	         return emit_simd_ins (cfg, klass, OP_VUPLLF, args[0]->dreg, -1);
-	    default:
-	         return NULL;
-           }
-        }
+		if (id == SN_WidenLower) {
+			switch (arg0_type){
+			case MONO_TYPE_I1:
+				return emit_simd_ins (cfg, klass, OP_VUPHB, args[0]->dreg, -1);
+			case MONO_TYPE_U1:
+				return emit_simd_ins (cfg, klass, OP_VUPLHB, args[0]->dreg, -1);
+			case MONO_TYPE_I2:
+				return emit_simd_ins (cfg, klass, OP_VUPHH, args[0]->dreg, -1);
+			case MONO_TYPE_U2:
+				return emit_simd_ins (cfg, klass, OP_VUPLHH, args[0]->dreg, -1);
+			case MONO_TYPE_I4:
+				return emit_simd_ins (cfg, klass, OP_VUPHF, args[0]->dreg, -1);
+			case MONO_TYPE_U4:
+				return emit_simd_ins (cfg, klass, OP_VUPLHF, args[0]->dreg, -1);
+			default:
+				return NULL;
+			}
+		}
+		else {
+			switch (arg0_type){
+			case MONO_TYPE_I1:
+				return emit_simd_ins (cfg, klass, OP_VUPLB, args[0]->dreg, -1);
+			case MONO_TYPE_U1:
+				return emit_simd_ins (cfg, klass, OP_VUPLLB, args[0]->dreg, -1);
+			case MONO_TYPE_I2:
+				return emit_simd_ins (cfg, klass, OP_VUPLH, args[0]->dreg, -1);
+			case MONO_TYPE_U2:
+				return emit_simd_ins (cfg, klass, OP_VUPLLH, args[0]->dreg, -1);
+			case MONO_TYPE_I4:
+				return emit_simd_ins (cfg, klass, OP_VUPLF, args[0]->dreg, -1);
+			case MONO_TYPE_U4:
+				return emit_simd_ins (cfg, klass, OP_VUPLLF, args[0]->dreg, -1);
+			default:
+				return NULL;
+			}
+		}
 #else
 		return NULL;
 #endif
@@ -3623,30 +3632,47 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		memset (buf, 0, sizeof (buf));
 
 #ifdef TARGET_S390X
-    /* we directly emit vrepi*/
-   if (etype->type != MONO_TYPE_R4 && etype->type != MONO_TYPE_R8)
-        return emit_simd_ins_for_sig (cfg, klass, OP_VEC_ONE, etype->type, 1, fsig, args);
-   switch (etype->type){
-        case MONO_TYPE_R4:{
-            float *value = (float*)buf;
+		/* we directly emit vrepi*/
+		if (etype->type != MONO_TYPE_R4 && etype->type != MONO_TYPE_R8) {
+			switch (etype->type) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+				return emit_simd_ins_for_sig (cfg, klass, OP_VREPIB, etype->type, 1, fsig, args);
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+				return emit_simd_ins_for_sig (cfg, klass, OP_VREPIH, etype->type, 1, fsig, args);
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+				return emit_simd_ins_for_sig (cfg, klass, OP_VREPIF, etype->type, 1, fsig, args);
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+				return emit_simd_ins_for_sig (cfg, klass, OP_VREPIG, etype->type, 1, fsig, args);
+			default:
+				g_assert_not_reached ();
+			}
+		}
+		switch (etype->type){
+		case MONO_TYPE_R4:{
+			float *value = (float*)buf;
 
-            for (int i = 0; i < len; ++i) {
-                value [i] = 1.0f;
-            }
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1.0f;
+			}
 
-            return emit_xconst_v128 (cfg, klass, (guint8*)value);
-        }
-        case MONO_TYPE_R8:{
-            double *value = (double*)buf;
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		case MONO_TYPE_R8:{
+			double *value = (double*)buf;
 
-            for (int i = 0; i < len; ++i) {
-                value [i] = 1.0;
-            }
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1.0;
+			}	
 
-            return emit_xconst_v128 (cfg, klass, (guint8*)value);
-
-        }
-   }
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		}	
 #else
 
 		switch (etype->type) {
@@ -6885,10 +6911,8 @@ decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
 	case OP_XZERO:
 	case OP_XPHI:
 	case OP_LOADX_MEMBASE:
-#ifndef TARGET_S390X
 	case OP_LOADX_ALIGNED_MEMBASE:
 	case OP_STOREX_ALIGNED_MEMBASE_REG:
-#endif
 	case OP_STOREX_MEMBASE:
 		return TRUE;
 	default:

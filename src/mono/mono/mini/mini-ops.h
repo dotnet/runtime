@@ -149,7 +149,7 @@ MINI_OP(OP_LOADR8_MEMBASE,"loadr8_membase", FREG, IREG, NONE)
 /* klass must be set to a simd class */
 MINI_OP(OP_LOADX_MEMBASE, 			"loadx_membase", XREG, IREG, NONE)
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_S390X)
 MINI_OP(OP_LOADX_ALIGNED_MEMBASE,  "loadx_aligned_membase", XREG, IREG, NONE)
 #endif
 
@@ -1498,6 +1498,7 @@ MINI_OP(OP_S390_CIJ,            "s390_cij", IREG, NONE, NONE)
 MINI_OP(OP_S390_CLIJ,           "s390_cij_un", IREG, IREG, NONE)
 MINI_OP(OP_S390_CGIJ,           "s390_cgij", LREG, NONE, NONE)
 MINI_OP(OP_S390_CLGIJ,          "s390_cgij_un", LREG, NONE, NONE)
+MINI_OP(OP_STOREX_ALIGNED_MEMBASE_REG, "storex_aligned_membase_reg", IREG, XREG, NONE)
 MINI_OP(OP_VADDB, "vaddb", XREG, XREG, XREG)
 MINI_OP(OP_VADDH, "vaddh", XREG, XREG, XREG)
 MINI_OP(OP_VADDF, "vaddf", XREG, XREG, XREG)
@@ -1584,6 +1585,8 @@ MINI_OP(OP_VCHLBS, "vchlbs", XREG, XREG, XREG)
 MINI_OP(OP_VCHLHS, "vchlhs", XREG, XREG, XREG)
 MINI_OP(OP_VCHLFS, "vchlfs", XREG, XREG, XREG)
 MINI_OP(OP_VCHLGS, "vchlgs", XREG, XREG, XREG)
+MINI_OP(OP_VFCHESBS, "vfchesbs", XREG, XREG, XREG)
+MINI_OP(OP_VFCHEDBS, "vfchedbs", XREG, XREG, XREG)
 MINI_OP(OP_VEC_ABS, "vecabs", XREG, XREG, NONE)
 MINI_OP(OP_VEC_ONE, "vecone", XREG, NONE, NONE)
 MINI_OP(OP_VLPB, "vlpb", XREG, XREG, NONE)
@@ -1594,7 +1597,6 @@ MINI_OP(OP_VFLPDB, "vflpdb", XREG, XREG, NONE)
 MINI_OP(OP_VFLPSB, "vflpsb", XREG, XREG, NONE)
 MINI_OP(OP_VFLCDB, "vflcdb", XREG, XREG, NONE)
 MINI_OP(OP_VFLCSB, "vflcsb", XREG, XREG, NONE)
-MINI_OP3(OP_BSL, "bitwise_select", XREG, XREG, XREG, XREG)
 MINI_OP(OP_VPKH, "vpkh", XREG, XREG, XREG)
 MINI_OP(OP_VPKF, "vpkf", XREG, XREG, XREG)
 MINI_OP(OP_VPKG, "vpkg", XREG, XREG, XREG)
@@ -1617,9 +1619,7 @@ MINI_OP(OP_VUPLLF, "vupllf", XREG, XREG, NONE)
 MINI_OP(OP_VFISB, "vfidb", XREG, XREG, NONE)
 MINI_OP(OP_VFIDB, "vfisb", XREG, XREG, NONE)
 MINI_OP(OP_CEIL_FLOOR, "ceil_floor", XREG, XREG, NONE)
-MINI_OP(OP_ICNLE,   "int_cnle", IREG, NONE, NONE)
-MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
-MINI_OP(OP_NEGATION, "negate", XREG, XREG, NONE)
+MINI_OP(OP_S390_XEXTRACT, "s390_xextract", IREG, XREG, NONE)
 #endif
 
 #if defined(TARGET_ARM64)
@@ -1984,7 +1984,6 @@ MINI_OP(OP_SIMD_LOAD_SCALAR_R8, "simd_load_scalar_r8", XREG, IREG, NONE)
 MINI_OP(OP_SIMD_STORE, "simd_store", NONE, XREG, XREG)
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
-MINI_OP(OP_ONES_COMPLEMENT,  "ones_complement", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_UI,        "convert_fp_to_ui", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_SI,        "convert_fp_to_si", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_UI_SCALAR, "convert_fp_to_ui_scalar", XREG, XREG, NONE)
@@ -1994,11 +1993,15 @@ MINI_OP(OP_CVT_SI_FP,        "convert_si_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_UI_FP_SCALAR, "convert_ui_to_fp_scalar", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 /* inst_c1 is one of the MONO_TYPE_ constants */
-MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
+#endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_S390X)
+MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
+MINI_OP(OP_ONES_COMPLEMENT,  "ones_complement", XREG, XREG, NONE)
 /* Select bits from src2/src3 using src1 */
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
-#endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
+#endif
 
 #if defined(TARGET_RISCV64) || defined(TARGET_RISCV32)
 MINI_OP(OP_RISCV_EXC_BEQ, "riscv_exc_beq", NONE, IREG, IREG)

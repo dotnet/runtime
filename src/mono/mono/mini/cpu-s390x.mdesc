@@ -298,7 +298,6 @@ int_clt_un: dest:i len:12
 int_cneq: dest:i len:12
 int_cge: dest:i len:12
 int_cle: dest:i len:12
-int_cnle: dest:i len:12
 int_cge_un: dest:i len:12
 int_cle_un: dest:i len:12
 
@@ -510,10 +509,9 @@ expand_r8: dest:x src1:f len:20
 expand_r4: dest:x src1:f len:20
 
 
-xextract: dest:i src1:x len:12
+s390_xextract: dest:i src1:x len:12
 xones: dest:x len:6
 xmove: dest:x src1:x len:6
-#xcast: dest:x src1:x len:6
 xzero: dest:x len:6
 xcompare: dest:x src1:x src2:x len:6
 xcompare_fp: dest:x src1:x src2:x len:6
@@ -535,9 +533,9 @@ vfsubs: dest:x src1:x src2:x len:6
 vfsubd: dest:x src1:x src2:x len:6
 vxor: dest:x src1:x src2:x len:6
 vor: dest:x src1:x src2:x len:6
-vnor: dest:x src1:x src2:x len:24
+vnor: dest:x src1:x src2:x len:6
 vand: dest:x src1:x src2:x len:6
-vandnot: dest:x src1:x src2:x len:12
+vandnot: dest:x src1:x src2:x len:6
 vnand: dest:x src1:x src2:x len:6
 vmulb: dest:x src1:x src2:x len:6
 vmulhw: dest:x src1:x src2:x len:6
@@ -599,14 +597,14 @@ vchbs: dest:x src1:x src2:x len:6
 vchhs: dest:x src1:x src2:x len:6
 vchfs: dest:x src1:x src2:x len:6
 vchgs: dest:x src1:x src2:x len:6
-#vfsqsb: src1:x src2:x len:6 clob:1
 vfsqsb: dest:x src1:x len:6
-#vfsqdb: src1:x src2:x len:6 clob:1
 vfsqdb: dest:x src1:x len:6
 vchlbs: dest:x src1:x src2:x len:6
 vchlhs: dest:x src1:x src2:x len:6
 vchlfs: dest:x src1:x src2:x len:6
 vchlgs: dest:x src1:x src2:x len:6
+vfchesbs: dest:x src1:x src2:x len:6
+vfchedbs: dest:x src1:x src2:x len:6
 vlpb: dest:x src1:x len:6
 vlph: dest:x src1:x len:6
 vlpf: dest:x src1:x len:6

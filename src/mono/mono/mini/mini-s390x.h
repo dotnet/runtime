@@ -259,21 +259,6 @@ s390_patch_addr (guchar *code, guint64 target)
 } while (0)
 
 /*========================= End of Function ========================*/
-#define S390_LONG_VEC(loc, opy, op, r, off, ix, br)                    \
-       if (s390_is_imm12(off)) {                                       \
-               s390_##opy (loc, r, off, ix, br);                       \
-       } else {                                                        \
-               if (ix == 0) {                                          \
-                       S390_SET(loc, s390_r13, off);                   \
-                       s390_la (loc, s390_r13, s390_r13, br, 0);       \
-               } else {                                                \
-                       s390_la   (loc, s390_r13, ix, br, 0);           \
-                       S390_SET  (loc, s390_r0, off);                  \
-                       s390_agr  (loc, s390_r13, s390_r0);             \
-               }                                                       \
-               s390_##op (loc, r, 0, 0, s390_r13);                     \
-       }
-
 #define S390_SET(loc, dr, v)					\
 	do {							\
 		guint64 val = (guint64) v;			\
@@ -307,6 +292,22 @@ s390_patch_addr (guchar *code, guint64 target)
 		}							\
 		s390_##op (loc, r, 0, s390_r13, 0);			\
 	}
+
+#define S390_LONG_VEC(loc, opy, op, r, off, ix, br)                    \
+       if (s390_is_imm12(off)) {                                       \
+               s390_##opy (loc, r, ix, br, off);                       \
+       } else {                                                        \
+               if (ix == 0) {                                          \
+                       S390_SET(loc, s390_r13, off);                   \
+                       s390_la (loc, s390_r13, s390_r13, br, 0);       \
+               } else {                                                \
+                       s390_la   (loc, s390_r13, ix, br, 0);           \
+                       S390_SET  (loc, s390_r0, off);                  \
+                       s390_agr  (loc, s390_r13, s390_r0);             \
+               }                                                       \
+               s390_##op (loc, r, 0, s390_r13, 0);                     \
+       }
+
 
 #define S390_SET_MASK(loc, dr, v)				\
 	do {							\
