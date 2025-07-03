@@ -23,9 +23,9 @@ namespace Internal.Reflection.Execution
         {
             ArgumentNullException.ThrowIfNull(resourceName);
 
-            foreach (ResourceInfo resourceInfo in ExtractResources(assembly))
+            foreach (string name in ExtractResources(assembly))
             {
-                if (resourceInfo.Name == resourceName)
+                if (name == resourceName)
                 {
                     return new ManifestResourceInfo(null, null, ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile);
                 }
@@ -38,9 +38,9 @@ namespace Internal.Reflection.Execution
         {
             ArrayBuilder<string> arrayBuilder = default;
 
-            foreach (ResourceInfo resourceInfo in ExtractResources(assembly))
+            foreach (string name in ExtractResources(assembly))
             {
-                arrayBuilder.Add(resourceInfo.Name);
+                arrayBuilder.Add(name);
             }
 
             return arrayBuilder.ToArray();
@@ -49,31 +49,59 @@ namespace Internal.Reflection.Execution
         public sealed override Stream GetManifestResourceStream(Assembly assembly, string name)
         {
             ArgumentNullException.ThrowIfNull(name);
+            Debug.Assert(assembly != null);
+            string assemblyName = assembly.GetName().FullName;
 
-            foreach (ResourceInfo resourceInfo in ExtractResources(assembly))
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                if (resourceInfo.Name == name)
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out NativeReader reader))
                 {
-                    return ReadResourceFromBlob(resourceInfo);
+                    continue;
+                }
+                NativeParser indexParser = new NativeParser(reader, 0);
+                NativeHashtable indexHashTable = new NativeHashtable(indexParser);
+
+                var lookup = indexHashTable.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(assemblyName));
+                NativeParser entryParser;
+                while (!(entryParser = lookup.GetNext()).IsNull)
+                {
+                    if (entryParser.StringEquals(assemblyName))
+                    {
+                        entryParser.SkipString(); // assemblyName
+                        if (entryParser.StringEquals(name))
+                        {
+                            entryParser.SkipString(); // resourceName
+                            int resourceOffset = (int)entryParser.GetUnsigned();
+                            int resourceLength = (int)entryParser.GetUnsigned();
+                            return ReadResourceFromBlob(resourceOffset, resourceLength, module);
+                        }
+                    }
+                    else
+                    {
+                        entryParser.SkipString(); // assemblyName
+                    }
+                    entryParser.SkipString(); // resourceName
+                    entryParser.SkipInteger(); // offset
+                    entryParser.SkipInteger(); // length
                 }
             }
 
             return null;
         }
 
-        private static unsafe UnmanagedMemoryStream ReadResourceFromBlob(ResourceInfo resourceInfo)
+        private static unsafe UnmanagedMemoryStream ReadResourceFromBlob(int resourceOffset, int resourceLength, NativeFormatModuleInfo module)
         {
-            if (!resourceInfo.Module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out byte* pBlob, out uint cbBlob))
+            if (!module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out byte* pBlob, out uint cbBlob))
             {
                 throw new BadImageFormatException();
             }
 
             // resourceInfo is read from the executable image, so check it only in debug builds
-            Debug.Assert(resourceInfo.Index >= 0 && resourceInfo.Length >= 0 && (uint)(resourceInfo.Index + resourceInfo.Length) <= cbBlob);
-            return new UnmanagedMemoryStream(pBlob + resourceInfo.Index, resourceInfo.Length);
+            Debug.Assert(resourceOffset >= 0 && resourceLength >= 0 && (uint)(resourceOffset + resourceLength) <= cbBlob);
+            return new UnmanagedMemoryStream(pBlob + resourceOffset, resourceLength);
         }
 
-        private static IEnumerable<ResourceInfo> ExtractResources(Assembly assembly)
+        private static IEnumerable<string> ExtractResources(Assembly assembly)
         {
             Debug.Assert(assembly != null);
             string assemblyName = assembly.GetName().FullName;
@@ -93,37 +121,18 @@ namespace Internal.Reflection.Execution
                 {
                     if (entryParser.StringEquals(assemblyName))
                     {
-                        entryParser.SkipString();
-                        string entryResourceName = entryParser.GetString();
-                        int resourceOffset = (int)entryParser.GetUnsigned();
-                        int resourceLength = (int)entryParser.GetUnsigned();
-                        yield return new ResourceInfo(entryResourceName, resourceOffset, resourceLength, module);
+                        entryParser.SkipString(); // assemblyName
+                        yield return entryParser.GetString();
                     }
                     else
                     {
-                        entryParser.SkipString();
-                        entryParser.SkipString();
-                        entryParser.SkipInteger();
-                        entryParser.SkipInteger();
+                        entryParser.SkipString(); // assemblyName
+                        entryParser.SkipString(); // resourceName
                     }
+                    entryParser.SkipInteger(); // offset
+                    entryParser.SkipInteger(); // length
                 }
             }
-        }
-
-        private struct ResourceInfo
-        {
-            public ResourceInfo(string name, int index, int length, NativeFormatModuleInfo module)
-            {
-                Name = name;
-                Index = index;
-                Length = length;
-                Module = module;
-            }
-
-            public string Name { get; }
-            public int Index { get; }
-            public int Length { get; }
-            public NativeFormatModuleInfo Module { get; }
         }
     }
 }
