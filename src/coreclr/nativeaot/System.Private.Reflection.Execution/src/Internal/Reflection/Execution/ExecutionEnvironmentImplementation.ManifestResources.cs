@@ -21,8 +21,6 @@ namespace Internal.Reflection.Execution
     {
         public sealed override ManifestResourceInfo GetManifestResourceInfo(Assembly assembly, string resourceName)
         {
-            ArgumentNullException.ThrowIfNull(resourceName);
-
             foreach (string name in ExtractResources(assembly))
             {
                 if (name == resourceName)
@@ -48,8 +46,6 @@ namespace Internal.Reflection.Execution
 
         public sealed override Stream GetManifestResourceStream(Assembly assembly, string name)
         {
-            ArgumentNullException.ThrowIfNull(name);
-            Debug.Assert(assembly != null);
             string assemblyName = assembly.GetName().FullName;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
