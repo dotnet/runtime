@@ -830,9 +830,14 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo()
+        
+        public static object[][] Bla = Enumerable.Range(0, 10).Select(i => new object[] { i }).ToArray();
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Bla))]
+        public async Task SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo(int para)
         {
+            _output.WriteLine(para.ToString());
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
             static async Task RunTest(string useVersion, string testAsync)
             {
@@ -870,8 +875,18 @@ namespace System.Net.Http.Functional.Tests
                         {
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
-
-                        await Assert.ThrowsAsync<TaskCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+                        bool canceled = false;
+                        //await Assert.ThrowsAsync<TaskCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+                        try
+                        {
+                            await GetAsync(useVersion, testAsync, uri, cts.Token);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            canceled = true;
+                            // Expected
+                        }
+                        Assert.True(canceled);
                     },
                     async server =>
                     {
