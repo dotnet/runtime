@@ -94,9 +94,6 @@ struct CloneInfo : public GuardInfo
     Statement*  m_allocStmt  = nullptr;
     BasicBlock* m_allocBlock = nullptr;
 
-    // Block holding the GDV test that decides if the enumerator will be allocated
-    BasicBlock* m_domBlock = nullptr;
-
     // Blocks to clone (in order), and a set representation
     // of the same
     jitstd::vector<BasicBlock*>* m_blocksToClone = nullptr;

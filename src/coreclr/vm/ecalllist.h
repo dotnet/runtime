@@ -364,6 +364,9 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("_InternalAlloc", MarshalNative::GCHandleInternalAlloc)
     FCFuncElement("_InternalFree", MarshalNative::GCHandleInternalFree)
     FCFuncElement("InternalGet", MarshalNative::GCHandleInternalGet)
+#ifdef FEATURE_JAVAMARSHAL
+    FCFuncElement("InternalTryGetBridgeWait", MarshalNative::GCHandleInternalTryGetBridgeWait)
+#endif
     FCFuncElement("InternalSet", MarshalNative::GCHandleInternalSet)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
 FCFuncEnd()
