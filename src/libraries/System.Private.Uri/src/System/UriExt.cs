@@ -204,10 +204,6 @@ namespace System
                     // Iri'ze and then normalize relative uris
                     _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
                                                 (UriComponents)0);
-                    if (_string.Length > ushort.MaxValue)
-                    {
-                        return;
-                    }
                 }
             }
             else
