@@ -1320,124 +1320,6 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
 }
 
 #ifndef DACCESS_COMPILE
-// This is an implementation of a cache of the Native->IL offset mappings used by managed stack traces. It exists for the following reasons:
-// 1. When a large server experiences a large number of exceptions due to some other system failing, it can cause a tremendous number of stack traces to be generated, if customers are attempting to log.
-// 2. The native->IL offset mapping is somewhat expensive to compute, and it is not necessary to compute it repeatedly for the same IP.
-// 3. Often when these mappings are needed, the system is under stress, and throwing on MANY different threads with similar callstacks, so the cost of having locking around the cache may be significant.
-//
-// The cache is implemented as a simple hash table, where the key is the IP + fAdjustOffset
-// flag, and the value is the IL offset. We use a version number to indicate when the cache
-// is being updated, and to indicate that a found value is valid, and we use a simple linear
-// probing algorithm to find the entry in the cache. The fallback from the cache is now
-// designed to avoid locks when possible, and while it is substantially slower than the cache,
-// it is still fast enough that we don't need to go to great lengths to avoid it.
-
-static LONG s_stackWalkILToNativeCacheVersion = 0;
-const DWORD s_stackWalkCacheSize = 1024; // This is the total size of the cache (We use a pointer+4 bytes for each entry, so on 64bit platforms 12KB of memory)
-const DWORD s_stackWalkCacheWalk = 8; // Walk up to this many entries in the cache before giving up
-const DWORD s_stackWalkCacheAdjustOffsetFlag = 0x80000000; // 2^31, put into the IL offset portion of the cache entry to check if the native offset was adjusted by STACKWALK_CONTROLPC_ADJUST_OFFSET
-static void* s_stackWalkILToNativeCacheIP[s_stackWalkCacheSize];
-static uint32_t s_stackWalkILToNativeCacheIL[s_stackWalkCacheSize];
-
-bool CheckILToNativeCacheCore(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
-{
-    // Check the cache for the IP
-    int hashCode = MixPointerIntoHash(ip);
-    int index = hashCode % s_stackWalkCacheSize;
-
-    DWORD count = 0;
-    do
-    {
-        if (VolatileLoadWithoutBarrier(&s_stackWalkILToNativeCacheIP[index]) == ip)
-        {
-            // Cache hit
-            uint32_t dwILOffset = VolatileLoad(&s_stackWalkILToNativeCacheIL[index]);
-            if (fAdjustOffset != ((dwILOffset & s_stackWalkCacheAdjustOffsetFlag) == s_stackWalkCacheAdjustOffsetFlag))
-            {
-                continue; // The cache entry did not match on the adjust offset flag, so move to the next entry.
-            }
-
-            dwILOffset &= ~s_stackWalkCacheAdjustOffsetFlag; // Clear the adjust offset flag
-            *pILOffset = dwILOffset;
-            return true;
-        }
-    } while (index = (index + 1) % s_stackWalkCacheSize, count++ < s_stackWalkCacheWalk);
-
-    return false; // Not found in cache
-}
-
-bool CheckILToNativeCache(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    LONG versionStart = VolatileLoad(&s_stackWalkILToNativeCacheVersion);
-
-    if ((versionStart & 1) == 1)
-    {
-        // Cache is being updated, so we cannot use it
-        return false;
-    }
-
-    if (CheckILToNativeCacheCore(ip, fAdjustOffset, pILOffset))
-    {
-        LONG versionEnd = VolatileLoadWithoutBarrier(&s_stackWalkILToNativeCacheVersion);
-        if (versionEnd == versionStart)
-        {
-            // Cache was not updated while we were checking it, so we can use it
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void InsertIntoILToNativeCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Insert the IP and IL offset into the cache
-    
-    LONG versionStart = VolatileLoadWithoutBarrier(&s_stackWalkILToNativeCacheVersion);
-    if ((versionStart & 1) == 1)
-    {
-        // Cache is being updated by someone else, so we can't modify it
-        return;
-    }
-
-    if (versionStart != InterlockedCompareExchange(&s_stackWalkILToNativeCacheVersion, versionStart, versionStart | 1))
-    {
-        // Someone else updated the cache version while we were attempting to take the lock, so abort updating the cache
-        return;
-    }
-    // Now we have the lock, so we can safely update the cache
-
-    // First check to see if the cache already has an entry
-    uint32_t dwILOffsetFound;
-    if (CheckILToNativeCacheCore(ip, fAdjustOffset, &dwILOffsetFound))
-    {
-        // The entry already exists, so we don't need to insert it again
-        _ASSERTE(dwILOffsetFound == dwILOffset);
-
-        // Store back the original version to indicate that the cache has not been updated, and is ready for use.
-        VolatileStore(&s_stackWalkILToNativeCacheVersion, versionStart);
-    }
-    else
-    {
-        // Insert the IP and IL offset into the cache
-
-        int hashCode = MixPointerIntoHash(ip);
-
-        // Insert the entry into a semi-random location in the set of cache entries. The idea is to attempt to be somewhat collision resistant
-        int index = (hashCode + (MixOneValueIntoHash(versionStart) % s_stackWalkCacheWalk)) % s_stackWalkCacheSize;
-
-        s_stackWalkILToNativeCacheIP[index] = ip;
-        s_stackWalkILToNativeCacheIL[index] = dwILOffset | (fAdjustOffset ? s_stackWalkCacheAdjustOffsetFlag : 0);
-
-        // Increment the version to indicate that the cache has been updated, and is ready for use.
-        VolatileStore(&s_stackWalkILToNativeCacheVersion, versionStart + 2);
-    }
-}
-
 #ifdef DEBUG
 size_t WalkILOffsetsCallback_Printer(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
 {
@@ -1590,7 +1472,7 @@ void DebugStackTrace::Element::InitPass2()
     {
         // Check the cache!
         uint32_t dwILOffsetFromCache;
-        if (CheckILToNativeCache((void*)this->ip, fAdjustOffset, &dwILOffsetFromCache))
+        if (CheckNativeToILCache((void*)this->ip, fAdjustOffset, &dwILOffsetFromCache))
         {
 #if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
             _ASSERTE(this->dwILOffset == dwILOffsetFromCache); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
@@ -1625,7 +1507,7 @@ void DebugStackTrace::Element::InitPass2()
                 if (!pMD->IsLCGMethod() && !pMD->GetLoaderAllocator()->IsCollectible())
                 {
                     // Only insert into the cache if the value found will not change throughout the lifetime of the process.
-                    InsertIntoILToNativeCache(
+                    InsertIntoNativeToILCache(
                         (void*)this->ip,
                         fAdjustOffset,
                         this->dwILOffset);
