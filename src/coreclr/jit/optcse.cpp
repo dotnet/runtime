@@ -4411,28 +4411,51 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     unsigned enregCount         = 0;
     unsigned cntAggressiveEnreg = 0;
 
-    if (candidate->Expr()->TypeIs(TYP_STRUCT))
+    GenTree*  candidateExpr  = candidate->Expr();
+    var_types candidateType  = candidateExpr->TypeGet();
+    bool      liveAcrossCall = candidate->LiveAcrossCall();
+    unsigned  candidateCost  = 0;
+
+    bool usesIntReg = false;
+    bool usesMskReg = false;
+    bool usesFltReg = false;
+
+    if (varTypeUsesIntReg(candidateType))
+    {
+        usesIntReg = true;
+    }
+    else if (varTypeUsesMaskReg(candidateType))
+    {
+        usesMskReg = true;
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(candidateType));
+        usesFltReg = true;
+    }
+
+    if (candidateType == TYP_STRUCT)
     {
         // This is a non-enregisterable struct.
         canEnregister = false;
-        unsigned size = candidate->Expr()->GetLayout(m_pCompiler)->GetSize();
+        unsigned size = candidateExpr->GetLayout(m_pCompiler)->GetSize();
         // Note that the slotCount is used to estimate the reference cost, but it may overestimate this
         // because it doesn't take into account that we might use a vector register for struct copies.
         slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
     }
-    else if (varTypeUsesIntReg(candidate->Expr()->TypeGet()))
+    else if (usesIntReg)
     {
         enregCount         = enregCountInt;
         cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG;
     }
-    else if (varTypeUsesMaskReg(candidate->Expr()->TypeGet()))
+    else if (usesMskReg)
     {
         enregCount         = enregCountMsk;
         cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_MSK;
     }
     else
     {
-        assert(varTypeUsesFloatReg(candidate->Expr()->TypeGet()));
+        assert(usesFltReg);
         enregCount         = enregCountFlt;
         cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_FLT;
     }
@@ -4443,7 +4466,8 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         // upon the code size and we use unweighted ref counts instead of weighted ref counts.
         // Also note that optimizing for SMALL_CODE is rare, we typically only optimize this way
         // for class constructors, because we know that they will only run once.
-        //
+        candidateCost = candidate->Size();
+
         if (cseRefCnt >= aggressiveRefCnt)
         {
             // Record that we are choosing to use the aggressive promotion rules
@@ -4463,7 +4487,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
 
             // Check if this candidate is likely to live on the stack
             //
-            if (candidate->LiveAcrossCall() || !canEnregister)
+            if (liveAcrossCall || !canEnregister)
             {
                 // Increase the costs when we have a large or huge frame
                 //
@@ -4530,7 +4554,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             }
         }
 #ifdef TARGET_XARCH
-        if (varTypeIsFloating(candidate->Expr()->TypeGet()))
+        if (usesFltReg)
         {
             // floating point loads/store encode larger
             cse_def_cost += 2;
@@ -4542,7 +4566,8 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     {
         // Note that when optimizing for BLENDED_CODE or FAST_CODE we set cse_def_cost/cse_use_cost
         // based upon the execution costs of the code and we use weighted ref counts.
-        //
+        candidateCost = candidate->Cost();
+
         if ((cseRefCnt >= aggressiveRefCnt) && canEnregister)
         {
             // Record that we are choosing to use the aggressive promotion rules
@@ -4565,7 +4590,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             // Record that we are choosing to use the moderate promotion rules
             //
             candidate->SetModerate();
-            if (!candidate->LiveAcrossCall() && canEnregister)
+            if (!liveAcrossCall && canEnregister)
             {
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
@@ -4582,7 +4607,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 if (m_pCompiler->verbose)
                 {
                     printf("Moderate CSE Promotion (%s) (%f >= %f)\n",
-                           candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable", cseRefCnt,
+                           liveAcrossCall ? "CSE is live across a call" : "not enregisterable", cseRefCnt,
                            moderateRefCnt);
                 }
 #endif
@@ -4609,13 +4634,13 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             // Record that we are choosing to use the conservative promotion rules
             //
             candidate->SetConservative();
-            if (!candidate->LiveAcrossCall() && canEnregister)
+            if (!liveAcrossCall && canEnregister)
             {
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
                     printf("Conservative CSE Promotion (%s) (%f < %f)\n",
-                           candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable", cseRefCnt,
+                           liveAcrossCall ? "CSE is live across a call" : "not enregisterable", cseRefCnt,
                            moderateRefCnt);
                 }
 #endif
@@ -4651,7 +4676,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
 
     // If this CSE is live across a call then we may have additional costs
     //
-    if (candidate->LiveAcrossCall())
+    if (liveAcrossCall)
     {
         // If we have certain CSEs that are both live across a call and there
         // are no callee-saved registers available, the RA will have to spill at
@@ -4661,11 +4686,11 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         {
             bool hasRequiredSpill = false;
 
-            if (varTypeUsesIntReg(candidate->Expr()))
+            if (usesIntReg)
             {
                 assert(CNT_CALLEE_SAVED != 0);
             }
-            else if (varTypeUsesMaskReg(candidate->Expr()))
+            else if (usesMskReg)
             {
                 if (CNT_CALLEE_SAVED_MASK == 0)
                 {
@@ -4674,7 +4699,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             }
             else
             {
-                assert(varTypeUsesFloatReg(candidate->Expr()));
+                assert(usesFltReg);
 
                 if (CNT_CALLEE_SAVED_FLOAT == 0)
                 {
@@ -4682,12 +4707,12 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 }
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_XARCH)
-                else if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
+                else if ((candidateType == TYP_SIMD32) || (candidateType == TYP_SIMD64))
                 {
                     hasRequiredSpill = true;
                 }
 #elif defined(TARGET_ARM64)
-                else if (candidate->Expr()->TypeIs(TYP_SIMD16))
+                else if (candidateType == TYP_SIMD16)
                 {
                     hasRequiredSpill = true;
                 }
@@ -4717,19 +4742,19 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         }
     }
 
-    // estimate the cost from lost codesize reduction if we do not perform the CSE
-    if (candidate->Size() > cse_use_cost)
+    // estimate the cost from lost reduction if we do not perform the CSE
+    if (candidateCost > cse_use_cost)
     {
         CSEdsc* dsc = candidate->CseDsc(); // We need to retrieve the actual use count, not the
         // weighted count
-        extra_no_cost = candidate->Size() - cse_use_cost;
+        extra_no_cost = candidateCost - cse_use_cost;
         extra_no_cost = extra_no_cost * dsc->csdUseCount * 2;
     }
 
     /* no_cse_cost  is the cost estimate when we decide not to make a CSE */
     /* yes_cse_cost is the cost estimate when we decide to make a CSE     */
 
-    no_cse_cost  = candidate->UseCount() * candidate->Cost();
+    no_cse_cost  = candidate->UseCount() * candidateCost;
     yes_cse_cost = (candidate->DefCount() * cse_def_cost) + (candidate->UseCount() * cse_use_cost);
 
     no_cse_cost += extra_no_cost;
@@ -4740,7 +4765,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     {
         printf("cseRefCnt=%f, aggressiveRefCnt=%f, moderateRefCnt=%f\n", cseRefCnt, aggressiveRefCnt, moderateRefCnt);
         printf("defCnt=%f, useCnt=%f, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
-               candidate->Cost(), candidate->Size(), candidate->LiveAcrossCall() ? ", LiveAcrossCall" : "");
+               candidate->Cost(), candidate->Size(), liveAcrossCall ? ", LiveAcrossCall" : "");
         printf("def_cost=%d, use_cost=%d, extra_no_cost=%d, extra_yes_cost=%d\n", cse_def_cost, cse_use_cost,
                extra_no_cost, extra_yes_cost);
 
