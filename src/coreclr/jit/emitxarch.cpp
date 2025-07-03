@@ -156,7 +156,6 @@ bool emitter::IsKMOVInstruction(instruction ins)
     }
 }
 
-
 //------------------------------------------------------------------------
 // IsSETZUccInstruction: Is this a SETcc instruction with APX-ZU feature?
 //
@@ -174,7 +173,6 @@ bool emitter::IsSETZUccInstruction(instruction ins)
     return false;
 #endif
 }
-
 
 regNumber emitter::getBmiRegNumber(instruction ins)
 {

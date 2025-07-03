@@ -1808,11 +1808,10 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
     const GenConditionDesc& desc = GenConditionDesc::Get(condition);
-    const bool useZU = compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU() && !varTypeIsByte(type);
-    insOpts instOptions = useZU ? INS_OPTS_EVEX_zu : INS_OPTS_NONE;
+    const bool useZU             = compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU() && !varTypeIsByte(type);
+    insOpts    instOptions       = useZU ? INS_OPTS_EVEX_zu : INS_OPTS_NONE;
 
     inst_SET(desc.jumpKind1, dstReg, instOptions);
-
 
     if (desc.oper != GT_NONE)
     {
