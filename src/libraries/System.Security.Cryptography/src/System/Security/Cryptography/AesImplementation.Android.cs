@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
-
 namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation
@@ -39,56 +35,6 @@ namespace System.Security.Cryptography
             return new OpenSslCipherLite(algorithm, blockSize, paddingSize, key, iv, encrypting);
         }
 
-        protected override void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            int written = KeyWrap(source, destination, enc: 1);
-            Debug.Assert(written == destination.Length);
-        }
-
-        protected override int DecryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            return KeyWrap(source, destination, enc: 0);
-        }
-
-        private int KeyWrap(ReadOnlySpan<byte> source, Span<byte> destination, int enc)
-        {
-            Debug.Assert(enc is 0 or 1);
-
-            SafeEvpCipherCtxHandle ctx = GetKey().UseKey(
-                state: enc,
-                static (enc, key) =>
-                {
-                    int keySizeInBits = key.Length * 8;
-
-                    IntPtr algorithm = GetKeyWrapAlgorithm(keySizeInBits);
-
-                    return Interop.Crypto.EvpCipherCreate(
-                        algorithm,
-                        ref MemoryMarshal.GetReference(key),
-                        key.Length * 8,
-                        ref MemoryMarshal.GetReference(ReadOnlySpan<byte>.Empty),
-                        enc);
-                });
-
-            int written;
-
-            using (ctx)
-            {
-                bool ret = Interop.Crypto.EvpCipherUpdate(
-                    ctx,
-                    destination,
-                    out written,
-                    source);
-
-                if (!ret)
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-            }
-
-            return written;
-        }
-
         private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode) =>
             (keySize, cipherMode) switch
             {
@@ -112,15 +58,6 @@ namespace System.Security.Cryptography
                 _ => throw (keySize == 128 || keySize == 192 || keySize == 256 ? (Exception)
                         new NotSupportedException() :
                         new CryptographicException(SR.Cryptography_InvalidKeySize)),
-            };
-
-        private static IntPtr GetKeyWrapAlgorithm(int keySize) =>
-            keySize switch
-            {
-                128 => Interop.Crypto.EvpAes128WrapPad(),
-                192 => Interop.Crypto.EvpAes192WrapPad(),
-                256 => Interop.Crypto.EvpAes256WrapPad(),
-                _ => throw new CryptographicException(SR.Cryptography_InvalidKeySize),
             };
     }
 }
