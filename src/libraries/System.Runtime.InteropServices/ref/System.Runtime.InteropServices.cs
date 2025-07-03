@@ -679,6 +679,7 @@ namespace System.Runtime.InteropServices
     }
     public static partial class CollectionsMarshal
     {
+        public static System.Span<byte> AsBytes(System.Collections.BitArray? array) { throw null; }
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue, TAlternateKey>(System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> dictionary, TAlternateKey key) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
@@ -2379,6 +2380,44 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_STATIC = 1,
         VAR_CONST = 2,
         VAR_DISPATCH = 3,
+    }
+}
+namespace System.Runtime.InteropServices.Java
+{
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public struct ComponentCrossReference
+    {
+        public nuint SourceGroupIndex;
+        public nuint DestinationGroupIndex;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public static class JavaMarshal
+    {
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences) => throw null;
+        public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context) => throw null;
+        public static unsafe void* GetContext(GCHandle obj) => throw null;
+        public static unsafe void FinishCrossReferenceProcessing(
+            MarkCrossReferencesArgs* crossReferences,
+            System.ReadOnlySpan<GCHandle> unreachableObjectHandles) => throw null;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct StronglyConnectedComponent
+    {
+        public nuint Count;
+        public void** Contexts;
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct MarkCrossReferencesArgs
+    {
+        public nuint ComponentCount;
+        public StronglyConnectedComponent* Components;
+        public nuint CrossReferenceCount;
+        public ComponentCrossReference* CrossReferences;
     }
 }
 namespace System.Runtime.InteropServices.ObjectiveC

@@ -408,7 +408,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (pInternal == NULL)
     {
@@ -4856,14 +4856,12 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetCurrentCustomDebuggerNotification(VMP
     return vmObjHandle;
 }
 
-// Return the current appdomain the specified thread is in.
-VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
+// Return the current appdomain.
+VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain()
 {
     DD_ENTER_MAY_THROW;
 
-    Thread *    pThread    = vmThread.GetDacPtr();
     AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
-
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
     return vmAppDomain;
@@ -5421,29 +5419,21 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
     BOOL fIsGCSafe = FALSE;
     Thread * pThread = vmThread.GetDacPtr();
 
-    // Check if the runtime has entered "Shutdown for Finalizer" mode.
-    if ((g_fEEShutDown & ShutDown_Finalize2) != 0)
+    T_CONTEXT ctx;
+    REGDISPLAY rd;
+    SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
+
+    ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
+
+    StackFrameIterator iter;
+    iter.Init(pThread, pThread->GetFrame(), &rd, flags);
+
+    CrawlFrame * pCF = &(iter.m_crawl);
+    if (pCF->IsFrameless() && pCF->IsActiveFunc())
     {
-        fIsGCSafe = TRUE;
-    }
-    else
-    {
-        T_CONTEXT ctx;
-        REGDISPLAY rd;
-        SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
-
-        ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
-
-        StackFrameIterator iter;
-        iter.Init(pThread, pThread->GetFrame(), &rd, flags);
-
-        CrawlFrame * pCF = &(iter.m_crawl);
-        if (pCF->IsFrameless() && pCF->IsActiveFunc())
+        if (pCF->IsGcSafe())
         {
-            if (pCF->IsGcSafe())
-            {
-                fIsGCSafe = TRUE;
-            }
+            fIsGCSafe = TRUE;
         }
     }
 
@@ -5755,7 +5745,7 @@ BOOL DacDbiInterfaceImpl::IsVmObjectHandleValid(VMPTR_OBJECTHANDLE vmHandle)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return ret;
 }
@@ -5841,7 +5831,7 @@ HRESULT DacDbiInterfaceImpl::FastSanityCheckObject(PTR_Object objPtr)
         LOG((LF_CORDB, LL_INFO10000, "GOI: exception indicated ref is bad.\n"));
         hr = E_INVALIDARG;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }   // DacDbiInterfaceImpl::FastSanityCheckObject
@@ -6388,7 +6378,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
     {
         ret = false;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return ret;
 }
@@ -6951,7 +6941,7 @@ bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
         {
             isValid = false;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return isValid;

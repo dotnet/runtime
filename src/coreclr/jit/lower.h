@@ -440,7 +440,7 @@ private:
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
-    void     LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
+    void     LowerFusedMultiplyOp(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
@@ -451,11 +451,12 @@ private:
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
-    bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
-    void LowerModPow2(GenTree* node);
-    bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
-    void StoreFFRValue(GenTreeHWIntrinsic* node);
+    bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
+    void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+    void     LowerModPow2(GenTree* node);
+    GenTree* LowerCnsMask(GenTreeMskCon* mask);
+    bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
+    void     StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
@@ -495,6 +496,13 @@ public:
             }
 
 #endif // TARGET_XARCH
+
+#if TARGET_X86
+            if (parentNode->OperIs(GT_MUL_LONG))
+            {
+                return genTypeSize(childNode->TypeGet()) == operatorSize / 2;
+            }
+#endif // TARGET_X86
 
             return genTypeSize(childNode->TypeGet()) == operatorSize;
         }

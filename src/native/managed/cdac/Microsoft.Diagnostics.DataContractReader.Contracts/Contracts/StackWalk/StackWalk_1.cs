@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -131,6 +132,11 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
     }
 
+    /// <summary>
+    /// If an explicit frame is allocated in a managed stack frame (e.g. an inlined pinvoke call),
+    /// we may have skipped an explicit frame.  This function checks for them.
+    /// </summary>
+    /// <returns> true if there are skipped frames. </returns>
     private bool CheckForSkippedFrames(StackWalkData handle)
     {
         // ensure we can find the caller context

@@ -427,7 +427,7 @@ SIZE_T DereferenceByRefVar(SIZE_T addr)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #endif // !DACCESS_COMPILE
 

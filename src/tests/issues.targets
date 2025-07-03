@@ -522,6 +522,9 @@
 
     <!-- Crossgen2 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/interpreter/InterpreterTester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/116823</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/83942</Issue>
         </ExcludeList>
@@ -1068,20 +1071,6 @@
 
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
             <Issue>Dynamic code generation is not supported on this platform</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- NativeAOT Linux specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'linux'">
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
-            <Issue>https://github.com/dotnet/runtime/issues/116686</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- NativeAOT arm32 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm'">
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalAllocatedBytes/**">
-            <Issue>https://github.com/dotnet/runtime/issues/103333</Issue>
         </ExcludeList>
     </ItemGroup>
 
