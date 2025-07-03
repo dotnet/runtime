@@ -26,9 +26,9 @@ namespace System.Net.Http
         private Http3Connection _connection;
         private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
         private readonly QuicStream _stream;
-        private volatile bool _concurrentWrite;
+        private volatile bool _finishingBackgroundWrite;
         private ArrayBuffer _sendBuffer;
-        private volatile bool _concurrentRead;
+        private volatile bool _finishingBackgroundRead;
         private ArrayBuffer _recvBuffer;
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
@@ -134,13 +134,13 @@ namespace System.Net.Http
 
             // If the request sending was offloaded to be done concurrently and not awaited within SendAsync (by calling connection.LogException),
             // the _sendBuffer disposal is the responsibility of that offloaded task to prevent returning the buffer to the pool while it still might be in use.
-            if (!_concurrentWrite)
+            if (!_finishingBackgroundWrite)
             {
                 _sendBuffer.Dispose();
             }
             // If the response receiving was offloaded to be done concurrently and not awaited within SendAsync (by calling connection.LogException),
             // the _recvBuffer disposal is the responsibility of that offloaded task to prevent returning the buffer to the pool while it still might be in use.
-            if (!_concurrentRead)
+            if (!_finishingBackgroundRead)
             {
                 _recvBuffer.Dispose();
             }
@@ -208,19 +208,27 @@ namespace System.Net.Http
                     }
                     catch
                     {
+                        // This is a best effort attempt to transfer the responsibility of disposing _recvBuffer to ReadResponseAsync.
+                        // The task might be past checking the variable or already finished, in which case the buffer won't be returned to the pool.
+                        // Not returning the buffer to the pool is an acceptable trade-off for making sure that the buffer is not used after it's been returned.
+                        _finishingBackgroundRead = true;
+
                         // Exceptions will be bubbled up from sendRequestTask here,
                         // which means the result of readResponseTask won't be observed directly:
                         // Do a background await to log any exceptions.
-                        _concurrentRead = true;
                         _connection.LogExceptions(readResponseTask);
                         throw;
                     }
                 }
                 else
                 {
+                    // This is a best effort attempt to transfer the responsibility of disposing _sendBuffer to SendContentAsync.
+                    // The task might be past checking the variable or already finished, in which case the buffer won't be returned to the pool.
+                    // Not returning the buffer to the pool is an acceptable trade-off for making sure that the buffer is not used after it's been returned.
+                    _finishingBackgroundWrite = true;
+
                     // Duplex is being used, so we can't wait for content to finish sending.
                     // Do a background await to log any exceptions.
-                    _concurrentWrite = true;
                     _connection.LogExceptions(sendRequestTask);
                 }
 
@@ -428,7 +436,7 @@ namespace System.Net.Http
             {
                 // Note that we might still observe false here even if we're responsible for the _recvBuffer disposal.
                 // But in that case, we just don't return the rented buffer to the pool, which is lesser evil than writing to returned one.
-                if (_concurrentRead)
+                if (_finishingBackgroundRead)
                 {
                     _recvBuffer.Dispose();
                 }
@@ -513,7 +521,7 @@ namespace System.Net.Http
             {
                 // Note that we might still observe false here even if we're responsible for the _sendBuffer disposal.
                 // But in that case, we just don't return the rented buffer to the pool, which is lesser evil than writing to returned one.
-                if (_concurrentWrite)
+                if (_finishingBackgroundWrite)
                 {
                     _sendBuffer.Dispose();
                 }
