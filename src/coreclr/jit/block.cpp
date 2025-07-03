@@ -675,12 +675,9 @@ void BasicBlock::dspKind() const
             }
             else
             {
-                const unsigned   jumpCnt = bbEhfTargets->bbeCount;
-                FlowEdge** const jumpTab = bbEhfTargets->bbeSuccs;
-
-                for (unsigned i = 0; i < jumpCnt; i++)
+                for (unsigned i = 0; i < bbEhfTargets->GetSuccCount(); i++)
                 {
-                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(bbEhfTargets->GetSucc(i)));
                 }
             }
 
@@ -1187,7 +1184,7 @@ unsigned BasicBlock::NumSucc() const
                 return 0;
             }
 
-            return bbEhfTargets->bbeCount;
+            return bbEhfTargets->GetSuccCount();
 
         case BBJ_SWITCH:
             return bbSwtTargets->bbsCount;
@@ -1232,7 +1229,7 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
             }
 
         case BBJ_EHFINALLYRET:
-            return bbEhfTargets->bbeSuccs[i];
+            return bbEhfTargets->GetSucc(i);
 
         case BBJ_SWITCH:
             return bbSwtTargets->bbsDstTab[i];
@@ -1291,7 +1288,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
                 return 0;
             }
 
-            return bbEhfTargets->bbeCount;
+            return bbEhfTargets->GetSuccCount();
 
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
@@ -1346,8 +1343,7 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
 
         case BBJ_EHFINALLYRET:
             assert(bbEhfTargets != nullptr);
-            assert(i < bbEhfTargets->bbeCount);
-            return bbEhfTargets->bbeSuccs[i];
+            return bbEhfTargets->GetSucc(i);
 
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
@@ -1639,7 +1635,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBehfDesc* ehfTargets)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBJumpTable* ehfTargets)
 {
     BasicBlock* block = BasicBlock::New(compiler);
     block->SetEhf(ehfTargets);
@@ -1793,29 +1789,23 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
     // Allocate and fill in a new dst tab
     //
     bbsDstTab = new (comp, CMK_FlowEdge) FlowEdge*[bbsCount];
-    for (unsigned i = 0; i < bbsCount; i++)
-    {
-        bbsDstTab[i] = other->bbsDstTab[i];
-    }
+    memcpy(bbsDstTab, other->bbsDstTab, sizeof(FlowEdge*) * bbsCount);
 }
 
 //------------------------------------------------------------------------
-// BBehfDesc copy ctor: copy a EHFINALLYRET descriptor
+// BBJumpTable copy ctor: copy a N-successor block descriptor
 //
 // Arguments:
 //    comp - compiler instance
 //    other - existing descriptor to copy
 //
-BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other)
-    : bbeCount(other->bbeCount)
+BBJumpTable::BBJumpTable(Compiler* comp, const BBJumpTable* other)
+    : succs(new(comp, CMK_FlowEdge) FlowEdge*[other->succCount])
+    , succCount(other->succCount)
 {
-    // Allocate and fill in a new dst tab
+    // Fill in the new jump table
     //
-    bbeSuccs = new (comp, CMK_FlowEdge) FlowEdge*[bbeCount];
-    for (unsigned i = 0; i < bbeCount; i++)
-    {
-        bbeSuccs[i] = other->bbeSuccs[i];
-    }
+    memcpy(succs, other->succs, sizeof(FlowEdge*) * succCount);
 }
 
 //------------------------------------------------------------------------

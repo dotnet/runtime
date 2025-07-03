@@ -259,11 +259,11 @@ void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
     assert(oldBlock->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    BBehfDesc* ehfDesc = oldBlock->GetEhfTargets();
+    BBJumpTable* ehfDesc = oldBlock->GetEhfTargets();
 
-    for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
+    for (unsigned i = 0; i < ehfDesc->GetSuccCount(); i++)
     {
-        FlowEdge* succEdge = ehfDesc->bbeSuccs[i];
+        FlowEdge* succEdge = ehfDesc->GetSucc(i);
         fgReplacePred(succEdge, newBlock);
     }
 }
@@ -288,9 +288,9 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     assert(block->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
-    const unsigned   succCount = ehfDesc->bbeCount;
-    FlowEdge** const succTab   = ehfDesc->bbeSuccs;
+    BBJumpTable* const ehfDesc   = block->GetEhfTargets();
+    const unsigned     succCount = ehfDesc->GetSuccCount();
+    FlowEdge** const   succTab   = ehfDesc->GetSuccs();
 
     // Walk the successor table looking for the old successor, which we expect to find only once.
     unsigned oldSuccNum = UINT_MAX;
@@ -344,48 +344,38 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
 //
 // Arguments:
 //   block     - BBJ_EHFINALLYRET block
-//   succIndex - index of the successor in block->GetEhfTargets()->bbeSuccs
+//   succIndex - index of the successor in the block's jump table
 //
 void Compiler::fgRemoveEhfSuccFromTable(BasicBlock* block, const unsigned succIndex)
 {
     assert(block != nullptr);
     assert(block->KindIs(BBJ_EHFINALLYRET));
 
-    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
-    const unsigned   succCount = ehfDesc->bbeCount;
-    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
-    assert(succIndex < succCount);
-    FlowEdge* const succEdge = succTab[succIndex];
-
-    // If succEdge is not the last entry, move everything after in the table down one slot.
-    if ((succIndex + 1) < succCount)
-    {
-        memmove_s(&succTab[succIndex], (succCount - succIndex) * sizeof(FlowEdge*), &succTab[succIndex + 1],
-                  (succCount - succIndex - 1) * sizeof(FlowEdge*));
-    }
+    BBJumpTable* const ehfDesc  = block->GetEhfTargets();
+    FlowEdge* const    succEdge = ehfDesc->GetSucc(succIndex);
+    ehfDesc->RemoveSucc(succIndex);
 
     // Recompute the likelihoods of the block's other successor edges.
     const weight_t removedLikelihood = succEdge->getLikelihood();
-    const unsigned newSuccCount      = succCount - 1;
+    const unsigned newSuccCount      = ehfDesc->GetSuccCount();
 
     for (unsigned i = 0; i < newSuccCount; i++)
     {
         // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
-        const weight_t currLikelihood = succTab[i]->getLikelihood();
-        const weight_t newLikelihood =
+        FlowEdge* const edge           = ehfDesc->GetSucc(i);
+        const weight_t  currLikelihood = edge->getLikelihood();
+        const weight_t  newLikelihood =
             (removedLikelihood == 1.0) ? (1.0 / newSuccCount) : (currLikelihood / (1.0 - removedLikelihood));
-        succTab[i]->setLikelihood(min(1.0, newLikelihood));
+        edge->setLikelihood(min(1.0, newLikelihood));
     }
 
 #ifdef DEBUG
     // We only expect to see a successor once in the table.
-    for (unsigned i = succIndex; i < (succCount - 1); i++)
+    for (unsigned i = succIndex; i < newSuccCount; i++)
     {
-        assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
+        assert(ehfDesc->GetSucc(i)->getDestinationBlock() != succEdge->getDestinationBlock());
     }
 #endif // DEBUG
-
-    ehfDesc->bbeCount--;
 }
 
 //------------------------------------------------------------------------
@@ -407,50 +397,18 @@ void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
 
     fgRemoveRefPred(succEdge);
 
-    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
-    const unsigned   succCount = ehfDesc->bbeCount;
-    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
-    bool             found     = false;
+    BBJumpTable* const ehfDesc = block->GetEhfTargets();
 
-    // Search succTab for succEdge so we can splice it out of the table.
-    for (unsigned i = 0; i < succCount; i++)
+    for (unsigned i = 0; i < ehfDesc->GetSuccCount(); i++)
     {
-        if (succTab[i] == succEdge)
+        if (ehfDesc->GetSucc(i) == succEdge)
         {
-            // If succEdge not the last entry, move everything after in the table down one slot.
-            if ((i + 1) < succCount)
-            {
-                memmove_s(&succTab[i], (succCount - i) * sizeof(FlowEdge*), &succTab[i + 1],
-                          (succCount - i - 1) * sizeof(FlowEdge*));
-            }
-
-            found = true;
-
-#ifdef DEBUG
-            // We only expect to see a successor once in the table.
-            for (; i < (succCount - 1); i++)
-            {
-                assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
-            }
-#endif // DEBUG
+            fgRemoveEhfSuccFromTable(block, i);
+            return;
         }
     }
 
-    // Recompute the likelihoods of the block's other successor edges.
-    const weight_t removedLikelihood = succEdge->getLikelihood();
-    const unsigned newSuccCount      = succCount - 1;
-
-    for (unsigned i = 0; i < newSuccCount; i++)
-    {
-        // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
-        const weight_t currLikelihood = succTab[i]->getLikelihood();
-        const weight_t newLikelihood =
-            (removedLikelihood == 1.0) ? (1.0 / newSuccCount) : (currLikelihood / (1.0 - removedLikelihood));
-        succTab[i]->setLikelihood(min(1.0, newLikelihood));
-    }
-
-    assert(found);
-    ehfDesc->bbeCount--;
+    unreached();
 }
 
 //------------------------------------------------------------------------

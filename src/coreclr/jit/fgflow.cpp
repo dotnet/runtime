@@ -307,10 +307,10 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
         case BBJ_EHFINALLYRET:
         {
-            BBehfDesc* const ehfDesc = block->GetEhfTargets();
-            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
+            BBJumpTable* const ehfDesc = block->GetEhfTargets();
+            for (unsigned i = 0; i < ehfDesc->GetSuccCount(); i++)
             {
-                fgRemoveRefPred(ehfDesc->bbeSuccs[i]);
+                fgRemoveAllRefPreds(ehfDesc->GetSucc(i)->getDestinationBlock(), block);
             }
             break;
         }

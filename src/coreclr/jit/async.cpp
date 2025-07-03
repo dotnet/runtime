@@ -290,12 +290,11 @@ BasicBlock* Compiler::InsertTryFinallyForContextRestore(BasicBlock* block, State
     block->SetTargetEdge(fgAddRefPred(callFinally, block));
     callFinally->SetTargetEdge(fgAddRefPred(finallyRet, callFinally));
 
-    BBehfDesc* ehfDesc = new (this, CMK_BasicBlock) BBehfDesc;
-    ehfDesc->bbeCount  = 1;
-    ehfDesc->bbeSuccs  = new (this, CMK_BasicBlock) FlowEdge* [1] {
+    FlowEdge** succs = new (this, CMK_BasicBlock) FlowEdge* [1] {
         fgAddRefPred(callFinallyRet, finallyRet)
     };
-    ehfDesc->bbeSuccs[0]->setLikelihood(1.0);
+    succs[0]->setLikelihood(1.0);
+    BBJumpTable* ehfDesc = new (this, CMK_BasicBlock) BBJumpTable(succs, 1);
     finallyRet->SetEhfTargets(ehfDesc);
 
     callFinallyRet->SetTargetEdge(fgAddRefPred(goToTailBlock, callFinallyRet));

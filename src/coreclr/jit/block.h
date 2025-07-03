@@ -107,7 +107,7 @@ struct BasicBlockList;
 struct FlowEdge;
 struct EHblkDsc;
 struct BBswtDesc;
-struct BBehfDesc;
+struct BBJumpTable;
 
 struct StackEntry
 {
@@ -396,16 +396,16 @@ public:
     BBArrayIterator end() const;
 };
 
-// BBEhfSuccList: adapter class for forward iteration of BBJ_EHFINALLYRET blocks, using range-based `for`,
+// BBJumpTableList: adapter class for forward iteration of blocks with N successors, using range-based `for`,
 // normally used via BasicBlock::EHFinallyRetSuccs(), e.g.:
 //    for (BasicBlock* const succ : block->EHFinallyRetSuccs()) ...
 //
-class BBEhfSuccList
+class BBJumpTableList
 {
-    BBehfDesc* m_bbeDesc;
+    BBJumpTable* m_bbJumpTable;
 
 public:
-    BBEhfSuccList(BBehfDesc* bbeDesc);
+    BBJumpTableList(BBJumpTable* bbJumpTable);
     BBArrayIterator begin() const;
     BBArrayIterator end() const;
 };
@@ -743,11 +743,11 @@ private:
     /* The following union describes the jump target(s) of this block */
     union
     {
-        unsigned   bbTargetOffs; // PC offset (temporary only)
-        FlowEdge*  bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
-        FlowEdge*  bbTrueEdge;   // BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)
-        BBswtDesc* bbSwtTargets; // switch descriptor
-        BBehfDesc* bbEhfTargets; // BBJ_EHFINALLYRET descriptor
+        unsigned     bbTargetOffs; // PC offset (temporary only)
+        FlowEdge*    bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
+        FlowEdge*    bbTrueEdge;   // BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)
+        BBswtDesc*   bbSwtTargets; // switch descriptor
+        BBJumpTable* bbEhfTargets; // BBJ_EHFINALLYRET descriptor
     };
 
     // Successor edge of a BBJ_COND block if bbTrueEdge is not taken
@@ -756,7 +756,7 @@ private:
 public:
     static BasicBlock* New(Compiler* compiler);
     static BasicBlock* New(Compiler* compiler, BBKinds kind);
-    static BasicBlock* New(Compiler* compiler, BBehfDesc* ehfTargets);
+    static BasicBlock* New(Compiler* compiler, BBJumpTable* ehfTargets);
     static BasicBlock* New(Compiler* compiler, BBswtDesc* swtTargets);
     static BasicBlock* New(Compiler* compiler, BBKinds kind, unsigned targetOffs);
 
@@ -1032,19 +1032,19 @@ public:
         bbSwtTargets = swtTarget;
     }
 
-    BBehfDesc* GetEhfTargets() const
+    BBJumpTable* GetEhfTargets() const
     {
         assert(KindIs(BBJ_EHFINALLYRET));
         return bbEhfTargets;
     }
 
-    void SetEhfTargets(BBehfDesc* ehfTarget)
+    void SetEhfTargets(BBJumpTable* ehfTarget)
     {
         assert(KindIs(BBJ_EHFINALLYRET));
         bbEhfTargets = ehfTarget;
     }
 
-    void SetEhf(BBehfDesc* ehfTarget)
+    void SetEhf(BBJumpTable* ehfTarget)
     {
         assert(ehfTarget != nullptr);
         bbKind       = BBJ_EHFINALLYRET;
@@ -1421,10 +1421,10 @@ public:
     // successors, e.g.:
     //    for (BasicBlock* const succ : block->EHFinallyRetSuccs()) ...
     //
-    BBEhfSuccList EHFinallyRetSuccs() const
+    BBJumpTableList EHFinallyRetSuccs() const
     {
         assert(bbKind == BBJ_EHFINALLYRET);
-        return BBEhfSuccList(bbEhfTargets);
+        return BBJumpTableList(bbEhfTargets);
     }
 
     BasicBlock* GetUniquePred(Compiler* comp) const;
@@ -2351,40 +2351,79 @@ inline BBArrayIterator BBSwitchTargetList::end() const
     return BBArrayIterator(m_bbsDesc->bbsDstTab + m_bbsDesc->bbsCount);
 }
 
-// BBehfDesc -- descriptor for a BBJ_EHFINALLYRET block
+// BBJumpTable -- descriptor blocks with N successors
 //
-struct BBehfDesc
+struct BBJumpTable
 {
-    FlowEdge** bbeSuccs; // array of `FlowEdge*` pointing to BBJ_EHFINALLYRET block successors
-    unsigned   bbeCount; // size of `bbeSuccs` array
+private:
+    FlowEdge** const succs;     // array of unique `FlowEdge*` pointing to the block's successors
+    unsigned         succCount; // Number of unique successors
 
-    BBehfDesc()
-        : bbeSuccs(nullptr)
-        , bbeCount(0)
+public:
+    BBJumpTable()
+        : succs(nullptr)
+        , succCount(0)
     {
     }
 
-    BBehfDesc(Compiler* comp, const BBehfDesc* other);
+    BBJumpTable(FlowEdge** succs, unsigned succCount)
+        : succs(succs)
+        , succCount(succCount)
+    {
+    }
+
+    BBJumpTable(Compiler* comp, const BBJumpTable* other);
+
+    FlowEdge** GetSuccs() const
+    {
+        return succs;
+    }
+
+    FlowEdge* GetSucc(unsigned index) const
+    {
+        assert(index < succCount);
+        return succs[index];
+    }
+
+    unsigned GetSuccCount() const
+    {
+        return succCount;
+    }
+
+    void RemoveSucc(unsigned index)
+    {
+        assert(index < succCount);
+        assert(succs != nullptr);
+
+        // If succEdge is not the last entry, move everything after in the table down one slot.
+        if ((index + 1) < succCount)
+        {
+            memmove_s(&succs[index], (succCount - index) * sizeof(FlowEdge*), &succs[index + 1],
+                      (succCount - index - 1) * sizeof(FlowEdge*));
+        }
+
+        succCount--;
+    }
 };
 
-// BBEhfSuccList out-of-class-declaration implementations (here due to C++ ordering requirements).
+// BBJumpTableList out-of-class-declaration implementations (here due to C++ ordering requirements).
 //
 
-inline BBEhfSuccList::BBEhfSuccList(BBehfDesc* bbeDesc)
-    : m_bbeDesc(bbeDesc)
+inline BBJumpTableList::BBJumpTableList(BBJumpTable* bbJumpTable)
+    : m_bbJumpTable(bbJumpTable)
 {
-    assert(m_bbeDesc != nullptr);
-    assert((m_bbeDesc->bbeSuccs != nullptr) || (m_bbeDesc->bbeCount == 0));
+    assert(m_bbJumpTable != nullptr);
+    assert((m_bbJumpTable->GetSuccs() != nullptr) || (m_bbJumpTable->GetSuccCount() == 0));
 }
 
-inline BBArrayIterator BBEhfSuccList::begin() const
+inline BBArrayIterator BBJumpTableList::begin() const
 {
-    return BBArrayIterator(m_bbeDesc->bbeSuccs);
+    return BBArrayIterator(m_bbJumpTable->GetSuccs());
 }
 
-inline BBArrayIterator BBEhfSuccList::end() const
+inline BBArrayIterator BBJumpTableList::end() const
 {
-    return BBArrayIterator(m_bbeDesc->bbeSuccs + m_bbeDesc->bbeCount);
+    return BBArrayIterator(m_bbJumpTable->GetSuccs() + m_bbJumpTable->GetSuccCount());
 }
 
 // SuccList out-of-class-declaration implementations
@@ -2442,8 +2481,8 @@ inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
             }
             else
             {
-                m_begin = block->GetEhfTargets()->bbeSuccs;
-                m_end   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
+                m_begin = block->GetEhfTargets()->GetSuccs();
+                m_end   = block->GetEhfTargets()->GetSuccs() + block->GetEhfTargets()->GetSuccCount();
             }
             break;
 
