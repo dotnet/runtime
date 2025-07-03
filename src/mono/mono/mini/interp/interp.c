@@ -9236,7 +9236,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_prof_samplepoint (InterpFrame *frame, guint16 *ip)
 {
 	guint16 flag = ip [1];
-	INTERP_PROFILER_RAISE_SAMPLEPOINT;
+	INTERP_PROFILER_RAISE_SAMPLEPOINT();
 }
 
 EMSCRIPTEN_KEEPALIVE void
