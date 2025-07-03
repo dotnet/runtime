@@ -4212,8 +4212,6 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (!varTypeUsesIntReg(tree->TypeGet()))
-        return false;
     if (varTypeIsLong(tree->TypeGet()))
         return false;
 #endif
@@ -4246,6 +4244,18 @@ void Compiler::gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCost
             costEx += 1;
             costSz += 1;
         }
+#if defined(TARGET_XARCH)
+        if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+        {
+            costEx = 1;
+            costSz = 4;
+        }
+        else if (varTypeIsMask(node))
+        {
+            costEx = 1;
+            costSz = 5;
+        }
+#endif // TARGET_XARCH
     }
     else
     {
@@ -4263,6 +4273,18 @@ void Compiler::gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCost
             costEx += 2 * IND_COST_EX;
             costSz += 2 * 2;
         }
+#if defined(TARGET_XARCH)
+        if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+        {
+            costEx = IND_COST_EX_FLT;
+            costSz = 4 + IND_COST_SZ_FLT;
+        }
+        else if (varTypeIsMask(node))
+        {
+            costEx = IND_COST_EX_MSK;
+            costSz = 5 + IND_COST_SZ_MSK;
+        }
+#endif // TARGET_XARCH
     }
 #if defined(TARGET_AMD64)
     // increase costSz for floating point locals
@@ -4305,6 +4327,19 @@ void Compiler::gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCost
         costSz += 2 * 2;
     }
 
+#if defined(TARGET_XARCH)
+    if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+    {
+        costEx = IND_COST_EX_FLT;
+        costSz = 4 + IND_COST_SZ_FLT;
+    }
+    else if (varTypeIsMask(node))
+    {
+        costEx = IND_COST_EX_MSK;
+        costSz = 5 + IND_COST_SZ_MSK;
+    }
+#endif // TARGET_XARCH
+
     *pCostEx = costEx;
     *pCostSz = costSz;
 }
@@ -4344,6 +4379,19 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
         costSz += 2;
     }
 #endif // TARGET_ARM
+
+#if defined(TARGET_XARCH)
+    if (varTypeIsFloating(node) || varTypeIsSIMD(node))
+    {
+        costEx = IND_COST_EX_FLT;
+        costSz = 4 + IND_COST_SZ_FLT;
+    }
+    else if (varTypeIsMask(node))
+    {
+        costEx = IND_COST_EX_MSK;
+        costSz = 5 + IND_COST_SZ_MSK;
+    }
+#endif // TARGET_XARCH
 
     // Can we form an addressing mode with this indirection?
     GenTree* addr = node->Addr();
@@ -4843,7 +4891,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
     /* Is this a FP value? */
 
-    bool isflt = varTypeIsFloating(tree->TypeGet());
+    bool isFlt = varTypeIsFloating(tree->TypeGet());
 
     /* Figure out what kind of a node we have */
 
@@ -5132,22 +5180,26 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 level = 0;
 #if defined(TARGET_XARCH)
-                if (tree->IsFloatPositiveZero() || tree->IsFloatAllBitsSet())
+                if (tree->IsFloatPositiveZero())
                 {
-                    // We generate `xorp* tgtReg, tgtReg` for PositiveZero and
-                    // `pcmpeqd tgtReg, tgtReg` for AllBitsSet which is 3-5 bytes
-                    // but which can be elided by the instruction decoder.
+                    // vxorps xmm0, xmm0, xmm0
 
                     costEx = 1;
-                    costSz = 2;
+                    costSz = 4;
+                }
+                else if (tree->IsFloatAllBitsSet())
+                {
+                    // vpcmpeqd  xmm0, xmm0, xmm0
+
+                    costEx = 1;
+                    costSz = 4;
                 }
                 else
                 {
-                    // We generate `movs* tgtReg, [mem]` which is 4-6 bytes
-                    // and which has the same cost as an indirection.
+                    // movsd xmm0, qword ptr [reloc @RWD00]
 
-                    costEx = IND_COST_EX;
-                    costSz = 2;
+                    costEx = IND_COST_EX_FLT;
+                    costSz = IND_COST_SZ_FLT + 4;
                 }
 #elif defined(TARGET_ARM)
                 var_types targetType = tree->TypeGet();
@@ -5189,14 +5241,58 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #else
 #error "Unknown TARGET"
 #endif
+                break;
             }
-            break;
 
 #if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
             {
                 level = 0;
 
+#if defined(TARGET_XARCH)
+                if (tree->IsVectorZero())
+                {
+                    // SIMD16: vxorps xmm0, xmm0, xmm0
+                    // SIMD32: vxorps ymm0, ymm0, ymm0
+                    // SIMD64: vxorps ymm0, ymm0, ymm0      - the upper bits are implicitly zeroed
+
+                    costEx = 1;
+                    costSz = 4;
+                }
+                else if (tree->IsVectorAllBitsSet())
+                {
+                    // SIMD16: vpcmpeqd   xmm0, xmm0, xmm0
+                    // SIMD32: vpcmpeqd   ymm0, xmm0, xmm0
+                    // SIMD64: vpternlogd zmm0, zmm0, zmm0, 255
+
+                    costEx = 1;
+                    costSz = tree->TypeIs(TYP_SIMD64) ? 7 : 4;
+                }
+                else
+                {
+                    if (tree->TypeIs(TYP_SIMD64))
+                    {
+                        // vmovups zmm0, zmmword ptr [reloc @RWD00]
+
+                        costEx = IND_COST_EX_FLT + 2;
+                        costSz = IND_COST_SZ_FLT + 6;
+                    }
+                    else if (tree->TypeIs(TYP_SIMD32))
+                    {
+                        // vmovups ymm0, ymmword ptr [reloc @RWD00]
+
+                        costEx = IND_COST_EX_FLT + 1;
+                        costSz = IND_COST_SZ_FLT + 5;
+                    }
+                    else
+                    {
+                        // vmovups xmm0, xmmword ptr [reloc @RWD00]
+
+                        costEx = IND_COST_EX_FLT;
+                        costSz = IND_COST_SZ_FLT + 4;
+                    }
+                }
+#elif defined(TARGET_ARM64)
                 if (tree->AsVecCon()->IsAllBitsSet() || tree->AsVecCon()->IsZero())
                 {
                     // We generate `cmpeq* tgtReg, tgtReg`, which is 4-5 bytes, for AllBitsSet
@@ -5214,6 +5310,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = IND_COST_EX;
                     costSz = 2;
                 }
+#else
+#error "Unknown TARGET"
+#endif
                 break;
             }
 #endif // FEATURE_SIMD
@@ -5223,6 +5322,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 level = 0;
 
+#if defined(TARGET_XARCH)
+                if (tree->AsMskCon()->IsAllBitsSet() || tree->AsMskCon()->IsZero())
+                {
+                    costEx = 1;
+                    costSz = 5;
+                }
+                else
+                {
+                    costEx = IND_COST_EX_MSK;
+                    costSz = IND_COST_SZ_MSK;
+                }
+#elif defined(TARGET_ARM64)
                 if (tree->AsMskCon()->IsAllBitsSet() || tree->AsMskCon()->IsZero())
                 {
                     costEx = 1;
@@ -5233,6 +5344,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = IND_COST_EX;
                     costSz = 2;
                 }
+#else
+#error "Unknown TARGET"
+#endif
                 break;
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -5334,10 +5448,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_CAST:
+                {
 #if defined(TARGET_ARM)
                     costEx = 1;
                     costSz = 1;
-                    if (isflt || varTypeIsFloating(op1->TypeGet()))
+                    if (isFlt || varTypeIsFloating(op1->TypeGet()))
                     {
                         costEx = 3;
                         costSz = 4;
@@ -5345,7 +5460,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #elif defined(TARGET_ARM64)
                     costEx = 1;
                     costSz = 2;
-                    if (isflt || varTypeIsFloating(op1->TypeGet()))
+                    if (isFlt || varTypeIsFloating(op1->TypeGet()))
                     {
                         costEx = 2;
                         costSz = 4;
@@ -5354,11 +5469,151 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 2;
 
-                    if (isflt || varTypeIsFloating(op1->TypeGet()))
+                    var_types fromType = tree->CastFromType();
+                    var_types toType   = tree->CastToType();
+
+                    if (varTypeIsFloating(fromType))
                     {
-                        /* cast involving floats always go through memory */
-                        costEx = IND_COST_EX * 2;
-                        costSz = 6;
+                        if (isFlt)
+                        {
+                            // ex, sz: ins
+                            //  3,  4: vcvts*2s* xmm0, xmm0, xmm0
+
+                            costEx = 3;
+                            costSz = 4;
+                        }
+                        else if (varTypeIsUnsigned(toType))
+                        {
+                            if (canUseEvexEncoding())
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*      xmm1, xmm1, xmm1
+                                //  3,  4: vmaxs*      xmm0, xmm0, xmm1
+                                //  8,  6: vcvtts*2usi  rax, xmm0
+
+                                costEx = 12;
+                                costSz = 14;
+                            }
+                            else if (varTypeIsLong(toType))
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*     xmm1, xmm1, xmm1
+                                //  3,  4: vmaxs*     xmm1, xmm0, xmm1
+                                //  +, +4: vmovs*     xmm2, dword ptr [reloc @RWD00]
+                                //  4,  4: vsubs*     xmm3, xmm0, xmm2
+                                //  8,  5: vcvtts*2si rdx,  xmm1
+                                //  8,  5: vcvtts*2si rcx,  xmm3
+                                //  1,  3: mov        rax,  rdx
+                                //  1,  4: sar        rax,  63
+                                //  1,  3: and        rcx,  rax
+                                //  1, 10: mov        rax,  -1
+                                //  1,  3: or         rdx,  rcx
+                                //  5,  4: vucomis*   xmm0, xmm2
+                                //  1,  4: cmovb      rax,  rdx
+
+                                costEx = 35 + IND_COST_EX_FLT;
+                                costSz = 57 + IND_COST_SZ_FLT;
+                            }
+                            else
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*     xmm1, xmm1, xmm1
+                                //  3,  4: vmaxs*     xmm1, xmm0, xmm1
+                                //  1,  5: mov        eax,  0xFFFFFFFF
+                                //  8,  5: vcvtts*2si rcx,  xmm1
+                                // +5, +4: vucomis*   xmm0, dword ptr [reloc @RWD00]
+                                //  1,  3: cmovb      eax,  ecx
+
+                                costEx = 19 + IND_COST_EX_FLT;
+                                costSz = 25 + IND_COST_SZ_FLT;
+                            }
+                        }
+                        else if (varTypeIsLong(toType))
+                        {
+                            // ex, sz: ins
+                            //  3,  5: vcmpords*  xmm1, xmm0, xmm0
+                            //  1,  4: vandp*     xmm1, xmm1, xmm0
+                            //  1, 10: mov        rax, 0x7FFFFFFFFFFFFFFF
+                            //  8,  5: vcvtts*2si rcx, xmm1
+                            // +5, +4: vucomis*   xmm0, dword ptr [reloc @RWD00]
+                            //  1,  4: cmovb      rax, rcx
+
+                            costEx = 19 + IND_COST_EX_FLT;
+                            costSz = 32 + IND_COST_SZ_FLT;
+                        }
+                        else
+                        {
+                            // ex, sz: ins
+                            //  3,  5: vcmpordss  xmm1, xmm0, xmm0
+                            //  1,  4: vandps     xmm1, xmm1, xmm0
+                            //  1,  5: mov         eax, 0x7FFFFFFF
+                            //  8,  4: vcvttss2si  ecx, xmm1
+                            // +5,  4: vucomiss   xmm0, dword ptr [reloc @RWD00]
+                            //  1,  3: cmovb       eax, ecx
+
+                            costEx = 19 + IND_COST_EX_FLT;
+                            costSz = 25 + IND_COST_SZ_FLT;
+                        }
+                    }
+                    else if (isFlt)
+                    {
+                        if (tree->IsUnsigned())
+                        {
+                            if (canUseEvexEncoding())
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                                //  4,  6: vcvtsi2s* xmm0, xmm0, rcx
+
+                                costEx = 5;
+                                costSz = 10;
+                            }
+                            else if (varTypeIsLong(fromType))
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                                //  1,  3: mov       rdx,  rcx
+                                //  1,  3: shr       rdx,  1
+                                //  1,  2: mov       eax,  ecx
+                                //  1,  3: and       eax,  1
+                                //  1,  3: or        rax,  rdx
+                                //  1,  3: test      rcx,  rcx
+                                //  1,  4: cmovns    rax,  rcx
+                                //  4,  5: vcvtsi2s* xmm0, rax
+                                //  3,  2: jns       SHORT ...
+                                //  4,  4: vadds*    xmm0, xmm0
+
+                                costEx = 19;
+                                costSz = 36;
+                            }
+                            else
+                            {
+                                // ex, sz: ins
+                                //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                                //  4,  5: vcvtsi2s* xmm0, xmm0, rcx
+
+                                costEx = 5;
+                                costSz = 9;
+                            }
+                        }
+                        else if (varTypeIsLong(fromType))
+                        {
+                            // ex, sz: ins
+                            //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                            //  4,  5: vcvtsi2s* xmm0, xmm0, rcx
+
+                            costEx = 5;
+                            costSz = 9;
+                        }
+                        else
+                        {
+                            // ex, sz: ins
+                            //  1,  4: vxorp*    xmm0, xmm0, xmm0
+                            //  4,  4: vcvtsi2s* xmm0, xmm0, ecx
+
+                            costEx = 5;
+                            costSz = 8;
+                        }
                     }
 #elif defined(TARGET_LOONGARCH64)
                     // TODO-LoongArch64-CQ: tune the costs.
@@ -5378,8 +5633,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costEx += 6;
                         costSz += 6;
                     }
-
                     break;
+                }
 
                 case GT_INTRINSIC:
                     intrinsic = tree->AsIntrinsic();
@@ -5485,16 +5740,28 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_NOT:
                 case GT_NEG:
-                    // We need to ensure that -x is evaluated before x or else
-                    // we get burned while adjusting genFPstkLevel in x*-x where
-                    // the rhs x is the last use of the enregistered x.
-                    //
-                    // Even in the integer case we want to prefer to
-                    // evaluate the side without the GT_NEG node, all other things
-                    // being equal.  Also a GT_NOT requires a scratch register
+                {
+#if defined(TARGET_XARCH)
+                    if (isFlt)
+                    {
+                        // ex, sz: ins
+                        // +1, +4: vxorp* xmm0, xmmword ptr [reloc @RWD00]
+
+                        costEx = 1 + IND_COST_EX_FLT;
+                        costSz = 4 + IND_COST_SZ_FLT;
+                    }
+#endif // TARGET_XARCH
+       // We need to ensure that -x is evaluated before x or else
+       // we get burned while adjusting genFPstkLevel in x*-x where
+       // the rhs x is the last use of the enregistered x.
+       //
+       // Even in the integer case we want to prefer to
+       // evaluate the side without the GT_NEG node, all other things
+       // being equal.  Also a GT_NOT requires a scratch register
 
                     level++;
                     break;
+                }
 
                 case GT_ARR_LENGTH:
                 case GT_MDARR_LENGTH:
@@ -5563,7 +5830,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx += 1;
                     costSz += 1;
 #ifdef TARGET_ARM
-                    if (isflt)
+                    if (isFlt)
                     {
                         costSz += 2;
                     }
@@ -5596,7 +5863,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         costSz = 1;
 
 #ifdef TARGET_ARM
-        if (isflt)
+        if (isFlt)
         {
             costSz += 2;
         }
@@ -5616,7 +5883,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         {
             case GT_MOD:
             case GT_UMOD:
-
+            {
                 /* Modulo by a power of 2 is easy */
 
                 if (op2->IsCnsIntOrI())
@@ -5630,15 +5897,35 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
 
                 FALLTHROUGH;
+            }
 
             case GT_DIV:
             case GT_UDIV:
-
-                if (isflt)
+            {
+                if (isFlt)
                 {
+#if defined(TARGET_XARCH)
+                    if (tree->TypeIs(TYP_DOUBLE))
+                    {
+                        // ex, sz: ins
+                        // 14,  4: vdivsd xmm0, xmm0, xmm1
+
+                        costEx = 14;
+                        costSz = 4;
+                    }
+                    else
+                    {
+                        // ex, sz: ins
+                        // 11,  4: vdivss xmm0, xmm0, xmm1
+
+                        costEx = 11;
+                        costSz = 4;
+                    }
+#else
                     /* fp division is very expensive to execute */
                     costEx = 36; // TYP_DOUBLE
                     costSz += 3;
+#endif
                 }
                 else
                 {
@@ -5650,14 +5937,23 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     level += 3;
                 }
                 break;
+            }
 
             case GT_MUL:
-
-                if (isflt)
+            {
+                if (isFlt)
                 {
+#if defined(TARGET_XARCH)
+                    // ex, sz: ins
+                    //  4,  4: vmuls* xmm0, xmm0, xmm1
+
+                    costEx = 4;
+                    costSz = 4;
+#else
                     /* FP multiplication instructions are more expensive */
                     costEx += 4;
                     costSz += 3;
+#endif
                 }
                 else
                 {
@@ -5685,14 +5981,26 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif //  TARGET_X86
                 }
                 break;
+            }
 
             case GT_ADD:
             case GT_SUB:
-                if (isflt)
+            {
+                if (isFlt)
                 {
+#if defined(TARGET_XARCH)
+                    // ex, sz: ins
+                    //  4,  4: vadds* xmm0, xmm0, xmm1
+                    // -or-
+                    //  4,  4: vsubs* xmm0, xmm0, xmm1
+
+                    costEx = 4;
+                    costSz = 4;
+#else
                     /* FP instructions are a bit more expensive */
                     costEx += 4;
                     costSz += 3;
+#endif
                     break;
                 }
 
@@ -5703,6 +6011,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz += 3;
                 }
                 break;
+            }
 
             case GT_LSH:
             case GT_RSH:
@@ -5734,9 +6043,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_LE:
             case GT_GE:
             case GT_GT:
-                /* Float compares remove both operands from the FP stack */
-                /* Also FP comparison uses EAX for flags */
-
+            {
                 if (varTypeIsFloating(op1->TypeGet()))
                 {
                     level++;
@@ -5748,6 +6055,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx += 3;
                 }
                 break;
+            }
 
             case GT_BOUNDS_CHECK:
                 costEx = 4; // cmp reg,reg and jae throw (not taken)
