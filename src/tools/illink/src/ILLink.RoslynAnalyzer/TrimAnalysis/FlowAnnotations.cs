@@ -109,13 +109,21 @@ namespace ILLink.Shared.TrimAnalysis
 
         private static bool ShouldWarnWhenAccessedForReflection(IFieldSymbol field)
         {
-            return GetFieldAnnotation(field) != DynamicallyAccessedMemberTypes.None;
+            return GetFieldAnnotation(field) != DynamicallyAccessedMemberTypes.None
+                && field.AssociatedSymbol is not IPropertySymbol;
         }
 
         internal static DynamicallyAccessedMemberTypes GetFieldAnnotation(IFieldSymbol field)
         {
             if (!field.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef: field.RefKind is not RefKind.None))
                 return DynamicallyAccessedMemberTypes.None;
+
+            if (field.AssociatedSymbol is IPropertySymbol property)
+            {
+                // If the field is a backing field for a property, the field assumes the annotation of the property it is associated with.
+                // The property annotation takes precedence over the field annotation.
+                return GetBackingFieldAnnotation(property);
+            }
 
             return field.GetDynamicallyAccessedMemberTypes();
         }

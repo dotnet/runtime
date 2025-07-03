@@ -206,7 +206,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             if (fieldSymbol.TryGetRequiresUnreferencedCodeAttribute(out var requiresUnreferencedCodeAttributeData))
                 ReportRequiresUnreferencedCodeDiagnostic(location, requiresUnreferencedCodeAttributeData, fieldSymbol);
 
-            if (FlowAnnotations.GetFieldAnnotation(fieldSymbol) != DynamicallyAccessedMemberTypes.None)
+            if (FlowAnnotations.ShouldWarnWhenAccessedForReflection(fieldSymbol))
             {
                 var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic);
                 diagnosticContext.AddDiagnostic(DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, fieldSymbol.GetDisplayName());

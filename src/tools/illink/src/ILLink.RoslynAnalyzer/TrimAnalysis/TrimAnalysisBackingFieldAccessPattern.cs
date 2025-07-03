@@ -14,18 +14,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
     internal readonly record struct TrimAnalysisBackingFieldAccessPattern
     {
         public IPropertySymbol Property { get; init; }
-        public IPropertyReferenceOperation Operation { get; init; }
+        public IOperation Operation { get; init; }
         public ISymbol OwningSymbol { get; init; }
         public FeatureContext FeatureContext { get; init; }
 
         public TrimAnalysisBackingFieldAccessPattern(
             IPropertySymbol property,
-            IPropertyReferenceOperation operation,
+            IOperation propertyOrFieldReferenceOperation,
             ISymbol owningSymbol,
             FeatureContext featureContext)
         {
             Property = property;
-            Operation = operation;
+            Operation = propertyOrFieldReferenceOperation;
             OwningSymbol = owningSymbol;
             FeatureContext = featureContext;
         }
