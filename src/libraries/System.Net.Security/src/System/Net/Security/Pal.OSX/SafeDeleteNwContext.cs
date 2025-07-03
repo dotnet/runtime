@@ -447,7 +447,7 @@ namespace System.Net.Security
             switch (_handshakeState)
             {
                 case HandshakeState.NotStarted:
-                    return StartHandshake();
+                    return await StartHandshake().ConfigureAwait(false);
 
                 case HandshakeState.InProgress:
                     // return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
@@ -469,7 +469,7 @@ namespace System.Net.Security
             }
         }
 
-        private SecurityStatusPal StartHandshake()
+        private async Task<SecurityStatusPal> StartHandshake()
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Starting TLS handshake", "StartHandshake");
 
@@ -479,7 +479,7 @@ namespace System.Net.Security
             try
             {
                 // Start async handshake but don't wait
-                _pendingHandshakeTask = StartHandshakeAsync();
+                await StartHandshakeAsync().ConfigureAwait(false);
                 _handshakeState = HandshakeState.InProgress;
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake started async", "StartHandshake");
@@ -537,7 +537,7 @@ namespace System.Net.Security
             return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
         }
 
-        private async Task<SecurityStatusPalErrorCode> StartHandshakeAsync()
+        private Task<SecurityStatusPalErrorCode> StartHandshakeAsync()
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Starting async handshake operation", "StartHandshakeAsync");
 
@@ -546,9 +546,9 @@ namespace System.Net.Security
                 Interop.NetworkFramework.Tls.StartTlsHandshake(_connectionHandle, GCHandle.ToIntPtr(_thisHandle));
 
                 // Wait a short time for initial handshake progress
-                await Task.Delay(1).ConfigureAwait(false);
+                _writeWaiter.Wait();
 
-                return SecurityStatusPalErrorCode.ContinueNeeded;
+                return Task.FromResult(SecurityStatusPalErrorCode.ContinueNeeded);
             }
             catch (Exception ex)
             {
@@ -676,7 +676,7 @@ namespace System.Net.Security
             {
                 if (data.Length > 0)
                 {
-                    WriteInboundWireDataAsync(data.ToArray()).AsTask().GetAwaiter().GetResult();
+                    WriteInboundWireDataAsync(data.ToArray()).GetAwaiter().GetResult();
                 }
                 else if (_readStatus == (int)NwOSStatus.NoErr)
                 {
