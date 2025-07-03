@@ -652,7 +652,7 @@ bool hasVexOrEvexPrefix(code_t code)
     return (hasVexPrefix(code) || hasEvexPrefix(code));
 }
 
-ssize_t TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte);
+ssize_t TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool* dspInByte) const;
 
 //------------------------------------------------------------------------
 // codeEvexMigrationCheck: Temporary check to use when adding EVEX codepaths
@@ -670,7 +670,7 @@ bool codeEvexMigrationCheck(code_t code)
     return hasEvexPrefix(code);
 }
 
-ssize_t GetInputSizeInBytes(instrDesc* id) const;
+ssize_t GetInputSizeInBytes(const instrDesc* id) const;
 
 bool containsAVXInstruction = false;
 bool ContainsAVX()

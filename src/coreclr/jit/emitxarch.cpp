@@ -1861,19 +1861,69 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     }
 #endif // DEBUG
 
-    if ((ins == INS_pslldq) || (ins == INS_psrldq))
+    if (id->idHasMem())
     {
-        // The memory operand can only be encoded using the EVEX encoding
-        return id->idHasMem();
-    }
+        if ((ins == INS_pslldq) || (ins == INS_psrldq))
+        {
+            // The memory operand can only be encoded using the EVEX encoding
+            return true;
+        }
 
-    if ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0)
-    {
-        assert((ins == INS_pslld) || (ins == INS_psllq) || (ins == INS_psllw) || (ins == INS_psrad) ||
-               (ins == INS_psraw) || (ins == INS_psrld) || (ins == INS_psrlq) || (ins == INS_psrlw));
+        if ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0)
+        {
+            assert((ins == INS_pslld) || (ins == INS_psllq) || (ins == INS_psllw) || (ins == INS_psrad) ||
+                   (ins == INS_psraw) || (ins == INS_psrld) || (ins == INS_psrlq) || (ins == INS_psrlw));
 
-        // Memory operand with immediate can only be encoded using EVEX
-        return id->idHasMemAndCns();
+            if (id->idHasMemAndCns())
+            {
+                // Memory operand with immediate can only be encoded using EVEX
+                return true;
+            }
+        }
+
+        if (id->idHasMemGen())
+        {
+            return false;
+        }
+
+        ssize_t dsp = 0;
+
+        if (id->idHasMemStk())
+        {
+            bool ebpBased = false;
+            int  varNum   = id->idAddr()->iiaLclVar.lvaVarNum();
+
+            dsp = emitComp->lvaFrameAddress(varNum, &ebpBased) + id->idAddr()->iiaLclVar.lvaOffset();
+
+#if !FEATURE_FIXED_OUT_ARGS
+            if (!ebpBased)
+            {
+                // Adjust the offset by the amount currently pushed on the CPU stack
+                dsp += emitCurStackLvl;
+            }
+#endif // !FEATURE_FIXED_OUT_ARGS
+        }
+        else
+        {
+            assert(id->idHasMemAdr());
+
+            if (id->idIsDspReloc())
+            {
+                // reloc cannot be compressed
+                return false;
+            }
+
+            dsp = emitGetInsAmdAny(id);
+        }
+
+        // We don't want to use compressed displacement if it already fit into a byte
+        bool dspInByte = (static_cast<int8_t>(dsp) == dsp);
+
+        if (!dspInByte)
+        {
+            dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
+            return dspInByte;
+        }
     }
 
     return false;
@@ -17968,7 +18018,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 // Return Value:
 //    size in bytes.
 //
-ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
+ssize_t emitter::GetInputSizeInBytes(const instrDesc* id) const
 {
     assert((unsigned)id->idIns() < ArrLen(CodeGenInterface::instInfo));
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
@@ -18002,24 +18052,24 @@ ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
 //    compressed displacement value if dspInByte ===  TRUE.
 //    Original dsp otherwise.
 //
-ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte)
+ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool* dspInByte) const
 {
-    assert(TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id));
+    instruction ins = id->idIns();
+    assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
-    if (!hasTupleTypeInfo(id->idIns()))
+    if (!hasTupleTypeInfo(ins))
     {
         // After APX, some instructions with APX features will be promoted
         // to APX-EVEX, we will re-use the existing displacement emitting
         // path, but for those instructions with no tuple information,
         // APX-EVEX treat the scaling factor to be 1 constantly.
-        instruction ins = id->idIns();
         assert(IsApxExtendedEvexInstruction(ins) || IsBMIInstruction(ins));
         *dspInByte = ((signed char)dsp == (ssize_t)dsp);
         return dsp;
     }
 
-    insTupleType tt = insTupleTypeInfo(id->idIns());
-    assert(hasTupleTypeInfo(id->idIns()));
+    insTupleType tt = insTupleTypeInfo(ins);
+    assert(hasTupleTypeInfo(ins));
 
     // if dsp is 0, no need for all of this
     if (dsp == 0)
@@ -18038,9 +18088,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
     if ((tt & INS_TT_MEM128) != 0)
     {
         // These instructions can be one of two tuple types, so we need to find the right one
-
-        instruction ins    = id->idIns();
-        insFormat   insFmt = id->idInsFmt();
+        insFormat insFmt = id->idInsFmt();
 
         if ((tt & INS_TT_FULL) != 0)
         {
