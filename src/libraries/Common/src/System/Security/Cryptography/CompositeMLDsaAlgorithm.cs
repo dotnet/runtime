@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
                 new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
                 3072 / 8,
                 Oids.MLDsa65WithRSA3072PssPreHashSha512,
-                [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x05],
+                [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x04],
                 HashAlgorithmName.SHA512);
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pkcs15 { get; } =
             new("MLDSA65-RSA4096-PKCS15-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                new RsaAlgorithm(4096, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1),
                 4096 / 8,
                 Oids.MLDsa65WithRSA4096Pkcs15PreHashSha512,
                 [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x07],
@@ -294,7 +294,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithRSA3072Pss { get; } =
             new("MLDSA87-RSA3072-PSS-SHA512",
                 MLDsaAlgorithm.MLDsa87,
-                new RsaAlgorithm(3072, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
+                new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
                 3072 / 8,
                 Oids.MLDsa87WithRSA3072PssPreHashSha512,
                 [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0F],
@@ -309,7 +309,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithRSA4096Pss { get; } =
             new("MLDSA87-RSA4096-PSS-SHA512",
                 MLDsaAlgorithm.MLDsa87,
-                new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
+                new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
                 4096 / 8,
                 Oids.MLDsa87WithRSA4096PssPreHashSha512,
                 [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x10],

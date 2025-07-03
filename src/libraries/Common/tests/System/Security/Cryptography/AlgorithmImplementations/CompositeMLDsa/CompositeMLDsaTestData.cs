@@ -35,6 +35,9 @@ namespace System.Security.Cryptography.Tests
             public override string ToString() => Id;
         }
 
+        // TODO The test vectors from the current spec (at the time of writing) are not correct. The script to
+        // generate them is correct, so the ones in this class were generated from that script. These should
+        // be updated when the spec is updated with correct test vectors.
         internal static partial CompositeMLDsaTestVector[] AllIetfVectors { get; }
 
         internal static CompositeMLDsaTestVector[] SupportedAlgorithmIetfVectors =>

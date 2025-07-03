@@ -109,6 +109,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(expectedMPrime, MPrime);
         }
 
+        // TODO This is a temporary test to validate the KATs. The spec is not finalized, so the KATs might not be correct.
+        // This is a quick way to validate them without using CompositeMLDsa directly.
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void KATValidation(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
