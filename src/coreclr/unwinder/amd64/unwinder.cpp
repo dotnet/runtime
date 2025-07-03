@@ -242,7 +242,7 @@ BOOL DacUnwindStackFrame(CONTEXT * pContext, KNONVOLATILE_CONTEXT_POINTERS* pCon
 
     if (res && pContextPointers)
     {
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < 32; i++)
         {
             *(&pContextPointers->Rax + i) = &pContext->Rax + i;
         }
