@@ -145,6 +145,7 @@ namespace System.IO
             private readonly SafeFileHandle _inotifyHandle;
             private readonly ConcurrentDictionary<int, Watch> _wdToWatch = new ConcurrentDictionary<int, Watch>();
             private readonly ReaderWriterLockSlim _addLock = new(LockRecursionPolicy.NoRecursion);
+            private bool _allWatchersStopped;
 
             private int _bufferAvailable;
             private int _bufferPos;
@@ -224,8 +225,8 @@ namespace System.IO
             {
                 // This method gets called only on the ProcessEvents thread, or when that thread fails to start.
                 // It closes the inotify handle.
-
-                IsStopped = true; // note: may be set already by RemoveUnusedINotifyWatches.
+                Debug.Assert(!IsStopped);
+                IsStopped = true;
 
                 // Sync with AddOrUpdateWatchedDirectory and RemoveUnusedINotifyWatches.
                 _addLock.EnterWriteLock();
@@ -371,66 +372,36 @@ namespace System.IO
 
             private void RemoveUnusedINotifyWatches(WatchedDirectory removedDir, int ignoredFd = -1)
             {
-                bool watchersLockTaken = false;
-                bool addLockTaken = false;
+                // _addLock stops handles from being added while we'll removing watches.
+                // This is needed to prevent removing watch descriptors between INotifyAddWatch and adding them to the Watch.Watchers.
+                // _addLock is also used to synchronizes with Stop.
+                _addLock.EnterWriteLock();
                 try
                 {
-                    // If we're removing the root directory of the last watcher,
-                    // we'll only remove the root watch (to potentially trigger an IN_IGNORED if we got called through EnableRaisingEvents = false)
-                    // and let the other watches get cleaned up when the inotify gets closed.
-                    if (removedDir.IsRootDir)
-                    {
-                        Monitor.Enter(_watchersLock, ref watchersLockTaken);
-                    }
-
-                    // _addLock stops handles from being added while we'll removing watches.
-                    // This is needed to prevent removing watch descriptors between INotifyAddWatch and adding them to the Watch.Watchers.
-                    // _addLock is also used to synchronizes with Stop.
-                    _addLock.EnterWriteLock();
-                    addLockTaken = true;
-
                     if (IsStopped)
                     {
                         return;
                     }
 
-                    if (watchersLockTaken)
-                    {
-                        _watchers.Remove(removedDir.Watcher);
-
-                        // Mark us as IsStopped to prevent new watchers from being added.
-                        IsStopped = _watchers.Count == 0;
-
-                        Monitor.Exit(_watchersLock);
-                        watchersLockTaken = false;
-                    }
-
                     RemoveINotifyWatchWhenNoMoreWatchers(removedDir.Watch, ignoredFd);
 
-                    if (IsStopped)
+                    // We don't need to remove the children when all watchers have stopped and the inotify will be closed.
+                    if (_allWatchersStopped)
                     {
                         return;
                     }
 
                     if (removedDir.Children is { } children)
-                    {
-                        foreach (var child in children)
                         {
-                            RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
+                            foreach (var child in children)
+                            {
+                                RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
+                            }
                         }
-                    }
                 }
                 finally
                 {
-                    if (addLockTaken)
-                    {
-                        _addLock.ExitWriteLock();
-                    }
-
-                    if (watchersLockTaken)
-                    {
-                        Monitor.Exit(_watchersLock);
-                    }
+                    _addLock.ExitWriteLock();
                 }
 
                 void RemoveINotifyWatchWhenNoMoreWatchers(Watch watch, int ignoredFd)
@@ -451,8 +422,19 @@ namespace System.IO
                 }
             }
 
-            private static void RemoveWatchedDirectoryFromParentAndWatches(WatchedDirectory dir, ref bool removeINotifyWatches)
+            private void RemoveWatchedDirectoryFromParentAndWatches(WatchedDirectory dir, ref bool removeINotifyWatches)
             {
+                if (dir.IsRootDir)
+                {
+                    lock (s_watchersLock)
+                    {
+                        _watchers.Remove(dir.Watcher);
+
+                        // Set _allWatchersStopped before we update the Watch and _wdToWatch.
+                        _allWatchersStopped = _watchers.Count == 0;
+                    }
+                }
+
                 Watcher watcher = dir.Watcher;
                 lock (watcher)
                 {
@@ -677,7 +659,7 @@ namespace System.IO
                             // We'll still call WatchChildDirectories in case the source was still being iterated for adding watches.
                             if (matchingFrom is not null)
                             {
-                                RenameWatchedDirectoryes(dir, nextEvent.name, matchingFrom, movedFromName);
+                                RenameWatchedDirectories(dir, nextEvent.name, matchingFrom, movedFromName);
                             }
 
                             string directoryPath = dir.GetPath(nextEvent.name, pathBuffer, fullPath: true).ToString();
@@ -735,18 +717,13 @@ namespace System.IO
                     }
                 }
 
-                // For each Watcher there is a root watch that will generate an IN_IGNORED when it is a removed.
-                // Check if we can stop because all Watchers were removed.
-                if ((mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0)
+                // For each Watcher we'll receive an IN_IGNORED for its root watch.
+                // If the root watch was found back as a WatchedDirectory via _wdToWatch above, then _allWatchersStopped will be updated by calling RemoveWatchedDirectory.
+                // If we didn't find back the WatchedDirectory, then RemoveWatchedDirectory was called already and it has updated _allWatchersStopped.
+                if (_allWatchersStopped)
                 {
-                    lock (_watchersLock)
-                    {
-                        if (_watchers.Count == 0)
-                        {
-                            Stop();
-                            return false;
-                        }
-                    }
+                    Stop();
+                    return false;
                 }
 
                 return true;
@@ -806,7 +783,7 @@ namespace System.IO
                 }
             }
 
-            private void RenameWatchedDirectoryes(WatchedDirectory moveTo, string moveToName, WatchedDirectory moveFrom, string moveFromName)
+            private void RenameWatchedDirectories(WatchedDirectory moveTo, string moveToName, WatchedDirectory moveFrom, string moveFromName)
             {
                 WatchedDirectory? sourceToRemove = null;
 
