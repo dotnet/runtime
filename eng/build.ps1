@@ -353,6 +353,8 @@ if ($env:BUILD_SOURCESDIRECTORY) {
   }
 }
 
+Get-Process | Where-Object {$_.Path -like "*Microsoft.Azure.Geneva.GenevaMonitoring*" } | Stop-Process -Force
+
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
