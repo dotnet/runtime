@@ -26,6 +26,7 @@ struct ContinuationLayout
     unsigned                             ReturnValDataOffset    = UINT_MAX;
     unsigned                             ExceptionGCDataIndex   = UINT_MAX;
     unsigned                             ExecContextGCDataIndex = UINT_MAX;
+    unsigned                             ContinuationContextGCDataIndex = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
 
     explicit ContinuationLayout(const jitstd::vector<LiveLocalInfo>& locals)

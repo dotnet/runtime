@@ -1040,6 +1040,14 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 block->getTryIndex(), layout.ExceptionGCDataIndex);
     }
 
+    if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
+    {
+        layout.ContinuationContextGCDataIndex = layout.GCRefsCount++;
+        JITDUMP(
+            "  Continuation continues on captured context; context will be at GC@+%02u in GC data\n",
+            layout.ContinuationContextGCDataIndex);
+    }
+
     if (call->GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
     {
         layout.ExecContextGCDataIndex = layout.GCRefsCount++;
@@ -1200,6 +1208,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
 
     // Fill in 'flags'
+    const AsyncCallInfo& callInfo = call->GetAsyncInfo();
     unsigned continuationFlags = 0;
     if (layout.ReturnInGCData)
         continuationFlags |= CORINFO_CONTINUATION_RESULT_IN_GCDATA;
@@ -1207,6 +1216,8 @@ BasicBlock* AsyncTransformation::CreateSuspension(
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
         continuationFlags |= CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA;
+    if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
+        continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
     newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
