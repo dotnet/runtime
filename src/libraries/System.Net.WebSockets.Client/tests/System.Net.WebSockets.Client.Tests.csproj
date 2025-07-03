@@ -49,8 +49,8 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs" Link="Common\System\Net\Http\HuffmanEncoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs" Link="Common\System\Net\Http\HPackEncoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs" Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoHelper.cs" Link="Common\System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoHelper.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoOptions.cs" Link="Common\System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoOptions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketEchoHelper.cs" Link="Common\System\Net\WebSockets\WebSocketEchoHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketEchoOptions.cs" Link="Common\System\Net\WebSockets\WebSocketEchoOptions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs" Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs" Link="Common\System\IO\DelegateDelegatingStream.cs" />

@@ -4,8 +4,6 @@
 using System;
 using System.Net.WebSockets;
 using System.Net.Test.Common;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
@@ -15,6 +13,7 @@ namespace NetCoreServer
     {
         public static async Task InvokeAsync(HttpContext context)
         {
+            var queryString = context.Request.QueryString.HasValue ? context.Request.QueryString.Value : "";
             WebSocketEchoOptions options = await WebSocketEchoHelper.ProcessOptions(queryString);
             try
             {

@@ -61,7 +61,7 @@ namespace System.Net.Test.Common
                         await readLock.WaitAsync(cancellationToken);
                         try
                         {
-                            return await stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                            return await stream.ReadAsync(buffer, offset, count, cancellationToken);
                         }
                         finally
                         {
@@ -70,11 +70,11 @@ namespace System.Net.Test.Common
                     },
                     writeAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
-                        await writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+                        await writeLock.WaitAsync(cancellationToken);
                         try
                         {
-                            await stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-                            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                            await stream.WriteAsync(buffer, offset, count, cancellationToken);
+                            await stream.FlushAsync(cancellationToken);
                         }
                         finally
                         {

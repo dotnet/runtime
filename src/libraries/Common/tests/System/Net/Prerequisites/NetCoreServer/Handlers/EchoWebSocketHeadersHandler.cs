@@ -6,11 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Net.Test.Common;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 
 namespace NetCoreServer
 {
@@ -27,7 +24,7 @@ namespace NetCoreServer
                 }
 
                 var headers = context.Request.Headers.Select(
-                        h => new KeyValuePair<string, string>(h.Key, h.Value.ToString()))
+                        h => new KeyValuePair<string, string>(h.Key, h.Value.ToString()));
 
                 await WebSocketEchoHelper.RunEchoHeaders(socket, headers);
             }
