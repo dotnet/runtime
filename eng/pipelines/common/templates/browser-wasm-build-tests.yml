@@ -108,7 +108,7 @@ jobs:
           /p:Configuration=$(_BuildConfig)
           /p:TestUsingWorkloads=true
           /p:InstallWorkloadForTesting=true
-          /p:WasmSkipMissingRuntimePackBuild=true
+          /p:WasmSkipMissingRuntimePackBuild=false
           /p:PreparePackagesForWorkloadInstall=false
           /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
         timeoutInMinutes: 180
