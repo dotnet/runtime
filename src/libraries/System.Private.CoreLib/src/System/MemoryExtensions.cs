@@ -5853,7 +5853,7 @@ namespace System
             public readonly ReadOnlySpan<T> Source => _source;
 
             /// <summary>Gets the current element of the enumeration.</summary>
-            /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element withing the source span.</returns>
+            /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element within the source span.</returns>
             public Range Current => new Range(_startCurrent, _endCurrent);
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.SearchValues"/>.</summary>

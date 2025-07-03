@@ -1681,7 +1681,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         }
 
         // Redirect exit edge from previous iteration to new entry.
-        fgRedirectTrueEdge(prevTestBlock, target);
+        fgRedirectEdge(prevTestBlock->TrueEdgeRef(), target);
         fgRemoveRefPred(prevTestBlock->GetFalseEdge());
         prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, prevTestBlock->GetTrueEdge());
 
@@ -2092,7 +2092,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     preheader->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
 
     // Redirect newPreheader from header to stayInLoopSucc
-    fgRedirectTargetEdge(newPreheader, stayInLoopSucc);
+    fgRedirectEdge(newPreheader->TargetEdgeRef(), stayInLoopSucc);
 
     // Duplicate all the code now
     for (int i = 0; i < duplicatedBlocks.Height(); i++)
@@ -2557,6 +2557,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     //
     unsigned preheaderEHRegion    = EHblkDsc::NO_ENCLOSING_INDEX;
     bool     inSameRegionAsHeader = true;
+    bool     headerIsTryEntry     = bbIsTryBeg(header);
     if (header->hasTryIndex())
     {
         preheaderEHRegion = header->getTryIndex();
@@ -2594,6 +2595,14 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     if (inSameRegionAsHeader)
     {
         fgExtendEHRegionBefore(header);
+
+        // If the header was a try region entry, it no longer is.
+        //
+        if (headerIsTryEntry)
+        {
+            assert(!bbIsTryBeg(header));
+            header->RemoveFlags(BBF_DONT_REMOVE);
+        }
     }
     else
     {

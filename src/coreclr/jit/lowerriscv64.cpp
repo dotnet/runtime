@@ -138,11 +138,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTree*     cmpOp1;
     GenTree*     cmpOp2;
 
+    assert(!op->OperIsCompare() || op->OperIsCmpCompare()); // We do not expect any other relops on RISCV64
+
     if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
     {
-        // We do not expect any other relops on RISCV64
-        assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
-
         cond = GenCondition::FromRelop(op);
 
         cmpOp1 = op->gtGetOp1();
@@ -153,7 +152,16 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     }
     else
     {
-        cond = GenCondition(GenCondition::NE);
+        GenCondition::Code code = GenCondition::NE;
+        if (op->OperIsCompare() && varTypeIsFloating(op->gtGetOp1()) && (op->gtFlags & GTF_RELOP_NAN_UN) != 0)
+        {
+            // Unordered floating-point comparisons are achieved by neg'ing the ordered counterparts. Avoid that by
+            // reversing both the FP comparison and the zero-comparison fused with the branch.
+            op->ChangeOper(GenTree::ReverseRelop(op->OperGet()));
+            op->gtFlags &= ~GTF_RELOP_NAN_UN;
+            code = GenCondition::EQ;
+        }
+        cond = GenCondition(code);
 
         cmpOp1 = op;
         cmpOp2 = comp->gtNewZeroConNode(cmpOp1->TypeGet());

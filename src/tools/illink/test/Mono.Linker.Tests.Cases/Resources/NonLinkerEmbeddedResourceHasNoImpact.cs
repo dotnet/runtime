@@ -3,14 +3,14 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Resources
 {
-	[IgnoreDescriptors (false)]
+    [IgnoreDescriptors(false)]
 
-	[SetupCompileResource ("Dependencies/NonLinkerEmbeddedResourceHasNoImpact.xml", "ILLink.Descriptors.xml")]
-	[KeptResource ("ILLink.Descriptors.xml")]
-	public class NonLinkerEmbeddedResourceHasNoImpact
-	{
-		public static void Main ()
-		{
-		}
-	}
+    [SetupCompileResource("Dependencies/NonLinkerEmbeddedResourceHasNoImpact.xml", "ILLink.Descriptors.xml")]
+    [KeptResource("ILLink.Descriptors.xml")]
+    public class NonLinkerEmbeddedResourceHasNoImpact
+    {
+        public static void Main()
+        {
+        }
+    }
 }

@@ -13,6 +13,7 @@ set(INTERPRETER_SOURCES
   naming.cpp
   methodset.cpp
   ../../native/containers/dn-simdhash.c
+  ../../native/containers/dn-simdhash-ght-compatible.c
   ../../native/containers/dn-simdhash-ptr-ptr.c)
 
 set(INTERPRETER_LINK_LIBRARIES

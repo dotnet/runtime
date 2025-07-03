@@ -34,8 +34,15 @@ namespace System.Security.Cryptography
         [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static partial bool SupportsAny() => s_algHandle is not null;
 
-        protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+        protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
+        {
+            if (!_hasSecretKey)
+            {
+                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+            }
+
             Interop.BCrypt.BCryptSignHashPqcPure(_key, data, context, destination);
+        }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.BCrypt.BCryptVerifySignaturePqcPure(_key, data, context, signature);
@@ -153,8 +160,13 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
-            _key?.Dispose();
-            _key = null!;
+            if (disposing)
+            {
+                _key?.Dispose();
+                _key = null!;
+            }
+
+            base.Dispose(disposing);
         }
 
         private void ExportKey(string keyBlobType, int expectedKeySize, Span<byte> destination)
