@@ -197,7 +197,7 @@ typedef struct _Arm64VolatileContextPointer
 } Arm64VolatileContextPointer;
 #endif //TARGET_ARM64
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
 typedef struct _Amd64VolatileContextPointer
 {
     union {
@@ -222,7 +222,7 @@ typedef struct _Amd64VolatileContextPointer
         PDWORD64 R[16];
     };
 } Amd64VolatileContextPointer;
-#endif //TARGET_AMD64
+#endif //TARGET_AMD64 && TARGET_UNIX
 
 #if defined(TARGET_LOONGARCH64)
 typedef struct _LoongArch64VolatileContextPointer
@@ -698,8 +698,18 @@ inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
     };
 
     return (PTR_size_t)(PTR_BYTE(regs) + OFFSET_OF_REGISTERS[regNum]);
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) && defined(TARGET_UNIX)
     _ASSERTE(regNum < 32);
+    if (regNum < 16)
+    {
+        return (size_t *)&regs->Rax + regNum;
+    }
+    else
+    {
+        return (size_t *)&regs->R16 + (regNum - 16);
+    }
+#elif defined(TARGET_AMD64)
+    _ASSERTE(regNum < 16);
     return (size_t *)&regs->Rax + regNum;
 #elif defined(TARGET_ARM)
         _ASSERTE(regNum < 16);
