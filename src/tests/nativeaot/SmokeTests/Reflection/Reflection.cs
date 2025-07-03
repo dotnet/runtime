@@ -2952,7 +2952,7 @@ internal static class ReflectionTest
     {
         class MyClass
         {
-            public event EventHandler<int> MyEvent;
+            public event EventHandler<int> MyEvent { add { } remove { } }
         }
 
         static EventInfo s_eventInfo = typeof(MyClass).GetEvent("MyEvent");
