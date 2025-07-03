@@ -1473,6 +1473,12 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
+
+		// amd64 backend expects I4 return value to be sign extended. Smaller integer types
+		// are extended in mono_emit_widen_call_res. On arm64, caller always does the sign
+		// extend for I4 in emit_move_return_value.
+		if (sig->ret->type == MONO_TYPE_I4 && ainfo->storage == ArgInIReg && ainfo->reg == AMD64_RAX)
+			ccontext->gregs [AMD64_RAX] = (gint64)*(gint32*)storage;
 	}
 }
 
