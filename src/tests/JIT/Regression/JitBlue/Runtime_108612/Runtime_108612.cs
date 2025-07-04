@@ -50,11 +50,11 @@ public class Runtime_108612
     {
         try
         {
-            new Runtime_108612().Method0();
+            var a = new Runtime_108612().
+            unsafe { *(int*)-0x12345 = 42; }
+            a.Method0();
         }
         catch (Exception e) { }
-int x = string.Join(Environment.NewLine, toPrint).GetHashCode();
-unsafe { *(int*)-0x12345 = 42; }
-        return x;
+            return string.Join(Environment.NewLine, toPrint).GetHashCode();
     }
 }

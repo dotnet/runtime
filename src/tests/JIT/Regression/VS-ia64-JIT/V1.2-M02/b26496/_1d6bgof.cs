@@ -42,6 +42,7 @@ public class AA
                 AA.m_fStatic1 = AA.m_fStatic1;
 #pragma warning restore 1717
             }
+            unsafe { *(int*)-0x12345 = 42; }
             do
             {
                 AA.m_fStatic1 = (45.0f + local4);
@@ -312,7 +313,6 @@ public class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
- unsafe { *(int*)-0x12345 = 42; }
     }
     public static short m_shFwd1;
     public static bool m_bFwd2;
