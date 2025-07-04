@@ -7895,7 +7895,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsAsync() && (call->GetAsyncInfo().ContinuationContextHandling != ContinuationContextHandling::None))
     {
-        // Cannot currently handle restoring the SynchronizationContext field when inlining.
+        // Cannot currently handle moving to captured context/thread pool when logically returning from inlinee.
         //
         inlineResult->NoteFatal(InlineObservation::CALLSITE_CONTINUATION_HANDLING);
         return;
