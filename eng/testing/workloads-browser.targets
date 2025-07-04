@@ -46,9 +46,6 @@
       <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
       <!--<WorkloadCombinationsToInstall Include="none" />-->
     </ItemGroup>
-    
-    <!-- Debug: Show what workloads were just added -->
-    <Message Importance="high" Text="DEBUG: _GetWorkloadsToInstall added WorkloadIdForTesting items: @(WorkloadIdForTesting, ', ')" />
   </Target>
 
   <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,
