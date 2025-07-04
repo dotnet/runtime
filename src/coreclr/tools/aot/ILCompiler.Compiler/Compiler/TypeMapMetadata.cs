@@ -248,7 +248,7 @@ namespace ILCompiler
                             {
                                 typeMapStates[typeMapGroup] = typeMapState = new Map(typeMapGroup);
                             }
-                            typeMapState.AddExternalTypeMapEntry(typeName, targetType, targetType);
+                            typeMapState.AddExternalTypeMapEntry(typeName, targetType, null);
                             break;
                         }
 
