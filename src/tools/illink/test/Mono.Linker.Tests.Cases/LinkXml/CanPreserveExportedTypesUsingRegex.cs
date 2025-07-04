@@ -9,8 +9,8 @@ namespace Mono.Linker.Tests.Cases.LinkXml
     [SetupCompileBefore("Forwarder.dll", new[] { "Dependencies/CanPreserveAnExportedType_Forwarder.cs" }, references: new[] { "Library.dll" })]
 
     // NativeAOT doesn't have a concept of type forwarders in the compiled app, everything is fully resolved
-    [KeptMemberInAssembly("Library.dll", typeof(CanPreserveAnExportedType_Library), "Field1", "Method()", ".ctor()", Tool = Tool.Trimmer)]
-    [KeptTypeInAssembly("Forwarder.dll", typeof(CanPreserveAnExportedType_Library), Tool = Tool.Trimmer)]
+    [KeptMemberInAssembly("Library.dll", typeof(CanPreserveAnExportedType_Library), "Field1", "Method()", ".ctor()", By = Tool.Trimmer)]
+    [KeptTypeInAssembly("Forwarder.dll", typeof(CanPreserveAnExportedType_Library), By = Tool.Trimmer)]
     [SetupLinkerDescriptorFile("CanPreserveExportedTypesUsingRegex.xml")]
     class CanPreserveExportedTypesUsingRegex
     {

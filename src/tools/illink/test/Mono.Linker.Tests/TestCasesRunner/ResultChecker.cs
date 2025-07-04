@@ -1385,7 +1385,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 {
                     var assemblyName = (string)attr.ConstructorArguments[0].Value;
 
-                    Tool? toolTarget = (Tool?)(int?)attr.GetPropertyValue("Tool");
+                    Tool? toolTarget = (Tool?)(int?)attr.GetPropertyValue("By");
                     if (toolTarget is not null && !toolTarget.Value.HasFlag(Tool.Trimmer))
                         continue;
 
