@@ -4149,12 +4149,33 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
-    auto isVariableSingleBit = [](GenTree*& testedOp, GenTree*& bitOp) -> bool {
-        if (!bitOp->OperIs(GT_LSH))
+    // If 'test' is a single bit test, leaves the tested expr in the left op, the bit index in the right op, and returns
+    // true. Otherwise, returns false.
+    auto tryReduceSingleBitTestOps = [this](GenTreeOp* test) -> bool {
+        assert(test->OperIs(GT_AND, GT_TEST_EQ, GT_TEST_NE));
+        GenTree* testedOp = test->gtOp1;
+        GenTree* bitOp    = test->gtOp2;
+#ifdef TARGET_RISCV64
+        if (bitOp->IsIntegralConstUnsignedPow2())
         {
-            std::swap(bitOp, testedOp);
+            INT64 bit  = bitOp->AsIntConCommon()->IntegralValue();
+            int   log2 = BitOperations::Log2((UINT64)bit);
+            bitOp->AsIntConCommon()->SetIntegralValue(log2);
+            return true;
         }
-        return bitOp->OperIs(GT_LSH) && varTypeIsIntOrI(bitOp) && bitOp->gtGetOp1()->IsIntegralConst(1);
+#endif
+        if (!bitOp->OperIs(GT_LSH))
+            std::swap(bitOp, testedOp);
+
+        if (bitOp->OperIs(GT_LSH) && varTypeIsIntOrI(bitOp) && bitOp->gtGetOp1()->IsIntegralConst(1))
+        {
+            BlockRange().Remove(bitOp->gtGetOp1());
+            BlockRange().Remove(bitOp);
+            test->gtOp1 = testedOp;
+            test->gtOp2 = bitOp->gtGetOp2();
+            return true;
+        }
+        return false;
     };
 
     ssize_t op2Value = op2->IconValue();
@@ -4252,73 +4273,53 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
 
 #ifdef TARGET_RISCV64
-        GenTree* testedOp  = andOp1;
-        GenTree* bitOp = andOp2;
-        bool isSingleBit = bitOp->IsIntegralConstUnsignedPow2() || isVariableSingleBit(testedOp, bitOp);
-        if ((op2Value == 0) && !bitOp->IsIntegralConst(1) && isSingleBit)
+        if (op2Value == 0 && !andOp2->isContained() && tryReduceSingleBitTestOps(op1->AsOp()))
         {
+            GenTree* testedOp   = op1->gtGetOp1();
+            GenTree* bitIndexOp = op1->gtGetOp2();
+
+            if (bitIndexOp->IsIntegralConst())
+                bitIndexOp->SetContained();
+
             LIR::Use cmpUse;
-            bool isUserJtrue = BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE);
-            if (bitOp->IsIntegralConst() && (isUserJtrue ? !bitOp->isContained() : cmp->OperIs(GT_NE)))
+            bool     isUserJtrue = BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE);
+            if (bitIndexOp->IsIntegralConst() && (cmp->OperIs(GT_NE) || isUserJtrue))
             {
-                // Shift the tested single bit into the sign bit, then check if negative/positive.
-                INT64 bit = bitOp->AsIntConCommon()->IntegralValue();
-                if (bit > 0)
+                // Shift the tested bit into the sign bit, then check if negative/positive.
+                // Work on whole registers because comparisons and compressed shifts are full-register only.
+                INT64 bitIndex     = bitIndexOp->AsIntConCommon()->IntegralValue();
+                INT64 signBitIndex = genTypeSize(TYP_I_IMPL) * 8 - 1;
+                if (bitIndex < signBitIndex)
                 {
-                    int shiftAmount = genTypeSize(op1) * 8 - BitOperations::Log2((UINT64)bit) - 1;
-                    assert(shiftAmount > 0);
+                    bitIndexOp->AsIntConCommon()->SetIntegralValue(signBitIndex - bitIndex);
                     op1->SetOperRaw(GT_LSH);
-                    bitOp->AsIntConCommon()->SetIntegralValue(shiftAmount);
-                    bitOp->SetContained();
+                    op1->gtType = TYP_I_IMPL;
                 }
                 else
                 {
-                    // The tested single bit is the sign bit, just remove the AND
-                    assert(bit == INT_MIN || bit == LONG_MIN);
-                    cmp->AsOp()->gtOp1 = testedOp;
-                    BlockRange().Remove(bitOp);
+                    // The tested bit is the sign bit, remove "AND bitIndex" and only check if negative/positive
+                    assert(bitIndex == signBitIndex);
+                    assert(genActualType(testedOp) == TYP_I_IMPL);
+                    BlockRange().Remove(bitIndexOp);
                     BlockRange().Remove(op1);
+                    cmp->AsOp()->gtOp1 = testedOp;
                 }
 
+                op2->gtType = TYP_I_IMPL;
                 cmp->SetOperRaw(cmp->OperIs(GT_NE) ? GT_LT : GT_GE);
                 cmp->ClearUnsigned();
-                op2->SetContained();
 
-                return cmp->gtNext;
+                return cmp;
             }
-            else
-            {
-                return cmp->gtNext;
-                // TODO: debug
 
-                // Transform (a & bit) into ((a >> log2(bit)) & 1)
-                // The "!=/== 0" is folded below if necessary.
-                GenTree* shiftAmount = nullptr;
-                GenTree* one = nullptr;
-                if (bitOp->IsIntegralConst()) // a & constBit
-                {
-                    INT64 bit = bitOp->AsIntConCommon()->IntegralValue();
-                    int log2 = BitOperations::Log2((UINT64)bit);
-                    shiftAmount = comp->gtNewIconNode(log2);
-                    BlockRange().InsertAfter(testedOp, shiftAmount);
-
-                    bitOp->AsIntConCommon()->SetIntegralValue(1);
-                    one = bitOp;
-                }
-                else // a & (1 << varBit)
-                {
-                    assert(bitOp->OperIs(GT_LSH));
-                    BlockRange().Remove(bitOp);
-                    shiftAmount = bitOp->gtGetOp2();
-                    one = bitOp->gtGetOp1();
-                }
-                assert(one->IsIntegralConst(1));
-
-                GenTree* shiftRight = comp->gtNewOperNode(GT_RSH, testedOp->TypeGet(), testedOp, shiftAmount);
-                BlockRange().InsertAfter(testedOp, shiftRight);
-                op1->AsOp()->gtOp1 = shiftRight;
-                op1->AsOp()->gtOp2 = one;
-            }
+            // Shift the tested bit into the lowest bit, then AND with 1.
+            // The "EQ|NE 0" comparison is folded below as necessary.
+            var_types type     = genActualType(testedOp);
+            op1->AsOp()->gtOp1 = andOp1 = comp->gtNewOperNode(GT_RSH, type, testedOp, bitIndexOp);
+            op1->AsOp()->gtOp2 = andOp2 = comp->gtNewIconNode(1, type);
+            BlockRange().InsertBefore(op1, andOp1);
+            BlockRange().InsertBefore(op1, andOp2);
+            andOp2->SetContained();
         }
 #endif // TARGET_RISCV64
 
@@ -4355,9 +4356,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             }
         }
 
-#ifndef TARGET_RISCV64
         if (op2Value == 0)
         {
+#ifndef TARGET_RISCV64
             BlockRange().Remove(op1);
             BlockRange().Remove(op2);
 
@@ -4401,10 +4402,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 }
             }
 #endif
-        }
-        else
 #endif // !TARGET_RISCV64
-        if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
+        }
+        else if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
         {
             //
             // Transform EQ|NE(AND(x, y), y) into EQ|NE(AND(NOT(x), y), 0) when y is a constant.
@@ -4430,20 +4430,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // Note that BT has the same behavior as LSH when the bit index exceeds the
         // operand bit size - it uses (bit_index MOD bit_size).
         //
-
-        GenTree* lsh = cmp->AsOp()->gtOp1;
-        GenTree* op  = cmp->AsOp()->gtOp2;
-        if (isVariableSingleBit(op, lsh))
+        if (tryReduceSingleBitTestOps(cmp->AsOp()))
         {
             cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
-
-            BlockRange().Remove(lsh->gtGetOp1());
-            BlockRange().Remove(lsh);
-
-            cmp->AsOp()->gtOp1 = op;
-            cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
             cmp->gtGetOp2()->ClearContained();
-
             return cmp->gtNext;
         }
     }
