@@ -4329,7 +4329,7 @@ enum class ContinuationContextHandling
 // Additional async call info.
 struct AsyncCallInfo
 {
-    ExecutionContextHandling ExecutionContextHandling = ExecutionContextHandling::None;
+    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
     // Whether to save and restore SynchronizationContext field around this
     // call when it completes synchronously.

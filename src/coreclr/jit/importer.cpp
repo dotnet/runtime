@@ -9131,8 +9131,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // many other places.  We unfortunately embed that knowledge here.
                 if (opcode != CEE_CALLI)
                 {
-                    bool isAwait = false;
-                    int configVal = -1; // -1 not configured, 0/1 configured to false/true
+                    bool isAwait   = false;
+                    int  configVal = -1; // -1 not configured, 0/1 configured to false/true
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
                         if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))

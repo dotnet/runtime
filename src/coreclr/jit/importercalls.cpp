@@ -701,12 +701,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         AsyncCallInfo asyncInfo;
 
-
         if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
         {
             JITDUMP("Call is an async task await\n");
 
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.ExecutionContextHandling                 = ExecutionContextHandling::SaveAndRestore;
             asyncInfo.SyncSaveAndRestoreSynchronizationContext = true;
 
             if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
@@ -7895,11 +7894,11 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    if (call->IsAsync() && (call->GetAsyncInfo().SynchronizationContextHandling == SynchronizationContextHandling::SaveAndSyncRestoreAsyncPost))
+    if (call->IsAsync() && call->GetAsyncInfo().SyncSaveAndRestoreSynchronizationContext)
     {
         // Cannot currently handle restoring the SynchronizationContext field when inlining.
         //
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_CALLSITE_NEEDS_SYNC_SAVE_AND_RESTORE);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_NEEDS_SYNC_SAVE_AND_RESTORE);
         return;
     }
 

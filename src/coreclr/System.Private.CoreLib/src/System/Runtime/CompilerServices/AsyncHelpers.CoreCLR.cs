@@ -115,6 +115,19 @@ namespace System.Runtime.CompilerServices
         //
         public byte[]? Data;
         public object?[]? GCData;
+
+        public object GetContinuationContext()
+        {
+            int index = 0;
+            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
+                index++;
+            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                index++;
+            Debug.Assert(GCData != null && GCData.Length > index);
+            object? continuationContext = GCData[index];
+            Debug.Assert(continuationContext != null);
+            return continuationContext;
+        }
     }
 
     public static partial class AsyncHelpers
@@ -131,7 +144,6 @@ namespace System.Runtime.CompilerServices
         {
             public Continuation? SentinelContinuation;
             public INotifyCompletion? Notifier;
-            public SynchronizationContext? ResumptionContext;
         }
 
         [ThreadStatic]
@@ -192,65 +204,6 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(pMT->IsValueType);
             // We need no type/cctor checks since we will be storing an instance that already exists.
             return RuntimeTypeHandle.InternalAllocNoChecks((MethodTable*)pMT);
-        }
-
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
-        private static void SwitchContext(SynchronizationContext context)
-        {
-            if (context != null && context.GetType() != typeof(SynchronizationContext) && context != Thread.CurrentThreadAssumedInitialized._synchronizationContext)
-            {
-                SuspendToSwitchContext(context);
-            }
-        }
-
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
-        [RequiresPreviewFeatures]
-        private static void SuspendToSwitchContext(SynchronizationContext context)
-        {
-            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation;
-            if (sentinelContinuation == null)
-                state.SentinelContinuation = sentinelContinuation = new Continuation();
-
-            state.ResumptionContext = context;
-            AsyncSuspend(sentinelContinuation);
-        }
-
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
-        private static void SwitchToThreadPool()
-        {
-            // This is basically AwaitTaskContinuation.IsValidLocationForInlining, but without
-            // initializing Thread.CurrentThread (which is always valid in runtime async methods).
-            Thread thread = Thread.CurrentThreadAssumedInitialized!;
-            SynchronizationContext? ctx = thread._synchronizationContext;
-            if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
-            {
-                TaskScheduler? sched = TaskScheduler.InternalCurrent;
-                if (sched == null || sched == TaskScheduler.Default)
-                {
-                    return;
-                }
-            }
-
-            SuspendToSwitchToThreadPool();
-        }
-
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
-        [RequiresPreviewFeatures]
-        private static void SuspendToSwitchToThreadPool()
-        {
-            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation;
-            if (sentinelContinuation == null)
-                state.SentinelContinuation = sentinelContinuation = new Continuation();
-
-            AsyncSuspend(sentinelContinuation);
         }
 
         private interface IThunkTaskOps<T>
@@ -423,7 +376,7 @@ namespace System.Runtime.CompilerServices
 
                     if (continuation.Resume == null)
                     {
-                        bool successfullySet = !TOps.SetCompleted(task, continuation);
+                        bool successfullySet = TOps.SetCompleted(task, continuation);
 
                         contexts.Pop();
 
@@ -445,40 +398,28 @@ namespace System.Runtime.CompilerServices
 
             public static void HandleSuspended<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
             {
-                Continuation headContinuation =
-                    UnlinkHeadContinuation(
-                        out SynchronizationContext? resumptionContext,
-                        out INotifyCompletion? notifier);
+                Continuation headContinuation = UnlinkHeadContinuation(out INotifyCompletion? notifier);
 
-                // Head continuation should be the result of async call to AwaitAwaiter, UnsafeAwaitAwaiter,
-                // SwitchContext or SwitchOffThread. These cannot be configured.
-                Debug.Assert(!headContinuation.Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT | CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL));
+                // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
+                const CorInfoContinuationFlags continueFlags =
+                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT |
+                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL |
+                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
+                Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
-                // TODO: Does this need a volatile write, or is the data dependency enough?
+                // TODO: This may need volatile write
                 TOps.SetContinuationState(task, headContinuation);
 
                 try
                 {
-                    if (notifier != null)
+                    if (notifier is ICriticalNotifyCompletion crit)
                     {
-                        Debug.Assert(notifier != null);
-                        notifier.OnCompleted(TOps.GetContinuationAction(task));
-                    }
-                    else if (resumptionContext != null)
-                    {
-                        // Async method is requesting to be switched to a specific SynchronizationContext
-                        // (because of finishing running an inlinee).
-                        TOps.PostToSyncContext(task, resumptionContext);
+                        crit.UnsafeOnCompleted(TOps.GetContinuationAction(task));
                     }
                     else
                     {
-                        // Async method is requesting to be switched off the current thread
-                        // (because of finishing running an inlinee that does not continue on captured context,
-                        // and we do not want to run on the current context).
-                        // TODO: Implement IThreadPoolWorkItem on ThunkTask to run it directly?
-                        // It does not work because ThreadPoolWorkQueue.Enqueue does not allow
-                        // a class to be both Task derived and IThreadPoolWorkItem.
-                        ThreadPool.UnsafeQueueUserWorkItem(new ThunkTaskThreadPoolWorkItem<T, TOps>(task), preferLocal: true);
+                        Debug.Assert(notifier != null);
+                        notifier.OnCompleted(TOps.GetContinuationAction(task));
                     }
                 }
                 catch (Exception ex)
@@ -487,13 +428,10 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private static Continuation UnlinkHeadContinuation(out SynchronizationContext? syncContext, out INotifyCompletion? notifier)
+            private static Continuation UnlinkHeadContinuation(out INotifyCompletion? notifier)
             {
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                syncContext = state.ResumptionContext;
                 notifier = state.Notifier;
-
-                state.ResumptionContext = null;
                 state.Notifier = null;
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
@@ -523,40 +461,46 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT) == 0)
+                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT) != 0)
                 {
-                    return false;
+                    object continuationContext = continuation.GetContinuationContext();
+                    Debug.Assert(continuationContext is SynchronizationContext { });
+                    SynchronizationContext continuationSyncCtx = (SynchronizationContext)continuationContext;
+
+                    if (continuationSyncCtx == Thread.CurrentThreadAssumedInitialized._synchronizationContext)
+                    {
+                        // Inline
+                        return false;
+                    }
+
+                    // TODO: May need a volatile write here.
+                    TOps.SetContinuationState(task, continuation);
+
+                    try
+                    {
+                        TOps.PostToSyncContext(task, continuationSyncCtx);
+                    }
+                    catch (Exception ex)
+                    {
+                        Task.ThrowAsync(ex, targetContext: null);
+                    }
+
+                    return true;
                 }
 
-                int syncContextIndex = 0;
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
-                    syncContextIndex++;
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
-                    syncContextIndex++;
-
-                object?[]? gcData = continuation.GCData;
-                Debug.Assert(gcData != null && gcData.Length > syncContextIndex && gcData[syncContextIndex] is SynchronizationContext);
-                SynchronizationContext? continuationSyncCtx = (SynchronizationContext?)gcData[syncContextIndex];
-
-                if (continuationSyncCtx == null || continuationSyncCtx.GetType() == typeof(SynchronizationContext) ||
-                    continuationSyncCtx == SynchronizationContext.Current)
+                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER) != 0)
                 {
-                    return false;
+                    object continuationContext = continuation.GetContinuationContext();
+                    Debug.Assert(continuationContext is TaskScheduler { });
+                    TaskScheduler sched = (TaskScheduler)continuationContext;
+
+                    TOps.SetContinuationState(task, continuation);
+                    // TODO: We do not need TaskSchedulerAwaitTaskContinuation here, just need to refactor its Run method...
+                    var taskSchedCont = new TaskSchedulerAwaitTaskContinuation(sched, TOps.GetContinuationAction(task), flowExecutionContext: false);
+                    taskSchedCont.Run(Task.CompletedTask, canInlineContinuationTask: true);
                 }
 
-                // TODO: Does this need a volatile write, or is the data dependency enough?
-                TOps.SetContinuationState(task, continuation);
-
-                try
-                {
-                    TOps.PostToSyncContext(task, continuationSyncCtx);
-                }
-                catch (Exception ex)
-                {
-                    Task.ThrowAsync(ex, targetContext: null);
-                }
-
-                return true;
+                return false;
             }
 
             private sealed class ThunkTaskThreadPoolWorkItem<T, TOps>(T task) : IThreadPoolWorkItem where T : Task where TOps : IThunkTaskOps<T>
@@ -692,6 +636,27 @@ namespace System.Runtime.CompilerServices
             {
                 ExecutionContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
             }
+        }
+
+        private static void CaptureContinuationContext(ref object context, ref CorInfoContinuationFlags flags)
+        {
+            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+            if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+            {
+                flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT;
+                context = syncCtx;
+                return;
+            }
+
+            TaskScheduler? sched = TaskScheduler.InternalCurrent;
+            if (sched != null && sched != TaskScheduler.Default)
+            {
+                flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
+                context = sched;
+                return;
+            }
+
+            flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
         }
     }
 }
