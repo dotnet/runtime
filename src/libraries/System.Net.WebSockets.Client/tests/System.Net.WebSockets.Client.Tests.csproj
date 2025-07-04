@@ -88,7 +88,10 @@
     <Compile Include="DeflateTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'browser'">
-    <Compile Include="ClientWebSocketTestBase.Loopback.cs" />
+    <Compile Include="ClientWebSocketTestBase.Echo.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <Compile Include="ClientWebSocketTestBase.Echo.Unsupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
