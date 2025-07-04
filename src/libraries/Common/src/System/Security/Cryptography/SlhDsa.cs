@@ -14,10 +14,15 @@ namespace System.Security.Cryptography
     ///   Represents an SLH-DSA key.
     /// </summary>
     /// <remarks>
-    ///   Developers are encouraged to program against the <c>SlhDsa</c> base class,
-    ///   rather than any specific derived class.
-    ///   The derived classes are intended for interop with the underlying system
-    ///   cryptographic libraries.
+    ///   <para>
+    ///     This algorithm is specified by FIPS-205.
+    ///   </para>
+    ///   <para>
+    ///     Developers are encouraged to program against the <see cref="SlhDsa"/> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class SlhDsa : IDisposable
@@ -62,9 +67,6 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
-        /// <summary>
-        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
-        /// </summary>
         private protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(SlhDsa));
 
         /// <summary>

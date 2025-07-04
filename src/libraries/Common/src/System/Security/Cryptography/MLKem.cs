@@ -40,10 +40,10 @@ namespace System.Security.Cryptography
         public static bool IsSupported => MLKemImplementation.IsSupported;
 
         /// <summary>
-        ///   Gets the algorithm of the current instance.
+        ///   Gets the specific ML-KEM algorithm for this key.
         /// </summary>
         /// <value>
-        ///   A value representing the ML-KEM algorithm.
+        ///   The specific ML-KEM algorithm for this key.
         /// </value>
         public MLKemAlgorithm Algorithm { get; }
 
