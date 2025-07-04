@@ -94,7 +94,7 @@ deps_json_t::rid_fallback_graph_t deps_json_t::get_rid_fallback_graph(const pal:
         return rid_fallback_graph;
 
     json_parser_t json;
-    if (!json.parse_file(deps_path_local))
+    if (!json.parse_fully_trusted_file(deps_path_local))
         return rid_fallback_graph;
 
     populate_rid_fallback_graph(json.document(), rid_fallback_graph);
@@ -586,7 +586,7 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
     }
 
     json_parser_t json;
-    if (!json.parse_file(m_deps_file))
+    if (!json.parse_fully_trusted_file(m_deps_file))
         return;
 
     m_valid = true;
