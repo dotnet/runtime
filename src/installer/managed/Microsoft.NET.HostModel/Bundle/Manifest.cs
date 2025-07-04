@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -172,8 +173,31 @@ namespace Microsoft.NET.HostModel.Bundle
             {
                 entry.Write(writer);
             }
+            Debug.Assert(writer.BaseStream.Position - startOffset == GetManifestLength(BundleMajorVersion, Files.Select(static f => f.RelativePath)),
+                $"Manifest size mismatch: {writer.BaseStream.Position - startOffset} != {GetManifestLength(BundleMajorVersion, Files.Select(static f => f.RelativePath))}");
 
             return startOffset;
+        }
+
+        /// <summary>
+        /// Calculates the length of the manifest in bytes.
+        /// </summary>
+        public static long GetManifestLength(uint bundleMajorVersion, IEnumerable<string> fileSpecs)
+        {
+            const string dummyBundleId = "FakeBundleID";
+            Debug.Assert(dummyBundleId.Length == BundleIdLength);
+            // Size of the header
+            long size = sizeof(uint) * 2 + // BundleMajorVersion + BundleMinorVersion
+                        sizeof(int) + // NumEmbeddedFiles
+                        (bundleMajorVersion >= 2 ? (sizeof(long) * 4 + sizeof(ulong)) : 0); // DepsJson and RuntimeConfigJson offsets and sizes, and Flags
+            size += Bundler.GetBinaryWriterStringLength(dummyBundleId);
+            // Size of each FileEntry
+            foreach (var fileSpec in fileSpecs)
+            {
+                size += FileEntry.GetFileEntryLength(bundleMajorVersion, fileSpec);
+            }
+
+            return size;
         }
 
         public bool Contains(string relativePath)
