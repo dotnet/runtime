@@ -4147,7 +4147,16 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTree*       op1 = cmp->gtGetOp1();
     GenTreeIntCon* op2 = cmp->gtGetOp2()->AsIntCon();
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+
+    auto isVariableSingleBit = [](GenTree*& testedOp, GenTree*& bitOp) -> bool {
+        if (!bitOp->OperIs(GT_LSH))
+        {
+            std::swap(bitOp, testedOp);
+        }
+        return bitOp->OperIs(GT_LSH) && varTypeIsIntOrI(bitOp) && bitOp->gtGetOp1()->IsIntegralConst(1);
+    };
+
     ssize_t op2Value = op2->IconValue();
 
 #ifdef TARGET_XARCH
@@ -4242,6 +4251,77 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
+#ifdef TARGET_RISCV64
+        GenTree* testedOp  = andOp1;
+        GenTree* bitOp = andOp2;
+        bool isSingleBit = bitOp->IsIntegralConstUnsignedPow2() || isVariableSingleBit(testedOp, bitOp);
+        if ((op2Value == 0) && !bitOp->IsIntegralConst(1) && isSingleBit)
+        {
+            LIR::Use cmpUse;
+            bool isUserJtrue = BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE);
+            if (bitOp->IsIntegralConst() && (isUserJtrue ? !bitOp->isContained() : cmp->OperIs(GT_NE)))
+            {
+                // Shift the tested single bit into the sign bit, then check if negative/positive.
+                INT64 bit = bitOp->AsIntConCommon()->IntegralValue();
+                if (bit > 0)
+                {
+                    int shiftAmount = genTypeSize(op1) * 8 - BitOperations::Log2((UINT64)bit) - 1;
+                    assert(shiftAmount > 0);
+                    op1->SetOperRaw(GT_LSH);
+                    bitOp->AsIntConCommon()->SetIntegralValue(shiftAmount);
+                    bitOp->SetContained();
+                }
+                else
+                {
+                    // The tested single bit is the sign bit, just remove the AND
+                    assert(bit == INT_MIN || bit == LONG_MIN);
+                    cmp->AsOp()->gtOp1 = testedOp;
+                    BlockRange().Remove(bitOp);
+                    BlockRange().Remove(op1);
+                }
+
+                cmp->SetOperRaw(cmp->OperIs(GT_NE) ? GT_LT : GT_GE);
+                cmp->ClearUnsigned();
+                op2->SetContained();
+
+                return cmp->gtNext;
+            }
+            else
+            {
+                return cmp->gtNext;
+                // TODO: debug
+
+                // Transform (a & bit) into ((a >> log2(bit)) & 1)
+                // The "!=/== 0" is folded below if necessary.
+                GenTree* shiftAmount = nullptr;
+                GenTree* one = nullptr;
+                if (bitOp->IsIntegralConst()) // a & constBit
+                {
+                    INT64 bit = bitOp->AsIntConCommon()->IntegralValue();
+                    int log2 = BitOperations::Log2((UINT64)bit);
+                    shiftAmount = comp->gtNewIconNode(log2);
+                    BlockRange().InsertAfter(testedOp, shiftAmount);
+
+                    bitOp->AsIntConCommon()->SetIntegralValue(1);
+                    one = bitOp;
+                }
+                else // a & (1 << varBit)
+                {
+                    assert(bitOp->OperIs(GT_LSH));
+                    BlockRange().Remove(bitOp);
+                    shiftAmount = bitOp->gtGetOp2();
+                    one = bitOp->gtGetOp1();
+                }
+                assert(one->IsIntegralConst(1));
+
+                GenTree* shiftRight = comp->gtNewOperNode(GT_RSH, testedOp->TypeGet(), testedOp, shiftAmount);
+                BlockRange().InsertAfter(testedOp, shiftRight);
+                op1->AsOp()->gtOp1 = shiftRight;
+                op1->AsOp()->gtOp2 = one;
+            }
+        }
+#endif // TARGET_RISCV64
+
         // Optimizes (X & 1) != 0 to (X & 1)
         // Optimizes (X & 1) == 0 to ((NOT X) & 1)
         // (== 1 or != 1) cases are transformed to (!= 0 or == 0) above
@@ -4275,6 +4355,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             }
         }
 
+#ifndef TARGET_RISCV64
         if (op2Value == 0)
         {
             BlockRange().Remove(op1);
@@ -4321,7 +4402,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             }
 #endif
         }
-        else if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
+        else
+#endif // !TARGET_RISCV64
+        if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
         {
             //
             // Transform EQ|NE(AND(x, y), y) into EQ|NE(AND(NOT(x), y), 0) when y is a constant.
@@ -4350,13 +4433,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         GenTree* lsh = cmp->AsOp()->gtOp1;
         GenTree* op  = cmp->AsOp()->gtOp2;
-
-        if (!lsh->OperIs(GT_LSH))
-        {
-            std::swap(lsh, op);
-        }
-
-        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh) && lsh->gtGetOp1()->IsIntegralConst(1))
+        if (isVariableSingleBit(op, lsh))
         {
             cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
 
@@ -4371,7 +4448,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 #endif // TARGET_XARCH
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
     // Optimize EQ/NE(relop/SETCC, 0) into (maybe reversed) cond.
     if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))

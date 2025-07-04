@@ -38,6 +38,51 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool I8_BT_mem_reg(ref long x, int y) => (x & (1L << y)) != 0;
 
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I1_BT_reg_min(sbyte x) => (x & (1 << 7)) != 0;
+    
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte I1_BT_reg_min_JCC(sbyte x) => (sbyte)((x & (1 << 7)) == 0 ? (x + 1) : (x - 1));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I2_BT_reg_min(short x) => (x & (1 << 15)) != 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I4_BT_reg_min(int x) => (x & (1 << 31)) != 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I4_BT_reg_min_EQ(int x) => (x & (1 << 31)) == 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int I4_BT_reg_min_JCC(int x) => (x & (1 << 31)) == 0 ? (x + 1) : (x - 1);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I8_BT_reg_min(long x) => (x & (1L << 63)) != 0;
+
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I1_BT_reg_min_1(sbyte x) => (x & (1 << 6)) != 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte I1_BT_reg_min_1_JCC(sbyte x) => (sbyte)((x & (1 << 6)) == 0 ? (x + 1) : (x - 1));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I2_BT_reg_min_1(short x) => (x & (1 << 14)) != 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I4_BT_reg_min_1(int x) => (x & (1 << 30)) != 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I4_BT_reg_min_1_EQ(int x) => (x & (1 << 30)) == 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int I4_BT_reg_min_1_JCC(int x) => (x & (1 << 30)) == 0 ? (x + 1) : (x - 1);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool I8_BT_reg_min_1(long x) => (x & (1L << 62)) != 0;
+
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -106,6 +151,69 @@ public class Program
         pass &= !I8_BT_mem_reg(ref i8one, 32);
         pass &= I8_BT_mem_reg(ref i8one, 64);
         pass &= !I8_BT_mem_reg(ref i8two, 0);
+
+        pass &= I1_BT_reg_min(sbyte.MinValue);
+        Assert.True(pass);
+        pass &= !I1_BT_reg_min(sbyte.MaxValue);
+        Assert.True(pass);
+        pass &= !I1_BT_reg_min_1(sbyte.MinValue);
+        Assert.True(pass);
+        pass &= I1_BT_reg_min_1(sbyte.MaxValue);
+        Assert.True(pass);
+
+        pass &= I1_BT_reg_min_JCC(sbyte.MinValue) == sbyte.MaxValue;
+        Assert.True(pass);
+        pass &= I1_BT_reg_min_JCC(sbyte.MaxValue) == sbyte.MinValue;
+        Assert.True(pass);
+        pass &= I1_BT_reg_min_1_JCC(sbyte.MinValue) == (sbyte.MinValue + 1);
+        Assert.True(pass);
+        pass &= I1_BT_reg_min_1_JCC(sbyte.MaxValue) == (sbyte.MaxValue - 1);
+        Assert.True(pass);
+
+        pass &= I2_BT_reg_min(short.MinValue);
+        Assert.Equal(0, pass ? 0 : 159);
+        pass &= !I2_BT_reg_min(short.MaxValue);
+        Assert.Equal(0, pass ? 0 : 161);
+        pass &= !I2_BT_reg_min_1(short.MinValue);
+        Assert.Equal(0, pass ? 0 : 163);
+        pass &= I2_BT_reg_min_1(short.MaxValue);
+        Assert.Equal(0, pass ? 0 : 165);
+
+        pass &= I4_BT_reg_min(int.MinValue);
+        Assert.Equal(0, pass ? 0 : 168);
+        pass &= !I4_BT_reg_min(int.MaxValue);
+        Assert.Equal(0, pass ? 0 : 170);
+        pass &= !I4_BT_reg_min_1(int.MinValue);
+        Assert.Equal(0, pass ? 0 : 172);
+        pass &= I4_BT_reg_min_1(int.MaxValue);
+        Assert.Equal(0, pass ? 0 : 174);
+
+        pass &= !I4_BT_reg_min_EQ(int.MinValue);
+        Assert.Equal(0, pass ? 0 : 177);
+        pass &= I4_BT_reg_min_EQ(int.MaxValue);
+        Assert.Equal(0, pass ? 0 : 179);
+        pass &= I4_BT_reg_min_1_EQ(int.MinValue);
+        Assert.Equal(0, pass ? 0 : 181);
+        pass &= !I4_BT_reg_min_1_EQ(int.MaxValue);
+        Assert.Equal(0, pass ? 0 : 183);
+
+        pass &= I4_BT_reg_min_JCC(int.MinValue) == int.MaxValue;
+        Assert.Equal(0, pass ? 0 : 186);
+        pass &= I4_BT_reg_min_JCC(int.MaxValue) == int.MinValue;
+        Assert.Equal(0, pass ? 0 : 188);
+        pass &= I4_BT_reg_min_1_JCC(int.MinValue) == (int.MinValue + 1);
+        Assert.Equal(0, pass ? 0 : 190);
+        pass &= I4_BT_reg_min_1_JCC(int.MaxValue) == (int.MaxValue - 1);
+        Assert.Equal(0, pass ? 0 : 192);
+
+        pass &= I8_BT_reg_min(long.MinValue);
+        Assert.Equal(0, pass ? 0 : 195);
+        pass &= !I8_BT_reg_min(long.MaxValue);
+        Assert.Equal(0, pass ? 0 : 197);
+        pass &= !I8_BT_reg_min_1(long.MinValue);
+        Assert.Equal(0, pass ? 0 : 199);
+        pass &= I8_BT_reg_min_1(long.MaxValue);
+        Assert.Equal(0, pass ? 0 : 201);
 
         if (pass)
         {
