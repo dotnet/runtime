@@ -361,4 +361,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
     </PropertyGroup>
   </Target>
+
+  <Target Name="AdHocSign"
+    AfterTargets="LinkNative"
+    BeforeTargets="CopyNativeBinary;CreateLib"
+    Condition="'$(_IsApplePlatform)' == 'true' and '$([MSBUILD]::FileExists('/usr/bin/codesign'))' == 'true'">
+
+    <Exec Command="/usr/bin/codesign --sign - --entitlements &quot;$(MSBuildThisFileDirectory)entitlements.xml&quot; &quot;$(NativeBinary)&quot;" />
+  </Target>
+
+
 </Project>
