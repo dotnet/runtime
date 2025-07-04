@@ -20,6 +20,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private readonly RuntimeFunction _runtimeFunction;
         private readonly int _offset;
         private List<DebugInfoBoundsEntry> _boundsList;
+        private byte[] _boundsBytes;
         private List<NativeVarInfo> _variablesList;
         private Machine _machine;
 
@@ -35,6 +36,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureInitialized();
                 return _boundsList;
+            }
+        }
+
+        public byte[] BoundsBytes
+        {
+            get
+            {
+                EnsureInitialized();
+                return _boundsBytes;
             }
         }
 
@@ -111,6 +121,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             int boundsOffset = reader.GetNextByteOffset();
             int variablesOffset = (int)(boundsOffset + boundsByteCount);
 
+            _boundsBytes = new byte[boundsByteCount];
+            Array.Copy(image, boundsOffset, _boundsBytes, 0, boundsByteCount);
+
             if (boundsByteCount > 0)
             {
                 ParseBounds(image, boundsOffset);
@@ -149,10 +162,9 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 while (curBoundsProcessed < boundsEntryCount)
                 {
-                    bitTemp <<= 8;
-                    bitTemp |= image[offsetOfActualBoundsData++];
+                    bitTemp |= ((uint)image[offsetOfActualBoundsData++]) << (int)bitsCollected;
                     bitsCollected += 8;
-                    if (bitsCollected >= bitsPerEntry)
+                    while (bitsCollected >= bitsPerEntry)
                     {
                         ulong mappingDataEncoded = bitsMeaningfulMask & bitTemp;
                         bitTemp >>= (int)bitsPerEntry;
@@ -183,6 +195,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         entry.ILOffset = (uint)(mappingDataEncoded) + (uint)DebugInfoBoundsType.MaxMappingValue;
 
                         _boundsList.Add(entry);
+                        curBoundsProcessed++;
                     }
                 }
             }

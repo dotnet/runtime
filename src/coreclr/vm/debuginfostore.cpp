@@ -41,35 +41,31 @@ static uint32_t u32_max(uint32_t a, uint32_t b)
 static uint64_t ReadFromBitOffsets(PTR_UINT64 pArray, uint32_t bitStart, uint32_t bitCount)
 {
     uint32_t elementBitSize = (sizeof(uint64_t) * 8);
-    uint32_t bitEnd = bitStart + bitCount - 1;
     uint32_t lowOffset = bitStart / elementBitSize;
-    uint32_t highOffset = bitEnd / elementBitSize;
 
     uint64_t low = pArray[lowOffset];
-    uint64_t high = pArray[highOffset];
 
     uint32_t bitOffsetInLow = bitStart - lowOffset * elementBitSize;
     uint32_t bitsInLow = u32_min(elementBitSize - bitOffsetInLow, bitCount);
 
-    uint32_t endBitOffsetInHigh = bitEnd - highOffset * elementBitSize;
-    int32_t bitsNotInHigh = i32_max(-((int32_t)bitStart - (int32_t)(highOffset * elementBitSize)), 0);
-
-    int32_t startBitOffsetInHigh = i32_max((int32_t)bitStart - (int32_t)(highOffset * elementBitSize), 0);
 
     // Extract LowBits from low
     uint64_t lowShift1 = (low >> (int32_t)bitOffsetInLow);
 
-    int32_t loBitMask = ((1 << (bitsInLow)) - 1);
-    int32_t shiftLoToMaskUpperBitsAmount = (int32_t)(elementBitSize - bitsInLow);
-    uint64_t BitsFromLow = (lowShift1 & loBitMask);
+    uint64_t loBitMask = ((1ULL << (bitsInLow)) - 1);
+    uint64_t result = (lowShift1 & loBitMask);
 
-    uint64_t hiShift1 = (high >> startBitOffsetInHigh);
-    int32_t bitsInHigh = ((int32_t)endBitOffsetInHigh + 1) - startBitOffsetInHigh;
-    int32_t hiBitMask = ((1 << (bitsInHigh)) - 1);
-    uint64_t BitsFromHigh = hiShift1 & hiBitMask;
-    uint64_t resultBitsFromHigh = BitsFromHigh << bitsNotInHigh;
+    if (bitsInLow < elementBitSize)
+    {
+        uint64_t high = pArray[lowOffset + 1];
+        int32_t bitsInHigh = bitCount - bitsInLow;
+        uint64_t hiBitMask = ((1ULL << (bitsInHigh)) - 1);
+        uint64_t BitsFromHigh = high & hiBitMask;
+        uint64_t resultBitsFromHigh = BitsFromHigh << bitsInLow;
 
-    uint64_t result = BitsFromLow | resultBitsFromHigh;
+        result = result | resultBitsFromHigh;
+    }
+
     return result;
 }
 
