@@ -4331,9 +4331,6 @@ struct AsyncCallInfo
 {
     ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
-    // Whether to save and restore SynchronizationContext field around this
-    // call when it completes synchronously.
-    bool SyncSaveAndRestoreSynchronizationContext = false;
 };
 
 // Return type descriptor of a GT_CALL node.
