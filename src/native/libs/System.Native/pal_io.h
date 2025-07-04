@@ -38,9 +38,34 @@ typedef struct
 
 typedef struct
 {
-    size_t ResidentSetSize;
+    // note: sorted by size to avoid alignment padding
+    uint64_t VirtualSize;
+    uint64_t ResidentSetSize;
+    int64_t StartTime;    // time proc. started
+    int64_t StartTimeNsec;
+    int64_t CpuTotalTime; // Cumulative CPU time (user+sys)
+    int64_t CpuTotalTimeNsec;
+    int32_t Pid;
+    int32_t ParentPid;
+    int32_t SessionId;
+    int32_t Priority;
+    int32_t NiceVal;
     // add more fields when needed.
 } ProcessStatus;
+
+typedef struct
+{
+    // note: sorted by size to avoid alignment padding
+    int64_t StartTime;          // time thread started
+    int64_t StartTimeNsec;
+    int64_t CpuTotalTime;       // cumulative CPU time (user+sys)
+    int64_t CpuTotalTimeNsec;
+    int32_t Tid;
+    int32_t Priority;
+    int32_t NiceVal;
+    uint8_t StatusCode;    // [ORSTWZ] See ProcFsStateToThreadState()
+    // add more fields when needed.
+} ThreadStatus;
 
 // NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
 //       assertions in pal_networking.c that validate this.
@@ -805,11 +830,18 @@ PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
 PALEXPORT int32_t SystemNative_CanGetHiddenFlag(void);
 
 /**
+ * Reads the lwpsinfo_t struct and converts into ThreadStatus.
+ *
+ * Returns 0 on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_ReadProcessLwpInfo(int32_t pid, int32_t tid, ThreadStatus* threadStatus);
+
+/**
  * Reads the psinfo_t struct and converts into ProcessStatus.
  *
- * Returns 1 if the process status was read; otherwise, 0.
+ * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus);
+PALEXPORT int32_t SystemNative_ReadProcessStatusInfo(int32_t pid, ProcessStatus* processStatus, uint8_t *argBuf, int32_t argBufSize);
 
 /**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor at specified offset.
