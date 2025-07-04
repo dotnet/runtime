@@ -38,6 +38,13 @@ dn_simdhash_ght_get_value_or_default (
 	dn_simdhash_ght_t *hash, void * key
 );
 
+dn_simdhash_add_result
+dn_simdhash_ght_try_insert (
+	dn_simdhash_ght_t *hash,
+	void *key, void *value,
+	dn_simdhash_insert_mode mode
+);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
