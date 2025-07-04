@@ -28,14 +28,6 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
-  
-  <!-- Remove wasm-experimental workload to avoid problems with building MT runtime pack in ST scenarios (https://github.com/dotnet/runtime/issues/116492) -->
-  <Target Name="_RemoveUnusedWorkload" AfterTargets="_GetWorkloadsToInstall" Condition="'$(InstallWorkloadForTesting)' == 'true'">
-    <ItemGroup>
-      <WorkloadIdForTesting Remove="wasm-experimental" />
-    </ItemGroup>
-  </Target>
-  
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
   <PropertyGroup>
@@ -55,7 +47,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
-    <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
+	<PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <!-- Update the version provided by Microsoft.Playwright but drop it in favor of framework copy-->
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" PrivateAssets="All" ExcludeAssets="All" />
