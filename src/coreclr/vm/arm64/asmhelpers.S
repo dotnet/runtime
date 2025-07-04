@@ -211,11 +211,11 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     mov x4, sp
     str x4, [x3]
 
-    ldp x19, x20, [x2, #OFFSETOF__CONTEXT__R19]
-    ldp x21, x22, [x2, #(OFFSETOF__CONTEXT__R19 + 16)]
-    ldp x23, x24, [x2, #(OFFSETOF__CONTEXT__R19 + 32)]
-    ldp x25, x26, [x2, #(OFFSETOF__CONTEXT__R19 + 48)]
-    ldp x27, x28, [x2, #(OFFSETOF__CONTEXT__R19 + 64)]
+    ldp x19, x20, [x2, #OFFSETOF__CONTEXT__X19]
+    ldp x21, x22, [x2, #(OFFSETOF__CONTEXT__X19 + 16)]
+    ldp x23, x24, [x2, #(OFFSETOF__CONTEXT__X19 + 32)]
+    ldp x25, x26, [x2, #(OFFSETOF__CONTEXT__X19 + 48)]
+    ldp x27, x28, [x2, #(OFFSETOF__CONTEXT__X19 + 64)]
     ldr fp, [x2, #OFFSETOF__CONTEXT__Fp]
 
     // Invoke the funclet
