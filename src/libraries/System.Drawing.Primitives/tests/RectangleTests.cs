@@ -4,7 +4,7 @@
 using System.Globalization;
 using Xunit;
 
-namespace System.Drawing.PrimitivesTest
+namespace System.Drawing.Primitives.Tests
 {
     public class RectangleTests
     {
