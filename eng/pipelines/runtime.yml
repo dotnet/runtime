@@ -897,7 +897,7 @@ extends:
       #     condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
       #     nameSuffix: MultiThreaded
       #     extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #     publishArtifactsForWorkload: false
+      #     publishArtifactsForWorkload: true
       #     publishWBT: false
 
       # Browser Wasm.Build.Tests
