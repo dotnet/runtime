@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class RealCodeHeader : IData<RealCodeHeader>
@@ -12,12 +14,14 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
+        DebugInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(DebugInfo)].Offset);
         GCInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCInfo)].Offset);
         NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
         UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
     }
 
     public TargetPointer MethodDesc { get; init; }
+    public TargetPointer DebugInfo { get; init; }
     public TargetPointer GCInfo { get; init; }
     public uint NumUnwindInfos { get; init; }
     public TargetPointer UnwindInfos { get; init; }

@@ -7014,9 +7014,9 @@ CLRDataCreateInstance(REFIID iid,
     InitializeLogging();
 #endif
 
+#ifdef CAN_USE_CDAC
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     NonVMComHolder<IUnknown> cdacInterface = nullptr;
-#ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
     {
@@ -7047,12 +7047,16 @@ CLRDataCreateInstance(REFIID iid,
             }
         }
     }
-#endif
-    if (cdacInterface != nullptr)
+    if (enable.IsSet())
     {
+        if (cdacInterface == nullptr)
+        {
+            return E_NOINTERFACE;
+        }
         hr = cdacInterface->QueryInterface(iid, iface);
     }
     else
+#endif // CAN_USE_CDAC
     {
         hr = pClrDataAccess->QueryInterface(iid, iface);
 
