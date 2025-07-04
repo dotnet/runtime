@@ -33619,7 +33619,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     // op2 = op2 & op1
                     op2->AsVecCon()->EvaluateBinaryInPlace(GT_AND, false, simdBaseType, op1->AsVecCon());
 
-                    // op3 = op2 & ~op1
+                    // op3 = op3 & ~op1
                     op3->AsVecCon()->EvaluateBinaryInPlace(GT_AND_NOT, false, simdBaseType, op1->AsVecCon());
 
                     // op2 = op2 | op3
@@ -33632,8 +33632,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
 #if defined(TARGET_ARM64)
             case NI_Sve_ConditionalSelect:
+            case NI_Sve_ConditionalSelect_Predicates:
             {
-                assert(!varTypeIsMask(retType));
                 assert(varTypeIsMask(op1));
 
                 if (cnsNode != op1)
@@ -33662,6 +33662,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (op2->IsCnsVec() && op3->IsCnsVec())
                 {
+                    assert(ni == NI_Sve_ConditionalSelect);
                     assert(op2->gtType == TYP_SIMD16);
                     assert(op3->gtType == TYP_SIMD16);
 
@@ -33674,7 +33675,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                                                  op1SimdVal);
                     op2->AsVecCon()->gtSimd16Val = result;
 
-                    // op3 = op2 & ~op1
+                    // op3 = op3 & ~op1
                     result = {};
                     EvaluateBinarySimd<simd16_t>(GT_AND_NOT, false, simdBaseType, &result, op3->AsVecCon()->gtSimd16Val,
                                                  op1SimdVal);
@@ -33682,6 +33683,30 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     // op2 = op2 | op3
                     op2->AsVecCon()->EvaluateBinaryInPlace(GT_OR, false, simdBaseType, op3->AsVecCon());
+
+                    resultNode = op2;
+                }
+                else if (op2->IsCnsMsk() && op3->IsCnsMsk())
+                {
+                    assert(ni == NI_Sve_ConditionalSelect_Predicates);
+
+                    // op2 = op2 & op1
+                    simdmask_t result = {};
+                    EvaluateBinaryMask<simd16_t>(GT_AND, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                                 op1->AsMskCon()->gtSimdMaskVal);
+                    op2->AsMskCon()->gtSimdMaskVal = result;
+
+                    // op3 = op3 & ~op1
+                    result = {};
+                    EvaluateBinaryMask<simd16_t>(GT_AND_NOT, false, simdBaseType, &result,
+                                                 op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
+                    op3->AsMskCon()->gtSimdMaskVal = result;
+
+                    // op2 = op2 | op3
+                    result = {};
+                    EvaluateBinaryMask<simd16_t>(GT_OR, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                                 op3->AsMskCon()->gtSimdMaskVal);
+                    op2->AsMskCon()->gtSimdMaskVal = result;
 
                     resultNode = op2;
                 }
