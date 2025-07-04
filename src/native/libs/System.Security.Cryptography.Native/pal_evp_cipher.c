@@ -30,6 +30,9 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         return NULL;
     }
 
+    // Required for OpenSSL 1.1 AES-KWP, no-op in OpenSSL 3.
+    EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+
     // Perform partial initialization so we can set the key lengths
     int ret = EVP_CipherInit_ex(ctx, type, NULL, NULL, NULL, 0);
     if (!ret)
