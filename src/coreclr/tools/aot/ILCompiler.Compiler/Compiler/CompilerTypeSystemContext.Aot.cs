@@ -43,18 +43,8 @@ namespace ILCompiler
         private TypeDesc[] _arrayEnumeratorOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataType _arrayOfTType;
+        private MetadataType _arrayOfTEnumeratorType;
         private MetadataType _attributeType;
-
-        private MetadataType _systemArrayOfTEnumeratorType;
-        public MetadataType ArrayOfTEnumeratorType
-        {
-            get
-            {
-                // This type is optional, but it's fine for this cache to be ineffective if that happens.
-                // Those scenarios are rare and typically deal with small compilations.
-                return _systemArrayOfTEnumeratorType ??= SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
-            }
-        }
 
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures,
             int genericCycleDepthCutoff = DefaultGenericCycleDepthCutoff,
@@ -73,6 +63,16 @@ namespace ILCompiler
             _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleDepthCutoff, genericCycleBreadthCutoff);
 
             GenericsConfig = new SharedGenericsConfiguration();
+        }
+
+        public MetadataType ArrayOfTEnumeratorType
+        {
+            get
+            {
+                // This type is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                return _arrayOfTEnumeratorType ??= SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            }
         }
 
         public bool IsArrayVariantCastable(TypeDesc type)
