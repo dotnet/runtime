@@ -8,7 +8,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
-    <WasmPerfTracing>true</WasmPerfTracing>
+    <EnableDiagnostics>true</EnableDiagnostics>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
     <RuntimeComponents Include="diagnostics_tracing" />

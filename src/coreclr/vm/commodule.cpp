@@ -750,7 +750,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         _ASSERTE("LoadClass failed." && !curClass.IsNull());
 
         MethodTable* pMT = curClass.GetMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
+        _ASSERTE(pMT != NULL);
 
         // Get the CLR Class object
         OBJECTREF refCurClass = pMT->GetManagedClassObject();

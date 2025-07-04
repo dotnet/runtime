@@ -99,4 +99,6 @@ public class ContextHolder<[DynamicallyAccessedMembers(DynamicallyAccessedMember
     }
 
     public override int GetHashCode() => Context.GetHashCode();
+
+    public override string ToString() => Context.ToString() ?? string.Empty;
 }

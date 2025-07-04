@@ -708,15 +708,15 @@ bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
 
 HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
 
-// This is meant to mimic the RethrowTerminalExceptions/
-// SwallowAllExceptions/RethrowTransientExceptions macros to allow minidump
+// This is meant to mimic the RethrowTerminalExceptions()/
+// RethrowTransientExceptions() macros to allow minidump
 // gathering cancelation for details see
 // code:ClrDataAccess.EnumMemoryRegionsWrapper
 
 extern void DacLogMessage(LPCSTR format, ...);
 
-// This is usable in EX_TRY exactly how RethrowTerminalExceptions et cetera
-#define RethrowCancelExceptions                                         \
+// This is usable in EX_TRY exactly how RethrowTerminalExceptions() et cetera
+#define RethrowCancelExceptions()                                       \
     if (GET_EXCEPTION()->GetHR() == COR_E_OPERATIONCANCELED)            \
     {                                                                   \
         EX_RETHROW;                                                     \
@@ -828,11 +828,6 @@ struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 // virtually unwind a CONTEXT out-of-process
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
 #endif // FEATURE_EH_FUNCLETS
-
-#if defined(TARGET_UNIX)
-// call back through data target to unwind out-of-process
-HRESULT DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
-#endif // TARGET_UNIX
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 class SString;

@@ -119,7 +119,6 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
-gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -3764,17 +3763,6 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 	}
 }
 
-MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
-{
-	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
-
-	mono_term_signaled = TRUE;
-
-	mono_gc_finalize_notify ();
-
-	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-}
-
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
 
 #define HAVE_SIG_INFO
@@ -4946,7 +4934,6 @@ register_icalls (void)
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);
 
 	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
-	register_icall (mono_trace_samplepoint_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_tail_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);

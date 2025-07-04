@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
-    public static class PrivateKeyAssociationTests
+    public static partial class PrivateKeyAssociationTests
     {
         private const int PROV_RSA_FULL = 1;
         private const int PROV_DSS = 3;
@@ -708,6 +708,62 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void GetMLDsaPublicKeyTest()
+        {
+            // Cert without private key
+            using (X509Certificate2 cert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            using (MLDsa? certKey = GetMLDsaPublicKey(cert))
+            {
+                Assert.NotNull(certKey);
+                byte[] publicKey = certKey.ExportMLDsaPublicKey();
+                AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, publicKey);
+
+                // Verify the key is not actually private
+                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3]));
+            }
+
+            // Cert with private key
+            using (X509Certificate2 cert = LoadMLDsaIetfCertificateWithPrivateKey())
+            using (MLDsa? certKey = GetMLDsaPublicKey(cert))
+            {
+                Assert.NotNull(certKey);
+                byte[] publicKey = certKey.ExportMLDsaPublicKey();
+                AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, publicKey);
+
+                // Verify the key is not actually private
+                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3]));
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void GetMLDsaPrivateKeyTest()
+        {
+            // Cert without private key
+            using (X509Certificate2 cert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            {
+                using (MLDsa? certKey = GetMLDsaPrivateKey(cert))
+                {
+                    Assert.Null(certKey);
+                }
+            }
+
+            // Cert with private key
+            using (X509Certificate2 certWithPrivateKey = LoadMLDsaIetfCertificateWithPrivateKey())
+            {
+                using (MLDsa? certKey = GetMLDsaPrivateKey(certWithPrivateKey))
+                {
+                    Assert.NotNull(certKey);
+
+                    // Verify the key is actually private
+                    byte[] privateSeed = certKey.ExportMLDsaPrivateSeed();
+                    AssertExtensions.SequenceEqual(
+                        MLDsaTestsData.IetfMLDsa44.PrivateSeed,
+                        privateSeed);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void CheckCopyWithPrivateKey_MLDSA()
         {
             using (MLDsa privKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
@@ -742,109 +798,322 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         byte[] data = new byte[RandomNumberGenerator.GetInt32(97)];
                         RandomNumberGenerator.Fill(data);
 
-                        byte[] signature = new byte[pub.Algorithm.SignatureSizeInBytes];
-                        int written = priv.SignData(data, signature);
-                        Assert.Equal(signature.Length, written);
+                        byte[] signature = priv.SignData(data);
                         Assert.True(pub.VerifyData(data, signature));
                     });
                 }
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void CheckCopyWithPrivateKey_MLKem()
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_SecretKey()
         {
-            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
-            using (MLKem privKey = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem512PrivateKeySeed))
-            using (X509Certificate2 wrongAlg = X509CertificateLoader.LoadCertificate(TestData.CertWithEnhancedKeyUsage))
+            using (X509Certificate2 pubOnly = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
             {
-                CheckCopyWithPrivateKey(
-                    pubOnly,
-                    wrongAlg,
-                    privKey,
-                    [
-                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem512),
-                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem768),
-                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem1024),
-                    ],
-                    (cert, key) => cert.CopyWithPrivateKey(key),
-                    cert => cert.GetMLKemPublicKey(),
-                    cert => cert.GetMLKemPrivateKey(),
-                    (priv, pub) =>
-                    {
-                        pub.Encapsulate(out byte[] ciphertext, out byte[] pubSharedSecret);
-                        byte[] privSharedSecret = priv.Decapsulate(ciphertext);
-                        AssertExtensions.SequenceEqual(pubSharedSecret, privSharedSecret);
-                    });
-            }
-        }
-
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_Seed()
-        {
-            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
-            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
-            {
-                contract.OnExportPrivateSeedCore = (Span<byte> source) =>
+                using (MLDsaTestImplementation publicMLDsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
                 {
-                    MLKemTestData.IncrementalSeed.CopyTo(source);
-                };
+                    Exception e = new Exception("no secret key");
 
-                contract.OnExportEncapsulationKeyCore = (Span<byte> source) =>
-                {
-                    PublicKey publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki, out _);
-                    publicKey.EncodedKeyValue.RawData.AsSpan().CopyTo(source);
-                };
+                    // The private key can be retrieved directly or from PKCS#8. If the seed is not available,
+                    // it should fall back to the secret key.
+                    publicMLDsa.TryExportPkcs8PrivateKeyHook = (_, out _) => throw e;
+                    publicMLDsa.ExportMLDsaSecretKeyHook = _ => throw e;
+                    publicMLDsa.ExportMLDsaPrivateSeedHook = _ => throw new CryptographicException("Should signal to try secret key");
+                    publicMLDsa.ExportMLDsaPublicKeyHook = (Span<byte> destination) =>
+                        MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo(destination);
 
-                using (X509Certificate2 cert = pubOnly.CopyWithPrivateKey(contract))
-                {
-                    AssertExtensions.TrueExpression(cert.HasPrivateKey);
-
-                    using (MLKem kem = cert.GetMLKemPrivateKey())
-                    {
-                        AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
-                    }
+                    Assert.Same(e, AssertExtensions.Throws<Exception>(() => CopyWithPrivateKey_MLDsa(pubOnly, publicMLDsa)));
                 }
-            }
-        }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
-        public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_DecapsulationKey()
-        {
-            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
-            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
-            {
-                contract.OnExportPrivateSeedCore = (Span<byte> source) =>
+                MLDsaTestImplementation privateMLDsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44);
+                privateMLDsa.ExportMLDsaPrivateSeedHook = _ => throw new CryptographicException("Should signal to try secret key"); ;
+                privateMLDsa.ExportMLDsaPublicKeyHook = (Span<byte> destination) =>
+                    MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo(destination);
+                privateMLDsa.ExportMLDsaSecretKeyHook = (Span<byte> destination) =>
+                    MLDsaTestsData.IetfMLDsa44.SecretKey.CopyTo(destination);
+
+                privateMLDsa.TryExportPkcs8PrivateKeyHook = (dest, out written) =>
                 {
-                    throw new CryptographicException("Should signal to try decaps key");
-                };
-
-                contract.OnExportDecapsulationKeyCore = (Span<byte> source) =>
-                {
-                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey.AsSpan().CopyTo(source);
-                };
-
-                contract.OnExportEncapsulationKeyCore = (Span<byte> source) =>
-                {
-                    PublicKey publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki, out _);
-                    publicKey.EncodedKeyValue.RawData.AsSpan().CopyTo(source);
-                };
-
-                using (X509Certificate2 cert = pubOnly.CopyWithPrivateKey(contract))
-                {
-                    AssertExtensions.TrueExpression(cert.HasPrivateKey);
-
-                    using (MLKem kem = cert.GetMLKemPrivateKey())
+                    if (MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed.AsSpan().TryCopyTo(dest))
                     {
+                        written = MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed.Length;
+                        return true;
+                    }
+
+                    written = 0;
+                    return false;
+                };
+
+                using (X509Certificate2 privCert = CopyWithPrivateKey_MLDsa(pubOnly, privateMLDsa))
+                {
+                    AssertExtensions.TrueExpression(privCert.HasPrivateKey);
+
+                    using (MLDsa certPrivateMLDsa = GetMLDsaPrivateKey(privCert))
+                    {
+                        byte[] secretKey = certPrivateMLDsa.ExportMLDsaSecretKey();
                         AssertExtensions.SequenceEqual(
-                            MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
-                            kem.ExportDecapsulationKey());
+                            MLDsaTestsData.IetfMLDsa44.SecretKey,
+                            secretKey);
+
+                        privateMLDsa.Dispose();
+                        privateMLDsa.ExportMLDsaPrivateSeedHook = _ => Assert.Fail();
+                        privateMLDsa.ExportMLDsaPublicKeyHook = _ => Assert.Fail();
+                        privateMLDsa.ExportMLDsaSecretKeyHook = _ => Assert.Fail();
+                        privateMLDsa.TryExportPkcs8PrivateKeyHook = (_, out w) => { Assert.Fail(); w = 0; return false; };
+
+                        // Ensure the key is actual a clone
+                        secretKey = certPrivateMLDsa.ExportMLDsaSecretKey();
+                        AssertExtensions.SequenceEqual(
+                            MLDsaTestsData.IetfMLDsa44.SecretKey,
+                            secretKey);
                     }
                 }
             }
         }
 
-        private static void CheckCopyWithPrivateKey<TKey>(
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_PrivateSeed()
+        {
+            using (X509Certificate2 pubOnly = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            {
+                using (MLDsaTestImplementation publicMLDsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
+                {
+                    Exception e = new Exception("no secret key");
+
+                    // The private seed can be retrieved directly or from PKCS#8
+                    publicMLDsa.TryExportPkcs8PrivateKeyHook = (_, out _) => throw e;
+                    publicMLDsa.ExportMLDsaPrivateSeedHook = _ => throw e;
+                    publicMLDsa.ExportMLDsaPublicKeyHook = (Span<byte> destination) =>
+                        MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo(destination);
+
+                    Assert.Same(e, AssertExtensions.Throws<Exception>(() => CopyWithPrivateKey_MLDsa(pubOnly, publicMLDsa)));
+                }
+
+                MLDsaTestImplementation privateMLDsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44);
+                privateMLDsa.ExportMLDsaPublicKeyHook = (Span<byte> destination) =>
+                    MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo(destination);
+                privateMLDsa.ExportMLDsaPrivateSeedHook = (Span<byte> destination) =>
+                    MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo(destination);
+
+                privateMLDsa.TryExportPkcs8PrivateKeyHook = (dest, out written) =>
+                {
+                    if (MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed.AsSpan().TryCopyTo(dest))
+                    {
+                        written = MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed.Length;
+                        return true;
+                    }
+
+                    written = 0;
+                    return false;
+                };
+
+                using (X509Certificate2 privCert = CopyWithPrivateKey_MLDsa(pubOnly, privateMLDsa))
+                {
+                    AssertExtensions.TrueExpression(privCert.HasPrivateKey);
+
+                    using (MLDsa certPrivateMLDsa = GetMLDsaPrivateKey(privCert))
+                    {
+                        byte[] secretKey = certPrivateMLDsa.ExportMLDsaPrivateSeed();
+                        AssertExtensions.SequenceEqual(
+                            MLDsaTestsData.IetfMLDsa44.PrivateSeed,
+                            secretKey);
+
+                        privateMLDsa.Dispose();
+                        privateMLDsa.ExportMLDsaPublicKeyHook = _ => Assert.Fail();
+                        privateMLDsa.ExportMLDsaPrivateSeedHook = _ => Assert.Fail();
+                        privateMLDsa.TryExportPkcs8PrivateKeyHook = (_, out w) => { Assert.Fail(); w = 0; return false; };
+
+                        // Ensure the key is actual a clone
+                        secretKey = certPrivateMLDsa.ExportMLDsaPrivateSeed();
+                        AssertExtensions.SequenceEqual(
+                            MLDsaTestsData.IetfMLDsa44.PrivateSeed,
+                            secretKey);
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_WrongPkcs8()
+        {
+            using (X509Certificate2 ietfCert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            using (RSA rsa = RSA.Create())
+            using (MLDsaTestImplementation keyThatExportsRsaPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
+            {
+                keyThatExportsRsaPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
+                keyThatExportsRsaPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
+
+                // Export RSA PKCS#8
+                keyThatExportsRsaPkcs8.TryExportPkcs8PrivateKeyHook = rsa.TryExportPkcs8PrivateKey;
+
+                if (PlatformDetection.IsWindows)
+                {
+                    // Only Windows uses PKCS#8 for pairing key to cert.
+                    AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8));
+                }
+                else
+                {
+                    // Assert.NoThrow
+                    using (ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8)) { }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_MalformedPkcs8()
+        {
+            using (X509Certificate2 ietfCert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            using (MLDsaTestImplementation keyThatExportsMalformedPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
+            {
+                keyThatExportsMalformedPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
+                keyThatExportsMalformedPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
+
+                // Export malformed PKCS#8
+                keyThatExportsMalformedPkcs8.TryExportPkcs8PrivateKeyHook =
+                    (dest, out written) =>
+                    {
+                        written = 0;
+                        return true;
+                    };
+
+                if (PlatformDetection.IsWindows)
+                {
+                    // Only Windows uses PKCS#8 for pairing key to cert.
+                    AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8));
+                }
+                else
+                {
+                    // Assert.NoThrow
+                    using (ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8)) { }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void AssociatePersistedKey_CNG_MLDsa()
+        {
+            const string KeyName = nameof(AssociatePersistedKey_CNG_MLDsa);
+
+            CngKey cngKey = null;
+            byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+
+            try
+            {
+                CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
+                {
+                    ExportPolicy = CngExportPolicies.None,
+                    Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                CngProperty parameterSet = MLDsaTestHelpers.GetCngProperty(MLDsaAlgorithm.MLDsa44);
+                creationParameters.Parameters.Add(parameterSet);
+
+                cngKey = CngKey.Create(CngAlgorithm.MLDsa, KeyName, creationParameters);
+
+                using (MLDsaCng mldsaCng = new MLDsaCng(cngKey))
+                {
+                    CertificateRequest request = new CertificateRequest(
+                        new X500DistinguishedName($"CN={KeyName}"),
+                        mldsaCng);
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                    using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                    using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+                    {
+                        mldsa.SignData("test"u8, signature);
+                        Assert.True(mldsaCng.VerifyData("test"u8, signature));
+                    }
+                }
+
+                // Some certs have disposed, did they delete the key?
+                using (CngKey stillPersistedKey = CngKey.Open(KeyName, CngProvider.MicrosoftSoftwareKeyStorageProvider))
+                using (MLDsaCng mldsa = new MLDsaCng(stillPersistedKey))
+                {
+                    mldsa.SignData("test"u8, signature);
+                }
+            }
+            finally
+            {
+                cngKey?.Delete();
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void AssociateEphemeralKey_CNG_MLDsa()
+        {
+            CngKeyCreationParameters creationParameters = new CngKeyCreationParameters();
+            CngProperty parameterSet = MLDsaTestHelpers.GetCngProperty(MLDsaAlgorithm.MLDsa44);
+            creationParameters.Parameters.Add(parameterSet);
+            creationParameters.ExportPolicy = CngExportPolicies.AllowPlaintextExport;
+
+            byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+
+            using (CngKey ephemeralCngKey = CngKey.Create(CngAlgorithm.MLDsa, keyName: null, creationParameters))
+            {
+                using (MLDsaCng mldsaCng = new MLDsaCng(ephemeralCngKey))
+                {
+                    CertificateRequest request = new CertificateRequest(
+                        new X500DistinguishedName($"CN=EphemeralMLDsaKey"),
+                        mldsaCng);
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                    using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                    using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+                    {
+                        mldsa.SignData("test"u8, signature);
+                        Assert.True(mldsaCng.VerifyData("test"u8, signature));
+                    }
+
+                    // Run a few iterations to catch nondeterministic use-after-dispose issues
+                    for (int i = 0; i < 5; i++)
+                    {
+                        using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1))) { }
+                    }
+
+                    mldsaCng.SignData("test"u8, signature);
+                }
+
+                // Some certs have disposed, did they delete the key?
+                using (MLDsaCng mldsa = new MLDsaCng(ephemeralCngKey))
+                {
+                    mldsa.SignData("test"u8, signature);
+                }
+            }
+        }
+
+        private static partial Func<X509Certificate2, MLKem, X509Certificate2> CopyWithPrivateKey_MLKem =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
+
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPublicKey =>
+            cert => cert.GetMLKemPublicKey();
+
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPrivateKey =>
+            cert => cert.GetMLKemPrivateKey();
+
+        private static Func<X509Certificate2, MLDsa, X509Certificate2> CopyWithPrivateKey_MLDsa =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
+
+        private static Func<X509Certificate2, MLDsa> GetMLDsaPublicKey =>
+            cert => cert.GetMLDsaPublicKey();
+
+        private static Func<X509Certificate2, MLDsa> GetMLDsaPrivateKey =>
+            cert => cert.GetMLDsaPrivateKey();
+
+        private static partial Func<X509Certificate2, SlhDsa, X509Certificate2> CopyWithPrivateKey_SlhDsa =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
+
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPublicKey =>
+            cert => cert.GetSlhDsaPublicKey();
+
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPrivateKey =>
+            cert => cert.GetSlhDsaPrivateKey();
+
+        private static partial void CheckCopyWithPrivateKey<TKey>(
             X509Certificate2 cert,
             X509Certificate2 wrongAlgorithmCert,
             TKey correctPrivateKey,
@@ -853,70 +1122,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Func<X509Certificate2, TKey> getPublicKey,
             Func<X509Certificate2, TKey> getPrivateKey,
             Action<TKey, TKey> keyProver)
-            where TKey : class, IDisposable
+            where TKey : class, IDisposable;
+
+        private static X509Certificate2 LoadMLDsaIetfCertificateWithPrivateKey()
         {
-            Exception e = AssertExtensions.Throws<ArgumentException>(
-                null,
-                () => copyWithPrivateKey(wrongAlgorithmCert, correctPrivateKey));
-
-            Assert.Contains("algorithm", e.Message);
-
-            List<TKey> generatedKeys = new();
-
-            foreach (Func<TKey> func in incorrectKeys)
-            {
-                TKey incorrectKey = func();
-                generatedKeys.Add(incorrectKey);
-
-                e = AssertExtensions.Throws<ArgumentException>(
-                    "privateKey",
-                    () => copyWithPrivateKey(cert, incorrectKey));
-
-                Assert.Contains("key does not match the public key for this certificate", e.Message);
-            }
-
-            using (X509Certificate2 withKey = copyWithPrivateKey(cert, correctPrivateKey))
-            {
-                e = AssertExtensions.Throws<InvalidOperationException>(
-                    () => copyWithPrivateKey(withKey, correctPrivateKey));
-
-                Assert.Contains("already has an associated private key", e.Message);
-
-                foreach (TKey incorrectKey in generatedKeys)
-                {
-                    e = AssertExtensions.Throws<InvalidOperationException>(
-                        () => copyWithPrivateKey(withKey, incorrectKey));
-
-                    Assert.Contains("already has an associated private key", e.Message);
-                }
-
-                using (TKey pub = getPublicKey(withKey))
-                using (TKey pub2 = getPublicKey(withKey))
-                using (TKey pubOnly = getPublicKey(cert))
-                using (TKey priv = getPrivateKey(withKey))
-                using (TKey priv2 = getPrivateKey(withKey))
-                {
-                    Assert.NotSame(pub, pub2);
-                    Assert.NotSame(pub, pubOnly);
-                    Assert.NotSame(pub2, pubOnly);
-                    Assert.NotSame(priv, priv2);
-
-                    keyProver(priv, pub2);
-                    keyProver(priv2, pub);
-                    keyProver(priv, pubOnly);
-
-                    priv.Dispose();
-                    pub2.Dispose();
-
-                    keyProver(priv2, pub);
-                    keyProver(priv2, pubOnly);
-                }
-            }
-
-            foreach (TKey incorrectKey in generatedKeys)
-            {
-                incorrectKey.Dispose();
-            }
+            using (X509Certificate2 cert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            using (MLDsa? privateKey = MLDsa.ImportMLDsaPrivateSeed(MLDsaAlgorithm.MLDsa44, MLDsaTestsData.IetfMLDsa44.PrivateSeed))
+                return cert.CopyWithPrivateKey(privateKey);
         }
     }
 }

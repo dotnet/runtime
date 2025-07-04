@@ -39,13 +39,8 @@ namespace System.Text.Json
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-            get
-            {
-                return s_defaultOptions ?? GetOrCreateSingleton(ref s_defaultOptions, JsonSerializerDefaults.General);
-            }
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.General);
         }
-
-        private static JsonSerializerOptions? s_defaultOptions;
 
         /// <summary>
         /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the web configuration.
@@ -59,13 +54,23 @@ namespace System.Text.Json
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-            get
-            {
-                return s_webOptions ?? GetOrCreateSingleton(ref s_webOptions, JsonSerializerDefaults.Web);
-            }
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.Web);
         }
 
-        private static JsonSerializerOptions? s_webOptions;
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the strict configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Strict
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.Strict);
+        }
 
         // For any new option added, consider adding it to the options copied in the copy constructor below
         // and consider updating the EqualtyComparer used for comparing CachingContexts.
@@ -97,6 +102,7 @@ namespace System.Text.Json
         private bool _writeIndented;
         private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
         private int _indentSize = JsonConstants.DefaultIndentSize;
+        private bool _allowDuplicateProperties = true;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -149,6 +155,7 @@ namespace System.Text.Json
             _writeIndented = options._writeIndented;
             _indentCharacter = options._indentCharacter;
             _indentSize = options._indentSize;
+            _allowDuplicateProperties = options._allowDuplicateProperties;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -169,6 +176,13 @@ namespace System.Text.Json
                 _propertyNameCaseInsensitive = true;
                 _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 _numberHandling = JsonNumberHandling.AllowReadingFromString;
+            }
+            else if (defaults == JsonSerializerDefaults.Strict)
+            {
+                _unmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+                _allowDuplicateProperties = false;
+                _respectNullableAnnotations = true;
+                _respectRequiredConstructorParameters = true;
             }
             else if (defaults != JsonSerializerDefaults.General)
             {
@@ -834,6 +848,31 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Defines whether duplicate property names are allowed when deserializing JSON objects.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// By default, it's set to true. If set to false, <see cref="JsonException"/> is thrown
+        /// when a duplicate property name is encountered during deserialization.
+        /// </para>
+        /// <para>
+        /// Duplicate property names are not allowed in serialization.
+        /// </para>
+        /// </remarks>
+        public bool AllowDuplicateProperties
+        {
+            get => _allowDuplicateProperties;
+            set
+            {
+                VerifyMutable();
+                _allowDuplicateProperties = value;
+            }
+        }
+
+        /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -1020,9 +1059,10 @@ namespace System.Text.Json
         {
             return new JsonDocumentOptions
             {
+                AllowDuplicateProperties = AllowDuplicateProperties,
                 AllowTrailingCommas = AllowTrailingCommas,
                 CommentHandling = ReadCommentHandling,
-                MaxDepth = MaxDepth
+                MaxDepth = MaxDepth,
             };
         }
 

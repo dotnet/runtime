@@ -44,6 +44,10 @@
 #include "interoputil.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_JAVAMARSHAL
+#include "interoplibinterface.h"
+#endif // FEATURE_JAVAMARSHAL
+
 // Prelink
 // Does advance loading of an N/Direct library
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
@@ -397,6 +401,46 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
     return *((LPVOID*)&objRef);
 }
 FCIMPLEND
+
+#ifdef FEATURE_JAVAMARSHAL
+// Get the object referenced by a GC handle, also waiting for bridge procesing to finish.
+// Used by WeakReference
+FCIMPL2(FC_BOOL_RET, MarshalNative::GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object **pObjResult)
+{
+    FCALL_CONTRACT;
+
+    if (Interop::IsGCBridgeActive())
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pObjResult = OBJECTREFToObject(ObjectFromHandle(handle));
+    FC_RETURN_BOOL(true);
+}
+FCIMPLEND
+
+// Unlike the fast call above, this can block
+extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    BEGIN_QCALL;
+
+    {
+        GCX_COOP();
+
+        Interop::WaitForGCBridgeFinish();
+        // No GC can happen between the wait and obtaining of the reference, so the
+        // bridge processing status can't change, guaranteeing the nulling of weak refs
+        // took place in the bridge processing finish stage.
+        result.Set(ObjectFromHandle(handle));
+    }
+
+    END_QCALL;
+}
+#endif // FEATURE_JAVAMARSHAL
 
 // Update the object referenced by a GC handle.
 FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)
@@ -800,7 +844,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnS
     GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
 
@@ -830,7 +874,7 @@ extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandl
     GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
 
@@ -1044,7 +1088,7 @@ static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
         if (DefItfType == DefaultInterfaceType_AutoDual || DefItfType == DefaultInterfaceType_Explicit)
         {
             pMT = hndDefItfClass.GetMethodTable();
-            PREFIX_ASSUME(pMT != NULL);
+            _ASSERTE(pMT != NULL);
         }
         else
         {

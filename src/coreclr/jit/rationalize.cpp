@@ -131,7 +131,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 unreached();
 #endif // FEATURE_HW_INTRINSICS
             }
-            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
+            arg = NewCallArg::Struct(operand, sigTyp, comp->typGetObjLayout(clsHnd));
         }
         else
         {
@@ -340,6 +340,36 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
     switch (intrinsicId)
     {
+#if defined(TARGET_XARCH)
+        case NI_AVX_Compare:
+        case NI_AVX_CompareScalar:
+        case NI_AVX512_Compare:
+        {
+            assert(operandCount == 3);
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+            GenTree* op3 = operands[2];
+
+            if (!op3->IsCnsIntOrI())
+            {
+                break;
+            }
+
+            FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+            NamedIntrinsic      id =
+                HWIntrinsicInfo::lookupIdForFloatComparisonMode(intrinsicId, mode, simdBaseType, simdSize);
+
+            if (id == intrinsicId)
+            {
+                break;
+            }
+
+            result = comp->gtNewSimdHWIntrinsicNode(retType, op1, op2, id, simdBaseJitType, simdSize);
+            break;
+        }
+#endif // TARGET_XARCH
+
         case NI_Vector128_Shuffle:
         case NI_Vector128_ShuffleNative:
         case NI_Vector128_ShuffleNativeFallback:
@@ -382,57 +412,6 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             }
 
             result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
-            break;
-        }
-
-        case NI_Vector128_WithElement:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_WithElement:
-#endif
-        {
-            assert(operandCount == 3);
-
-            GenTree* op1 = operands[0];
-            GenTree* op2 = operands[1];
-            GenTree* op3 = operands[2];
-
-            if (op2->OperIsConst())
-            {
-                ssize_t imm8  = op2->AsIntCon()->IconValue();
-                ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-                if ((imm8 >= count) || (imm8 < 0))
-                {
-                    // Using software fallback if index is out of range (throw exception)
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                if (varTypeIsIntegral(simdBaseType))
-                {
-                    if (varTypeIsLong(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
-                        {
-                            break;
-                        }
-                    }
-                    else if (!varTypeIsShort(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                        {
-                            break;
-                        }
-                    }
-                }
-#endif // TARGET_XARCH
-
-                result = comp->gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
-                break;
-            }
             break;
         }
 
@@ -867,7 +846,7 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 {
     GenTree* const node = *use;
 
-    if (node->OperGet() == GT_INTRINSIC)
+    if (node->OperIs(GT_INTRINSIC))
     {
         if (m_rationalizer.comp->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
         {

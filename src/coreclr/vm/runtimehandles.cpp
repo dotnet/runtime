@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 #include "corhdr.h"
 #include "runtimehandles.h"
@@ -1143,6 +1142,50 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CompareCanonicalHandles, ReflectClassBas
 }
 FCIMPLEND
 
+FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable* pMT)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pMT != nullptr);
+
+    if (!GCHeapUtilities::UseThreadAllocationContexts())
+    {
+        return NULL;
+    }
+
+    if (pMT->HasFinalizer())
+    {
+        return NULL;
+    }
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (pMT->RequiresAlign8())
+    {
+        return NULL;
+    }
+#endif
+
+    SIZE_T size = pMT->GetBaseSize();
+    _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+    ee_alloc_context* allocContext = &t_runtime_thread_locals.alloc_context;
+    BYTE* allocPtr = allocContext->m_GCAllocContext.alloc_ptr;
+    BYTE* limit = allocContext->getCombinedLimit();
+
+    if ((SIZE_T)(limit - allocPtr) < size)
+    {
+        return NULL; // Fall back to slow path in managed
+    }
+
+    allocContext->m_GCAllocContext.alloc_ptr = allocPtr + size;
+    Object* obj = reinterpret_cast<Object*>(allocPtr);
+    obj->SetMethodTable(pMT);
+    _ASSERTE(obj->HasEmptySyncBlockInfo());
+
+    return obj;
+}
+FCIMPLEND
+
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsGenericVariable, PTR_ReflectClassBaseObject pTypeUNSAFE)
 {
     FCALL_CONTRACT;
@@ -1804,14 +1847,14 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 // For {task-returning, async} variants Reflection hands out only the task-returning variant.
 //  the async varinat is an implementation detail that conceptually does not exist.
 //  TODO: (async) the filtering may not cover all scenarios. Review and add tests.
-// 
+//
 // For generic methods we always hand out an instantiating stub except for a generic method definition
 // For non-generic methods on generic types we need an instantiating stub if it's one of the following
 //  - static method on a generic class
 //  - static or instance method on a generic interface
 //  - static or instance method on a generic value type
 // The Reflection policy is to always hand out instantiating stubs in these cases
-// 
+//
 // For methods on non-generic value types we can use either the canonical method or the unboxing stub
 // The Reflection policy is to always hand out unboxing stubs if the methods are virtual methods
 // The reason for this is that in the current implementation of the class loader, the v-table slots for
@@ -1842,8 +1885,8 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetStubIfNeededInternal,
     if (pMethod->IsAsyncVariantMethod())
         return NULL;
 
-    // Perf optimization: this logic is actually duplicated in FindOrCreateAssociatedMethodDescForReflection, but since it
-    // is the more common case it's worth the duplicate check here to avoid the helper method frame
+    // Perf optimization: this logic is duplicated from FindOrCreateAssociatedMethodDescForReflection,
+    // but it's worth repeating here to avoid unnecessary overhead in the common case.
     if (pMethod->HasMethodInstantiation()
         || (!instType.IsValueType()
             && (!instType.HasInstantiation() || instType.IsGenericTypeDefinition())))
@@ -2250,7 +2293,7 @@ extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule
         {
             globalTypeHandle = TypeHandle(pModule->GetGlobalMethodTable());
         }
-        EX_SWALLOW_NONTRANSIENT;
+        EX_SWALLOW_NONTRANSIENT
 
         if (!globalTypeHandle.IsNull())
         {

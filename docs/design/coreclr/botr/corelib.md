@@ -42,8 +42,6 @@ The CLR provides a [`mscorlib` binder](https://github.com/dotnet/runtime/blob/ma
 
 Two techniques exist for calling into the CLR from managed code. FCall allows you to call directly into the CLR code, and provides a lot of flexibility in terms of manipulating objects, though it is easy to cause GC holes by not tracking object references correctly. QCall also allows you to call into the CLR via the P/Invoke, but is much harder to accidentally mis-use. FCalls are identified in managed code as extern methods with the [`MethodImplOptions.InternalCall`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.methodimploptions) bit set. QCalls are marked `static extern` methods similar to regular P/Invokes, but are directed toward a library called `"QCall"`.
 
-There is a small variant of FCall called HCall (for Helper call) for implementing JIT helpers. The HCall is intended for doing things like accessing multi-dimensional array elements, range checks, etc. The only difference between HCall and FCall is that HCall methods won't show up in an exception stack trace.
-
 ### Choosing between FCall, QCall, P/Invoke, and writing in managed code
 
 First, remember that you should be writing as much as possible in managed code. You avoid a raft of potential GC hole issues, you get a better debugging experience, and the code is often simpler.
@@ -54,7 +52,7 @@ If the only reason you're defining a FCall method is to call a native method, yo
 
 If you still need to implement a feature inside the runtime, consider if there is a way to reduce the frequency of transitioning to native code. Can you write the common case in managed and only call into native for some rare corner cases? You're usually best off keeping as much as possible in managed code.
 
-QCalls are the preferred mechanism going forward. You should only use FCalls when you are "forced" to. This happens when there is common "short path" through the code that is important to optimize. This short path should not be more than a few hundred instructions, cannot allocate GC memory, take locks or throw exceptions (`GC_NOTRIGGER`, `NOTHROWS`). In all other circumstances (and especially when you enter a FCall and then simply erect HelperMethodFrame), you should be using QCall.
+QCalls are the preferred mechanism going forward. You should only use FCalls when you are "forced" to. This happens when there is common "short path" through the code that is important to optimize. This short path should not be more than a few hundred instructions, cannot allocate GC memory, take locks or throw exceptions (`GC_NOTRIGGER`, `NOTHROWS`). In all other circumstances, you should be using QCall.
 
 FCalls were specifically designed for short paths of code that must be optimized. They allowed explicit control over when erecting a frame was done. However, it is error prone and not worth the complexity for many APIs. QCalls are essentially P/Invokes into the CLR. In the event the performance of an FCall is required consider creating a QCall and marking it with [`SuppressGCTransitionAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.suppressgctransitionattribute).
 
@@ -63,8 +61,6 @@ As a result, QCalls give you some advantageous marshaling for `SafeHandle`s auto
 ## QCall functional behavior
 
 QCalls are very much like a normal P/Invoke from CoreLib to CLR. Unlike FCalls, QCalls will marshal all arguments as unmanaged types like a normal P/Invoke. QCall also switch to preemptive GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls. QCalls are not prone to GC holes and GC starvation bugs that are common with FCalls.
-
-QCalls perform better than FCalls that erect a `HelperMethodFrame`. The overhead is about 1.4x less compared to FCall w/ `HelperMethodFrame` overhead on x86 and x64.
 
 The preferred types for QCall arguments are primitive types that are efficiently handled by the P/Invoke marshaler (`INT32`, `LPCWSTR`, `BOOL`). Notice that `BOOL` is the correct boolean flavor for QCall arguments. On the other hand, `CLR_BOOL` is the correct boolean flavor for FCall arguments.
 
@@ -164,7 +160,7 @@ extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::S
 
 ## FCall functional behavior
 
-FCalls allow more flexibility in terms of passing object references around, but with higher code complexity and more opportunities to make mistakes. Additionally, FCall methods must either erect a helper method frame along their common code paths, or for any FCall of non-trivial length, explicitly poll for whether a garbage collection must occur. Failing to do so will lead to starvation issues if managed code repeatedly calls the FCall method in a tight loop, because FCalls execute while the thread only allows the GC to run in a cooperative manner.
+FCalls allow more flexibility in terms of passing object references around, but with higher code complexity and more opportunities to make mistakes. Additionally, for any FCall of non-trivial length, explicitly poll for whether a garbage collection must occur. Failing to do so will lead to starvation issues if managed code repeatedly calls the FCall method in a tight loop, because FCalls execute while the thread only allows the GC to run in a cooperative manner.
 
 FCalls require a lot of boilerplate code, too much to describe here. Refer to [fcall.h][fcall] for details.
 
@@ -176,8 +172,6 @@ A more complete discussion on GC holes can be found in the [CLR Code Guide](../.
 
 Object references passed as parameters to FCall methods are not GC-protected, meaning that if a GC occurs, those references will point to the old location in memory of an object, not the new location. For this reason, FCalls usually follow the discipline of accepting something like `StringObject*` as their parameter type, then explicitly converting that to a `STRINGREF` before doing operations that may trigger a GC. If you expect to use an object reference later, you must GC protect object references before triggering a GC.
 
-All GC heap allocations within an FCall method must happen within a helper method frame. If you allocate memory on the GC heap, the GC may collect dead objects and move objects around in unpredictable ways, with some low probability. For this reason, you must manually report any object references in your method to the GC, so that if a garbage collection occurs, your object reference will be updated to refer to the new location in memory. Any pointers into managed objects (like arrays or Strings) within your code will not be updated automatically, and must be re-fetched after any operation that may allocate memory and before your first usage. Reporting a reference can be done via the `GCPROTECT_*` macros or as parameters when erecting a helper method frame.
-
 Failing to properly report an `OBJECTREF` or to update an interior pointer is commonly referred to as a "GC hole", because the `OBJECTREF` class will do some validation that it points to a valid object every time you dereference it in Debug and Checked builds. When an `OBJECTREF` pointing to an invalid object is dereferenced, an assert will trigger saying something like "Detected an invalid object reference. Possible GC hole?". This assert is unfortunately easy to hit when writing "manually managed" code.
 
 Note that QCall's programming model is restrictive to sidestep GC holes by forcing you to pass in the address of an object reference on the stack. This guarantees that the object reference is GC protected by the JIT's reporting logic, and that the actual object reference will not move because it is not allocated in the GC heap. QCall is our recommended approach, precisely because it makes GC holes harder to write.
@@ -187,8 +181,6 @@ Note that QCall's programming model is restrictive to sidestep GC holes by forci
 The managed stack walker needs to be able to find its way from FCalls. It is relative easy on newer platforms that define conventions for stack unwinding as part of the ABI. The stack unwinding conventions are not defined by an ABI for x86. The runtime works around this by implementing an epilog walker. The epilog walker computes the FCall return address and callee save registers by simulating the FCall execution. This imposes limits on what constructs are allowed in the FCall implementation.
 
 Complex constructs like stack allocated objects with destructors or exception handling in the FCall implementation may confuse the epilog walker. This can lead to GC holes or crashes during stack walking. There is no comprehensive list of what constructs should be avoided to prevent this class of bugs. An FCall implementation that is fine one day may break with the next C++ compiler update. We depend on stress runs and code coverage to find bugs in this area.
-
-Setting a breakpoint inside an FCall implementation may confuse the epilog walker. It leads to an "Invalid breakpoint in a helpermethod frame epilog" assert inside [vm\i386\gmsx86.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/i386/gmsx86.cpp).
 
 ### FCall example – managed
 
@@ -218,29 +210,18 @@ The FCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllis
 
 [ecalllist]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/ecalllist.h
 
-This method is an instance method in managed code, with the "this" parameter passed as the first argument. We use `StringObject*` as the argument type, then copy it into a `STRINGREF` so we get some error checking when we use it.
+This example shows an FCall method that takes a managed object (`Object*`) as a raw pointer. These raw inputs are considered "unsafe" and must be validated or converted if they’re used in a GC-sensitive context.
 
 ```C++
-FCIMPL1(Object*, AppDomainNative::IsStringInterned, StringObject* pStringUNSAFE)
+FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExceptionUNSAFE)
 {
     FCALL_CONTRACT;
 
-    STRINGREF       refString   = ObjectToSTRINGREF(pStringUNSAFE);
-    STRINGREF*      prefRetVal  = NULL;
+    ASSERT(pExceptionUNSAFE != NULL);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refString);
+    OBJECTREF pException = (OBJECTREF) pExceptionUNSAFE;
 
-    if (refString == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
-
-    prefRetVal = GetAppDomain()->IsStringInterned(&refString);
-
-    HELPER_METHOD_FRAME_END();
-
-    if (prefRetVal == NULL)
-        return NULL;
-
-    return OBJECTREFToObject(*prefRetVal);
+    FC_RETURN_BOOL(CLRException::IsPreallocatedExceptionObject(pException));
 }
 FCIMPLEND
 ```

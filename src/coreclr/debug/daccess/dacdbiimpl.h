@@ -822,9 +822,8 @@ public:
     // (or a dump was generated while in this callback)
     VMPTR_OBJECTHANDLE GetCurrentCustomDebuggerNotification(VMPTR_Thread vmThread);
 
-
-    // Return the current appdomain the specified thread is in.
-    VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
+    // Return the current appdomain
+    VMPTR_AppDomain GetCurrentAppDomain();
 
     // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
     VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef);
@@ -1107,7 +1106,7 @@ public:
 };
 
 
-// Global allocator for DD. Access is protected under the g_dacCritSec lock.
+// Global allocator for DD. Access is protected under the g_dacMutex lock.
 extern "C" IDacDbiInterface::IAllocator * g_pAllocator;
 
 
@@ -1116,7 +1115,7 @@ class DDHolder
 public:
     DDHolder(DacDbiInterfaceImpl* pContainer, bool fAllowReentrant)
     {
-        EnterCriticalSection(&g_dacCritSec);
+        minipal_mutex_enter(&g_dacMutex);
 
         // If we're not re-entrant, then assert.
         if (!fAllowReentrant)
@@ -1139,7 +1138,7 @@ public:
         g_dacImpl    = m_pOldContainer;
         g_pAllocator = m_pOldAllocator;
 
-        LeaveCriticalSection(&g_dacCritSec);
+        minipal_mutex_leave(&g_dacMutex);
     }
 
 protected:

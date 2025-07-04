@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM64;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -25,6 +26,13 @@ internal struct ARM64Context : IPlatformContext
         CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
         CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_X18,
 
+        //
+        // This flag is set by the unwinder if it has unwound to a call
+        // site, and cleared whenever it unwinds through a trap frame.
+        // It is used by language-specific exception handlers to help
+        // differentiate exception scopes during dispatching.
+        //
+        CONTEXT_UNWOUND_TO_CALL = 0x20000000,
         CONTEXT_AREA_MASK = 0xFFFF,
     }
 
@@ -50,7 +58,8 @@ internal struct ARM64Context : IPlatformContext
 
     public void Unwind(Target target)
     {
-        Unwinder.ARM64Unwind(ref this, target);
+        ARM64Unwinder unwinder = new(target);
+        unwinder.Unwind(ref this);
     }
 
     // Control flags

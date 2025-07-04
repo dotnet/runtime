@@ -7,12 +7,6 @@
 #include "common.h"
 #include "reflectclasswriter.h"
 
-// Forward declaration.
-STDAPI  GetMetaDataInternalInterfaceFromPublic(
-    IUnknown    *pv,                    // [IN] Given interface.
-    REFIID      riid,                   // [IN] desired interface
-    void        **ppv);                 // [OUT] returned interface
-
 //******************************************************
 //*
 //* constructor for RefClassWriter
@@ -60,7 +54,7 @@ HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR s
     if (FAILED(hr))
         RETURN(hr);
 
-    hr = GetMetaDataInternalInterfaceFromPublic(pUnk, IID_IMDInternalImport, (void**)&m_internalimport);
+    hr = GetMDInternalInterfaceFromPublic(pUnk, IID_IMDInternalImport, (void**)&m_internalimport);
     if (FAILED(hr))
         RETURN(hr);
 
