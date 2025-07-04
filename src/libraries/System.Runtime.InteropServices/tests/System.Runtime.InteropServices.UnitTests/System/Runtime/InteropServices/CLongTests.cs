@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -50,6 +51,36 @@ namespace System.Runtime.InteropServices.Tests
             nint largeValue = unchecked(((nint)int.MaxValue) + 1);
             CLong value = new CLong(largeValue);
             Assert.Equal(largeValue, value.Value);
+        }
+
+        [Fact]
+        public void MaxValue()
+        {
+            CLong result = CLong.MaxValue;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Equal(System.Int32.MaxValue, result.Value);
+            }
+            else
+            {
+                Assert.Equal(System.IntPtr.MaxValue, result.Value);
+            }
+        }
+
+        [Fact]
+        public void MinValue()
+        {
+            CLong result = CLong.MinValue;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Equal(System.Int32.MinValue, result.Value);
+            }
+            else
+            {
+                Assert.Equal(System.IntPtr.MinValue, result.Value);
+            }
         }
 
         public static IEnumerable<object[]> EqualsData()

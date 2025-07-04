@@ -666,6 +666,8 @@ namespace System.Runtime.InteropServices
         public CLong(int value) { throw null; }
         public CLong(nint value) { throw null; }
         public nint Value { get { throw null; } }
+        public static System.Runtime.InteropServices.CLong MaxValue { get { throw null; } }
+        public static System.Runtime.InteropServices.CLong MinValue { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(System.Runtime.InteropServices.CLong other) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -813,6 +815,8 @@ namespace System.Runtime.InteropServices
         public CULong(uint value) { throw null; }
         public CULong(nuint value) { throw null; }
         public nuint Value { get { throw null; } }
+        public static System.Runtime.InteropServices.CULong MaxValue { get { throw null; } }
+        public static System.Runtime.InteropServices.CULong MinValue { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(System.Runtime.InteropServices.CULong other) { throw null; }
         public override int GetHashCode() { throw null; }
