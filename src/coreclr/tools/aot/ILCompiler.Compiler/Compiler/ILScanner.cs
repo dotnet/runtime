@@ -393,6 +393,14 @@ namespace ILCompiler
                 ArrayBuilder<GenericLookupResult> slotBuilder = default;
                 ArrayBuilder<GenericLookupResult> discardedBuilder = default;
 
+                // Find all constructed type lookups. We'll deduplicate those with necessary type lookups.
+                var constructedTypeLookups = new HashSet<TypeDesc>();
+                foreach (GenericLookupResult lookupResult in slots)
+                {
+                    if (lookupResult is TypeHandleGenericLookupResult thLookup)
+                        constructedTypeLookups.Add(thLookup.Type);
+                }
+
                 // We go over all slots in the layout, looking for references to method dictionaries
                 // that are going to be empty.
                 // Set those slots aside so that we can avoid generating the references to such dictionaries.
@@ -411,6 +419,11 @@ namespace ILCompiler
                             discardedBuilder.Add(lookupResult);
                             continue;
                         }
+                    }
+                    else if (lookupResult is NecessaryTypeHandleGenericLookupResult thLookup)
+                    {
+                        if (constructedTypeLookups.Contains(thLookup.Type))
+                            continue;
                     }
 
                     slotBuilder.Add(lookupResult);
