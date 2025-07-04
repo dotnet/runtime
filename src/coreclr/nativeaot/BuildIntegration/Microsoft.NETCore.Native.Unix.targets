@@ -362,12 +362,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
   </Target>
 
-  <Target Name="AdHocSign"
+  <Target Name="CodesignNativeBinary"
     AfterTargets="LinkNative"
     BeforeTargets="CopyNativeBinary;CreateLib"
-    Condition="'$(_IsApplePlatform)' == 'true' and '$([MSBUILD]::FileExists('/usr/bin/codesign'))' == 'true'">
+    Condition="'$(_IsApplePlatform)' == 'true' and Exists('/usr/bin/codesign')">
 
-    <Exec Command="/usr/bin/codesign --sign - --entitlements &quot;$(MSBuildThisFileDirectory)entitlements.xml&quot; &quot;$(NativeBinary)&quot;" />
+    <Exec Command="/usr/bin/codesign --sign - --entitlements &quot;$(MSBuildThisFileDirectory)entitlements.plist&quot; &quot;$(NativeBinary)&quot;" />
   </Target>
 
 
