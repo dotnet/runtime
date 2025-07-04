@@ -132,6 +132,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
     NI_System_String_Equals,
+    NI_System_String_GetNonRandomizedHashCode,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
     NI_System_String_op_Implicit,

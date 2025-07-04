@@ -3547,6 +3547,23 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_String_GetNonRandomizedHashCode:
+            {
+                assert(sig->numArgs == 0);
+                assert(sig->hasThis());
+                if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_CNS_STR))
+                {
+                    //GenTreeStrCon* strCon = impStackTop().val->AsStrCon();
+                    //int hashCode = 0;
+                    //if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX, &hashCode))
+                    //{
+                    //    impPopStack();
+                    //    retNode = gtNewIconNode(hashCode, TYP_INT);
+                    //}
+                }
+                break;
+            }
+
             case NI_System_String_get_Length:
             {
                 GenTree* op1 = impPopStack().val;
@@ -10212,6 +10229,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_String_Equals;
+                        }
+                        else if (strcmp(methodName, "GetNonRandomizedHashCode") == 0)
+                        {
+                            result = NI_System_String_GetNonRandomizedHashCode;
                         }
                         else if (strcmp(methodName, "get_Chars") == 0)
                         {

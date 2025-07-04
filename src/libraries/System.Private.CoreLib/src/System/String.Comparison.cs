@@ -826,7 +826,7 @@ namespace System
         // rely on str.GetNonRandomizedHashCode() == GetNonRandomizedHashCode(str.AsSpan()). As such, we must
         // restructure the comparison so that for odd-length spans, we simulate the null terminator and include
         // it in the hash computation exactly as does str.GetNonRandomizedHashCode().
-
+        [Intrinsic]
         internal unsafe int GetNonRandomizedHashCode()
         {
             fixed (char* src = &_firstChar)
