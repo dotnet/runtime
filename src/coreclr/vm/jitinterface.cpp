@@ -8663,7 +8663,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             else if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
             {
                 MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
-                
+
                 // Check to see if the derived class implements multiple variants of a matching interface.
                 // If so, we cannot predict exactly which implementation is in use here.
                 MethodTable::InterfaceMapIterator it = pObjMT->IterateInterfaceMap();
@@ -8686,7 +8686,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                         }
                     }
                 }
-                
+
                 if (canonicallyMatchingInterfacesFound == 0)
                 {
                     // The object doesn't implement the interface...
@@ -11026,7 +11026,7 @@ void CEEJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
 
     CodeHeader* pCodeHeader = (CodeHeader*)m_CodeHeader;
     if (pCodeHeader)
-        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
+        jitMgr->RemoveJitData({pCodeHeader, m_GCinfo_len, m_EHinfo_len});
 }
 
 template<class TCodeHeader>
@@ -11056,11 +11056,11 @@ void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
     // Now that the code header was written to the final location, publish the code via the nibble map
     NibbleMapSet<CodeHeader>();
 
-#if defined(TARGET_AMD64)
+#if defined(FEATURE_EH_FUNCLETS)
     // Publish the new unwind information in a way that the ETW stack crawler can find
     _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
     UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, ((CodeHeader*)m_CodeHeader)->GetUnwindInfo(0), m_totalUnwindInfos);
-#endif // defined(TARGET_AMD64)
+#endif // defined(FEATURE_EH_FUNCLETS)
 }
 
 /*********************************************************************/
@@ -11262,7 +11262,7 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             pArgs->hotCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
                                                  , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
                                                  , 0
@@ -11315,8 +11315,8 @@ void * CInterpreterJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
-    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
+    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    _ASSERTE(block);      // AllocFromJitMetaHeap throws if there's not enough memory
 
     ((InterpreterCodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
 
@@ -11372,7 +11372,7 @@ void CInterpreterJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
 
     InterpreterCodeHeader* pCodeHeader = (InterpreterCodeHeader*)m_CodeHeader;
     if (pCodeHeader)
-        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
+        jitMgr->RemoveJitData({pCodeHeader, m_GCinfo_len, m_EHinfo_len});
 }
 
 void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
@@ -12597,7 +12597,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
                                       , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
                                       , m_totalUnwindInfos
@@ -12667,8 +12667,8 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
-    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
+    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    _ASSERTE(block);      // AllocFromJitMetaHeap throws if there's not enough memory
 
     ((CodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
 
@@ -12700,8 +12700,8 @@ void CEECodeGenInfo::setEHcountWorker(unsigned cEH)
     if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
         COMPlusThrowOM();
 
-    BYTE *pEHInfo = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize, &m_EHinfo_len);
-    _ASSERTE(pEHInfo);      // allocFromJitMetaHeap throws if there's not enough memory
+    BYTE *pEHInfo = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize, &m_EHinfo_len);
+    _ASSERTE(pEHInfo);      // AllocFromJitMetaHeap throws if there's not enough memory
     _ASSERTE(m_EHinfo_len != 0);
 
     pCodeHeaderRW->SetEHInfo((EE_ILEXCEPTION*)(pEHInfo + sizeof(size_t)));
