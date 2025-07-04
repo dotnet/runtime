@@ -52,6 +52,16 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         [System.ObsoleteAttribute("Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.", DiagnosticId="SYSLIB0045", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static new System.Security.Cryptography.Aes? Create(string algorithmName) { throw null; }
+        public byte[] DecryptKeyWrapPadded(byte[] ciphertext) { throw null; }
+        public byte[] DecryptKeyWrapPadded(System.ReadOnlySpan<byte> ciphertext) { throw null; }
+        public int DecryptKeyWrapPadded(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> destination) { throw null; }
+        protected virtual int DecryptKeyWrapPaddedCore(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public byte[] EncryptKeyWrapPadded(byte[] plaintext) { throw null; }
+        public byte[] EncryptKeyWrapPadded(System.ReadOnlySpan<byte> plaintext) { throw null; }
+        public void EncryptKeyWrapPadded(System.ReadOnlySpan<byte> plaintext, System.Span<byte> destination) { }
+        protected virtual void EncryptKeyWrapPaddedCore(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
+        public static int GetKeyWrapPaddedLength(int plaintextLengthInBytes) { throw null; }
+        public bool TryDecryptKeyWrapPadded(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -2099,12 +2109,13 @@ namespace System.Security.Cryptography
     {
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public MLKemCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.MLKemAlgorithm)) { }
-        public System.Security.Cryptography.CngKey Key { get { throw null; } }
         protected override void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void Dispose(bool disposing) { }
         protected override void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
         protected override void ExportDecapsulationKeyCore(System.Span<byte> destination) { }
         protected override void ExportEncapsulationKeyCore(System.Span<byte> destination) { }
         protected override void ExportPrivateSeedCore(System.Span<byte> destination) { }
+        public System.Security.Cryptography.CngKey GetKey() { throw null; }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]

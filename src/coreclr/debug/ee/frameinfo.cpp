@@ -1179,7 +1179,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
 
         // Ok, we haven't cancelled it yet, so go ahead and send the UM chain.
-        FrameInfo f;
+        FrameInfo f = {};
         FramePointer fpRoot = d->GetUMChainEnd();
         FramePointer fpLeaf = GetSP(d->GetUMChainStartRD());
 
