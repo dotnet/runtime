@@ -27,7 +27,7 @@ namespace System
             int charsWritten;
             while (!toNormalize.TryNormalize(vsb.RawChars, out charsWritten, NormalizationForm.FormC))
             {
-                vsb.EnsureCapacity(vsb.Length + 1);
+                vsb.EnsureCapacity(vsb.Capacity + 1);
             }
 
             string result = string.Concat(start, vsb.RawChars.Slice(0, charsWritten));
