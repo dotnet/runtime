@@ -128,6 +128,16 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(continuationContext != null);
             return continuationContext;
         }
+
+        public void SetException(Exception ex)
+        {
+            int index = 0;
+            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
+                index++;
+
+            Debug.Assert(GCData != null && GCData.Length > index);
+            GCData[index] = ex;
+        }
     }
 
     public static partial class AsyncHelpers
@@ -369,7 +379,7 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        nextContinuation.GCData![(nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0 ? 1 : 0] = ex;
+                        nextContinuation.SetException(ex);
 
                         continuation = nextContinuation;
                     }
@@ -401,6 +411,7 @@ namespace System.Runtime.CompilerServices
                 Continuation headContinuation = UnlinkHeadContinuation(out INotifyCompletion? notifier);
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
+                // These never have special continuation handling.
                 const CorInfoContinuationFlags continueFlags =
                     CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT |
                     CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL |
