@@ -133,6 +133,8 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Threading.Channels" />
   </ItemGroup>
 
 </Project>
