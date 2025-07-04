@@ -555,7 +555,7 @@ static code_t insEncodeReg3Scale(bool isScaled);
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(emitAttr size);
 
-// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+// Returns the encoding to select the 1/2/4 byte elemsize for an Arm64 Sve narrowing vector instruction
 static code_t insEncodeNarrowingSveElemsize(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
