@@ -32,6 +32,7 @@ namespace Internal.Reflection.Execution
         public sealed override string[] GetManifestResourceNames(Assembly assembly)
         {
             string assemblyName = assembly.GetName().FullName;
+            int assemblyNameHash = TypeHashingAlgorithms.ComputeNameHashCode(assemblyName);
             ArrayBuilder<string> arrayBuilder = default;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
@@ -43,7 +44,7 @@ namespace Internal.Reflection.Execution
                 NativeParser indexParser = new NativeParser(reader, 0);
                 NativeHashtable indexHashTable = new NativeHashtable(indexParser);
 
-                var lookup = indexHashTable.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(assemblyName));
+                var lookup = indexHashTable.Lookup(assemblyNameHash);
                 NativeParser entryParser;
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
@@ -91,6 +92,7 @@ namespace Internal.Reflection.Execution
         private static ResourceInfo FindResourceWithName(Assembly assembly, string resourceName)
         {
             string assemblyName = assembly.GetName().FullName;
+            int assemblyNameHash = TypeHashingAlgorithms.ComputeNameHashCode(assemblyName);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -101,7 +103,7 @@ namespace Internal.Reflection.Execution
                 NativeParser indexParser = new NativeParser(reader, 0);
                 NativeHashtable indexHashTable = new NativeHashtable(indexParser);
 
-                var lookup = indexHashTable.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(assemblyName));
+                var lookup = indexHashTable.Lookup(assemblyNameHash);
                 NativeParser entryParser;
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
