@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // We use our own aliases since they differ per platform
@@ -22,7 +23,7 @@ namespace System.Runtime.InteropServices
     /// </summary>
     [CLSCompliant(false)]
     [Intrinsic]
-    public readonly struct CLong : IEquatable<CLong>
+    public readonly struct CLong : IEquatable<CLong>, IMinMaxValue<CLong>
     {
         private readonly NativeType _value;
 
@@ -49,6 +50,24 @@ namespace System.Runtime.InteropServices
         /// The underlying integer value of this instance.
         /// </summary>
         public nint Value => _value;
+
+        /// <summary>
+        /// Represents the largest finite value of a CLong.
+        /// </summary>
+        public static CLong MaxValue
+        {
+            [NonVersionable]
+            get => new CLong(NativeType.MaxValue);
+        }
+
+        /// <summary>
+        /// Represents the smallest finite value of a CLong.
+        /// </summary>
+        public static CLong MinValue
+        {
+            [NonVersionable]
+            get => new CLong(NativeType.MinValue);
+        }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.
