@@ -705,7 +705,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             JITDUMP("Call is an async task await\n");
 
-            asyncInfo.ExecutionContextHandling                 = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
 
             if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
             {
