@@ -32426,7 +32426,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             tree->SetMorphed(this);
             tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseJitType, simdSize)->AsHWIntrinsic();
             tree->SetMorphed(this);
-            return tree;
         }
     }
 #endif // TARGET_XARCH
