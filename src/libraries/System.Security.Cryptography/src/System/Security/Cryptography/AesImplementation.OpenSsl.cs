@@ -71,6 +71,7 @@ namespace System.Security.Cryptography
 
                     if (ctx.IsInvalid)
                     {
+                        ctx.Dispose();
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
