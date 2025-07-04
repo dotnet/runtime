@@ -9,7 +9,12 @@
   <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <ItemGroup>
-      <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
+      <WorkloadIdForTesting Include="wasm-tools"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
+                            Variant="latest"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+
+      <WorkloadIdForTesting Include="wasm-experimental"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                             Variant="latest"
                             Version="$(PackageVersionForWorkloadManifests)" />
@@ -41,6 +46,9 @@
       <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
       <!--<WorkloadCombinationsToInstall Include="none" />-->
     </ItemGroup>
+    
+    <!-- Debug: Show what workloads were just added -->
+    <Message Importance="high" Text="DEBUG: _GetWorkloadsToInstall added WorkloadIdForTesting items: @(WorkloadIdForTesting, ', ')" />
   </Target>
 
   <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,

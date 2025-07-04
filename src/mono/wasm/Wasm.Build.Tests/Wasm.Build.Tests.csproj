@@ -29,10 +29,12 @@
 
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
   
-  <!-- Remove wasm-experimental workload to avoid missing MT runtime pack in ST scenarios (https://github.com/dotnet/runtime/issues/116492) -->
-  <ItemGroup Condition="'$(InstallWorkloadForTesting)' == 'true' and '$(WasmEnableThreads)' != 'true'">
-    <WorkloadIdForTesting Remove="wasm-experimental" />
-  </ItemGroup>
+  <!-- Remove wasm-experimental workload to avoid problems with building MT runtime pack in ST scenarios (https://github.com/dotnet/runtime/issues/116492) -->
+  <Target Name="DebugWorkloads" AfterTargets="_GetWorkloadsToInstall" Condition="'$(InstallWorkloadForTesting)' == 'true'">
+    <ItemGroup>
+      <WorkloadIdForTesting Remove="wasm-experimental" />
+    </ItemGroup>
+  </Target>
   
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
