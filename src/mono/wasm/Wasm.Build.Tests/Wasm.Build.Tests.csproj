@@ -31,7 +31,7 @@
   
   <!-- Replace latest workload to exclude wasm-experimental and avoid missing MT runtime pack (https://github.com/dotnet/runtime/issues/116492) -->
   <ItemGroup Condition="'$(InstallWorkloadForTesting)' == 'true' and '$(WasmEnableThreads)' != 'true'">
-    <WorkloadIdForTesting Remove="@(WorkloadIdForTesting)" Condition="'%(WorkloadIdForTesting.Variant)' == 'latest'" />
+    <WorkloadIdForTesting Remove="@(WorkloadIdForTesting->WithMetadataValue('Variant', 'latest'))" />
     <WorkloadIdForTesting Include="wasm-tools" 
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                           Variant="latest"
