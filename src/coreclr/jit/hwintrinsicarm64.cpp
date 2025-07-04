@@ -3417,8 +3417,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
 
             CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
