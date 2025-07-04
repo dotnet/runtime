@@ -586,9 +586,9 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Save the SP of this function
     sd  sp, 0(a3)
 
-    ld  gp, OFFSETOF__CONTEXT__GP(a2)
-    ld  tp, OFFSETOF__CONTEXT__TP(a2)
-    ld  fp, OFFSETOF__CONTEXT__FP(a2)
+    ld  gp, OFFSETOF__CONTEXT__Gp(a2)
+    ld  tp, OFFSETOF__CONTEXT__Tp(a2)
+    ld  fp, OFFSETOF__CONTEXT__Fp(a2)
     ld  s1, OFFSETOF__CONTEXT__S1(a2)
     ld  s2, OFFSETOF__CONTEXT__S2(a2)
     ld  s3, OFFSETOF__CONTEXT__S2+8(a2)

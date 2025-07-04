@@ -741,7 +741,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Save the SP of this function
     st.d  $sp, $a3, 0
 
-    ld.d  $fp, $a2, OFFSETOF__CONTEXT__FP
+    ld.d  $fp, $a2, OFFSETOF__CONTEXT__Fp
     ld.d  $s0, $a2, OFFSETOF__CONTEXT__S0
     ld.d  $s1, $a2, OFFSETOF__CONTEXT__S0+8
     ld.d  $s2, $a2, OFFSETOF__CONTEXT__S0+16
