@@ -139,7 +139,6 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
 
     LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
 LOCAL_LABEL(StubStart\STUB_PAGE_SIZE):
-        dmb ishld
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
         ldrh w10, [x9]
         subs w10, w10, #1
