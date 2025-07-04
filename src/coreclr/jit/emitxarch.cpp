@@ -313,6 +313,11 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
     // some NAOT scenarios and it will already have been recorded
     // for appropriate usage.
 
+    if (IsBMIInstruction(ins) || IsKMOVInstruction(ins))
+    {
+        return UsePromotedEVEXEncoding();
+    }
+
     switch (ins)
     {
 #if defined(FEATURE_HW_INTRINSICS)
@@ -1527,7 +1532,7 @@ insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
     switch (mode)
     {
         case 1:
-            return INS_OPTS_EVEX_eb_er_rd;
+            return INS_OPTS_EVEX_er_rd;
         case 2:
             return INS_OPTS_EVEX_er_ru;
         case 3:
@@ -1797,7 +1802,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    if (HasEmbeddedBroadcast(id) || HasEmbeddedMask(id))
+    if (id->idIsEvexbContextSet() || HasEmbeddedMask(id))
     {
         // Requires the EVEX encoding due to embedded functionality
         return true;
@@ -1821,43 +1826,8 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #if defined(DEBUG)
     if (emitComp->DoJitStressEvexEncoding())
     {
-        if (IsBMIInstruction(ins))
-        {
-            // The Encoding_EVEX on some BMI instructions is tagged due to APX,
-            // they cannot be stressed with JitStressEvexEncoding.
-            return false;
-        }
-
-        if (IsKMOVInstruction(ins))
-        {
-            // KMOV should not be encoded in EVEX when stressing EVEX, as they are supposed to encded in EVEX only
-            // when APX is available, only stressing EVEX is not enough making the encoding valid.
-            return false;
-        }
-
-        // Requires the EVEX encoding due to STRESS mode and no change in semantics
-        //
-        // Some instructions, like VCMPEQW return the value in a SIMD register for
-        // VEX but in a MASK register for EVEX. Such instructions will have already
-        // returned TRUE if they should have used EVEX due to the HasMaskReg(id)
-        // check above so we need to still return false here to preserve semantics.
-        return !HasKMaskRegisterDest(ins);
-    }
-
-    if (IsApxExtendedEvexInstruction(ins) && emitComp->DoJitStressPromotedEvexEncoding())
-    {
-        // This path will be hit when we stress APX-EVEX and encode VEX with Extended EVEX.
-        if (IsKMOVInstruction(ins))
-        {
-            return true;
-        }
-
-        if (IsBMIInstruction(ins))
-        {
-            return HasApxNf(ins);
-        }
-
-        return false;
+        // Requires the EVEX encoding due to STRESS mode
+        return true;
     }
 #endif // DEBUG
 
@@ -1879,50 +1849,6 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
                 // Memory operand with immediate can only be encoded using EVEX
                 return true;
             }
-        }
-
-        if (id->idHasMemGen())
-        {
-            return false;
-        }
-
-        ssize_t dsp = 0;
-
-        if (id->idHasMemStk())
-        {
-            bool ebpBased = false;
-            int  varNum   = id->idAddr()->iiaLclVar.lvaVarNum();
-
-            dsp = emitComp->lvaFrameAddress(varNum, &ebpBased) + id->idAddr()->iiaLclVar.lvaOffset();
-
-#if !FEATURE_FIXED_OUT_ARGS
-            if (!ebpBased)
-            {
-                // Adjust the offset by the amount currently pushed on the CPU stack
-                dsp += emitCurStackLvl;
-            }
-#endif // !FEATURE_FIXED_OUT_ARGS
-        }
-        else
-        {
-            assert(id->idHasMemAdr());
-
-            if (id->idIsDspReloc())
-            {
-                // reloc cannot be compressed
-                return false;
-            }
-
-            dsp = emitGetInsAmdAny(id);
-        }
-
-        // We don't want to use compressed displacement if it already fit into a byte
-        bool dspInByte = (static_cast<int8_t>(dsp) == dsp);
-
-        if (!dspInByte)
-        {
-            dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
-            return dspInByte;
         }
     }
 
@@ -2188,11 +2114,13 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (id->idIsEvexbContextSet())
     {
-        code |= BBIT_IN_BYTE_EVEX_PREFIX;
-
         if (!id->idHasMem())
         {
+            // For non-memory operations, this holds the EVEX.RC bits
+            // that indicate the rounding mode to use, EVEX.b is implied
+
             unsigned roundingMode = id->idGetEvexbContext();
+
             if (roundingMode == 1)
             {
                 // {rd-sae}
@@ -2215,10 +2143,16 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             {
                 unreached();
             }
+
+            code |= BBIT_IN_BYTE_EVEX_PREFIX;
         }
-        else
+        else if (HasEmbeddedBroadcast(id))
         {
-            assert(id->idGetEvexbContext() == 1);
+            // For memory operations, the low bit being set indicates
+            // we are using embedded broadcast, while the upper bit
+            // being set indicates we are using compressed displacement
+
+            code |= BBIT_IN_BYTE_EVEX_PREFIX;
         }
     }
 
@@ -5115,6 +5049,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 //
 inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp)
 {
+    instruction    ins  = id->idIns();
     UNATIVE_OFFSET size = emitInsSize(id, code, /* includeRexPrefixSize */ true);
     UNATIVE_OFFSET offs;
     bool           offsIsUpperBound = true;
@@ -5218,26 +5153,36 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 
                 assert(emitComp->lvaTempsHaveLargerOffsetThanVars());
 
-                // Check whether we can use compressed displacement if EVEX.
-                if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+                if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
                 {
-                    bool compressedFitsInByte = false;
-                    TryEvexCompressDisp8Byte(id, ssize_t(offs), &compressedFitsInByte);
-                    return size + (compressedFitsInByte ? sizeof(char) : sizeof(int));
-                }
+                    ssize_t compressedDsp;
+                    bool    fitsInByte;
 
-                if ((int)offs < 0)
+                    if (TryEvexCompressDisp8Byte(id, offs, &compressedDsp, &fitsInByte))
+                    {
+                        if (!TakesEvexPrefix(id))
+                        {
+                            // We mispredicted the adjusted size since we didn't know we'd use the EVEX
+                            // encoding due to comprssed displacement. So we need an additional adjustment
+                            size += emitGetEvexPrefixSize(id) - emitGetVexPrefixSize(id);
+                        }
+                        SetEvexCompressedDisplacement(id);
+                    }
+
+                    return size + (fitsInByte ? sizeof(char) : sizeof(int));
+                }
+                else if ((int)offs < 0)
                 {
                     // offset is negative
                     return size + ((int(offs) >= SCHAR_MIN) ? sizeof(char) : sizeof(int));
                 }
 #ifdef TARGET_AMD64
-                // This case arises for localloc frames
                 else
                 {
+                    // This case arises for localloc frames
                     return size + ((offs <= SCHAR_MAX) ? sizeof(char) : sizeof(int));
                 }
-#endif
+#endif // TARGET_AMD64
             }
         }
     }
@@ -5263,9 +5208,21 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     bool useSmallEncoding = false;
-    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+
+    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
-        TryEvexCompressDisp8Byte(id, ssize_t(offs), &useSmallEncoding);
+        ssize_t compressedDsp;
+
+        if (TryEvexCompressDisp8Byte(id, offs, &compressedDsp, &useSmallEncoding))
+        {
+            if (!TakesEvexPrefix(id))
+            {
+                // We mispredicted the adjusted size since we didn't know we'd use the EVEX
+                // encoding due to comprssed displacement. So we need an additional adjustment
+                size += emitGetEvexPrefixSize(id) - emitGetVexPrefixSize(id);
+            }
+            SetEvexCompressedDisplacement(id);
+        }
     }
     else
     {
@@ -5277,7 +5234,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     }
 
     // If it is ESP based, and the offset is zero, we will not encode the disp part.
-    if (!EBPbased && offs == 0)
+    if (!EBPbased && (offs == 0))
     {
         return size;
     }
@@ -5428,11 +5385,13 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         dspInByte = false; // relocs can't be placed in a byte
         dspIsZero = false; // relocs won't always be zero
     }
-    else
+    else if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
-        if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        ssize_t compressedDsp;
+
+        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
         {
-            dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
+            SetEvexCompressedDisplacement(id);
         }
     }
 
@@ -8062,13 +8021,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     SetEvexNfIfNeeded(id, instOptions);
     SetEvexDFVIfNeeded(id, instOptions);
     SetApxPpxIfNeeded(id, instOptions);
-
-    if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
-    {
-        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext(instOptions);
-    }
+    SetEvexEmbRoundIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
@@ -8344,10 +8297,10 @@ void emitter::emitIns_R_R_A(
     id->idReg1(reg1);
     id->idReg2(reg2);
 
+    emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
+
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
-
-    emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8502,12 +8455,7 @@ void emitter::emitIns_R_R_R(
     id->idReg2(reg1);
     id->idReg3(reg2);
 
-    if ((instOptions & INS_OPTS_EVEX_b_MASK) != 0)
-    {
-        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext(instOptions);
-    }
+    SetEvexEmbRoundIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
     SetEvexNfIfNeeded(id, instOptions);
@@ -12552,7 +12500,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 //
 void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
 {
-    if (!IsEvexEncodableInstruction(id->idIns()) || !id->idIsEvexbContextSet())
+    if (!IsEvexEncodableInstruction(id->idIns()) || !HasEmbeddedBroadcast(id))
     {
         return;
     }
@@ -12579,8 +12527,10 @@ void emitter::emitDispEmbRounding(instrDesc* id) const
         // for ndd case, we don't need to display any thing special.
         return;
     }
+
     assert(!id->idHasMem());
     unsigned roundingMode = id->idGetEvexbContext();
+
     if (roundingMode == 1)
     {
         printf(" {rd-sae}");
@@ -12926,7 +12876,7 @@ void emitter::emitDispIns(
     else
     {
         attr = id->idOpSize();
-        sstr = codeGen->genSizeStr(emitGetMemOpSize(id));
+        sstr = codeGen->genSizeStr(emitGetMemOpSize(id, !id->idHasMem()));
 
         if (ins == INS_lea)
         {
@@ -14727,22 +14677,35 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
 GOT_DSP:
 
-    dspIsZero = (dsp == 0);
-
     if (id->idIsDspReloc())
     {
         dspInByte = false; // relocs can't be placed in a byte
+        dspIsZero = false; // relocs won't always be zero
     }
-    else
+    else if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
-        if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        if (HasCompressedDisplacement(id))
         {
-            dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
+            ssize_t compressedDsp;
+            bool    isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
+
+            assert(isCompressed && dspInByte);
+            dsp = compressedDsp;
+        }
+        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        {
+            dspInByte = false;
         }
         else
         {
             dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
+        dspIsZero = (dsp == 0);
+    }
+    else
+    {
+        dspInByte = ((signed char)dsp == (ssize_t)dsp);
+        dspIsZero = (dsp == 0);
     }
 
     if (isMoffset)
@@ -14876,14 +14839,15 @@ GOT_DSP:
             {
                 if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                 {
-                    // Does the offset fit in a byte?
                     if (dspInByte)
                     {
+                        // This is "[rbp + dsp8]"
                         dst += emitOutputByte(dst, code | 0x45);
                         dst += emitOutputByte(dst, dsp);
                     }
                     else
                     {
+                        // This is "[rbp + dsp32]"
                         dst += emitOutputByte(dst, code | 0x85);
                         dst += emitOutputLong(dst, dsp);
 
@@ -14893,23 +14857,21 @@ GOT_DSP:
                         }
                     }
                 }
+                else if (dspInByte)
+                {
+                    // This is "[rbp + dsp8]"
+                    dst += emitOutputWord(dst, code | 0x4500);
+                    dst += emitOutputByte(dst, dsp);
+                }
                 else
                 {
-                    // Does the offset fit in a byte?
-                    if (dspInByte)
-                    {
-                        dst += emitOutputWord(dst, code | 0x4500);
-                        dst += emitOutputByte(dst, dsp);
-                    }
-                    else
-                    {
-                        dst += emitOutputWord(dst, code | 0x8500);
-                        dst += emitOutputLong(dst, dsp);
+                    // This is "[rbp + dsp32]"
+                    dst += emitOutputWord(dst, code | 0x8500);
+                    dst += emitOutputLong(dst, dsp);
 
-                        if (id->idIsDspReloc())
-                        {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                        }
+                    if (id->idIsDspReloc())
+                    {
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                     }
                 }
                 break;
@@ -14919,52 +14881,55 @@ GOT_DSP:
             {
                 if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                 {
-                    // Is the offset 0 or does it at least fit in a byte?
                     if (dspIsZero)
                     {
+                        // This is simply "[rsp]"
                         dst += emitOutputByte(dst, code | 0x04);
                         dst += emitOutputByte(dst, 0x24);
                     }
                     else if (dspInByte)
                     {
+                        // This is "[rsp + dsp8]"
                         dst += emitOutputByte(dst, code | 0x44);
                         dst += emitOutputByte(dst, 0x24);
                         dst += emitOutputByte(dst, dsp);
                     }
                     else
                     {
+                        // This is "[rsp + dsp32]"
                         dst += emitOutputByte(dst, code | 0x84);
                         dst += emitOutputByte(dst, 0x24);
                         dst += emitOutputLong(dst, dsp);
+
                         if (id->idIsDspReloc())
                         {
                             emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                         }
                     }
                 }
+                else if (dspIsZero)
+                {
+                    // This is simply "[rsp]"
+                    dst += emitOutputWord(dst, code | 0x0400);
+                    dst += emitOutputByte(dst, 0x24);
+                }
+                else if (dspInByte)
+                {
+                    // This is "[rsp + dsp8]"
+                    dst += emitOutputWord(dst, code | 0x4400);
+                    dst += emitOutputByte(dst, 0x24);
+                    dst += emitOutputByte(dst, dsp);
+                }
                 else
                 {
-                    // Is the offset 0 or does it at least fit in a byte?
-                    if (dspIsZero)
+                    // This is "[rsp + dsp32]"
+                    dst += emitOutputWord(dst, code | 0x8400);
+                    dst += emitOutputByte(dst, 0x24);
+                    dst += emitOutputLong(dst, dsp);
+
+                    if (id->idIsDspReloc())
                     {
-                        dst += emitOutputWord(dst, code | 0x0400);
-                        dst += emitOutputByte(dst, 0x24);
-                    }
-                    else if (dspInByte)
-                    {
-                        dst += emitOutputWord(dst, code | 0x4400);
-                        dst += emitOutputByte(dst, 0x24);
-                        dst += emitOutputByte(dst, dsp);
-                    }
-                    else
-                    {
-                        dst += emitOutputWord(dst, code | 0x8400);
-                        dst += emitOutputByte(dst, 0x24);
-                        dst += emitOutputLong(dst, dsp);
-                        if (id->idIsDspReloc())
-                        {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                        }
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                     }
                 }
                 break;
@@ -14977,28 +14942,26 @@ GOT_DSP:
                     // Put the register in the opcode
                     code |= insEncodeReg012(id, reg, EA_PTRSIZE, nullptr);
 
-                    // Is there a displacement?
                     if (dspIsZero)
                     {
                         // This is simply "[reg]"
                         dst += emitOutputByte(dst, code);
                     }
+                    else if (dspInByte)
+                    {
+                        // This is "[reg + dsp8]"
+                        dst += emitOutputByte(dst, code | 0x40);
+                        dst += emitOutputByte(dst, dsp);
+                    }
                     else
                     {
-                        // This is [reg + dsp]" -- does the offset fit in a byte?
-                        if (dspInByte)
+                        // This is "[reg + dsp32]"
+                        dst += emitOutputByte(dst, code | 0x80);
+                        dst += emitOutputLong(dst, dsp);
+
+                        if (id->idIsDspReloc())
                         {
-                            dst += emitOutputByte(dst, code | 0x40);
-                            dst += emitOutputByte(dst, dsp);
-                        }
-                        else
-                        {
-                            dst += emitOutputByte(dst, code | 0x80);
-                            dst += emitOutputLong(dst, dsp);
-                            if (id->idIsDspReloc())
-                            {
-                                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                            }
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                         }
                     }
                 }
@@ -15013,22 +14976,21 @@ GOT_DSP:
                         // This is simply "[reg]"
                         dst += emitOutputWord(dst, code);
                     }
+                    else if (dspInByte)
+                    {
+                        // This is "[reg + dsp8]"
+                        dst += emitOutputWord(dst, code | 0x4000);
+                        dst += emitOutputByte(dst, dsp);
+                    }
                     else
                     {
-                        // This is [reg + dsp]" -- does the offset fit in a byte?
-                        if (dspInByte)
+                        // This is "[reg + dsp32]"
+                        dst += emitOutputWord(dst, code | 0x8000);
+                        dst += emitOutputLong(dst, dsp);
+
+                        if (id->idIsDspReloc())
                         {
-                            dst += emitOutputWord(dst, code | 0x4000);
-                            dst += emitOutputByte(dst, dsp);
-                        }
-                        else
-                        {
-                            dst += emitOutputWord(dst, code | 0x8000);
-                            dst += emitOutputLong(dst, dsp);
-                            if (id->idIsDspReloc())
-                            {
-                                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                            }
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                         }
                     }
                 }
@@ -15056,62 +15018,55 @@ GOT_DSP:
 
                 if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                 {
-                    // Emit [ebp + {2/4/8} * rgz] as [ebp + {2/4/8} * rgx + 0]
-                    if (dspIsZero && reg != REG_EBP)
+                    if (dspIsZero && (reg != REG_EBP))
                     {
                         // The address is "[reg + {2/4/8} * rgx]"
                         dst += emitOutputByte(dst, code | 0x04);
                         dst += emitOutputByte(dst, regByte);
                     }
+                    else if (dspInByte)
+                    {
+                        // The address is "[reg + {2/4/8} * rgx + dsp8]"
+                        dst += emitOutputByte(dst, code | 0x44);
+                        dst += emitOutputByte(dst, regByte);
+                        dst += emitOutputByte(dst, dsp);
+                    }
                     else
                     {
-                        // The address is "[reg + {2/4/8} * rgx + disp]"
-                        if (dspInByte)
+                        // The address is "[reg + {2/4/8} * rgx + dsp32]"
+                        dst += emitOutputByte(dst, code | 0x84);
+                        dst += emitOutputByte(dst, regByte);
+                        dst += emitOutputLong(dst, dsp);
+
+                        if (id->idIsDspReloc())
                         {
-                            dst += emitOutputByte(dst, code | 0x44);
-                            dst += emitOutputByte(dst, regByte);
-                            dst += emitOutputByte(dst, dsp);
-                        }
-                        else
-                        {
-                            dst += emitOutputByte(dst, code | 0x84);
-                            dst += emitOutputByte(dst, regByte);
-                            dst += emitOutputLong(dst, dsp);
-                            if (id->idIsDspReloc())
-                            {
-                                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                            }
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                         }
                     }
                 }
+                else if (dspIsZero && (reg != REG_EBP))
+                {
+                    // The address is "[reg + {2/4/8} * rgx]"
+                    dst += emitOutputWord(dst, code | 0x0400);
+                    dst += emitOutputByte(dst, regByte);
+                }
+                else if (dspInByte)
+                {
+                    // The address is "[reg + {2/4/8} * rgx + dsp8]"
+                    dst += emitOutputWord(dst, code | 0x4400);
+                    dst += emitOutputByte(dst, regByte);
+                    dst += emitOutputByte(dst, dsp);
+                }
                 else
                 {
-                    // Emit [ebp + {2/4/8} * rgz] as [ebp + {2/4/8} * rgx + 0]
-                    if (dspIsZero && reg != REG_EBP)
+                    // The address is "[reg + {2/4/8} * rgx + dsp32]"
+                    dst += emitOutputWord(dst, code | 0x8400);
+                    dst += emitOutputByte(dst, regByte);
+                    dst += emitOutputLong(dst, dsp);
+
+                    if (id->idIsDspReloc())
                     {
-                        // The address is "[reg + {2/4/8} * rgx]"
-                        dst += emitOutputWord(dst, code | 0x0400);
-                        dst += emitOutputByte(dst, regByte);
-                    }
-                    else
-                    {
-                        // The address is "[reg + {2/4/8} * rgx + disp]"
-                        if (dspInByte)
-                        {
-                            dst += emitOutputWord(dst, code | 0x4400);
-                            dst += emitOutputByte(dst, regByte);
-                            dst += emitOutputByte(dst, dsp);
-                        }
-                        else
-                        {
-                            dst += emitOutputWord(dst, code | 0x8400);
-                            dst += emitOutputByte(dst, regByte);
-                            dst += emitOutputLong(dst, dsp);
-                            if (id->idIsDspReloc())
-                            {
-                                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                            }
-                        }
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                     }
                 }
             }
@@ -15152,60 +15107,55 @@ GOT_DSP:
 
             if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
-                if (dspIsZero && reg != REG_EBP)
+                if (dspIsZero && (reg != REG_EBP))
                 {
                     // This is [reg+rgx]"
                     dst += emitOutputByte(dst, code | 0x04);
                     dst += emitOutputByte(dst, regByte);
                 }
+                else if (dspInByte)
+                {
+                    // This is [reg+rgx+dsp8]"
+                    dst += emitOutputByte(dst, code | 0x44);
+                    dst += emitOutputByte(dst, regByte);
+                    dst += emitOutputByte(dst, dsp);
+                }
                 else
                 {
-                    // This is [reg+rgx+dsp]" -- does the offset fit in a byte?
-                    if (dspInByte)
+                    // This is [reg+rgx+dsp32]"
+                    dst += emitOutputByte(dst, code | 0x84);
+                    dst += emitOutputByte(dst, regByte);
+                    dst += emitOutputLong(dst, dsp);
+
+                    if (id->idIsDspReloc())
                     {
-                        dst += emitOutputByte(dst, code | 0x44);
-                        dst += emitOutputByte(dst, regByte);
-                        dst += emitOutputByte(dst, dsp);
-                    }
-                    else
-                    {
-                        dst += emitOutputByte(dst, code | 0x84);
-                        dst += emitOutputByte(dst, regByte);
-                        dst += emitOutputLong(dst, dsp);
-                        if (id->idIsDspReloc())
-                        {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                        }
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                     }
                 }
             }
+            else if (dspIsZero && (reg != REG_EBP))
+            {
+                // This is [reg+rgx]"
+                dst += emitOutputWord(dst, code | 0x0400);
+                dst += emitOutputByte(dst, regByte);
+            }
+            else if (dspInByte)
+            {
+                // This is [reg+rgx+dsp8]"
+                dst += emitOutputWord(dst, code | 0x4400);
+                dst += emitOutputByte(dst, regByte);
+                dst += emitOutputByte(dst, dsp);
+            }
             else
             {
-                if (dspIsZero && reg != REG_EBP)
+                // This is [reg+rgx+dsp32]"
+                dst += emitOutputWord(dst, code | 0x8400);
+                dst += emitOutputByte(dst, regByte);
+                dst += emitOutputLong(dst, dsp);
+
+                if (id->idIsDspReloc())
                 {
-                    // This is [reg+rgx]"
-                    dst += emitOutputWord(dst, code | 0x0400);
-                    dst += emitOutputByte(dst, regByte);
-                }
-                else
-                {
-                    // This is [reg+rgx+dsp]" -- does the offset fit in a byte?
-                    if (dspInByte)
-                    {
-                        dst += emitOutputWord(dst, code | 0x4400);
-                        dst += emitOutputByte(dst, regByte);
-                        dst += emitOutputByte(dst, dsp);
-                    }
-                    else
-                    {
-                        dst += emitOutputWord(dst, code | 0x8400);
-                        dst += emitOutputByte(dst, regByte);
-                        dst += emitOutputLong(dst, dsp);
-                        if (id->idIsDspReloc())
-                        {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
-                        }
-                    }
+                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                 }
             }
         }
@@ -15615,13 +15565,24 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     adr = emitComp->lvaFrameAddress(varNum, &EBPbased);
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
 
-    // TODO-XARCH-AVX512 : working to wrap up all adjusted disp8 compression logic into the following
-    // function, to which the remainder of the emitter logic should handle properly.
-    // TODO-XARCH-AVX512 : embedded broadcast might change this
-    int dspAsByte = dsp;
-    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
-        dspAsByte = int(TryEvexCompressDisp8Byte(id, ssize_t(dsp), &dspInByte));
+        if (HasCompressedDisplacement(id))
+        {
+            ssize_t compressedDsp;
+            bool    isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
+
+            assert(isCompressed && dspInByte);
+            dsp = (int)compressedDsp;
+        }
+        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        {
+            dspInByte = false;
+        }
+        else
+        {
+            dspInByte = ((signed char)dsp == (ssize_t)dsp);
+        }
     }
     else
     {
@@ -15640,7 +15601,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             if (dspInByte)
             {
                 dst += emitOutputByte(dst, code | 0x45);
-                dst += emitOutputByte(dst, dspAsByte);
+                dst += emitOutputByte(dst, dsp);
             }
             else
             {
@@ -15648,61 +15609,48 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 dst += emitOutputLong(dst, dsp);
             }
         }
+        else if (dspInByte)
+        {
+            dst += emitOutputWord(dst, code | 0x4500);
+            dst += emitOutputByte(dst, dsp);
+        }
         else
         {
-            if (dspInByte)
-            {
-                dst += emitOutputWord(dst, code | 0x4500);
-                dst += emitOutputByte(dst, dspAsByte);
-            }
-            else
-            {
-                dst += emitOutputWord(dst, code | 0x8500);
-                dst += emitOutputLong(dst, dsp);
-            }
+            dst += emitOutputWord(dst, code | 0x8500);
+            dst += emitOutputLong(dst, dsp);
         }
     }
     else
     {
-
 #if !FEATURE_FIXED_OUT_ARGS
         // Adjust the offset by the amount currently pushed on the CPU stack
         dsp += emitCurStackLvl;
-#endif
 
-        // TODO-XARCH-AVX512 : working to wrap up all adjusted disp8 compression logic into the following
-        // function, to which the remainder of the emitter logic should handle properly.
-        // TODO-XARCH-AVX512 : embedded broadcast might change this
         if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
-            dspAsByte = int(TryEvexCompressDisp8Byte(id, ssize_t(dsp), &dspInByte));
+            assert(!HasCompressedDisplacement(id));
+            dspInByte = false;
         }
         else
         {
             dspInByte = ((signed char)dsp == (ssize_t)dsp);
-            if (dspInByte)
-            {
-                dspAsByte = dsp;
-            }
         }
         dspIsZero = (dsp == 0);
+#endif // !FEATURE_FIXED_OUT_ARGS
 
         // Does the offset fit in a byte?
         if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
         {
-            if (dspInByte)
+            if (dspIsZero)
             {
-                if (dspIsZero)
-                {
-                    dst += emitOutputByte(dst, code | 0x04);
-                    dst += emitOutputByte(dst, 0x24);
-                }
-                else
-                {
-                    dst += emitOutputByte(dst, code | 0x44);
-                    dst += emitOutputByte(dst, 0x24);
-                    dst += emitOutputByte(dst, dspAsByte);
-                }
+                dst += emitOutputByte(dst, code | 0x04);
+                dst += emitOutputByte(dst, 0x24);
+            }
+            else if (dspInByte)
+            {
+                dst += emitOutputByte(dst, code | 0x44);
+                dst += emitOutputByte(dst, 0x24);
+                dst += emitOutputByte(dst, dsp);
             }
             else
             {
@@ -15711,28 +15659,22 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 dst += emitOutputLong(dst, dsp);
             }
         }
+        else if (dspIsZero)
+        {
+            dst += emitOutputWord(dst, code | 0x0400);
+            dst += emitOutputByte(dst, 0x24);
+        }
+        else if (dspInByte)
+        {
+            dst += emitOutputWord(dst, code | 0x4400);
+            dst += emitOutputByte(dst, 0x24);
+            dst += emitOutputByte(dst, dsp);
+        }
         else
         {
-            if (dspInByte)
-            {
-                if (dspIsZero)
-                {
-                    dst += emitOutputWord(dst, code | 0x0400);
-                    dst += emitOutputByte(dst, 0x24);
-                }
-                else
-                {
-                    dst += emitOutputWord(dst, code | 0x4400);
-                    dst += emitOutputByte(dst, 0x24);
-                    dst += emitOutputByte(dst, dspAsByte);
-                }
-            }
-            else
-            {
-                dst += emitOutputWord(dst, code | 0x8400);
-                dst += emitOutputByte(dst, 0x24);
-                dst += emitOutputLong(dst, dsp);
-            }
+            dst += emitOutputWord(dst, code | 0x8400);
+            dst += emitOutputByte(dst, 0x24);
+            dst += emitOutputLong(dst, dsp);
         }
     }
 
@@ -16144,7 +16086,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         addr = emitConsBlock + doff;
 
 #ifdef DEBUG
-        int byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id));
+        int byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, /*ignoreEmbeddedBroadcast*/ false));
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
         // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
@@ -18044,18 +17986,26 @@ ssize_t emitter::GetInputSizeInBytes(const instrDesc* id) const
 // TryEvexCompressDisp8Byte: Do we do compressed displacement encoding for EVEX.
 //
 // Arguments:
-//    id -- Instruction descriptor.
-//    dsp -- Displacemnt.
-//    dspInByte[out] - `true` if compressed displacement
+//    id              -- Instruction descriptor.
+//    dsp             -- displacement to try and compress
+//    compressedDsp   -- [out] the compressed displacement on success; otherwise, dsp
+//    fitsInByte      -- [out] true if the displacement fits in a byte; otherwise, false
 //
 // Return Value:
-//    compressed displacement value if dspInByte ===  TRUE.
-//    Original dsp otherwise.
+//    True if the displacement was compressed; otherwise, false
 //
-ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool* dspInByte) const
+bool emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, ssize_t* compressedDsp, bool* fitsInByte) const
 {
     instruction ins = id->idIns();
+
     assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(id->idHasMem() && !id->idHasMemGen());
+    assert(!id->idIsDspReloc());
+    assert(compressedDsp != nullptr);
+    assert(fitsInByte != nullptr);
+
+    *compressedDsp = dsp;
+    *fitsInByte    = (static_cast<signed char>(dsp) == dsp);
 
     if (!hasTupleTypeInfo(ins))
     {
@@ -18063,26 +18013,26 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         // to APX-EVEX, we will re-use the existing displacement emitting
         // path, but for those instructions with no tuple information,
         // APX-EVEX treat the scaling factor to be 1 constantly.
-        assert(IsApxExtendedEvexInstruction(ins) || IsBMIInstruction(ins));
-        *dspInByte = ((signed char)dsp == (ssize_t)dsp);
-        return dsp;
+
+        assert(IsApxExtendedEvexInstruction(ins) || IsBMIInstruction(ins) || IsKMOVInstruction(ins));
+        assert(*compressedDsp == dsp);
+
+        return *fitsInByte;
+    }
+
+    if (*fitsInByte && !TakesEvexPrefix(id))
+    {
+        // We already fit into a byte and do not otherwise require the EVEX prefix
+        // which means we can use the VEX encoding instead and be even smaller.
+
+        assert(*compressedDsp == dsp);
+        return false;
     }
 
     insTupleType tt = insTupleTypeInfo(ins);
-    assert(hasTupleTypeInfo(ins));
 
-    // if dsp is 0, no need for all of this
-    if (dsp == 0)
-    {
-        *dspInByte = true;
-        return dsp;
-    }
-
-    // Only handling non-broadcast forms right now
-    ssize_t vectorLength = EA_SIZE_IN_BYTES(id->idOpSize());
-
-    ssize_t inputSize = GetInputSizeInBytes(id);
-
+    ssize_t vectorLength     = EA_SIZE_IN_BYTES(id->idOpSize());
+    ssize_t inputSize        = GetInputSizeInBytes(id);
     ssize_t disp8Compression = 1;
 
     if ((tt & INS_TT_MEM128) != 0)
@@ -18127,12 +18077,14 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         }
     }
 
+    bool isEmbBroadcast = HasEmbeddedBroadcast(id);
+
     switch (tt)
     {
         case INS_TT_FULL:
         {
-            assert(inputSize == 4 || inputSize == 8);
-            if (HasEmbeddedBroadcast(id))
+            assert((inputSize == 4) || (inputSize == 8));
+            if (isEmbBroadcast)
             {
                 // N = input size in bytes
                 disp8Compression = inputSize;
@@ -18148,7 +18100,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_HALF:
         {
             assert(inputSize == 4);
-            if (HasEmbeddedBroadcast(id))
+            if (isEmbBroadcast)
             {
                 // N = input size in bytes
                 disp8Compression = inputSize;
@@ -18164,12 +18116,14 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_FULL_MEM:
         {
             // N = vector length in bytes
+            assert(!isEmbBroadcast);
             disp8Compression = vectorLength;
             break;
         }
 
         case INS_TT_TUPLE1_SCALAR:
         {
+            assert(!isEmbBroadcast);
             disp8Compression = inputSize;
             break;
         }
@@ -18177,7 +18131,8 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_TUPLE1_FIXED:
         {
             // N = input size in bytes, 32bit and 64bit only
-            assert(inputSize == 4 || inputSize == 8);
+            assert(!isEmbBroadcast);
+            assert((inputSize == 4) || (inputSize == 8));
             disp8Compression = inputSize;
             break;
         }
@@ -18185,7 +18140,8 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_TUPLE2:
         {
             // N = input size in bytes * 2, 32bit and 64bit for 256 bit and 512 bit only
-            assert((inputSize == 4) || (inputSize == 8 && vectorLength >= 32));
+            assert(!isEmbBroadcast);
+            assert((inputSize == 4) || ((inputSize == 8) && (vectorLength >= 32)));
             disp8Compression = inputSize * 2;
             break;
         }
@@ -18193,7 +18149,8 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_TUPLE4:
         {
             // N = input size in bytes * 4, 32bit for 256 bit and 512 bit, 64bit for 512 bit
-            assert((inputSize == 4 && vectorLength >= 32) || (inputSize == 8 && vectorLength >= 64));
+            assert(!isEmbBroadcast);
+            assert(((inputSize == 4) && (vectorLength >= 32)) || ((inputSize == 8) && (vectorLength >= 64)));
             disp8Compression = inputSize * 4;
             break;
         }
@@ -18201,7 +18158,8 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_TUPLE8:
         {
             // N = input size in bytes * 8, 32bit for 512 only
-            assert((inputSize == 4 && vectorLength >= 64));
+            assert(!isEmbBroadcast);
+            assert((inputSize == 4) && (vectorLength >= 64));
             disp8Compression = inputSize * 8;
             break;
         }
@@ -18209,6 +18167,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_HALF_MEM:
         {
             // N = vector length in bytes / 2
+            assert(!isEmbBroadcast);
             disp8Compression = vectorLength / 2;
             break;
         }
@@ -18216,6 +18175,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_QUARTER_MEM:
         {
             // N = vector length in bytes / 4
+            assert(!isEmbBroadcast);
             disp8Compression = vectorLength / 4;
             break;
         }
@@ -18223,6 +18183,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_EIGHTH_MEM:
         {
             // N = vector length in bytes / 8
+            assert(!isEmbBroadcast);
             disp8Compression = vectorLength / 8;
             break;
         }
@@ -18230,6 +18191,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_MEM128:
         {
             // N = 16
+            assert(!isEmbBroadcast);
             disp8Compression = 16;
             break;
         }
@@ -18237,6 +18199,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
         case INS_TT_MOVDDUP:
         {
             // N = vector length in bytes / 2
+            assert(!isEmbBroadcast);
             disp8Compression = (vectorLength == 16) ? (vectorLength / 2) : vectorLength;
             break;
         }
@@ -18248,23 +18211,26 @@ ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool
     }
 
     // If we can evenly divide dsp by the disp8Compression, we can attempt to use it in a disp8 byte form
-    if (dsp % disp8Compression != 0)
+    if ((dsp % disp8Compression) != 0)
     {
-        *dspInByte = false;
-        return dsp;
+        assert(*compressedDsp == dsp);
+        *fitsInByte = false;
+        return false;
     }
 
-    ssize_t compressedDsp = dsp / disp8Compression;
+    ssize_t compressedDisp = dsp / disp8Compression;
 
-    *dspInByte = ((signed char)compressedDsp == (ssize_t)compressedDsp);
-    if (*dspInByte)
+    if (static_cast<signed char>(compressedDisp) != compressedDisp)
     {
-        return compressedDsp;
+        assert(*compressedDsp == dsp);
+        *fitsInByte = false;
+        return false;
     }
-    else
-    {
-        return dsp;
-    }
+
+    *compressedDsp = compressedDisp;
+    *fitsInByte    = true;
+
+    return true;
 }
 
 /*****************************************************************************
