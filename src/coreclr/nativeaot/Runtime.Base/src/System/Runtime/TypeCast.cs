@@ -469,7 +469,7 @@ namespace System.Runtime
 
         private static unsafe bool IsInstanceOfInterfaceViaIDynamicInterfaceCastable(MethodTable* pTargetType, object obj, bool throwing)
         {
-            return ((IDynamicInterfaceCastable)obj).IsInterfaceImplemented(new RuntimeTypeHandle(pTargetType), throwing);
+            return IDynamicInterfaceCastable.IsInterfaceImplemented((IDynamicInterfaceCastable)obj, pTargetType, throwing);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)
