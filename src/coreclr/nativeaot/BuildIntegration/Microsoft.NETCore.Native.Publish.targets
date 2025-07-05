@@ -89,7 +89,7 @@
   <Target Name="CopyNativeBinary" AfterTargets="Publish">
     <!-- replace apphost with binary we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
-    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
+    <Copy SourceFiles="$(NativeBinary)" DestinationFolder="$(PublishDir)" />
   </Target>
 
   <Target Name="_CopyAotSymbols" AfterTargets="Publish"
