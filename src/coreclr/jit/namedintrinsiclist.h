@@ -255,10 +255,11 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_END,
 
     //
-    // Array Intrinsics
+    // Enumeration Intrinsics
     //
     NI_System_SZArrayHelper_GetEnumerator,
     NI_System_Array_T_GetEnumerator,
+    NI_System_Collections_Generic_IEnumerable_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_
