@@ -46,5 +46,8 @@ namespace System.Diagnostics
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }
+
+        [SupportedOSPlatform("windows")]
+        public bool CreateNewProcessGroup { get; set; }
     }
 }
