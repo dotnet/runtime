@@ -23,14 +23,36 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Override of Item that wraps a weak reference around the
-        /// key and performs a scavenge.
+        /// Adds a key-value pair to the hashtable, wrapping the key in a weak reference.
         /// </summary>
-        public void SetWeak(object key, object value)
+        public override void Add(object key, object? value)
         {
             ScavengeKeys();
-            this[new EqualityWeakReference(key)] = value;
+            base.Add(new EqualityWeakReference(key), value);
         }
+
+        /// <summary>
+        /// Gets or sets the value associated with the specified key.
+        /// </summary>
+        public override object? this[object key]
+        {
+            get
+            {
+                return base[key];
+            }
+
+            set
+            {
+                ScavengeKeys();
+                base[new EqualityWeakReference(key)] = value;
+            }
+        }
+
+        /// <summary>
+        /// Override of GetEnumerator that returns enumerator which skips not alive keys
+        /// during enumeration.
+        /// </summary>
+        public override IDictionaryEnumerator GetEnumerator() => new WeakHashtableEnumerator(base.GetEnumerator());
 
         /// <summary>
         /// This method checks to see if it is necessary to
@@ -167,6 +189,66 @@ namespace System.ComponentModel
             }
 
             public override int GetHashCode() => _hashCode;
+        }
+
+        /// <summary>
+        /// A wrapper around the base HashTable enumerator that skips
+        /// collected keys and captures the key value to prevent it
+        /// from being collected during enumeration.
+        /// </summary>
+        private sealed class WeakHashtableEnumerator : IDictionaryEnumerator
+        {
+            private readonly IDictionaryEnumerator _baseEnumerator;
+            // Captured key of the WeakHashtable so that it is not collected during enumeration
+            private object? _currentKey;
+
+            public WeakHashtableEnumerator(IDictionaryEnumerator baseEnumerator)
+            {
+                _baseEnumerator = baseEnumerator;
+            }
+
+            public DictionaryEntry Entry => new DictionaryEntry(Key, Value);
+
+            public object Key
+            {
+                get
+                {
+                    object key = _baseEnumerator.Key;
+                    return ((EqualityWeakReference)key).Target!;
+                }
+            }
+
+            public object? Value => _baseEnumerator.Value;
+
+            public object Current => Entry;
+
+            public bool MoveNext()
+            {
+                while (_baseEnumerator.MoveNext())
+                {
+                    // The key must always be an EqualityWeakReference by design.
+                    EqualityWeakReference key = (EqualityWeakReference)_baseEnumerator.Key;
+
+                    // If the weak reference is alive, capture it and return true.
+                    _currentKey = key.Target;
+                    if (_currentKey != null)
+                    {
+                        return true;
+                    }
+
+                    // Otherwise, the key has been collected and we need to skip it.
+                }
+
+                // Cleanup the captured key and return false if there is nothing more in the table.
+                _currentKey = null;
+                return false;
+            }
+
+            public void Reset()
+            {
+                _baseEnumerator.Reset();
+                _currentKey = null;
+            }
         }
     }
 }
