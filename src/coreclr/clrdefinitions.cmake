@@ -209,6 +209,10 @@ if (FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
   add_definitions(-DFEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 endif()
 
+if (FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS)
+  add_definitions(-DFEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS)
+endif()
+
 if (CLR_CMAKE_TARGET_APPLE)
 #  Re-enable when dbgshim containing https://github.com/dotnet/diagnostics/pull/5487 is generally available
 #  add_definitions(-DFEATURE_MAP_THUNKS_FROM_IMAGE)
