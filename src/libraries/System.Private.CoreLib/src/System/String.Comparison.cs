@@ -920,6 +920,7 @@ namespace System
         // for both for big-endian and for little-endian.
         private const uint NormalizeToLowercase = 0x0020_0020u;
 
+        [Intrinsic]
         internal unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase()
         {
             uint hash1 = (5381 << 16) + 5381;
@@ -929,9 +930,9 @@ namespace System
             fixed (char* src = &_firstChar)
             {
                 Debug.Assert(src[Length] == '\0', "src[this.Length] == '\\0'");
-                Debug.Assert(((int) src) % 4 == 0, "Managed string should start at 4 bytes boundary");
+                Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
 
-                uint* ptr = (uint*) src;
+                uint* ptr = (uint*)src;
 
                 while (length > 2)
                 {

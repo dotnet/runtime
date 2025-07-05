@@ -539,12 +539,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _tryGetNonRandomizedHashCode(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, int* pHashCode)
+        private static byte _tryGetNonRandomizedHashCode(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, byte ignoreCase, int* pHashCode)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.tryGetNonRandomizedHashCode(module, metaTOK, ref *pHashCode) ? (byte)1 : (byte)0;
+                return _this.tryGetNonRandomizedHashCode(module, metaTOK, ignoreCase != 0, ref *pHashCode) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2704,7 +2704,7 @@ namespace Internal.JitInterface
             callbacks[33] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, CORINFO_CONTEXT_STRUCT*, CORINFO_SIG_INFO*, void>)&_findCallSiteSig;
             callbacks[34] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_CLASS_STRUCT_*>)&_getTokenTypeAsHandle;
             callbacks[35] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, char*, int, int, int>)&_getStringLiteral;
-            callbacks[36] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, int*, byte>)&_tryGetNonRandomizedHashCode;
+            callbacks[36] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, byte, int*, byte>)&_tryGetNonRandomizedHashCode;
             callbacks[37] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte*, UIntPtr, UIntPtr*, UIntPtr>)&_printObjectDescription;
             callbacks[38] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_asCorInfoType;
             callbacks[39] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte**, byte*>)&_getClassNameFromMetadata;

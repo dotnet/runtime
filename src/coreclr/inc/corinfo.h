@@ -2293,7 +2293,8 @@ public:
     virtual bool tryGetNonRandomizedHashCode (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
-            int32_t*                    pHashCode  /* OUT */
+            bool                        ignoreCase, /* IN  */
+            int32_t*                    pHashCode   /* OUT */
             ) = 0;
 
     //------------------------------------------------------------------------------

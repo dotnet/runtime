@@ -368,10 +368,11 @@ int WrapICorJitInfo::getStringLiteral(
 bool WrapICorJitInfo::tryGetNonRandomizedHashCode(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
+          bool ignoreCase,
           int* pHashCode)
 {
     API_ENTER(tryGetNonRandomizedHashCode);
-    bool temp = wrapHnd->tryGetNonRandomizedHashCode(module, metaTOK, pHashCode);
+    bool temp = wrapHnd->tryGetNonRandomizedHashCode(module, metaTOK, ignoreCase, pHashCode);
     API_LEAVE(tryGetNonRandomizedHashCode);
     return temp;
 }

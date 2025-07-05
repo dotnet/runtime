@@ -175,6 +175,7 @@ int getStringLiteral(
 bool tryGetNonRandomizedHashCode(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
+          bool ignoreCase,
           int* pHashCode) override;
 
 size_t printObjectDescription(

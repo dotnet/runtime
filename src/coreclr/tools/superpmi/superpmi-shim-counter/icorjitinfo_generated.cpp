@@ -310,10 +310,11 @@ int interceptor_ICJI::getStringLiteral(
 bool interceptor_ICJI::tryGetNonRandomizedHashCode(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
+          bool ignoreCase,
           int* pHashCode)
 {
     mcs->AddCall("tryGetNonRandomizedHashCode");
-    return original_ICorJitInfo->tryGetNonRandomizedHashCode(module, metaTOK, pHashCode);
+    return original_ICorJitInfo->tryGetNonRandomizedHashCode(module, metaTOK, ignoreCase, pHashCode);
 }
 
 size_t interceptor_ICJI::printObjectDescription(

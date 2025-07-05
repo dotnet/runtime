@@ -652,6 +652,7 @@ int CEEInfo::getStringLiteral (
 bool CEEInfo::tryGetNonRandomizedHashCode (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
+        bool                        ignoreCase,
         int*                        pHashCode)
 {
     CONTRACTL{
@@ -672,11 +673,22 @@ bool CEEInfo::tryGetNonRandomizedHashCode (
         if (pPinnedString != nullptr)
         {
             GCX_COOP();
-            PREPARE_NONVIRTUAL_CALLSITE(METHOD__STRING__GETNONRANDOMIZEDHASHCODE);
+            int hashCode;
+
             DECLARE_ARGHOLDER_ARRAY(args, 1);
             args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(getObjectFromJitHandle(pPinnedString));
-            int hashCode;
-            CALL_MANAGED_METHOD(hashCode, int, args);
+            if (ignoreCase)
+            {
+                // TODO: don't invoke it for non-ASCII strings - we don't want to trigger and depend on ICU.
+                PREPARE_NONVIRTUAL_CALLSITE(METHOD__STRING__GET_NONRANDOMIZED_HASHCODE_IGNORECASE);
+                CALL_MANAGED_METHOD(hashCode, int, args);
+            }
+            else
+            {
+                PREPARE_NONVIRTUAL_CALLSITE(METHOD__STRING__GET_NONRANDOMIZED_HASHCODE);
+                CALL_MANAGED_METHOD(hashCode, int, args);
+            }
+
             *pHashCode = hashCode;
             result = true;
         }

@@ -3613,23 +3613,22 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             case NI_System_String_GetNonRandomizedHashCode:
+            case NI_System_String_GetNonRandomizedHashCodeOrdinalIgnoreCase:
             {
                 assert(sig->numArgs == 0);
                 assert(sig->hasThis());
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_CNS_STR))
                 {
                     GenTreeStrCon* strCon = impStackTop().val->AsStrCon();
-
-                    if (strCon->IsStringEmptyField())
+                    if (!strCon->IsStringEmptyField())
                     {
-                        break;
-                    }
-
-                    int hashCode = 0;
-                    if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX, &hashCode))
-                    {
-                        impPopStack();
-                        retNode = gtNewIconNode(hashCode, TYP_INT);
+                        bool ignoreCase = (ni == NI_System_String_GetNonRandomizedHashCodeOrdinalIgnoreCase);
+                        int  hashCode = 0;
+                        if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX, ignoreCase, &hashCode))
+                        {
+                            impPopStack();
+                            retNode = gtNewIconNode(hashCode, TYP_INT);
+                        }
                     }
                 }
                 break;
@@ -10304,6 +10303,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "GetNonRandomizedHashCode") == 0)
                         {
                             result = NI_System_String_GetNonRandomizedHashCode;
+                        }
+                        else if (strcmp(methodName, "GetNonRandomizedHashCodeOrdinalIgnoreCase") == 0)
+                        {
+                            result = NI_System_String_GetNonRandomizedHashCodeOrdinalIgnoreCase;
                         }
                         else if (strcmp(methodName, "get_Chars") == 0)
                         {

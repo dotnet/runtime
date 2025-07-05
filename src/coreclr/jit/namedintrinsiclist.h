@@ -133,6 +133,7 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_String_Equals,
     NI_System_String_GetNonRandomizedHashCode,
+    NI_System_String_GetNonRandomizedHashCodeOrdinalIgnoreCase,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
     NI_System_String_op_Implicit,

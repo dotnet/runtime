@@ -668,9 +668,9 @@ public:
     void dmpGetStringLiteral(DLDDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex);
 
-    void recTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* pHashCode, bool result);
-    void dmpTryGetNonRandomizedHashCode(DLD key, DD value);
-    bool repTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* pHashCode);
+    void recTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool ignoreCase, int* pHashCode, bool result);
+    void dmpTryGetNonRandomizedHashCode(DLDD key, DD value);
+    bool repTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool ignoreCase, int* pHashCode);
 
     void recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, bool result);
     void dmpCanCast(DLDL key, DWORD value);

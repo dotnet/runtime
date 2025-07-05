@@ -373,13 +373,14 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
     return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
 }
 
-bool MyICJI::tryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module,    /* IN  */
-                                         unsigned              metaTOK,   /* IN  */
-                                         int*                  pHashCode  /* OUT */
+bool MyICJI::tryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module,     /* IN  */
+                                         unsigned              metaTOK,    /* IN  */
+                                         bool                  ignoreCase, /* IN  */
+                                         int*                  pHashCode   /* OUT */
                                          )
 {
     jitInstance->mc->cr->AddCall("tryGetNonRandomizedHashCode");
-    return jitInstance->mc->repTryGetNonRandomizedHashCode(module, metaTOK, pHashCode);
+    return jitInstance->mc->repTryGetNonRandomizedHashCode(module, metaTOK, ignoreCase, pHashCode);
 }
 
 size_t MyICJI::printObjectDescription(CORINFO_OBJECT_HANDLE handle,             /* IN  */

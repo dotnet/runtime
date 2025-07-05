@@ -5240,15 +5240,16 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     return srcBufferLength;
 }
 
-void MethodContext::recTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* pHashCode, bool result)
+void MethodContext::recTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool ignoreCase, int* pHashCode, bool result)
 {
     if (TryGetNonRandomizedHashCode == nullptr)
-        TryGetNonRandomizedHashCode = new LightWeightMap<DLD, DD>();
+        TryGetNonRandomizedHashCode = new LightWeightMap<DLDD, DD>();
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)ignoreCase;
 
     DD value;
     value.A = (DWORD)result;
@@ -5258,17 +5259,18 @@ void MethodContext::recTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module,
     DEBUG_REC(dmpTryGetNonRandomizedHashCode(key, value));
 }
 
-void MethodContext::dmpTryGetNonRandomizedHashCode(DLD key, DD value)
+void MethodContext::dmpTryGetNonRandomizedHashCode(DLDD key, DD value)
 {
-    printf("TryGetNonRandomizedHashCode key mod-%016" PRIX64 " tok-%08X, hashcode-%u, result-%u", key.A, key.B, value.A, value.B);
+    printf("TryGetNonRandomizedHashCode key mod-%016" PRIX64 " tok-%08X, ignoreCase-%u, hashcode-%u, result-%u", key.A, key.B, key.C, value.A, value.B);
 }
 
-bool MethodContext::repTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* pHashCode)
+bool MethodContext::repTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool ignoreCase, int* pHashCode)
 {
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)ignoreCase;
 
     return false;
 }

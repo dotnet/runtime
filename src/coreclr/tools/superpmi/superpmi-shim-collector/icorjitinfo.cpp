@@ -446,14 +446,15 @@ int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  *
     return temp;
 }
 
-bool interceptor_ICJI::tryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module,    /* IN  */
-                                                   unsigned              metaTOK,   /* IN  */
-                                                   int*                  pHashCode  /* OUT */
+bool interceptor_ICJI::tryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module,     /* IN  */
+                                                   unsigned              metaTOK,    /* IN  */
+                                                   bool                  ignoreCase, /* IN  */
+                                                   int*                  pHashCode   /* OUT */
                                                    )
 {
     mc->cr->AddCall("tryGetNonRandomizedHashCode");
-    bool temp = original_ICorJitInfo->tryGetNonRandomizedHashCode(module, metaTOK, pHashCode);
-    mc->recTryGetNonRandomizedHashCode(module, metaTOK, pHashCode, temp);
+    bool temp = original_ICorJitInfo->tryGetNonRandomizedHashCode(module, metaTOK, ignoreCase, pHashCode);
+    mc->recTryGetNonRandomizedHashCode(module, metaTOK, ignoreCase, pHashCode, temp);
     return temp;
 }
 

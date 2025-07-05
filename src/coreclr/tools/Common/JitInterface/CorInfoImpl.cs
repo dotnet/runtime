@@ -1967,7 +1967,7 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private bool tryGetNonRandomizedHashCode(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int pHashCode)
+        private bool tryGetNonRandomizedHashCode(CORINFO_MODULE_STRUCT_* module, uint metaTOK, bool ignoreCase, ref int pHashCode)
         {
             return false;
         }
