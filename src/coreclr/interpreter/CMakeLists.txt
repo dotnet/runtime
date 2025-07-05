@@ -12,6 +12,7 @@ set(INTERPRETER_SOURCES
   stackmap.cpp
   naming.cpp
   methodset.cpp
+  intrinsics.cpp
   ../../native/containers/dn-simdhash.c
   ../../native/containers/dn-simdhash-ght-compatible.c
   ../../native/containers/dn-simdhash-ptr-ptr.c)
