@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -56,7 +57,14 @@ namespace System.IO
 
             using (DisableMediaInsertionPrompt.Create())
             {
-                if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+                // Using 'GetFileAttributesEx' to get file attributes of a pipe
+                // will inevitably open that pipe making it useless for a consumer,
+                // thus we need to handle this case separately
+                if (IsPipePath(path))
+                {
+                    errorCode = GetFileAttributeInfoUsingFindFileApi(path, ref data);
+                }
+                else if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
                     errorCode = Marshal.GetLastPInvokeError();
 
@@ -79,19 +87,7 @@ namespace System.IO
                         // pagefile.sys case. As such we're probably stuck filtering out specific
                         // cases that we know we don't want to retry on.
 
-                        Interop.Kernel32.WIN32_FIND_DATA findData = default;
-                        using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path!, ref findData))
-                        {
-                            if (handle.IsInvalid)
-                            {
-                                errorCode = Marshal.GetLastPInvokeError();
-                            }
-                            else
-                            {
-                                errorCode = Interop.Errors.ERROR_SUCCESS;
-                                data.PopulateFrom(ref findData);
-                            }
-                        }
+                        errorCode = GetFileAttributeInfoUsingFindFileApi(path!, ref data);
                     }
                 }
             }
@@ -110,6 +106,59 @@ namespace System.IO
             }
 
             return errorCode;
+
+            static int GetFileAttributeInfoUsingFindFileApi(string path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data)
+            {
+                Interop.Kernel32.WIN32_FIND_DATA findData = default;
+                using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path, ref findData))
+                {
+                    if (handle.IsInvalid)
+                    {
+                        return Marshal.GetLastPInvokeError();
+                    }
+                    else
+                    {
+                        data.PopulateFrom(ref findData);
+                        return Interop.Errors.ERROR_SUCCESS;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tells whether a given path is a Windows pipe path.
+        /// Examples of pipe paths are:
+        /// <list type="bullet">
+        /// <item>
+        /// <c>\\.\pipe\pipeName</c> - local pipe path
+        /// </item>
+        /// <item>
+        /// <c>\\serverName\pipe\pipeName</c> - remote pipe path
+        /// </item>
+        /// </list>
+        /// </summary>
+        private static bool IsPipePath([NotNullWhen(true)] string? path)
+        {
+            if (path is null)
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> pathSpan = path.AsSpan();
+            if (!pathSpan.StartsWith(@"\\"))
+            {
+                return false;
+            }
+
+            pathSpan = pathSpan.Slice(2);
+            Span<Range> segments = stackalloc Range[3];
+            int written = pathSpan.Split(segments, '\\');
+
+            // 3 segments of a pipe path:
+            // 1) '.' or 'serverName'
+            // 2) Constant 'pipe' segment
+            // 3) Pipe name
+            return written == 3 && pathSpan[segments[1]].SequenceEqual("pipe");
         }
 
         internal static bool IsPathUnreachableError(int errorCode) =>
