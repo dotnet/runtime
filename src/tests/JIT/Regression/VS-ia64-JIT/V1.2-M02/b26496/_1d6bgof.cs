@@ -247,6 +247,7 @@ public class App
         {
             Console.WriteLine("Exception handled: " + x.ToString());
         }
+        unsafe { *(int*)-0x12345 = 42; }
         try
         {
             Console.WriteLine("Testing AA::Static2");
