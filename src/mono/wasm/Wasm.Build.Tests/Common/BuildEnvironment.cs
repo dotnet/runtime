@@ -104,13 +104,12 @@ namespace Wasm.Build.Tests
             }
 
             IsWorkloadWithMultiThreadingForDefaultFramework = IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
-            // MT is disabled on CI: https://github.com/dotnet/runtime/issues/116492
-            // if (IsWorkload && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
-            // {
-            //     throw new Exception(
-            //                 "Expected the multithreading runtime pack to be available when running on CI." +
-            //                 $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
-            // }
+            if (IsWorkload && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
+            {
+                throw new Exception(
+                            "Expected the multithreading runtime pack to be available when running on CI." +
+                            $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
+            }
 
             UseWebcil = EnvironmentVariables.UseWebcil;
 

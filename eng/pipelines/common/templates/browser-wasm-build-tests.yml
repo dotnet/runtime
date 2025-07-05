@@ -41,10 +41,10 @@ jobs:
       jobParameters:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
-            # - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_linux_Release_SingleThreaded_BuildOnly
           - ${{ if eq(platform, 'browser_wasm_win') }}:
-            # - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_windows_Release_SingleThreaded_BuildOnly
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
@@ -67,22 +67,22 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
-          # # Download for multi-threaded
-          # - task: DownloadBuildArtifacts@0
-          #   displayName: Download built nugets for multi-threaded runtime
-          #   inputs:
-          #     buildType: current
-          #     artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
-          #     downloadType: single
-          #     downloadPath: '$(Build.SourcesDirectory)/artifacts'
+          # Download for multi-threaded
+          - task: DownloadBuildArtifacts@0
+            displayName: Download built nugets for multi-threaded runtime
+            inputs:
+              buildType: current
+              artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
+              downloadType: single
+              downloadPath: '$(Build.SourcesDirectory)/artifacts'
 
-          # - task: CopyFiles@2
-          #   displayName: Copy multithreading runtime pack
-          #   inputs:
-          #     SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
-          #     Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
-          #     TargetFolder: '$(Build.SourcesDirectory)/artifacts'
-          #     CleanTargetFolder: false
+          - task: CopyFiles@2
+            displayName: Copy multithreading runtime pack
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
+              Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
 
           # Download WBT
           - task: DownloadBuildArtifacts@0
@@ -108,7 +108,7 @@ jobs:
           /p:Configuration=$(_BuildConfig)
           /p:TestUsingWorkloads=true
           /p:InstallWorkloadForTesting=true
-          /p:WasmSkipMissingRuntimePackBuild=false
+          /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
           /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
         timeoutInMinutes: 180
