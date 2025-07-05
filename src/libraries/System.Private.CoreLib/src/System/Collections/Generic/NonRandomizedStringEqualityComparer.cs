@@ -112,7 +112,7 @@ namespace System.Collections.Generic
             {
             }
 
-            public override bool Equals(string? x, string? y) => string.EqualsOrdinalIgnoreCase(x, y);
+            public override bool Equals(string? x, string? y) => string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
 
             public override int GetHashCode(string? obj)
             {

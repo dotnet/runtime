@@ -2290,6 +2290,12 @@ public:
             int                         startIndex = 0 /* IN  */
             ) = 0;
 
+    virtual bool tryGetNonRandomizedHashCode (
+            CORINFO_MODULE_HANDLE       module,     /* IN  */
+            unsigned                    metaTOK,    /* IN  */
+            bool                        ignoreCase, /* IN  */
+            int32_t*                    pHashCode   /* OUT */
+            ) = 0;
 
     //------------------------------------------------------------------------------
     // printObjectDescription: Prints a (possibly truncated) textual UTF8 representation of the given
