@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
@@ -234,6 +235,14 @@ namespace Microsoft.Extensions.Logging
 
                 if (minLevel is not null and > LogLevel.Critical)
                 {
+                    continue;
+                }
+
+                var logger = loggerInformation.Logger;
+                if (logger is NullLogger ||
+                    (logger.GetType() is var loggerType && loggerType.IsGenericType && loggerType.GetGenericTypeDefinition() == typeof(NullLogger<>)))
+                {
+                    // Skip NullLogger instances
                     continue;
                 }
 
