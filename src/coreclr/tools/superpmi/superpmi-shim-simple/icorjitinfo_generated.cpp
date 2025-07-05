@@ -271,6 +271,14 @@ int interceptor_ICJI::getStringLiteral(
     return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
 }
 
+bool interceptor_ICJI::tryGetNonRandomizedHashCode(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK,
+          int* pHashCode)
+{
+    return original_ICorJitInfo->tryGetNonRandomizedHashCode(module, metaTOK, pHashCode);
+}
+
 size_t interceptor_ICJI::printObjectDescription(
           CORINFO_OBJECT_HANDLE handle,
           char* buffer,

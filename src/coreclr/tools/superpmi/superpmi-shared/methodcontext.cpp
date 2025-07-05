@@ -5236,6 +5236,39 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     return srcBufferLength;
 }
 
+void MethodContext::recTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* pHashCode, bool result)
+{
+    if (TryGetNonRandomizedHashCode == nullptr)
+        TryGetNonRandomizedHashCode = new LightWeightMap<DLD, DD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(module);
+    key.B = (DWORD)metaTOK;
+
+    DD value;
+    value.A = (DWORD)result;
+    value.B = (DWORD)*pHashCode;
+
+    TryGetNonRandomizedHashCode->Add(key, value);
+    DEBUG_REC(dmpTryGetNonRandomizedHashCode(key, value));
+}
+
+void MethodContext::dmpTryGetNonRandomizedHashCode(DLD key, DD value)
+{
+    printf("TryGetNonRandomizedHashCode key mod-%016" PRIX64 " tok-%08X, hashcode-%u, result-%u", key.A, key.B, value.A, value.B);
+}
+
+bool MethodContext::repTryGetNonRandomizedHashCode(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* pHashCode)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(module);
+    key.B = (DWORD)metaTOK;
+
+    return false;
+}
+
 void MethodContext::recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, bool result)
 {
     if (CanCast == nullptr)

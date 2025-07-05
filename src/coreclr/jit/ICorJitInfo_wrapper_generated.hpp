@@ -365,6 +365,17 @@ int WrapICorJitInfo::getStringLiteral(
     return temp;
 }
 
+bool WrapICorJitInfo::tryGetNonRandomizedHashCode(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK,
+          int* pHashCode)
+{
+    API_ENTER(tryGetNonRandomizedHashCode);
+    bool temp = wrapHnd->tryGetNonRandomizedHashCode(module, metaTOK, pHashCode);
+    API_LEAVE(tryGetNonRandomizedHashCode);
+    return temp;
+}
+
 size_t WrapICorJitInfo::printObjectDescription(
           CORINFO_OBJECT_HANDLE handle,
           char* buffer,

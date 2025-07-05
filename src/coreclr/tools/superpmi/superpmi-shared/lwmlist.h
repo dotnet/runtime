@@ -158,6 +158,7 @@ LWM(ExpandRawHandleIntrinsic, Agnostic_ExpandRawHandleIntrinsic, Agnostic_CORINF
 LWM(IsIntrinsicType, DWORDLONG, DWORD)
 LWM(IsSDArray, DWORDLONG, DWORD)
 LWM(GetStringLiteral, DLDDD, DD)
+LWM(TryGetNonRandomizedHashCode, DLD, DD)
 LWM(PrintObjectDescription, DWORDLONG, Agnostic_PrintResult)
 LWM(PrintClassName, DWORDLONG, Agnostic_PrintResult)
 LWM(PrintFieldName, DWORDLONG, Agnostic_PrintResult)

@@ -172,6 +172,11 @@ int getStringLiteral(
           int bufferSize,
           int startIndex) override;
 
+bool tryGetNonRandomizedHashCode(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK,
+          int* pHashCode) override;
+
 size_t printObjectDescription(
           CORINFO_OBJECT_HANDLE handle,
           char* buffer,

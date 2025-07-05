@@ -47,6 +47,7 @@ struct JitInterfaceCallbacks
     void (* findCallSiteSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned methTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig);
     CORINFO_CLASS_HANDLE (* getTokenTypeAsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken);
     int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex);
+    bool (* tryGetNonRandomizedHashCode)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* pHashCode);
     size_t (* printObjectDescription)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -554,6 +555,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     int temp = _callbacks->getStringLiteral(_thisHandle, &pException, module, metaTOK, buffer, bufferSize, startIndex);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool tryGetNonRandomizedHashCode(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK,
+          int* pHashCode)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->tryGetNonRandomizedHashCode(_thisHandle, &pException, module, metaTOK, pHashCode);
     if (pException != nullptr) throw pException;
     return temp;
 }

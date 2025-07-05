@@ -1967,6 +1967,11 @@ namespace Internal.JitInterface
             return result;
         }
 
+        private bool tryGetNonRandomizedHashCode(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int pHashCode)
+        {
+            return false;
+        }
+
         private nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             Debug.Assert(handle != null);

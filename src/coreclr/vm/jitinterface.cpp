@@ -649,6 +649,83 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
+
+bool CEEInfo::tryGetNonRandomizedHashCode (
+        CORINFO_MODULE_HANDLE       moduleHnd,
+        mdToken                     metaTOK,
+        int*                        pHashCode)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    Module* module = GetModule(moduleHnd);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+
+    if (IsDynamicScope(moduleHnd))
+    {
+        //GCX_COOP();
+        //STRINGREF strRef = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK);
+        //if (strRef != NULL)
+        //{
+        //    StringObject* strObj = STRINGREFToObject(strRef);
+        //    int length = (int)strObj->GetStringLength();
+        //    result = (length >= startIndex) ? (length - startIndex) : 0;
+        //    if (buffer != NULL && result != 0)
+        //    {
+        //        memcpyNoGCRefs(buffer, strObj->GetBuffer() + startIndex, min(bufferSize, result) * sizeof(char16_t));
+        //    }
+        //}
+    }
+    else
+    {
+        ULONG dwCharCount;
+        LPCWSTR pString;
+        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
+        {
+            _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
+            _ASSERTE(pString != nullptr);
+
+            ULONG length = dwCharCount;
+
+            uint32_t hash1 = (5381 << 16) + 5381;
+            uint32_t hash2 = hash1;
+
+            uint32_t* ptr = (uint32_t*)pString;
+
+            auto RotateLeft = [](uint32_t value, int offset) -> uint32_t {
+                return (value << offset) | (value >> (32 - offset));
+            };
+
+            while (length > 2)
+            {
+                length -= 4;
+                hash1 = (RotateLeft(hash1, 5) + hash1) ^ ptr[0];
+                hash2 = (RotateLeft(hash2, 5) + hash2) ^ ptr[1];
+                ptr += 2;
+            }
+
+            if (length > 0)
+            {
+                hash2 = (RotateLeft(hash2, 5) + hash2) ^ ptr[0];
+            }
+
+            *pHashCode = (int)(hash1 + (hash2 * 1566083941));
+            result = true;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 size_t CEEInfo::printObjectDescription (
         CORINFO_OBJECT_HANDLE  handle,
         char*                  buffer,

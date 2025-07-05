@@ -3553,13 +3553,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 assert(sig->hasThis());
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_CNS_STR))
                 {
-                    //GenTreeStrCon* strCon = impStackTop().val->AsStrCon();
-                    //int hashCode = 0;
-                    //if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX, &hashCode))
-                    //{
-                    //    impPopStack();
-                    //    retNode = gtNewIconNode(hashCode, TYP_INT);
-                    //}
+                    GenTreeStrCon* strCon = impStackTop().val->AsStrCon();
+                    int hashCode = 0;
+                    if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX, &hashCode))
+                    {
+                        impPopStack();
+                        retNode = gtNewIconNode(hashCode, TYP_INT);
+                    }
                 }
                 break;
             }
