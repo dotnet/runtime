@@ -26,7 +26,7 @@ namespace System.IO
 
             return
                 (lastError == 0) &&
-                (data.dwFileAttributes != -1) &&
+                (data.dwFileAttributes != Interop.Kernel32.FileAttributes.INVALID_FILE_ATTRIBUTES) &&
                 ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
         }
 
@@ -37,7 +37,7 @@ namespace System.IO
 
             return
                 (errorCode == 0) &&
-                (data.dwFileAttributes != -1) &&
+                (data.dwFileAttributes != Interop.Kernel32.FileAttributes.INVALID_FILE_ATTRIBUTES) &&
                 ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
         }
 
@@ -100,7 +100,7 @@ namespace System.IO
                     case Interop.Errors.ERROR_PATH_NOT_FOUND:
                     case Interop.Errors.ERROR_NOT_READY: // Removable media not ready
                         // Return default value for backward compatibility
-                        data.dwFileAttributes = -1;
+                        data.dwFileAttributes = Interop.Kernel32.FileAttributes.INVALID_FILE_ATTRIBUTES;
                         return Interop.Errors.ERROR_SUCCESS;
                 }
             }
