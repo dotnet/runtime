@@ -453,18 +453,21 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_aes_128_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_128_ecb) \
     REQUIRED_FUNCTION(EVP_aes_128_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_128_wrap_pad) \
     REQUIRED_FUNCTION(EVP_aes_192_cbc) \
     REQUIRED_FUNCTION(EVP_aes_192_ccm) \
     REQUIRED_FUNCTION(EVP_aes_192_cfb128) \
     REQUIRED_FUNCTION(EVP_aes_192_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_192_ecb) \
     REQUIRED_FUNCTION(EVP_aes_192_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_192_wrap_pad) \
     REQUIRED_FUNCTION(EVP_aes_256_cbc) \
     REQUIRED_FUNCTION(EVP_aes_256_ccm) \
     REQUIRED_FUNCTION(EVP_aes_256_cfb128) \
     REQUIRED_FUNCTION(EVP_aes_256_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_256_ecb) \
     REQUIRED_FUNCTION(EVP_aes_256_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_256_wrap_pad) \
     LIGHTUP_FUNCTION(EVP_chacha20_poly1305) \
     LEGACY_FUNCTION(EVP_CIPHER_CTX_cleanup) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_ctrl) \
@@ -1025,18 +1028,21 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_aes_128_ecb EVP_aes_128_ecb_ptr
 #define EVP_aes_128_gcm EVP_aes_128_gcm_ptr
 #define EVP_aes_128_ccm EVP_aes_128_ccm_ptr
+#define EVP_aes_128_wrap_pad EVP_aes_128_wrap_pad_ptr
 #define EVP_aes_192_cbc EVP_aes_192_cbc_ptr
 #define EVP_aes_192_cfb8 EVP_aes_192_cfb8_ptr
 #define EVP_aes_192_cfb128 EVP_aes_192_cfb128_ptr
 #define EVP_aes_192_ecb EVP_aes_192_ecb_ptr
 #define EVP_aes_192_gcm EVP_aes_192_gcm_ptr
 #define EVP_aes_192_ccm EVP_aes_192_ccm_ptr
+#define EVP_aes_192_wrap_pad EVP_aes_192_wrap_pad_ptr
 #define EVP_aes_256_cbc EVP_aes_256_cbc_ptr
 #define EVP_aes_256_cfb8 EVP_aes_256_cfb8_ptr
 #define EVP_aes_256_cfb128 EVP_aes_256_cfb128_ptr
 #define EVP_aes_256_ecb EVP_aes_256_ecb_ptr
 #define EVP_aes_256_gcm EVP_aes_256_gcm_ptr
 #define EVP_aes_256_ccm EVP_aes_256_ccm_ptr
+#define EVP_aes_256_wrap_pad EVP_aes_256_wrap_pad_ptr
 #define EVP_chacha20_poly1305 EVP_chacha20_poly1305_ptr
 #define EVP_CIPHER_CTX_cleanup EVP_CIPHER_CTX_cleanup_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
