@@ -6,10 +6,11 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public static class LoopbackWebSocketServer
+    public static partial class LoopbackWebSocketServer
     {
         public static Task RunAsync(
             Func<ClientWebSocket, CancellationToken, Task> clientWebSocketFunc,
@@ -17,11 +18,11 @@ namespace System.Net.WebSockets.Client.Tests
             Options options,
             CancellationToken cancellationToken)
         {
-            Assert.False(options.ManualServerHandshakeResponse, "Not supported in this overload");
+            Assert.False(options.SkipServerHandshakeResponse, "Required to create ClientWebSocket");
 
             return RunAsyncPrivate(
-                uri => RunClientAsync(uri, clientWebSocketFunc, options, cancellationToken),
-                (requestData, token) => RunServerAsync(requestData, serverWebSocketFunc, options, token),
+                uri => RunClientWebSocketAsync(uri, clientWebSocketFunc, options, cancellationToken),
+                (requestData, token) => RunServerWebSocketAsync(requestData, serverWebSocketFunc, options, token),
                 options,
                 cancellationToken);
         }
@@ -32,9 +33,9 @@ namespace System.Net.WebSockets.Client.Tests
             Options options,
             CancellationToken cancellationToken)
         {
-            Assert.False(options.DisposeClientWebSocket, "Not supported in this overload");
-            Assert.False(options.DisposeServerWebSocket, "Not supported in this overload");
-            Assert.False(options.DisposeHttpInvoker, "Not supported in this overload");
+            Assert.False(options.DisposeClientWebSocket, "ClientWebSocket is not created in this overload");
+            Assert.False(options.DisposeServerWebSocket, "ServerWebSocket is not created in this overload");
+            Assert.False(options.DisposeHttpInvoker, "HttpInvoker is not used in this overload");
             Assert.Null(options.HttpInvoker); // Not supported in this overload
 
             return RunAsyncPrivate(loopbackClientFunc, loopbackServerFunc, options, cancellationToken);
@@ -44,55 +45,47 @@ namespace System.Net.WebSockets.Client.Tests
             Func<Uri, Task> loopbackClientFunc,
             Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc,
             Options options,
-            CancellationToken cancellationToken)
+            CancellationToken globalCt)
         {
-            bool sendDefaultServerHandshakeResponse = !options.ManualServerHandshakeResponse;
-            if (options.HttpVersion == HttpVersion.Version11)
+            if (!options.AbortServerOnClientExit)
             {
-                return LoopbackServer.CreateClientAndServerAsync(
-                    loopbackClientFunc,
-                    async server =>
-                    {
-                        await server.AcceptConnectionAsync(async connection =>
-                        {
-                            var requestData = await WebSocketHandshakeHelper.ProcessHttp11RequestAsync(connection, sendDefaultServerHandshakeResponse, cancellationToken).ConfigureAwait(false);
-                            await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
-                        });
-                    },
-                    new LoopbackServer.Options { WebSocketEndpoint = true, UseSsl = options.UseSsl });
+                return RunClientAndServerAsync(
+                    loopbackClientFunc, loopbackServerFunc, options, CancellationToken.None, globalCt);
             }
-            else if (options.HttpVersion == HttpVersion.Version20)
-            {
-                return Http2LoopbackServer.CreateClientAndServerAsync(
-                    loopbackClientFunc,
-                    async server =>
-                    {
-                        var requestData = await WebSocketHandshakeHelper.ProcessHttp2RequestAsync(server, sendDefaultServerHandshakeResponse, cancellationToken).ConfigureAwait(false);
-                        var http2Connection = requestData.Http2Connection!;
-                        var http2StreamId = requestData.Http2StreamId.Value;
 
-                        await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
+            CancellationTokenSource clientExitCts = new CancellationTokenSource();
 
-                        await http2Connection.ShutdownIgnoringErrorsAsync(http2StreamId).ConfigureAwait(false);
-                    },
-                    new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl });
-            }
-            else
-            {
-                throw new ArgumentException(nameof(options.HttpVersion));
-            }
+            return RunClientAndServerAsync(
+                async uri =>
+                {
+                    try
+                    {
+                        await loopbackClientFunc(uri);
+                    }
+                    finally
+                    {
+                        clientExitCts.Cancel();
+                    }
+                },
+                loopbackServerFunc,
+                options,
+                clientExitCts.Token,
+                globalCt);
         }
 
-        private static async Task RunServerAsync(
+        private static async Task RunServerWebSocketAsync(
             WebSocketRequestData requestData,
             Func<WebSocket, CancellationToken, Task> serverWebSocketFunc,
             Options options,
             CancellationToken cancellationToken)
         {
-            var wsOptions = new WebSocketCreationOptions { IsServer = true };
-            var serverWebSocket = WebSocket.CreateFromStream(requestData.WebSocketStream, wsOptions);
+            var wsOptions = new WebSocketCreationOptions { IsServer = true, SubProtocol = options.ServerSubProtocol };
 
-            await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
+            var serverWebSocket = WebSocket.CreateFromStream(requestData.TransportStream, wsOptions);
+            using (var registration = cancellationToken.Register(serverWebSocket.Abort))
+            {
+                await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
+            }
 
             if (options.DisposeServerWebSocket)
             {
@@ -100,7 +93,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        private static async Task RunClientAsync(
+        private static async Task RunClientWebSocketAsync(
             Uri uri,
             Func<ClientWebSocket, CancellationToken, Task> clientWebSocketFunc,
             Options options,
@@ -139,13 +132,26 @@ namespace System.Net.WebSockets.Client.Tests
             return clientWebSocket;
         }
 
-        public record class Options(Version HttpVersion, bool UseSsl, HttpMessageInvoker? HttpInvoker)
+        public record class Options()
         {
-            public bool DisposeServerWebSocket { get; set; } = true;
+            public Version HttpVersion { get; init; }
+            public bool UseSsl { get; init; }
+            public HttpMessageInvoker? HttpInvoker { get; init; }
+
+            public bool DisposeServerWebSocket { get; set; }
+            public bool SkipServerHandshakeResponse { get; set; }
+            public bool ParseEchoOptions { get; set; }
+            public bool IgnoreServerErrors { get; set; }
+            public bool AbortServerOnClientExit { get; set; }
+            public string? ServerSubProtocol { get; set; }
+            public string? ServerExtensions { get; set; }
+            public Action<Http2Options>? ConfigureHttp2Options { get; set; }
+
             public bool DisposeClientWebSocket { get; set; }
             public bool DisposeHttpInvoker { get; set; }
-            public bool ManualServerHandshakeResponse { get; set; }
             public Action<ClientWebSocketOptions>? ConfigureClientOptions { get; set; }
+
+            public ITestOutputHelper? Output { get; set; }
         }
     }
 }

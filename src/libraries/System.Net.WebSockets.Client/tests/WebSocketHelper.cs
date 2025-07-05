@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Http;
-using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,6 +13,8 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static class WebSocketHelper
     {
+        public const string OriginalQueryStringHeader = "x-original-query-string";
+
         private static readonly Lazy<bool> s_WebSocketSupported = new Lazy<bool>(InitWebSocketSupported);
         public static bool WebSocketsSupported { get { return s_WebSocketSupported.Value; } }
 
@@ -21,6 +23,7 @@ namespace System.Net.WebSockets.Client.Tests
             WebSocketMessageType type,
             int timeOutMilliseconds,
             ITestOutputHelper output,
+            Action<ClientWebSocketOptions> configureOptions,
             HttpMessageInvoker? invoker = null)
         {
             var cts = new CancellationTokenSource(timeOutMilliseconds);
@@ -29,38 +32,31 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[100];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, invoker: invoker))
-            {
-                output.WriteLine("TestEcho: SendAsync starting.");
-                await cws.SendAsync(WebSocketData.GetBufferFromText(message), type, true, cts.Token);
-                output.WriteLine("TestEcho: SendAsync done.");
-                Assert.Equal(WebSocketState.Open, cws.State);
+            using ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, configureOptions, invoker);
 
-                output.WriteLine("TestEcho: ReceiveAsync starting.");
-                WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cts.Token);
-                output.WriteLine("TestEcho: ReceiveAsync done.");
-                Assert.Equal(WebSocketState.Open, cws.State);
-                Assert.Equal(message.Length, recvRet.Count);
-                Assert.Equal(type, recvRet.MessageType);
-                Assert.True(recvRet.EndOfMessage);
-                Assert.Null(recvRet.CloseStatus);
-                Assert.Null(recvRet.CloseStatusDescription);
+            await cws.SendAsync(ToUtf8(message), type, true, cts.Token);
+            Assert.Equal(WebSocketState.Open, cws.State);
 
-                var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
-                Assert.Equal(message, WebSocketData.GetTextFromBuffer(recvSegment));
+            WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cts.Token);
+            Assert.Equal(WebSocketState.Open, cws.State);
+            Assert.Equal(message.Length, recvRet.Count);
+            Assert.Equal(type, recvRet.MessageType);
+            Assert.True(recvRet.EndOfMessage);
+            Assert.Null(recvRet.CloseStatus);
+            Assert.Null(recvRet.CloseStatusDescription);
 
-                output.WriteLine("TestEcho: CloseAsync starting.");
-                Task taskClose = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeMessage, cts.Token);
-                Assert.True(
-                    (cws.State == WebSocketState.Open) || (cws.State == WebSocketState.CloseSent) ||
-                    (cws.State == WebSocketState.CloseReceived) || (cws.State == WebSocketState.Closed),
-                    "State immediately after CloseAsync : " + cws.State);
-                await taskClose;
-                output.WriteLine("TestEcho: CloseAsync done.");
-                Assert.Equal(WebSocketState.Closed, cws.State);
-                Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
-                Assert.Equal(closeMessage, cws.CloseStatusDescription);
-            }
+            var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
+            Assert.Equal(message, FromUtf8(recvSegment));
+
+            Task taskClose = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeMessage, cts.Token);
+            Assert.True(
+                (cws.State == WebSocketState.Open) || (cws.State == WebSocketState.CloseSent) ||
+                (cws.State == WebSocketState.CloseReceived) || (cws.State == WebSocketState.Closed),
+                "State immediately after CloseAsync : " + cws.State);
+            await taskClose;
+            Assert.Equal(WebSocketState.Closed, cws.State);
+            Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
+            Assert.Equal(closeMessage, cws.CloseStatusDescription);
         }
 
         public static Task<ClientWebSocket> GetConnectedWebSocket(
@@ -97,24 +93,47 @@ namespace System.Net.WebSockets.Client.Tests
             Retry(output, async () =>
             {
                 var cws = new ClientWebSocket();
-                configureOptions(cws.Options);
-
-                using (var cts = new CancellationTokenSource(timeOutMilliseconds))
-                {
-                    output.WriteLine("GetConnectedWebSocket: ConnectAsync starting.");
-                    Task taskConnect = invoker == null ? cws.ConnectAsync(server, cts.Token) : cws.ConnectAsync(server, invoker, cts.Token);
-                    Assert.True(
-                        (cws.State == WebSocketState.None) ||
-                        (cws.State == WebSocketState.Connecting) ||
-                        (cws.State == WebSocketState.Open) ||
-                        (cws.State == WebSocketState.Aborted),
-                        "State immediately after ConnectAsync incorrect: " + cws.State);
-                    await taskConnect;
-                    output.WriteLine("GetConnectedWebSocket: ConnectAsync done.");
-                    Assert.Equal(WebSocketState.Open, cws.State);
-                }
+                using var cts = new CancellationTokenSource(timeOutMilliseconds);
+                await ConnectAsync(cws, server, configureOptions, invoker, validateState: true, cts.Token);
                 return cws;
             });
+
+        public static async Task ConnectAsync(
+            ClientWebSocket cws,
+            Uri server,
+            Action<ClientWebSocketOptions> configureOptions,
+            HttpMessageInvoker? invoker = null,
+            bool validateState = true,
+            CancellationToken cancellationToken = default)
+        {
+            if (PlatformDetection.IsNotBrowser && server.Scheme == "wss" && invoker == null)
+            {
+                cws.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+            }
+
+            configureOptions(cws.Options);
+
+            Task taskConnect = invoker == null
+                ? cws.ConnectAsync(server, cancellationToken)
+                : cws.ConnectAsync(server, invoker, cancellationToken);
+
+            if (validateState)
+            {
+                Assert.True(
+                    (cws.State == WebSocketState.None) ||
+                    (cws.State == WebSocketState.Connecting) ||
+                    (cws.State == WebSocketState.Open) ||
+                    (cws.State == WebSocketState.Aborted),
+                    "State immediately after ConnectAsync incorrect: " + cws.State);
+            }
+
+            await taskConnect;
+
+            if (validateState)
+            {
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
+        }
 
         public static async Task<T> Retry<T>(ITestOutputHelper output, Func<Task<T>> func)
         {
@@ -165,6 +184,17 @@ namespace System.Net.WebSockets.Client.Tests
                     cws.Dispose();
                 }
             }
+        }
+
+        public static ArraySegment<byte> ToUtf8(string text)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(text);
+            return new ArraySegment<byte>(buffer);
+        }
+
+        public static string FromUtf8(ArraySegment<byte> buffer)
+        {
+            return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
         }
     }
 }

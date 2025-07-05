@@ -344,11 +344,12 @@ namespace System.Net.WebSockets.Tests
             return stream;
         }
 
-        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
-        public static readonly object[][] EchoServersAndBoolean = EchoServers.SelectMany(o => new object[][]
+        public static readonly Uri[] EchoServers_Values = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
+        public static readonly object[][] EchoServers = EchoServers_Values.Select(uri => new object[] { uri }).ToArray();
+        public static readonly object[][] EchoServersAndBoolean = EchoServers_Values.SelectMany(uri => new object[][]
         {
-            new object[] { o[0], false },
-            new object[] { o[0], true }
+            new object[] { uri, false },
+            new object[] { uri, true }
         }).ToArray();
 
         protected sealed class UnreadableStream : Stream
