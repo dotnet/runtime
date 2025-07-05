@@ -57,6 +57,7 @@ private:
     bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation);
     void IfConvertJoinStmts(BasicBlock* fromBlock);
 
+    GenTree* TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput);
 #ifdef DEBUG
     void IfConvertDump();
 #endif
@@ -678,17 +679,8 @@ bool OptIfConversionDsc::optIfConvert()
     GenTree*  selectFalseInput;
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
-        if (m_doElseConversion)
-        {
-            selectTrueInput  = m_elseOperation.node->AsLclVar()->Data();
-            selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
-        }
-        else // Duplicate the destination of the Then store.
-        {
-            GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
-            selectTrueInput      = m_comp->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
-            selectFalseInput     = m_thenOperation.node->AsLclVar()->Data();
-        }
+        selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
+        selectTrueInput  = m_doElseConversion ? m_elseOperation.node->AsLclVar()->Data() : nullptr;
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
         selectType = genActualType(m_thenOperation.node);
@@ -704,23 +696,20 @@ bool OptIfConversionDsc::optIfConvert()
         selectType       = genActualType(m_thenOperation.node);
     }
 
-    GenTree* select = nullptr;
-    if (selectTrueInput->TypeIs(TYP_INT) && selectFalseInput->TypeIs(TYP_INT))
-    {
-        if (selectTrueInput->IsIntegralConst(1) && selectFalseInput->IsIntegralConst(0))
-        {
-            // compare ? true : false  -->  compare
-            select = m_cond;
-        }
-        else if (selectTrueInput->IsIntegralConst(0) && selectFalseInput->IsIntegralConst(1))
-        {
-            // compare ? false : true  -->  reversed_compare
-            select = m_comp->gtReverseCond(m_cond);
-        }
-    }
-
+    GenTree* select = TryTransformSelectToOrdinaryOps(selectTrueInput, selectFalseInput);
     if (select == nullptr)
     {
+#ifdef TARGET_RISCV64
+        JITDUMP("Skipping if-conversion that cannot be transformed to ordinary operations\n");
+        return false;
+#endif
+        if (selectTrueInput == nullptr)
+        {
+            // Duplicate the destination of the Then store.
+            assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
+            GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
+            selectTrueInput      = m_comp->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
+        }
         // Create a select node
         select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
@@ -775,6 +764,222 @@ bool OptIfConversionDsc::optIfConvert()
 }
 
 //-----------------------------------------------------------------------------
+// TryTransformSelectToOrdinaryOps: Try transforming the identified if-else expressions to a single expression
+//
+// This is meant mostly for RISC-V where the condition (1 or 0) is stored in a regular general-purpose register
+// which can be fed as an argument to standard operations, e.g.
+//     * (cond ? 6 : 5) becomes (5 + cond)
+//     * (cond ? -25 : -13) becomes (-25 >> cond)
+//     * if (cond) a++; becomes (a + cond)
+//     * (cond ? 1 << a : 0) becomes (cond << a)
+//
+// Arguments:
+//     trueInput  - expression to be evaluated when m_cond is true, or null if there is no else expression
+//     falseInput - expression to be evaluated when m_cond is false
+//
+// Return Value:
+//     The transformed single expression equivalent to the if-else expressions, or null if no transformation took place
+//
+GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput)
+{
+    assert(falseInput != nullptr);
+
+    if ((trueInput != nullptr && trueInput->IsIntegralConst()) && falseInput->IsIntegralConst())
+    {
+        int64_t trueVal  = trueInput->AsIntConCommon()->IntegralValue();
+        int64_t falseVal = falseInput->AsIntConCommon()->IntegralValue();
+        if (trueInput->TypeIs(TYP_INT) && falseInput->TypeIs(TYP_INT))
+        {
+            if (trueVal == 1 && falseVal == 0)
+            {
+                // compare ? true : false  -->  compare
+                return m_cond;
+            }
+            else if (trueVal == 0 && falseVal == 1)
+            {
+                // compare ? false : true  -->  reversed_compare
+                return m_comp->gtReverseCond(m_cond);
+            }
+        }
+#ifdef TARGET_RISCV64
+        bool isCondPlain    = false;
+        bool isCondReversed = false;
+
+        unsigned   log2   = 0;
+        var_types  opType = TYP_UNDEF;
+        genTreeOps oper   = GT_NONE;
+        do
+        {
+            isCondPlain    = (trueVal == falseVal + 1);
+            isCondReversed = (falseVal == trueVal + 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_ADD;
+                opType = TYP_LONG;
+                break;
+            }
+            isCondPlain    = (trueVal == ((int32_t)falseVal) + 1);
+            isCondReversed = (falseVal == ((int32_t)trueVal) + 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_ADD;
+                opType = TYP_INT;
+                break;
+            }
+
+            isCondPlain    = (falseVal == 0) && (trueVal == (1l << BitOperations::Log2((uint64_t)trueVal)));
+            isCondReversed = (trueVal == 0) && (falseVal == (1l << BitOperations::Log2((uint64_t)falseVal)));
+            if (isCondPlain || isCondReversed)
+            {
+                log2 = BitOperations::Log2((uint64_t)(isCondPlain ? trueVal : falseVal));
+                assert(log2 > 0);
+                oper   = GT_LSH;
+                opType = TYP_LONG;
+                break;
+            }
+            isCondPlain    = (falseVal == 0) && (trueVal == (1 << BitOperations::Log2((uint32_t)trueVal)));
+            isCondReversed = (trueVal == 0) && (falseVal == (1 << BitOperations::Log2((uint32_t)falseVal)));
+            if (isCondPlain || isCondReversed)
+            {
+                log2 = BitOperations::Log2((uint64_t)(isCondPlain ? trueVal : falseVal));
+                assert(log2 > 0);
+                oper   = GT_LSH;
+                opType = TYP_INT;
+                break;
+            }
+
+            isCondPlain    = (trueVal == falseVal << 1);
+            isCondReversed = (falseVal == trueVal << 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_LSH;
+                opType = TYP_LONG;
+                break;
+            }
+            isCondPlain    = (trueVal == ((int32_t)falseVal) << 1);
+            isCondReversed = (falseVal == ((int32_t)trueVal) << 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_LSH;
+                opType = TYP_INT;
+                break;
+            }
+
+            isCondPlain    = (trueVal == falseVal >> 1);
+            isCondReversed = (falseVal == trueVal >> 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_RSH;
+                opType = TYP_LONG;
+                break;
+            }
+            isCondPlain    = (trueVal == ((int32_t)falseVal) >> 1);
+            isCondReversed = (falseVal == ((int32_t)trueVal) >> 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_RSH;
+                opType = TYP_INT;
+                break;
+            }
+
+            isCondPlain    = (trueVal == (uint64_t)falseVal >> 1);
+            isCondReversed = (falseVal == (uint64_t)trueVal >> 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_RSZ;
+                opType = TYP_LONG;
+                break;
+            }
+            isCondPlain    = (trueVal == ((uint32_t)falseVal) >> 1);
+            isCondReversed = (falseVal == ((uint32_t)trueVal) >> 1);
+            if (isCondPlain || isCondReversed)
+            {
+                oper   = GT_RSZ;
+                opType = TYP_INT;
+                break;
+            }
+
+            return nullptr;
+        } while (false);
+
+        assert(isCondReversed != isCondPlain);
+        GenTree* left  = isCondReversed ? trueInput : falseInput;
+        GenTree* right = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+        if (log2 > 0)
+        {
+            left->AsIntConCommon()->SetIntegralValue(log2);
+            std::swap(left, right);
+        }
+
+        return m_comp->gtNewOperNode(oper, opType, left, right);
+#endif // TARGET_RISCV64
+    }
+#ifdef TARGET_RISCV64
+    else
+    {
+        bool isTrueLclVar  = (trueInput == nullptr || trueInput->OperIs(GT_LCL_VAR));
+        bool isFalseLclVar = falseInput->OperIs(GT_LCL_VAR);
+        if (isTrueLclVar != isFalseLclVar)
+        {
+            GenTree* binOp = isTrueLclVar ? falseInput : trueInput;
+            assert(binOp != nullptr);
+            if (binOp->OperIs(GT_ADD, GT_OR, GT_XOR) || binOp->OperIsShift())
+            {
+                GenTree*& op1 = binOp->AsOp()->gtOp1;
+                GenTree*& op2 = binOp->AsOp()->gtOp2;
+
+                bool isDecrement = binOp->OperIs(GT_ADD) && (op1->IsIntegralConst(-1) || op2->IsIntegralConst(-1));
+                if ((!binOp->OperIsShift() && op1->IsIntegralConst(1)) || op2->IsIntegralConst(1) || isDecrement)
+                {
+                    GenTree* lclVar = isTrueLclVar ? trueInput : falseInput;
+                    if (lclVar == nullptr)
+                    {
+                        assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
+                        lclVar = m_thenOperation.node;
+                    }
+                    unsigned lclNum = lclVar->AsLclVarCommon()->GetLclNum();
+                    GenTree* varOp  = op1->IsIntegralConst() ? op2 : op1;
+                    if (varOp->OperIs(GT_LCL_VAR) && (varOp->AsLclVar()->GetLclNum() == lclNum))
+                    {
+                        GenTree*& constOp = op1->IsIntegralConst() ? op1 : op2;
+
+                        constOp = isTrueLclVar ? m_comp->gtReverseCond(m_cond) : m_cond;
+                        if (isDecrement)
+                            binOp->ChangeOper(GT_SUB);
+
+                        binOp->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
+                        return binOp;
+                    }
+                }
+            }
+        }
+        else if (trueInput != nullptr && (trueInput->IsIntegralConst(0) != falseInput->IsIntegralConst(0)))
+        {
+            bool isTrueZero = trueInput->IsIntegralConst(0);
+
+            GenTree* binOp = isTrueZero ? falseInput : trueInput;
+            if (binOp->OperIs(GT_LSH, GT_AND))
+            {
+                GenTree*& op1 = binOp->AsOp()->gtOp1;
+                GenTree*& op2 = binOp->AsOp()->gtOp2;
+
+                if (op1->IsIntegralConst(1) || (op2->IsIntegralConst(1) && binOp->OperIs(GT_AND)))
+                {
+                    GenTree*& constOp = op1->IsIntegralConst(1) ? op1 : op2;
+
+                    constOp = isTrueZero ? m_comp->gtReverseCond(m_cond) : m_cond;
+
+                    binOp->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
+                    return binOp;
+                }
+            }
+        }
+    }
+#endif // TARGET_RISCV64
+    return nullptr;
+}
+
+//-----------------------------------------------------------------------------
 // optIfConversion: If conversion
 //
 // Returns:
@@ -800,7 +1005,7 @@ PhaseStatus Compiler::optIfConversion()
     assert(!fgSsaValid);
     optReachableBitVecTraits = nullptr;
 
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_RISCV64)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)
