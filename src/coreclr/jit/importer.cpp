@@ -13861,9 +13861,8 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
     // Cache the relevant arg and lcl info for this argument.
     // We will modify argInfo but not lclVarInfo.
 
-    // NOTE: Any attempt to modify CNS_STR is an Undefined Behavior,
-    // so we can ignore argHasLdargaOp/argHasStargOp for them
-    const bool argCanBeModified = (argInfo.argHasLdargaOp || argInfo.argHasStargOp) && !argNode->OperIs(GT_CNS_STR);
+    // NOTE: Any attempt to modify CNS_STR is an Undefined Behavior, so we can ignore argHasLdargaOp for them
+    const bool argCanBeModified = ((argInfo.argHasLdargaOp && !argNode->OperIs(GT_CNS_STR)) || argInfo.argHasStargOp);
     const var_types lclTyp      = lclInfo.lclTypeInfo;
     GenTree*        op1         = nullptr;
 
