@@ -242,6 +242,13 @@ public:
         return FALSE;
     }
 
+    BOOL HasAsyncContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // async calls are also not supported for reflection invoke
+        return FALSE;
+    }
+
     BOOL IsVarArg()
     {
         LIMITED_METHOD_CONTRACT;
