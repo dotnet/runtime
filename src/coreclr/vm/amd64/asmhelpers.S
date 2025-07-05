@@ -382,18 +382,19 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         //
         // RDI = throwable
         // RSI = PC to invoke
-        // RDX = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        // RDX = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         //
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
         //  Restore RBX, RBP, R12, R13, R14, R15 from CONTEXT
-        mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
-        mov     r12, [rdx + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
-        mov     r13, [rdx + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
-        mov     r14, [rdx + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
-        mov     r15, [rdx + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+        mov     rbx, [rdx + OFFSETOF__CONTEXT__Rbx]
+        mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp]
+        mov     r12, [rdx + OFFSETOF__CONTEXT__R12]
+        mov     r13, [rdx + OFFSETOF__CONTEXT__R13]
+        mov     r14, [rdx + OFFSETOF__CONTEXT__R14]
+        mov     r15, [rdx + OFFSETOF__CONTEXT__R15]
 
         // Save the SP of this function.
         mov     [rcx], rsp

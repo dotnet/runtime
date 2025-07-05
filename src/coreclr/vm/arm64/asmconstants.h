@@ -101,6 +101,12 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
+#define OFFSETOF__CONTEXT__X19        0xA0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__X19 == offsetof(T_CONTEXT, X19));
+
+#define OFFSETOF__CONTEXT__Fp         0xF0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
+
 #define               OFFSETOF__DynamicHelperStubArgs__Constant1    0x0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant1
                     == offsetof(DynamicHelperStubArgs, Constant1));
