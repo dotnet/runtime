@@ -1773,7 +1773,8 @@ namespace Internal.JitInterface
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
-                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Constrained)
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Constrained
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method)
                 {
                     helperId = ReadyToRunHelperId.TypeHandle;
                 }
@@ -1783,7 +1784,26 @@ namespace Internal.JitInterface
                 }
                 else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
                 {
-                    helperId = _compilation.GetLdTokenHelperForType(td);
+                    if (((TypeDesc)target).IsRuntimeDeterminedSubtype)
+                    {
+                        // If we're in a generic context and the type is canonical, Compilation cannot give
+                        // us a good answer on what handle kind to use because we don't track canonical forms.
+                        // If we already have a fixed generic dictionary layout (a build with a scanner pass),
+                        // ask for NecessaryTypeSymbol - it will get upgraded as needed.
+                        // If we don't have a fixed dictionary layout, ask for a full type symbol because that's
+                        // always correct.
+                        MethodDesc callerContextMethod = HandleToObject(callerHandle);
+                        DictionaryLayoutNode contextLayout = _compilation.NodeFactory.GenericDictionaryLayout(
+                            callerContextMethod.RequiresInstMethodDescArg() ? callerContextMethod : callerContextMethod.OwningType);
+                        if (contextLayout.HasFixedSlots)
+                            helperId = ReadyToRunHelperId.NecessaryTypeHandle;
+                        else
+                            helperId = ReadyToRunHelperId.TypeHandle;
+                    }
+                    else
+                    {
+                        helperId = _compilation.GetLdTokenHelperForType(td);
+                    }
                 }
                 else
                 {
