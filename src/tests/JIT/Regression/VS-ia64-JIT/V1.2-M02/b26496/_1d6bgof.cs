@@ -42,7 +42,6 @@ public class AA
                 AA.m_fStatic1 = AA.m_fStatic1;
 #pragma warning restore 1717
             }
-            unsafe { *(int*)-0x12345 = 42; }
             do
             {
                 AA.m_fStatic1 = (45.0f + local4);
@@ -248,6 +247,7 @@ public class App
         {
             Console.WriteLine("Exception handled: " + x.ToString());
         }
+        unsafe { *(int*)-0x12345 = 42; }
         try
         {
             Console.WriteLine("Testing AA::Static2");
