@@ -679,7 +679,9 @@ bool CEEInfo::tryGetNonRandomizedHashCode (
             args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(getObjectFromJitHandle(pPinnedString));
             if (ignoreCase)
             {
-                // TODO: don't invoke it for non-ASCII strings - we don't want to trigger and depend on ICU.
+                // This may trigger ICU loading for non-ASCII output, but it should be fine.
+                // In most cases this is called for an optimized code for a hot block, so, presumably
+                // ICU has already been loaded (e.g by Tier0 code).
                 PREPARE_NONVIRTUAL_CALLSITE(METHOD__STRING__GET_NONRANDOMIZED_HASHCODE_IGNORECASE);
                 CALL_MANAGED_METHOD(hashCode, int, args);
             }

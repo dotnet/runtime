@@ -3617,14 +3617,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
                 assert(sig->numArgs == 0);
                 assert(sig->hasThis());
-                if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_CNS_STR))
+                if (opts.OptimizationEnabled() && !compCurBB->isRunRarely() && impStackTop().val->OperIs(GT_CNS_STR))
                 {
                     GenTreeStrCon* strCon = impStackTop().val->AsStrCon();
                     if (!strCon->IsStringEmptyField())
                     {
                         bool ignoreCase = (ni == NI_System_String_GetNonRandomizedHashCodeOrdinalIgnoreCase);
-                        int  hashCode = 0;
-                        if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX, ignoreCase, &hashCode))
+                        int  hashCode   = 0;
+                        if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX,
+                                                                          ignoreCase, &hashCode))
                         {
                             impPopStack();
                             retNode = gtNewIconNode(hashCode, TYP_INT);
