@@ -1040,6 +1040,13 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 block->getTryIndex(), layout.ExceptionGCDataIndex);
     }
 
+    if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
+    {
+        layout.ContinuationContextGCDataIndex = layout.GCRefsCount++;
+        JITDUMP("  Continuation continues on captured context; context will be at GC@+%02u in GC data\n",
+                layout.ContinuationContextGCDataIndex);
+    }
+
     if (call->GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
     {
         layout.ExecContextGCDataIndex = layout.GCRefsCount++;
@@ -1200,13 +1207,16 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
 
     // Fill in 'flags'
-    unsigned continuationFlags = 0;
+    const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
+    unsigned             continuationFlags = 0;
     if (layout.ReturnInGCData)
         continuationFlags |= CORINFO_CONTINUATION_RESULT_IN_GCDATA;
     if (block->hasTryIndex())
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
         continuationFlags |= CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA;
+    if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
+        continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
     newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
@@ -1384,6 +1394,51 @@ void AsyncTransformation::FillInGCPointersOnSuspension(const ContinuationLayout&
                 m_comp->lvaSetVarDoNotEnregister(inf.LclNum DEBUGARG(DoNotEnregisterReason::LocalField));
             }
         }
+    }
+
+    if (layout.ContinuationContextGCDataIndex != UINT_MAX)
+    {
+        // Insert call AsyncHelpers.CaptureContinuationContext(ref
+        // newContinuation.GCData[ContinuationContextGCDataIndex], ref newContinuation.Flags).
+        GenTree*     contextElementPlaceholder = m_comp->gtNewZeroConNode(TYP_BYREF);
+        GenTree*     flagsPlaceholder          = m_comp->gtNewZeroConNode(TYP_BYREF);
+        GenTreeCall* captureCall =
+            m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
+
+        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(flagsPlaceholder));
+        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(contextElementPlaceholder));
+
+        m_comp->compCurBB = suspendBB;
+        m_comp->fgMorphTree(captureCall);
+
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, captureCall));
+
+        // Now replace contextElementPlaceholder with actual address of the context element
+        LIR::Use use;
+        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(contextElementPlaceholder, &use);
+        assert(gotUse);
+
+        GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
+        unsigned offset = OFFSETOF__CORINFO_Array__data + (layout.ContinuationContextGCDataIndex * TARGET_POINTER_SIZE);
+        GenTree* contextElementOffset =
+            m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, objectArr, m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(contextElementPlaceholder, LIR::SeqTree(m_comp, contextElementOffset));
+        use.ReplaceWith(contextElementOffset);
+        LIR::AsRange(suspendBB).Remove(contextElementPlaceholder);
+
+        // And now replace flagsPlaceholder with actual address of the flags
+        gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
+        assert(gotUse);
+
+        newContinuation          = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        unsigned flagsOffset     = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
+        GenTree* flagsOffsetNode = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                                         m_comp->gtNewIconNode((ssize_t)flagsOffset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(flagsPlaceholder, LIR::SeqTree(m_comp, flagsOffsetNode));
+        use.ReplaceWith(flagsOffsetNode);
+        LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
     }
 
     if (layout.ExecContextGCDataIndex != UINT_MAX)

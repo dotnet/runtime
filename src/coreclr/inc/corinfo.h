@@ -1712,6 +1712,15 @@ enum CorInfoContinuationFlags
     // OSR method saved in the beginning of 'Data', or -1 if the continuation
     // belongs to a tier 0 method.
     CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+    // If this bit is set the continuation should continue on the thread
+    // pool.
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 8,
+    // If this bit is set the continuation has a SynchronizationContext
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 16,
+    // If this bit is set the continuation has a TaskScheduler
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 32,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1737,6 +1746,7 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
     // Method handle for AsyncHelpers.RestoreExecutionContext
     CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
 };
 
 // Flags passed from JIT to runtime.
