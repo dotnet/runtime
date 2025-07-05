@@ -1,0 +1,142 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net.Security;
+using System.Runtime.InteropServices;
+using System.Security.Authentication;
+using Microsoft.Win32.SafeHandles;
+
+internal static partial class Interop
+{
+    // TLS 1.3 specific Network Framework implementation for macOS
+    internal static partial class NetworkFramework
+    {
+        internal static partial class Tls
+        {
+            // Initialize internal shim for NetworkFramework integration
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwInit")]
+            [return: MarshalAs(UnmanagedType.I4)]
+            internal static unsafe partial bool Init(
+                delegate* unmanaged<IntPtr, StatusUpdates, IntPtr, IntPtr, void> statusCallback,
+                delegate* unmanaged<IntPtr, byte*, void**, int> readCallback,
+                delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
+
+            // Create a new connection context
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCreateContext")]
+            internal static partial SafeNwHandle CreateContext([MarshalAs(UnmanagedType.I4)] bool isServer);
+
+            // Set TLS options for a connection
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
+            private static partial void SetTlsOptions(SafeNwHandle connection, IntPtr state,
+            string targetName, Span<byte> alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol);
+
+            internal static void SetTlsOptions(SafeNwHandle nwHandle, IntPtr state, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
+            {
+                int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
+                Span<byte> alpn = stackalloc byte[256];
+                SerializeAlpnProtocolList(applicationProtocols, alpn);
+
+                SetTlsOptions(nwHandle, state, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
+            }
+
+            // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwStartTlsHandshake")]
+            internal static partial int StartTlsHandshake(SafeNwHandle connection, IntPtr state);
+
+            // takes encrypted input from underlying stream and feed it to the connection.
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
+            internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength);
+
+            // sends plaintext data to the connection.
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSendToConnection")]
+            internal static unsafe partial void SendToConnection(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength);
+
+            // read plaintext data from the connection.
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
+            internal static partial void ReadFromConnection(SafeNwHandle connection, IntPtr state);
+
+            // starts connection cleanup
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]
+            internal static partial void CancelConnection(SafeNwHandle connection);
+
+            // gets TLS connection information
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwGetConnectionInfo")]
+            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, ref byte* negotiatedAlpn, out int negotiatedAlpnLength);
+
+            // copies the certificate chain from the connection
+            [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]
+            internal static partial void CopyCertChain(SafeNwHandle connection, out SafeCFArrayHandle certificates, out int count);
+
+            internal static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
+            {
+                if (applicationProtocols is null)
+                {
+                    return 0;
+                }
+
+                int protocolSize = 0;
+
+                foreach (SslApplicationProtocol protocol in applicationProtocols)
+                {
+                    protocolSize += protocol.Protocol.Length + 2;
+                }
+
+                return protocolSize;
+            }
+
+            private static void SerializeAlpnProtocolList(List<SslApplicationProtocol>? applicationProtocols, Span<byte> buffer)
+            {
+                if (applicationProtocols is null)
+                {
+                    return;
+                }
+
+                Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length);
+
+                int offset = 0;
+                foreach (SslApplicationProtocol protocol in applicationProtocols)
+                {
+                    buffer[offset++] = (byte)protocol.Protocol.Length;
+                    protocol.Protocol.Span.CopyTo(buffer.Slice(offset));
+                    offset += protocol.Protocol.Length;
+                    buffer[offset++] = 0;
+                }
+            }
+        }
+
+        // Status enumeration for Network Framework TLS operations
+        internal enum StatusUpdates
+        {
+            UnknownError = 0,
+            FramerStart = 1,
+            FramerStop = 2,
+            HandshakeFinished = 3,
+            HandshakeFailed = 4,
+            ConnectionReadFinished = 100,
+            ConnectionWriteFinished = 101,
+            ConnectionWriteFailed = 102,
+            ConnectionCancelled = 103,
+        }
+    }
+
+    // Safe handle classes for Network Framework TLS resources
+    internal sealed class SafeNwHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public SafeNwHandle() : base(ownsHandle: true) { }
+
+        public SafeNwHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
+        {
+            SetHandle(handle);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            NetworkFramework.Release(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+    }
+}
