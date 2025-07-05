@@ -443,7 +443,7 @@ namespace System.Tests
         public void EscapeUriString_Long_Success()
         {
             string s;
-            const int LongCount = 65520 + 1;
+            const int LongCount = 100_000;
 
             s = new string('a', LongCount);
             Assert.Equal(s, Uri.EscapeUriString(s));
