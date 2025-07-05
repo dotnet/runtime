@@ -95,7 +95,7 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
     {
         case 0x01:
         {
-            result |= INS_OPTS_EVEX_eb_er_rd;
+            result |= INS_OPTS_EVEX_er_rd;
             break;
         }
 
