@@ -62,4 +62,4 @@ target_link_libraries(clrinterpreter
 
 set_property(TARGET clrinterpreter APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime)
+install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime)
