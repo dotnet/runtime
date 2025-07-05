@@ -1287,6 +1287,27 @@ INST1(setge,            "setge",            IUM_WR, 0x0F009D,                   
 INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
 INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
 
+#ifdef TARGET_AMD64
+// The following instructions shall always be next to SETcc instructions group, the offset between the original instruction and the ZU variant should be 16.
+// No new instruction should be inserted from INS_seto to setzug.
+INST1(setzuo,             "setzuo",         IUM_WR, 0x40,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF)
+INST1(setzuno,            "setzuno",        IUM_WR, 0x41,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF)
+INST1(setzub,             "setzub",         IUM_WR, 0x42,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_CF)
+INST1(setzuae,            "setzuae",        IUM_WR, 0x43,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_CF)
+INST1(setzue,             "setzue",         IUM_WR, 0x44,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF)
+INST1(setzune,            "setzune",        IUM_WR, 0x45,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF)
+INST1(setzube,            "setzube",        IUM_WR, 0x46,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF | Reads_CF)
+INST1(setzua,             "setzua",         IUM_WR, 0x47,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF | Reads_CF)
+INST1(setzus,             "setzus",         IUM_WR, 0x48,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_SF)
+INST1(setzuns,            "setzuns",        IUM_WR, 0x49,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_SF)
+INST1(setzup,             "setzup",         IUM_WR, 0x4A,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_PF)
+INST1(setzunp,            "setzunp",        IUM_WR, 0x4B,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_PF)
+INST1(setzul,             "setzul",         IUM_WR, 0x4C,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF)
+INST1(setzuge,            "setzuge",        IUM_WR, 0x4D,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF)
+INST1(setzule,            "setzule",        IUM_WR, 0x4E,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
+INST1(setzug,             "setzug",         IUM_WR, 0x4F,                                                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
+#endif
+
 // Indirect jump used for tailcalls. We differentiate between func-internal
 // indirect jump (e.g. used for switch) and tailcall indirect jumps because the
 // x64 unwinder might require the latter to be rex.w prefixed.
