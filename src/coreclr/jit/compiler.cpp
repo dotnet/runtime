@@ -10618,7 +10618,7 @@ const char* Compiler::convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String)
 {
     const char* utf8Str = "<utf8 conversion failure>";
     int         utf8Len = WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, nullptr, 0, nullptr, nullptr);
-    if (utf8Len == 0)
+    if (utf8Len > 0)
     {
         char* allocated = new (this, CMK_DebugOnly) char[utf8Len];
 
