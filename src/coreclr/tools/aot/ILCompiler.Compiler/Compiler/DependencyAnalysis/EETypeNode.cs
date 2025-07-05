@@ -758,7 +758,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
-            if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+            if (_type.GetTypeDefinition() == factory.TypeSystemContext.ArrayOfTEnumeratorType)
             {
                 // Generic array enumerators use special variance rules recognized by the runtime
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
@@ -1148,7 +1148,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     GenericVarianceDetails details;
-                    if (_type == factory.ArrayOfTEnumeratorType)
+                    if (_type == factory.TypeSystemContext.ArrayOfTEnumeratorType)
                     {
                         // Generic array enumerators use special variance rules recognized by the runtime
                         details = new GenericVarianceDetails(new[] { GenericVariance.ArrayCovariant });

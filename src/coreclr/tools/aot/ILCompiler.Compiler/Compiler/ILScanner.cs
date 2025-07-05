@@ -470,6 +470,7 @@ namespace ILCompiler
 
         private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
+            private CompilerTypeSystemContext _context;
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
@@ -483,6 +484,8 @@ namespace ILCompiler
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
+                _context = factory.TypeSystemContext;
+
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
                 var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();
 
@@ -576,23 +579,6 @@ namespace ILCompiler
                                 for (DefType @base = type.BaseType; @base != null; @base = @base.BaseType)
                                 {
                                     _disqualifiedTypes.Add(@base);
-                                }
-                            }
-                            else if (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
-                            {
-                                // Interfaces implemented by arrays and array enumerators have weird casting rules
-                                // due to array covariance (string[] castable to object[], or int[] castable to uint[]).
-                                // Disqualify such interfaces.
-                                TypeDesc elementType = type.IsArray ? ((ArrayType)type).ElementType : type.Instantiation[0];
-                                if (CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
-                                    (elementType.IsDefType && !elementType.IsValueType))
-                                {
-                                    foreach (DefType baseInterface in type.RuntimeInterfaces)
-                                    {
-                                        // Limit to the generic ones - ICollection<T>, etc.
-                                        if (baseInterface.HasInstantiation)
-                                            _disqualifiedTypes.Add(baseInterface);
-                                    }
                                 }
                             }
 
@@ -794,6 +780,9 @@ namespace ILCompiler
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {
                 if (_disqualifiedTypes.Contains(type))
+                    return null;
+
+                if (_context.IsArrayVariantCastable(type))
                     return null;
 
                 if (_implementators.TryGetValue(type, out HashSet<TypeDesc> implementations))

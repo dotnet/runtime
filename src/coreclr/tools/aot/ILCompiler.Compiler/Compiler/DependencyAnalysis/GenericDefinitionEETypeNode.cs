@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
             // Generic array enumerators use special variance rules recognized by the runtime
             // Runtime casting logic relies on all interface types implemented on arrays
             // to have the variant flag set.
-            if (_type == factory.ArrayOfTEnumeratorType || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+            if (_type == factory.TypeSystemContext.ArrayOfTEnumeratorType || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
 
             if (_type.IsByRefLike)

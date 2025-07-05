@@ -1087,6 +1087,10 @@ namespace ILCompiler
             if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation()))
                 return false;
 
+            // Above check took care of most variant scenarios but we still need to worry about array variance
+            if (((CompilerTypeSystemContext)type.Context).IsArrayVariantCastable(type))
+                return false;
+
             constant = 0;
 
             return true;
