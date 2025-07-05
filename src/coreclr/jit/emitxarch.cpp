@@ -5158,7 +5158,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
                     ssize_t compressedDsp;
                     bool    fitsInByte;
 
-                    if (TryEvexCompressDisp8Byte(id, offs, &compressedDsp, &fitsInByte))
+                    if (TryEvexCompressDisp8Byte(id, int(offs), &compressedDsp, &fitsInByte))
                     {
                         if (!TakesEvexPrefix(id))
                         {
@@ -5213,7 +5213,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     {
         ssize_t compressedDsp;
 
-        if (TryEvexCompressDisp8Byte(id, offs, &compressedDsp, &useSmallEncoding))
+        if (TryEvexCompressDisp8Byte(id, int(offs), &compressedDsp, &useSmallEncoding))
         {
             if (!TakesEvexPrefix(id))
             {
@@ -14684,16 +14684,17 @@ GOT_DSP:
     }
     else if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
+        ssize_t compressedDsp;
+
         if (HasCompressedDisplacement(id))
         {
-            ssize_t compressedDsp;
             bool    isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
-
             assert(isCompressed && dspInByte);
             dsp = compressedDsp;
         }
         else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
+            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
             dspInByte = false;
         }
         else
@@ -15567,16 +15568,17 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
     if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
+        ssize_t compressedDsp;
+
         if (HasCompressedDisplacement(id))
         {
-            ssize_t compressedDsp;
-            bool    isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
-
+            bool isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
             assert(isCompressed && dspInByte);
             dsp = (int)compressedDsp;
         }
         else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
+            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
             dspInByte = false;
         }
         else
@@ -15626,10 +15628,25 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // Adjust the offset by the amount currently pushed on the CPU stack
         dsp += emitCurStackLvl;
 
-        if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
         {
-            assert(!HasCompressedDisplacement(id));
-            dspInByte = false;
+            ssize_t compressedDsp;
+
+            if (HasCompressedDisplacement(id))
+            {
+                bool isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
+                assert(isCompressed && dspInByte);
+                dsp = (int)compressedDsp;
+            }
+            else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+            {
+                assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
+                dspInByte = false;
+            }
+            else
+            {
+                dspInByte = ((signed char)dsp == (ssize_t)dsp);
+            }
         }
         else
         {
@@ -18020,13 +18037,27 @@ bool emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, ssize_t* comp
         return *fitsInByte;
     }
 
-    if (*fitsInByte && !TakesEvexPrefix(id))
+    if (*fitsInByte)
     {
-        // We already fit into a byte and do not otherwise require the EVEX prefix
-        // which means we can use the VEX encoding instead and be even smaller.
+        if (!TakesEvexPrefix(id))
+        {
+            // We already fit into a byte and do not otherwise require the EVEX prefix
+            // which means we can use the VEX encoding instead and be even smaller.
 
-        assert(*compressedDsp == dsp);
-        return false;
+            assert(*compressedDsp == dsp);
+            return false;
+        }
+    }
+    else
+    {
+        ssize_t compressedTest = dsp / 64;
+
+        if (static_cast<signed char>(compressedTest) != compressedTest)
+        {
+            // We are larger than the maximum possible compressed displacement
+            assert(*compressedDsp == dsp);
+            return false;
+        }
     }
 
     insTupleType tt = insTupleTypeInfo(ins);
