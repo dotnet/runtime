@@ -308,6 +308,8 @@ elseif(CLR_CMAKE_HOST_APPLE)
   add_definitions(-D_XOPEN_SOURCE)
   # enable support for Darwin extension APIs, like pthread_getthreadid_np
   add_definitions(-D_DARWIN_C_SOURCE)
+  # enable the non-cancellable versions of APIs with $NOCANCEL variants, like close(2)
+  add_definitions(-D__DARWIN_NON_CANCELABLE=1)
 
   if(CLR_CMAKE_HOST_OSX)
     # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
