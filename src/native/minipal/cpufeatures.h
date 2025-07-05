@@ -55,6 +55,7 @@ static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_A
 #if defined(HOST_RISCV64)
 #define RiscV64IntrinsicConstants_Zba (1 << 0)
 #define RiscV64IntrinsicConstants_Zbb (1 << 1)
+#define RiscV64IntrinsicConstants_Zbs (1 << 2)
 #endif // HOST_RISCV64
 
 #ifdef __cplusplus

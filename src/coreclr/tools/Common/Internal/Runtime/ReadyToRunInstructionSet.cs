@@ -70,6 +70,7 @@ namespace Internal.ReadyToRunConstants
         Zba=57,
         Zbb=58,
         Sve2=59,
+        Zbs=60,
         Aes_V256=64,
         Aes_V512=65,
         AvxIfma=66,
