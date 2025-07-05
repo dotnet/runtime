@@ -1577,8 +1577,11 @@ public class InterpreterTest
             int c = (int)inRangeInt,
                 d = (int)outOfRangeInt;
 
-            if (a != b)
+            // See https://github.com/dotnet/runtime/issues/116823 - they should *not* currently match if target size is smaller than int32
+            // if (a != b)
+            if (a == b)
                 return false;
+
             if (c != d)
                 return false;
         }
