@@ -1483,12 +1483,13 @@ public:
 #ifdef FEATURE_HW_INTRINSICS
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
-    bool isRMWHWIntrinsic(Compiler* comp);
+    bool isRMWHWIntrinsic(Compiler* comp) const;
 #if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
     bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
+    bool isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, CorInfoType& tgtSimdBaseJitType) const;
 #endif // TARGET_XARCH
-    bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
+    bool isEmbeddedMaskingCompatible() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1500,7 +1501,7 @@ public:
         return false;
     }
 
-    bool isRMWHWIntrinsic(Compiler* comp)
+    bool isRMWHWIntrinsic(Compiler* comp) const
     {
         return false;
     }
@@ -1517,7 +1518,7 @@ public:
     }
 #endif // TARGET_XARCH
 
-    bool isEmbeddedMaskingCompatibleHWIntrinsic() const
+    bool isEmbeddedMaskingCompatible() const
     {
         return false;
     }
