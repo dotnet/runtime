@@ -3554,6 +3554,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_CNS_STR))
                 {
                     GenTreeStrCon* strCon = impStackTop().val->AsStrCon();
+
+                    if (strCon->IsStringEmptyField())
+                    {
+                        break;
+                    }
+
                     int hashCode = 0;
                     if (info.compCompHnd->tryGetNonRandomizedHashCode(strCon->gtScpHnd, strCon->gtSconCPX, &hashCode))
                     {

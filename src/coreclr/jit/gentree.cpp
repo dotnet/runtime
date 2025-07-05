@@ -12213,19 +12213,22 @@ void Compiler::gtDispConst(GenTree* tree)
                 break;
             }
 
-            char16_t str[512] = {};
-            int len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, sizeof(str));
+            const int MaxLiteralLen      = 512;
+            char16_t  str[MaxLiteralLen] = {};
+            int       len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, sizeof(str));
             if (len == 0)
             {
                 printf("\"\"");
             }
-            else if (len < 0)
+            else if ((len < 0) || (len >= MaxLiteralLen))
             {
                 printf("<unknown string literal>");
             }
             else
             {
-                printf("\"%.32s\"", convertUtf16ToUtf8ForPrinting(reinterpret_cast<WCHAR*>(str)));
+                // Trim the string to 64 characters for printing
+                printf("\"%.64s%s\"", convertUtf16ToUtf8ForPrinting(reinterpret_cast<WCHAR*>(str)),
+                       len > 64 ? "..." : "");
             }
         }
         break;
