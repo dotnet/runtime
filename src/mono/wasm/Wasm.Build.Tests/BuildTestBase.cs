@@ -487,6 +487,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new();
             object syncObj = new();
+            bool isDisposed = false;
 
             var processStartInfo = new ProcessStartInfo
             {
@@ -560,6 +561,12 @@ namespace Wasm.Build.Tests
                 // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
+                // Mark as disposed before detaching handlers to prevent further TestOutput access
+                lock (syncObj)
+                {
+                    isDisposed = true;
+                }
+
                 process.ErrorDataReceived -= logStdErr;
                 process.OutputDataReceived -= logStdOut;
                 process.CancelErrorRead();
@@ -573,7 +580,12 @@ namespace Wasm.Build.Tests
             }
             catch (Exception ex)
             {
-                _testOutput.WriteLine($"-- exception -- {ex}");
+                // Mark as disposed before writing to avoid potential race condition
+                lock (syncObj)
+                {
+                    isDisposed = true;
+                }
+                TryWriteToTestOutput(_testOutput, $"-- exception -- {ex}", outputBuilder);
                 throw;
             }
 
@@ -581,9 +593,11 @@ namespace Wasm.Build.Tests
             {
                 lock (syncObj)
                 {
+                    if (isDisposed)
+                        return;
                     if (message != null)
                     {
-                        _testOutput.WriteLine($"{label} {message}");
+                        TryWriteToTestOutput(_testOutput, $"{label} {message}", outputBuilder, label);
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
@@ -625,6 +639,24 @@ namespace Wasm.Build.Tests
             doc.Save(projectFile);
 
             return projectFile;
+        }
+
+        private static void TryWriteToTestOutput(ITestOutputHelper testOutput, string message, StringBuilder? outputBuffer = null, string? warningPrefix = null)
+        {
+            try
+            {
+                testOutput.WriteLine(message);
+            }
+            catch (InvalidOperationException)
+            {
+                // Test context has expired, but we still want to capture output in buffer
+                // for potential debugging purposes
+                if (outputBuffer != null)
+                {
+                    string prefix = warningPrefix ?? "";
+                    outputBuffer.AppendLine($"{prefix}[WARNING: Test context expired, subsequent output may be incomplete]");
+                }
+            }
         }
 
         public void Dispose()
