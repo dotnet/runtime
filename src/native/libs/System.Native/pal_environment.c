@@ -4,29 +4,19 @@
 #include "pal_config.h"
 #include "pal_environment.h"
 
-#include <stdlib.h>
-#include <string.h>
-#if HAVE_NSGETENVIRON
-#include <crt_externs.h>
-#endif
+#include <minipal/env.h>
 
-char* SystemNative_GetEnv(const char* variable)
+const char* SystemNative_GetEnv(const char* variable)
 {
-    return getenv(variable);
+    return minipal_env_get_unsafe(variable);
 }
 
 char** SystemNative_GetEnviron(void)
 {
-#if HAVE_NSGETENVIRON
-    return *(_NSGetEnviron());
-#else
-    extern char **environ;
-    return environ;
-#endif
+    return minipal_env_get_environ();
 }
 
 void SystemNative_FreeEnviron(char** environ)
 {
-    // no op
-    (void)environ;
+    minipal_env_free_environ(environ);
 }

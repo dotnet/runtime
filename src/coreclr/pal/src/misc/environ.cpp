@@ -22,22 +22,13 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
-
-#if HAVE_CRT_EXTERNS_H
-#include <crt_externs.h>
-#endif
+#include "minipal/env.h"
 
 #include <stdlib.h>
 
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
-
-char **palEnvironment = nullptr;
-int palEnvironmentCount = 0;
-int palEnvironmentCapacity = 0;
-
-minipal_mutex gcsEnvironment;
 
 /*++
 Function:
@@ -78,15 +69,12 @@ GetEnvironmentVariableA(
             OUT LPSTR lpBuffer,
             IN DWORD nSize)
 {
-    char  *value;
     DWORD dwRet = 0;
 
     PERF_ENTRY(GetEnvironmentVariableA);
     ENTRY("GetEnvironmentVariableA(lpName=%p (%s), lpBuffer=%p, nSize=%u)\n",
         lpName ? lpName : "NULL",
         lpName ? lpName : "NULL", lpBuffer, nSize);
-
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
 
     if (lpName == nullptr)
     {
@@ -105,41 +93,37 @@ GetEnvironmentVariableA(
     if (strchr(lpName, '=') != nullptr)
     {
         // GetEnvironmentVariable doesn't permit '=' in variable names.
-        value = nullptr;
+        goto done;
     }
     else
     {
-        // Enter the environment critical section so that we can safely get
-        // the environment variable value without EnvironGetenv making an
-        // intermediate copy. We will just copy the string to the output
-        // buffer anyway, so just stay in the critical section until then.
-        minipal_mutex_enter(&gcsEnvironment);
-
-        value = EnvironGetenv(lpName, /* copyValue */ FALSE);
-
-        if (value != nullptr)
+        size_t valueLength = 0;
+        if (minipal_env_get_s(&valueLength, lpBuffer, nSize, lpName, false))
         {
-            DWORD valueLength = strlen(value);
+            // minipal_env_get_s returns the length of the value including the null terminator.
+            if (valueLength > 0)
+            {
+                valueLength--;
+            }
+
             if (valueLength < nSize)
             {
-                strcpy_s(lpBuffer, nSize, value);
-                dwRet = valueLength;
+                // The value fits in the buffer, so return the length of the value without the null terminator.
+                dwRet = (DWORD)valueLength;
             }
             else
             {
-                dwRet = valueLength + 1;
+                // The value doesn't fit in the buffer, so return the size required to hold it including the null terminator.
+                dwRet = (DWORD)(valueLength + 1);
             }
 
             SetLastError(ERROR_SUCCESS);
         }
-
-        minipal_mutex_leave(&gcsEnvironment);
-    }
-
-    if (value == nullptr)
-    {
-        TRACE("%s is not found\n", lpName);
-        SetLastError(ERROR_ENVVAR_NOT_FOUND);
+        else
+        {
+            TRACE("%s is not found\n", lpName);
+            SetLastError(ERROR_ENVVAR_NOT_FOUND);
+        }
     }
 
 done:
@@ -362,6 +346,34 @@ done:
     return bRet;
 }
 
+typedef struct _EnvironmentStringsCallbackCookie
+{
+    WCHAR* wenviron;
+    WCHAR* tempEnviron;
+    int envNum;
+} EnvironmentStringsCallbackCookie;
+
+bool EnvironmentStringsCallback(const char* s, void* cookie)
+{
+    EnvironmentStringsCallbackCookie* envStrings = (EnvironmentStringsCallbackCookie*)cookie;
+    if (envStrings != nullptr && s != nullptr)
+    {
+        if (envStrings->wenviron != nullptr)
+        {
+            int len = MultiByteToWideChar(CP_ACP, 0, s, -1, envStrings->tempEnviron, envStrings->envNum);
+            envStrings->tempEnviron += len;
+            envStrings->envNum      -= len;
+        }
+        else
+        {
+            int len = MultiByteToWideChar(CP_ACP, 0, s, -1, nullptr, 0);
+            envStrings->envNum += len;
+        }
+    }
+
+    return true;
+}
+
 /*++
 Function:
   GetEnvironmentStringsW
@@ -393,50 +405,30 @@ PALAPI
 GetEnvironmentStringsW(
                VOID)
 {
-    WCHAR *wenviron = nullptr, *tempEnviron;
-    int i, len, envNum;
-
     PERF_ENTRY(GetEnvironmentStringsW);
     ENTRY("GetEnvironmentStringsW()\n");
 
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_mutex_enter(&gcsEnvironment);
+    EnvironmentStringsCallbackCookie envStrings = { 0 };
+    minipal_env_foreach(EnvironmentStringsCallback, &envStrings);
 
-    envNum = 0;
-    len    = 0;
-
-    /* get total length of the bytes that we need to allocate */
-    for (i = 0; palEnvironment[i] != 0; i++)
-    {
-        len = MultiByteToWideChar(CP_ACP, 0, palEnvironment[i], -1, wenviron, 0);
-        envNum += len;
-    }
-
-    wenviron = (WCHAR *)malloc(sizeof(WCHAR)* (envNum + 1));
-    if (wenviron == nullptr)
+    envStrings.wenviron = (WCHAR *)malloc(sizeof(WCHAR)* (envStrings.envNum + 1));
+    if (envStrings.wenviron == nullptr)
     {
         ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
 
-    len = 0;
-    tempEnviron = wenviron;
-    for (i = 0; palEnvironment[i] != 0; i++)
-    {
-        len = MultiByteToWideChar(CP_ACP, 0, palEnvironment[i], -1, tempEnviron, envNum);
-        tempEnviron += len;
-        envNum      -= len;
-    }
+    envStrings.tempEnviron = envStrings.wenviron;
+    minipal_env_foreach(EnvironmentStringsCallback, &envStrings);
 
-    *tempEnviron = 0; /* Put an extra null at the end */
+    *envStrings.tempEnviron = 0; /* Put an extra null at the end */
 
  EXIT:
-    minipal_mutex_leave(&gcsEnvironment);
 
-    LOGEXIT("GetEnvironmentStringsW returning %p\n", wenviron);
+    LOGEXIT("GetEnvironmentStringsW returning %p\n", envStrings.wenviron);
     PERF_EXIT(GetEnvironmentStringsW);
-    return wenviron;
+    return envStrings.wenviron;
 }
 
 /*++
@@ -541,39 +533,18 @@ SetEnvironmentVariableA(
      * the variable name from process environment */
     if (lpValue == nullptr)
     {
-        // We tell EnvironGetenv not to bother with making a copy of the
-        // value since we're not going to use it for anything interesting
-        // apart from checking whether it's null.
-        if ((lpValue = EnvironGetenv(lpName, /* copyValue */ FALSE)) == nullptr)
+        if (!minipal_env_exists(lpName))
         {
             ERROR("Couldn't find environment variable (%s)\n", lpName);
             SetLastError(ERROR_ENVVAR_NOT_FOUND);
             goto done;
         }
 
-        EnvironUnsetenv(lpName);
+        minipal_env_unset(lpName);
     }
     else
     {
-        // All the conditions are met. Set the variable.
-        int iLen = strlen(lpName) + strlen(lpValue) + 2;
-        LPSTR string = (LPSTR) malloc(iLen);
-        if (string == nullptr)
-        {
-            bRet = FALSE;
-            ERROR("Unable to allocate memory\n");
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto done;
-        }
-
-        sprintf_s(string, iLen, "%s=%s", lpName, lpValue);
-        nResult = EnvironPutenv(string, FALSE) ? 0 : -1;
-
-        free(string);
-        string = nullptr;
-
-        // If EnvironPutenv returns FALSE, it almost certainly failed to allocate memory.
-        if (nResult == -1)
+        if (!minipal_env_set(lpName, lpValue, true))
         {
             bRet = FALSE;
             ERROR("Unable to allocate memory\n");
@@ -592,49 +563,6 @@ done:
 
 /*++
 Function:
-  ResizeEnvironment
-
-Resizes the PAL environment buffer.
-
-Parameters
-
-    newSize
-           [in] New size of palEnvironment
-
-Return Values
-
-    TRUE on success, FALSE otherwise
-
---*/
-BOOL ResizeEnvironment(int newSize)
-{
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_mutex_enter(&gcsEnvironment);
-
-    BOOL ret = FALSE;
-    if (newSize >= palEnvironmentCount)
-    {
-        // If palEnvironment is null, realloc acts like malloc.
-        char **newEnvironment = (char**)realloc(palEnvironment, newSize * sizeof(char *));
-        if (newEnvironment != nullptr)
-        {
-            // realloc succeeded, so set palEnvironment to what it returned.
-            palEnvironment = newEnvironment;
-            palEnvironmentCapacity = newSize;
-            ret = TRUE;
-        }
-    }
-    else
-    {
-        ASSERT("ResizeEnvironment: newSize < current palEnvironmentCount!\n");
-    }
-
-    minipal_mutex_leave(&gcsEnvironment);
-    return ret;
-}
-
-/*++
-Function:
   EnvironUnsetenv
 
 Remove the environment variable with the given name from the PAL version
@@ -648,38 +576,7 @@ Parameters
 --*/
 void EnvironUnsetenv(const char *name)
 {
-    int nameLength = strlen(name);
-
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_mutex_enter(&gcsEnvironment);
-
-    for (int i = 0; palEnvironment[i] != nullptr; ++i)
-    {
-        const char *equalsSignPosition = strchr(palEnvironment[i], '=');
-        if (equalsSignPosition == nullptr)
-        {
-            equalsSignPosition = palEnvironment[i] + strlen(palEnvironment[i]);
-        }
-
-        // Check whether the name of this variable has the same length as the one
-        // we're looking for before proceeding to compare them.
-        if (equalsSignPosition - palEnvironment[i] == nameLength)
-        {
-            if (memcmp(name, palEnvironment[i], nameLength) == 0)
-            {
-                // Free the string we're removing.
-                free(palEnvironment[i]);
-
-                // Move the last environment variable pointer here.
-                palEnvironment[i] = palEnvironment[palEnvironmentCount - 1];
-                palEnvironment[palEnvironmentCount - 1] = nullptr;
-
-                palEnvironmentCount--;
-            }
-        }
-    }
-
-    minipal_mutex_leave(&gcsEnvironment);
+    minipal_env_unset(name);
 }
 
 /*++
@@ -706,10 +603,6 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
 {
     BOOL result = FALSE;
 
-    bool fOwningCS = false;
-
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-
     const char *equalsSignPosition = strchr(entry, '=');
     if (equalsSignPosition == entry || equalsSignPosition == nullptr)
     {
@@ -717,16 +610,16 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
         return FALSE;
     }
 
-    char* copy = strdup(entry);
-    if (copy == nullptr)
-    {
-        return FALSE;
-    }
-
     int nameLength = equalsSignPosition - entry;
 
     if (equalsSignPosition[1] == '\0' && deleteIfEmpty)
     {
+        char* copy = strdup(entry);
+        if (copy == nullptr)
+        {
+            return FALSE;
+        }
+
         // "foo=" removes foo from the environment in _putenv() on Windows.
         // The same string can result from a call to SetEnvironmentVariable()
         // with the empty string as the value, but in that case we want to
@@ -736,7 +629,7 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
         // Change '=' to '\0'
         copy[nameLength] = '\0';
 
-        EnvironUnsetenv(copy);
+        minipal_env_unset(copy);
         free(copy);
 
         result = TRUE;
@@ -744,134 +637,45 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
     else
     {
         // See if we are replacing an item or adding one.
-
-        minipal_mutex_enter(&gcsEnvironment);
-        fOwningCS = true;
-
-        int i;
-        for (i = 0; palEnvironment[i] != nullptr; i++)
-        {
-            const char *existingEquals = strchr(palEnvironment[i], '=');
-            if (existingEquals == nullptr)
-            {
-                // The PAL screens out malformed strings, but the strings which
-                // came from the system during initialization might not have the
-                // equals sign. We treat the entire string as a name in that case.
-                existingEquals = palEnvironment[i] + strlen(palEnvironment[i]);
-            }
-
-            if (existingEquals - palEnvironment[i] == nameLength)
-            {
-                if (memcmp(entry, palEnvironment[i], nameLength) == 0)
-                {
-                    free(palEnvironment[i]);
-                    palEnvironment[i] = copy;
-
-                    result = TRUE;
-                    break;
-                }
-            }
-        }
-
-        if (palEnvironment[i] == nullptr)
-        {
-            _ASSERTE(i < palEnvironmentCapacity);
-            if (i == (palEnvironmentCapacity - 1))
-            {
-                // We found the first null, but it's the last element in our environment
-                // block. We need more space in our environment, so let's double its size.
-                int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
-                if (resizeRet != TRUE)
-                {
-                    free(copy);
-                    goto done;
-                }
-            }
-
-            _ASSERTE(copy != nullptr);
-            palEnvironment[i] = copy;
-            palEnvironment[i + 1] = nullptr;
-            palEnvironmentCount++;
-
-            result = TRUE;
-        }
-    }
-done:
-
-    if (fOwningCS)
-    {
-        minipal_mutex_leave(&gcsEnvironment);
+        result = minipal_env_put(entry) ? TRUE : FALSE;
     }
 
     return result;
 }
 
-
 /*++
 Function:
-  FindEnvVarValue
+  EnvironCheckenv
 
-Get the value of environment variable with the given name.
-Caller should take care of locking and releasing palEnvironment.
+Check if environment variable with the given name exists in environment.
 
 Parameters
 
     name
-            [in] The name of the environment variable to get.
+            [in] The name of the environment variable to check.
 
 Return Value
 
-    A pointer to the value of the environment variable if it exists,
-    or nullptr otherwise.
+    Returns TRUE if environment variable exists in environment,
+    otherwise FALSE.
 
 --*/
-char* FindEnvVarValue(const char* name)
+BOOL EnvironCheckenv(const char* name)
 {
-    if (*name == '\0')
-        return nullptr;
-
-    for (int i = 0; palEnvironment[i] != nullptr; ++i)
-    {
-        const char* pch = name;
-        char* p = palEnvironment[i];
-
-        do
-        {
-            if (*pch == '\0')
-            {
-                if (*p == '=')
-                    return p + 1;
-
-                if (*p == '\0') // no = sign -> empty value
-                    return p;
-
-                break;
-            }
-        }
-        while (*pch++ == *p++);
-    }
-
-    return nullptr;
+    return minipal_env_exists(name) ? TRUE : FALSE;
 }
-
 
 /*++
 Function:
   EnvironGetenv
 
 Get the value of environment variable with the given name.
+Caller should free the returned string if it is not NULL.
 
 Parameters
 
     name
             [in] The name of the environment variable to get.
-    copyValue
-            [in] If this is TRUE, the function will make a copy of the
-                 value and return a pointer to that. Otherwise, it will
-                 return a pointer to the value in the PAL environment
-                 directly. Calling this function with copyValue set to
-                 FALSE is therefore unsafe without taking special pre-
-                 cautions since the pointer may point to garbage later.
 
 Return Value
 
@@ -879,49 +683,9 @@ Return Value
     or nullptr otherwise.
 
 --*/
-char* EnvironGetenv(const char* name, BOOL copyValue)
+char* EnvironGetenv(const char* name)
 {
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_mutex_enter(&gcsEnvironment);
-
-    char* retValue = FindEnvVarValue(name);
-
-    if ((retValue != nullptr) && copyValue)
-    {
-        retValue = strdup(retValue);
-    }
-
-    minipal_mutex_leave(&gcsEnvironment);
-    return retValue;
-}
-
-
-/*++
-Function:
-  EnvironGetSystemEnvironment
-
-Get a pointer to the array of pointers representing the process's
-environment.
-
-See 'man environ' for details.
-
-Return Value
-
-    A pointer to the environment.
-
---*/
-char** EnvironGetSystemEnvironment()
-{
-    char** sysEnviron;
-
-#if HAVE__NSGETENVIRON
-    sysEnviron = *(_NSGetEnviron());
-#else   // HAVE__NSGETENVIRON
-    extern char **environ;
-    sysEnviron = environ;
-#endif  // HAVE__NSGETENVIRON
-
-    return sysEnviron;
+    return minipal_env_get(name);
 }
 
 /*++
@@ -936,45 +700,26 @@ Note: This is called before debug channels are initialized, so it
 BOOL
 EnvironInitialize(void)
 {
-    BOOL ret = FALSE;
+    return minipal_env_load_environ() ? TRUE : FALSE;
+}
 
-    minipal_mutex_init(&gcsEnvironment);
+/*++
+Function:
+  EnvironGetUnsafe
 
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_mutex_enter(&gcsEnvironment);
+Get the current environment. This is similar accessing
+global environ variable and is not thread safe. This function
+should only be called from code that guarantees environment won't
+change while using returned pointer.
 
-    char** sourceEnviron = EnvironGetSystemEnvironment();
+Return Value
 
-    int variableCount = 0;
-    while (sourceEnviron[variableCount] != nullptr)
-        variableCount++;
-
-    palEnvironmentCount = 0;
-
-    // We need to decide how much space to allocate. Since we need enough
-    // space for all of the 'n' current environment variables, but we don't
-    // know how many more there will be, we will initially make room for
-    // '2n' variables. If even more are added, we will resize again.
-    // If there are no variables, we will still make room for 1 entry to
-    // store a nullptr there.
-    int initialSize = (variableCount == 0) ? 1 : variableCount * 2;
-
-    ret = ResizeEnvironment(initialSize);
-    if (ret == TRUE)
-    {
-        _ASSERTE(palEnvironment != nullptr);
-        for (int i = 0; i < variableCount; ++i)
-        {
-            palEnvironment[i] = strdup(sourceEnviron[i]);
-            palEnvironmentCount++;
-        }
-
-        // Set the entry after the last variable to null to indicate the end.
-        palEnvironment[variableCount] = nullptr;
-    }
-
-    minipal_mutex_leave(&gcsEnvironment);
-    return ret;
+    A pointer to the environment. NOTE, caller should never manipulate
+    or free returned pointer.
+--*/
+char** EnvironGetUnsafe(void)
+{
+    return minipal_env_get_environ_unsafe();
 }
 
 /*++

@@ -6,7 +6,7 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
-PALEXPORT char* SystemNative_GetEnv(const char* variable);
+PALEXPORT const char* SystemNative_GetEnv(const char* variable);
 
 PALEXPORT char** SystemNative_GetEnviron(void);
 

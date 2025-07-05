@@ -41,6 +41,7 @@
 #include <cstdarg>
 #include <signal.h>
 #include <minipal/thread.h>
+#include <minipal/env.h>
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
@@ -981,21 +982,25 @@ UInt32_BOOL PalResetEvent(HANDLE event)
 
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
-    const char* value = getenv(name);
-    if (value == NULL)
+    size_t valueLen = 0;
+    if (!minipal_env_get_s(&valueLen, buffer, size, name, false))
     {
         return 0;
     }
 
-    size_t valueLen = strlen(value);
+    // minipal_env_get_s returns the length of the value including the null terminator.
+    if (valueLen > 0)
+    {
+        valueLen--;
+    }
+
     if (valueLen < size)
     {
-        strcpy(buffer, value);
-        return valueLen;
+        return (uint32_t)valueLen;
     }
 
     // return required size including the null character or 0 if the size doesn't fit into uint32_t
-    return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
+    return valueLen < UINT32_MAX ? (uint32_t)(valueLen + 1) : 0;
 }
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)

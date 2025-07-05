@@ -12,6 +12,9 @@ set(SOURCES
     utf8.c
     xoshiro128pp.c
     log.c
+    env.c
+    env-system-environ-provider.c
+    env-android-system-properties-provider.c
 )
 
 # Provide an object library for scenarios where we ship static libraries

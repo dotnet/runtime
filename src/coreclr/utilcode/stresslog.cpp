@@ -235,14 +235,25 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         // in this case, interpret the number as GB
         maxBytesPerThread *= (1024 * 1024 * 1024);
     }
+
     theLog.MaxSizePerThread = (unsigned)min(maxBytesPerThread,(size_t)0xffffffff);
 
     size_t maxBytesTotal = maxBytesTotalArg;
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    if (logFilename != nullptr && logFilename[0] != '\0')
+    {
+        // we need at least sizeof(StressLogHeader) bytes for memory mapped stress log
+        maxBytesTotal = sizeof(StressLogHeader) + maxBytesTotal;
+    }
+#endif
+
     if (maxBytesTotal < STRESSLOG_CHUNK_SIZE * 256)
     {
         // in this case, interpret the number as GB
         maxBytesTotal *= (1024 * 1024 * 1024);
     }
+    
     theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, (size_t)0xffffffff);
     theLog.totalChunk = 0;
     theLog.facilitiesToLog = facilities | LF_ALWAYS;
