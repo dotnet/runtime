@@ -2860,8 +2860,12 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     m_interpExecMethodFirstArgReg = (TADDR)GetFirstArgReg(pRD->pCurrentContext);
 
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
+                    if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
+                    {
+                        m_crawl.isInterrupted = true;
+                        m_crawl.hasFaulted = true;
+                    }
 
-                    pRD->pCurrentContext->ContextFlags = CONTEXT_FULL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
                     m_walkingInterpreterFrames = m_crawl.isFrameless;
