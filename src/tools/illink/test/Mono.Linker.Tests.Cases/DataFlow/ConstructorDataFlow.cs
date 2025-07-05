@@ -39,11 +39,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type annotatedField = GetUnknown();
 
-            [ExpectedWarning("IL2074", nameof(GetUnknown), nameof(AnnotatedProperty), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93277", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL2074", nameof(GetUnknown), nameof(AnnotatedProperty), CompilerGeneratedCode = true)]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type AnnotatedProperty { get; } = GetUnknown();
 
-            [ExpectedWarning("IL2074", nameof(GetUnknown), nameof(AnnotatedPropertyWithSetter), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93277", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL2074", nameof(GetUnknown), nameof(AnnotatedPropertyWithSetter), CompilerGeneratedCode = true)]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type AnnotatedPropertyWithSetter { get; set; } = GetUnknown();
 

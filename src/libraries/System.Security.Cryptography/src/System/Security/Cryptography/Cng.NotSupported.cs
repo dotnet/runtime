@@ -425,12 +425,9 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
 
-        public partial CngKey Key
+        public partial CngKey GetKey()
         {
-            get
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
-            }
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
