@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -160,7 +159,8 @@ namespace System.Net.Http.Functional.Tests
                     // Client should abort at some point so this is going to throw.
                     HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK).ConfigureAwait(false);
                 }
-                catch (Exception) { };
+                catch (Exception) { }
+                ;
             });
         }
 
@@ -594,6 +594,40 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
             });
+        }
+
+        [ConditionalTheory]
+        [InlineData(false, "test\nxwow\nmore\n")]
+        [InlineData(false, "test\rwow\rmore\r")]
+        [InlineData(false, "test\r\nwow\r\nmore\r\n")]
+        [InlineData(true, "one\0two\0three\0")]
+        public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value)
+        {
+            if (!testHttp11 && UseVersion == HttpVersion.Version11)
+            {
+                throw new SkipTestException("This case is not valid for HTTP 1.1");
+            }
+
+            string expectedValue = value.Replace('\r', ' ').Replace('\n', ' ').Replace('\0', ' ');
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+
+                    using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri)
+                    {
+                        Version = UseVersion,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+
+                    using HttpResponseMessage response = await client.SendAsync(request);
+                    Assert.Equal(expectedValue, response.Headers.GetValues("test").Single());
+                },
+                async server =>
+                {
+                    List<HttpHeaderData> headers = [new HttpHeaderData("test", value)];
+                    HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(additionalHeaders: headers);
+                });
         }
     }
 }
