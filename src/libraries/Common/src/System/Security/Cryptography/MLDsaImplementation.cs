@@ -10,6 +10,7 @@ namespace System.Security.Cryptography
     internal sealed partial class MLDsaImplementation : MLDsa
     {
         internal static partial bool SupportsAny();
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm);
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm);
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
