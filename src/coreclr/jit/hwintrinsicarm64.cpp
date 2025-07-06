@@ -3377,6 +3377,34 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve2_VectorTableLookup:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType != TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            var_types argType1 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            var_types argType2 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+
+            var_types   simdBaseType   = JitType2PreciseVarType(simdBaseJitType);
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            if (op1->TypeIs(TYP_STRUCT))
+            {
+                info.compNeedsConsecutiveRegisters = true;
+                unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
+                op1                                = gtConvertTableOpToFieldList(op1, fieldCount);
+            }
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
+            break;
+        }
+
         default:
         {
             return nullptr;

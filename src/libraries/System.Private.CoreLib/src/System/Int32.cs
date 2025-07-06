@@ -1013,8 +1013,12 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1099,8 +1103,12 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))

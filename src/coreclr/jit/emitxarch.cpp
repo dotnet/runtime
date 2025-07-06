@@ -1964,6 +1964,12 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return true;
     }
 
+    if (id->idIsApxPpxContextSet())
+    {
+        // The instruction uses PPX hint, and it requires REX2.
+        return true;
+    }
+
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
@@ -3825,7 +3831,7 @@ void emitter::emitMarkStackLvl(unsigned stackLevel)
  *  Get hold of the address mode displacement value for an indirect call.
  */
 
-inline ssize_t emitter::emitGetInsCIdisp(instrDesc* id)
+inline ssize_t emitter::emitGetInsCIdisp(instrDesc* id) const
 {
     if (id->idIsLargeCall())
     {
@@ -3848,12 +3854,12 @@ inline ssize_t emitter::emitGetInsCIdisp(instrDesc* id)
 // clang-format off
 const insFlags CodeGenInterface::instInfo[] =
 {
-    #define INST0(id, nm, um, mr,                 tt, flags) static_cast<insFlags>(flags),
-    #define INST1(id, nm, um, mr,                 tt, flags) static_cast<insFlags>(flags),
-    #define INST2(id, nm, um, mr, mi,             tt, flags) static_cast<insFlags>(flags),
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) static_cast<insFlags>(flags),
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) static_cast<insFlags>(flags),
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) static_cast<insFlags>(flags),
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) static_cast<insFlags>(flags),
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) static_cast<insFlags>(flags),
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) static_cast<insFlags>(flags),
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) static_cast<insFlags>(flags),
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) static_cast<insFlags>(flags),
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) static_cast<insFlags>(flags),
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -3872,12 +3878,12 @@ const insFlags CodeGenInterface::instInfo[] =
 // clang-format off
 const uint8_t emitter::emitInsModeFmtTab[] =
 {
-    #define INST0(id, nm, um, mr,                 tt, flags) um,
-    #define INST1(id, nm, um, mr,                 tt, flags) um,
-    #define INST2(id, nm, um, mr, mi,             tt, flags) um,
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) um,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) um,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) um,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) um,
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) um,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) um,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) um,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) um,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) um,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -3897,11 +3903,54 @@ unsigned const emitter::emitInsModeFmtCnt = ArrLen(emitInsModeFmtTab);
  *  Combine the given base format with the update mode of the instruction.
  */
 
-inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat base)
+inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat base, bool useNDD)
 {
     assert(IF_RRD + IUM_RD == IF_RRD);
     assert(IF_RRD + IUM_WR == IF_RWR);
     assert(IF_RRD + IUM_RW == IF_RRW);
+
+#ifdef TARGET_AMD64
+    if (useNDD)
+    {
+        assert(IsApxNDDEncodableInstruction(ins));
+        if (ins == INS_rcl_N || ins == INS_rcr_N || ins == INS_rol_N || ins == INS_ror_N || ins == INS_shl_N ||
+            ins == INS_shr_N || ins == INS_sar_N)
+        {
+            // shift instructions has its own instruction format.
+            return IF_RWR_RRD_SHF;
+        }
+        // NDD instructions have the following operand encoding:
+        // 1. (w, r, r) for binary
+        // 2. (w, r) for unary
+        // These format are not properly tracked by the original IF table, we need to fix them here.
+        switch (base)
+        {
+            case IF_RRD_RRD_RRD:
+                return IF_RWR_RRD_RRD;
+
+            case IF_RRD_RRD_ARD:
+                return IF_RWR_RRD_ARD;
+
+            case IF_RRD_RRD_CNS:
+                return IF_RWR_RRD_CNS;
+
+            case IF_RRD_RRD_SRD:
+                return IF_RWR_RRD_SRD;
+
+            // we only apply NDD on unary instructions with register uses.
+            case IF_RRD_RRD:
+                return IF_RWR_RRD;
+
+            default:
+                // There should not be any other instruction format with NDD feature.
+                unreached();
+        }
+    }
+    else
+    {
+        return (insFormat)(base + emitInsUpdateMode(ins));
+    }
+#endif
 
     return (insFormat)(base + emitInsUpdateMode(ins));
 }
@@ -3989,12 +4038,12 @@ inline size_t insCode(instruction ins)
     // clang-format off
     const static uint32_t insCodes[] =
     {
-        #define INST0(id, nm, um, mr,                 tt, flags) mr,
-        #define INST1(id, nm, um, mr,                 tt, flags) mr,
-        #define INST2(id, nm, um, mr, mi,             tt, flags) mr,
-        #define INST3(id, nm, um, mr, mi, rm,         tt, flags) mr,
-        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) mr,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) mr,
+        #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) mr,
+        #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) mr,
+        #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) mr,
+        #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) mr,
+        #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) mr,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) mr,
         #include "instrs.h"
         #undef  INST0
         #undef  INST1
@@ -4021,12 +4070,12 @@ inline size_t insCodeACC(instruction ins)
     // clang-format off
     const static uint32_t insCodesACC[] =
     {
-        #define INST0(id, nm, um, mr,                 tt, flags)
-        #define INST1(id, nm, um, mr,                 tt, flags)
-        #define INST2(id, nm, um, mr, mi,             tt, flags)
-        #define INST3(id, nm, um, mr, mi, rm,         tt, flags)
-        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) a4,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) a4,
+        #define INST0(id, nm, um, mr,                 lat, tp, tt, flags)
+        #define INST1(id, nm, um, mr,                 lat, tp, tt, flags)
+        #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags)
+        #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags)
+        #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) a4,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) a4,
         #include "instrs.h"
         #undef  INST0
         #undef  INST1
@@ -4053,12 +4102,12 @@ inline size_t insCodeRR(instruction ins)
     // clang-format off
     const static uint32_t insCodesRR[] =
     {
-        #define INST0(id, nm, um, mr,                 tt, flags)
-        #define INST1(id, nm, um, mr,                 tt, flags)
-        #define INST2(id, nm, um, mr, mi,             tt, flags)
-        #define INST3(id, nm, um, mr, mi, rm,         tt, flags)
-        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags)
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) rr,
+        #define INST0(id, nm, um, mr,                 lat, tp, tt, flags)
+        #define INST1(id, nm, um, mr,                 lat, tp, tt, flags)
+        #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags)
+        #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags)
+        #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags)
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) rr,
         #include "instrs.h"
         #undef  INST0
         #undef  INST1
@@ -4078,12 +4127,12 @@ inline size_t insCodeRR(instruction ins)
 // clang-format off
 const static size_t insCodesRM[] =
 {
-    #define INST0(id, nm, um, mr,                 tt, flags)
-    #define INST1(id, nm, um, mr,                 tt, flags)
-    #define INST2(id, nm, um, mr, mi,             tt, flags)
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) rm,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) rm,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) rm,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags)
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags)
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags)
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) rm,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) rm,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) rm,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -4117,12 +4166,12 @@ inline size_t insCodeRM(instruction ins)
 // clang-format off
 const static size_t insCodesMI[] =
 {
-    #define INST0(id, nm, um, mr,                 tt, flags)
-    #define INST1(id, nm, um, mr,                 tt, flags)
-    #define INST2(id, nm, um, mr, mi,             tt, flags) mi,
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) mi,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) mi,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) mi,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags)
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags)
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) mi,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) mi,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) mi,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) mi,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -4156,12 +4205,12 @@ inline size_t insCodeMI(instruction ins)
 // clang-format off
 const static uint32_t insCodesMR[] =
 {
-    #define INST0(id, nm, um, mr,                 tt, flags)
-    #define INST1(id, nm, um, mr,                 tt, flags) mr,
-    #define INST2(id, nm, um, mr, mi,             tt, flags) mr,
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) mr,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) mr,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) mr,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags)
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) mr,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) mr,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) mr,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) mr,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) mr,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -4305,12 +4354,12 @@ inline size_t insCodeMR(instruction ins)
 // clang-format off
 const static insTupleType insTupleTypeInfos[] =
 {
-    #define INST0(id, nm, um, mr,                 tt, flags) static_cast<insTupleType>(tt),
-    #define INST1(id, nm, um, mr,                 tt, flags) static_cast<insTupleType>(tt),
-    #define INST2(id, nm, um, mr, mi,             tt, flags) static_cast<insTupleType>(tt),
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) static_cast<insTupleType>(tt),
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) static_cast<insTupleType>(tt),
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) static_cast<insTupleType>(tt),
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) static_cast<insTupleType>(tt),
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) static_cast<insTupleType>(tt),
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) static_cast<insTupleType>(tt),
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) static_cast<insTupleType>(tt),
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) static_cast<insTupleType>(tt),
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) static_cast<insTupleType>(tt),
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -4320,6 +4369,7 @@ const static insTupleType insTupleTypeInfos[] =
     #undef  INST5
 };
 // clang-format on
+
 //------------------------------------------------------------------------
 // hasTupleTypeInfo: Checks if the instruction has tuple type info.
 //
@@ -6545,7 +6595,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         }
                         else
                         {
-                            fmt = useNDD ? emitInsModeFormat(ins, IF_RWR_RRD_ARD) : emitInsModeFormat(ins, IF_RRD_ARD);
+                            // NDD allow instructions have different register on dst and src1.
+                            insFormat base = useNDD ? IF_RRD_RRD_ARD : IF_RRD_ARD;
+                            fmt            = emitInsModeFormat(ins, base, useNDD);
                         }
                     }
                     else
@@ -6936,8 +6988,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts i
             break;
 
         case INS_pop:
-        case INS_pop_hide:
         case INS_push:
+            SetApxPpxIfNeeded(id, instOptions);
+            __fallthrough;
+        case INS_pop_hide:
         case INS_push_hide:
 
             /* We don't currently push/pop small values */
@@ -7858,7 +7912,8 @@ bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, reg
 //    srcReg    -- The source register
 //    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
 //
-void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
+bool emitter::emitIns_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, bool useApxNdd)
 {
     // Only move instructions can use emitIns_Mov
     assert(IsMovInstruction(ins));
@@ -7947,13 +8002,23 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
     if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
     {
-        return;
+        // Move is redundant, no need to emit anything
+        return false;
     }
 
     if (EmitMovsxAsCwde(ins, size, dstReg, srcReg))
     {
-        return;
+        // Move is redundant, no need to emit anything
+        return false;
     }
+
+#ifdef TARGET_AMD64
+    if (useApxNdd)
+    {
+        // Move is required, but the caller is APX NDD aware
+        return true;
+    }
+#endif // TARGET_AMD64
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -7966,6 +8031,9 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
     dispIns(id);
     emitCurIGsize += sz;
+
+    // Move is required and the caller is not APX NDD aware, we emitted the move
+    return true;
 }
 
 /*****************************************************************************
@@ -7981,13 +8049,16 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         emitIns_Mov(ins, attr, reg1, reg2, /* canSkip */ false);
     }
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     emitAttr size = EA_SIZE(attr);
 
     assert(size <= EA_64BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
 
     /* Special case: "XCHG" uses a different format */
-    insFormat fmt = (ins == INS_xchg) ? IF_RRW_RRW : emitInsModeFormat(ins, IF_RRD_RRD);
+    insFormat fmt = (ins == INS_xchg) ? IF_RRW_RRW : emitInsModeFormat(ins, IF_RRD_RRD, useNDD);
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -7998,11 +8069,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     SetEvexNdIfNeeded(id, instOptions);
     SetEvexNfIfNeeded(id, instOptions);
     SetEvexDFVIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        id->idInsFmt(IF_RWR_RRD);
-    }
+    SetApxPpxIfNeeded(id, instOptions);
 
     if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
     {
@@ -8035,8 +8102,11 @@ void emitter::emitIns_R_R_I(
 
     instrDesc* id = emitNewInstrSC(attr, ival);
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     id->idIns(ins);
-    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_CNS));
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_CNS, useNDD));
     id->idReg1(reg1);
     id->idReg2(reg2);
 
@@ -8058,31 +8128,6 @@ void emitter::emitIns_R_R_I(
     assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        // need to fix the instruction opcode for legacy instructions as they has different opcode for RI form.
-        code = insCodeMI(ins);
-        // need to fix the instructions format for NDD legacy instructions.
-        insFormat fmt;
-        switch (ins)
-        {
-            case INS_shl_N:
-            case INS_shr_N:
-            case INS_sar_N:
-            case INS_ror_N:
-            case INS_rol_N:
-            case INS_rcr_N:
-            case INS_rcl_N:
-                fmt = IF_RWR_RRD_SHF;
-                break;
-
-            default:
-                fmt = IF_RWR_RRD_CNS;
-                break;
-        }
-        id->idInsFmt(fmt);
-    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
     id->idCodeSize(sz);
@@ -8455,9 +8500,12 @@ void emitter::emitIns_R_R_R(
     assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
-    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_RRD : emitInsModeFormat(ins, IF_RRD_RRD_RRD));
+    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_RRD : emitInsModeFormat(ins, IF_RRD_RRD_RRD, useNDD));
     id->idReg1(targetReg);
     id->idReg2(reg1);
     id->idReg3(reg2);
@@ -8471,12 +8519,6 @@ void emitter::emitIns_R_R_R(
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
     SetEvexNfIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        // need to fix the instructions format for NDD legacy instructions.
-        id->idInsFmt(IF_RWR_RRD_RRD);
-    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8493,8 +8535,11 @@ void emitter::emitIns_R_R_S(
 
     instrDesc* id = emitNewInstr(attr);
 
+    // Checking EVEX.ND and NDD compatibility together in case the ND slot is overridden by other features.
+    bool useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNDDEncodableInstruction(ins);
+
     id->idIns(ins);
-    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_SRD : emitInsModeFormat(ins, IF_RRD_RRD_SRD));
+    id->idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_SRD : emitInsModeFormat(ins, IF_RRD_RRD_SRD, useNDD));
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
@@ -8502,11 +8547,6 @@ void emitter::emitIns_R_R_S(
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
-
-    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
-    {
-        id->idInsFmt(IF_RWR_RRD_SRD);
-    }
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -10700,17 +10740,15 @@ regNumber emitter::emitIns_BASE_R_R_RM(
     regNumber r                     = REG_NA;
     assert(regOp->isUsedFromReg());
 
-    if (DoJitUseApxNDD(ins) && regOp->GetRegNum() != targetReg)
+    bool useApxNdd = DoJitUseApxNDD(ins);
+
+    if (emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), true, useApxNdd) && useApxNdd)
     {
-        r = emitInsBinary(ins, attr, regOp, rmOp, targetReg);
-    }
-    else
-    {
-        emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), /*canSkip*/ true);
-        r = emitInsBinary(ins, attr, treeNode, rmOp);
+        return emitInsBinary(ins, attr, regOp, rmOp, targetReg);
     }
 
-    return r;
+    return emitInsBinary(ins, attr, treeNode, rmOp);
+    ;
 }
 
 //----------------------------------------------------------------------------------------
@@ -11842,13 +11880,8 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
             {
                 return emitXMMregName(reg);
             }
-
+            assert(isGeneralRegister(reg));
 #if defined(TARGET_AMD64)
-            if (reg > REG_R15)
-            {
-                break;
-            }
-
             if (reg > REG_RDI)
             {
                 suffix = 'd';
@@ -12230,7 +12263,7 @@ void emitter::emitDispMask(const instrDesc* id, regNumber reg) const
  *  If we are formatting for a diffable assembly listing don't print the hex value
  *  since it will prevent us from doing assembly diffs
  */
-void emitter::emitDispReloc(ssize_t value)
+void emitter::emitDispReloc(ssize_t value) const
 {
     if (emitComp->opts.disAsm && emitComp->opts.disDiffable)
     {
@@ -12247,7 +12280,7 @@ void emitter::emitDispReloc(ssize_t value)
  *  Display an address mode.
  */
 
-void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
+void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
 {
     bool    nsep = false;
     ssize_t disp;
@@ -12446,7 +12479,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
  *  If the given instruction is a shift, display the 2nd operand.
  */
 
-void emitter::emitDispShift(instruction ins, int cnt)
+void emitter::emitDispShift(instruction ins, int cnt) const
 {
     switch (ins)
     {
@@ -12594,6 +12627,112 @@ void emitter::emitDispEmbMasking(instrDesc* id) const
     }
 
     emitDispMask(id, maskReg);
+}
+
+//--------------------------------------------------------------------
+// emitDispConstant: Display the constant for an instruction
+//
+// Arguments:
+//   ins       - The instruction
+//   skipComma - true if the comma separator should be skipped; otherwise false
+//
+void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
+{
+    instruction ins = id->idIns();
+
+    if (CodeGenInterface::instHasPseudoName(ins))
+    {
+        switch (ins)
+        {
+            case INS_roundpd:
+            case INS_roundps:
+            case INS_roundsd:
+            case INS_roundss:
+            {
+                // These instructions have pseudo-names, but still need to display the immediate
+                break;
+            }
+
+            default:
+            {
+                // These instructions have pseudo-names for each possible immediate value
+                return;
+            }
+        }
+    }
+
+    CnsVal cnsVal;
+
+    if (id->idHasMemGen())
+    {
+        emitGetInsDcmCns(id, &cnsVal);
+    }
+    else if (id->idHasMemAdr())
+    {
+        emitGetInsAmdCns(id, &cnsVal);
+    }
+    else
+    {
+        emitGetInsCns(id, &cnsVal);
+    }
+
+    switch (id->idInsFmt())
+    {
+        case IF_RRW_SHF:
+        case IF_RWR_RRD_SHF:
+        case IF_MRW_SHF:
+        case IF_SRW_SHF:
+        case IF_ARW_SHF:
+        {
+            emitDispShift(ins, static_cast<BYTE>(cnsVal.cnsVal));
+            return;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    if (!skipComma)
+    {
+        printf(", ");
+    }
+
+    if (cnsVal.cnsReloc)
+    {
+        emitDispReloc(cnsVal.cnsVal);
+        return;
+    }
+
+    ssize_t val = cnsVal.cnsVal;
+
+    // Munge any pointers if we want diff-able disassembly
+    if (emitComp->opts.disDiffable)
+    {
+        ssize_t top14bits = (val >> 18);
+
+        if ((top14bits != 0) && (top14bits != -1))
+        {
+            val = 0xD1FFAB1E;
+        }
+    }
+
+    if ((val > -1000) && (val < 1000))
+    {
+        printf("%d", (int)val);
+    }
+    else if ((val > 0) || (val < -0xFFFFFF))
+    {
+        printf("0x%zX", (ssize_t)val);
+    }
+    else
+    {
+        // (val < 0)
+        printf("-0x%zX", (ssize_t)-val);
+    }
+
+    emitDispCommentForHandle(cnsVal.cnsVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
 }
 
 //--------------------------------------------------------------------
@@ -12823,51 +12962,13 @@ void emitter::emitDispIns(
 
     switch (id->idInsFmt())
     {
-        ssize_t     val;
         ssize_t     offs;
-        CnsVal      cnsVal;
         const char* methodName;
 
         case IF_CNS:
         {
             assert(!IsEvexEncodableInstruction(id->idIns()));
-
-            val = emitGetInsSC(id);
-#ifdef TARGET_AMD64
-            // no 8-byte immediates allowed here!
-            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
-#endif
-            if (id->idIsCnsReloc())
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-            PRINT_CONSTANT:
-                ssize_t srcVal = val;
-                // Munge any pointers if we want diff-able disassembly
-                if (emitComp->opts.disDiffable)
-                {
-                    ssize_t top14bits = (val >> 18);
-                    if ((top14bits != 0) && (top14bits != -1))
-                    {
-                        val = 0xD1FFAB1E;
-                    }
-                }
-                if ((val > -1000) && (val < 1000))
-                {
-                    printf("%d", (int)val);
-                }
-                else if ((val > 0) || (val < -0xFFFFFF))
-                {
-                    printf("0x%zX", (ssize_t)val);
-                }
-                else
-                { // (val < 0)
-                    printf("-0x%zX", (ssize_t)-val);
-                }
-                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
-            }
+            emitDispConstant(id, /* skipComma */ true);
             break;
         }
 
@@ -12959,20 +13060,7 @@ void emitter::emitDispIns(
             printf(", %s", sstr);
             emitDispAddrMode(id);
             emitDispEmbBroadcastCount(id);
-            emitGetInsAmdCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
-
+            emitDispConstant(id);
             break;
         }
 
@@ -13012,21 +13100,7 @@ void emitter::emitDispIns(
             emitDispAddrMode(id);
             emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
-
-            emitGetInsAmdCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
-
+            emitDispConstant(id);
             break;
         }
 
@@ -13081,20 +13155,7 @@ void emitter::emitDispIns(
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
             emitDispEmbBroadcastCount(id);
-            emitGetInsAmdCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
-
+            emitDispConstant(id);
             break;
         }
 
@@ -13103,6 +13164,7 @@ void emitter::emitDispIns(
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
 
+            CnsVal cnsVal;
             emitGetInsAmdCns(id, &cnsVal);
             regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
             bool      hasMaskReg = isMaskReg(op3Reg);
@@ -13153,28 +13215,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
             emitDispAddrMode(id);
             emitDispEmbMasking(id);
-            emitGetInsAmdCns(id, &cnsVal);
-            val = cnsVal.cnsVal;
-#ifdef TARGET_AMD64
-            // no 8-byte immediates allowed here!
-            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
-#endif
-            if (id->idInsFmt() == IF_ARW_SHF)
-            {
-                emitDispShift(ins, (BYTE)val);
-            }
-            else
-            {
-                printf(", ");
-                if (cnsVal.cnsReloc)
-                {
-                    emitDispReloc(val);
-                }
-                else
-                {
-                    goto PRINT_CONSTANT;
-                }
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13227,29 +13268,7 @@ void emitter::emitDispIns(
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
             emitDispEmbMasking(id);
-
-            emitGetInsCns(id, &cnsVal);
-            val = cnsVal.cnsVal;
-#ifdef TARGET_AMD64
-            // no 8-byte immediates allowed here!
-            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
-#endif
-            if (id->idInsFmt() == IF_SRW_SHF)
-            {
-                emitDispShift(ins, (BYTE)val);
-            }
-            else
-            {
-                printf(", ");
-                if (cnsVal.cnsReloc)
-                {
-                    emitDispReloc(val);
-                }
-                else
-                {
-                    goto PRINT_CONSTANT;
-                }
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13258,8 +13277,6 @@ void emitter::emitDispIns(
         case IF_SRW_RRD_CNS:
         {
             assert(IsSSEOrAVXInstruction(ins));
-            emitGetInsAmdCns(id, &cnsVal);
-
             printf("%s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
@@ -13267,18 +13284,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
 
             printf(", %s", emitRegName(id->idReg1(), attr));
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13324,19 +13330,7 @@ void emitter::emitDispIns(
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
             emitDispEmbBroadcastCount(id);
-            emitGetInsCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13376,19 +13370,7 @@ void emitter::emitDispIns(
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
             emitDispEmbBroadcastCount(id);
-            emitGetInsCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13397,6 +13379,7 @@ void emitter::emitDispIns(
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
 
+            CnsVal cnsVal;
             emitGetInsCns(id, &cnsVal);
             regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
             bool      hasMaskReg = isMaskReg(op3Reg);
@@ -13661,9 +13644,8 @@ void emitter::emitDispIns(
                 }
             }
 
-            printf(", %s, ", emitRegName(id->idReg3(), attr));
-            val = emitGetInsSC(id);
-            goto PRINT_CONSTANT;
+            printf(", %s", emitRegName(id->idReg3(), attr));
+            emitDispConstant(id);
             break;
         }
 
@@ -13756,20 +13738,7 @@ void emitter::emitDispIns(
             printf("%s", emitRegName(id->idReg1(), tgtAttr));
             emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg2(), attr));
-            val = emitGetInsSC(id);
-#ifdef TARGET_AMD64
-            // no 8-byte immediates allowed here!
-            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
-#endif
-            printf(", ");
-            if (id->idIsCnsReloc())
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13790,27 +13759,7 @@ void emitter::emitDispIns(
         {
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
-
-            emitGetInsCns(id, &cnsVal);
-            val = cnsVal.cnsVal;
-
-            if (id->idInsFmt() == IF_RRW_SHF)
-            {
-                emitDispShift(ins, (BYTE)val);
-            }
-            else
-            {
-                printf(", ");
-
-                if (cnsVal.cnsReloc)
-                {
-                    emitDispReloc(val);
-                }
-                else
-                {
-                    goto PRINT_CONSTANT;
-                }
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13818,12 +13767,7 @@ void emitter::emitDispIns(
         {
             assert(IsApxExtendedEvexInstruction(id->idIns()));
             printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
-
-            emitGetInsCns(id, &cnsVal);
-            val = cnsVal.cnsVal;
-
-            emitDispShift(ins, (BYTE)val);
-
+            emitDispConstant(id);
             break;
         }
 
@@ -13866,19 +13810,7 @@ void emitter::emitDispIns(
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbBroadcastCount(id);
-            emitGetInsDcmCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13919,20 +13851,7 @@ void emitter::emitDispIns(
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
-            emitGetInsDcmCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
-
+            emitDispConstant(id);
             break;
         }
 
@@ -13972,19 +13891,7 @@ void emitter::emitDispIns(
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbBroadcastCount(id);
-            emitGetInsDcmCns(id, &cnsVal);
-
-            val = cnsVal.cnsVal;
-            printf(", ");
-
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else
-            {
-                goto PRINT_CONSTANT;
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -13992,6 +13899,7 @@ void emitter::emitDispIns(
         {
             printf("%s", emitRegName(id->idReg1(), attr));
 
+            CnsVal cnsVal;
             emitGetInsDcmCns(id, &cnsVal);
             regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
             bool      hasMaskReg = isMaskReg(op3Reg);
@@ -14044,25 +13952,7 @@ void emitter::emitDispIns(
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbMasking(id);
-            emitGetInsDcmCns(id, &cnsVal);
-            val = cnsVal.cnsVal;
-#ifdef TARGET_AMD64
-            // no 8-byte immediates allowed here!
-            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
-#endif
-            if (cnsVal.cnsReloc)
-            {
-                emitDispReloc(val);
-            }
-            else if (id->idInsFmt() == IF_MRW_SHF)
-            {
-                emitDispShift(ins, (BYTE)val);
-            }
-            else
-            {
-                printf(", ");
-                goto PRINT_CONSTANT;
-            }
+            emitDispConstant(id);
             break;
         }
 
@@ -16584,6 +16474,12 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             if (TakesRex2Prefix(id))
             {
                 code = AddRex2Prefix(ins, code);
+                // Setting EVEX.W = 1 bit indicates a push-pop acceleration (PPX) hint
+                // So, it is used only in Epilog/Prolog code generation
+                if (id->idIsApxPpxContextSet())
+                {
+                    code = AddRexWPrefix(id, code);
+                }
             }
 
             assert(!TakesSimdPrefix(id));
@@ -16902,6 +16798,21 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+#ifdef TARGET_AMD64
+    else if ((ins == INS_push2) || (ins == INS_pop2))
+    {
+        assert(size == EA_PTRSIZE);
+        assert(TakesApxExtendedEvexPrefix(id));
+        code = insCodeMR(ins);
+        code = AddX86PrefixIfNeeded(id, code, size);
+        code = insEncodeMRreg(id, code);
+        // Setting EVEX.W = 1 bit indicates a push-pop acceleration (PPX) hint
+        // The current recommendation is to use PUSH2/POP2 only with PPX hint
+        // So, it is used only in Epilog/Prolog code generation
+        assert(id->idIsApxPpxContextSet());
+        code = AddRexWPrefix(id, code);
+    }
+#endif // TARGET_AMD64
     else
     {
         // TODO-XArch-APX:
@@ -20258,6 +20169,42 @@ emitter::insFormat emitter::ExtractMemoryFormat(insFormat insFmt) const
 
 #if defined(DEBUG) || defined(LATE_DISASM)
 
+// clang-format off
+const static float insLatencyInfos[] =
+{
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) PERFSCORE_LATENCY_##lat,
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) PERFSCORE_LATENCY_##lat,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) PERFSCORE_LATENCY_##lat,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) PERFSCORE_LATENCY_##lat,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) PERFSCORE_LATENCY_##lat,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) PERFSCORE_LATENCY_##lat,
+    #include "instrs.h"
+    #undef  INST0
+    #undef  INST1
+    #undef  INST2
+    #undef  INST3
+    #undef  INST4
+    #undef  INST5
+};
+
+const static float insThroughputInfos[] =
+{
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) PERFSCORE_THROUGHPUT_##tp,
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) PERFSCORE_THROUGHPUT_##tp,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) PERFSCORE_THROUGHPUT_##tp,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) PERFSCORE_THROUGHPUT_##tp,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) PERFSCORE_THROUGHPUT_##tp,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) PERFSCORE_THROUGHPUT_##tp,
+    #include "instrs.h"
+    #undef  INST0
+    #undef  INST1
+    #undef  INST2
+    #undef  INST3
+    #undef  INST4
+    #undef  INST5
+};
+// clang-format on
+
 //----------------------------------------------------------------------------------------
 // getInsExecutionCharacteristics:
 //    Returns the current instruction execution characteristics
@@ -20353,6 +20300,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     switch (ins)
     {
         case INS_align:
+        {
+            assert(memFmt == IF_NONE);
+
 #if FEATURE_LOOP_ALIGN
             if ((id->idCodeSize() == 0) || ((instrDescAlign*)id)->isPlacedAfterJmp)
             {
@@ -20365,18 +20315,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 break;
             }
 #endif
-            FALLTHROUGH;
 
-        case INS_data16:
-        case INS_nop:
-        case INS_int3:
-            assert(memFmt == IF_NONE);
             result.insThroughput = PERFSCORE_THROUGHPUT_4X;
             result.insLatency    = PERFSCORE_LATENCY_ZERO;
             break;
+        }
 
         case INS_push:
         case INS_push_hide:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             if (insFmt == IF_RRD) // push  reg
             {
@@ -20384,9 +20331,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency = PERFSCORE_LATENCY_ZERO;
             }
             break;
+        }
+
+        case INS_push2:
+        {
+            // TODO-XArch-APX: to be verified.
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (insFmt == IF_RRD_RRD) // push2  reg1, reg2
+            {
+                result.insLatency = PERFSCORE_LATENCY_ZERO;
+            }
+            break;
+        }
 
         case INS_pop:
         case INS_pop_hide:
+        {
             if (insFmt == IF_RWR) // pop   reg
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20398,11 +20358,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
+        }
+
+        case INS_pop2:
+        {
+            // TODO-XArch-APX: to be verified.
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (insFmt == IF_RRD_RRD) // pop2  reg1, reg2
+            {
+                result.insLatency = PERFSCORE_LATENCY_ZERO;
+            }
+            break;
+        }
 
         case INS_inc:
         case INS_dec:
         case INS_neg:
         case INS_not:
+        {
             if (memFmt == IF_NONE)
             {
                 // ins   reg
@@ -20416,6 +20389,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 // no additional R/W latency
             }
             break;
+        }
 
 #ifdef TARGET_AMD64
         case INS_movsxd:
@@ -20461,6 +20435,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_ccmple:
         case INS_ccmpg:
 #endif
+        {
 
             if (memFmt == IF_NONE)
             {
@@ -20489,9 +20464,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
+        }
 
         case INS_adc:
         case INS_sbb:
+        {
             if (memAccessKind != PERFSCORE_MEMORY_READ_WRITE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20503,6 +20480,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 // no additional R/W latency
             }
             break;
+        }
 
         case INS_add:
         case INS_sub:
@@ -20510,6 +20488,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_and:
         case INS_or:
         case INS_xor:
+        {
             if (memFmt == IF_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_4X;
@@ -20526,8 +20505,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_1C;
             }
             break;
+        }
 
         case INS_lea:
+        {
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
             result.insLatency    = PERFSCORE_LATENCY_1C;
@@ -20568,56 +20549,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     }
                 }
             }
-
             break;
-
-        case INS_imul_AX:
-        case INS_imul_BX:
-        case INS_imul_CX:
-        case INS_imul_DX:
-        case INS_imul_BP:
-        case INS_imul_SI:
-        case INS_imul_DI:
-#ifdef TARGET_AMD64
-        case INS_imul_08:
-        case INS_imul_09:
-        case INS_imul_10:
-        case INS_imul_11:
-        case INS_imul_12:
-        case INS_imul_13:
-        case INS_imul_14:
-        case INS_imul_15:
-        case INS_imul_16:
-        case INS_imul_17:
-        case INS_imul_18:
-        case INS_imul_19:
-        case INS_imul_20:
-        case INS_imul_21:
-        case INS_imul_22:
-        case INS_imul_23:
-        case INS_imul_24:
-        case INS_imul_25:
-        case INS_imul_26:
-        case INS_imul_27:
-        case INS_imul_28:
-        case INS_imul_29:
-        case INS_imul_30:
-        case INS_imul_31:
-#endif // TARGET_AMD64
-        case INS_imul:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_3C;
-            break;
-
-        case INS_mulEAX:
-        case INS_imulEAX:
-            // uops.info: mul/imul rdx:rax,reg latency is 3 only if the low half of the result is needed, but in that
-            // case codegen uses imul reg,reg instruction form (except for unsigned overflow checks, which are rare)
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
+        }
 
         case INS_div:
+        {
             // The integer divide instructions have long latencies
             if (opSize == EA_8BYTE)
             {
@@ -20631,8 +20567,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
+        }
 
         case INS_idiv:
+        {
             // The integer divide instructions have long latenies
             if (opSize == EA_8BYTE)
             {
@@ -20646,17 +20584,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
-
-        case INS_cdq:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            break;
+        }
 
         case INS_shl:
         case INS_shr:
         case INS_sar:
         case INS_ror:
         case INS_rol:
+        {
             switch (insFmt)
             {
                 case IF_RRW_CNS:
@@ -20695,10 +20630,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
             }
             break;
+        }
 
         case INS_shl_1:
         case INS_shr_1:
         case INS_sar_1:
+        {
             result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
@@ -20722,18 +20659,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
             }
             break;
-
-        case INS_ror_1:
-        case INS_rol_1:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            break;
+        }
 
         case INS_shl_N:
         case INS_shr_N:
         case INS_sar_N:
         case INS_ror_N:
         case INS_rol_N:
+        {
             result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
@@ -20756,24 +20689,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
             }
             break;
-
-        case INS_rcr:
-        case INS_rcl:
-        case INS_rcr_N:
-        case INS_rcl_N:
-            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency += PERFSCORE_LATENCY_6C;
-            break;
-
-        case INS_rcr_1:
-        case INS_rcl_1:
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_2C;
-            break;
+        }
 
         case INS_shld:
         case INS_shrd:
+        {
             result.insLatency += PERFSCORE_LATENCY_3C;
             if (insFmt == IF_RRW_RRD_CNS)
             {
@@ -20786,8 +20706,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             }
             break;
+        }
 
         case INS_bt:
+        {
             result.insLatency += PERFSCORE_LATENCY_1C;
             if ((insFmt == IF_RRD_RRD) || (insFmt == IF_RRD_CNS))
             {
@@ -20798,6 +20720,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
+        }
 
         case INS_seto:
         case INS_setno:
@@ -20815,6 +20738,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_setge:
         case INS_setle:
         case INS_setg:
+        {
             result.insLatency += PERFSCORE_LATENCY_1C;
             if (insFmt == IF_RRD)
             {
@@ -20825,29 +20749,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
-
-        case INS_jo:
-        case INS_jno:
-        case INS_jb:
-        case INS_jae:
-        case INS_je:
-        case INS_jne:
-        case INS_jbe:
-        case INS_ja:
-        case INS_js:
-        case INS_jns:
-        case INS_jp:
-        case INS_jnp:
-        case INS_jl:
-        case INS_jge:
-        case INS_jle:
-        case INS_jg:
-            // conditional branch
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_BRANCH_COND;
-            break;
+        }
 
         case INS_jmp:
+        {
             if (emitInstHasNoCode(id))
             {
                 // a removed jmp to the next instruction
@@ -20861,21 +20766,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
             }
             break;
-
-        case INS_l_jmp:
-            // branch to a constant address
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
-            break;
-
-        case INS_tail_i_jmp:
-        case INS_i_jmp:
-            // branch to register
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency    = PERFSCORE_LATENCY_BRANCH_INDIRECT;
-            break;
+        }
 
         case INS_call:
+        {
             // uops.info
             result.insLatency = PERFSCORE_LATENCY_ZERO;
             switch (insFmt)
@@ -20904,8 +20798,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
             }
             break;
+        }
 
         case INS_ret:
+        {
             if (insFmt == IF_CNS)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -20916,22 +20812,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
-
-        case INS_lock:
-            result.insThroughput = PERFSCORE_THROUGHPUT_13C;
-            break;
-
-        case INS_xadd:
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            break;
-
-        case INS_cmpxchg:
-            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
-            break;
+        }
 
         case INS_xchg:
+        {
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             if (memFmt == IF_NONE)
@@ -20943,44 +20827,25 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency = PERFSCORE_LATENCY_23C;
             }
             break;
+        }
 
 #ifdef TARGET_X86
         case INS_fld:
         case INS_fstp:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insLatency = PERFSCORE_LATENCY_1C;
             }
             break;
+        }
 #endif // TARGET_X86
-
-#ifdef TARGET_AMD64
-        case INS_movsq:
-        case INS_stosq:
-#endif // TARGET_AMD64
-        case INS_movsd:
-        case INS_stosd:
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-
-#ifdef TARGET_AMD64
-        case INS_r_movsq:
-        case INS_r_stosq:
-#endif // TARGET_AMD64
-        case INS_r_movsd:
-        case INS_r_movsb:
-        case INS_r_stosd:
-        case INS_r_stosb:
-            // Actually variable sized: rep stosd, used to zero frame slots
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_25C;
-            break;
 
         case INS_movd32:
         case INS_movd64:
         case INS_movq:
+        {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 if (isFloatReg(id->idReg1()) && isFloatReg(id->idReg2()))
@@ -21010,6 +20875,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
             break;
+        }
 
         case INS_movdqa32:
         case INS_vmovdqa64:
@@ -21023,6 +20889,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movups:
         case INS_movapd:
         case INS_movupd:
+        {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 // ins   reg, reg
@@ -21043,11 +20910,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
             break;
+        }
 
         case INS_movhps:
         case INS_movhpd:
         case INS_movlps:
         case INS_movlpd:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
@@ -21059,42 +20928,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
             break;
-
-        case INS_movhlps:
-        case INS_movlhps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            break;
-
-        case INS_movntdq:
-        case INS_movnti32:
-        case INS_movnti64:
-        case INS_movntps:
-        case INS_movntpd:
-            assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instructions
-            break;
-
-        case INS_maskmovdqu:
-            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instructions
-            break;
+        }
 
         case INS_movntdqa:
+        {
             assert(memAccessKind == PERFSCORE_MEMORY_READ);
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
             break;
-
-        case INS_vzeroupper:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            // insLatency is zero and is set when we Model the memory latency
-            break;
+        }
 
         case INS_movss:
         case INS_movsd_simd:
         case INS_movddup:
+        {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -21111,102 +20958,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
             break;
+        }
 
         case INS_lddqu:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
-            break;
-
-        case INS_comiss:
-        case INS_comisd:
-        case INS_ucomiss:
-        case INS_ucomisd:
-        case INS_vfpclasspd:
-        case INS_vfpclassps:
-        case INS_vfpclasssd:
-        case INS_vfpclassss:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_3C;
-            break;
-
-        case INS_addsd:
-        case INS_addss:
-        case INS_addpd:
-        case INS_addps:
-        case INS_subsd:
-        case INS_subss:
-        case INS_subpd:
-        case INS_subps:
-        case INS_cvttps2dq:
-        case INS_cvtps2dq:
-        case INS_cvtdq2ps:
-        case INS_vcvtpd2qq:
-        case INS_vcvtpd2uqq:
-        case INS_vcvtps2udq:
-        case INS_vcvtqq2pd:
-        case INS_vcvttps2udq:
-        case INS_vcvtudq2ps:
-        case INS_vcvttpd2qq:
-        case INS_vcvttpd2uqq:
-        case INS_vcvtuqq2pd:
-        case INS_vfixupimmpd:
-        case INS_vfixupimmps:
-        case INS_vfixupimmsd:
-        case INS_vfixupimmss:
-        case INS_vgetexppd:
-        case INS_vgetexpps:
-        case INS_vgetexpsd:
-        case INS_vgetexpss:
-        case INS_vgetmantpd:
-        case INS_vgetmantps:
-        case INS_vgetmantsd:
-        case INS_vgetmantss:
-        case INS_vrangepd:
-        case INS_vrangeps:
-        case INS_vrangesd:
-        case INS_vrangess:
-        case INS_vminmaxsd:
-        case INS_vminmaxss:
-        case INS_vminmaxpd:
-        case INS_vminmaxps:
-        case INS_vreducepd:
-        case INS_vreduceps:
-        case INS_vreducesd:
-        case INS_vreducess:
-        case INS_vscalefpd:
-        case INS_vscalefps:
-        case INS_vscalefsd:
-        case INS_vscalefss:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
-        }
-
-        // TODO-XArch-AVX10.2: handle perf for AVX10.2 instructions
-        case INS_vcomxsd:
-        case INS_vcomxss:
-        case INS_vucomxsd:
-        case INS_vucomxss:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
-        }
-
-        case INS_vpermi2b:
-        case INS_vpermt2b:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_5C;
-            break;
-        }
-
-        case INS_vpermi2w:
-        case INS_vpermt2w:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_7C;
             break;
         }
 
@@ -21228,55 +20985,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpmovusqw:
         case INS_vpmovuswb:
         case INS_vpmovwb:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency += (opSize == EA_16BYTE) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
             break;
-
-        case INS_haddps:
-        case INS_haddpd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_6C;
-            break;
-
-        case INS_mulss:
-        case INS_mulsd:
-        case INS_mulps:
-        case INS_mulpd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
-
-        case INS_divss:
-        case INS_divps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency += PERFSCORE_LATENCY_11C;
-            break;
-
-        case INS_divsd:
-        case INS_divpd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            result.insLatency += PERFSCORE_LATENCY_13C;
-            break;
-
-        case INS_sqrtss:
-        case INS_sqrtps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency += PERFSCORE_LATENCY_12C;
-            break;
-
-        case INS_sqrtsd:
-        case INS_sqrtpd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            result.insLatency += PERFSCORE_LATENCY_13C;
-            break;
-
-        case INS_rcpps:
-        case INS_rcpss:
-        case INS_rsqrtss:
-        case INS_rsqrtps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
+        }
 
         case INS_vrcp14pd:
         case INS_vrcp14ps:
@@ -21344,80 +21057,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_roundpd:
-        case INS_roundps:
-        case INS_roundsd:
-        case INS_roundss:
-        case INS_vrndscalepd:
-        case INS_vrndscaleps:
-        case INS_vrndscalesd:
-        case INS_vrndscaless:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_8C;
-            break;
-        }
-
-        case INS_cvttsd2si32:
-        case INS_cvttsd2si64:
-        case INS_cvtsd2si32:
-        case INS_cvtsd2si64:
-        case INS_cvtsi2sd32:
-        case INS_cvtsi2ss32:
-        case INS_cvtsi2sd64:
-        case INS_cvtsi2ss64:
-        case INS_vcvtsd2usi32:
-        case INS_vcvtsd2usi64:
-        case INS_vcvtusi2ss32:
-        case INS_vcvtusi2ss64:
-        case INS_vcvttsd2usi32:
-        case INS_vcvttsd2usis32:
-        case INS_vcvttsd2usi64:
-        case INS_vcvttsd2usis64:
-        case INS_vcvttss2usi32:
-        case INS_vcvttss2usis32:
-        case INS_vcvttsd2sis32:
-        case INS_vcvttsd2sis64:
-        case INS_vcvttss2sis32:
-        case INS_vcvttss2sis64:
-        case INS_vcvttss2usis64:
-        case INS_vcvttps2dqs:
-        case INS_vcvttps2udqs:
-        case INS_vcvttpd2qqs:
-        case INS_vcvttpd2uqqs:
-        case INS_vcvttps2ibs:
-        case INS_vcvttps2iubs:
-        case INS_vcvtps2ibs:
-        case INS_vcvtps2iubs:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_7C;
-            break;
-
-        case INS_vcvtusi2sd64:
-        case INS_vcvtusi2sd32:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_5C;
-            break;
-
         case INS_cvttss2si32:
         case INS_cvttss2si64:
         case INS_cvtss2si32:
         case INS_cvtss2si64:
         case INS_vcvtss2usi32:
         case INS_vcvtss2usi64:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_7C;
             break;
-
-        case INS_vcvttss2usi64:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_8C;
-            break;
-
-        case INS_cvtss2sd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_5C;
-            break;
+        }
 
         case INS_paddb:
         case INS_psubb:
@@ -21454,6 +21104,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_blendps:
         case INS_blendpd:
         case INS_vpblendd:
+        {
             result.insLatency += PERFSCORE_LATENCY_1C;
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -21463,73 +21114,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             }
-            break;
-
-        case INS_andn:
-        case INS_pcmpeqb:
-        case INS_pcmpeqw:
-        case INS_pcmpeqd:
-        case INS_pcmpeqq:
-        case INS_pcmpgtb:
-        case INS_pcmpgtw:
-        case INS_pcmpgtd:
-        case INS_pavgb:
-        case INS_pavgw:
-        case INS_pminub:
-        case INS_pminsb:
-        case INS_pminuw:
-        case INS_pminsw:
-        case INS_pminud:
-        case INS_pminsd:
-        case INS_vpminuq:
-        case INS_vpminsq:
-        case INS_pmaxub:
-        case INS_pmaxsb:
-        case INS_pmaxuw:
-        case INS_pmaxsw:
-        case INS_pmaxsd:
-        case INS_pmaxud:
-        case INS_vpmaxsq:
-        case INS_vpmaxuq:
-        case INS_pabsb:
-        case INS_pabsw:
-        case INS_pabsd:
-        case INS_vpabsq:
-        case INS_psignb:
-        case INS_psignw:
-        case INS_psignd:
-        case INS_vprold:
-        case INS_vprolq:
-        case INS_vprolvd:
-        case INS_vprolvq:
-        case INS_vprord:
-        case INS_vprorq:
-        case INS_vprorvd:
-        case INS_vprorvq:
-        case INS_vpsravd:
-        case INS_vpsravq:
-        case INS_vpsravw:
-        case INS_blendvps:
-        case INS_blendvpd:
-        case INS_pblendvb:
-        case INS_vpcmpeqb:
-        case INS_vpcmpeqw:
-        case INS_vpcmpeqd:
-        case INS_vpcmpeqq:
-        case INS_vpcmpgtb:
-        case INS_vpcmpgtw:
-        case INS_vpcmpgtd:
-        case INS_vpsllvd:
-        case INS_vpsllvq:
-        case INS_vpsllvw:
-        case INS_vpsrlvd:
-        case INS_vpsrlvq:
-        case INS_vpsrlvw:
-        case INS_vpternlogd:
-        case INS_vpternlogq:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += PERFSCORE_LATENCY_1C;
             break;
         }
 
@@ -21542,6 +21126,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_psrad:
         case INS_psraw:
         case INS_vpsraq:
+        {
             if (insFmt == IF_RWR_CNS)
             {
                 result.insLatency    = PERFSCORE_LATENCY_1C;
@@ -21552,69 +21137,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_2C;
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
-            break;
-
-        case INS_blsi:
-        case INS_blsmsk:
-        case INS_blsr:
-        case INS_bzhi:
-        case INS_rorx:
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        case INS_bextr:
-            result.insLatency += PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        case INS_packuswb:
-        case INS_packusdw:
-        case INS_packsswb:
-        case INS_packssdw:
-        case INS_unpcklps:
-        case INS_unpckhps:
-        case INS_unpcklpd:
-        case INS_unpckhpd:
-        case INS_punpckldq:
-        case INS_punpcklwd:
-        case INS_punpcklbw:
-        case INS_punpckhdq:
-        case INS_punpckhwd:
-        case INS_punpckhbw:
-        case INS_punpcklqdq:
-        case INS_punpckhqdq:
-        case INS_pshufb:
-        case INS_pshufd:
-        case INS_pshuflw:
-        case INS_pshufhw:
-        case INS_shufps:
-        case INS_shufpd:
-        case INS_pblendw:
-        case INS_movsldup:
-        case INS_movshdup:
-        case INS_insertps:
-        case INS_palignr:
-        case INS_valignd:
-        case INS_valignq:
-        case INS_vpermilps:
-        case INS_vpermilpd:
-        case INS_vpermilpsvar:
-        case INS_vpermilpdvar:
-        case INS_pslldq:
-        case INS_psrldq:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            break;
-        }
-
-        case INS_vblendvps:
-        case INS_vblendvpd:
-        case INS_vpblendvb:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_2C;
             break;
         }
 
@@ -21650,25 +21172,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_vcompresspd:
-        case INS_vcompressps:
-        case INS_vpcompressb:
-        case INS_vpcompressd:
-        case INS_vpcompressq:
-        case INS_vpcompressw:
-        case INS_vexpandpd:
-        case INS_vexpandps:
-        case INS_vpexpandb:
-        case INS_vpexpandd:
-        case INS_vpexpandq:
-        case INS_vpexpandw:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_6C;
-            break;
-        }
-
         case INS_bswap:
+        {
             if (opSize == EA_8BYTE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -21681,10 +21186,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency    = PERFSCORE_LATENCY_1C;
             }
             break;
+        }
 
         case INS_pmovmskb:
         case INS_movmskpd:
         case INS_movmskps:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             if (opSize == EA_32BYTE)
             {
@@ -21695,84 +21202,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_3C;
             }
             break;
-
-        case INS_bsf:
-        case INS_bsr:
-        case INS_lzcnt:
-        case INS_tzcnt:
-        case INS_popcnt:
-        case INS_crc32:
-        case INS_pdep:
-        case INS_pext:
-        case INS_pcmpgtq:
-        case INS_psadbw:
-        case INS_vdbpsadbw:
-        case INS_vpcmpgtq:
-        case INS_vpermps:
-        case INS_vpermpd:
-        case INS_vpermpd_reg:
-        case INS_vpermd:
-        case INS_vpermq:
-        case INS_vpermq_reg:
-        case INS_vperm2i128:
-        case INS_vperm2f128:
-        case INS_vextractf32x4:
-        case INS_vextractf32x8:
-        case INS_vextractf64x2:
-        case INS_vextractf64x4:
-        case INS_vextracti32x4:
-        case INS_vextracti32x8:
-        case INS_vextracti64x2:
-        case INS_vextracti64x4:
-        case INS_vinsertf32x4:
-        case INS_vinsertf32x8:
-        case INS_vinsertf64x2:
-        case INS_vinsertf64x4:
-        case INS_vinserti32x4:
-        case INS_vinserti32x8:
-        case INS_vinserti64x2:
-        case INS_vinserti64x4:
-        case INS_vpermb:
-        case INS_vpermi2d:
-        case INS_vpermi2pd:
-        case INS_vpermi2ps:
-        case INS_vpermi2q:
-        case INS_vpermt2d:
-        case INS_vpermt2pd:
-        case INS_vpermt2ps:
-        case INS_vpermt2q:
-        case INS_vpmultishiftqb:
-        case INS_vshuff32x4:
-        case INS_vshuff64x2:
-        case INS_vshufi32x4:
-        case INS_vshufi64x2:
-#ifdef TARGET_AMD64
-        case INS_popcnt_apx:
-        case INS_lzcnt_apx:
-        case INS_tzcnt_apx:
-        case INS_crc32_apx:
-#endif // TARGET_AMD64
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_3C;
-            break;
         }
-
-        case INS_vpermw:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_6C;
-            break;
-
-        case INS_pextrb:
-        case INS_pextrd:
-        case INS_pextrw:
-        case INS_pextrq:
-        case INS_pextrw_sse42:
-        case INS_addsubps:
-        case INS_addsubpd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
 
         case INS_pmovsxbw:
         case INS_pmovsxbd:
@@ -21786,106 +21216,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmovzxwd:
         case INS_pmovzxwq:
         case INS_pmovzxdq:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
             break;
-
-        case INS_phaddw:
-        case INS_phaddd:
-        case INS_phaddsw:
-        case INS_phsubw:
-        case INS_phsubsw:
-        case INS_phsubd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_3C;
-            break;
-
-        case INS_cmpps:
-        case INS_cmppd:
-        case INS_cmpss:
-        case INS_cmpsd:
-        case INS_vcmpps:
-        case INS_vcmppd:
-        case INS_vcmpss:
-        case INS_vcmpsd:
-        case INS_vplzcntd:
-        case INS_vplzcntq:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            break;
         }
 
-        case INS_mulx:
-        case INS_maxps:
-        case INS_maxpd:
-        case INS_maxss:
-        case INS_maxsd:
-        case INS_minps:
-        case INS_minpd:
-        case INS_minss:
-        case INS_minsd:
-        case INS_phminposuw:
-        case INS_extractps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
-
         case INS_ptest:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_4C;
             break;
-
-        case INS_vptestmb:
-        case INS_vptestmd:
-        case INS_vptestmq:
-        case INS_vptestmw:
-        case INS_vptestnmb:
-        case INS_vptestnmd:
-        case INS_vptestnmq:
-        case INS_vptestnmw:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
         }
-
-        case INS_mpsadbw:
-        case INS_vmpsadbw:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
-
-        case INS_pmullw:
-        case INS_pmulhw:
-        case INS_pmulhuw:
-        case INS_pmulhrsw:
-        case INS_pmuldq:
-        case INS_pmuludq:
-        case INS_pmaddwd:
-        case INS_pmaddubsw:
-        case INS_vpdpbusd:
-        case INS_vpdpbusds:
-        case INS_vpdpbssd:
-        case INS_vpdpbssds:
-        case INS_vpdpbsud:
-        case INS_vpdpbsuds:
-        case INS_vpdpbuud:
-        case INS_vpdpbuuds:
-        case INS_vpdpwssds:
-        case INS_vpdpwssd:
-        case INS_vpdpwsud:
-        case INS_vpdpwsuds:
-        case INS_vpdpwusd:
-        case INS_vpdpwusds:
-        case INS_vpdpwuud:
-        case INS_vpdpwuuds:
-        case INS_gf2p8affineinvqb:
-        case INS_gf2p8affineqb:
-        case INS_gf2p8mulb:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += PERFSCORE_LATENCY_5C;
-            break;
 
         case INS_cvtsd2ss:
         case INS_cvtps2pd:
@@ -21902,36 +21244,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvttps2uqq:
         case INS_vcvtudq2pd:
         case INS_vcvtuqq2ps:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_7C : PERFSCORE_LATENCY_5C;
             break;
+        }
 
         case INS_vtestps:
         case INS_vtestpd:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_3C;
             break;
-
-        case INS_hsubps:
-        case INS_hsubpd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_6C;
-            break;
-
-        case INS_pclmulqdq:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_7C;
-            break;
-
-        case INS_pmulld:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_10C;
-            break;
-
-        case INS_vpmullq:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_15C;
-            break;
+        }
 
         case INS_vpbroadcastb:
         case INS_vpbroadcastb_gpr:
@@ -21953,6 +21278,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vbroadcasti32x8:
         case INS_vbroadcastss:
         case INS_vbroadcastsd:
+        {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -21968,11 +21294,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 }
             }
             break;
+        }
 
         case INS_pinsrb:
         case INS_pinsrw:
         case INS_pinsrd:
         case INS_pinsrq:
+        {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -21984,87 +21312,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_3C;
             }
             break;
-
-        case INS_dppd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_9C;
-            break;
-
-        case INS_dpps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency    = PERFSCORE_LATENCY_13C;
-            break;
-
-        case INS_vfmadd132pd:
-        case INS_vfmadd213pd:
-        case INS_vfmadd231pd:
-        case INS_vfmadd132ps:
-        case INS_vfmadd213ps:
-        case INS_vfmadd231ps:
-        case INS_vfmadd132sd:
-        case INS_vfmadd213sd:
-        case INS_vfmadd231sd:
-        case INS_vfmadd132ss:
-        case INS_vfmadd213ss:
-        case INS_vfmadd231ss:
-        case INS_vfmaddsub132pd:
-        case INS_vfmaddsub213pd:
-        case INS_vfmaddsub231pd:
-        case INS_vfmaddsub132ps:
-        case INS_vfmaddsub213ps:
-        case INS_vfmaddsub231ps:
-        case INS_vfmsubadd132pd:
-        case INS_vfmsubadd213pd:
-        case INS_vfmsubadd231pd:
-        case INS_vfmsubadd132ps:
-        case INS_vfmsubadd213ps:
-        case INS_vfmsubadd231ps:
-        case INS_vfmsub132pd:
-        case INS_vfmsub213pd:
-        case INS_vfmsub231pd:
-        case INS_vfmsub132ps:
-        case INS_vfmsub213ps:
-        case INS_vfmsub231ps:
-        case INS_vfmsub132sd:
-        case INS_vfmsub213sd:
-        case INS_vfmsub231sd:
-        case INS_vfmsub132ss:
-        case INS_vfmsub213ss:
-        case INS_vfmsub231ss:
-        case INS_vfnmadd132pd:
-        case INS_vfnmadd213pd:
-        case INS_vfnmadd231pd:
-        case INS_vfnmadd132ps:
-        case INS_vfnmadd213ps:
-        case INS_vfnmadd231ps:
-        case INS_vfnmadd132sd:
-        case INS_vfnmadd213sd:
-        case INS_vfnmadd231sd:
-        case INS_vfnmadd132ss:
-        case INS_vfnmadd213ss:
-        case INS_vfnmadd231ss:
-        case INS_vfnmsub132pd:
-        case INS_vfnmsub213pd:
-        case INS_vfnmsub231pd:
-        case INS_vfnmsub132ps:
-        case INS_vfnmsub213ps:
-        case INS_vfnmsub231ps:
-        case INS_vfnmsub132sd:
-        case INS_vfnmsub213sd:
-        case INS_vfnmsub231sd:
-        case INS_vfnmsub132ss:
-        case INS_vfnmsub213ss:
-        case INS_vfnmsub231ss:
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
+        }
 
         case INS_vmaskmovpd:
         case INS_vmaskmovps:
         case INS_vpmaskmovd:
         case INS_vpmaskmovq:
-
+        {
             if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -22077,12 +21331,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += PERFSCORE_LATENCY_12C;
             }
             break;
+        }
 
         case INS_vpgatherdd:
         case INS_vgatherdps:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_4C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_13C : PERFSCORE_LATENCY_11C;
             break;
+        }
 
         case INS_vpgatherdq:
         case INS_vpgatherqd:
@@ -22090,51 +21347,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vgatherdpd:
         case INS_vgatherqps:
         case INS_vgatherqpd:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_4C;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_11C : PERFSCORE_LATENCY_9C;
-            break;
-
-        case INS_aesdec:
-        case INS_aesdeclast:
-        case INS_aesenc:
-        case INS_aesenclast:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            break;
-
-        case INS_aesimc:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += PERFSCORE_LATENCY_8C;
-            break;
-
-        case INS_aeskeygenassist:
-            result.insThroughput = PERFSCORE_THROUGHPUT_13C;
-            result.insLatency += PERFSCORE_LATENCY_7C;
-            break;
-
-        case INS_lfence:
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            break;
-
-        case INS_sfence:
-            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            break;
-
-        case INS_mfence:
-            result.insThroughput = PERFSCORE_THROUGHPUT_33C;
-            break;
-
-        case INS_prefetcht0:
-        case INS_prefetcht1:
-        case INS_prefetcht2:
-        case INS_prefetchnta:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        case INS_pause:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_140C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_140C;
             break;
         }
 
@@ -22142,6 +21357,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 #ifdef TARGET_AMD64
         case INS_movbe_apx:
 #endif
+        {
             if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -22154,155 +21370,26 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             }
             break;
-
-        case INS_serialize:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_50C;
-            result.insLatency    = PERFSCORE_LATENCY_105C;
-            break;
-        }
-
-        case INS_shlx:
-        case INS_sarx:
-        case INS_shrx:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-        }
-
-        case INS_vpmovb2m:
-        case INS_vpmovw2m:
-        case INS_vpmovd2m:
-        case INS_vpmovq2m:
-        {
-            result.insLatency += PERFSCORE_LATENCY_3C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_kmovb_gpr:
-        case INS_kmovw_gpr:
-        case INS_kmovd_gpr:
-        case INS_kmovq_gpr:
-        {
-            result.insLatency += PERFSCORE_LATENCY_3C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_kmovb_msk:
-        case INS_kmovw_msk:
-        case INS_kmovd_msk:
-        case INS_kmovq_msk:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_vpcmpb:
-        case INS_vpcmpw:
-        case INS_vpcmpd:
-        case INS_vpcmpq:
-        case INS_vpcmpub:
-        case INS_vpcmpuw:
-        case INS_vpcmpud:
-        case INS_vpcmpuq:
-        {
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_vpmovm2b:
-        case INS_vpmovm2w:
-        {
-            result.insLatency += PERFSCORE_LATENCY_3C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-        case INS_vpmovm2d:
-        case INS_vpmovm2q:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_kandb:
-        case INS_kandd:
-        case INS_kandq:
-        case INS_kandw:
-        case INS_kandnb:
-        case INS_kandnd:
-        case INS_kandnq:
-        case INS_kandnw:
-        case INS_knotb:
-        case INS_knotd:
-        case INS_knotq:
-        case INS_knotw:
-        case INS_korb:
-        case INS_kord:
-        case INS_korq:
-        case INS_korw:
-        case INS_kxnorb:
-        case INS_kxnord:
-        case INS_kxnorq:
-        case INS_kxnorw:
-        case INS_kxorb:
-        case INS_kxord:
-        case INS_kxorq:
-        case INS_kxorw:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_kortestb:
-        case INS_kortestd:
-        case INS_kortestq:
-        case INS_kortestw:
-        case INS_ktestb:
-        case INS_ktestd:
-        case INS_ktestq:
-        case INS_ktestw:
-        {
-            // Keep these in a separate group as there isn't a documented latency
-            // Similar instructions have a 1 cycle latency, however
-
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-
-            break;
-        }
-
-        case INS_kaddb:
-        case INS_kaddd:
-        case INS_kaddq:
-        case INS_kaddw:
-        case INS_kshiftlb:
-        case INS_kshiftld:
-        case INS_kshiftlq:
-        case INS_kshiftlw:
-        case INS_kshiftrb:
-        case INS_kshiftrd:
-        case INS_kshiftrq:
-        case INS_kshiftrw:
-        case INS_kunpckbw:
-        case INS_kunpckdq:
-        case INS_kunpckwd:
-        {
-            result.insLatency += PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
         }
 
         default:
-            // unhandled instruction insFmt combination
-            perfScoreUnhandledInstruction(id, &result);
+        {
+            assert((unsigned)ins < ArrLen(insThroughputInfos));
+            float insThroughput = insThroughputInfos[ins];
+
+            assert((unsigned)ins < ArrLen(insLatencyInfos));
+            float insLatency = insLatencyInfos[ins];
+
+            if ((insLatency == PERFSCORE_LATENCY_ILLEGAL) || (insThroughput == PERFSCORE_THROUGHPUT_ILLEGAL))
+            {
+                // unhandled instruction insFmt combination
+                perfScoreUnhandledInstruction(id, &result);
+            }
+
+            result.insLatency += insLatency;
+            result.insThroughput = insThroughput;
             break;
+        }
     }
 
     return result;

@@ -1462,8 +1462,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualResult = (value == PositiveInfinity) ? UInt128.MaxValue :
-                                       (value <= 0.0f) ? UInt128.MinValue : (UInt128)value;
+                UInt128 actualResult = (UInt128)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

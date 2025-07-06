@@ -480,7 +480,7 @@ dotnet_diagnostic.CA1860.severity = warning
 # CA1861: Avoid constant arrays as arguments
 dotnet_diagnostic.CA1861.severity = warning
 
-# CA1862: Prefer using 'StringComparer'/'StringComparison' to perform case-insensitive string comparisons
+# CA1862: Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 dotnet_diagnostic.CA1862.severity = suggestion
 
 # CA1863: Use 'CompositeFormat'
@@ -512,6 +512,15 @@ dotnet_diagnostic.CA1871.severity = warning
 
 # CA1872: Prefer 'Convert.ToHexString' and 'Convert.ToHexStringLower' over call chains based on 'BitConverter.ToString'
 dotnet_diagnostic.CA1872.severity = warning
+
+# CA1873: Avoid potentially expensive logging
+dotnet_diagnostic.CA1873.severity = warning
+
+# CA1874: Use 'Regex.IsMatch'
+dotnet_diagnostic.CA1874.severity = warning
+
+# CA1875: Use 'Regex.Count'
+dotnet_diagnostic.CA1875.severity = warning
 
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
@@ -564,7 +573,13 @@ dotnet_diagnostic.CA2021.severity = warning
 # CA2022: Avoid inexact read with 'Stream.Read'
 dotnet_diagnostic.CA2022.severity = warning
 
-# CA2025: Ensure tasks using 'IDisposable' instances complete before the instances are disposed
+# CA2023: Invalid braces in message template
+dotnet_diagnostic.CA2023.severity = warning
+
+# CA2024: Do not use 'StreamReader.EndOfStream' in async methods
+dotnet_diagnostic.CA2024.severity = warning
+
+# CA2025: Do not pass 'IDisposable' instances into unawaited tasks
 dotnet_diagnostic.CA2025.severity = warning
 
 # CA2100: Review SQL queries for security vulnerabilities
