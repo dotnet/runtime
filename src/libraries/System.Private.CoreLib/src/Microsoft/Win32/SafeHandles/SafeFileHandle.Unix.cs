@@ -148,9 +148,7 @@ namespace Microsoft.Win32.SafeHandles
                 _isLocked = false;
             }
 
-            // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
-            // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
-            // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
+            // Close the descriptor.
             return Interop.Sys.Close(handle) == 0;
         }
 
