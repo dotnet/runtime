@@ -303,7 +303,7 @@ bool emitter::IsVexEncodableInstruction(instruction ins) const
         case INS_vpdpbuuds:
         {
             // Vex versions of AvxVnniInt8 + AvxVnniInt16
-            return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT);
         }
 
         case INS_vpmadd52huq:
@@ -367,7 +367,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpdpbuuds:
         {
             // Evex versions of AvxVnniInt8 + AvxVnniInt16 will be supported
-            return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT_V512);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
         }
 
         case INS_vpdpbusd:
