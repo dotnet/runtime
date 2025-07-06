@@ -17,39 +17,7 @@ namespace Internal.Runtime.CompilerServices
         private const int FatFunctionPointerOffset = 2;
 #endif
 
-        private struct GenericMethodDescriptorInfo : IEquatable<GenericMethodDescriptorInfo>
-        {
-            public override bool Equals(object? obj)
-            {
-                if (!(obj is GenericMethodDescriptorInfo))
-                    return false;
-
-                return Equals((GenericMethodDescriptorInfo)obj);
-            }
-
-            public bool Equals(GenericMethodDescriptorInfo other)
-            {
-                if (MethodFunctionPointer != other.MethodFunctionPointer)
-                    return false;
-
-                if (InstantiationArgument != other.InstantiationArgument)
-                    return false;
-
-                return true;
-            }
-
-            public override int GetHashCode()
-            {
-                int a = InstantiationArgument.GetHashCode();
-                int b = MethodFunctionPointer.GetHashCode();
-                return (a ^ b) + (a << 11) - (b >> 13);
-            }
-
-            public IntPtr MethodFunctionPointer;
-            public IntPtr InstantiationArgument;
-        }
-
-        private static Dictionary<GenericMethodDescriptorInfo, IntPtr> s_genericFunctionPointerDictionary = new Dictionary<GenericMethodDescriptorInfo, IntPtr>();
+        private static Dictionary<(IntPtr MethodFunctionPointer, IntPtr InstantiationArgument), IntPtr> s_genericFunctionPointerDictionary = new Dictionary<(IntPtr, IntPtr), IntPtr>();
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
@@ -60,13 +28,7 @@ namespace Internal.Runtime.CompilerServices
 
             lock (s_genericFunctionPointerDictionary)
             {
-                var key = new GenericMethodDescriptorInfo
-                {
-                    MethodFunctionPointer = canonFunctionPointer,
-                    InstantiationArgument = instantiationArgument
-                };
-
-                ref IntPtr descriptor = ref CollectionsMarshal.GetValueRefOrAddDefault(s_genericFunctionPointerDictionary, key, out bool exists);
+                ref IntPtr descriptor = ref CollectionsMarshal.GetValueRefOrAddDefault(s_genericFunctionPointerDictionary, (canonFunctionPointer, instantiationArgument), out bool exists);
                 if (!exists)
                 {
                     descriptor = (IntPtr)NativeMemory.Alloc((uint)sizeof(GenericMethodDescriptor));
