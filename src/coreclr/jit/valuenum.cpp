@@ -12176,20 +12176,6 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
         return false;
     }
 
-    // Ignore BYREF->I_IMPL casts when we look for object handles.
-    VNFuncApp funcApp;
-    if ((vnStore->TypeOfVN(treeVN) == TYP_I_IMPL) && vnStore->GetVNFunc(treeVN, &funcApp) &&
-        (funcApp.m_func == VNF_Cast))
-    {
-        var_types castToType;
-        bool      srcIsUnsigned;
-        vnStore->GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
-        if ((castToType == TYP_I_IMPL) && varTypeIsGC(vnStore->TypeOfVN(funcApp.m_args[0])))
-        {
-            treeVN = funcApp.m_args[0];
-        }
-    }
-
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&treeVN, &offset);
 
@@ -15229,8 +15215,25 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 
     *offset = 0;
     VNFuncApp app;
-    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    while (GetVNFunc(*vn, &app) && ((app.m_func == VNF_ADD) || (app.m_func == VNF_Cast)))
     {
+        if (app.m_func == VNF_Cast)
+        {
+            // Ignore GC -> I_IMPL casts during peeling
+            if (TypeOfVN(*vn) == TYP_I_IMPL)
+            {
+                var_types castToType;
+                bool      srcIsUnsigned;
+                GetCastOperFromVN(app.m_args[1], &castToType, &srcIsUnsigned);
+                if (varTypeIsI(castToType) && varTypeIsI(TypeOfVN(app.m_args[0])))
+                {
+                    *vn = app.m_args[0];
+                    continue;
+                }
+            }
+            break;
+        }
+
         // We don't treat handles and null as constant offset.
 
         if (IsVNConstantNonHandle(app.m_args[0]) && (app.m_args[0] != VNForNull()))
