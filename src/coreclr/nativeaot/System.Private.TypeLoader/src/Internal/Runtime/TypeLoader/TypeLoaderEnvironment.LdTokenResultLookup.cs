@@ -4,12 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
@@ -24,34 +19,6 @@ namespace Internal.Runtime.TypeLoader
     public sealed partial class TypeLoaderEnvironment
     {
         #region Ldtoken Hashtables
-        private struct RuntimeFieldHandleKey : IEquatable<RuntimeFieldHandleKey>
-        {
-            private RuntimeTypeHandle _declaringType;
-            private FieldHandle _handle;
-
-            public RuntimeFieldHandleKey(RuntimeTypeHandle declaringType, FieldHandle fieldHandle)
-            {
-                _declaringType = declaringType;
-                _handle = fieldHandle;
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (obj is RuntimeFieldHandleKey other)
-                {
-                    return Equals(other);
-                }
-                return false;
-            }
-
-            public bool Equals(RuntimeFieldHandleKey other)
-            {
-                return other._declaringType.Equals(_declaringType) && other._handle.Equals(_handle);
-            }
-
-            public override int GetHashCode() => _declaringType.GetHashCode() ^ _handle.GetHashCode();
-        }
-
         private struct RuntimeMethodHandleKey : IEquatable<RuntimeMethodHandleKey>
         {
             private RuntimeTypeHandle _declaringType;
@@ -105,7 +72,9 @@ namespace Internal.Runtime.TypeLoader
                 : TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs));
         }
 
-        private LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle> _runtimeFieldHandles = new LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle>();
+        // To minimize the generic instantiations of Dictionary in CoreLib, use the instantiation <(IntPtr, IntPtr), IntPtr>
+        // that's shared with other instances.
+        private Dictionary<(IntPtr DeclaringType, IntPtr FieldHandle), IntPtr> _runtimeFieldHandles = new Dictionary<(IntPtr, IntPtr), IntPtr>();
         private LowLevelDictionary<RuntimeMethodHandleKey, RuntimeMethodHandle> _runtimeMethodHandles = new LowLevelDictionary<RuntimeMethodHandleKey, RuntimeMethodHandle>();
         #endregion
 
@@ -118,21 +87,21 @@ namespace Internal.Runtime.TypeLoader
 
         public unsafe RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle)
         {
-            RuntimeFieldHandleKey key = new RuntimeFieldHandleKey(declaringTypeHandle, handle);
+            (IntPtr, IntPtr) key = (RuntimeTypeHandle.ToIntPtr(declaringTypeHandle), ((Handle)handle).AsInt());
 
             lock (_runtimeFieldHandles)
             {
-                if (!_runtimeFieldHandles.TryGetValue(key, out RuntimeFieldHandle runtimeFieldHandle))
+                if (!_runtimeFieldHandles.TryGetValue(key, out IntPtr runtimeFieldHandle))
                 {
                     FieldHandleInfo* fieldData = (FieldHandleInfo*)MemoryHelpers.AllocateMemory(sizeof(FieldHandleInfo));
                     fieldData->DeclaringType = declaringTypeHandle;
                     fieldData->Handle = handle;
-                    runtimeFieldHandle = RuntimeFieldHandle.FromIntPtr((nint)fieldData);
+                    runtimeFieldHandle = (nint)fieldData;
 
                     _runtimeFieldHandles.Add(key, runtimeFieldHandle);
                 }
 
-                return runtimeFieldHandle;
+                return RuntimeFieldHandle.FromIntPtr(runtimeFieldHandle);
             }
         }
 
