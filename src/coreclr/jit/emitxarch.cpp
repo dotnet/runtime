@@ -5213,16 +5213,35 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     {
         ssize_t compressedDsp;
 
-        if (TryEvexCompressDisp8Byte(id, int(offs), &compressedDsp, &useSmallEncoding))
+#if !FEATURE_FIXED_OUT_ARGS
+        if (!emitHasFramePtr)
         {
+            // We cannot use compressed displacement because the stack offset estimator
+            // can be off and the compression is only usable in very precise scenarios
+            //
+            // But we can still predict small encoding for VEX encodable instructions
+
             if (!TakesEvexPrefix(id))
             {
-                // We mispredicted the adjusted size since we didn't know we'd use the EVEX
-                // encoding due to comprssed displacement. So we need an additional adjustment
-                size += emitGetEvexPrefixSize(id) - emitGetVexPrefixSize(id);
+#ifdef TARGET_AMD64
+                useSmallEncoding = (SCHAR_MIN <= (int)offs) && ((int)offs <= SCHAR_MAX);
+#else
+                useSmallEncoding = (offs <= size_t(SCHAR_MAX));
+#endif
             }
-            SetEvexCompressedDisplacement(id);
         }
+        else
+#endif // FEATURE_FIXED_OUT_ARGS
+            if (TryEvexCompressDisp8Byte(id, int(offs), &compressedDsp, &useSmallEncoding))
+            {
+                if (!TakesEvexPrefix(id))
+                {
+                    // We mispredicted the adjusted size since we didn't know we'd use the EVEX
+                    // encoding due to compressed displacement. So we need an additional adjustment
+                    size += emitGetEvexPrefixSize(id) - emitGetVexPrefixSize(id);
+                }
+                SetEvexCompressedDisplacement(id);
+            }
     }
     else
     {
@@ -14688,7 +14707,7 @@ GOT_DSP:
 
         if (HasCompressedDisplacement(id))
         {
-            bool    isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
+            bool isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
             assert(isCompressed && dspInByte);
             dsp = compressedDsp;
         }
@@ -15630,20 +15649,13 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
         {
-            ssize_t compressedDsp;
+            // We cannot reliably predict the encoding size up front so we shouldn't
+            // have encountered a scenario marked with compressed displacement. We
+            // did predict cases that could use the small encoding for VEX scenarios
 
-            if (HasCompressedDisplacement(id))
-            {
-                bool isCompressed = TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte);
-                assert(isCompressed && dspInByte);
-                dsp = (int)compressedDsp;
-            }
-            else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
-            {
-                assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
-                dspInByte = false;
-            }
-            else
+            assert(!HasCompressedDisplacement(id));
+
+            if (!TakesEvexPrefix(id))
             {
                 dspInByte = ((signed char)dsp == (ssize_t)dsp);
             }
