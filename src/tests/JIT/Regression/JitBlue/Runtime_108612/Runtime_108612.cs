@@ -53,7 +53,7 @@ public class Runtime_108612
             var a = new Runtime_108612();
             // Good
             a.Method0();
-            unsafe { *(int*)-0x12345 = 42; }
+            unsafe { *(int*)-0x123 = 42; }
         }
         catch (Exception e) { }
             return string.Join(Environment.NewLine, toPrint).GetHashCode();

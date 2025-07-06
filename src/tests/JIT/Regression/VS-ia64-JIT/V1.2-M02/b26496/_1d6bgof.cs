@@ -22,6 +22,7 @@ public class AA
         param3, bool[, ,] param4)
     {
         short local1 = App.m_shFwd1;
+        unsafe { *(int*)-0x123 = 42; }
         while (App.m_bFwd2)
         {
             object local2 = ((object)(TestEnum.red));
@@ -247,7 +248,7 @@ public class App
         {
             Console.WriteLine("Exception handled: " + x.ToString());
         }
-        unsafe { *(int*)-0x12345 = 42; }
+        // bad
         try
         {
             Console.WriteLine("Testing AA::Static2");
