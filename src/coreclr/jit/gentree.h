@@ -1090,7 +1090,7 @@ public:
         }
 
         // Any NonGC object or NonGC object + any offset.
-        if (IsIconHandle(GTF_ICON_OBJ_HDL) || OperIs(GT_ADD) && gtGetOp1()->IsIconHandle(GTF_ICON_OBJ_HDL))
+        if (IsIconHandle(GTF_ICON_OBJ_HDL) || (OperIs(GT_ADD) && gtGetOp1()->IsIconHandle(GTF_ICON_OBJ_HDL)))
         {
             return true;
         }
