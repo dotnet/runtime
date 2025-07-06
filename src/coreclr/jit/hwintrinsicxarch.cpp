@@ -273,7 +273,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
                 {
                     if ((strcmp(className + 10, "8") == 0) || (strcmp(className + 10, "16") == 0))
                     {
-                        if (compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT))
+                        if (compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT))
                         {
                             return InstructionSet_AVXVNNIINT;
                         }

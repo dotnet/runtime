@@ -64,9 +64,6 @@ unsafe class Program
         bool? ExpectedAvx2 = false;
         bool? ExpectedBmi1 = false;
         bool? ExpectedBmi2 = false;
-        bool? ExpectedAvxVnniInt = false;
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedAvx10v2 = false;
         bool? ExpectedF16c = false;
         bool? ExpectedFma = false;
         bool? ExpectedLzcnt = false;
@@ -82,9 +79,12 @@ unsafe class Program
         bool? ExpectedAvx512Fp16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
         bool? ExpectedAvx512Vp2intersect = false;
         bool? ExpectedAvxIfma = false;
         bool? ExpectedAvxVnni = false;
+        bool? ExpectedAvxVnniInt = false;
+        bool? ExpectedAvxVnniIntV512 = false;
         bool? ExpectedGfniV256 = false;
         bool? ExpectedGfniV512 = false;
         bool? ExpectedAesV256 = false;
@@ -109,9 +109,6 @@ unsafe class Program
         bool? ExpectedAvx2 = false;
         bool? ExpectedBmi1 = false;
         bool? ExpectedBmi2 = false;
-        bool? ExpectedAvxVnniInt = false;
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedAvx10v2 = false;
         bool? ExpectedF16c = false;
         bool? ExpectedFma = false;
         bool? ExpectedLzcnt = false;
@@ -127,9 +124,12 @@ unsafe class Program
         bool? ExpectedAvx512Fp16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
         bool? ExpectedAvx512Vp2intersect = false;
         bool? ExpectedAvxIfma = false;
         bool? ExpectedAvxVnni = false;
+        bool? ExpectedAvxVnniInt = false;
+        bool? ExpectedAvxVnniIntV512 = false;
         bool? ExpectedGfniV256 = false;
         bool? ExpectedGfniV512 = false;
         bool? ExpectedAesV256 = false;
@@ -175,12 +175,12 @@ unsafe class Program
         bool? ExpectedAvx512Fp16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
         bool? ExpectedAvx512Vp2intersect = false;
+        bool? ExpectedAvxVnniIntV512 = false;
         bool? ExpectedGfniV512 = false;
         bool? ExpectedAesV512 = false;
         bool? ExpectedPclmulqdqV512 = false;
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedAvx10v2 = false;
 #elif AVX_INTRINSICS_NO_AVX2
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -217,15 +217,15 @@ unsafe class Program
         bool? ExpectedAvx512Fp16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
         bool? ExpectedAvx512Vp2intersect = false;
         bool? ExpectedAvxIfma = false;
         bool? ExpectedAvxVnni = false;
+        bool? ExpectedAvxVnniInt = false;
+        bool? ExpectedAvxVnniIntV512 = false;
         bool? ExpectedGfniV512 = false;
         bool? ExpectedAesV512 = false;
         bool? ExpectedPclmulqdqV512 = false;
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedAvxVnniInt = false;
-        bool? ExpectedAvx10v2 = false;
 #elif AVX2_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -265,12 +265,12 @@ unsafe class Program
         bool? ExpectedAvx512Fp16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
         bool? ExpectedAvx512Vp2intersect = false;
+        bool? ExpectedAvxVnniIntV512 = false;
         bool? ExpectedGfniV512 = false;
         bool? ExpectedAesV512 = false;
         bool? ExpectedPclmulqdqV512 = false;
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedAvx10v2 = false;
 #elif AVX512_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -297,11 +297,14 @@ unsafe class Program
         bool? ExpectedAvx512Fp16 = null;
         bool? ExpectedAvx10v1 = null;
         bool? ExpectedAvx10v1V512 = null;
+        bool? ExpectedAvx10v2 = null;
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedAvx512Vp2intersect = null;
         bool? ExpectedAvxIfma = null;
         bool? ExpectedAvxVnni = null;
+        bool? ExpectedAvxVnniInt = null;
+        bool? ExpectedAvxVnniIntV512 = null;
         bool? ExpectedGfni = null;
         bool? ExpectedGfniV256 = null;
         bool? ExpectedGfniV512 = null;
@@ -312,10 +315,6 @@ unsafe class Program
         bool? ExpectedPclmulqdqV512 = null;
         bool? ExpectedWaitPkg = null;
         bool? ExpectedX86Serialize = null;
-
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedAvxVnniInt = false;
-        bool? ExpectedAvx10v2 = false;
 #elif AVX10v2_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -328,8 +327,6 @@ unsafe class Program
         bool? ExpectedBmi2 = true;
         bool? ExpectedF16c = true;
         bool? ExpectedFma = true;
-        bool? ExpectedAvxVnniIntV512 = true;
-        bool? ExpectedAvx10v2 = true;
         bool? ExpectedLzcnt = true;
         bool? ExpectedAvx512F = true;
         bool? ExpectedAvx512BW = true;
@@ -343,12 +340,14 @@ unsafe class Program
         bool? ExpectedAvx512Fp16 = true;
         bool? ExpectedAvx10v1 = true;
         bool? ExpectedAvx10v1V512 = true;
+        bool? ExpectedAvx10v2 = true;
+        bool? ExpectedAvxVnni = true;
+        bool? ExpectedAvxVnniIntV512 = true;
 
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedAvx512Vp2intersect = null;
         bool? ExpectedAvxIfma = null;
-        bool? ExpectedAvxVnni = null;
         bool? ExpectedGfni = null;
         bool? ExpectedGfniV256 = null;
         bool? ExpectedGfniV512 = null;
