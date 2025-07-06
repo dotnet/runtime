@@ -6088,38 +6088,38 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> AbsoluteDifferenceAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> AbsoluteDifferenceAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
-        public static System.Numerics.Vector<short> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<int> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
-        public static System.Numerics.Vector<long> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<uint> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
-        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
 
-        public static System.Numerics.Vector<short> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<int> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
-        public static System.Numerics.Vector<long> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<uint> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
-        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
 
-        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningLower(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningLower(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
-        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningLower(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningLower(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningLower(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
-        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningLower(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
 
-        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
-        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
-        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
 
-        public static System.Numerics.Vector<uint> AddCarryWideningLower(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
-        public static System.Numerics.Vector<ulong> AddCarryWideningLower(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
-        public static System.Numerics.Vector<uint> AddCarryWideningUpper(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
-        public static System.Numerics.Vector<ulong> AddCarryWideningUpper(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<uint> AddCarryWideningEven(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> AddCarryWideningEven(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<uint> AddCarryWideningOdd(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> AddCarryWideningOdd(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
 
         public static System.Numerics.Vector<byte> AddHighNarrowingEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<short> AddHighNarrowingEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
