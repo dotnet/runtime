@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO.Pipes;
+using System.Threading;
 using Xunit;
 
 namespace System.IO.Tests
@@ -256,17 +257,17 @@ namespace System.IO.Tests
             var pipeName = GetNamedPipeServerStreamName();
 
             using var server = new NamedPipeServerStream(pipeName);
-            var connected = false;
-            var connectResult = server.BeginWaitForConnection(_ => { connected = true; }, state: null);
+            var connectedEvent = new ManualResetEventSlim(initialState: false);
+            var connectResult = server.BeginWaitForConnection(_ => { connectedEvent.Set(); }, state: null);
 
             Assert.True(Exists(@$"\\.\pipe\{pipeName}"));
 
             using var client = new NamedPipeClientStream(pipeName);
-            client.Connect(timeout: 0);
+            client.Connect(timeout: 1000);
 
             server.EndWaitForConnection(connectResult);
 
-            Assert.True(connected);
+            Assert.True(connectedEvent.Wait(millisecondsTimeout: 1000));
         }
 
         #endregion
