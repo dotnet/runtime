@@ -175,13 +175,13 @@ namespace Internal.TypeSystem
         }
 
         // This dictionary is in every scenario - create it eagerly
-        private LowLevelDictionary<RuntimeTypeHandle, TypeDesc> _runtimeTypeHandleResolutionCache =
-             new LowLevelDictionary<RuntimeTypeHandle, TypeDesc>();
+        private Dictionary<IntPtr, TypeDesc> _runtimeTypeHandleResolutionCache =
+             new Dictionary<IntPtr, TypeDesc>();
 
         public TypeDesc ResolveRuntimeTypeHandle(RuntimeTypeHandle rtth)
         {
             TypeDesc returnedType;
-            if (_runtimeTypeHandleResolutionCache.TryGetValue(rtth, out returnedType))
+            if (_runtimeTypeHandleResolutionCache.TryGetValue(rtth.Value, out returnedType))
                 return returnedType;
 
             if (rtth.Equals(CanonType.RuntimeTypeHandle))
@@ -271,7 +271,7 @@ namespace Internal.TypeSystem
                     returnedType.SetRuntimeTypeHandleUnsafe(rtth);
             }
 
-            _runtimeTypeHandleResolutionCache.Add(rtth, returnedType);
+            _runtimeTypeHandleResolutionCache.Add(rtth.Value, returnedType);
 
             return returnedType.WithDebugName();
         }

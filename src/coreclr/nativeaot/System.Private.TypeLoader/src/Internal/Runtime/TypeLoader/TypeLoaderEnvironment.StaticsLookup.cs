@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using Internal.NativeFormat;
@@ -19,7 +20,7 @@ namespace Internal.Runtime.TypeLoader
 
         // Counter to keep track of generated offsets for TLS cells of dynamic types;
         private LowLevelDictionary<IntPtr, uint> _maxThreadLocalIndex = new LowLevelDictionary<IntPtr, uint>();
-        private LowLevelDictionary<IntPtr, LowLevelDictionary<uint, IntPtr>> _dynamicGenericsThreadStaticDescs = new LowLevelDictionary<IntPtr, LowLevelDictionary<uint, IntPtr>>();
+        private Dictionary<IntPtr, LowLevelDictionary<uint, IntPtr>> _dynamicGenericsThreadStaticDescs = new Dictionary<IntPtr, LowLevelDictionary<uint, IntPtr>>();
 
         // Various functions in static access need to create permanent pointers for use by thread static lookup.
         #region GC/Non-GC Statics
@@ -170,10 +171,8 @@ namespace Internal.Runtime.TypeLoader
             _threadStaticsLock.Enter();
             try
             {
-                if (!_dynamicGenericsThreadStaticDescs.TryGetValue(typeManager, out LowLevelDictionary<uint, IntPtr> gcDescs))
-                {
-                    _dynamicGenericsThreadStaticDescs.Add(typeManager, gcDescs = new LowLevelDictionary<uint, IntPtr>());
-                }
+                LowLevelDictionary<uint, IntPtr>? gcDescs = CollectionsMarshal.GetValueRefOrAddDefault(_dynamicGenericsThreadStaticDescs, typeManager, out _);
+                gcDescs ??= new LowLevelDictionary<uint, nint>();
                 gcDescs.Add(offsetValue, gcDesc);
                 registered = true;
             }

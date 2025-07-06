@@ -109,7 +109,7 @@ namespace Internal.Runtime.TypeLoader
         // thread safety. Using ThreadStatic instead of a lock is ok as long as the NativeReader class is
         // small enough in size (which is the case today).
         [ThreadStatic]
-        private static LowLevelDictionary<TypeManagerHandle, NativeReader> t_moduleNativeReaders;
+        private static Dictionary<IntPtr, NativeReader> t_moduleNativeReaders;
 
         // Eager initialization called from LibraryInitializer for the assembly.
         internal static void Initialize()
@@ -190,10 +190,10 @@ namespace Internal.Runtime.TypeLoader
         {
             Debug.Assert(!moduleHandle.IsNull);
 
-            t_moduleNativeReaders ??= new LowLevelDictionary<TypeManagerHandle, NativeReader>();
+            t_moduleNativeReaders ??= new Dictionary<IntPtr, NativeReader>();
 
             NativeReader result;
-            if (t_moduleNativeReaders.TryGetValue(moduleHandle, out result))
+            if (t_moduleNativeReaders.TryGetValue(moduleHandle.GetIntPtrUNSAFE(), out result))
                 return result;
 
             byte* pBlob;
@@ -201,7 +201,7 @@ namespace Internal.Runtime.TypeLoader
             if (RuntimeAugments.FindBlob(moduleHandle, (int)ReflectionMapBlob.NativeLayoutInfo, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
                 result = new NativeReader(pBlob, cbBlob);
 
-            t_moduleNativeReaders.Add(moduleHandle, result);
+            t_moduleNativeReaders.Add(moduleHandle.GetIntPtrUNSAFE(), result);
             return result;
         }
 
