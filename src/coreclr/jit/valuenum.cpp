@@ -12176,6 +12176,20 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
         return false;
     }
 
+    // Ignore BYREF->I_IMPL casts when we look for object handles.
+    VNFuncApp funcApp;
+    if ((vnStore->TypeOfVN(treeVN) == TYP_I_IMPL) && vnStore->GetVNFunc(treeVN, &funcApp) &&
+        (funcApp.m_func == VNF_Cast))
+    {
+        var_types castToType;
+        bool      srcIsUnsigned;
+        vnStore->GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+        if ((castToType == TYP_I_IMPL) && varTypeIsGC(vnStore->TypeOfVN(funcApp.m_args[0])))
+        {
+            treeVN = funcApp.m_args[0];
+        }
+    }
+
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&treeVN, &offset);
 
