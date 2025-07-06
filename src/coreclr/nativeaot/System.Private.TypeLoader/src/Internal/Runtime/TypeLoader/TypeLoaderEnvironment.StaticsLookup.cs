@@ -19,8 +19,8 @@ namespace Internal.Runtime.TypeLoader
         private Lock _threadStaticsLock = new Lock(useTrivialWaits: true);
 
         // Counter to keep track of generated offsets for TLS cells of dynamic types;
-        private LowLevelDictionary<IntPtr, uint> _maxThreadLocalIndex = new LowLevelDictionary<IntPtr, uint>();
-        private Dictionary<IntPtr, LowLevelDictionary<uint, IntPtr>> _dynamicGenericsThreadStaticDescs = new Dictionary<IntPtr, LowLevelDictionary<uint, IntPtr>>();
+        private Dictionary<IntPtr, IntPtr> _maxThreadLocalIndex = new Dictionary<IntPtr, IntPtr>();
+        private Dictionary<IntPtr, Dictionary<IntPtr, IntPtr>> _dynamicGenericsThreadStaticDescs = new Dictionary<IntPtr, Dictionary<IntPtr, IntPtr>>();
 
         // Various functions in static access need to create permanent pointers for use by thread static lookup.
         #region GC/Non-GC Statics
@@ -143,7 +143,7 @@ namespace Internal.Runtime.TypeLoader
             return IntPtr.Zero;
         }
 
-        public IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, uint index)
+        public IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, nint index)
         {
             using (_threadStaticsLock.EnterScope())
             {
@@ -153,12 +153,13 @@ namespace Internal.Runtime.TypeLoader
 
         public uint GetNextThreadStaticsOffsetValue(TypeManagerHandle typeManagerHandle)
         {
-            if (!_maxThreadLocalIndex.TryGetValue(typeManagerHandle.GetIntPtrUNSAFE(), out uint result))
-                result = (uint)RuntimeAugments.GetHighestStaticThreadStaticIndex(typeManagerHandle);
+            if (!_maxThreadLocalIndex.TryGetValue(typeManagerHandle.GetIntPtrUNSAFE(), out nint result))
+                result = RuntimeAugments.GetHighestStaticThreadStaticIndex(typeManagerHandle);
 
-            _maxThreadLocalIndex[typeManagerHandle.GetIntPtrUNSAFE()] = checked(++result);
+            uint uintResult = (uint)(nuint)result;
+            _maxThreadLocalIndex[typeManagerHandle.GetIntPtrUNSAFE()] = (nint)(nuint)checked(++uintResult);
 
-            return result;
+            return uintResult;
         }
 
         public void RegisterDynamicThreadStaticsInfo(RuntimeTypeHandle runtimeTypeHandle, uint offsetValue, IntPtr gcDesc)
@@ -171,18 +172,18 @@ namespace Internal.Runtime.TypeLoader
             _threadStaticsLock.Enter();
             try
             {
-                LowLevelDictionary<uint, IntPtr>? gcDescs = CollectionsMarshal.GetValueRefOrAddDefault(_dynamicGenericsThreadStaticDescs, typeManager, out _);
-                gcDescs ??= new LowLevelDictionary<uint, nint>();
-                gcDescs.Add(offsetValue, gcDesc);
+                Dictionary<IntPtr, IntPtr>? gcDescs = CollectionsMarshal.GetValueRefOrAddDefault(_dynamicGenericsThreadStaticDescs, typeManager, out _);
+                gcDescs ??= new Dictionary<IntPtr, IntPtr>();
+                gcDescs.Add((int)offsetValue, gcDesc);
                 registered = true;
             }
             finally
             {
                 if (!registered)
                 {
-                    if (_dynamicGenericsThreadStaticDescs.TryGetValue(typeManager, out LowLevelDictionary<uint, IntPtr> gcDescs))
+                    if (_dynamicGenericsThreadStaticDescs.TryGetValue(typeManager, out Dictionary<IntPtr, IntPtr> gcDescs))
                     {
-                        gcDescs.Remove(offsetValue);
+                        gcDescs.Remove((int)offsetValue);
                     }
                 }
 

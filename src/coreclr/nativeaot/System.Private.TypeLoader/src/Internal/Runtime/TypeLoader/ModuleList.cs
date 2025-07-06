@@ -94,15 +94,15 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Map of module handles to indices within the Modules array.
         /// </summary>
-        public readonly LowLevelDictionary<TypeManagerHandle, int> HandleToModuleIndex;
+        public readonly Dictionary<IntPtr, IntPtr> HandleToModuleIndex;
 
         internal ModuleMap(ModuleInfo[] modules)
         {
             Modules = modules;
-            HandleToModuleIndex = new LowLevelDictionary<TypeManagerHandle, int>();
+            HandleToModuleIndex = new Dictionary<IntPtr, IntPtr>();
             for (int moduleIndex = 0; moduleIndex < Modules.Length; moduleIndex++)
             {
-                HandleToModuleIndex.Add(Modules[moduleIndex].Handle, moduleIndex);
+                HandleToModuleIndex.Add(Modules[moduleIndex].Handle.GetIntPtrUNSAFE(), moduleIndex);
             }
         }
     }
@@ -159,7 +159,7 @@ namespace Internal.Runtime.TypeLoader
         /// Preferred module index in the array, -1 when none (in such case the array is enumerated
         /// in its natural order).
         /// </summary>
-        private int _preferredIndex;
+        private nint _preferredIndex;
 
         /// <summary>
         /// Enumeration step index initially set to -1 (so that the first MoveNext increments it to 0).
@@ -184,7 +184,7 @@ namespace Internal.Runtime.TypeLoader
             _currentModule = null;
 
             if (!preferredModuleHandle.IsNull &&
-                !moduleMap.HandleToModuleIndex.TryGetValue(preferredModuleHandle, out _preferredIndex))
+                !moduleMap.HandleToModuleIndex.TryGetValue(preferredModuleHandle.GetIntPtrUNSAFE(), out _preferredIndex))
             {
                 Environment.FailFast("Invalid module requested in enumeration: " + preferredModuleHandle.LowLevelToString());
             }
@@ -205,7 +205,7 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 _iterationIndex++;
-                int moduleIndex = _iterationIndex;
+                nint moduleIndex = _iterationIndex;
                 if (moduleIndex <= _preferredIndex)
                 {
                     // Transform the index so that the _preferredIndex is returned in first iteration
@@ -292,7 +292,7 @@ namespace Internal.Runtime.TypeLoader
         public NativeFormatModuleInfo GetModuleInfoByHandle(TypeManagerHandle moduleHandle)
         {
             ModuleMap moduleMap = _loadedModuleMap;
-            return (NativeFormatModuleInfo)moduleMap.Modules[moduleMap.HandleToModuleIndex[moduleHandle]];
+            return (NativeFormatModuleInfo)moduleMap.Modules[moduleMap.HandleToModuleIndex[moduleHandle.GetIntPtrUNSAFE()]];
         }
 
         /// <summary>
@@ -304,8 +304,7 @@ namespace Internal.Runtime.TypeLoader
         public bool TryGetModuleInfoByHandle(TypeManagerHandle moduleHandle, out ModuleInfo moduleInfo)
         {
             ModuleMap moduleMap = _loadedModuleMap;
-            int moduleIndex;
-            if (moduleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out moduleIndex))
+            if (moduleMap.HandleToModuleIndex.TryGetValue(moduleHandle.GetIntPtrUNSAFE(), out IntPtr moduleIndex))
             {
                 moduleInfo = moduleMap.Modules[moduleIndex];
                 return true;
@@ -322,8 +321,7 @@ namespace Internal.Runtime.TypeLoader
         public MetadataReader GetMetadataReaderForModule(TypeManagerHandle moduleHandle)
         {
             ModuleMap moduleMap = _loadedModuleMap;
-            int moduleIndex;
-            if (moduleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out moduleIndex))
+            if (moduleMap.HandleToModuleIndex.TryGetValue(moduleHandle.GetIntPtrUNSAFE(), out IntPtr moduleIndex))
             {
                 NativeFormatModuleInfo moduleInfo = moduleMap.Modules[moduleIndex] as NativeFormatModuleInfo;
                 if (moduleInfo != null)
