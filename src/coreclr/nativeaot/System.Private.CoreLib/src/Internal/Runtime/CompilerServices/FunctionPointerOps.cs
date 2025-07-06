@@ -49,7 +49,7 @@ namespace Internal.Runtime.CompilerServices
             public IntPtr InstantiationArgument;
         }
 
-        private static LowLevelDictionary<GenericMethodDescriptorInfo, IntPtr> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, IntPtr>();
+        private static Dictionary<GenericMethodDescriptorInfo, IntPtr> s_genericFunctionPointerDictionary = new Dictionary<GenericMethodDescriptorInfo, IntPtr>();
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
@@ -66,14 +66,13 @@ namespace Internal.Runtime.CompilerServices
                     InstantiationArgument = instantiationArgument
                 };
 
-                if (!s_genericFunctionPointerDictionary.TryGetValue(key, out IntPtr descriptor))
+                ref IntPtr descriptor = ref CollectionsMarshal.GetValueRefOrAddDefault(s_genericFunctionPointerDictionary, key, out bool exists);
+                if (!exists)
                 {
                     descriptor = (IntPtr)NativeMemory.Alloc((uint)sizeof(GenericMethodDescriptor));
 
                     *(GenericMethodDescriptor*)descriptor =
                         new GenericMethodDescriptor(canonFunctionPointer, instantiationArgument);
-
-                    s_genericFunctionPointerDictionary.LookupOrAdd(key, descriptor);
                 }
 
                 GenericMethodDescriptor* genericFunctionPointer = (GenericMethodDescriptor*)descriptor;
