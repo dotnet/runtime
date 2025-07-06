@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 //==================================================================================================================
 // Dependency note:
@@ -133,14 +134,12 @@ namespace Internal.Reflection.Extensions.NonPortable
                     //
                     //   - Cache the results of retrieving the usage attribute.
                     //
-                    LowLevelDictionary<TypeUnificationKey, AttributeUsageAttribute> encounteredTypes = new LowLevelDictionary<TypeUnificationKey, AttributeUsageAttribute>(11);
+                    Dictionary<Type, AttributeUsageAttribute> encounteredTypes = new Dictionary<Type, AttributeUsageAttribute>();
 
                     for (int i = 0; i < immediateResults.Count; i++)
                     {
                         Type attributeType = immediateResults[i].AttributeType;
-                        TypeUnificationKey attributeTypeKey = new TypeUnificationKey(attributeType);
-                        if (!encounteredTypes.TryGetValue(attributeTypeKey, out _))
-                            encounteredTypes.Add(attributeTypeKey, null);
+                        encounteredTypes.TryAdd(attributeType, null);
                     }
 
                     do
@@ -150,20 +149,18 @@ namespace Internal.Reflection.Extensions.NonPortable
                             Type attributeType = cad.AttributeType;
                             if (!passesFilter(attributeType))
                                 continue;
-                            AttributeUsageAttribute? usage;
-                            TypeUnificationKey attributeTypeKey = new TypeUnificationKey(attributeType);
-                            if (!encounteredTypes.TryGetValue(attributeTypeKey, out usage))
+
+                            ref AttributeUsageAttribute? usage = ref CollectionsMarshal.GetValueRefOrAddDefault(encounteredTypes, attributeType, out bool exists);
+                            if (!exists)
                             {
                                 // Type was not encountered before. Only include it if it is inheritable.
                                 usage = GetAttributeUsage(attributeType);
-                                encounteredTypes.Add(attributeTypeKey, usage);
                                 if (usage.Inherited)
                                     yield return cad;
                             }
                             else
                             {
                                 usage ??= GetAttributeUsage(attributeType);
-                                encounteredTypes[attributeTypeKey] = usage;
                                 // Type was encountered at a lower level. Only include it if its inheritable AND allowMultiple.
                                 if (usage.Inherited && usage.AllowMultiple)
                                     yield return cad;
