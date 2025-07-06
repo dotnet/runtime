@@ -15597,7 +15597,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
+#if FEATURE_FIXED_OUT_ARGS
+            // We can only predict compressed displacement for FEATURE_FIXED_OUT_ARGS
             assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
+#endif
+
             dspInByte = false;
         }
         else
