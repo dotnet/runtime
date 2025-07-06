@@ -7,7 +7,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Metadata.NativeFormat;
-using Internal.Reflection.Core;
 
 namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {
@@ -15,9 +14,8 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
     {
         internal sealed override RuntimeTypeInfo GetTypeCoreCaseInsensitive(string fullName)
         {
-            LowLevelDictionary<string, QHandle> dict = CaseInsensitiveTypeDictionary;
-            QHandle qualifiedHandle;
-            if (!dict.TryGetValue(fullName.ToLowerInvariant(), out qualifiedHandle))
+            Dictionary<string, QHandle> dict = CaseInsensitiveTypeDictionary;
+            if (!dict.TryGetValue(fullName, out QHandle qualifiedHandle))
             {
                 return null;
             }
@@ -48,7 +46,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
         }
 
-        private LowLevelDictionary<string, QHandle> CaseInsensitiveTypeDictionary
+        private Dictionary<string, QHandle> CaseInsensitiveTypeDictionary
         {
             get
             {
@@ -56,7 +54,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
         }
 
-        private LowLevelDictionary<string, QHandle> CreateCaseInsensitiveTypeDictionary()
+        private Dictionary<string, QHandle> CreateCaseInsensitiveTypeDictionary()
         {
             //
             // Collect all of the *non-nested* types and type-forwards.
@@ -70,7 +68,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             // same issue.)
             //
 
-            LowLevelDictionary<string, QHandle> dict = new LowLevelDictionary<string, QHandle>();
+            Dictionary<string, QHandle> dict = new Dictionary<string, QHandle>(StringComparer.OrdinalIgnoreCase);
 
             MetadataReader reader = Scope.Reader;
             ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
@@ -87,25 +85,19 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 foreach (TypeDefinitionHandle typeDefinitionHandle in namespaceDefinition.TypeDefinitions)
                 {
                     string fullName = ns + typeDefinitionHandle.GetTypeDefinition(reader).Name.GetString(reader).ToLowerInvariant();
-                    if (!dict.TryGetValue(fullName, out _))
-                    {
-                        dict.Add(fullName, new QHandle(reader, typeDefinitionHandle));
-                    }
+                    dict.TryAdd(fullName, new QHandle(reader, typeDefinitionHandle));
                 }
 
                 foreach (TypeForwarderHandle typeForwarderHandle in namespaceDefinition.TypeForwarders)
                 {
                     string fullName = ns + typeForwarderHandle.GetTypeForwarder(reader).Name.GetString(reader).ToLowerInvariant();
-                    if (!dict.TryGetValue(fullName, out _))
-                    {
-                        dict.Add(fullName, new QHandle(reader, typeForwarderHandle));
-                    }
+                    dict.TryAdd(fullName, new QHandle(reader, typeForwarderHandle));
                 }
             }
 
             return dict;
         }
 
-        private volatile LowLevelDictionary<string, QHandle> _lazyCaseInsensitiveTypeDictionary;
+        private volatile Dictionary<string, QHandle> _lazyCaseInsensitiveTypeDictionary;
     }
 }

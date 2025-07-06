@@ -75,7 +75,7 @@ namespace Internal.Runtime.TypeLoader
         // To minimize the generic instantiations of Dictionary in CoreLib, use the instantiation <(IntPtr, IntPtr), IntPtr>
         // that's shared with other instances.
         private Dictionary<(IntPtr DeclaringType, IntPtr FieldHandle), IntPtr> _runtimeFieldHandles = new Dictionary<(IntPtr, IntPtr), IntPtr>();
-        private LowLevelDictionary<RuntimeMethodHandleKey, RuntimeMethodHandle> _runtimeMethodHandles = new LowLevelDictionary<RuntimeMethodHandleKey, RuntimeMethodHandle>();
+        private Dictionary<RuntimeMethodHandleKey, RuntimeMethodHandle> _runtimeMethodHandles = new Dictionary<RuntimeMethodHandleKey, RuntimeMethodHandle>();
         #endregion
 
 
