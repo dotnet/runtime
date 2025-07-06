@@ -1084,7 +1084,18 @@ public:
 
     bool IsNotGcDef() const
     {
-        return IsIntegralConst(0) || OperIs(GT_LCL_ADDR);
+        if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR))
+        {
+            return true;
+        }
+
+        // Any NonGC object or NonGC object + any offset.
+        if (IsIconHandle(GTF_ICON_OBJ_HDL) || OperIs(GT_ADD) && gtGetOp1()->IsIconHandle(GTF_ICON_OBJ_HDL))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     // LIR flags
