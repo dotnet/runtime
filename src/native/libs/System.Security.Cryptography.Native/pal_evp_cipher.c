@@ -8,6 +8,8 @@
 #define SUCCESS 1
 #define KEEP_CURRENT_DIRECTION -1
 
+c_static_assert(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW == 1);
+
 EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, unsigned char* iv, int32_t enc)
 {
