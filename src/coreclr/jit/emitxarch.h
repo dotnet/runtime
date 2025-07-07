@@ -121,6 +121,8 @@ static bool IsSSEOrAVXInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsKMOVInstruction(instruction ins);
+static bool IsAVXVNNIFamilyInstruction(instruction ins);
+static bool IsAVXVNNIINTInstruction(instruction ins);
 static bool Is3OpRmwInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
