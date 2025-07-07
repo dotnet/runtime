@@ -166,6 +166,6 @@
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
 
-#ifndef TARGET_WASM
+#ifdef TARGET_WASM
 #define PEIMAGE_FLAT_LAYOUT_ONLY
 #endif // !TARGET_WASM

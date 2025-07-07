@@ -70,17 +70,14 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
 
     set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
     set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+    set(LIB_CORDBEE cordbee_wks)
+    set(LIB_INTEROP interop)
+    set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-    set(LIB_CORDBEE cordbee_wks)
-    set(LIB_INTEROP interop)
-    set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
-endif (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared

@@ -41,7 +41,6 @@ endif(DEFINED CLR_CMAKE_ICU_DIR)
 
 if (CLR_CMAKE_TARGET_ARCH_WASM)
     add_compile_options(-fwasm-exceptions)
-    add_link_options(-fwasm-exceptions -sEXIT_RUNTIME=1)
 endif()
 
 #----------------------------------------------------
