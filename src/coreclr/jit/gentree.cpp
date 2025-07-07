@@ -32541,8 +32541,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
 #if defined(TARGET_XARCH)
         case NI_AVX_Compare:
-        case NI_AVX512_Compare:
         case NI_AVX_CompareScalar:
+        case NI_AVX512_CompareMask:
         {
             assert(tree->GetOperandCount() == 3);
 

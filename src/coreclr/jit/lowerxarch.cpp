@@ -3017,8 +3017,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                             switch (mskIntrinsic)
                             {
                                 case NI_AVX_Compare:
-                                case NI_AVX512_Compare:
                                 case NI_AVX_CompareScalar:
+                                case NI_AVX512_CompareMask:
                                 {
                                     assert(mskIntrin->GetOperandCount() == 3);
 

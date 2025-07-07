@@ -468,7 +468,6 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
     {
         case NI_AVX_Compare:
         case NI_AVX_CompareScalar:
-        case NI_AVX512_Compare:
         case NI_AVX512_CompareMask:
         case NI_AVX10v2_MinMaxScalar:
         case NI_AVX10v2_MinMax:
