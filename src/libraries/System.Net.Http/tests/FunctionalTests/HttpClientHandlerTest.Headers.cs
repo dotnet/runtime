@@ -596,11 +596,14 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
-        [InlineData(false, "test\nxwow\nmore\n")]
-        [InlineData(false, "test\rwow\rmore\r\n")]
-        [InlineData(true, "one\0two\0three\0")]
-        public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData(false, "test\nxwow\nmore\n", false)]
+        [InlineData(false, "test\rwow\rmore\r\n", false)]
+        [InlineData(true, "one\0two\0three\0", false)]
+        [InlineData(false, "test\nxwow\nmore\n", true)]
+        [InlineData(false, "test\rwow\rmore\r\n", true)]
+        [InlineData(true, "one\0two\0three\0", true)]
+        public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value, bool testTrailers)
         {
             if (!testHttp11 && UseVersion == HttpVersion.Version11)
             {
@@ -620,12 +623,30 @@ namespace System.Net.Http.Functional.Tests
                     };
 
                     using HttpResponseMessage response = await client.SendAsync(request);
-                    Assert.Equal(expectedValue, response.Headers.GetValues("test").Single());
+                    HttpResponseHeaders headerCollection = testTrailers ? response.TrailingHeaders : response.Headers;
+                    Assert.Equal(expectedValue, headerCollection.GetValues("test").Single());
                 },
                 async server =>
                 {
-                    List<HttpHeaderData> headers = [new HttpHeaderData("test", value)];
-                    HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(additionalHeaders: headers);
+                    List<HttpHeaderData>? headers = testTrailers ? null : [new HttpHeaderData("test", value)];
+                    List<HttpHeaderData>? trailers = testTrailers ? [new HttpHeaderData("test", value)] : null;
+                    string content = "hello";
+
+                    if (testTrailers && UseVersion == HttpVersion.Version11)
+                    {
+                        headers = [new HttpHeaderData("Transfer-Encoding", "chunked")];
+                        content = $"{content.Length:X}\r\n{content}\r\n";
+                    }
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync(headers: headers, content: content, isFinal: trailers is null);
+                        if (trailers is { })
+                        {
+                            await connection.SendResponseHeadersAsync(headers: trailers, isTrailingHeader: true);
+                        }
+                    });
                 });
         }
     }
