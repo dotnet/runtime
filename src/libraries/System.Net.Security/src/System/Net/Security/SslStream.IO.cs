@@ -298,8 +298,13 @@ namespace System.Net.Security
 #if TARGET_OSX
                 if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
                 {
-                    Task handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, _sslAuthenticationOptions, InnerStream, cancellationToken);
+                    Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, _sslAuthenticationOptions, InnerStream, cancellationToken);
                     await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
+                    if (await handshakeTask.ConfigureAwait(false) is Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex, "Async handshake failed");
+                        throw new AuthenticationException(SR.net_auth_SSPI, ex);
+                    }
 
                     CompleteHandshake(_sslAuthenticationOptions);
                     return;

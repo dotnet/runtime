@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -61,7 +62,7 @@ namespace System.Net.Security
         private HandshakeState _handshakeState = HandshakeState.NotStarted;
         private Exception? _handshakeException;
         private readonly Stream _transportStream;
-        private TaskCompletionSource _handshakeCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
@@ -105,7 +106,7 @@ namespace System.Net.Security
             }
         }
 
-        internal Task HandshakeAsync(CancellationToken cancellationToken)
+        internal Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
             Interop.NetworkFramework.Tls.StartTlsHandshake(_connectionHandle, GCHandle.ToIntPtr(_thisHandle));
 
@@ -174,7 +175,7 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static void CompletionCallback(IntPtr context, long status)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing", "WriteAsync");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", "WriteAsync");
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 TaskCompletionSource<long> tcs = (TaskCompletionSource<long>)handle.Target!;
 
@@ -209,13 +210,21 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, long status, byte* buffer, int length)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing DecryptAsync", "ReadAsync");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing ReadAsync, status: {status}, len: {length}", "ReadAsync");
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 (TaskCompletionSource<int> tcs, Memory<byte> state) = (Tuple<TaskCompletionSource<int>, Memory<byte>>)handle.Target!;
 
-                new Span<byte>(buffer, length).CopyTo(state.Span);
+                if (status != 0)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ReadAsync failed with status: {status}", "ReadAsync");
+                    tcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status)));
+                }
+                else
+                {
+                    new Span<byte>(buffer, length).CopyTo(state.Span);
+                    tcs.TrySetResult(length);
+                }
 
-                tcs.TrySetResult(length);
                 handle.Free();
             }
         }
@@ -491,7 +500,7 @@ namespace System.Net.Security
                         break;
                     case NetworkFrameworkStatusUpdates.HandshakeFailed:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"HandshakeFailed - errorCode: {data.ToInt32()}", "StatusUpdateCallback");
-                        nwContext?.HandshakeFailed(data.ToInt32());
+                        nwContext?.ConnectionFailed(data.ToInt32());
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionReadFinished:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, $"ConnectionReadFinished - dataLength: {data.ToInt32()}", "StatusUpdateCallback");
@@ -558,16 +567,16 @@ namespace System.Net.Security
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "TLS handshake completed successfully", "HandshakeFinished");
             _handshakeState = HandshakeState.Completed;
-            _handshakeCompletionSource.SetResult();
+            _handshakeCompletionSource.TrySetResult(null);
         }
 
-        private void HandshakeFailed(int errorCode)
+        private void ConnectionFailed(int errorCode)
         {
             Exception ex = Interop.AppleCrypto.CreateExceptionForOSStatus(errorCode);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"TLS handshake failed with error code: {errorCode} ({ex.Message})", "HandshakeFailed");
             _handshakeException = ex;
             _handshakeState = HandshakeState.Failed;
-            _handshakeCompletionSource.SetException(ex);
+            _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
             _readStatus = errorCode;
         }
 
