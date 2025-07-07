@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
@@ -36,10 +37,68 @@ internal static partial class Interop
             internal static void SetTlsOptions(SafeNwHandle nwHandle, IntPtr state, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
             {
                 int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
-                Span<byte> alpn = stackalloc byte[256];
-                SerializeAlpnProtocolList(applicationProtocols, alpn);
 
-                SetTlsOptions(nwHandle, state, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
+                byte[]? buffer = null;
+                try
+                {
+
+                    const int StackAllocThreshold = 256;
+                    Span<byte> alpn = alpnLength == 0
+                        ? Span<byte>.Empty
+                        : alpnLength <= StackAllocThreshold
+                            ? stackalloc byte[StackAllocThreshold]
+                            : (buffer = ArrayPool<byte>.Shared.Rent(alpnLength));
+
+                    if (alpnLength > 0)
+                    {
+                        SerializeAlpnProtocolList(applicationProtocols!, alpn.Slice(0, alpnLength));
+                    }
+
+                    SetTlsOptions(nwHandle, state, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
+                }
+                finally
+                {
+                    if (buffer != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
+                }
+
+                //
+                // Native API accepts only a single ALPN protocol at a time
+                // (null-terminated string). We serialize all used app protocols
+                // into a single buffer in the format <len><protocol><0>
+                //
+
+                static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
+                {
+                    if (applicationProtocols is null)
+                    {
+                        return 0;
+                    }
+
+                    int protocolSize = 0;
+
+                    foreach (SslApplicationProtocol protocol in applicationProtocols)
+                    {
+                        protocolSize += protocol.Protocol.Length + 2;
+                    }
+
+                    return protocolSize;
+                }
+
+                static void SerializeAlpnProtocolList(List<SslApplicationProtocol> applicationProtocols, Span<byte> buffer)
+                {
+                    Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length);
+
+                    int offset = 0;
+                    foreach (SslApplicationProtocol protocol in applicationProtocols)
+                    {
+                        buffer[offset] = (byte)protocol.Protocol.Length; // preffix len
+                        protocol.Protocol.Span.CopyTo(buffer.Slice(offset + 1)); // ALPN
+                        buffer[offset + protocol.Protocol.Length + 1] = 0; // null-terminator
+                    }
+                }
             }
 
             // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
@@ -70,41 +129,6 @@ internal static partial class Interop
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]
             internal static partial void CopyCertChain(SafeNwHandle connection, out SafeCFArrayHandle certificates, out int count);
 
-            internal static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
-            {
-                if (applicationProtocols is null)
-                {
-                    return 0;
-                }
-
-                int protocolSize = 0;
-
-                foreach (SslApplicationProtocol protocol in applicationProtocols)
-                {
-                    protocolSize += protocol.Protocol.Length + 2;
-                }
-
-                return protocolSize;
-            }
-
-            private static void SerializeAlpnProtocolList(List<SslApplicationProtocol>? applicationProtocols, Span<byte> buffer)
-            {
-                if (applicationProtocols is null)
-                {
-                    return;
-                }
-
-                Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length);
-
-                int offset = 0;
-                foreach (SslApplicationProtocol protocol in applicationProtocols)
-                {
-                    buffer[offset++] = (byte)protocol.Protocol.Length;
-                    protocol.Protocol.Span.CopyTo(buffer.Slice(offset));
-                    offset += protocol.Protocol.Length;
-                    buffer[offset++] = 0;
-                }
-            }
         }
 
         // Status enumeration for Network Framework TLS operations
