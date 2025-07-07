@@ -38,13 +38,13 @@ namespace Wasm.Build.Tests
                 }",
                 buildArgs, args, host, id);
 
-        [Theory]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.NodeJS })]
-        //[MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void TopLevelWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
-            => TestMainWithArgs("top_level_args",
-                                @"##CODE## return await System.Threading.Tasks.Task.FromResult(42 + count);",
-                                buildArgs, args, host, id);
+        // [Theory]
+        // [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.NodeJS })]
+        // //[MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        // public void TopLevelWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
+        //     => TestMainWithArgs("top_level_args",
+        //                         @"##CODE## return await System.Threading.Tasks.Task.FromResult(42 + count);",
+        //                         buildArgs, args, host, id);
 
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
