@@ -1808,8 +1808,15 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
     const GenConditionDesc& desc = GenConditionDesc::Get(condition);
-    const bool useZU             = compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU() && !varTypeIsByte(type);
-    insOpts    instOptions       = useZU ? INS_OPTS_EVEX_zu : INS_OPTS_NONE;
+    insOpts    instOptions       = INS_OPTS_NONE;
+    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU())
+    {
+        instOptions = varTypeIsByte(type) ? INS_OPTS_NONE : INS_OPTS_EVEX_zu;
+    }
+    else
+    {
+        assert(instOptions == INS_OPTS_NONE);
+    }
 
     inst_SET(desc.jumpKind1, dstReg, instOptions);
 
@@ -1822,7 +1829,7 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     }
 
     // TODO-XArch-Apx: we can apply EVEX.ZU to avoid this movzx.
-    if (!useZU)
+    if ((instOptions == INS_OPTS_NONE) && !varTypeIsByte(type))
     {
         GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, dstReg, dstReg, /* canSkip */ false);
     }
