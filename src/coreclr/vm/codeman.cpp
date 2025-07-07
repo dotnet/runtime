@@ -3547,18 +3547,27 @@ void EEJitManager::DeleteFunctionTable(PVOID pvTableID)
 // elements.
 void EECodeGenManager::Unload(LoaderAllocator* pAllocator)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(pAllocator != NULL);
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     CrstHolder ch(&m_CodeHeapLock);
     // If we are in the middle of an enumeration, we cannot unload any code heaps.
     if (m_iteratorCount != 0)
     {
         // Record the LoaderAllocator and return.
-        LoaderAllocator** toUnload = m_delayUnload.AppendThrowing();
+        LoaderAllocator** toUnload = m_delayUnload.Append();
+        if (toUnload == NULL)
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
+                W("Failed to delay unload code heap for LoaderAllocator"));
+            return;
+        }
+
         *toUnload = pAllocator;
         return;
     }

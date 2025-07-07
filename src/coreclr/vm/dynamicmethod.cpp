@@ -930,6 +930,7 @@ void LCGMethodResolver::Reset()
     m_UsedIndCellList       = NULL;
     m_pJumpStubCache        = NULL;
     m_next                  = NULL;
+    m_delayDestroyNext      = NULL;
     m_Code                  = NULL;
 }
 

@@ -129,13 +129,11 @@ class LCGMethodResolver : public DynamicResolver
 {
     friend class DynamicMethodDesc;
     friend class DynamicMethodTable;
-    // review this to see whether the EEJitManageris the only thing to worry about
     friend class ExecutionManager;
     friend class EECodeGenManager;
     friend class EEJitManager;
     friend class InterpreterJitManager;
     friend class HostCodeHeap;
-    friend struct ExecutionManager::JumpStubCache;
 
     // We clean-up in stages due to how locks are structured.
     bool TryDestroyCodeHeapMemory();
@@ -164,7 +162,14 @@ public:
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
     void* GetRecordCodePointer()  { LIMITED_METHOD_CONTRACT; return m_recordCodePointer; }
     void SetRecordCodePointer(void* recordCodePointer) { LIMITED_METHOD_CONTRACT; m_recordCodePointer = recordCodePointer; }
-
+    DynamicMethodDesc* GetNextDynamicMethodToDestroy() { LIMITED_METHOD_CONTRACT; return m_delayDestroyNext; }
+    void SetNextDynamicMethodToDestroy(DynamicMethodDesc* next)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(next != NULL);
+        _ASSERTE(m_delayDestroyNext == NULL);
+        m_delayDestroyNext = next;
+    }
     STRINGREF GetStringLiteral(mdToken metaTok);
     STRINGREF * GetOrInternString(STRINGREF *pString);
     void AddToUsedIndCellList(BYTE * indcell);
@@ -179,26 +184,27 @@ private:
 
     struct IndCellList
     {
-        BYTE * indcell;
-        IndCellList * pNext;
+        BYTE* indcell;
+        IndCellList* pNext;
     };
 
     DynamicMethodDesc* m_pDynamicMethod;
     OBJECTHANDLE m_managedResolver;
-    BYTE *m_Code;
+    BYTE* m_Code;
     DWORD m_CodeSize;
     SigPointer m_LocalSig;
     unsigned short m_StackSize;
     CorInfoOptions m_Options;
     unsigned m_EHSize;
-    DynamicMethodTable *m_DynamicMethodTable;
-    DynamicMethodDesc *m_next;
-    void *m_recordCodePointer;
+    DynamicMethodTable* m_DynamicMethodTable;
+    DynamicMethodDesc* m_next;
+    DynamicMethodDesc* m_delayDestroyNext;
+    void* m_recordCodePointer;
     ChunkAllocator m_jitMetaHeap;
     ChunkAllocator m_jitTempData;
     DynamicStringLiteral* m_DynamicStringLiterals;
-    IndCellList * m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
-    ExecutionManager::JumpStubCache * m_pJumpStubCache;
+    IndCellList* m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
+    ExecutionManager::JumpStubCache* m_pJumpStubCache;
 
 #ifdef FEATURE_PGO
     Volatile<PgoManager*> m_pgoManager;
