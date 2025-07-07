@@ -1738,6 +1738,18 @@ namespace Mono.Linker.Steps
                     isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(method, out requiresUnreferencedCode);
                     break;
 
+                case DependencyKind.AttributeConstructor:
+                    // Attribute constructors for the System.Runtime.InteropServices.TypeMap*Attribute types should not
+                    // enforce RUC as directly accessing the attributes themselves is not valid.
+                    // They should only be accessed via the type-map APIs.
+                    // Additionally, there's no way to suppress the warnings for the linker.
+                    // By suppressing them here, they become analyzer-only, which is the expected behavior.
+                    isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(method, out requiresUnreferencedCode);
+                    if (origin.Provider is AssemblyDefinition && TypeMapHandler.IsTypeMapAttributeType(method.DeclaringType))
+                    {
+                        isReflectionAccessCoveredByRUC = false;
+                    }
+                    break;
                 default:
                     // If the method being accessed has warnings suppressed due to Requires attributes,
                     // we need to issue a warning for the reflection access. This is true even for instance
@@ -2112,7 +2124,7 @@ namespace Mono.Linker.Steps
                     reason.Kind is not DependencyKind.TypeInAssembly)
                 {
                     // Don't warn for type map attribute types. They're marked as "remove attributes" but we explicitly keep the ones needed.
-                    if (type is not { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1" or "TypeMapAssemblyTargetAttribute`1" })
+                    if (!TypeMapHandler.IsTypeMapAttributeType(type))
                         Context.LogWarning(origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName());
                 }
             }

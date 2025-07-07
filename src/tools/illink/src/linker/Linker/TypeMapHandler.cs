@@ -221,6 +221,11 @@ namespace Mono.Linker
             }
         }
 
+        public static bool IsTypeMapAttributeType(TypeDefinition type)
+        {
+            return type is { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1" or "TypeMapAssemblyTargetAttribute`1" };
+        }
+
         class TypeMapResolver(IReadOnlySet<AssemblyNameReference> assemblies)
         {
             public void Resolve(LinkContext context, TypeMapHandler manager)

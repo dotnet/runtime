@@ -763,11 +763,6 @@ namespace Mono.Linker
             if (Suppressions == null)
                 return false;
 
-            // Don't warn for RUC on assembly attributes.
-            // There's no way to suppress it.
-            if ((DiagnosticId)warningCode == DiagnosticId.RequiresUnreferencedCode && origin.Provider is AssemblyDefinition)
-                return true;
-
             return Suppressions.IsSuppressed(warningCode, origin, out _);
         }
 
