@@ -1807,8 +1807,8 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     assert(varTypeIsIntegral(type));
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
-    const GenConditionDesc& desc = GenConditionDesc::Get(condition);
-    insOpts    instOptions       = INS_OPTS_NONE;
+    const GenConditionDesc& desc        = GenConditionDesc::Get(condition);
+    insOpts                 instOptions = INS_OPTS_NONE;
     if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU())
     {
         instOptions = varTypeIsByte(type) ? INS_OPTS_NONE : INS_OPTS_EVEX_zu;
