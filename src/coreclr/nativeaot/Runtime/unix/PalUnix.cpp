@@ -983,7 +983,7 @@ UInt32_BOOL PalResetEvent(HANDLE event)
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
     size_t valueLen = 0;
-    if (!minipal_env_get_s(&valueLen, buffer, size, name, false))
+    if (!minipal_env_get_s(&valueLen, buffer, size, name))
     {
         return 0;
     }

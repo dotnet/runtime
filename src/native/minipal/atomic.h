@@ -29,8 +29,8 @@ static inline int minipal_atomic_load_int(volatile int* value)
 {
 #ifdef HOST_WINDOWS
     volatile int loaded_value = *value;
-	_ReadWriteBarrier();
-	return (int)loaded_value;
+    _ReadWriteBarrier();
+    return (int)loaded_value;
 #else
     atomic_thread_fence(memory_order_seq_cst);
     return (int)atomic_load((volatile atomic_int *)value);
@@ -48,8 +48,8 @@ static inline void* minipal_atomic_load_ptr(volatile void** ptr)
 {
 #ifdef HOST_WINDOWS
     volatile void* loaded_value = *ptr;
-	_ReadWriteBarrier();
-	return (void*)loaded_value;
+    _ReadWriteBarrier();
+    return (void*)loaded_value;
 #else
     atomic_thread_fence(memory_order_seq_cst);
     return (void*)atomic_load((volatile _Atomic(void *) *)ptr);

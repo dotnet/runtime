@@ -13,7 +13,7 @@
 #error This file uses manual memory management and must not use ARC, but ARC is enabled.
 #endif
 
-const char* SystemNative_GetEnv(const char* variable)
+char* SystemNative_GetEnv(const char* variable)
 {
     return getenv(variable);
 }

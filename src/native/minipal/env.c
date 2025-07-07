@@ -1,9 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "minipalconfig.h"
 #include <errno.h>
 #include <assert.h>
+#include <stddef.h>
 #include <ctype.h>
 #include <string.h>
 #include "minipal/env.h"
@@ -11,6 +16,10 @@
 #include "minipal/utils.h"
 #include "minipal/strings.h"
 #include "minipal/mutex.h"
+
+#if HAVE_CRT_EXTERNS_H
+#include <crt_externs.h>
+#endif
 
 /**
  * Structure representing a dynamic array of environment variable strings.
@@ -33,47 +42,208 @@ static bool g_env_loaded;
 // except when accessed from minipal_env_get_environ_unsafe.
 static EnvironmentVariables g_env;
 
+//Forward declarations.
+static char* get_system_env_unsafe(const char* name);
+static char* get_system_env(const char* name);
+static void free_system_env(char* value);
+static int get_system_env_s(size_t *required_len, char *buffer, size_t buffer_len, const char *name);
+static char** get_system_environ_unsafe(void);
+static bool put_env(EnvironmentVariables* env, char* env_s);
+
+// System environ provider.
+EnvironmentProvider g_env_system_environ_provider =
+{
+    ENV_SYSTEM_ENVIRON_PROVIDER_TYPE,
+    get_system_env_unsafe,
+    get_system_env,
+    free_system_env,
+    get_system_env_s,
+    get_system_environ_unsafe,
+    get_system_environ_unsafe,
+    NULL,
+};
+
 // Environment providers array.
 #ifdef HOST_ANDROID
-extern EnvironmentProvider g_minipal_env_system_environ_provider;
 extern EnvironmentProvider g_minipal_env_android_system_properties_provider;
 static EnvironmentProvider* g_env_providers[] =
 {
-    &g_minipal_env_system_environ_provider,
+    &g_env_system_environ_provider,
     &g_minipal_env_android_system_properties_provider
 };
 #else
 extern EnvironmentProvider g_minipal_env_system_environ_provider;
 static EnvironmentProvider* g_env_providers[] =
 {
-    &g_minipal_env_system_environ_provider
+    &g_env_system_environ_provider
 };
 #endif
 
 // Number of environment providers.
 #define g_env_providers_count ARRAY_SIZE(g_env_providers)
 
-// Forward declares.
-static minipal_mutex* atomic_load_env_lock_ptr(void);
-static bool atomic_cas_env_lock_ptr(minipal_mutex* lock);
-static bool lock_env(void);
-static void unlock_env(void);
-static bool resize_env(EnvironmentVariables* env, int new_size);
-static void destroy_env(EnvironmentVariables* env);
-static bool init_empty_env(EnvironmentVariables* env);
-static EnvironmentVariables init_env(void);
-static bool copy_env(const EnvironmentVariables* src, EnvironmentVariables* dest);
-static void assign_env(const EnvironmentVariables* src, EnvironmentVariables* dest);
-static bool merge_envs(EnvironmentVariables* src, EnvironmentVariables* dest, bool transfer_ownership);
-static const char* cache_env_string(EnvironmentVariables* env, const char* name);
-static const char* get_env(EnvironmentVariables* env, const char* name);
-static bool get_env_s(EnvironmentVariables* env, size_t* len, char* value, size_t valuesz, const char* name, bool truncate);
-static bool put_env(EnvironmentVariables* env, char* env_s);
-static bool set_env(EnvironmentVariables* env, const char* name, const char* value, bool overwrite);
-static bool unset_env(EnvironmentVariables* env, const char* name);
-static bool foreach_env(EnvironmentVariables* env, bool (*callback)(const char* env_s, void* cookie), void* cookie);
-static bool load_environ(void);
-static void unload_environ(void);
+/**
+ * @brief Retrieves the system environment variable.
+ *
+ * @return Pointer to the system environment variable, if found, NULL otherwise.
+ *
+ * @remarks
+ * - Returned system environment variable is not thread-safe.
+ */
+static char* get_system_env_unsafe(const char* name)
+{
+#if HAVE_GETENV
+    return getenv(name);
+#else
+    return NULL;
+#endif
+}
+
+/**
+ * @brief Get a copy of the value of an environment variable.
+ *
+ * @param name The name of the environment variable to get.
+ *
+ * @return Newly allocated string containing the value. Returns NULL if not found or on error.
+ *
+ * @remarks
+ * - Caller is responsible freeing the returned string.
+ */
+static char* get_system_env(const char* name)
+{
+    const char* result = get_system_env_unsafe(name);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
+    return minipal_strdup(result);
+}
+
+/**
+ * @brief Frees the memory allocated for a system environment variable value.
+ *
+ * @param value Pointer to the value to free. If NULL, no action is taken.
+ *
+ * @remarks
+ * - This function should be used to free values obtained from get_system_env.
+ */
+static void free_system_env(char* value)
+{
+    if (value != NULL)
+    {
+        free(value);
+    }
+}
+
+/**
+ * @brief Retrieves the value of an environment variable into a caller-provided buffer.
+ *
+ * This function attempts to obtain the value of the environment variable specified by name.
+ * If the variable exists, its value (including the null terminator) is copied into buffer,
+ * provided the buffer is large enough. The required length (including the null terminator) is
+ * returned in required_len. If the buffer is too small, the value is truncated, and
+ * required_len is set to the full required size.
+ *
+ * On platforms supporting `getenv_s`, that function is used. Otherwise, a portable fallback
+ * using `getenv` is provided.
+ *
+ * @param required_len  Pointer to a size_t that receives the required length of the value,
+ *                      including the null terminator. Set to 0 if the variable is not found.
+ * @param buffer        Buffer to receive the value. May be NULL if only the required length is needed.
+ * @param buffer_len    Size of the buffer in bytes.
+ * @param name          Name of the environment variable to retrieve.
+ *
+ * @return 0 on success, or an error code (EINVAL for invalid arguments, ERANGE if buffer is too small).
+ *
+ * @remarks
+ * - If buffer is NULL or buffer_len is 0, only the required length is returned in required_len.
+ * - If the environment variable does not exist, required_len is set to 0 and buffer (if provided) is set to an empty string.
+ * - If the buffer is too small, the value is truncated, @p required_len is set to the full required size, and ERANGE is returned.
+ */
+static int get_system_env_s(size_t *required_len, char *buffer, size_t buffer_len, const char *name)
+{
+#if HAVE_GETENV_S
+    return (int)getenv_s(required_len, buffer, buffer_len, name);
+#else
+    if (name == NULL || required_len == NULL || (buffer == NULL && buffer_len > 0))
+    {
+        return EINVAL;
+    }
+
+    char *value = get_system_env_unsafe(name);
+
+    size_t value_len = value ? strlen(value) : 0;
+
+    *required_len = value ? (value_len + 1) : 0;
+
+    if (buffer && buffer_len > 0)
+    {
+        if (!value)
+        {
+            buffer[0] = '\0';
+            return 0;
+        }
+
+        if (buffer_len < value_len + 1)
+        {
+            buffer[0] = '\0';
+            return ERANGE;
+        }
+
+        memcpy(buffer, value, value_len + 1);
+    }
+
+    return 0;
+#endif
+}
+
+/**
+ * @brief Retrieves the system environment variables array.
+ *
+ * @return Pointer to the system environment variables array.
+ *
+ * @remarks
+ * - Returned system environment variables array is not thread-safe.
+ */
+static char** get_system_environ_unsafe(void)
+{
+    char** sys_env;
+
+#if HAVE__NSGETENVIRON
+    sys_env = *(_NSGetEnviron());
+#elif HAVE__ENVIRON
+    sys_env = _environ;
+#else
+    extern char **environ;
+    sys_env = environ;
+#endif
+
+    return sys_env;
+}
+
+/**
+ * @brief Checks if cached env is in use or needed.
+ *
+ * This function determines if the cached environment is currently in use or needed.
+ * Mainly used as an internal optimization to have a low overhead path when only
+ * the system environment provider is used and no cache is currently loaded.
+ *
+ * @return True if cache is in use, false otherwise.
+ */
+static bool use_cached_env(void)
+{
+    // If we only have the system environment provider and nothing is loaded in cache,
+    // no need for cache unless explicitly requested.
+    bool only_system_provider = (g_env_providers_count == 1 && g_env_providers[0]->type == ENV_SYSTEM_ENVIRON_PROVIDER_TYPE);
+    if (!only_system_provider)
+    {
+        return true;
+    }
+
+    char** cached_env_data = (char**)minipal_atomic_load_ptr((volatile void **)&g_env.data);
+    return cached_env_data != NULL;
+}
 
 /**
  * @brief Atomically loads the pointer to the global environment mutex lock.
@@ -516,9 +686,7 @@ static const char* cache_env_string(EnvironmentVariables* env, const char* name)
 }
 
 /**
- * @brief Retrieves the value of an environment variable.
- *
- * If env has not been loaded prior this call, this function will not load and cache env.
+ * @brief Retrieves the value of an environment variable from cache.
  *
  * @param env   Pointer to the EnvironmentVariables structure.
  * @param name  Name of the environment variable.
@@ -531,7 +699,7 @@ static const char* cache_env_string(EnvironmentVariables* env, const char* name)
  * - Pointer is still owned by environment data block and should never be freed by caller.
  * - Function assumes exclusive access to env.
  */
-static const char* get_env(EnvironmentVariables* env, const char* name)
+static const char* find_env(EnvironmentVariables* env, const char* name)
 {
     assert(env != NULL && name != NULL);
 
@@ -568,6 +736,35 @@ static const char* get_env(EnvironmentVariables* env, const char* name)
         }
     }
 
+    return NULL;
+}
+
+/**
+ * @brief Retrieves the value of an environment variable.
+ *
+ * If env has not been loaded prior this call, this function will not load and cache env.
+ *
+ * @param env   Pointer to the EnvironmentVariables structure.
+ * @param name  Name of the environment variable.
+ *
+ * @return Pointer to the value, or NULL if not found.
+ *
+ * @remarks
+ * - Returned value is a direct pointer into environment variables data block and is only
+ *   safe to use if environment variable data block won't be changed.
+ * - Pointer is still owned by environment data block and should never be freed by caller.
+ * - Function assumes exclusive access to env.
+ */
+static const char* get_env(EnvironmentVariables* env, const char* name)
+{
+    assert(env != NULL && name != NULL);
+
+    const char* env_value = find_env(env, name);
+    if (env_value != NULL)
+    {
+        return env_value;
+    }
+
     if (g_env_loaded)
     {
         return NULL;
@@ -587,6 +784,37 @@ static const char* get_env(EnvironmentVariables* env, const char* name)
 }
 
 /**
+ * @brief Get the value of an environment variable into a caller provided buffer bypassing cache.
+ *
+ * @param len       If not NULL, receives the length of the value in bytes.
+ * @param value     Buffer receiving the value.
+ * @param valuesz   Size of the value buffer in bytes.
+ * @param name      Name of the environment variable value to get.
+ *
+ * @return true if the variable was found, false otherwise.
+ *
+ * @remarks
+ * - If the buffer is too small, value is truncated and len is set to the required size in bytes
+ *   (including null terminator) and function returns success.
+ * - If complete value fit into buffer, len includes the number copied bytes
+ *   (including the null terminator).
+ */
+static bool get_env_s_nocache(size_t* len, char* value, size_t valuesz, const char* name)
+{
+    assert(!use_cached_env());
+    assert(g_env_providers[0]->getenv_s_func != NULL);
+
+    size_t required_len = 0;
+    int result = g_env_providers[0]->getenv_s_func(&required_len, value, valuesz, name);
+    if (len != NULL)
+    {
+        *len = required_len;
+    }
+
+    return required_len > 0 ? true : false;
+}
+
+/**
  * @brief Get the value of an environment variable into a caller provided buffer.
  *
  * @param env       Pointer to the EnvironmentVariables structure.
@@ -594,18 +822,17 @@ static const char* get_env(EnvironmentVariables* env, const char* name)
  * @param value     Buffer receiving the value.
  * @param valuesz   Size of the value buffer in bytes.
  * @param name      Name of the environment variable value to get.
- * @param truncate  If true, truncates the value if it does not fit into the buffer.
  *
  * @return true if the variable was found, false otherwise.
  *
  * @remarks
- * - If the buffer is too small, value is truncated and len is set to the required
- *   size in bytes (including null terminator) and function returns success.
+ * - If the buffer is too small, len is set to the required size in bytes
+ *   (including null terminator) and function returns success.
  * - If complete value fit into buffer, len includes the number copied bytes
  *   (including the null terminator).
  * - Function assumes exclusive access to env.
  */
-static bool get_env_s(EnvironmentVariables* env, size_t* len, char* value, size_t valuesz, const char* name, bool truncate)
+static bool get_env_s(EnvironmentVariables* env, size_t* len, char* value, size_t valuesz, const char* name)
 {
     assert(env != NULL && name != NULL);
 
@@ -639,10 +866,9 @@ static bool get_env_s(EnvironmentVariables* env, size_t* len, char* value, size_
         }
         else
         {
-            if (value != NULL && valuesz > 0 && truncate)
+            if (value != NULL)
             {
-                minipal_strncpy_s(value, valuesz, env_value, valuesz - 1);
-                value[valuesz - 1] = '\0';
+                value[0] = '\0';
             }
 
             if (len != NULL)
@@ -978,11 +1204,14 @@ char** minipal_env_get_environ_unsafe(void)
 
     errno = 0;
 
-    result = (char**)minipal_atomic_load_ptr((volatile void **)&g_env.data);
-
-    if (!result)
+    if (!use_cached_env())
     {
-        errno = EINVAL;
+        assert(g_env_providers[0]->get_environ_unsafe_func != NULL);
+        result = g_env_providers[0]->get_environ_unsafe_func();
+    }
+    else
+    {
+        result = (char**)minipal_atomic_load_ptr((volatile void **)&g_env.data);
     }
 
     return result;
@@ -996,6 +1225,17 @@ char** minipal_env_get_environ(void)
     char** result = NULL;
 
     errno = 0;
+
+    if (!use_cached_env())
+    {
+        EnvironmentVariables env = init_env();
+        if (env.data == NULL)
+        {
+            errno = ENOMEM;
+        }
+
+        return env.data;
+    }
 
     if (lock_env())
     {
@@ -1053,6 +1293,12 @@ bool minipal_env_exists(const char* name)
 
     errno = 0;
 
+    if (!use_cached_env())
+    {
+        assert(g_env_providers[0]->getenv_unsafe_func != NULL);
+        return g_env_providers[0]->getenv_unsafe_func(name) != NULL;
+    }
+
     if (lock_env())
     {
         result = get_env(&g_env, name) != NULL;
@@ -1077,6 +1323,12 @@ char* minipal_env_get(const char* name)
 
     errno = 0;
 
+    if (!use_cached_env())
+    {
+        assert(g_env_providers[0]->getenv_func != NULL);
+        return g_env_providers[0]->getenv_func(name);
+    }
+
     if (lock_env())
     {
         const char* value = get_env(&g_env, name);
@@ -1090,7 +1342,7 @@ char* minipal_env_get(const char* name)
 /**
 * @see env.h
 */
-const char* minipal_env_get_unsafe(const char* name)
+char* minipal_env_get_unsafe(const char* name)
 {
     if (name == NULL)
     {
@@ -1102,19 +1354,25 @@ const char* minipal_env_get_unsafe(const char* name)
 
     errno = 0;
 
+    if (!use_cached_env())
+    {
+        assert(g_env_providers[0]->getenv_unsafe_func != NULL);
+        return g_env_providers[0]->getenv_unsafe_func(name);
+    }
+
     if (lock_env())
     {
         result = get_env(&g_env, name);
         unlock_env();
     }
 
-    return result;
+    return (char*)result;
 }
 
 /**
 * @see env.h
 */
-bool minipal_env_get_s(size_t* len, char* value, size_t valuesz, const char* name, bool truncate)
+bool minipal_env_get_s(size_t* len, char* value, size_t valuesz, const char* name)
 {
     if (name == NULL)
     {
@@ -1126,9 +1384,14 @@ bool minipal_env_get_s(size_t* len, char* value, size_t valuesz, const char* nam
 
     errno = 0;
 
+    if (!use_cached_env())
+    {
+        return get_env_s_nocache(len, value, valuesz, name);
+    }
+
     if (lock_env())
     {
-        result = get_env_s(&g_env, len, value, valuesz, name, truncate);
+        result = get_env_s(&g_env, len, value, valuesz, name);
         unlock_env();
     }
     else
@@ -1244,6 +1507,16 @@ bool minipal_env_foreach(bool (*callback)(const char* env_s, void* cookie), void
     bool result = false;
 
     errno = 0;
+
+    if (!use_cached_env())
+    {
+        EnvironmentVariables env = { 0 };
+
+        assert(g_env_providers[0]->get_environ_unsafe_func != NULL);
+        env.data = g_env_providers[0]->get_environ_unsafe_func();
+
+        return foreach_env(&env, callback, cookie);
+    }
 
     if (lock_env())
     {

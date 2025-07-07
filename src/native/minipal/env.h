@@ -25,9 +25,11 @@ typedef enum _EnvironmentProviderType
 typedef struct _EnvironmentProvider
 {
     EnvironmentProviderType type;
+    char* (*getenv_unsafe_func)(const char* name);
     char* (*getenv_func)(const char* name);
     void (*free_env_func)(char* value);
     int (*getenv_s_func)(size_t *required_len, char *buffer, size_t buffer_len, const char *name);
+    char** (*get_environ_unsafe_func)(void);
     char** (*get_environ_func)(void);
     void (*free_environ_func)(char** values);
 } EnvironmentProvider;
@@ -55,13 +57,13 @@ bool minipal_env_load_environ(void);
 void minipal_env_unload_environ(void);
 
 /**
- * @brief Get a pointer to the internal environment variable array.
+ * @brief Get a pointer to an internal environment variable array.
  *
  * @warning The returned pointer is not thread-safe and should not be modified.
  * This function should only be called from code that guarantees environment won't
  * change while using returned pointer.
  *
- * @return Pointer to the environment variable array, or NULL if environment has not been successfully loaded.
+ * @return Pointer to the environment variable array.
  *
  * @remarks
  * - Access internal environment variable array wihout doing allocs or taking locks.
@@ -128,7 +130,7 @@ char* minipal_env_get(const char* name);
  * @return String containing the value, ownership is still held by the environment and should NOT
  * be freed by caller. Returns NULL if not found or on error.
  */
-const char* minipal_env_get_unsafe(const char* name);
+char* minipal_env_get_unsafe(const char* name);
 
 /**
  * @brief Get the value of an environment variable into a user allocated buffer.
@@ -142,17 +144,16 @@ const char* minipal_env_get_unsafe(const char* name);
  * @param value     Buffer receiving the value.
  * @param valuesz   Size of the value buffer in bytes.
  * @param name      Name of the environment variable value to get.
- * @param truncate  If true, truncates the value if it does not fit into the buffer.
  *
  * @return true if the variable was found, false otherwise.
  *
  * @remarks
- * - If the buffer is too small, value is truncated and len is set to the required
- *   size in bytes (including null terminator) and function returns success.
+ * - If the buffer is too small, len is set to the required size in bytes
+ *   (including null terminator) and function returns success.
  * - If complete value fit into buffer, len includes the number copied bytes
  *   (including the null terminator).
  */
-bool minipal_env_get_s(size_t* len, char* value, size_t valuesz, const char* name, bool truncate);
+bool minipal_env_get_s(size_t* len, char* value, size_t valuesz, const char* name);
 
 /**
  * @brief Set or update an environment variable.
@@ -200,9 +201,9 @@ bool minipal_env_unset(const char* name);
  * @return true if all variables were iterated, false if iteration was stopped or on error.
  *
  * @remarks
- * - If environment has NOT been explicitly loaded, function will automatically load
+ * - If environment has NOT been explicitly loaded and cache must be used, function will automatically load
  *   environment to reduce amount of potential allocations per call.
- *   If caller would like to avoid loading environment, use minipal_env_get_environ and
+ * -  If caller would like to avoid loading environment when cache must be used, use minipal_env_get_environ and
  *   iterate over returned environment copy.
  */
 bool minipal_env_foreach(bool (*callback)(const char* env_s, void* cookie), void* cookie);

@@ -98,7 +98,7 @@ GetEnvironmentVariableA(
     else
     {
         size_t valueLength = 0;
-        if (minipal_env_get_s(&valueLength, lpBuffer, nSize, lpName, false))
+        if (minipal_env_get_s(&valueLength, lpBuffer, nSize, lpName))
         {
             // minipal_env_get_s returns the length of the value including the null terminator.
             if (valueLength > 0)

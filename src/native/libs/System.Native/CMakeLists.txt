@@ -70,10 +70,15 @@ if (CLR_CMAKE_TARGET_APPLE)
 else()
     list (APPEND NATIVE_SOURCES
         pal_autoreleasepool.c
-        pal_environment.c
         pal_searchpath.c
         pal_log.c
         pal_iossupportversion.c)
+
+    if (CLR_CMAKE_TARGET_ANDROID)
+        list (APPEND NATIVE_SOURCES pal_environment_android.c)
+    else()
+        list (APPEND NATIVE_SOURCES pal_environment.c)
+    endif()
 
     if (CLR_CMAKE_TARGET_WASI)
         list (APPEND NATIVE_SOURCES pal_console_wasi.c)

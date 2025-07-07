@@ -13,9 +13,11 @@ set(SOURCES
     xoshiro128pp.c
     log.c
     env.c
-    env-system-environ-provider.c
-    env-android-system-properties-provider.c
 )
+
+if(CLR_CMAKE_HOST_ANDROID)
+    list(APPEND SOURCES env_android.c)
+endif()
 
 # Provide an object library for scenarios where we ship static libraries
 include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})

@@ -363,8 +363,10 @@ static void free_system_properties(char** system_props)
 EnvironmentProvider g_minipal_env_android_system_properties_provider =
 {
     ENV_ANDROID_SYSTEM_PROPERTIES_PROVIDER_TYPE,
+    NULL,
     get_system_property,
     free_system_property,
+    NULL,
     NULL,
     get_system_properties,
     free_system_properties
