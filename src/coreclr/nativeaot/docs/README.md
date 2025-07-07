@@ -1,5 +1,6 @@
 # Using Native AOT
 
+- [Native AOT deployment (official documentation)](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/)
 - [Compiling applications](compiling.md)
 - [Building native AOT apps in containers](containers.md)
 - [Debugging applications](debugging.md)
