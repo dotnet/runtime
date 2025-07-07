@@ -361,14 +361,4 @@ The .NET Foundation licenses this file to you under the MIT license.
       <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
     </PropertyGroup>
   </Target>
-
-  <Target Name="CodesignNativeBinary"
-    AfterTargets="LinkNative"
-    BeforeTargets="CopyNativeBinary;CreateLib"
-    Condition="'$(_IsApplePlatform)' == 'true' and Exists('/usr/bin/codesign')">
-
-    <Exec Command="/usr/bin/codesign --sign - --entitlements &quot;$(MSBuildThisFileDirectory)entitlements.plist&quot; &quot;$(NativeBinary)&quot;" />
-  </Target>
-
-
 </Project>
