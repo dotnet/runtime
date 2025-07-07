@@ -2172,56 +2172,69 @@ namespace System.Net.Http.Functional.Tests
         [InlineData('\u009F', HeaderType.Cookie)]
         public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
         {
-            string uri = "https://example.com"; // URI doesn't matter, the request should never leave the client
-            var handler = CreateHttpClientHandler();
+            TaskCompletionSource<bool> acceptConnection = new TaskCompletionSource<bool>();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            request.Version = UseVersion;
-            try
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                switch (headerType)
+                var handler = CreateHttpClientHandler();
+
+                var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                request.Version = UseVersion;
+                try
                 {
-                    case HeaderType.Request:
-                        request.Headers.Add("Custom-Header", $"HeaderValue{dangerousChar}WithControlChar");
-                        break;
-                    case HeaderType.Content:
-                        request.Content = new StringContent("test content");
-                        request.Content.Headers.Add("Custom-Content-Header", $"ContentValue{dangerousChar}WithControlChar");
-                        break;
-                    case HeaderType.Cookie:
+                    switch (headerType)
+                    {
+                        case HeaderType.Request:
+                            request.Headers.Add("Custom-Header", $"HeaderValue{dangerousChar}WithControlChar");
+                            break;
+                        case HeaderType.Content:
+                            request.Content = new StringContent("test content");
+                            request.Content.Headers.Add("Custom-Content-Header", $"ContentValue{dangerousChar}WithControlChar");
+                            break;
+                        case HeaderType.Cookie:
 #if WINHTTPHANDLER_TEST
-                        handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+                    handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
 #endif
-                        handler.CookieContainer = new CookieContainer();
-                        handler.CookieContainer.Add(new Uri(uri), new Cookie("CustomCookie", $"Value{dangerousChar}WithControlChar"));
-                        break;
+                            handler.CookieContainer = new CookieContainer();
+                            handler.CookieContainer.Add(uri, new Cookie("CustomCookie", $"Value{dangerousChar}WithControlChar"));
+                            break;
+                    }
                 }
-            }
-            catch (FormatException fex) when (fex.Message.Contains("New-line or NUL") && dangerousChar != '\u0100')
-            {
-                return;
-            }
-            catch (CookieException) when (dangerousChar != '\u0100')
-            {
-                return;
-            }
+                catch (FormatException fex) when (fex.Message.Contains("New-line or NUL") && dangerousChar != '\u0100')
+                {
+                    acceptConnection.SetResult(false);
+                    return;
+                }
+                catch (CookieException) when (dangerousChar != '\u0100')
+                {
+                    acceptConnection.SetResult(false);
+                    return;
+                }
 
-            using (var client = new HttpClient(handler))
+                using (var client = new HttpClient(handler))
+                {
+                    // WinHTTP validates the input before opening connection whereas SocketsHttpHandler opens connection first and validates only when writing to the wire.
+                    acceptConnection.SetResult(!IsWinHttpHandler);
+                    var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                    if (IsWinHttpHandler)
+                    {
+                        var fex = Assert.IsType<FormatException>(ex);
+                        Assert.Contains("Latin-1", fex.Message);
+                    }
+                    else
+                    {
+                        var hrex = Assert.IsType<HttpRequestException>(ex);
+                        var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
+                        Assert.Contains("ASCII", message);
+                    }
+                }
+            }, async server =>
             {
-                var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
-                _output.WriteLine(ex.ToString());
-                if (IsWinHttpHandler)
+                if (await acceptConnection.Task)
                 {
-                    var fex = Assert.IsType<FormatException>(ex);
-                    Assert.Contains("Latin-1", fex.Message);
+                    await IgnoreExceptions(server.AcceptConnectionAsync(c => Task.CompletedTask));
                 }
-                else
-                {
-                    var hrex = Assert.IsType<HttpRequestException>(ex);
-                    var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
-                    Assert.Contains("ASCII", message);
-                }
-            }
+            });
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

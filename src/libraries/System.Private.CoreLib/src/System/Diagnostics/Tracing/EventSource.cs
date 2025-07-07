@@ -2306,6 +2306,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private void WriteStringToAllListeners(string eventName, string msg)
         {
+#pragma warning disable CA1861
             var eventCallbackArgs = new EventWrittenEventArgs(this, 0)
             {
                 EventName = eventName,
@@ -2313,6 +2314,7 @@ namespace System.Diagnostics.Tracing
                 Payload = new ReadOnlyCollection<object?>(new object[] { msg }),
                 PayloadNames = s_errorPayloadNames ??= new ReadOnlyCollection<string>(new string[] { "message" })
             };
+#pragma warning restore CA1861
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {
@@ -2327,9 +2329,9 @@ namespace System.Diagnostics.Tracing
                 {
                     // if there's *any* enabled event on the dispatcher we'll write out the string
                     // otherwise we'll treat the listener as disabled and skip it
-                    foreach (bool enabled in dispatcher.m_EventEnabled.Values)
+                    foreach (KeyValuePair<int, bool> entry in dispatcher.m_EventEnabled)
                     {
-                        if (enabled)
+                        if (entry.Value)
                         {
                             dispatcherEnabled = true;
                             break;
@@ -2824,17 +2826,19 @@ namespace System.Diagnostics.Tracing
             if (dispatcher == null)
             {
                 if (m_etwProvider != null && eventProviderType == EventProviderType.ETW)
-                { eventMeta.EnabledForETW = value;}
+                    eventMeta.EnabledForETW = value;
 
 #if FEATURE_PERFTRACING
                 if (m_eventPipeProvider != null && eventProviderType == EventProviderType.EventPipe)
-                    {eventMeta.EnabledForEventPipe = value;}
+                    eventMeta.EnabledForEventPipe = value;
 #endif
             }
             else
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
-                if (!dispatcher.m_EventEnabled.ContainsKey(eventId)) return false;
+
+                if (!dispatcher.m_EventEnabled.ContainsKey(eventId))
+                    return false;
 
                 dispatcher.m_EventEnabled[eventId] = value;
                 if (value)
@@ -2891,13 +2895,10 @@ namespace System.Diagnostics.Tracing
                 EventDispatcher? dispatcher = m_Dispatchers;
                 while (dispatcher != null)
                 {
-                    Dictionary<int, bool> eventEnabled = new Dictionary<int, bool>(m_eventData?.Count ?? 0);
-                    if (m_eventData != null)
+                    Dictionary<int, bool> eventEnabled = new Dictionary<int, bool>(m_eventData.Count);
+                    foreach (int eventId in m_eventData.Keys)
                     {
-                        foreach (int eventId in m_eventData.Keys)
-                        {
-                            eventEnabled[eventId] = false;
-                        }
+                        eventEnabled[eventId] = false;
                     }
                     dispatcher.m_EventEnabled ??= eventEnabled;
                     dispatcher = dispatcher.m_Next;
@@ -3159,7 +3160,7 @@ namespace System.Diagnostics.Tracing
                 Dictionary<string, string>? eventsByName = null;
                 if (source != null || (flags & EventManifestOptions.Strict) != 0)
                 {
-                    eventData = new();
+                    eventData = new Dictionary<int, EventMetadata>();
                     ref EventMetadata newEventMetadata = ref CollectionsMarshal.GetValueRefOrAddDefault(eventData, 0, out _);
                     newEventMetadata.Name = ""; // Event 0 is the 'write messages string' event, and has an empty name.
                 }
@@ -3331,7 +3332,6 @@ namespace System.Diagnostics.Tracing
                                         ref EventMetadata startEventMetadata = ref CollectionsMarshal.GetValueRefOrNullRef(eventData, startEventId);
                                         if (!Unsafe.IsNullRef(ref startEventMetadata))
                                         {
-                                            // Since we reserve id 0, we know that id-1 is <= 0
                                             // If you remove the Stop and add a Start does that name match the Start Event's Name?
                                             // Ideally we would throw an error
                                             if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&

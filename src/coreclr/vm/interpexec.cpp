@@ -1592,12 +1592,33 @@ MAIN_LOOP:
                     ip += 4;
                     break;
                 }
-                case INTOP_CALL_HELPER_P_PP:
+
+                case INTOP_CALL_HELPER_P_S:
+                {
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod->pDataItems[ip[2]]);
+                    void* helperArg = LOCAL_VAR(ip[3], void*);
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_CALL_HELPER_P_PS:
                 {
                     HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[2], void*));
+                    ip += 5;
+                    break;
+                }
+
+                case INTOP_CALL_HELPER_P_SP:
+                {
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
+                    void* helperArg = pMethod->pDataItems[ip[4]];
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(LOCAL_VAR(ip[2], void*), helperArg);
                     ip += 5;
                     break;
                 }
@@ -1614,7 +1635,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_P_GP:
+                case INTOP_CALL_HELPER_P_GS:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -1646,7 +1667,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_V_AGP:
+                case INTOP_CALL_HELPER_V_AGS:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -1657,7 +1678,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_V_APP:
+                case INTOP_CALL_HELPER_V_APS:
                 {
                     HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod->pDataItems[ip[3]]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
