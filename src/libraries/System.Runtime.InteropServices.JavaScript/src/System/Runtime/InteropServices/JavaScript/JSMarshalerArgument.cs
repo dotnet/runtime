@@ -1,11 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// FIXME: Make this dynamic!
+#define WASM64
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Threading;
+
+
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -19,9 +23,12 @@ namespace System.Runtime.InteropServices.JavaScript
     public partial struct JSMarshalerArgument
     {
         internal JSMarshalerArgumentImpl slot;
-
         // keep in sync with JSMarshalerArgumentOffsets in marshal.ts
+#if WASM64
+        [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 64)]
+#else
         [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 32)]
+#endif 
         internal struct JSMarshalerArgumentImpl
         {
             [FieldOffset(0)]
@@ -42,7 +49,37 @@ namespace System.Runtime.InteropServices.JavaScript
             internal double DoubleValue;// must be aligned to 8 because of Module.HEAPF64 view alignment
             [FieldOffset(0)]
             internal IntPtr IntPtrValue;
+#if WASM64
+            [FieldOffset(8)]
+            internal IntPtr JSHandle;
+            [FieldOffset(8)]
+            internal IntPtr GCHandle;
 
+            [FieldOffset(16)]
+            internal int Length;
+
+            /// <summary>
+            /// Discriminators
+            /// </summary>
+            [FieldOffset(24)]
+            internal MarshalerType Type;
+            [FieldOffset(25)]
+            internal MarshalerType ElementType;
+
+    #if FEATURE_WASM_MANAGED_THREADS
+                [FieldOffset(32)]
+                internal IntPtr ContextHandle;
+
+                [FieldOffset(40)]
+                internal bool ReceiverShouldFree; // note this is 1 byte
+
+                [FieldOffset(48)]
+                internal IntPtr CallerNativeTID;
+
+                [FieldOffset(56)]
+                internal IntPtr SyncDoneSemaphorePtr;
+    #endif
+#else
             [FieldOffset(4)]
             internal IntPtr JSHandle;
             [FieldOffset(4)]
@@ -59,18 +96,19 @@ namespace System.Runtime.InteropServices.JavaScript
             [FieldOffset(13)]
             internal MarshalerType ElementType;
 
-#if FEATURE_WASM_MANAGED_THREADS
-            [FieldOffset(16)]
-            internal IntPtr ContextHandle;
+    #if FEATURE_WASM_MANAGED_THREADS
+                [FieldOffset(16)]
+                internal IntPtr ContextHandle;
 
-            [FieldOffset(20)]
-            internal bool ReceiverShouldFree; // note this is 1 byte
+                [FieldOffset(20)]
+                internal bool ReceiverShouldFree; // note this is 1 byte
 
-            [FieldOffset(24)]
-            internal IntPtr CallerNativeTID;
+                [FieldOffset(24)]
+                internal IntPtr CallerNativeTID;
 
-            [FieldOffset(28)]
-            internal IntPtr SyncDoneSemaphorePtr;
+                [FieldOffset(28)]
+                internal IntPtr SyncDoneSemaphorePtr;
+    #endif
 #endif
         }
 

@@ -21,29 +21,51 @@ export const bound_cs_function_symbol = Symbol.for("wasm bound_cs_function");
 export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
 export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
 export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
-export const JavaScriptMarshalerArgSize = 32;
+export const JavaScriptMarshalerArgSize = isWasm64 ? 64 : 32;
 
 // keep in sync with JSMarshalerArgumentImpl offsets
-const enum JSMarshalerArgumentOffsets {
-    BooleanValue = 0,
-    ByteValue = 0,
-    CharValue = 0,
-    Int16Value = 0,
-    Int32Value = 0,
-    Int64Value = 0,
-    SingleValue = 0,
-    DoubleValue = 0,
-    IntPtrValue = 0,
-    JSHandle = 4,
-    GCHandle = 4,
-    Length = 8,
-    Type = 12,
-    ElementType = 13,
-    ContextHandle = 16,
-    ReceiverShouldFree = 20,
-    CallerNativeTID = 24,
-    SyncDoneSemaphorePtr = 28,
+const JSMarshalerArgumentOffsets = isWasm64 ? {
+    BooleanValue: 0,
+    ByteValue: 0,
+    CharValue: 0,
+    Int16Value: 0,
+    Int32Value: 0,
+    Int64Value: 0,
+    SingleValue: 0,
+    DoubleValue: 0,
+    IntPtrValue: 0,
+    JSHandle: 8,
+    GCHandle: 8,
+    Length: 16,
+    Type: 24,
+    ElementType: 25,
+    ContextHandle: 32,
+    ReceiverShouldFree: 40,
+    CallerNativeTID: 48,
+    SyncDoneSemaphorePtr: 56,
 }
+    :
+    {
+        BooleanValue: 0,
+        ByteValue: 0,
+        CharValue: 0,
+        Int16Value: 0,
+        Int32Value: 0,
+        Int64Value: 0,
+        SingleValue: 0,
+        DoubleValue: 0,
+        IntPtrValue: 0,
+        JSHandle: 4,
+        GCHandle: 4,
+        Length: 8,
+        Type: 12,
+        ElementType: 13,
+        ContextHandle: 16,
+        ReceiverShouldFree: 20,
+        CallerNativeTID: 24,
+        SyncDoneSemaphorePtr: 28,
+    };
+
 export const JSMarshalerTypeSize = 32;
 // keep in sync with JSFunctionBinding.JSBindingType
 const enum JSBindingTypeOffsets {
