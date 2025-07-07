@@ -1146,15 +1146,15 @@ ds_ipc_poll (
 				// check for hangup first because a closed socket
 				// will technically meet the requirements for POLLIN
 				// i.e., a call to recv/read won't block
-				poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_HANGUP;
+				poll_handles_data [i].events = (uint8_t)EP_IPC_POLL_EVENTS_HANGUP;
 			} else if ((poll_fds [i].revents & (POLLERR|POLLNVAL))) {
 				if (callback)
 					callback ("Poll error", (uint32_t)poll_fds [i].revents);
-				poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_ERR;
+				poll_handles_data [i].events = (uint8_t)EP_IPC_POLL_EVENTS_ERR;
 			} else if (poll_fds [i].revents & (POLLIN|POLLPRI)) {
-				poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_SIGNALED;
+				poll_handles_data [i].events = (uint8_t)EP_IPC_POLL_EVENTS_SIGNALED;
 			} else {
-				poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_UNKNOWN;
+				poll_handles_data [i].events = (uint8_t)EP_IPC_POLL_EVENTS_UNKNOWN;
 				if (callback)
 					callback ("unknown poll response", (uint32_t)poll_fds [i].revents);
 			}
@@ -1489,12 +1489,24 @@ ipc_stream_close_func (void *object)
 	return ds_ipc_stream_close (ipc_stream, NULL);
 }
 
+static
+EventPipeIpcPollEvents
+ipc_stream_poll_func (
+	void *object,
+	uint32_t timeout_ms)
+{
+	EP_ASSERT (object != NULL);
+	DiagnosticsIpcStream *ipc_stream = (DiagnosticsIpcStream *)object;
+	return ds_ipc_stream_poll (ipc_stream, timeout_ms);
+}
+
 static IpcStreamVtable ipc_stream_vtable = {
 	ipc_stream_free_func,
 	ipc_stream_read_func,
 	ipc_stream_write_func,
 	ipc_stream_flush_func,
-	ipc_stream_close_func };
+	ipc_stream_close_func,
+	ipc_stream_poll_func };
 
 static
 DiagnosticsIpcStream *
@@ -1666,6 +1678,44 @@ ds_ipc_stream_to_string (
 
 	int32_t result = snprintf (buffer, buffer_len, "{ client_socket = %d }", (int32_t)(size_t)ipc_stream->client_socket);
 	return (result > 0 && result < (int32_t)buffer_len) ? result : 0;
+}
+
+EventPipeIpcPollEvents
+ds_ipc_stream_poll (
+	DiagnosticsIpcStream *ipc_stream,
+	uint32_t timeout_ms)
+{
+	EP_ASSERT (ipc_stream != NULL);
+
+	if (ipc_stream->client_socket == DS_IPC_INVALID_SOCKET)
+		return EP_IPC_POLL_EVENTS_HANGUP;
+
+	ds_ipc_pollfd_t pfd;
+	pfd.fd = ipc_stream->client_socket;
+	pfd.events = POLLIN | POLLPRI | POLLOUT;
+
+	int result_poll;
+	result_poll = ipc_poll_fds (&pfd, 1, timeout_ms);
+
+	if (result_poll < 0)
+		return EP_IPC_POLL_EVENTS_ERR;
+
+	if (result_poll == 0)
+		return EP_IPC_POLL_EVENTS_HANGUP;
+
+	if (pfd.revents == 0)
+		return EP_IPC_POLL_EVENTS_NONE;
+
+	if (pfd.revents & POLLHUP)
+		return EP_IPC_POLL_EVENTS_HANGUP;
+
+	if (pfd.revents & (POLLERR | POLLNVAL))
+		return EP_IPC_POLL_EVENTS_ERR;
+
+	if (pfd.revents & (POLLIN | POLLPRI | POLLOUT))
+		return EP_IPC_POLL_EVENTS_SIGNALED;
+
+	return EP_IPC_POLL_EVENTS_UNKNOWN;
 }
 
 #endif /* ENABLE_PERFTRACING */

@@ -248,11 +248,11 @@ ds_ipc_poll (
 		int client_socket = poll_handles_data [i].stream->client_socket;
 		int pending = ds_rt_websocket_poll (client_socket);
 		if (pending < 0){
-			poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_ERR;
+			poll_handles_data [i].events = (uint8_t)EP_IPC_POLL_EVENTS_ERR;
 			return 1;
 		}
 		if (pending > 0){
-			poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_SIGNALED;
+			poll_handles_data [i].events = (uint8_t)EP_IPC_POLL_EVENTS_SIGNALED;
 			return 1;
 		}
 	}
@@ -425,12 +425,33 @@ ipc_stream_close_func (void *object)
 	return ds_ipc_stream_close (ipc_stream, NULL);
 }
 
+static
+EventPipeIpcPollEvents
+ipc_stream_poll_func (
+	void *object,
+	uint32_t timeout_ms)
+{
+	EP_ASSERT (object != NULL);
+	DiagnosticsIpcStream *ipc_stream = (DiagnosticsIpcStream *)object;
+
+	// Check if the socket is still open
+	int pending = ds_rt_websocket_poll (ipc_stream->client_socket);
+	if (pending < 0)
+		return EP_IPC_POLL_EVENTS_ERR;
+	
+	if (pending > 0)
+		return EP_IPC_POLL_EVENTS_SIGNALED;
+
+	return EP_IPC_POLL_EVENTS_NONE;
+}
+
 static IpcStreamVtable ipc_stream_vtable = {
 	ipc_stream_free_func,
 	ipc_stream_read_func,
 	ipc_stream_write_func,
 	ipc_stream_flush_func,
-	ipc_stream_close_func };
+	ipc_stream_close_func,
+	ipc_stream_poll_func };
 
 static
 DiagnosticsIpcStream *
