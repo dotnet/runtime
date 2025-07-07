@@ -278,8 +278,10 @@ namespace System.Net
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                value &= mask;
-                return new IPAddress(MemoryMarshal.AsBytes(new Span<UInt128>(ref value)));
+                UInt128 newAddress = value & mask;
+                return newAddress == value
+                    ? baseAddress
+                    : new IPAddress(MemoryMarshal.AsBytes(new Span<UInt128>(ref newAddress)));
             }
         }
 
