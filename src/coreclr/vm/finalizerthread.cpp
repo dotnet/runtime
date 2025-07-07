@@ -99,7 +99,7 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
     Thread* finalizerThread = GetFinalizerThread();
     return finalizerThread->RequireSyncBlockCleanup()
         || SystemDomain::System()->RequireAppDomainCleanup()
-        || (finalizerThread->m_DetachCount > 0)
+        || (Thread::m_DetachCount > 0)
         || Thread::CleanupNeededForFinalizedThread()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
@@ -135,7 +135,7 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
-    if (finalizerThread->m_DetachCount > 0
+    if (Thread::m_DetachCount > 0
         || Thread::CleanupNeededForFinalizedThread())
     {
         Thread::CleanupDetachedThreads();

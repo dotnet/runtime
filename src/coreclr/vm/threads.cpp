@@ -2478,8 +2478,6 @@ Thread::~Thread()
         Exception::Delete (m_pExceptionDuringStartup);
     }
 
-    ClearContext();
-
     if (!IsAtProcessExit())
     {
         // Destroy any handles that we're using to hold onto exception objects
@@ -2850,7 +2848,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         GCX_COOP();
 
         _ASSERTE(IsAtProcessExit());
-        ClearContext();
         if (m_ExposedObject != NULL)
             DecExternalCount(holdingLock);             // may destruct now
     }
@@ -6787,15 +6784,6 @@ T_CONTEXT *Thread::GetFilterContext(void)
 }
 
 #ifndef DACCESS_COMPILE
-
-void Thread::ClearContext()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    m_fDisableComObjectEagerCleanup = false;
-#endif //FEATURE_COMINTEROP
-}
 
 // HELPERS FOR THE BASE OF A MANAGED THREAD, INCLUDING AD TRANSITION SUPPORT
 

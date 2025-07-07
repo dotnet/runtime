@@ -1563,10 +1563,6 @@ public:
         return PTR_ThreadExceptionState(PTR_HOST_MEMBER_TADDR(Thread, this, m_ExceptionState));
     }
 
-private:
-    // ClearContext are to be called only during shutdown
-    void ClearContext();
-
 public:
 
     //---------------------------------------------------------------

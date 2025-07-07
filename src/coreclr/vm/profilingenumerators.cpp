@@ -51,12 +51,11 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
     EX_TRY
     {
         CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
-        while(heapIterator.Next())
+        while (heapIterator.Next())
         {
             MethodDesc *pMD = heapIterator.GetMethod();
 
-            // On AMD64 JumpStub is used to call functions that is 2GB away.  JumpStubs have a CodeHeader
-            // with NULL MethodDesc, are stored in code heap and are reported by EEJitManager::EnumCode.
+            // Stubs (see StubCodeBlockKind) have no MethodDesc. Skip them.
             if (pMD == NULL)
                 continue;
 
@@ -572,7 +571,7 @@ HRESULT ProfilerThreadEnum::Init()
     // 1. Include Thread::TS_FullyInitialized threads for ThreadCreated
     // 2. Exclude Thread::TS_Dead | Thread::TS_ReportDead for ThreadDestroyed
     //
-    while((pThread = ThreadStore::GetAllThreadList(
+    while ((pThread = ThreadStore::GetAllThreadList(
         pThread,
         Thread::TS_Dead | Thread::TS_ReportDead | Thread::TS_FullyInitialized,
         Thread::TS_FullyInitialized

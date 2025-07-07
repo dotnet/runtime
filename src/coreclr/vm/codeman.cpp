@@ -77,7 +77,7 @@ unsigned   ExecutionManager::m_LCG_JumpStubBlockFullCount;
 
 #endif // DACCESS_COMPILE
 
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE) // We don't do this on ARM just amd64
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
 
 // Support for new style unwind information (to allow OS to stack crawl JIT compiled code).
 
@@ -95,15 +95,6 @@ static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 static bool s_publishingActive;         // Publishing to ETW is turned on
 static Crst* s_pUnwindInfoTableLock;    // lock protects all public UnwindInfoTable functions
 
-#if _DEBUG
-// Fake functions on Win7 checked build to excercize the code paths, they are no-ops
-NTSTATUS WINAPI FakeRtlAddGrowableFunctionTable (
-        PVOID *DynamicTable, PT_RUNTIME_FUNCTION FunctionTable, ULONG EntryCount,
-        ULONG MaximumEntryCount, ULONG_PTR rangeStart, ULONG_PTR rangeEnd) { *DynamicTable = (PVOID) 1; return 0; }
-VOID WINAPI FakeRtlGrowFunctionTable (PVOID DynamicTable, ULONG NewEntryCount) { }
-VOID WINAPI FakeRtlDeleteGrowableFunctionTable (PVOID DynamicTable) {}
-#endif
-
 /****************************************************************************/
 // initialize the entry points for new win8 unwind info publishing functions.
 // return true if the initialize is successful (the functions exist)
@@ -116,7 +107,6 @@ bool InitUnwindFtns()
     }
     CONTRACTL_END;
 
-#ifdef TARGET_WINDOWS
     HINSTANCE hNtdll = GetModuleHandle(W("ntdll.dll"));
     if (hNtdll != NULL)
     {
@@ -135,15 +125,6 @@ bool InitUnwindFtns()
         }
         // Don't call FreeLibrary(hNtdll) because GetModuleHandle did *NOT* increment the reference count!
     }
-    else
-    {
-#if _DEBUG
-        pRtlGrowFunctionTable = FakeRtlGrowFunctionTable;
-        pRtlDeleteGrowableFunctionTable = FakeRtlDeleteGrowableFunctionTable;
-        pRtlAddGrowableFunctionTable = FakeRtlAddGrowableFunctionTable;
-#endif
-    }
-#endif // TARGET_WINDOWS
 
     return (pRtlAddGrowableFunctionTable != NULL);
 }
@@ -428,7 +409,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 }
 
 /*****************************************************************************/
-// We only do this on amd64 (NOT ARM, because ARM uses frame based stack crawling),
+// We only do this on Windows x64 (other platforms use frame-based stack crawling),
 // We want good stack traces so we need to publish unwind information so ETW can
 // walk the stack.
 /* static */ void UnwindInfoTable::Initialize()

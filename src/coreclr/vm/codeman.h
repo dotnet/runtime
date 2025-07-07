@@ -590,7 +590,7 @@ public:
 };
 
 typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
-// On Windows non-x64 platforms, the OS defined UnwindInfo (accessed from RUNTIME_FUNCTION
+// On Windows x64, publish OS UnwindInfo (accessed from RUNTIME_FUNCTION
 // structures) to support the ability unwind the stack. Unfortunately the pre-Win8
 // APIs defined a callback API for publishing this data dynamically that ETW does
 // not use (and really can't because the walk happens in the kernel). In Win8
@@ -618,7 +618,7 @@ public:
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 private:
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
-    // These are used by the stublinker and the high-level method functions above
+    // These are used by the high-level method functions above
     static void AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, T_RUNTIME_FUNCTION* data, TADDR rangeStart, TADDR rangeEnd);
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
