@@ -76,6 +76,10 @@ typedef void * OBJECTREF;
 
 #ifndef __cgencpu_h__
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 inline void SetIP(T_CONTEXT* context, PCODE rip)
 {
     _ASSERTE(!"don't call this");
@@ -105,7 +109,7 @@ inline PCODE GetIP(T_CONTEXT* context)
 #elif defined(TARGET_ARM)
     return (PCODE)context->Pc;
 #elif defined(TARGET_ARM64)
-    return (PCODE)context->Pc;
+    return (PCODE) PacStripPtr((void *)context->Pc);
 #elif defined(TARGET_LOONGARCH64)
     return (PCODE)context->Pc;
 #elif defined(TARGET_RISCV64)
