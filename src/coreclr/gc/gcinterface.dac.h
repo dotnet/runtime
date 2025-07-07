@@ -78,6 +78,9 @@ public:
     uint8_t** m_FillPointers[NUMBERGENERATIONS + ExtraSegCount];
 };
 
+// _TableSegmentHeader has byte alignment
+#pragma pack(push,1)
+
 class dac_handle_table_segment {
 public:
     uint8_t rgGeneration[HANDLE_BLOCKS_PER_SEGMENT * sizeof(uint32_t) / sizeof(uint8_t)];
@@ -92,6 +95,7 @@ public:
     DPTR(dac_handle_table_segment) pNextSegment;
  };
 
+#pragma pack(pop)
 
 class dac_handle_table {
 public:

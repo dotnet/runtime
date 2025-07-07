@@ -64,9 +64,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, publicKey));
                 testDirectCall(() => MLDsa.ImportMLDsaPublicKey(algorithm, publicKey.AsSpan()));
             }
 
@@ -109,9 +111,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey));
                 testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey.AsSpan()));
             }
 
@@ -147,9 +151,11 @@ namespace System.Security.Cryptography.Tests
             {
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, Array.Empty<byte>().AsSpan()));
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, privateSeed));
                 testDirectCall(() => MLDsa.ImportMLDsaPrivateSeed(algorithm, privateSeed.AsSpan()));
             }
 

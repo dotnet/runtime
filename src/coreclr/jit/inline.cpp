@@ -1309,9 +1309,8 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     context->m_Sibling        = parentContext->m_Child;
     parentContext->m_Child    = context;
 
-    // In debug builds we record inline contexts in all produced calls to be
-    // able to show all failed inlines in the inline tree, even non-candidates.
-    // These should always match the parent context we are seeing here.
+    // The inline context should always match the parent context we are seeing
+    // here.
     assert(parentContext == call->gtInlineContext);
 
     if (call->IsInlineCandidate())

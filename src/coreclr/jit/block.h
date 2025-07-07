@@ -684,15 +684,15 @@ public:
         return m_dupCount;
     }
 
-    void incrementDupCount()
+    void incrementDupCount(unsigned dupCount = 1)
     {
-        m_dupCount++;
+        m_dupCount += dupCount;
     }
 
-    void decrementDupCount()
+    void decrementDupCount(unsigned dupCount = 1)
     {
-        assert(m_dupCount >= 1);
-        m_dupCount--;
+        assert(m_dupCount >= dupCount);
+        m_dupCount -= dupCount;
     }
 
     bool visited() const
@@ -861,6 +861,14 @@ public:
         return bbTargetEdge;
     }
 
+    FlowEdge*& TargetEdgeRef()
+    {
+        assert(HasInitializedTarget());
+        assert(bbTargetEdge->getSourceBlock() == this);
+        assert(bbTargetEdge->getDestinationBlock() != nullptr);
+        return bbTargetEdge;
+    }
+
     void SetTargetEdge(FlowEdge* targetEdge)
     {
         // SetKindAndTarget() nulls target for non-jump kinds,
@@ -880,6 +888,15 @@ public:
     }
 
     FlowEdge* GetTrueEdge() const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(bbTrueEdge != nullptr);
+        assert(bbTrueEdge->getSourceBlock() == this);
+        assert(bbTrueEdge->getDestinationBlock() != nullptr);
+        return bbTrueEdge;
+    }
+
+    FlowEdge*& TrueEdgeRef()
     {
         assert(KindIs(BBJ_COND));
         assert(bbTrueEdge != nullptr);
@@ -913,6 +930,15 @@ public:
     }
 
     FlowEdge* GetFalseEdge() const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(bbFalseEdge != nullptr);
+        assert(bbFalseEdge->getSourceBlock() == this);
+        assert(bbFalseEdge->getDestinationBlock() != nullptr);
+        return bbFalseEdge;
+    }
+
+    FlowEdge*& FalseEdgeRef()
     {
         assert(KindIs(BBJ_COND));
         assert(bbFalseEdge != nullptr);
@@ -2272,10 +2298,9 @@ struct BBswtDesc
     FlowEdge** bbsDstTab; // case label table address
     unsigned   bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
 
-    // Case number and likelihood of most likely case
+    // Case number of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
     unsigned bbsDominantCase;
-    weight_t bbsDominantFraction;
 
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
