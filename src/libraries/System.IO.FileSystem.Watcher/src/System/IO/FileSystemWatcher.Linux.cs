@@ -62,8 +62,10 @@ namespace System.IO
                 return;
             }
 
-            _watcher = INotify.StartWatcher(this);
+            _watcher = new INotify.Watcher(this);
             _enabled = true;
+
+            _watcher.Start();
         }
 
         /// <summary>Cancels the currently running watch operation if there is one.</summary>
@@ -106,30 +108,9 @@ namespace System.IO
 
         private sealed class INotify
         {
-            // Guards the watchers of the inotify instance.
-            public static readonly object s_watchersLock = new();
-
+            // Guards the watchers of the inotify instance and starting the inotify thread.
+            private static readonly object s_watchersLock = new();
             private static INotify? s_currentInotify;
-
-            public static Watcher? StartWatcher(FileSystemWatcher fsw)
-            {
-                Watcher watcher;
-                lock (s_watchersLock)
-                {
-                    // If there is no running instance, start one.
-                    if (s_currentInotify is null || s_currentInotify.IsStopped)
-                    {
-                        INotify inotify = new(s_watchersLock);
-                        inotify.Start();
-                        s_currentInotify = inotify;
-                    }
-
-                    watcher = s_currentInotify.CreateWatcherCore(fsw);
-                }
-
-                watcher.Start();
-                return watcher;
-            }
 
             /// <summary>
             /// The size of the native struct inotify_event.  4 32-bit integer values, the last of which is a length
@@ -139,7 +120,6 @@ namespace System.IO
 
             public bool IsStopped => _isProcessThreadStopping || _allWatchersStopped;
 
-            private readonly object _watchersLock;
             private readonly List<Watcher> _watchers = new();
             private readonly byte[] _buffer = new byte[16384];
             private readonly SafeFileHandle _inotifyHandle;
@@ -152,10 +132,8 @@ namespace System.IO
             private int _bufferPos;
             private WatchedDirectory[] _dirBuffer = new WatchedDirectory[4];
 
-            public INotify(object watcherLock)
+            public INotify()
             {
-                _watchersLock = watcherLock;
-
                 _inotifyHandle = CreateINotifyHandle();
 
                 static SafeFileHandle CreateINotifyHandle()
@@ -185,24 +163,15 @@ namespace System.IO
                 }
             }
 
-            public Watcher CreateWatcherCore(FileSystemWatcher fsw)
+            private void AddWatcher(Watcher watcher)
             {
-                Debug.Assert(Monitor.IsEntered(_watchersLock));
-
-                var watcher = new Watcher(this, fsw);
-
-                // We only add to the watchers if this is effectively watching something.
-                if (watcher.CreateRootWatch())
-                {
-                    _watchers.Add(watcher);
-                }
-
-                return watcher;
+                Debug.Assert(Monitor.IsEntered(s_watchersLock));
+                _watchers.Add(watcher);
             }
 
             public void Start()
             {
-                Debug.Assert(Monitor.IsEntered(_watchersLock));
+                Debug.Assert(Monitor.IsEntered(s_watchersLock));
 
                 try
                 {
@@ -485,7 +454,7 @@ namespace System.IO
             {
                 try
                 {
-                    lock (_watchersLock)
+                    lock (s_watchersLock)
                     {
                         // We've started an INotify, but no root watch was created for the FileSystemWatcher that started it.
                         if (_watchers.Count == 0)
@@ -510,7 +479,7 @@ namespace System.IO
                 }
                 catch (Exception ex)
                 {
-                    lock (_watchersLock)
+                    lock (s_watchersLock)
                     {
                         Stop();
 
@@ -547,7 +516,7 @@ namespace System.IO
                 // An overflow event means we missed events.
                 if ((mask & Interop.Sys.NotifyEvents.IN_Q_OVERFLOW) != 0)
                 {
-                    lock (_watchersLock)
+                    lock (s_watchersLock)
                     {
                         Stop();
 
@@ -1002,7 +971,7 @@ namespace System.IO
                 /// read to wake up in the event that the user neglects to stop raising events.
                 /// </summary>
                 private readonly WeakReference<FileSystemWatcher> _weakFsw;
-                private readonly INotify _inotify;
+                private INotify? _inotify;
                 private readonly Channel<WatcherEvent> _eventQueue;
                 public string BasePath { get; }
                 public NotifyFilters NotifyFilters { get; }
@@ -1013,9 +982,8 @@ namespace System.IO
                 public bool IsStopped { get; set; }
                 public WatchedDirectory? RootDirectory { get; set; }
 
-                public Watcher(INotify inotify, FileSystemWatcher fsw)
+                public Watcher(FileSystemWatcher fsw)
                 {
-                    _inotify = inotify;
                     _weakFsw = new WeakReference<FileSystemWatcher>(fsw);
                     BasePath = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(fsw.Path));
                     IncludeSubdirectories = fsw.IncludeSubdirectories;
@@ -1024,8 +992,45 @@ namespace System.IO
                     _eventQueue = Channel.CreateUnbounded<WatcherEvent>(new UnboundedChannelOptions() { AllowSynchronousContinuations = false, SingleReader = true });
                 }
 
+                public void Start()
+                {
+                    Debug.Assert(_inotify is null);
+
+                    INotify? inotify;
+                    lock (s_watchersLock)
+                    {
+                        inotify = s_currentInotify;
+                        // If there is no running instance, start one.
+                        if (inotify is null || inotify.IsStopped)
+                        {
+                            inotify = new();
+                            inotify.Start();
+                            s_currentInotify = inotify;
+                        }
+
+                        _inotify = inotify;
+
+                        if (CreateRootWatch())
+                        {
+                            _inotify.AddWatcher(this);
+                        }
+                    }
+
+                    if (RootDirectory is { } dir && IncludeSubdirectories)
+                    {
+                        if (IncludeSubdirectories)
+                        {
+                            WatchChildDirectories(dir, BasePath, includeBasePath: false);
+                        }
+                    }
+
+                    EmitEvents = true;
+                }
+
                 internal bool CreateRootWatch()
                 {
+                    Debug.Assert(_inotify is not null);
+
                     RootDirectory = _inotify.AddOrUpdateWatchedDirectory(this, parent: null, BasePath, WatchFilters, followLinks: true, ignoreMissing: false);
 
                     bool hasRootWatch = RootDirectory is not null;
@@ -1036,19 +1041,6 @@ namespace System.IO
                     }
 
                     return hasRootWatch;
-                }
-
-                internal void Start()
-                {
-                    if (RootDirectory is { } dir && IncludeSubdirectories)
-                    {
-                        if (IncludeSubdirectories)
-                        {
-                            WatchChildDirectories(dir, BasePath, includeBasePath: false);
-                        }
-                    }
-
-                    EmitEvents = true;
                 }
 
                 private async Task DequeueEvents()
@@ -1145,12 +1137,14 @@ namespace System.IO
 
                     if (root is not null)
                     {
+                        Debug.Assert(_inotify is not null);
                         _inotify.RemoveWatchedDirectory(root);
                     }
                 }
 
                 public bool WatchChildDirectories(WatchedDirectory parent, string path, bool includeBasePath = true)
                 {
+                    Debug.Assert(_inotify is not null);
                     if (IsStopped)
                     {
                         return false;
