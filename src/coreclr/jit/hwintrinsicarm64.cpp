@@ -51,7 +51,7 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
 //
 // Return Value:
 //    The InstructionSet associated with className
-static CORINFO_InstructionSet lookupInstructionSet(const char* className)
+CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
 {
     assert(className != nullptr);
 
@@ -136,9 +136,9 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
 //
-CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
-                                                  const char* innerEnclosingClassName,
-                                                  const char* outerEnclosingClassName)
+CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
+                                           const char* innerEnclosingClassName,
+                                           const char* outerEnclosingClassName)
 {
     assert(className != nullptr);
 
@@ -632,6 +632,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef DEBUG
     bool isValidScalarIntrinsic = false;
 #endif
+
+    bool isMinMaxIntrinsic = false;
+    bool isMax             = false;
+    bool isMagnitude       = false;
+    bool isNative          = false;
+    bool isNumber          = false;
 
     switch (intrinsic)
     {
@@ -1965,58 +1971,85 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_Max:
         case NI_Vector128_Max:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            break;
+        }
 
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
+        case NI_Vector64_MaxMagnitude:
+        case NI_Vector128_MaxMagnitude:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isMagnitude       = true;
+            break;
+        }
 
-            retNode = gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
+        case NI_Vector64_MaxMagnitudeNumber:
+        case NI_Vector128_MaxMagnitudeNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isMagnitude       = true;
+            isNumber          = true;
             break;
         }
 
         case NI_Vector64_MaxNative:
         case NI_Vector128_MaxNative:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isNative          = true;
+            break;
+        }
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
+        case NI_Vector64_MaxNumber:
+        case NI_Vector128_MaxNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isNumber          = true;
             break;
         }
 
         case NI_Vector64_Min:
         case NI_Vector128_Min:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            break;
+        }
 
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
+        case NI_Vector64_MinMagnitude:
+        case NI_Vector128_MinMagnitude:
+        {
+            isMinMaxIntrinsic = true;
+            isMagnitude       = true;
+            break;
+        }
 
-            retNode = gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
+        case NI_Vector64_MinMagnitudeNumber:
+        case NI_Vector128_MinMagnitudeNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMagnitude       = true;
+            isNumber          = true;
             break;
         }
 
         case NI_Vector64_MinNative:
         case NI_Vector128_MinNative:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isNative          = true;
+            break;
+        }
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdMinNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
+        case NI_Vector64_MinNumber:
+        case NI_Vector128_MinNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isNumber          = true;
             break;
         }
 
@@ -3344,9 +3377,61 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve2_VectorTableLookup:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType != TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            var_types argType1 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            var_types argType2 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+
+            var_types   simdBaseType   = JitType2PreciseVarType(simdBaseJitType);
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            if (op1->TypeIs(TYP_STRUCT))
+            {
+                info.compNeedsConsecutiveRegisters = true;
+                unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
+                op1                                = gtConvertTableOpToFieldList(op1, fieldCount);
+            }
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
+            break;
+        }
+
         default:
         {
             return nullptr;
+        }
+    }
+
+    if (isMinMaxIntrinsic)
+    {
+        assert(sig->numArgs == 2);
+        assert(retNode == nullptr);
+
+        if (isNative && BlockNonDeterministicIntrinsics(mustExpand))
+        {
+            return nullptr;
+        }
+
+        op2 = impSIMDPopStack();
+        op1 = impSIMDPopStack();
+
+        if (isNative)
+        {
+            assert(!isMagnitude && !isNumber);
+            retNode = gtNewSimdMinMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize, isMax);
+        }
+        else
+        {
+            retNode = gtNewSimdMinMaxNode(retType, op1, op2, simdBaseJitType, simdSize, isMax, isMagnitude, isNumber);
         }
     }
 

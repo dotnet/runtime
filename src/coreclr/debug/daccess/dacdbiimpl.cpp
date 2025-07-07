@@ -4856,14 +4856,12 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetCurrentCustomDebuggerNotification(VMP
     return vmObjHandle;
 }
 
-// Return the current appdomain the specified thread is in.
-VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
+// Return the current appdomain.
+VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain()
 {
     DD_ENTER_MAY_THROW;
 
-    Thread *    pThread    = vmThread.GetDacPtr();
     AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
-
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
     return vmAppDomain;
@@ -5421,29 +5419,21 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
     BOOL fIsGCSafe = FALSE;
     Thread * pThread = vmThread.GetDacPtr();
 
-    // Check if the runtime has entered "Shutdown for Finalizer" mode.
-    if ((g_fEEShutDown & ShutDown_Finalize2) != 0)
+    T_CONTEXT ctx;
+    REGDISPLAY rd;
+    SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
+
+    ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
+
+    StackFrameIterator iter;
+    iter.Init(pThread, pThread->GetFrame(), &rd, flags);
+
+    CrawlFrame * pCF = &(iter.m_crawl);
+    if (pCF->IsFrameless() && pCF->IsActiveFunc())
     {
-        fIsGCSafe = TRUE;
-    }
-    else
-    {
-        T_CONTEXT ctx;
-        REGDISPLAY rd;
-        SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
-
-        ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
-
-        StackFrameIterator iter;
-        iter.Init(pThread, pThread->GetFrame(), &rd, flags);
-
-        CrawlFrame * pCF = &(iter.m_crawl);
-        if (pCF->IsFrameless() && pCF->IsActiveFunc())
+        if (pCF->IsGcSafe())
         {
-            if (pCF->IsGcSafe())
-            {
-                fIsGCSafe = TRUE;
-            }
+            fIsGCSafe = TRUE;
         }
     }
 
