@@ -31,12 +31,15 @@ public class Runtime_117377
 
         public byte M4()
         {
-            var vr3 = Vector256.CreateScalar(0U);
-            var vr5 = Vector256.Create<uint>(0);
-            var vr6 = Vector256.CreateScalar(85122339U);
-            var vr4 = Avx512F.VL.RotateLeftVariable(vr5, vr6);
-            var vr1 = Avx512F.VL.CompareGreaterThanOrEqual(vr3, vr4);
-            s_1 = Avx2.AndNot(vr1, s_1);
+            if (Avx512F.VL.IsSupported)
+            {
+                var vr3 = Vector256.CreateScalar(0U);
+                var vr5 = Vector256.Create<uint>(0);
+                var vr6 = Vector256.CreateScalar(85122339U);
+                var vr4 = Avx512F.VL.RotateLeftVariable(vr5, vr6);
+                var vr1 = Avx512F.VL.CompareGreaterThanOrEqual(vr3, vr4);
+                s_1 = Avx2.AndNot(vr1, s_1);
+            }
             return F4;
         }
     }
