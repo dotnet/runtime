@@ -805,7 +805,7 @@ static bool get_env_s_nocache(size_t* len, char* value, size_t valuesz, const ch
     assert(g_env_providers[0]->getenv_s_func != NULL);
 
     size_t required_len = 0;
-    int result = g_env_providers[0]->getenv_s_func(&required_len, value, valuesz, name);
+    g_env_providers[0]->getenv_s_func(&required_len, value, valuesz, name);
     if (len != NULL)
     {
         *len = required_len;
