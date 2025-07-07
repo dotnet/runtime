@@ -9,8 +9,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
-#pragma warning disable SA1648 // TODO: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3595
-
 namespace System.Net
 {
     /// <summary>
