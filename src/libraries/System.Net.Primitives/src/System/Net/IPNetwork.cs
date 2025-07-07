@@ -254,7 +254,10 @@ namespace System.Net
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                return new IPAddress(baseAddress.PrivateAddress & mask);
+                uint newAddress = baseAddress.PrivateAddress & mask;
+                return newAddress == baseAddress.PrivateAddress
+                    ? baseAddress
+                    : new IPAddress(newAddress);
             }
             else
             {
