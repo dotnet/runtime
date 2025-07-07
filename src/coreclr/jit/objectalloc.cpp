@@ -1710,8 +1710,41 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
     bool bbIsReturn = block->KindIs(BBJ_RETURN);
 
-    if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
+    // We zero init locally if the allocation site is in a loop, a return, or
+    // (profitability heuristic) if the allocation site may execute after EH region.
+    // This latter prevents the promoted allocation fields from being EH live.
+    //
+    bool                    needsExplicitZeroInit = comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
+    bool                    mayExecuteAfterEH     = false;
+    FlowGraphDfsTree* const dfsTree               = comp->m_dfsTree;
+
+    if (!needsExplicitZeroInit && (comp->compHndBBtabCount > 0) && (dfsTree->Contains(block)))
     {
+        // Walk forward through RPO until we find the allocation block. This gives
+        // us a crude "may happen before" check. This does not need to be exact.
+        // Note we only do this if the allocation site is NOT in a loop.
+        //
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const rpoBlock = dfsTree->GetPostOrder(i - 1);
+
+            if (rpoBlock == block)
+            {
+                break;
+            }
+
+            if (comp->bbIsTryBeg(rpoBlock))
+            {
+                mayExecuteAfterEH = true;
+                break;
+            }
+        }
+    }
+
+    if (needsExplicitZeroInit || mayExecuteAfterEH)
+    {
+        JITDUMP("\nAdding explicit zero-init for V%02u: %s\n", lclNum,
+                mayExecuteAfterEH ? "may execute after EH" : "allocation in loop");
         //------------------------------------------------------------------------
         // STMTx (IL 0x... ???)
         //   *  STORE_LCL_VAR   struct
@@ -1720,7 +1753,6 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
 
         GenTree*   init     = comp->gtNewStoreLclVarNode(lclNum, comp->gtNewIconNode(0));
         Statement* initStmt = comp->gtNewStmt(init);
-
         comp->fgInsertStmtBefore(block, stmt, initStmt);
     }
     else
