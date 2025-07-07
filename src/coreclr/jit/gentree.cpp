@@ -33525,28 +33525,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             case NI_Vector512_ConditionalSelect:
 #elif defined(TARGET_ARM64)
             case NI_AdvSimd_BitwiseSelect:
-            case NI_Sve_ConditionalSelect:
 #endif
             {
                 assert(!varTypeIsMask(retType));
+                assert(!varTypeIsMask(op1));
 
                 if (cnsNode != op1)
                 {
                     break;
                 }
 
-#if defined(TARGET_ARM64)
-                if (ni == NI_Sve_ConditionalSelect)
-                {
-                    assert(!op1->IsVectorAllBitsSet() && !op1->IsVectorZero());
-                }
-                else
-                {
-                    assert(!op1->IsTrueMask(simdBaseType) && !op1->IsMaskZero());
-                }
-#endif
-
-                if (op1->IsVectorAllBitsSet() || op1->IsTrueMask(simdBaseType))
+                if (op1->IsVectorAllBitsSet())
                 {
                     if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
@@ -33560,7 +33549,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     return op2;
                 }
 
-                if (op1->IsVectorZero() || op1->IsMaskZero())
+                if (op1->IsVectorZero())
                 {
                     return gtWrapWithSideEffects(op3, op2, GTF_ALL_EFFECT);
                 }
@@ -33580,6 +33569,65 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
                 break;
             }
+
+#if defined(TARGET_ARM64)
+            case NI_Sve_ConditionalSelect:
+            {
+                assert(!varTypeIsMask(retType));
+                assert(varTypeIsMask(op1));
+
+                if (cnsNode != op1)
+                {
+                    break;
+                }
+
+                if (op1->IsTrueMask(simdBaseType))
+                {
+                    if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        // op3 has side effects, this would require us to append a new statement
+                        // to ensure that it isn't lost, which isn't safe to do from the general
+                        // purpose handler here. We'll recognize this and mark it in VN instead
+                        break;
+                    }
+
+                    // op3 has no side effects, so we can return op2 directly
+                    return op2;
+                }
+
+                if (op1->IsMaskZero())
+                {
+                    return gtWrapWithSideEffects(op3, op2, GTF_ALL_EFFECT);
+                }
+
+                if (op2->IsCnsVec() && op3->IsCnsVec())
+                {
+                    assert(op2->gtType == TYP_SIMD16);
+                    assert(op3->gtType == TYP_SIMD16);
+
+                    simd16_t op1SimdVal;
+                    EvaluateSimdCvtMaskToVector<simd16_t>(simdBaseType, &op1SimdVal, op1->AsMskCon()->gtSimdMaskVal);
+
+                    // op2 = op2 & op1
+                    simd16_t result = {};
+                    EvaluateBinarySimd<simd16_t>(GT_AND, false, simdBaseType, &result, op2->AsVecCon()->gtSimd16Val,
+                                                 op1SimdVal);
+                    op2->AsVecCon()->gtSimd16Val = result;
+
+                    // op3 = op2 & ~op1
+                    result = {};
+                    EvaluateBinarySimd<simd16_t>(GT_AND_NOT, false, simdBaseType, &result, op3->AsVecCon()->gtSimd16Val,
+                                                 op1SimdVal);
+                    op3->AsVecCon()->gtSimd16Val = result;
+
+                    // op2 = op2 | op3
+                    op2->AsVecCon()->EvaluateBinaryInPlace(GT_OR, false, simdBaseType, op3->AsVecCon());
+
+                    resultNode = op2;
+                }
+                break;
+            }
+#endif // TARGET_ARM64
 
             default:
             {
