@@ -1090,12 +1090,9 @@ namespace System.IO
                             // If the Watcher wasn't stopped, Restart it against a new inotify instance.
                             if (evnt.Exception is InternalBufferOverflowException)
                             {
-                                lock (this)
+                                if (!IsStopped)
                                 {
-                                    if (!IsStopped)
-                                    {
-                                        fsw.Restart();
-                                    }
+                                    fsw.Restart();
                                 }
                             }
 
