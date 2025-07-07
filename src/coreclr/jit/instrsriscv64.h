@@ -307,6 +307,9 @@ INST(sh2add_uw,     "sh2add_uw",      0,   0x2000403b)
 INST(sh3add_uw,     "sh3add_uw",      0,   0x2000603b)
 INST(slli_uw,       "slli_uw",        0,   0x0800101b)
 
+// RVC
+INST(c_add,          "c.add",         0,   0x00009002)
+
 // clang-format on
 /*****************************************************************************/
 #undef INST

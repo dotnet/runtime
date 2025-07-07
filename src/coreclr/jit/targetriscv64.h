@@ -56,7 +56,7 @@
 
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
-  #define CODE_ALIGN               4       // code alignment requirement
+  #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
   #define FIRST_INT_CALLEE_SAVED  REG_S1
