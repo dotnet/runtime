@@ -86,8 +86,8 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
         return ERROR_NOT_ENOUGH_MEMORY;
     }
 #if !HAVE_PIPE2
-    fcntl(pipe_descs[0], F_SETFD, FD_CLOEXEC); // make pipe non-inheritable, if possible
-    fcntl(pipe_descs[1], F_SETFD, FD_CLOEXEC);
+    while (-1 == fcntl(pipe_descs[0], F_SETFD, FD_CLOEXEC) && errno == EINTR); // make pipe non-inheritable, if possible
+    while (-1 == fcntl(pipe_descs[1], F_SETFD, FD_CLOEXEC) && errno == EINTR);
 #endif // !HAVE_PIPE2
 
     // [0] is the read end of the pipe, and [1] is the write end.

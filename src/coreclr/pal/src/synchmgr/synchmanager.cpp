@@ -2778,8 +2778,8 @@ namespace CorUnix
             goto CPP_exit;
         }
 #if !HAVE_PIPE2
-        fcntl(rgiPipe[0], F_SETFD, FD_CLOEXEC); // make pipe non-inheritable, if possible
-        fcntl(rgiPipe[1], F_SETFD, FD_CLOEXEC);
+        while (-1 == fcntl(rgiPipe[0], F_SETFD, FD_CLOEXEC) && errno == EINTR); // make pipe non-inheritable, if possible
+        while (-1 == fcntl(rgiPipe[1], F_SETFD, FD_CLOEXEC) && errno == EINTR);
 #endif // !HAVE_PIPE2
 #endif // !CORECLR
 

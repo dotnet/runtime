@@ -467,7 +467,7 @@ CorUnix::InternalCreateFileMapping(
             // information, though...
             //
 
-            UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+            while (-1 == (UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0)) && errno == EINTR); // dup, but with CLOEXEC
             if (-1 == UnixFd)
             {
                 ERROR( "Unable to duplicate the Unix file descriptor!\n" );

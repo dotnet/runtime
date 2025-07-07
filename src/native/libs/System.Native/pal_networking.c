@@ -1713,13 +1713,18 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
 #if defined(FD_CLOEXEC)
     // macOS does not have accept4 but it can set _CLOEXEC on descriptor.
     // Unlike accept4 it is not atomic and the fd can leak child process.
-    if ((accepted != -1) && fcntl(accepted, F_SETFD, FD_CLOEXEC) != 0)
+    if (accepted != -1)
     {
-        // Preserve and return errno from fcntl. close() may reset errno to OK.
-        int oldErrno = errno;
-        close(accepted);
-        accepted = -1;
-        errno = oldErrno;
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(accepted, F_SETFD, FD_CLOEXEC)) && errno == EINTR);
+        if (fcntl_result != 0)
+        {
+            // Preserve and return errno from fcntl. close() may reset errno to OK.
+            int oldErrno = errno;
+            close(accepted);
+            accepted = -1;
+            errno = oldErrno;
+        }
     }
 #endif
 #if !defined(__linux__)
@@ -2839,7 +2844,7 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     }
 
 #ifndef SOCK_CLOEXEC
-    fcntl(ToFileDescriptor(*createdSocket), F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
+    while (-1 == fcntl(ToFileDescriptor(*createdSocket), F_SETFD, FD_CLOEXEC) && errno == EINTR); // ignore any failures; this is best effort
 #endif
     return Error_SUCCESS;
 }

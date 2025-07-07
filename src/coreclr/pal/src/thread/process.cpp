@@ -464,7 +464,7 @@ PrepareStandardHandle(
         goto PrepareStandardHandleExit;
     }
 
-    iError = fcntl(pLocalData->unix_fd, F_SETFD, 0);
+    while (-1 == (iError = fcntl(pLocalData->unix_fd, F_SETFD, 0)) && errno == EINTR);
     if (-1 == iError)
     {
         ERROR("Unable to remove close-on-exec for file (errno %i)\n", errno);
@@ -1015,7 +1015,9 @@ InternalCreateProcessExit:
        their close-on-exec flag */
     if (NULL != pobjFileIn)
     {
-        if(-1 == fcntl(iFdIn, F_SETFD, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(iFdIn, F_SETFD, 1)) && errno == EINTR);
+        if(-1 == fcntl_result)
         {
             WARN("couldn't restore close-on-exec flag to stdin descriptor! "
                  "errno is %d (%s)\n", errno, strerror(errno));
@@ -1025,7 +1027,9 @@ InternalCreateProcessExit:
 
     if (NULL != pobjFileOut)
     {
-        if(-1 == fcntl(iFdOut, F_SETFD, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(iFdOut, F_SETFD, 1)) && errno == EINTR);
+        if(-1 == fcntl_result)
         {
             WARN("couldn't restore close-on-exec flag to stdout descriptor! "
                  "errno is %d (%s)\n", errno, strerror(errno));
@@ -1035,7 +1039,9 @@ InternalCreateProcessExit:
 
     if (NULL != pobjFileErr)
     {
-        if(-1 == fcntl(iFdErr, F_SETFD, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(iFdErr, F_SETFD, 1)) && errno == EINTR);
+        if(-1 == fcntl_result)
         {
             WARN("couldn't restore close-on-exec flag to stderr descriptor! "
                  "errno is %d (%s)\n", errno, strerror(errno));

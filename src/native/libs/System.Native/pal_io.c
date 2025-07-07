@@ -335,7 +335,7 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 #if !HAVE_O_CLOEXEC
     if (old_flags & PAL_O_CLOEXEC)
     {
-        fcntl(result, F_SETFD, FD_CLOEXEC);
+        while (-1 == fcntl(result, F_SETFD, FD_CLOEXEC) && errno == EINTR);
     }
 #endif
     return result;
@@ -353,8 +353,11 @@ intptr_t SystemNative_Dup(intptr_t oldfd)
     while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD_CLOEXEC, 0)) < 0 && errno == EINTR);
 #elif HAVE_F_DUPFD
     while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD, 0)) < 0 && errno == EINTR);
-    // do CLOEXEC here too
-    fcntl(result, F_SETFD, FD_CLOEXEC);
+    if (result != -1)
+    {
+        // do CLOEXEC here too
+        while (-1 == fcntl(result, F_SETFD, FD_CLOEXEC) && errno == EINTR);
+    }
 #else
     // The main use cases for dup are setting up the classic Unix dance of setting up file descriptors in advance of performing a fork. Since WASI has no fork, these don't apply.
     // https://github.com/bytecodealliance/wasmtime/blob/b2fefe77148582a9b8013e34fe5808ada82b6efc/docs/WASI-rationale.md#why-no-dup
@@ -618,7 +621,9 @@ int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
 
 int32_t SystemNative_FcntlGetFD(intptr_t fd)
 {
-    return fcntl(ToFileDescriptor(fd), F_GETFD);
+    int result;
+    while (-1 == (result = fcntl(ToFileDescriptor(fd), F_GETFD)) && errno == EINTR);
+    return result;
 }
 
 int32_t SystemNative_FcntlCanGetSetPipeSz(void)
@@ -660,7 +665,8 @@ int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
 {
     int fileDescriptor = ToFileDescriptor(fd);
 
-    int flags = fcntl(fileDescriptor, F_GETFL);
+    int flags;
+    while (-1 == (flags = fcntl(fileDescriptor, F_GETFL)) && errno == EINTR);
     if (flags == -1)
     {
         return -1;
@@ -675,7 +681,9 @@ int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
         flags |= O_NONBLOCK;
     }
 
-    return fcntl(fileDescriptor, F_SETFL, flags);
+    int result;
+    while (-1 == (result = fcntl(fileDescriptor, F_SETFL, flags)) && errno == EINTR);
+    return result;
 }
 
 int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
@@ -685,7 +693,8 @@ int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
         return Error_EFAULT;
     }
 
-    int flags = fcntl(ToFileDescriptor(fd), F_GETFL);
+    int flags;
+    while (-1 == (flags = fcntl(ToFileDescriptor(fd), F_GETFL)) && errno == EINTR);
     if (flags == -1)
     {
         *isNonBlocking = 0;

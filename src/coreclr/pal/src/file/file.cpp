@@ -612,7 +612,9 @@ CorUnix::InternalCreateFile(
     if ( dwFlagsAndAttributes & FILE_FLAG_NO_BUFFERING )
     {
 #ifdef F_NOCACHE
-        if (-1 == fcntl(filed, F_NOCACHE, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(filed, F_NOCACHE, 1)) && errno == EINTR);
+        if (-1 == fcntl_result)
         {
             ASSERT("Can't set F_NOCACHE; fcntl() failed. errno is %d (%s)\n",
                errno, strerror(errno));
@@ -635,7 +637,9 @@ CorUnix::InternalCreateFile(
 
     /* make file descriptor close-on-exec; inheritable handles will get
       "uncloseonexeced" in CreateProcess if they are actually being inherited*/
-    if(-1 == fcntl(filed,F_SETFD, FD_CLOEXEC))
+    int fcntl_result;
+    while (-1 == (fcntl_result = fcntl(filed,F_SETFD, FD_CLOEXEC)) && errno == EINTR);
+    if(-1 == fcntl_result)
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
@@ -2166,14 +2170,18 @@ CorUnix::InternalCreatePipe(
 
     /* enable close-on-exec for both pipes; if one gets passed to CreateProcess
        it will be "uncloseonexeced" in order to be inherited */
-    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,FD_CLOEXEC))
+    int fcntl_result;
+    while (-1 == (fcntl_result = fcntl(readWritePipeDes[0],F_SETFD,FD_CLOEXEC)) && errno == EINTR);
+    if(-1 == fcntl_result)
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
         palError = ERROR_INTERNAL_ERROR;
         goto InternalCreatePipeExit;
     }
-    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC))
+    int fcntl_result;
+    while (-1 == (fcntl_result = fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC)) && errno == EINTR);
+    if(-1 == fcntl_result)
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
@@ -2416,7 +2424,7 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
-    new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+    while (-1 == (new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0)) && errno == EINTR); // dup, but with CLOEXEC
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));

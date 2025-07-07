@@ -270,7 +270,9 @@ static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes
 #include <unistd.h>
 static int sync_file(minipal_log_flags flags)
 {
-    if (fcntl(fileno(get_std_file(flags)), F_FULLFSYNC) != -1)
+    int result;
+    while (-1 == (result = fcntl(fileno(get_std_file(flags)), F_FULLFSYNC)) && errno == EINTR);
+    if (result != -1)
         return 0;
 
     return errno;
