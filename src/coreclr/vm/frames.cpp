@@ -1894,6 +1894,11 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
     SetSP(pContext, dac_cast<TADDR>(pFrame));
     SetFP(pContext, (TADDR)pFrame->pStack);
     SetFirstArgReg(pContext, dac_cast<TADDR>(this));
+    pContext->ContextFlags = CONTEXT_FULL;
+    if (m_isFaulting)
+    {
+        pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    }
 }
 
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)

@@ -44,6 +44,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVXIFMA_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
+        case InstructionSet_AVXVNNIINT:
+            return InstructionSet_AVXVNNIINT;
+        case InstructionSet_AVXVNNIINT_V512:
+            return InstructionSet_AVXVNNIINT_V512;
         case InstructionSet_GFNI:
             return InstructionSet_GFNI_X64;
         case InstructionSet_SHA:
@@ -145,6 +149,12 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_GFNI_V512;
         }
 
+        case InstructionSet_AVXVNNIINT:
+        case InstructionSet_AVXVNNIINT_V512:
+        {
+            return InstructionSet_AVXVNNIINT_V512;
+        }
+
         default:
         {
             return InstructionSet_NONE;
@@ -160,7 +170,7 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 //
 // Return Value:
 //    The InstructionSet associated with className
-static CORINFO_InstructionSet lookupInstructionSet(const char* className)
+CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
 {
     assert(className != nullptr);
 
@@ -253,9 +263,26 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             {
                 return InstructionSet_AVXIFMA;
             }
-            else if (strcmp(className + 3, "Vnni") == 0)
+            else if (strncmp(className + 3, "Vnni", 4) == 0)
             {
-                return InstructionSet_AVXVNNI;
+                if (className[7] == '\0')
+                {
+                    return InstructionSet_AVXVNNI;
+                }
+                else if (strncmp(className + 7, "Int", 3) == 0)
+                {
+                    if ((strcmp(className + 10, "8") == 0) || (strcmp(className + 10, "16") == 0))
+                    {
+                        if (compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT))
+                        {
+                            return InstructionSet_AVXVNNIINT;
+                        }
+                        else
+                        {
+                            return InstructionSet_AVXVNNIINT_V512;
+                        }
+                    }
+                }
             }
         }
     }
@@ -386,7 +413,6 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             return InstructionSet_X86Serialize;
         }
     }
-
     return InstructionSet_ILLEGAL;
 }
 
@@ -400,9 +426,9 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
-                                                  const char* innerEnclosingClassName,
-                                                  const char* outerEnclosingClassName)
+CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
+                                           const char* innerEnclosingClassName,
+                                           const char* outerEnclosingClassName)
 {
     assert(className != nullptr);
 
@@ -527,95 +553,6 @@ bool HWIntrinsicInfo::isAVX2GatherIntrinsic(NamedIntrinsic id)
 }
 
 //------------------------------------------------------------------------
-// lookupFloatComparisonModeForSwappedArgs: Get the floating-point comparison
-//      mode to use when the operands are swapped.
-//
-// Arguments:
-//    comparison -- The comparison mode used for (op1, op2)
-//
-// Return Value:
-//     The comparison mode to use for (op2, op1)
-//
-FloatComparisonMode HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison)
-{
-    switch (comparison)
-    {
-            // These comparison modes are the same even if the operands are swapped
-
-        case FloatComparisonMode::OrderedEqualNonSignaling:
-            return FloatComparisonMode::OrderedEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNonSignaling:
-            return FloatComparisonMode::UnorderedNonSignaling;
-        case FloatComparisonMode::UnorderedNotEqualNonSignaling:
-            return FloatComparisonMode::UnorderedNotEqualNonSignaling;
-        case FloatComparisonMode::OrderedNonSignaling:
-            return FloatComparisonMode::OrderedNonSignaling;
-        case FloatComparisonMode::UnorderedEqualNonSignaling:
-            return FloatComparisonMode::UnorderedEqualNonSignaling;
-        case FloatComparisonMode::OrderedFalseNonSignaling:
-            return FloatComparisonMode::OrderedFalseNonSignaling;
-        case FloatComparisonMode::OrderedNotEqualNonSignaling:
-            return FloatComparisonMode::OrderedNotEqualNonSignaling;
-        case FloatComparisonMode::UnorderedTrueNonSignaling:
-            return FloatComparisonMode::UnorderedTrueNonSignaling;
-        case FloatComparisonMode::OrderedEqualSignaling:
-            return FloatComparisonMode::OrderedEqualSignaling;
-        case FloatComparisonMode::UnorderedSignaling:
-            return FloatComparisonMode::UnorderedSignaling;
-        case FloatComparisonMode::UnorderedNotEqualSignaling:
-            return FloatComparisonMode::UnorderedNotEqualSignaling;
-        case FloatComparisonMode::OrderedSignaling:
-            return FloatComparisonMode::OrderedSignaling;
-        case FloatComparisonMode::UnorderedEqualSignaling:
-            return FloatComparisonMode::UnorderedEqualSignaling;
-        case FloatComparisonMode::OrderedFalseSignaling:
-            return FloatComparisonMode::OrderedFalseSignaling;
-        case FloatComparisonMode::OrderedNotEqualSignaling:
-            return FloatComparisonMode::OrderedNotEqualSignaling;
-        case FloatComparisonMode::UnorderedTrueSignaling:
-            return FloatComparisonMode::UnorderedTrueSignaling;
-
-            // These comparison modes need a different mode if the operands are swapped
-
-        case FloatComparisonMode::OrderedLessThanSignaling:
-            return FloatComparisonMode::OrderedGreaterThanSignaling;
-        case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
-            return FloatComparisonMode::OrderedGreaterThanOrEqualSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanSignaling;
-        case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
-            return FloatComparisonMode::OrderedLessThanOrEqualSignaling;
-        case FloatComparisonMode::OrderedGreaterThanSignaling:
-            return FloatComparisonMode::OrderedLessThanSignaling;
-        case FloatComparisonMode::OrderedLessThanNonSignaling:
-            return FloatComparisonMode::OrderedGreaterThanNonSignaling;
-        case FloatComparisonMode::OrderedLessThanOrEqualNonSignaling:
-            return FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanNonSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanNonSignaling;
-        case FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling:
-            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling;
-        case FloatComparisonMode::UnorderedNotGreaterThanNonSignaling:
-            return FloatComparisonMode::UnorderedNotLessThanNonSignaling;
-        case FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling:
-            return FloatComparisonMode::OrderedLessThanOrEqualNonSignaling;
-        case FloatComparisonMode::OrderedGreaterThanNonSignaling:
-            return FloatComparisonMode::OrderedLessThanNonSignaling;
-
-        default:
-            unreached();
-    }
-}
-
-//------------------------------------------------------------------------
 // lookupIdForFloatComparisonMode: Get the intrinsic ID to use for a given float comparison mode
 //
 // Arguments:
@@ -635,9 +572,14 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
     assert(varTypeIsFloating(simdBaseType));
     assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
+    // .NET doesn't differentiate between signalling and non-signalling
+    // we disable IEEE 754 exceptions on startup and make it undefined
+    // behavior to enable it, so we'll just normalize to the same form
+
     switch (comparison)
     {
         case FloatComparisonMode::OrderedEqualNonSignaling:
+        case FloatComparisonMode::OrderedEqualSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -658,6 +600,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedGreaterThanSignaling:
+        case FloatComparisonMode::OrderedGreaterThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -678,6 +621,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
+        case FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -698,6 +642,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedLessThanSignaling:
+        case FloatComparisonMode::OrderedLessThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -718,6 +663,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
+        case FloatComparisonMode::OrderedLessThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -738,6 +684,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotEqualNonSignaling:
+        case FloatComparisonMode::UnorderedNotEqualSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -758,6 +705,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
+        case FloatComparisonMode::UnorderedNotGreaterThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -778,6 +726,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
+        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -798,6 +747,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotLessThanSignaling:
+        case FloatComparisonMode::UnorderedNotLessThanNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -818,6 +768,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
+        case FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -838,6 +789,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::OrderedNonSignaling:
+        case FloatComparisonMode::OrderedSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -858,6 +810,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
         }
 
         case FloatComparisonMode::UnorderedNonSignaling:
+        case FloatComparisonMode::UnorderedSignaling:
         {
             if (intrinsic == NI_AVX512_CompareMask)
             {
@@ -5299,6 +5252,35 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             intrinsic = NI_AVX512_ExpandMask;
             op2       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
             retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AVXVNNIINT_MultiplyWideningAndAdd:
+        case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
+        case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
+        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate:
+        {
+            assert(sig->numArgs == 3);
+
+            CORINFO_ARG_LIST_HANDLE argList = sig->args;
+            CORINFO_CLASS_HANDLE    argClass;
+            var_types               argType = TYP_UNKNOWN;
+
+            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
+
+            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            CorInfoType op3BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+            GenTree*    op3            = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op3BaseJitType);
             break;
         }
 

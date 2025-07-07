@@ -755,7 +755,7 @@ void BasicBlock::dspKind() const
                 const bool isDominant = bbSwtTargets->bbsHasDominantCase && (i == bbSwtTargets->bbsDominantCase);
                 if (isDominant)
                 {
-                    printf("[dom(" FMT_WT ")]", bbSwtTargets->bbsDominantFraction);
+                    printf("[dom]");
                 }
             }
 
@@ -1771,7 +1771,6 @@ BBswtDesc::BBswtDesc(const BBswtDesc* other)
     : bbsDstTab(nullptr)
     , bbsCount(other->bbsCount)
     , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {
@@ -1788,7 +1787,6 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
     : bbsDstTab(nullptr)
     , bbsCount(other->bbsCount)
     , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {
