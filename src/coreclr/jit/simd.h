@@ -1740,7 +1740,6 @@ bool EvaluateSimdPatternToMask(simdmask_t* result, SveMaskPattern pattern)
             return false;
     }
     assert(finalOne <= count);
-    assert(finalOne > 0);
 
     // Write finalOne number of bits
     for (uint32_t i = 0; i < finalOne; i++)
@@ -1834,7 +1833,6 @@ bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
             return false;
     }
     assert(finalOne <= count);
-    assert(finalOne > 0);
 
     // Write finalOne number of entries
     for (uint32_t i = 0; i < count; i++)
