@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "sideeffects.h"
 
 #ifdef _MSC_VER
 #pragma hdrstop
