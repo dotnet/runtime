@@ -2776,7 +2776,7 @@ public:
     bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsILStub); }
     bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsLCGMethod); }
 
-	inline PTR_DynamicResolver    GetResolver();
+    inline PTR_DynamicResolver    GetResolver();
     inline PTR_LCGMethodResolver  GetLCGMethodResolver();
     inline PTR_ILStubResolver     GetILStubResolver();
 

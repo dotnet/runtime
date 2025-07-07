@@ -293,14 +293,14 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
 void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMethod));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LOG((LF_BCL, LL_INFO10000, "Level4 - Returning DynamicMethod to free list {0x%p} (used %d)\n", pMethod, m_Used));
     {
@@ -311,8 +311,6 @@ void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
         m_Used--;
 #endif
     }
-
-    RETURN;
 }
 
 
@@ -904,7 +902,7 @@ bool DynamicMethodDesc::TryDestroy()
     }
 
     // See ModuleHandle_GetDynamicMethod() for allocation of these DynamicMethodDesc members.
-    // Free the member field memory here prior to storage reclaimation below.
+    // Free the member field memory here prior to storage reclamation below.
     delete[] m_pszMethodName;
     delete[] (BYTE*)m_pSig;
 
