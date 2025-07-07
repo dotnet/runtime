@@ -9,8 +9,6 @@
     runincontext loads even framework assemblies into the unloadable
     context, locals in this loop prevent unloading -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/106241 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
