@@ -1200,6 +1200,7 @@ struct WalkILOffsetsData
     bool epilogCase = false;
 };
 
+// This callback is used to walk the IL offsets for a given method, and find the IL offset that corresponds to a given native offset.
 size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
 {
     WalkILOffsetsData *pWalkData = (WalkILOffsetsData *)pContext;
@@ -1243,6 +1244,13 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
         pWalkData->firstCall = false;
         // This is the first time we are called, so set the current native offset to the one we are looking for
         pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+        if (pOffsetMapping->nativeOffset > pWalkData->dwSearchNativeOffset)
+        {
+            // We are looking for an IL offset, and all IL offsets are are about portions of the method that are after the native offset we were passed initially.
+            // Treat this like a PROLOG and set the IL offset to 0
+            pWalkData->dwFinalILOffset = 0;
+            return 1; 
+        }
         pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
     }
     else
@@ -1399,11 +1407,116 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
 void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, uint8_t* ipHotStart, size_t hotLen)
 {
     LIMITED_METHOD_CONTRACT;
+    {
+        USHORT cMap;
+        NewArrayHolder<UINT> rguiILOffset;
+        NewArrayHolder<UINT> rguiNativeOffset;
+
+        if (pFunc->IsWrapperStub() || pFunc->IsDynamicMethod())
+        {
+            return;
+        }
+
+        // This is the limit on how big the il-to-native map can get, as measured by number
+        // of entries in each parallel array (IL offset array and native offset array).
+        // This number was chosen to ensure the overall event stays under the Windows limit
+        // of 64K
+        const USHORT kMapEntriesMax = 7000;
+
+        HRESULT hr = g_pDebugInterface->GetILToNativeMappingIntoArrays(
+        pFunc,
+        PINSTRToPCODE((TADDR)ipHotStart),
+        kMapEntriesMax,
+        &cMap,
+        &rguiILOffset,
+        &rguiNativeOffset);
+
+        if (FAILED(hr))
+        {
+            printf("Failed to get IL to Native mapping for %p: %x\n", pFunc, hr);
+            return;
+        }
+
+        EECodeInfo codeInfo((PCODE)ipHotStart);
+        if (!codeInfo.IsValid())
+        {
+            return;
+        }
+        TADDR startAddress = codeInfo.GetStartAddress();
+        DebugInfoRequest request;
+        request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+
+        ILToNativeMapArrays context(kMapEntriesMax);
+        codeInfo.GetJitManager()->WalkILOffsets(request, &context, ComputeILOffsetArrays);
+
+        uint32_t cMapWalk;
+        uint32_t* rguiILOffsetWalk;
+        uint32_t* rguiNativeOffsetWalk;
+
+        context.GetArrays(&cMapWalk, &rguiNativeOffsetWalk, &rguiILOffsetWalk);
+
+        bool failure = false;
+
+        if (cMapWalk != cMap)
+        {
+            printf("Mismatch in IL to Native mapping count for %p: Expected %d, got %d\n", pFunc, cMap, cMapWalk);
+            failure = true;
+        }
+
+        if (cMapWalk == cMap)
+        {
+            for (uint32_t i = 0; i < cMapWalk; i++)
+            {
+                // We should never have a prolog or epilog entry in the map.
+                if ((rguiILOffsetWalk[i] != rguiILOffset[i]) || rguiNativeOffsetWalk[i] != rguiNativeOffset[i])
+                {
+                    printf("Mismatch in IL to Native mapping at index %d\n", (int)i);
+                    failure = true;
+                    break;
+                }
+            }
+        }
+
+        if (failure)
+        {
+            codeInfo.GetJitManager()->WalkILOffsets(request, NULL, WalkILOffsetsCallback_Printer);
+
+            printf("cMap: %d\n", cMap);
+            printf("cMapWalk: %d\n", cMapWalk);
+
+            uint32_t i = 0;
+            for (i = 0; i < cMap && i < cMapWalk; i++)
+            {
+                if ((rguiILOffsetWalk[i] != rguiILOffset[i]) || rguiNativeOffsetWalk[i] != rguiNativeOffset[i])
+                {
+                    printf("MISMATCH - ");
+                }
+
+                printf("IL Offset: %d, IL Offset(walk): %d, Native Offset: %d Native Offset(walk): %d\n", (int)rguiILOffset[i], (int)rguiILOffsetWalk[i], (int)rguiNativeOffset[i], (int)rguiNativeOffsetWalk[i]);
+            }
+
+            for (; i < cMap; i++)
+            {
+                printf("IL Offset: %d, Native Offset: %d\n", (int)rguiILOffsetWalk[i], (int)rguiNativeOffsetWalk[i]);
+            }
+
+            for (; i < cMapWalk; i++)
+            {
+                printf("IL Offset(walk): %d, Native Offset(walk): %d\n", (int)rguiILOffsetWalk[i], (int)rguiNativeOffsetWalk[i]);
+            }
+            _ASSERTE(!failure);
+        }
+    }
 
     uint8_t *ip;
     if (ipColdStart != NULL)
     {
-        for (ip = ipColdStart; ip <= (ipColdStart + coldLen);ip++)
+        size_t step = coldLen / 100;
+        if (step == 0)
+        {
+            step = 1; // Ensure we step at least once
+        }
+        for (ip = ipColdStart; ip <= (ipColdStart + coldLen);ip += step)
         {
             ValidateILOffset(pFunc, ip);
         }
@@ -1411,7 +1524,12 @@ void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, 
 
     if (ipHotStart != NULL)
     {
-        for (ip = ipHotStart; ip <= (ipHotStart + hotLen);ip++)
+        size_t step = hotLen / 100;
+        if (step == 0)
+        {
+            step = 1; // Ensure we step at least once
+        }
+        for (ip = ipHotStart; ip <= (ipHotStart + hotLen);ip += step)
         {
             ValidateILOffset(pFunc, ip);
         }
@@ -1438,88 +1556,49 @@ void DebugStackTrace::Element::InitPass2()
     bool bRes = false;
 
     bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
-#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
 
-    // Calculate the IL offset using the debugging services
-    if ((this->ip != (PCODE)NULL) && g_pDebugInterface)
+    // Check the cache!
+    uint32_t dwILOffsetFromCache;
+    if (CheckNativeToILCache((void*)this->ip, fAdjustOffset, &dwILOffsetFromCache))
     {
-        // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
-        // adjusted in certain cases when calculating the IL offset.
-        //
-        // The dwOffset of the stack frame points to either:
-        //
-        // 1) The instruction that caused a hardware exception (div by zero, null ref, etc).
-        // 2) The instruction after the call to an internal runtime function (FCALL like IL_Throw, IL_Rethrow,
-        //    JIT_OverFlow, etc.) that caused a software exception.
-        // 3) The instruction after the call to a managed function (non-leaf node).
-        //
-        // #2 and #3 are the cases that need to adjust dwOffset because they point after the call instruction
-        // and may point to the next (incorrect) IL instruction/source line. If STEF_IP_ADJUSTED is set,
-        // IP/dwOffset has already be decremented so don't decrement it again.
-        //
-        // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
-        // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
-        // instruction throwing the exception.
-        bRes = g_pDebugInterface->GetILOffsetFromNative(
-            pFunc,
-            (LPCBYTE)this->ip,
-            fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
-            &this->dwILOffset);
+        this->dwILOffset = dwILOffsetFromCache;
+        bRes = true;
     }
-#endif // DEBUG
-
-    if (this->ip != (PCODE)NULL)
+    else
     {
-        // Check the cache!
-        uint32_t dwILOffsetFromCache;
-        if (CheckNativeToILCache((void*)this->ip, fAdjustOffset, &dwILOffsetFromCache))
+        // Get IL Offset from the JitManager directly
+        EECodeInfo codeInfo(this->ip);
+
+        // We are allowed to get a result for non-dynamic methods only, other methods will either have good data, or be returned as IL offset 0.
+        if (codeInfo.IsValid() && !codeInfo.GetMethodDesc()->IsDynamicMethod())
         {
-#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
-            _ASSERTE(this->dwILOffset == dwILOffsetFromCache); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
-#endif // DEBUGGING_SUPPORTED && DEBUG
-            this->dwILOffset = dwILOffsetFromCache;
+            TADDR startAddress = codeInfo.GetStartAddress();
+            WalkILOffsetsData data(fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset);
+            DebugInfoRequest request;
+            request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+            if (!codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback))
+            {
+                data.dwFinalILOffset = 0; // If we didn't find any IL offsets, set the final IL offset to 0
+            }
+
+            this->dwILOffset = data.dwFinalILOffset;
             bRes = true;
+
+            MethodDesc* pMD = codeInfo.GetMethodDesc();
+            if (!pMD->IsLCGMethod() && !pMD->GetLoaderAllocator()->IsCollectible())
+            {
+                // Only insert into the cache if the value found will not change throughout the lifetime of the process.
+                InsertIntoNativeToILCache(
+                    (void*)this->ip,
+                    fAdjustOffset,
+                    this->dwILOffset);
+            }
         }
         else
         {
-            // Get IL Offset from the JitManager directly
-            EECodeInfo codeInfo(this->ip);
-
-            // We are allowed to get a result for non-dynamic methods only, other methods will either have good data, or be returned as IL offset 0.
-            if (codeInfo.IsValid() && !codeInfo.GetMethodDesc()->IsDynamicMethod())
-            {
-                TADDR startAddress = codeInfo.GetStartAddress();
-                WalkILOffsetsData data(fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset);
-                DebugInfoRequest request;
-                request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
-                if (!codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback))
-                {
-                    data.dwFinalILOffset = 0; // If we didn't find any IL offsets, set the final IL offset to 0
-                }
-
-#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
-                _ASSERTE(this->dwILOffset == data.dwFinalILOffset); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
-#endif // DEBUGGING_SUPPORTED && DEBUG
-                this->dwILOffset = data.dwFinalILOffset;
-                bRes = true;
-
-                MethodDesc* pMD = codeInfo.GetMethodDesc();
-                if (!pMD->IsLCGMethod() && !pMD->GetLoaderAllocator()->IsCollectible())
-                {
-                    // Only insert into the cache if the value found will not change throughout the lifetime of the process.
-                    InsertIntoNativeToILCache(
-                        (void*)this->ip,
-                        fAdjustOffset,
-                        this->dwILOffset);
-                }
-            }
-            else
-            {
-                bRes = false;
-            }
+            bRes = false;
         }
     }
-
 
     // If there was no mapping information, then set to an invalid value
     if (!bRes)
@@ -1528,4 +1607,251 @@ void DebugStackTrace::Element::InitPass2()
     }
 }
 
+int32_t ILToNativeMapArrays::CompareILOffsets(uint32_t ilOffsetA, uint32_t ilOffsetB)
+{
+    if (ilOffsetA == ilOffsetB)
+    {
+        return 0; 
+    }
+
+    if (ilOffsetA == ICorDebugInfo::PROLOG)
+    {
+        // Prolog entries are always at the start of the list.
+        return -1;
+    }
+    if (ilOffsetB == ICorDebugInfo::PROLOG)
+    {
+        // Prolog entries are always at the start of the list.
+        return 1;
+    }
+    else if (ilOffsetA == ICorDebugInfo::NO_MAPPING)
+    {
+        // No mappings are always at the end of the list.
+        return 1;
+    }
+    else if (ilOffsetB == ICorDebugInfo::NO_MAPPING)
+    {
+        // No mappings are always at the end of the list.
+        return -1;
+    }
+    else if (ilOffsetA == ICorDebugInfo::EPILOG)
+    {
+        // Epilog entries are always just before the NO_MAPPING regions
+        return 1;
+    }
+    else if (ilOffsetB == ICorDebugInfo::EPILOG)
+    {
+        // Epilog entries are always just before the NO_MAPPING regions
+        return -1;
+    }
+    else if (ilOffsetA < ilOffsetB)
+    {
+        return -1;
+    }
+    else
+    {
+        return 1;
+    }
+}
+bool ILToNativeMapArrays::CompareLessOffsets(uint32_t ilOffsetA, uint32_t nativeOffsetA, uint32_t ilOffsetB, uint32_t nativeOffsetB)
+{
+    int32_t ilOffsetCompare = CompareILOffsets(ilOffsetA, ilOffsetB);
+    _ASSERTE(CompareILOffsets(ilOffsetB, ilOffsetA) == -ilOffsetCompare);
+
+    if (ilOffsetCompare != 0)
+    {
+        // If IL offsets are not equal, then we can return the result of the IL offset comparison.
+        return ilOffsetCompare < 0;
+    }
+    return nativeOffsetA < nativeOffsetB;
+}
+
+bool ILToNativeMapArrays::CompareGreaterOffsets(uint32_t ilOffsetA, uint32_t nativeOffsetA, uint32_t ilOffsetB, uint32_t nativeOffsetB)
+{
+    int32_t ilOffsetCompare = CompareILOffsets(ilOffsetA, ilOffsetB);
+    _ASSERTE(CompareILOffsets(ilOffsetB, ilOffsetA) == -ilOffsetCompare);
+
+    if (ilOffsetCompare != 0)
+    {
+        // If IL offsets are not equal, then we can return the result of the IL offset comparison.
+        return ilOffsetCompare > 0;
+    }
+    return nativeOffsetA > nativeOffsetB;
+}
+
+void ILToNativeMapArrays::Swap(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t i, int32_t j)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    uint32_t tempNative = rguiNativeOffset[i];
+    uint32_t tempIL = rguiILOffset[i];
+    rguiNativeOffset[i] = rguiNativeOffset[j];
+    rguiILOffset[i] = rguiILOffset[j];
+    rguiNativeOffset[j] = tempNative;
+    rguiILOffset[j] = tempIL;
+}
+
+void ILToNativeMapArrays::Copy(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t i, int32_t j)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    rguiNativeOffset[i] = rguiNativeOffset[j];
+    rguiILOffset[i] = rguiILOffset[j];
+}
+
+int32_t ILToNativeMapArrays::Partition(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t low, int32_t high)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Choose the pivot as the middle element and 
+    // pull the pivot the the end of the array.
+    Swap(rguiNativeOffset, rguiILOffset, low + (high - low) / 2, high);
+
+    uint32_t pivotNative = rguiNativeOffset[high];
+    uint32_t pivotIL = rguiILOffset[high];
+    int i = low - 1;
+
+    for (int j = low; j < high; j++)
+    {
+        if (CompareLessOffsets(rguiILOffset[j], rguiNativeOffset[j], pivotIL, pivotNative))
+        {
+            i++;
+            Swap(rguiNativeOffset, rguiILOffset, j, i);
+        }
+    }
+
+    // Place pivot in the correct position
+    Swap(rguiNativeOffset, rguiILOffset, i+1, high);
+    return i + 1;
+}
+
+void ILToNativeMapArrays::QuickSort(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t low, int32_t high, int32_t stackDepth)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if ((stackDepth > 5) || (high - low) < 10)
+    {
+        for (int i = low + 1; i <= high; i++)
+        {
+            uint32_t keyNative = rguiNativeOffset[i];
+            uint32_t keyIL = rguiILOffset[i];
+            int j = i - 1;
+
+            // Move elements of rguiNativeOffset[low..i-1], that are greater than keyNative,
+            // to one position ahead of their current position
+            while (j >= low && CompareGreaterOffsets(rguiILOffset[j], rguiNativeOffset[j], keyIL, keyNative))
+            {
+                Copy(rguiNativeOffset, rguiILOffset, j + 1, j);
+                j--;
+            }
+            rguiNativeOffset[j + 1] = keyNative;
+            rguiILOffset[j + 1] = keyIL;
+        }
+    }
+    else
+    {
+        int pi = Partition(rguiNativeOffset, rguiILOffset, low, high);
+
+        // Recursively sort elements before and after partition
+        QuickSort(rguiNativeOffset, rguiILOffset, low, pi - 1, stackDepth + 1);
+        QuickSort(rguiNativeOffset, rguiILOffset, pi + 1, high, stackDepth + 1);
+    }
+}
+
+void ILToNativeMapArrays::AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping)
+{
+    if (m_rguiNativeOffset.GetCount() < m_cMapEntriesMax)
+    {
+        if (m_fNextReplacesLast)
+        {
+            if ((pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION) == ICorDebugInfo::CALL_INSTRUCTION)
+            {
+                // Remove the excess mapping, and reset the m_fNextReplacesLast flag.
+                callInstrSequence++;
+                m_rguiILOffset.SetCount(m_rguiILOffset.GetCount() - 1);
+                m_rguiNativeOffset.SetCount(m_rguiNativeOffset.GetCount() - 1);
+                m_fNextReplacesLast = false;
+            }
+            else
+            {
+                // Check to see if we should prefer to drop this mapping in favor of a future mapping.
+                if ((m_rguiILOffset.GetCount() > 1) && 
+                    (m_rguiILOffset[m_rguiILOffset.GetCount() - 2] == pOffsetMapping->ilOffset))
+                {
+                    m_fNextReplacesLast = true;
+                }
+                else
+                {
+                    m_fNextReplacesLast = false;
+                }
+
+                m_rguiNativeOffset[m_rguiNativeOffset.GetCount() - 1] = pOffsetMapping->nativeOffset;
+                m_rguiILOffset[m_rguiNativeOffset.GetCount() - 1] = pOffsetMapping->ilOffset;
+            }
+        }
+        else if ((pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION) != ICorDebugInfo::CALL_INSTRUCTION)
+        {
+            if (callInstrSequence < 2)
+            {
+                // Check to see if we should prefer to drop this mapping in favor of a future mapping.
+                if ((m_rguiILOffset.GetCount() > 0) && 
+                    (m_rguiILOffset[m_rguiILOffset.GetCount() - 1] == pOffsetMapping->ilOffset))
+                {
+                    m_fNextReplacesLast = true;
+                }
+            }
+            m_rguiNativeOffset.Append(pOffsetMapping->nativeOffset);
+            m_rguiILOffset.Append(pOffsetMapping->ilOffset);
+
+            callInstrSequence = 0;
+        }
+        else
+        {
+            callInstrSequence++;
+        }
+    }
+    else
+    {
+        // Once we reach this stage, we will not add any more entries other than prolog entries.
+
+        // If there is a non-prolog entry, then print the next prolog entry.
+        // If there is a call_instruction entry, then don't add it, but it 
+        if (pOffsetMapping->ilOffset == ICorDebugInfo::PROLOG)
+        {
+            callInstrSequence = 0;
+            if (!m_fNextReplacesLast)
+            {
+                m_rguiNativeOffset.Append(pOffsetMapping->nativeOffset);
+                m_rguiILOffset.Append(pOffsetMapping->ilOffset);
+                m_fNextReplacesLast = true;
+            }
+        }
+        else if ((pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION) == ICorDebugInfo::CALL_INSTRUCTION)
+        {
+            callInstrSequence++;
+            if (callInstrSequence >= 2)
+            {
+                m_fNextReplacesLast = false;
+            }
+        }
+        else
+        {
+            callInstrSequence = 0;
+            m_fNextReplacesLast = false;
+        }
+    }
+}
+
+// This callback is used to walk the IL offsets for a given method, and produce a pair of arrays that contain the IL and native offsets for the method.
+size_t ComputeILOffsetArrays(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+{
+    if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
+    {
+        // This is a special case for the end of the method, where the native offset is 0xFFFFFFFF.
+        return 1;
+    }
+    ILToNativeMapArrays* pArrays = (ILToNativeMapArrays*)pContext;
+    pArrays->AddEntry(pOffsetMapping);
+    return 0;
+}
 #endif // !DACCESS_COMPILE
