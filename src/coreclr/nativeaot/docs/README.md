@@ -1,6 +1,5 @@
 # Using Native AOT
 
-- [Limitations](limitations.md)
 - [Compiling applications](compiling.md)
 - [Building native AOT apps in containers](containers.md)
 - [Debugging applications](debugging.md)
