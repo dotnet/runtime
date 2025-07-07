@@ -14,7 +14,7 @@
 #endif
 
 #define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
-#define HANDLE_MAX_INTERNAL_TYPES       12
+#define HANDLE_MAX_INTERNAL_TYPES       13
 
 /*--------------------------------------------------------------------------*/
 

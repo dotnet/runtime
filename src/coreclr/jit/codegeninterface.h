@@ -185,6 +185,8 @@ public:
     static unsigned instInputSize(instruction ins);
     static unsigned instKMaskBaseSize(instruction ins);
 
+    static bool instHasPseudoName(instruction ins);
+
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
     //-------------------------------------------------------------------------
