@@ -8,6 +8,8 @@
 #define SUCCESS 1
 #define KEEP_CURRENT_DIRECTION -1
 
+c_static_assert(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW == 1);
+
 EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, unsigned char* iv, int32_t enc)
 {
@@ -29,6 +31,9 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         EVP_CIPHER_CTX_free(ctx);
         return NULL;
     }
+
+    // Required for OpenSSL 1.1 AES-KWP, no-op in OpenSSL 3.
+    EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
 
     // Perform partial initialization so we can set the key lengths
     int ret = EVP_CipherInit_ex(ctx, type, NULL, NULL, NULL, 0);

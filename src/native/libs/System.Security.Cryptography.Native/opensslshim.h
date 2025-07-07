@@ -475,6 +475,7 @@ extern bool g_libSslUses32BitTime;
     LEGACY_FUNCTION(EVP_CIPHER_CTX_init) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_new) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_reset) \
+    REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_flags) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_key_length) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_padding) \
     RENAMED_FUNCTION(EVP_CIPHER_get_nid, EVP_CIPHER_nid) \
@@ -1050,6 +1051,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_CIPHER_CTX_init EVP_CIPHER_CTX_init_ptr
 #define EVP_CIPHER_CTX_new EVP_CIPHER_CTX_new_ptr
 #define EVP_CIPHER_CTX_reset EVP_CIPHER_CTX_reset_ptr
+#define EVP_CIPHER_CTX_set_flags EVP_CIPHER_CTX_set_flags_ptr
 #define EVP_CIPHER_CTX_set_key_length EVP_CIPHER_CTX_set_key_length_ptr
 #define EVP_CIPHER_CTX_set_padding EVP_CIPHER_CTX_set_padding_ptr
 #define EVP_CIPHER_get_nid EVP_CIPHER_get_nid_ptr

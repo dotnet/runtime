@@ -62,12 +62,20 @@ namespace System.Security.Cryptography
 
                     IntPtr algorithm = GetKeyWrapAlgorithm(keySizeInBits);
 
-                    return Interop.Crypto.EvpCipherCreate(
+                    SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreate(
                         algorithm,
                         ref MemoryMarshal.GetReference(key),
                         key.Length * 8,
                         ref MemoryMarshal.GetReference(ReadOnlySpan<byte>.Empty),
                         enc);
+
+                    if (ctx.IsInvalid)
+                    {
+                        ctx.Dispose();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    return ctx;
                 });
 
             int written;
