@@ -543,11 +543,13 @@ namespace Wasm.Build.Tests
                 using CancellationTokenSource cts = new();
                 cts.CancelAfter(timeoutMs ?? s_defaultPerTestTimeoutMs);
 
-                await process.WaitForExitAsync(cts.Token);
-
-                if (cts.IsCancellationRequested)
+                try
                 {
-                    // process didn't exit
+                    await process.WaitForExitAsync(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // process didn't exit within timeout
                     process.Kill(entireProcessTree: true);
                     lock (syncObj)
                     {
