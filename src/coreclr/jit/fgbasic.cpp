@@ -1135,7 +1135,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 if (resolveTokens)
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
-                    methodHnd   = resolvedToken.hMethod;
+                    methodHnd = resolvedToken.hMethod;
+
                     isIntrinsic = eeIsIntrinsic(methodHnd);
                 }
 
@@ -2261,9 +2262,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     {
                         noway_assert(opcode == CEE_LDARGA || opcode == CEE_LDARGA_S);
 
-                        varType = impInlineInfo->lclVarInfo[varNum].lclTypeInfo;
-
                         impInlineInfo->inlArgInfo[varNum].argHasLdargaOp = true;
+
+                        varType = impInlineInfo->lclVarInfo[varNum].lclTypeInfo;
 
                         pushedStack.PushArgument(varNum);
                         handled = true;
@@ -2310,11 +2311,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // generate for this ldfld, and we require that we
                     // won't need the address of this local at all
 
-                    const bool notStruct    = !varTypeIsStruct(lvaGetDesc(varNum));
                     const bool notLastInstr = (codeAddr < codeEndp - sz);
                     const bool notDebugCode = !opts.compDbgCode;
 
-                    if (notStruct && notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz))
+                    if (notLastInstr && notDebugCode &&
+                        impILConsumesAddr(lvaGetDesc(varNum)->TypeGet(), codeAddr + sz, codeEndp))
                     {
                         // We can skip the addrtaken, as next IL instruction consumes
                         // the address.
