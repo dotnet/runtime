@@ -114,20 +114,20 @@ namespace System.Diagnostics.Tests
                 (signalStr) =>
                 {
                     PosixSignal expectedSignal = Enum.Parse<PosixSignal>(signalStr);
-                    bool receivedSignal = false;
+                    using ManualResetEvent receivedSignalEvent = new ManualResetEvent(false);
                     ReEnableCtrlCHandlerIfNeeded(expectedSignal);
 
                     using PosixSignalRegistration p = PosixSignalRegistration.Create(expectedSignal, (ctx) =>
                     {
                         Assert.Equal(expectedSignal, ctx.Signal);
-                        receivedSignal = true;
+                        receivedSignalEvent.Set();
                         ctx.Cancel = true;
                     });
 
                     Console.WriteLine(PosixSignalRegistrationCreatedMessage);
-
-                    while (!receivedSignal) ;
-
+                    
+                    receivedSignalEvent.WaitOne(WaitInMS);
+                        
                     return 0;
                 },
                 arg: $"{signal}",
