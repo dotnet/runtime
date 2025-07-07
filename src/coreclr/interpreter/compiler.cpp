@@ -2344,6 +2344,11 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
             return true;
         }
+        case NI_System_Threading_Thread_FastPollGC:
+        {
+            AddIns(INTOP_SAFEPOINT);
+            return true;
+        }
 
         default:
         {
