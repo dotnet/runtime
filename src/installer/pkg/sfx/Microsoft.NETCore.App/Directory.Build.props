@@ -115,9 +115,6 @@
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="mscordaccore_universal.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmscordaccore_universal.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmscordaccore_universal.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
