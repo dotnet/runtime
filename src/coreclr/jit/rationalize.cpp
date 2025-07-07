@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
-#include "lower.h"
 
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -656,7 +655,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
     // variant
     SideEffectSet scratchSideEffects;
 
-    if (Lowering::IsInvariantInRange(op2, node, comp, scratchSideEffects))
+    if (scratchSideEffects.IsLirInvariantInRange(comp, op2, node))
     {
         unsigned    tgtMaskSize        = simdSize / genTypeSize(simdBaseType);
         CorInfoType tgtSimdBaseJitType = CORINFO_TYPE_UNDEF;
