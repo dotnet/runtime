@@ -789,6 +789,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+        case GT_CNS_MSK:
+            return LowerCnsMask(node->AsMskCon());
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+
         default:
             break;
     }
