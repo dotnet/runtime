@@ -21,11 +21,8 @@
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(TargetsLinuxBionic)' == 'true'">false</SupportsNativeAotComponents>
         <!-- NativeAOT doesn't support cross-OS compilation. disable for crossdac-->
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(HostOS)' != '$(TargetOS)'">false</SupportsNativeAotComponents>
-        <!-- unsupported targets -->
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</SupportsNativeAotComponents>
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'riscv64')">false</SupportsNativeAotComponents>
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or ('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' != 'true'))">true</SupportsNativeAotComponents>
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
+        <!-- consider everything else supported -->
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">true</SupportsNativeAotComponents>
     </PropertyGroup>
 
     <ItemGroup>
