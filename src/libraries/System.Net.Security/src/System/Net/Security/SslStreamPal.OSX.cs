@@ -31,6 +31,7 @@ namespace System.Net.Security
         // Since ST is not producing the framed empty message just call this false and avoid the
         // special case of an empty array being passed to the `fixed` statement.
         internal const bool CanEncryptEmptyMessage = false;
+        internal const bool CanGenerateCustomAlerts = false;
 
         public static void VerifyPackageInfo()
         {
