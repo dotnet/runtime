@@ -528,8 +528,8 @@ private:
 #endif // DEBUG
     }
 
-#ifdef DEBUG
     CORINFO_CLASS_HANDLE m_classHnd;
+    #ifdef DEBUG
     TArray<char> m_methodName;
     bool m_verbose = false;
 
