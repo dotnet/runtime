@@ -1091,7 +1091,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
-        public void Connect_Parallel_Succss()
+        public void Connect_Parallel_Success()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
             {

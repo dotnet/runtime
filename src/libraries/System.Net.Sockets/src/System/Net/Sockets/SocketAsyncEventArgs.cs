@@ -783,27 +783,27 @@ namespace System.Net.Sockets
                                 {
                                     address = addresses[nextAddressIndex];
                                     nextAddressIndex = GetNextAddressIndex(addresses, currentAddressFamily, nextAddressIndex);
-
                                 }
                                 else
                                 {
                                     address = null;
                                     currentAddressFamily = AddressFamily.InterNetworkV6;
                                 }
-                                    internalArgs.SocketError = SocketError.IOPending;
+                                internalArgs.SocketError = SocketError.IOPending;
                             }
 
-                            if (internalArgs.SecondarySaea?.SocketError != SocketError.IOPending || nextIPv6AddressIndex > 0)
+                            if (internalArgs.SecondarySaea is not null && (internalArgs.SecondarySaea.SocketError != SocketError.IOPending || nextIPv6AddressIndex > 0))
                             {
                                 if (nextIPv6AddressIndex >= 0)
                                 {
                                     address2 = addresses[nextIPv6AddressIndex];
-                                    if (address == null)
+                                    if (address is null)
                                     {
                                         // fall-back to normal processing without extra SAE
                                         address = addresses[nextIPv6AddressIndex];
                                         internalArgs.SocketError = SocketError.IOPending;
                                         address2 = null;
+                                        internalArgs.SecondarySaea.Dispose();
                                         internalArgs.SecondarySaea = null;
                                     }
                                     else
