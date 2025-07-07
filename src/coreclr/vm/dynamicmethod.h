@@ -13,20 +13,16 @@
 #include <daccess.h>
 
 //---------------------------------------------------------------------------------------
-//
 // This links together a set of news and release in one object.
 // The idea is to have a predefined size allocated up front and used by different calls to new.
-// All the allocation will be released at the same time releaseing an instance of this class
+// All the allocation will be released at the same time releasing an instance of this class
 // Here is how the object is laid out
 // | ptr_to_next_chunk | size_left_in_chunk | data | ... | data
 // This is not a particularly efficient allocator but it works well for a small number of allocation
 // needed while jitting a method
 //
-class ChunkAllocator
+class ChunkAllocator final
 {
-private:
-    #define CHUNK_SIZE 64
-
     BYTE *m_pData;
 
 public:
@@ -107,16 +103,19 @@ public:
     virtual MethodDesc * GetDynamicMethod() = 0;
 };  // class DynamicResolver
 
-//---------------------------------------------------------------------------------------
-//
+// Forward declaration
 class StringLiteralEntry;
 
-//---------------------------------------------------------------------------------------
-//
-struct DynamicStringLiteral
+struct DynamicStringLiteral final
 {
-    DynamicStringLiteral *  m_pNext;
-    StringLiteralEntry *    m_pEntry;
+    DynamicStringLiteral*  m_pNext;
+    StringLiteralEntry*    m_pEntry;
+};
+
+struct DynamicCodePointer final
+{
+    DynamicCodePointer*  m_pNext;
+    void*                m_pEntry;
 };
 
 //---------------------------------------------------------------------------------------
@@ -160,8 +159,7 @@ public:
     MethodDesc* GetDynamicMethod() { LIMITED_METHOD_CONTRACT; return m_pDynamicMethod; }
     OBJECTREF GetManagedResolver();
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
-    void* GetRecordCodePointer()  { LIMITED_METHOD_CONTRACT; return m_recordCodePointer; }
-    void SetRecordCodePointer(void* recordCodePointer) { LIMITED_METHOD_CONTRACT; m_recordCodePointer = recordCodePointer; }
+    void RecordCodePointer(void* recordCodePointer);
     DynamicMethodDesc* GetNextDynamicMethodToDestroy() { LIMITED_METHOD_CONTRACT; return m_delayDestroyNext; }
     void SetNextDynamicMethodToDestroy(DynamicMethodDesc* next)
     {
@@ -199,9 +197,9 @@ private:
     DynamicMethodTable* m_DynamicMethodTable;
     DynamicMethodDesc* m_next;
     DynamicMethodDesc* m_delayDestroyNext;
-    void* m_recordCodePointer;
     ChunkAllocator m_jitMetaHeap;
     ChunkAllocator m_jitTempData;
+    DynamicCodePointer* m_DynamicCodePointers;
     DynamicStringLiteral* m_DynamicStringLiterals;
     IndCellList* m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
     ExecutionManager::JumpStubCache* m_pJumpStubCache;

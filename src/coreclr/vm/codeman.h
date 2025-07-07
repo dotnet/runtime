@@ -1905,48 +1905,6 @@ public:
     virtual TypeHandle ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                        CrawlFrame *pCf);
 
-    class RemoveJitDataArg final
-    {
-        CodeHeader* m_pCHdr;
-#ifdef FEATURE_INTERPRETER
-        InterpreterCodeHeader* m_pCHdrInterpreter;
-#endif // FEATURE_INTERPRETER
-        size_t m_GCinfo_len;
-        size_t m_EHinfo_len;
-
-    public:
-        RemoveJitDataArg() = default;
-        RemoveJitDataArg(CodeHeader* pCHdr, size_t GCinfo_len, size_t EHinfo_len);
-
-#ifdef FEATURE_INTERPRETER
-        RemoveJitDataArg(InterpreterCodeHeader* pCHdr, size_t GCinfo_len, size_t EHinfo_len);
-#endif // FEATURE_INTERPRETER
-
-        RemoveJitDataArg(RemoveJitDataArg const&) = default;
-        RemoveJitDataArg& operator=(RemoveJitDataArg const&) = default;
-        RemoveJitDataArg(RemoveJitDataArg&&) = default;
-        RemoveJitDataArg& operator=(RemoveJitDataArg&&) = default;
-
-        MethodDesc* GetMethodDesc() const;
-        TADDR GetCodeStartAddress() const;
-        TADDR GetCodeHeaderAddress() const;
-
-        void* GetGCInfo() const;
-        size_t GetGCInfoLength() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_GCinfo_len;
-        }
-
-        void* GetEHInfo() const;
-        size_t GetEHInfoLength() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_EHinfo_len;
-        }
-    };
-
-    void RemoveJitData(RemoveJitDataArg const& arg);
     void Unload(LoaderAllocator* pAllocator);
 
 public:
@@ -1991,7 +1949,6 @@ private:
     LoaderHeap* GetJitMetaHeap(MethodDesc *pMD);
 
     void UnloadWorker(LoaderAllocator* pAllocator);
-    void RemoveJitDataWorker(RemoveJitDataArg const& arg);
     void FreeHostCodeHeapMemoryWorker(HostCodeHeap* pCodeHeap, void* codeStart);
 #else // !DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -2009,7 +1966,6 @@ private:
     CUnorderedArray<DomainCodeHeapList*, 5> m_DynamicDomainCodeHeaps;
 #ifndef DACCESS_COMPILE
     CUnorderedArray<LoaderAllocator*, 4> m_delayUnload;
-    CUnorderedArray<RemoveJitDataArg, 16> m_delayRemoveJitData;
 #endif // !DACCESS_COMPILE
 
 protected:

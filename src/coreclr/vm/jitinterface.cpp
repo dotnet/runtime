@@ -10998,13 +10998,7 @@ void CEEJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
-    // the code bytes to the target memory location.
     WriteCodeBytes();
-
-    CodeHeader* pCodeHeader = (CodeHeader*)m_CodeHeader;
-    if (pCodeHeader)
-        jitMgr->RemoveJitData({pCodeHeader, m_GCinfo_len, m_EHinfo_len});
 }
 
 template<class TCodeHeader>
@@ -11344,13 +11338,7 @@ void CInterpreterJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
-    // the code bytes to the target memory location.
     WriteCodeBytes();
-
-    InterpreterCodeHeader* pCodeHeader = (InterpreterCodeHeader*)m_CodeHeader;
-    if (pCodeHeader)
-        jitMgr->RemoveJitData({pCodeHeader, m_GCinfo_len, m_EHinfo_len});
 }
 
 void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)

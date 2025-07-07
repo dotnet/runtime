@@ -926,7 +926,7 @@ bool DynamicMethodDesc::TryDestroy()
 void LCGMethodResolver::Reset()
 {
     m_DynamicStringLiterals = NULL;
-    m_recordCodePointer     = NULL;
+    m_DynamicCodePointers   = NULL;
     m_UsedIndCellList       = NULL;
     m_pJumpStubCache        = NULL;
     m_next                  = NULL;
@@ -1003,17 +1003,18 @@ bool LCGMethodResolver::TryDestroyCodeHeapMemory()
     }
     CONTRACTL_END;
 
-    if (m_recordCodePointer != NULL)
+    while (m_DynamicCodePointers != NULL)
     {
         // Remove the unwind information (if applicable)
-        UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)m_recordCodePointer);
+        void* recordCodePointer = m_DynamicCodePointers->m_pEntry;
+        UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)recordCodePointer);
 
-        HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
+        HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)recordCodePointer);
         LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", this, pHeap, *(size_t*)pHeap));
-        if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, m_recordCodePointer))
+        if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, recordCodePointer))
             return false;
 
-        m_recordCodePointer = NULL;
+        m_DynamicCodePointers = m_DynamicCodePointers->m_pNext;
     }
 
     if (m_pJumpStubCache != NULL)
@@ -1092,7 +1093,7 @@ void LCGMethodResolver::DestroyResolver()
     }
 
     // Code heap memory should be destroyed before the resolver is destroyed
-    _ASSERTE(m_recordCodePointer == NULL);
+    _ASSERTE(m_DynamicCodePointers == NULL);
     _ASSERTE(m_pJumpStubCache == NULL);
 
     // Note that we need to do this before m_jitTempData is deleted
@@ -1366,7 +1367,6 @@ void LCGMethodResolver::AddToUsedIndCellList(BYTE * indcell)
         if (InterlockedCompareExchangeT(&m_UsedIndCellList, link, link->pNext) == link->pNext)
             break;
     }
-
 }
 
 void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
@@ -1527,7 +1527,6 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 
 #endif // !DACCESS_COMPILE
 
-
 // Get the associated managed resolver. This method will be called during a GC so it should not throw, trigger a GC or cause the
 // object in question to be validated.
 OBJECTREF LCGMethodResolver::GetManagedResolver()
@@ -1536,9 +1535,28 @@ OBJECTREF LCGMethodResolver::GetManagedResolver()
     return ObjectFromHandle(m_managedResolver);
 }
 
+void LCGMethodResolver::RecordCodePointer(void* recordCodePointer)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(recordCodePointer != NULL);
+    }
+    CONTRACTL_END;
+
+    DynamicCodePointer* codePointer = (DynamicCodePointer*)m_jitTempData.New(sizeof(DynamicCodePointer));
+    codePointer->m_pEntry = recordCodePointer;
+    codePointer->m_pNext = m_DynamicCodePointers;
+    m_DynamicCodePointers = codePointer;
+}
+
 //
 // ChunkAllocator implementation
 //
+
+#define CHUNK_SIZE 64
+
 ChunkAllocator::~ChunkAllocator()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1634,3 +1652,4 @@ void* ChunkAllocator::New(size_t size)
     return pNewBlock;
 }
 
+#undef CHUNK_SIZE
