@@ -990,12 +990,8 @@ namespace System
                     return "type";
                 case ExceptionArgument.sourceIndex:
                     return "sourceIndex";
-                case ExceptionArgument.sourceArray:
-                    return "sourceArray";
                 case ExceptionArgument.destinationIndex:
                     return "destinationIndex";
-                case ExceptionArgument.destinationArray:
-                    return "destinationArray";
                 case ExceptionArgument.pHandle:
                     return "pHandle";
                 case ExceptionArgument.handle:
@@ -1317,9 +1313,7 @@ namespace System
         timeout,
         type,
         sourceIndex,
-        sourceArray,
         destinationIndex,
-        destinationArray,
         pHandle,
         handle,
         other,

@@ -37,10 +37,6 @@ if(FEATURE_GDBJIT)
     )
 endif(FEATURE_GDBJIT)
 
-if(FEATURE_JIT_PITCHING)
-   add_definitions(-DFEATURE_JIT_PITCHING)
-endif(FEATURE_JIT_PITCHING)
-
 if(FEATURE_PERFTRACING)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
@@ -275,12 +271,6 @@ if(FEATURE_READYTORUN)
     )
 endif(FEATURE_READYTORUN)
 
-if(FEATURE_JIT_PITCHING)
-    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
-        codepitchingmanager.cpp
-    )
-endif(FEATURE_JIT_PITCHING)
-
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
@@ -508,6 +498,7 @@ set(GC_SOURCES_WKS
     ../gc/gceesvr.cpp
     ../gc/gceewks.cpp
     ../gc/gcload.cpp
+    ../gc/gcbridge.cpp
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
 
@@ -516,6 +507,7 @@ set(GC_HEADERS_WKS
     ../gc/gceventstatus.h
     ../gc/gcconfig.h
     ../gc/gcscan.h
+    ../gc/gcbridge.h
     ../gc/gchandletableimpl.h
     ../gc/softwarewritewatch.h)
 
@@ -556,6 +548,10 @@ if(FEATURE_OBJCMARSHAL)
         interoplibinterface_objc.cpp
     )
 endif(FEATURE_OBJCMARSHAL)
+
+list(APPEND VM_SOURCES_WKS
+    interoplibinterface_java.cpp
+)
 
 if(CLR_CMAKE_TARGET_WIN32)
 

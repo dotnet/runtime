@@ -220,6 +220,16 @@ namespace Internal.Metadata.NativeFormat
         {
             return _streamReader.StringEquals((uint)handle.Offset, value);
         }
+
+        internal ReadOnlySpan<byte> ReadStringAsBytes(ConstantStringValueHandle handle)
+        {
+            if (handle.IsNil)
+            {
+                return [];
+            }
+
+            return _streamReader.ReadStringAsBytes((uint)handle.Offset);
+        }
     }
 
     internal sealed partial class MetadataHeader

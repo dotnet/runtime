@@ -588,6 +588,11 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)                                                                                        \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispTreeRange(range, t);
+#define LABELEDDISPTREERANGE(label, range, t)                                                                          \
+    JITDUMP(label ":\n");                                                                                              \
+    if (JitTls::GetCompiler()->verbose)                                                                                \
+        JitTls::GetCompiler()->gtDispTreeRange(range, t);                                                              \
+    JITDUMP("\n");
 #define DISPBLOCK(b)                                                                                                   \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
@@ -606,6 +611,7 @@ const bool dspGCtbls = true;
 #define DISPSTMT(t)
 #define DISPRANGE(range)
 #define DISPTREERANGE(range, t)
+#define LABELEDDISPTREERANGE(title, range, t)
 #define DISPBLOCK(b)
 #define VERBOSE 0
 #endif // !DEBUG

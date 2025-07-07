@@ -93,8 +93,8 @@ unsafe class Program
         bool? ExpectedSsse3 = true;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
+        bool? ExpectedPopcnt = true;
 
-        bool? ExpectedPopcnt = null;
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedGfni = null;
@@ -180,11 +180,6 @@ unsafe class Program
         bool? ExpectedPopcnt = true;
         bool? ExpectedAvx = true;
 
-        bool? ExpectedBmi1 = null;
-        bool? ExpectedBmi2 = null;
-        bool? ExpectedF16c = null;
-        bool? ExpectedFma = null;
-        bool? ExpectedLzcnt = null;
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedGfni = null;
@@ -196,6 +191,11 @@ unsafe class Program
         bool? ExpectedX86Serialize = null;
 
         bool? ExpectedAvx2 = false;
+        bool? ExpectedBmi1 = false;
+        bool? ExpectedBmi2 = false;
+        bool? ExpectedF16c = false;
+        bool? ExpectedFma = false;
+        bool? ExpectedLzcnt = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
@@ -390,9 +390,9 @@ unsafe class Program
         // Check("Avx512Bitalg.VL", ExpectedAvx512Bitalg, &Avx512BitalgVLIsSupported, Avx512Bitalg.VL.IsSupported, null);
         // Check("Avx512Bitalg.X64", ExpectedAvx512Bitalg, &Avx512BitalgX64IsSupported, Avx512Bitalg.X64.IsSupported, null);
 
-        // Check("Avx512Vbmi2", ExpectedAvx512Vbmi2, &Avx512Vbmi2IsSupported, Avx512Vbmi2.IsSupported, null);
-        // Check("Avx512Vbmi2.VL", ExpectedAvx512Vbmi2, &Avx512Vbmi2VLIsSupported, Avx512Vbmi2.VL.IsSupported, null);
-        // Check("Avx512Vbmi2.X64", ExpectedAvx512Vbmi2, &Avx512Vbmi2X64IsSupported, Avx512Vbmi2.X64.IsSupported, null);
+        Check("Avx512Vbmi2", ExpectedAvx512Vbmi2, &Avx512Vbmi2IsSupported, Avx512Vbmi2.IsSupported, null);
+        Check("Avx512Vbmi2.VL", ExpectedAvx512Vbmi2, &Avx512Vbmi2VLIsSupported, Avx512Vbmi2.VL.IsSupported, null);
+        Check("Avx512Vbmi2.X64", ExpectedAvx512Vbmi2, &Avx512Vbmi2X64IsSupported, Avx512Vbmi2.X64.IsSupported, null);
 
         // Check("Avx512Vpopcntdq", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqIsSupported, Avx512Vpopcntdq.IsSupported, null);
         // Check("Avx512Vpopcntdq.VL", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqVLIsSupported, Avx512Vpopcntdq.VL.IsSupported, null);
@@ -523,9 +523,9 @@ unsafe class Program
     // static bool Avx512BitalgVLIsSupported() => Avx512Bitalg.VL.IsSupported;
     // static bool Avx512BitalgX64IsSupported() => Avx512Bitalg.X64.IsSupported;
 
-    // static bool Avx512Vbmi2IsSupported() => Avx512Vbmi2.IsSupported;
-    // static bool Avx512Vbmi2VLIsSupported() => Avx512Vbmi2.VL.IsSupported;
-    // static bool Avx512Vbmi2X64IsSupported() => Avx512Vbmi2.X64.IsSupported;
+    static bool Avx512Vbmi2IsSupported() => Avx512Vbmi2.IsSupported;
+    static bool Avx512Vbmi2VLIsSupported() => Avx512Vbmi2.VL.IsSupported;
+    static bool Avx512Vbmi2X64IsSupported() => Avx512Vbmi2.X64.IsSupported;
 
     // static bool Avx512VpopcntdqIsSupported() => Avx512Vpopcntdq.IsSupported;
     // static bool Avx512VpopcntdqVLIsSupported() => Avx512Vpopcntdq.VL.IsSupported;

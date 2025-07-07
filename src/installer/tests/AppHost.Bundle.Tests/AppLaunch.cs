@@ -6,7 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
 namespace AppHost.Bundle.Tests
@@ -172,7 +174,7 @@ namespace AppHost.Bundle.Tests
                 command.Process.Kill();
 
                 command
-                    .WaitForExit(true)
+                    .WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
