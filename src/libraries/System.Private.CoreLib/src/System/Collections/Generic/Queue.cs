@@ -426,10 +426,10 @@ namespace System.Collections.Generic
             private int _i;
             private T? _currentElement;
 
-            internal Enumerator(Queue<T> q)
+            internal Enumerator(Queue<T> queue)
             {
-                _queue = q;
-                _version = q._version;
+                _queue = queue;
+                _version = queue._version;
                 _i = -1;
                 _currentElement = default;
             }
