@@ -649,6 +649,58 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
+bool CEEInfo::tryGetNonRandomizedHashCode (
+        CORINFO_MODULE_HANDLE       moduleHnd,
+        mdToken                     metaTOK,
+        bool                        ignoreCase,
+        int*                        pHashCode)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    if (!IsDynamicScope(moduleHnd))
+    {
+        // If ResolveStringRef returns a pinned reference we can return it by value (IAT_VALUE)
+        CORINFO_OBJECT_HANDLE pPinnedString = nullptr;
+        reinterpret_cast<Module*>(moduleHnd)->ResolveStringRef(metaTOK, reinterpret_cast<void**>(&pPinnedString));
+        if (pPinnedString != nullptr)
+        {
+            GCX_COOP();
+            int hashCode;
+
+            DECLARE_ARGHOLDER_ARRAY(args, 1);
+            args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(getObjectFromJitHandle(pPinnedString));
+            if (ignoreCase)
+            {
+                // This may trigger ICU loading for non-ASCII output, but it should be fine.
+                // In most cases this is called for an optimized code for a hot block, so, presumably
+                // ICU has already been loaded (e.g by Tier0 code).
+                PREPARE_NONVIRTUAL_CALLSITE(METHOD__STRING__GET_NONRANDOMIZED_HASHCODE_IGNORECASE);
+                CALL_MANAGED_METHOD(hashCode, int, args);
+            }
+            else
+            {
+                PREPARE_NONVIRTUAL_CALLSITE(METHOD__STRING__GET_NONRANDOMIZED_HASHCODE);
+                CALL_MANAGED_METHOD(hashCode, int, args);
+            }
+
+            *pHashCode = hashCode;
+            result = true;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 size_t CEEInfo::printObjectDescription (
         CORINFO_OBJECT_HANDLE  handle,
         char*                  buffer,

@@ -13855,14 +13855,16 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 //
 GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo)
 {
-    // Cache the relevant arg and lcl info for this argument.
-    // We will modify argInfo but not lclVarInfo.
-    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
-    const var_types lclTyp           = lclInfo.lclTypeInfo;
-    GenTree*        op1              = nullptr;
-
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
+
+    // Cache the relevant arg and lcl info for this argument.
+    // We will modify argInfo but not lclVarInfo.
+
+    // NOTE: Any attempt to modify CNS_STR is an Undefined Behavior, so we can ignore argHasLdargaOp for them
+    const bool argCanBeModified = ((argInfo.argHasLdargaOp && !argNode->OperIs(GT_CNS_STR)) || argInfo.argHasStargOp);
+    const var_types lclTyp      = lclInfo.lclTypeInfo;
+    GenTree*        op1         = nullptr;
 
     // For TYP_REF args, if the argNode doesn't have any class information
     // we will lose some type info if we directly substitute it.
