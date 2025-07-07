@@ -91,7 +91,7 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
             // we patch the executable code. We only need to do this once, and it isn't equivalent to VolatileStore, as our definition of VolatileStore
             // doesn't include a means to drain the store queue before the patch. The important detail is that executing the instruction stream is not
             // logically equivalent to performing a memory load, and does not participate in all of the same load/store ordering guarantees.
-            // Intel does not provide a precise definition of this, but it does describe the situation as "cross modifying code", and describes an unforunately
+            // Intel does not provide a precise definition of this, but it does describe the situation as "cross modifying code", and describes an unfortunately
             // impractical scheme involving running cpuid on all cores that might execute the code in question. Since both the old/new code are semantically
             // equivalent, we're going to use an sfence to ensure that at least all the writes to establish the new code are completely visible to all cores
             // before we actually patch the executable code.
