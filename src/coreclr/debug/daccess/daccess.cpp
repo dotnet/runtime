@@ -7049,6 +7049,8 @@ CLRDataCreateInstance(REFIID iid,
             if (cdacInterface == nullptr)
             {
                 // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+                // Release the ClrDataAccess instance we created
+                pClrDataAccess->Release();
                 return E_FAIL;
             }
         }
