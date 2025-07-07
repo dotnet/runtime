@@ -32362,10 +32362,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     return tree;
                 }
             }
-
-            // We're only processing one operand which was valid, so we shouldn't get here
-            // for anything treated as GT_NOT. This ensures that op2 wasn't incorrectly mutated
-            assert(effectiveOper != GT_NOT);
         }
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
