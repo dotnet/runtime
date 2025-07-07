@@ -7700,11 +7700,18 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
     data.Handle = TO_CDADDR(handle.GetAddr());
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
+    {
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
-    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER)
+    }
+    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER
+        || param->Type == HNDTYPE_CROSSREFERENCE)
+    {
         data.Secondary = TO_CDADDR(HndGetHandleExtraInfo(handle.GetAddr()));
+    }
     else
+    {
         data.Secondary = 0;
+    }
     data.AppDomain = param->AppDomain;
     GetRefCountedHandleInfo((OBJECTREF)*handle, param->Type, &data.RefCount, &data.JupiterRefCount, &data.IsPegged, &data.StrongReference);
     data.StrongReference |= (BOOL)IsAlwaysStrongReference(param->Type);

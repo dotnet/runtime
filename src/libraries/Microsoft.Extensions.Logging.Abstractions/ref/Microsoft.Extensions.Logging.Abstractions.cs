@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
         public TState State { get { throw null; } }
     }
-    public partial class NullLogger : Microsoft.Extensions.Logging.ILogger
+    public sealed partial class NullLogger : Microsoft.Extensions.Logging.ILogger
     {
         internal NullLogger() { }
         public static Microsoft.Extensions.Logging.Abstractions.NullLogger Instance { get { throw null; } }

@@ -1,4 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1003,14 +1004,28 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 // getKillSetForReturn: Determine the liveness kill set for a return node.
 //
 // Arguments:
-//    NONE (this kill set is independent of the details of the specific return.)
+//    returnNode - the return node
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskTP LinearScan::getKillSetForReturn()
+regMaskTP LinearScan::getKillSetForReturn(GenTree* returnNode)
 {
-    return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE)
-                                                : RBM_NONE;
+    regMaskTP killSet = RBM_NONE;
+
+    if (compiler->compIsProfilerHookNeeded())
+    {
+        killSet = compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE);
+
+#if defined(TARGET_ARM)
+        // For arm methods with no return value R0 is also trashed.
+        if (returnNode->TypeIs(TYP_VOID))
+        {
+            killSet |= RBM_R0;
+        }
+#endif
+    }
+
+    return killSet;
 }
 
 //------------------------------------------------------------------------
@@ -1091,7 +1106,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         // more details.
         case GT_RETURN:
         case GT_SWIFT_ERROR_RET:
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             break;
 
         case GT_PROF_HOOK:
