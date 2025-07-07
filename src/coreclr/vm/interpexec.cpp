@@ -1972,8 +1972,9 @@ CALL_INTERP_METHOD:
                     int32_t vtSize = ip[4];
                     void *vtThis = stack + returnOffset;
 
-                    // clear the valuetype
-                    memset(vtThis, 0, vtSize);
+                    // Interpreter-TODO: Clear the valuetype memory for GC encoding
+                    // memset(vtThis, 0, vtSize);
+
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
 
