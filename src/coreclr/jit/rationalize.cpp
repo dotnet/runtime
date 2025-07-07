@@ -340,6 +340,36 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
     switch (intrinsicId)
     {
+#if defined(TARGET_XARCH)
+        case NI_AVX_Compare:
+        case NI_AVX_CompareScalar:
+        case NI_AVX512_Compare:
+        {
+            assert(operandCount == 3);
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+            GenTree* op3 = operands[2];
+
+            if (!op3->IsCnsIntOrI())
+            {
+                break;
+            }
+
+            FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+            NamedIntrinsic      id =
+                HWIntrinsicInfo::lookupIdForFloatComparisonMode(intrinsicId, mode, simdBaseType, simdSize);
+
+            if (id == intrinsicId)
+            {
+                break;
+            }
+
+            result = comp->gtNewSimdHWIntrinsicNode(retType, op1, op2, id, simdBaseJitType, simdSize);
+            break;
+        }
+#endif // TARGET_XARCH
+
         case NI_Vector128_Shuffle:
         case NI_Vector128_ShuffleNative:
         case NI_Vector128_ShuffleNativeFallback:
