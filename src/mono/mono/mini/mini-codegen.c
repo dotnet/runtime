@@ -141,14 +141,9 @@ static void
 mono_regstate_assign (MonoRegState *rs)
 {
 #ifdef MONO_ARCH_USE_SHARED_FP_SIMD_BANK
-	/* The regalloc may fail if fp and simd logical regbanks share the same physical reg bank and
-	 * if the values here are not the same.
-	 */
-/* s390x has unequal regbank masks for vector and floats*/
-#ifndef TARGET_S390X
-	g_assert(regbank_callee_regs [MONO_REG_SIMD] == regbank_callee_regs [MONO_REG_DOUBLE]);
-	g_assert(regbank_size [MONO_REG_SIMD] == regbank_size [MONO_REG_DOUBLE]);
-#endif
+	/* fp and simd logical banks may share the same physical reg bank with unequal overlapping registers */
+	g_assert((regbank_callee_regs [MONO_REG_SIMD] & regbank_callee_regs[MONO_REG_DOUBLE]) == regbank_callee_regs [MONO_REG_DOUBLE]);
+	g_assert(regbank_size [MONO_REG_SIMD] >= regbank_size [MONO_REG_DOUBLE]);
 	g_assert(regbank_callee_saved_regs [MONO_REG_SIMD] == regbank_callee_saved_regs [MONO_REG_DOUBLE]);
 #endif
 
