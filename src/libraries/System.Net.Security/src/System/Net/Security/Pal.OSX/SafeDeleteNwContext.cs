@@ -297,39 +297,9 @@ namespace System.Net.Security
             }
         }
 
-        private static ReadOnlySpan<SslProtocols> OrderedSslProtocols =>
-        [
-#pragma warning disable 0618
-            SslProtocols.Ssl2,
-            SslProtocols.Ssl3,
-#pragma warning restore 0618
-#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-            SslProtocols.Tls,
-            SslProtocols.Tls11,
-#pragma warning restore SYSLIB0039
-            SslProtocols.Tls12,
-            SslProtocols.Tls13
-        ];
-
-        private static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols)
-        {
-            (int minIndex, int maxIndex) = protocols.ValidateContiguous(OrderedSslProtocols);
-            SslProtocols minProtocolId = OrderedSslProtocols[minIndex];
-            SslProtocols maxProtocolId = OrderedSslProtocols[maxIndex];
-
-            return (minProtocolId, maxProtocolId);
-        }
-
         private void SetTlsOptions(SslAuthenticationOptions options)
         {
-            SslProtocols minProtocol = SslProtocols.Tls12;
-            SslProtocols maxProtocol = SslProtocols.Tls13;
-            if (options.EnabledSslProtocols != SslProtocols.None)
-            {
-                (minProtocol, maxProtocol) = GetMinMaxProtocols(options.EnabledSslProtocols);
-            }
-
-            Interop.NetworkFramework.Tls.SetTlsOptions(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), options.TargetHost, options.ApplicationProtocols, minProtocol, maxProtocol);
+            Interop.NetworkFramework.Tls.SetTlsOptions(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), options);
         }
 
         protected override bool ReleaseHandle()

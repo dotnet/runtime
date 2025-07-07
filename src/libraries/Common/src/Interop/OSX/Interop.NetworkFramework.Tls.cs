@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -31,36 +32,54 @@ internal static partial class Interop
 
             // Set TLS options for a connection
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
-            private static partial void SetTlsOptions(SafeNwHandle connection, IntPtr state,
-            string targetName, Span<byte> alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol);
+            private static unsafe partial void SetTlsOptions(SafeNwHandle connection, IntPtr state,
+            string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength);
 
-            internal static void SetTlsOptions(SafeNwHandle nwHandle, IntPtr state, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
+            internal static void SetTlsOptions(SafeNwHandle nwHandle, IntPtr state, SslAuthenticationOptions options)
             {
-                int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
+                int alpnLength = GetAlpnProtocolListSerializedLength(options.ApplicationProtocols);
 
-                byte[]? buffer = null;
+                SslProtocols minProtocol = SslProtocols.None;
+                SslProtocols maxProtocol = SslProtocols.None;
+
+                if (options.EnabledSslProtocols != SslProtocols.None)
+                {
+                    (minProtocol, maxProtocol) = GetMinMaxProtocols(options.EnabledSslProtocols);
+                }
+
+                byte[]? alpnBuffer = null;
                 try
                 {
-
                     const int StackAllocThreshold = 256;
                     Span<byte> alpn = alpnLength == 0
                         ? Span<byte>.Empty
                         : alpnLength <= StackAllocThreshold
                             ? stackalloc byte[StackAllocThreshold]
-                            : (buffer = ArrayPool<byte>.Shared.Rent(alpnLength));
+                            : (alpnBuffer = ArrayPool<byte>.Shared.Rent(alpnLength));
 
                     if (alpnLength > 0)
                     {
-                        SerializeAlpnProtocolList(applicationProtocols!, alpn.Slice(0, alpnLength));
+                        SerializeAlpnProtocolList(options.ApplicationProtocols!, alpn.Slice(0, alpnLength));
                     }
 
-                    SetTlsOptions(nwHandle, state, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
+                    Span<uint> ciphers = options.CipherSuitesPolicy is null
+                       ? Span<uint>.Empty
+                       : options.CipherSuitesPolicy.Pal.TlsCipherSuites;
+
+                    unsafe
+                    {
+                        fixed (byte* alpnPtr = alpn)
+                        fixed (uint* ciphersPtr = ciphers)
+                        {
+                            SetTlsOptions(nwHandle, state, options.TargetHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length);
+                        }
+                    }
                 }
                 finally
                 {
-                    if (buffer != null)
+                    if (alpnBuffer != null)
                     {
-                        ArrayPool<byte>.Shared.Return(buffer);
+                        ArrayPool<byte>.Shared.Return(alpnBuffer);
                     }
                 }
 
@@ -99,7 +118,31 @@ internal static partial class Interop
                         buffer[offset + protocol.Protocol.Length + 1] = 0; // null-terminator
                     }
                 }
+
+                static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols)
+                {
+                    (int minIndex, int maxIndex) = protocols.ValidateContiguous(OrderedSslProtocols);
+                    SslProtocols minProtocolId = OrderedSslProtocols[minIndex];
+                    SslProtocols maxProtocolId = OrderedSslProtocols[maxIndex];
+
+                    return (minProtocolId, maxProtocolId);
+                }
+
             }
+
+            private static ReadOnlySpan<SslProtocols> OrderedSslProtocols =>
+            [
+#pragma warning disable 0618
+                SslProtocols.Ssl2,
+                SslProtocols.Ssl3,
+#pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                SslProtocols.Tls,
+                SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
+                SslProtocols.Tls12,
+                SslProtocols.Tls13
+            ];
 
             // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwStartTlsHandshake")]

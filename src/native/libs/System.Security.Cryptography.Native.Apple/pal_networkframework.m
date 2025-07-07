@@ -299,7 +299,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 }
 
 // This configures TLS properties
-PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
+PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint16_t* cipherSuites, int cipherSuitesLength)
 {
     (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 30, (size_t)minTlsProtocol); // 30 = minTlsProtocol
     (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 31, (size_t)maxTlsProtocol); // 31 = maxTlsProtocol
@@ -335,6 +335,14 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
         }
     }
 
+    if (cipherSuites != NULL && cipherSuitesLength > 0)
+    {
+        for (int i = 0; i < cipherSuitesLength; i++)
+        {
+            sec_protocol_options_append_tls_ciphersuite(sec_options, (uint16_t)cipherSuites[i]);
+        }
+    }
+
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete) {
         LOG("Cert validation callback called");
@@ -343,6 +351,8 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
         (void)trust_ref;
         complete(true);
     }, _tlsQueue);
+
+
 
     nw_release(sec_options);
 

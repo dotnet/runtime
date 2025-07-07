@@ -318,11 +318,10 @@ namespace System.Net.Security
                 (sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.None ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
-                    (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13)) &&
-                sslAuthenticationOptions.CipherSuitesPolicy == null &&
+                    (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13))) &&
                 sslAuthenticationOptions.ClientCertificates == null &&
                 sslAuthenticationOptions.CertificateContext == null &&
-                sslAuthenticationOptions.CertSelectionDelegate == null);
+                sslAuthenticationOptions.CertSelectionDelegate == null;
         }
 
         private static SafeDeleteNwContext CreateAsyncSecurityContext(
