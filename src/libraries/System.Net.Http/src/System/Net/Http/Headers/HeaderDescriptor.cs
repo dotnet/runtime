@@ -15,7 +15,6 @@ namespace System.Net.Http.Headers
     // Use HeaderDescriptor.TryGet to resolve an arbitrary header name to a HeaderDescriptor.
     internal readonly struct HeaderDescriptor : IEquatable<HeaderDescriptor>
     {
-        private static readonly SearchValues<char> s_dangerousCharacters = SearchValues.Create('\0', '\r', '\n');
         private static readonly SearchValues<byte> s_dangerousCharacterBytes = SearchValues.Create((byte)'\0', (byte)'\r', (byte)'\n');
 
         /// <summary>
@@ -132,21 +131,7 @@ namespace System.Net.Http.Headers
             return new HeaderDescriptor(Name, customHeader: true);
         }
 
-        private readonly ref struct CreateHeaderStringState
-        {
-            public readonly ReadOnlySpan<byte> Bytes;
-            public readonly Encoding Encoding;
-            public readonly bool ReplaceDangerousCharacters;
-
-            public CreateHeaderStringState(ReadOnlySpan<byte> bytes, Encoding encoding, bool replaceDangerousCharacters)
-            {
-                Bytes = bytes;
-                Encoding = encoding;
-                ReplaceDangerousCharacters = replaceDangerousCharacters;
-            }
-        }
-
-        public string GetHeaderValue(ReadOnlySpan<byte> headerValue, Encoding? valueEncoding, bool replaceDangerousCharacters = false)
+        public string GetHeaderValue(ReadOnlySpan<byte> headerValue, Encoding? valueEncoding)
         {
             if (headerValue.Length == 0)
             {
@@ -186,18 +171,16 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            Encoding encoding = valueEncoding ?? HttpRuleParser.DefaultHttpEncoding;
-            replaceDangerousCharacters = replaceDangerousCharacters && headerValue.IndexOfAny(s_dangerousCharacterBytes) >= 0;
-            int length = encoding.GetCharCount(headerValue);
-            return string.Create(length, new CreateHeaderStringState(headerValue, encoding, replaceDangerousCharacters), static (chars, s) =>
+            string value = (valueEncoding ?? HttpRuleParser.DefaultHttpEncoding).GetString(headerValue);
+            if (headerValue.ContainsAny(s_dangerousCharacterBytes))
             {
-                int doubleCheck = s.Encoding.GetChars(s.Bytes, chars);
-                Debug.Assert(chars.Length == doubleCheck);
-                if (s.ReplaceDangerousCharacters)
-                {
-                    chars.ReplaceAny(s_dangerousCharacters, ' ');
-                }
-            });
+                // Depending on the encoding, 'value' may contain a dangerous character.
+                // We are replacing them with SP to conform with https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-5.
+                // This is a low-occurrence corner case, so we don't care about the cost of Replace() and the extra allocations.
+                value = value.Replace('\0', ' ').Replace('\r', ' ').Replace('\n', ' ');
+            }
+
+            return value;
         }
 
         internal static string? GetKnownContentType(ReadOnlySpan<byte> contentTypeValue)

@@ -598,8 +598,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory]
         [InlineData(false, "test\nxwow\nmore\n")]
-        [InlineData(false, "test\rwow\rmore\r")]
-        [InlineData(false, "test\r\nwow\r\nmore\r\n")]
+        [InlineData(false, "test\rwow\rmore\r\n")]
         [InlineData(true, "one\0two\0three\0")]
         public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value)
         {

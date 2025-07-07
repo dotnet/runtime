@@ -131,7 +131,7 @@ namespace System.Net.Http
             return
                 descriptor.Equals(KnownHeaders.Date) ? GetOrAddCachedValue(ref _lastDateHeaderValue, descriptor, value, valueEncoding) :
                 descriptor.Equals(KnownHeaders.Server) ? GetOrAddCachedValue(ref _lastServerHeaderValue, descriptor, value, valueEncoding) :
-                descriptor.GetHeaderValue(value, valueEncoding, replaceDangerousCharacters: true);
+                descriptor.GetHeaderValue(value, valueEncoding);
 
             static string GetOrAddCachedValue([NotNull] ref string? cache, HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? encoding)
             {
