@@ -979,8 +979,8 @@ namespace System.PrivateUri.Tests
         [ActiveIssue("Manual only. This test takes a few minutes to execute.")]
         public static async Task VeryLongInputs_ThrowOOM()
         {
-            // This string will expand 6x when escaped
-            string longString = string.Concat(Enumerable.Repeat("\uD83C\uDF49", 180_000_000));
+            // This string will expand 6x when escaped (12 = 6x growth * 2 chars in the string)
+            string longString = string.Concat(Enumerable.Repeat("\uD83C\uDF49", int.MaxValue / 12));
 
             Task userInfo = Task.Run(() => Test($"http://{longString}@host/path"));
             Task path = Task.Run(() => Test($"http://host/{longString}"));

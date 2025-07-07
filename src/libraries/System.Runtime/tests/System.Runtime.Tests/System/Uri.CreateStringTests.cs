@@ -813,7 +813,7 @@ namespace System.Tests
                 yield return new object[] { uriString, path, query, fragment };
                 yield return new object[] { new string(' ', 100_000) + uriString, path, query, fragment };
 
-                string longString = new string('^', 3);
+                string longString = new string('^', 100_000);
                 string escaped = Uri.EscapeDataString(longString);
 
                 int fragmentOffset = uriString.IndexOf('#');
