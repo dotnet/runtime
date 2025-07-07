@@ -90,8 +90,8 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 source: test,
                 fixedSource: fixtest,
                 baselineExpected: new[] {
-                    // /0/Test0.cs(9,25): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 25, 9, 27).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(9,28): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 28, 9, 30).WithArguments("C.M1()", " message.", ""),
                 },
                 fixedExpected: new[] {
                     // /0/Test0.cs(10,3): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
@@ -166,14 +166,14 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 source: test,
                 fixedSource: fixtest,
                 baselineExpected: new[] {
-                    // /0/Test0.cs(8,14): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(8, 14, 8, 16).WithArguments("C.M1()", " message.", ""),
-                    // /0/Test0.cs(12,24): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 24, 12, 28).WithArguments("C.M1()", " message.", ""),
-                    // /0/Test0.cs(16,25): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(16, 25, 16, 29).WithArguments("C.M1()", " message.", ""),
-                    // /0/Test0.cs(23,25): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(23, 25, 23, 29).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(8,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(8, 17, 8, 19).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(12,27): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 27, 12, 31).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(16,31): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(16, 31, 16, 35).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(23,28): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(23, 31, 23, 35).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: new[] {
                     // /0/Test0.cs(26,10): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
@@ -200,8 +200,8 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
             }
             """;
             var diag = new[] {
-                // /0/Test0.cs(11,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 16, 11, 18).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(11,22): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
             };
             // No fix available inside a lambda, requires manual code change since attribute cannot
             // be applied
@@ -249,8 +249,8 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-                    // /0/Test0.cs(11,22): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(11,27): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 27, 11, 29).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>(),
                 // The default iterations for the codefix is the number of diagnostics (1 in this case)
@@ -292,8 +292,8 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-                    // /0/Test0.cs(9,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 16, 9, 18).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(9,19): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 19, 9, 21).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: new[] {
                     // /0/Test0.cs(9,3): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
@@ -317,8 +317,8 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
             }
             """;
             var diag = new[] {
-                // /0/Test0.cs(10,15): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 12, 9, 14).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(9,15): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 15, 9, 17).WithArguments("C.M1()", " message.", "")
             };
             // Can't apply RUC on properties at the moment
             return VerifyRequiresUnreferencedCodeCodeFix(src, src, diag, diag);
@@ -365,10 +365,10 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
             }
             """;
             var diag = new[] {
-                // /0/Test0.cs(12,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 16, 12, 18).WithArguments("C.M1()", " message.", ""),
-                // /0/Test0.cs(13,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(13, 17, 13, 19).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(12,22): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 22, 12, 24).WithArguments("C.M1()", " message.", ""),
+                // /0/Test0.cs(13,23): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(13, 23, 13, 25).WithArguments("C.M1()", " message.", "")
             };
             return VerifyRequiresUnreferencedCodeCodeFix(src, fix, diag, Array.Empty<DiagnosticResult>());
         }
@@ -404,8 +404,8 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
             """;
             return VerifyRequiresUnreferencedCodeCodeFix(src, fix,
                 baselineExpected: new[] {
-                    // /0/Test0.cs(9,21): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 21, 9, 23).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(9,24): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 24, 9, 26).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: new[] {
                     // /0/Test0.cs(4,2): error CS7036: There is no argument given that corresponds to the required parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
@@ -436,8 +436,8 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
             """;
 
             return VerifyRequiresUnreferencedCodeAnalyzer(source,
-                // (8,3): warning IL2060: Call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
-                VerifyCS.Diagnostic(DiagnosticId.MakeGenericMethod).WithSpan(8, 3, 8, 44).WithArguments("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])"));
+                // (8,9): warning IL2060: Call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
+                VerifyCS.Diagnostic(DiagnosticId.MakeGenericMethod).WithSpan(8, 9, 8, 48).WithArguments("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])"));
         }
 
         [Fact]

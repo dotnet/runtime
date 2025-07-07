@@ -304,10 +304,10 @@ public class C
             }
             """;
             var diag = new[] {
-                // /0/Test0.cs(12,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 16, 12, 18).WithArguments("C.M1()", " message.", ""),
-                // /0/Test0.cs(13,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(13, 17, 13, 19).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(12,22): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 22, 12, 24).WithArguments("C.M1()", " message.", ""),
+                // /0/Test0.cs(13,23): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(13, 23, 13, 25).WithArguments("C.M1()", " message.", "")
             };
             return VerifyUnconditionalSuppressMessageCodeFixWithRUC(src, fix, diag, Array.Empty<DiagnosticResult>());
         }
@@ -392,8 +392,8 @@ public class C
                 src,
                 fix,
                 baselineExpected: new[] {
-                    // /0/Test0.cs(12,28): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 28, 12, 30).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(12,27): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 27, 12, 29).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -428,8 +428,8 @@ public class C
                 src,
                 fix,
                 baselineExpected: new[] {
-                    // /0/Test0.cs(10,15): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-                    VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(10, 20, 10, 22).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(10,19): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCSUSM.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(10, 19, 10, 21).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
