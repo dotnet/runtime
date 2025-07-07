@@ -29,19 +29,6 @@ namespace System.Runtime.CompilerServices
             _previousSyncCtx = _thread._synchronizationContext;
         }
 
-        public void PushExceptDefault()
-        {
-            Thread currentThread = Thread.CurrentThread;
-            _thread = currentThread;
-            ExecutionContext? previousExecutionCtx = currentThread._executionContext;
-            if (previousExecutionCtx != null && !previousExecutionCtx.IsDefault)
-            {
-                _previousExecutionCtx = previousExecutionCtx;
-            }
-
-            _previousSyncCtx = currentThread._synchronizationContext;
-        }
-
         public void Pop()
         {
             // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
@@ -339,7 +326,7 @@ namespace System.Runtime.CompilerServices
             public static unsafe void MoveNext<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
-                contexts.PushExceptDefault();
+                contexts.Push();
                 Continuation continuation = TOps.GetContinuationState(task);
 
                 while (true)
@@ -403,6 +390,17 @@ namespace System.Runtime.CompilerServices
                         contexts.Pop();
                         return;
                     }
+                }
+            }
+
+            private static Continuation UnwindToPossibleHandler(Continuation continuation)
+            {
+                while (true)
+                {
+                    Debug.Assert(continuation.Next != null);
+                    continuation = continuation.Next;
+                    if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                        return continuation;
                 }
             }
 
@@ -575,61 +573,6 @@ namespace System.Runtime.CompilerServices
         private static ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
         {
             return new ValueTask(FinalizeTaskReturningThunk(continuation));
-        }
-
-        // Return a continuation object if that is the one which has the final
-        // result of the Task, if the real output of the series of continuations was
-        // an exception, it is allowed to propagate out.
-        // OR
-        // return NULL to indicate that this isn't yet done.
-        private static unsafe Continuation? DispatchContinuations(Continuation? continuation)
-        {
-            Debug.Assert(continuation != null);
-
-            while (true)
-            {
-                Continuation? newContinuation;
-                try
-                {
-                    newContinuation = continuation.Resume(continuation);
-                }
-                catch (Exception ex)
-                {
-                    continuation = UnwindToPossibleHandler(continuation);
-                    if (continuation.Resume == null)
-                    {
-                        throw;
-                    }
-
-                    continuation.GCData![(continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0 ? 1 : 0] = ex;
-                    continue;
-                }
-
-                if (newContinuation != null)
-                {
-                    newContinuation.Next = continuation.Next;
-                    return null;
-                }
-
-                continuation = continuation.Next;
-                Debug.Assert(continuation != null);
-
-                if (continuation.Resume == null)
-                {
-                    return continuation; // Return the result containing Continuation
-                }
-            }
-        }
-
-        private static Continuation UnwindToPossibleHandler(Continuation continuation)
-        {
-            while (true)
-            {
-                Debug.Assert(continuation.Next != null);
-                continuation = continuation.Next;
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
-                    return continuation;
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
