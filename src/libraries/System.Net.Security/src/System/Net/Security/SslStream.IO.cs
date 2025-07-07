@@ -280,16 +280,6 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
-            {
-                Task handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, _sslAuthenticationOptions, InnerStream, cancellationToken);
-                await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
-
-                // TODO: cert validation
-                _handshakeCompleted = true;
-                return;
-            }
-
             bool handshakeCompleted = false;
             ProtocolToken token = default;
 
@@ -305,6 +295,17 @@ namespace System.Net.Security
             }
             try
             {
+#if TARGET_OSX
+                if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
+                {
+                    Task handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, _sslAuthenticationOptions, InnerStream, cancellationToken);
+                    await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
+
+                    CompleteHandshake(_sslAuthenticationOptions);
+                    return;
+                }
+#endif // TARGET_OSX
+
                 if (!receiveFirst)
                 {
                     token = NextMessage(reAuthenticationData, out int consumed);
@@ -834,13 +835,6 @@ namespace System.Net.Security
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
 
-            if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
-            {
-                Task<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
-                await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
-                return await task.ConfigureAwait(false);
-            }
-
             if (Interlocked.CompareExchange(ref _nestedRead, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
                 ObjectDisposedException.ThrowIf(_nestedRead == NestedState.StreamDisposed, this);
@@ -849,6 +843,16 @@ namespace System.Net.Security
 
             try
             {
+
+#if TARGET_OSX
+                if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+                {
+                    Task<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
+                    await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                    return await task.ConfigureAwait(false);
+                }
+#endif // TARGET_OSX
+
                 int processedLength = 0;
                 int nextTlsFrameLength = UnknownTlsFrameLength;
 
@@ -977,13 +981,6 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
-            if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
-            {
-                Task task = SslStreamPal.AsyncWriteAsync(_securityContext!, buffer, cancellationToken);
-                await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
-                return;
-            }
-
             if (buffer.Length == 0 && !SslStreamPal.CanEncryptEmptyMessage)
             {
                 // If it's an empty message and the PAL doesn't support that, we're done.
@@ -997,6 +994,15 @@ namespace System.Net.Security
 
             try
             {
+#if TARGET_OSX
+                if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+                {
+                    Task task = SslStreamPal.AsyncWriteAsync(_securityContext!, buffer, cancellationToken);
+                    await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                    return;
+                }
+#endif // TARGET_OSX
+
                 ValueTask t = buffer.Length < MaxDataSize ?
                     WriteSingleChunk<TIOAdapter>(buffer, cancellationToken) :
                     WriteAsyncChunked<TIOAdapter>(buffer, cancellationToken);
