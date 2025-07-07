@@ -15,6 +15,11 @@ static dispatch_queue_t _inputQueue;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
+#define LOG(msg) \
+    do { \
+        _statusFunc(0, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(msg)); \
+    } while (0)
+
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
 {
     if (isServer != 0)  // the current implementation only supports client
@@ -157,9 +162,7 @@ PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connectio
     nw_framer_async(framer, ^(void) 
     {
         nw_framer_deliver_input(framer, buffer, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
-
         completionCallback(context, 0);
-
         nw_release(message);
     });
 
@@ -238,12 +241,11 @@ PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, 
 }
 
 // This is used by decrypt. We feed data in via AppleCryptoNative_NwProcessInputData and we try to read from the connection.
-PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state, void* context, ReadCompletionCallback readCompletionCallback)
+PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state, uint32_t length, void* context, ReadCompletionCallback readCompletionCallback)
 {
-    nw_connection_receive(connection, 0, 65536, ^(dispatch_data_t content, nw_content_context_t ctx, bool is_complete, nw_error_t error) {
+    LOG("AppleCryptoNative_NwReadFromConnection called");
+    nw_connection_receive(connection, 0, length, ^(dispatch_data_t content, nw_content_context_t ctx, bool is_complete, nw_error_t error) {
         int errorCode = error ? nw_error_get_error_code(error) : 0;
-
-        printf("%s:%d: AppleCryptoNative_NwReadFromConnection called\n", __func__, __LINE__);
 
         if (error != NULL)
         {
@@ -335,7 +337,7 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
 
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete) {
-        printf("Cert validation callback called\n");
+        LOG("Cert validation callback called");
 
         (void)metadata;
         (void)trust_ref;

@@ -457,7 +457,6 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.OSX.cs" />
-    <Compile Include="System\Net\Security\SslStreamPal.OSX.Nw.cs" />
     <Compile Include="System\Net\Security\StreamSizes.OSX.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.OSX.cs" />
   </ItemGroup>

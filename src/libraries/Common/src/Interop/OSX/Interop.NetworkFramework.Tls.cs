@@ -56,7 +56,7 @@ internal static partial class Interop
 
             // read plaintext data from the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
-            internal static unsafe partial void ReadFromConnection(SafeNwHandle connection, IntPtr state, IntPtr context, delegate* unmanaged<IntPtr, long, byte*, int, void> readCompletionCallback);
+            internal static unsafe partial void ReadFromConnection(SafeNwHandle connection, IntPtr state, int length, IntPtr context, delegate* unmanaged<IntPtr, long, byte*, int, void> readCompletionCallback);
 
             // starts connection cleanup
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]

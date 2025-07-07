@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -58,8 +59,11 @@ namespace System.Net.Security
         }
 
         private HandshakeState _handshakeState = HandshakeState.NotStarted;
-        private Task<SecurityStatusPalErrorCode>? _pendingHandshakeTask;
         private Exception? _handshakeException;
+        private readonly Stream _transportStream;
+        private TaskCompletionSource _handshakeCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        private Task? _transportReadTask;
+        private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
         // TaskSourceCompletion objects for decrypt operations
         internal TaskCompletionSource<SecurityStatusPalErrorCode>? DecryptTask { get; private set; }
@@ -74,9 +78,10 @@ namespace System.Net.Security
 
         private bool _disposed;
 
-        public SafeDeleteNwContext(SslAuthenticationOptions sslAuthenticationOptions) : base(IntPtr.Zero)
+        public SafeDeleteNwContext(SslAuthenticationOptions sslAuthenticationOptions, Stream transportStream) : base(IntPtr.Zero)
         {
             _connectionHandle = Interop.NetworkFramework.Tls.CreateContext(sslAuthenticationOptions.IsServer);
+            _transportStream = transportStream;
             if (_connectionHandle.IsInvalid)
             {
                 throw new Exception("Failed to create Network Framework connection"); // TODO: Make this string resource
@@ -97,6 +102,121 @@ namespace System.Net.Security
 
                 // Then check if it's technically available
                 return s_isNetworkFrameworkAvailable.Value;
+            }
+        }
+
+        internal Task HandshakeAsync(CancellationToken cancellationToken)
+        {
+            Interop.NetworkFramework.Tls.StartTlsHandshake(_connectionHandle, GCHandle.ToIntPtr(_thisHandle));
+
+            // TODO: Handle cancellation token
+
+            _transportReadTask = Task.Run(async () =>
+            {
+                try
+                {
+                    byte[] buffer = new byte[16 * 1024];
+                    Memory<byte> readBuffer = new Memory<byte>(buffer);
+
+                    while (!_shutdownCts.IsCancellationRequested)
+                    {
+                        // Read data from the transport stream
+                        int bytesRead = await _transportStream.ReadAsync(readBuffer, _shutdownCts.Token).ConfigureAwait(false);
+
+                        if (bytesRead > 0)
+                        {
+                            // Process the read data
+                            await WriteInboundWireDataAsync(readBuffer.Slice(0, bytesRead)).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // EOF reached, signal completion
+                            break;
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Handle cancellation gracefully
+                }
+            }, cancellationToken);
+
+            return _handshakeCompletionSource.Task;
+        }
+
+        internal async Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"App sending {buffer.Length} bytes");
+
+            TaskCompletionSource<long> tcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Cancellation requested for WriteAsync");
+                tcs.TrySetCanceled();
+            });
+
+            GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
+
+            using MemoryHandle memoryHandle = buffer.Pin();
+            unsafe
+            {
+                Interop.NetworkFramework.Tls.SendToConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+            }
+
+            long status = await tcs.Task.ConfigureAwait(false);
+
+            if (status != 0)
+            {
+                throw Interop.AppleCrypto.CreateExceptionForOSStatus(_writeStatus);
+            }
+
+            [UnmanagedCallersOnly]
+            static void CompletionCallback(IntPtr context, long status)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing", "WriteAsync");
+                GCHandle handle = GCHandle.FromIntPtr(context);
+                TaskCompletionSource<long> tcs = (TaskCompletionSource<long>)handle.Target!;
+
+                tcs.SetResult(status);
+                handle.Free();
+            }
+        }
+
+        internal async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", "ReadAsync");
+
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Cancellation requested for ReadAsync");
+                tcs.TrySetCanceled();
+            });
+
+            Tuple<TaskCompletionSource<int>, Memory<byte>> state = new(tcs, buffer);
+            GCHandle handle = GCHandle.Alloc(state, GCHandleType.Normal);
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Waiting for read from connection");
+            unsafe
+            {
+                Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+            }
+
+            return await tcs.Task.ConfigureAwait(false);
+
+            [UnmanagedCallersOnly]
+            static unsafe void CompletionCallback(IntPtr context, long status, byte* buffer, int length)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing DecryptAsync", "ReadAsync");
+                GCHandle handle = GCHandle.FromIntPtr(context);
+                (TaskCompletionSource<int> tcs, Memory<byte> state) = (Tuple<TaskCompletionSource<int>, Memory<byte>>)handle.Target!;
+
+                new Span<byte>(buffer, length).CopyTo(state.Span);
+
+                tcs.TrySetResult(length);
+                handle.Free();
             }
         }
 
@@ -280,20 +400,15 @@ namespace System.Net.Security
         private void WriteOutboundWireData(ReadOnlySpan<byte> data)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {data.Length} bytes", "WriteOutboundWireData");
+
             lock (_lockObject)
             {
-                _outputBuffer.EnsureAvailableSpace(data.Length);
-                data.CopyTo(_outputBuffer.AvailableSpan);
-                _outputBuffer.Commit(data.Length);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Buffered {data.Length} bytes, total output buffer: {_outputBuffer.ActiveLength}", "WriteOutboundWireData");
+                _transportStream.Write(data);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Sent {data.Length} bytes,", "WriteOutboundWireData");
             }
-
-            // Signal that data is available
-            _writeWaiter.Set();
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Signaled _writeWaiter", "WriteOutboundWireData");
         }
 
-        internal unsafe Task WriteInboundWireDataAsync(ReadOnlyMemory<byte> buf)
+        internal async Task WriteInboundWireDataAsync(ReadOnlyMemory<byte> buf)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buf.Length} bytes", "WriteInboundWireDataAsync");
 
@@ -301,16 +416,15 @@ namespace System.Net.Security
             {
                 TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
-                fixed (byte* ptr = &MemoryMarshal.GetReference(buf.Span))
-                {
-                    Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, ptr, buf.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+                using MemoryHandle memoryHandle = buf.Pin();
 
+                unsafe
+                {
+                    Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
                 }
 
-                return tcs.Task;
+                await tcs.Task.ConfigureAwait(false);
             }
-
-            return Task.CompletedTask;
 
             [UnmanagedCallersOnly]
             static void CompletionCallback(IntPtr context, long status)
@@ -342,297 +456,42 @@ namespace System.Net.Security
 
         public override bool IsInvalid => _connectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
 
-        internal async Task<int> DecryptAsync(Memory<byte> buffer)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", "DecryptAsync");
-
-            await WriteInboundWireDataAsync(buffer).ConfigureAwait(false);
-
-            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            Tuple<TaskCompletionSource<int>, Memory<byte>> state = new(tcs, buffer);
-            GCHandle handle = GCHandle.Alloc(state, GCHandleType.Normal);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Waiting for read from connection", "DecryptAsync");
-            unsafe
-            {
-                Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), GCHandle.ToIntPtr(handle), &CompletionCallback);
-            }
-
-            return await tcs.Task.ConfigureAwait(false);
-
-            [UnmanagedCallersOnly]
-            static unsafe void CompletionCallback(IntPtr context, long status, byte* buffer, int length)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing DecryptAsync", "DecryptAsync");
-                GCHandle handle = GCHandle.FromIntPtr(context);
-                (TaskCompletionSource<int> tcs, Memory<byte> state) = (Tuple<TaskCompletionSource<int>, Memory<byte>>)handle.Target!;
-
-                new Span<byte>(buffer, length).CopyTo(state.Span);
-
-                tcs.SetResult(length);
-                handle.Free();
-            }
-            // if (_framerHandle is null || _framerHandle.IsInvalid)
-            // {
-            //     // We are shutting down
-            //     return -1;
-            // }
-
-            // // notify TLS we received EOF
-            // if (buffer.Length == 0)
-            // {
-            //     Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, null, 0);
-            //     return 0;
-            // }
-
-            // fixed (byte* ptr = buffer)
-            // {
-            //     Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, ptr, buffer.Length);
-            // }
-            // return 0;
-        }
-
-        internal async Task<ProtocolToken> EncryptAsync(ReadOnlyMemory<byte> buffer)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Encrypting {buffer.Length} bytes", "EncryptAsync");
-            ProtocolToken token = default;
-
-            _writeWaiter!.Reset();
-
-            TaskCompletionSource<long> tcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
-            GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
-
-            using MemoryHandle memoryHandle = buffer.Pin();
-            unsafe
-            {
-                Interop.NetworkFramework.Tls.SendToConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
-            }
-
-            long status = await tcs.Task.ConfigureAwait(false);
-
-            // this will be updated by WriteCompleted
-            _writeWaiter!.Wait();
-
-            if (_writeStatus == 0)
-            {
-                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-                ReadPendingWrites(ref token);
-            }
-            else
-            {
-                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError,
-                                        Interop.AppleCrypto.CreateExceptionForOSStatus(_writeStatus));
-            }
-
-            return token;
-
-            [UnmanagedCallersOnly]
-            static void CompletionCallback(IntPtr context, long status)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing", "EncryptAsync");
-                GCHandle handle = GCHandle.FromIntPtr(context);
-                TaskCompletionSource<long> tcs = (TaskCompletionSource<long>)handle.Target!;
-
-                tcs.SetResult(status);
-                handle.Free();
-            }
-        }
-
-        // // returns of available decrypted bytes or -1 if EOF was reached
-        // internal int BytesReadyFromConnection
-        // {
-        //     get
-        //     {
-        //         lock (_lockObject)
-        //         {
-        //             if (_inputBuffer.ActiveLength > 0)
-        //             {
-        //                 return _inputBuffer.ActiveLength;
-        //             }
-
-        //             return _readStatus == (int)NwOSStatus.NoErr ? 0 : -1;
-        //         }
-        //     }
-        // }
-
-        internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
-
-        internal void ReadPendingWrites(ref ProtocolToken token)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Called - checking for data", "ReadPendingWrites");
-
-            lock (_writeWaiter)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Output buffer length: {_outputBuffer.ActiveLength}", "ReadPendingWrites");
-
-                if (_outputBuffer.ActiveLength == 0)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "No data available, returning empty token", "ReadPendingWrites");
-                    token.Size = 0;
-                    token.Payload = null;
-                    return;
-                }
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Extracting {_outputBuffer.ActiveLength} bytes from output buffer", "ReadPendingWrites");
-                token.SetPayload(_outputBuffer.ActiveSpan);
-                _outputBuffer.Discard(_outputBuffer.ActiveLength);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Token size: {token.Size}", "ReadPendingWrites");
-            }
-        }
-
-        public async ValueTask<SecurityStatusPal> PerformHandshakeAsync()
-        {
-            await Task.Yield();
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State: {_handshakeState}", "PerformHandshake");
-            ObjectDisposedException.ThrowIf(_disposed, this);
-
-            switch (_handshakeState)
-            {
-                case HandshakeState.NotStarted:
-                    return await StartHandshake().ConfigureAwait(false);
-
-                case HandshakeState.InProgress:
-                    // return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
-                    return ContinueHandshake();
-
-                case HandshakeState.WaitingForPeer:
-                // return await ProcessPeerDataAsync().ConfigureAwait(false);
-
-                case HandshakeState.Completed:
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake already completed", "PerformHandshake");
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-
-                case HandshakeState.Failed:
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "Handshake failed", "PerformHandshake");
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, _handshakeException);
-
-                default:
-                    throw new InvalidOperationException($"Invalid handshake state: {_handshakeState}");
-            }
-        }
-
-        private async Task<SecurityStatusPal> StartHandshake()
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Starting TLS handshake", "StartHandshake");
-
-            bool add = false;
-            this.DangerousAddRef(ref add);
-
-            try
-            {
-                // Start async handshake but don't wait
-                await StartHandshakeAsync().ConfigureAwait(false);
-                _handshakeState = HandshakeState.InProgress;
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake started async", "StartHandshake");
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
-            }
-            catch (Exception ex)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"StartHandshake failed: {ex}", "StartHandshake");
-                _handshakeException = ex;
-                _handshakeState = HandshakeState.Failed;
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
-            }
-        }
-
-        private SecurityStatusPal ContinueHandshake()
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Continuing handshake", "ContinueHandshake");
-
-            // Check if async handshake completed
-            if (_pendingHandshakeTask?.IsCompleted == true)
-            {
-                if (_pendingHandshakeTask.IsFaulted)
-                {
-                    _handshakeException = _pendingHandshakeTask.Exception?.GetBaseException();
-                    _handshakeState = HandshakeState.Failed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Handshake task faulted: {_handshakeException}", "ContinueHandshake");
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, _handshakeException);
-                }
-
-                var result = _pendingHandshakeTask.Result;
-                _pendingHandshakeTask = null;
-
-                if (result == SecurityStatusPalErrorCode.OK)
-                {
-                    _handshakeState = HandshakeState.Completed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake completed successfully", "ContinueHandshake");
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-                }
-                else if (result == SecurityStatusPalErrorCode.ContinueNeeded)
-                {
-                    _handshakeState = HandshakeState.WaitingForPeer;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake needs peer data", "ContinueHandshake");
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
-                }
-                else
-                {
-                    _handshakeState = HandshakeState.Failed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Handshake failed with status: {result}", "ContinueHandshake");
-                    return new SecurityStatusPal(result);
-                }
-            }
-
-            // Still in progress
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake still in progress", "ContinueHandshake");
-            return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
-        }
-
-        private Task<SecurityStatusPalErrorCode> StartHandshakeAsync()
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Starting async handshake operation", "StartHandshakeAsync");
-
-            try
-            {
-                Interop.NetworkFramework.Tls.StartTlsHandshake(_connectionHandle, GCHandle.ToIntPtr(_thisHandle));
-
-                // Wait a short time for initial handshake progress
-                _writeWaiter.Wait();
-
-                return Task.FromResult(SecurityStatusPalErrorCode.ContinueNeeded);
-            }
-            catch (Exception ex)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Async handshake failed: {ex}", "StartHandshakeAsync");
-                throw;
-            }
-        }
-
-
         [UnmanagedCallersOnly]
         private static unsafe void StatusUpdateCallback(IntPtr thisHandle, NetworkFrameworkStatusUpdates statusUpdate, IntPtr data, IntPtr data2)
         {
             if (NetEventSource.Log.IsEnabled() && statusUpdate != NetworkFrameworkStatusUpdates.DebugLog) NetEventSource.Info(null, $"Received status update: {statusUpdate}", "StatusUpdateCallback");
-            SafeDeleteNwContext? nwContext = ResolveThisHandle(thisHandle);
-            if (nwContext == null)
+            SafeDeleteNwContext? nwContext = null;
+
+            if (thisHandle != IntPtr.Zero)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, "Failed to resolve context handle", "StatusUpdateCallback");
-                return;
+                nwContext = ResolveThisHandle(thisHandle);
+                if (nwContext == null)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, "Failed to resolve context handle", "StatusUpdateCallback");
+                    return;
+                }
             }
 
             try
             {
-                nwContext.EnsureKeepAlive();
+                nwContext?.EnsureKeepAlive();
                 switch (statusUpdate)
                 {
                     case NetworkFrameworkStatusUpdates.FramerStart:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "FramerStart", "StatusUpdateCallback");
-                        nwContext.FramerStartCallback(new SafeNwHandle(data, true));
+                        nwContext?.FramerStartCallback(new SafeNwHandle(data, true));
                         break;
                     case NetworkFrameworkStatusUpdates.FramerStop:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "FramerStop", "StatusUpdateCallback");
-                        nwContext.FramerStopCallback();
+                        nwContext?.FramerStopCallback();
                         break;
                     case NetworkFrameworkStatusUpdates.HandshakeFinished:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "HandshakeFinished", "StatusUpdateCallback");
-                        nwContext.HandshakeFinished();
+                        nwContext?.HandshakeFinished();
                         break;
                     case NetworkFrameworkStatusUpdates.HandshakeFailed:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"HandshakeFailed - errorCode: {data.ToInt32()}", "StatusUpdateCallback");
-                        nwContext.HandshakeFailed(data.ToInt32());
+                        nwContext?.HandshakeFailed(data.ToInt32());
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionReadFinished:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, $"ConnectionReadFinished - dataLength: {data.ToInt32()}", "StatusUpdateCallback");
@@ -640,18 +499,18 @@ namespace System.Net.Security
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionWriteFinished:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "ConnectionWriteFinished", "StatusUpdateCallback");
-                        nwContext.SetConnectionWriteStatus(data.ToInt32());
+                        nwContext?.SetConnectionWriteStatus(data.ToInt32());
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionWriteFailed:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"ConnectionWriteFailed - errorCode: {data.ToInt32()}", "StatusUpdateCallback");
-                        nwContext.SetConnectionWriteStatus(data.ToInt32());
+                        nwContext?.SetConnectionWriteStatus(data.ToInt32());
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionCancelled:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "ConnectionCancelled", "StatusUpdateCallback");
-                        nwContext.ConnectionCancelled();
+                        nwContext?.ConnectionCancelled();
                         break;
                     case NetworkFrameworkStatusUpdates.DebugLog:
-                        HandleDebugLog(data.ToInt32(), data2.ToInt32());
+                        HandleDebugLog(data, data2);
                         break;
                     default: // We shouldn't hit here.
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"Unknown status update: {statusUpdate}", "StatusUpdateCallback");
@@ -699,7 +558,7 @@ namespace System.Net.Security
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "TLS handshake completed successfully", "HandshakeFinished");
             _handshakeState = HandshakeState.Completed;
-            _pendingHandshakeTask = null;
+            _handshakeCompletionSource.SetResult();
         }
 
         private void HandshakeFailed(int errorCode)
@@ -708,7 +567,7 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"TLS handshake failed with error code: {errorCode} ({ex.Message})", "HandshakeFailed");
             _handshakeException = ex;
             _handshakeState = HandshakeState.Failed;
-            _pendingHandshakeTask = null;
+            _handshakeCompletionSource.SetException(ex);
             _readStatus = errorCode;
         }
 
@@ -725,7 +584,6 @@ namespace System.Net.Security
             OperationCanceledException ex = new();
             _handshakeException = ex;
             _handshakeState = HandshakeState.Failed;
-            _pendingHandshakeTask = null;
             DecryptTask?.TrySetException(ex);
             DecryptTask = null;
             _writeStatus = (int)NwOSStatus.SecUserCanceled;
@@ -734,7 +592,7 @@ namespace System.Net.Security
             _readWaiter.Set();
         }
 
-        private static void HandleDebugLog(int logType, int data)
+        private static void HandleDebugLog(IntPtr logType, IntPtr data)
         {
             switch (logType)
             {
@@ -754,7 +612,7 @@ namespace System.Net.Security
                 case 31: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"maxTlsProtocol: {data}", "Native"); break;
                 case 32: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"native min TLS version: {data}", "Native"); break;
                 case 33: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"native max TLS version: {data}", "Native"); break;
-                default: if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"Unknown debug log type: {logType}, data: {data}", "Native"); break;
+                default: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, Marshal.PtrToStringAnsi(data)!, "Native"); break;
             }
         }
     }

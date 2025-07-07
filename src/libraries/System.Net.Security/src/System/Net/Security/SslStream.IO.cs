@@ -280,6 +280,16 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+            if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
+            {
+                Task handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, _sslAuthenticationOptions, InnerStream, cancellationToken);
+                await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
+
+                // TODO: cert validation
+                _handshakeCompleted = true;
+                return;
+            }
+
             bool handshakeCompleted = false;
             ProtocolToken token = default;
 
@@ -820,10 +830,16 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
+
+            if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+            {
+                Task<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
+                await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                return await task.ConfigureAwait(false);
+            }
 
             if (Interlocked.CompareExchange(ref _nestedRead, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
@@ -960,6 +976,13 @@ namespace System.Net.Security
             where TIOAdapter : IReadWriteAdapter
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
+
+            if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+            {
+                Task task = SslStreamPal.AsyncWriteAsync(_securityContext!, buffer, cancellationToken);
+                await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                return;
+            }
 
             if (buffer.Length == 0 && !SslStreamPal.CanEncryptEmptyMessage)
             {
