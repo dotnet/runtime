@@ -169,7 +169,7 @@ namespace System.IO.Hashing
                 }
                 else
                 {
-                    DeriveSecretFromSeed(secret, (ulong)seed);
+                    DeriveSecretFromSeed(secret, seed);
                 }
             }
 
