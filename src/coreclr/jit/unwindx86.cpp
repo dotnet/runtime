@@ -119,13 +119,8 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
     if (fgFirstColdBlock != nullptr)
     {
-#ifdef DEBUG
-        if (JitConfig.JitFakeProcedureSplitting())
-        {
-            assert(func->funKind == FUNC_ROOT); // No splitting of funclets.
-        }
-        else
-#endif // DEBUG
+        // If fake-splitting, treat all unwind info as hot.
+        INDEBUG(if (!JitConfig.JitFakeProcedureSplitting()))
         {
             unwindReserveFuncHelper(func, false);
         }
