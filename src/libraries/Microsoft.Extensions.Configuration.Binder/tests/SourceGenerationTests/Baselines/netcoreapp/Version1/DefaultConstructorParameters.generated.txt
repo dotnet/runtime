@@ -61,90 +61,180 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static global::Program.ClassWhereParametersHaveDefaultValue InitializeProgramClassWhereParametersHaveDefaultValue(IConfiguration configuration, BinderOptions? binderOptions)
         {
             string name = "John Doe"!;
-            if (configuration["Name"] is string value0)
+            if (TryGetConfigurationValue(configuration, key: "Name", out string? value0))
             {
                 name = value0;
             }
 
             string address = "1 Microsoft Way"!;
-            if (configuration["Address"] is string value1)
+            if (TryGetConfigurationValue(configuration, key: "Address", out string? value1))
             {
                 address = value1;
             }
 
             int age = (int)(42);
-            if (configuration["Age"] is string value2 && !string.IsNullOrEmpty(value2))
+            if (TryGetConfigurationValue(configuration, key: "Age", out string? value2))
             {
-                age = ParseInt(value2, configuration.GetSection("Age").Path);
+                if (!string.IsNullOrEmpty(value2))
+                {
+                    age = ParseInt(value2, configuration.GetSection("Age").Path);
+                }
             }
 
             float f = 42F;
-            if (configuration["F"] is string value3 && !string.IsNullOrEmpty(value3))
+            if (TryGetConfigurationValue(configuration, key: "F", out string? value3))
             {
-                f = ParseFloat(value3, configuration.GetSection("F").Path);
+                if (!string.IsNullOrEmpty(value3))
+                {
+                    f = ParseFloat(value3, configuration.GetSection("F").Path);
+                }
             }
 
             double d = 3.1415899999999999D;
-            if (configuration["D"] is string value4 && !string.IsNullOrEmpty(value4))
+            if (TryGetConfigurationValue(configuration, key: "D", out string? value4))
             {
-                d = ParseDouble(value4, configuration.GetSection("D").Path);
+                if (!string.IsNullOrEmpty(value4))
+                {
+                    d = ParseDouble(value4, configuration.GetSection("D").Path);
+                }
             }
 
             decimal m = 3.1415926535897932384626433M;
-            if (configuration["M"] is string value5 && !string.IsNullOrEmpty(value5))
+            if (TryGetConfigurationValue(configuration, key: "M", out string? value5))
             {
-                m = ParseDecimal(value5, configuration.GetSection("M").Path);
+                if (!string.IsNullOrEmpty(value5))
+                {
+                    m = ParseDecimal(value5, configuration.GetSection("M").Path);
+                }
             }
 
             global::System.StringComparison sc = (global::System.StringComparison)(4);
-            if (configuration["SC"] is string value6 && !string.IsNullOrEmpty(value6))
+            if (TryGetConfigurationValue(configuration, key: "SC", out string? value6))
             {
-                sc = ParseEnum<global::System.StringComparison>(value6, configuration.GetSection("SC").Path);
+                if (!string.IsNullOrEmpty(value6))
+                {
+                    sc = ParseEnum<global::System.StringComparison>(value6, configuration.GetSection("SC").Path);
+                }
             }
 
             char c = 'q';
-            if (configuration["C"] is string value7 && !string.IsNullOrEmpty(value7))
+            if (TryGetConfigurationValue(configuration, key: "C", out string? value7))
             {
-                c = ParseChar(value7, configuration.GetSection("C").Path);
+                if (!string.IsNullOrEmpty(value7))
+                {
+                    c = ParseChar(value7, configuration.GetSection("C").Path);
+                }
             }
 
             int? nage = (int?)(42);
-            if (configuration["NAge"] is string value8 && !string.IsNullOrEmpty(value8))
+            if (TryGetConfigurationValue(configuration, key: "NAge", out string? value8))
             {
-                nage = ParseInt(value8, configuration.GetSection("NAge").Path);
+                if (value8 is null)
+                {
+                    nage = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(value8))
+                    {
+                        nage = ParseInt(value8, configuration.GetSection("NAge").Path);
+                    }
+                }
             }
 
             float? nf = 42F;
-            if (configuration["NF"] is string value9 && !string.IsNullOrEmpty(value9))
+            if (TryGetConfigurationValue(configuration, key: "NF", out string? value9))
             {
-                nf = ParseFloat(value9, configuration.GetSection("NF").Path);
+                if (value9 is null)
+                {
+                    nf = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(value9))
+                    {
+                        nf = ParseFloat(value9, configuration.GetSection("NF").Path);
+                    }
+                }
             }
 
             double? nd = 3.1415899999999999D;
-            if (configuration["ND"] is string value10 && !string.IsNullOrEmpty(value10))
+            if (TryGetConfigurationValue(configuration, key: "ND", out string? value10))
             {
-                nd = ParseDouble(value10, configuration.GetSection("ND").Path);
+                if (value10 is null)
+                {
+                    nd = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(value10))
+                    {
+                        nd = ParseDouble(value10, configuration.GetSection("ND").Path);
+                    }
+                }
             }
 
             decimal? nm = 3.1415926535897932384626433M;
-            if (configuration["NM"] is string value11 && !string.IsNullOrEmpty(value11))
+            if (TryGetConfigurationValue(configuration, key: "NM", out string? value11))
             {
-                nm = ParseDecimal(value11, configuration.GetSection("NM").Path);
+                if (value11 is null)
+                {
+                    nm = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(value11))
+                    {
+                        nm = ParseDecimal(value11, configuration.GetSection("NM").Path);
+                    }
+                }
             }
 
             global::System.StringComparison? nsc = (global::System.StringComparison?)(4);
-            if (configuration["NSC"] is string value12 && !string.IsNullOrEmpty(value12))
+            if (TryGetConfigurationValue(configuration, key: "NSC", out string? value12))
             {
-                nsc = ParseEnum<global::System.StringComparison>(value12, configuration.GetSection("NSC").Path);
+                if (value12 is null)
+                {
+                    nsc = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(value12))
+                    {
+                        nsc = ParseEnum<global::System.StringComparison>(value12, configuration.GetSection("NSC").Path);
+                    }
+                }
             }
 
             char? nc = 'q';
-            if (configuration["NC"] is string value13 && !string.IsNullOrEmpty(value13))
+            if (TryGetConfigurationValue(configuration, key: "NC", out string? value13))
             {
-                nc = ParseChar(value13, configuration.GetSection("NC").Path);
+                if (value13 is null)
+                {
+                    nc = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(value13))
+                    {
+                        nc = ParseChar(value13, configuration.GetSection("NC").Path);
+                    }
+                }
             }
 
             return new global::Program.ClassWhereParametersHaveDefaultValue(name, address, age, f, d, m, sc, c, nage, nf, nd, nm, nsc, nc);
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
 
@@ -178,7 +268,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(T)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(T)}'.", exception);
             }
         }
 
@@ -190,7 +280,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
@@ -202,7 +292,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(float)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(float)}'.", exception);
             }
         }
 
@@ -214,7 +304,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(double)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(double)}'.", exception);
             }
         }
 
@@ -226,7 +316,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(decimal)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(decimal)}'.", exception);
             }
         }
 
@@ -238,7 +328,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(char)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(char)}'.", exception);
             }
         }
         #endregion Core binding extensions.

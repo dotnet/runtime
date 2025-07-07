@@ -431,50 +431,49 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_NULLCHECK        = MAKE_BBFLAG( 9), // BB contains a null check
     BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(10), // BB contains a call to a method with SuppressGCTransitionAttribute
     BBF_RUN_RARELY           = MAKE_BBFLAG(11), // BB is rarely run (catch clauses, blocks with throws etc)
-    BBF_LOOP_HEAD            = MAKE_BBFLAG(12), // BB is the head of a loop (can reach a predecessor)
-    BBF_HAS_LABEL            = MAKE_BBFLAG(13), // BB needs a label
-    BBF_LOOP_ALIGN           = MAKE_BBFLAG(14), // Block is lexically the first block in a loop we intend to align.
-    BBF_HAS_ALIGN            = MAKE_BBFLAG(15), // BB ends with 'align' instruction
-    BBF_HAS_JMP              = MAKE_BBFLAG(16), // BB executes a JMP instruction (instead of return)
-    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(17), // BB has a GC safe point (e.g. a call)
-    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(18), // BB contains simple index or length expressions on an SD array local var.
-    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(19), // BB contains simple index, length, or lower bound expressions on an MD array local var.
-    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(20), // Block has a multi-dimensional array reference
-    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(21), // BB contains 'new' of an object type.
+    BBF_HAS_LABEL            = MAKE_BBFLAG(12), // BB needs a label
+    BBF_LOOP_ALIGN           = MAKE_BBFLAG(13), // Block is lexically the first block in a loop we intend to align.
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(14), // BB ends with 'align' instruction
+    BBF_HAS_JMP              = MAKE_BBFLAG(15), // BB executes a JMP instruction (instead of return)
+    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(16), // BB has a GC safe point (e.g. a call)
+    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(17), // BB contains simple index or length expressions on an SD array local var.
+    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(18), // BB contains simple index, length, or lower bound expressions on an MD array local var.
+    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(19), // Block has a multi-dimensional array reference
+    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(20), // BB contains 'new' of an object type.
 
-    BBF_RETLESS_CALL                   = MAKE_BBFLAG(22), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+    BBF_RETLESS_CALL                   = MAKE_BBFLAG(21), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
                                                           // BBJ_CALLFINALLYRET); see isBBCallFinallyPair().
-    BBF_COLD                           = MAKE_BBFLAG(23), // BB is cold
-    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(24), // BB weight is computed from profile data
-    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(25), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+    BBF_COLD                           = MAKE_BBFLAG(22), // BB is cold
+    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(23), // BB weight is computed from profile data
+    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(24), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                                           // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally.
-    BBF_HAS_CALL                       = MAKE_BBFLAG(26), // BB contains a call
-    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(27), // Block is dominated by exceptional entry.
-    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(28), // BB is surrounded by a backward jump/switch arc
-    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(29), // Block is a source of a backward jump
-    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(30), // Block is a target of a backward jump
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(31), // Block is a patchpoint
-    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(32), // Block is a partial compilation patchpoint
-    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(33), // BB contains a call needing a histogram profile
-    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(34), // BB has pred that has potential tail call
-    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(35), // Block has recursive tailcall that may turn into a loop
-    BBF_NO_CSE_IN                      = MAKE_BBFLAG(36), // Block should kill off any incoming CSE
-    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(37), // Ok to add pred edge to this block, even when "safe" edge creation disabled
-    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(38), // Block has a node that needs a value probing
-    BBF_HAS_NEWARR                     = MAKE_BBFLAG(39), // BB contains 'new' of an array type.
-    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(40), // BB *likely* has a bounds check (after rangecheck phase).
-    BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(41), // Block is a resumption block in an async method
+    BBF_HAS_CALL                       = MAKE_BBFLAG(25), // BB contains a call
+    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(26), // Block is dominated by exceptional entry.
+    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(27), // BB is surrounded by a backward jump/switch arc
+    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(28), // Block is a source of a backward jump
+    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(29), // Block is a target of a backward jump
+    BBF_PATCHPOINT                     = MAKE_BBFLAG(30), // Block is a patchpoint
+    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(31), // Block is a partial compilation patchpoint
+    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(32), // BB contains a call needing a histogram profile
+    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(33), // BB has pred that has potential tail call
+    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(34), // Block has recursive tailcall that may turn into a loop
+    BBF_NO_CSE_IN                      = MAKE_BBFLAG(35), // Block should kill off any incoming CSE
+    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(36), // Ok to add pred edge to this block, even when "safe" edge creation disabled
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(37), // Block has a node that needs a value probing
+    BBF_HAS_NEWARR                     = MAKE_BBFLAG(38), // BB contains 'new' of an array type.
+    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(39), // BB *likely* has a bounds check (after rangecheck phase).
+    BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(40), // Block is a resumption block in an async method
 
     // The following are sets of flags.
 
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD | BBF_MAY_HAVE_BOUNDS_CHECKS,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
 
     // Flags a block should not have had before it is split.
 
-    BBF_SPLIT_NONEXIST = BBF_LOOP_HEAD | BBF_RETLESS_CALL | BBF_COLD,
+    BBF_SPLIT_NONEXIST = BBF_RETLESS_CALL | BBF_COLD,
 
     // Flags lost by the top block when a block is split.
     // Note, this is a conservative guess.
@@ -595,6 +594,9 @@ private:
     // Convenience flag for phases that need to track edge visitation
     bool m_visited;
 
+    // Indicates if m_likelihood was determined using profile synthesis's heuristics
+    bool m_heuristicBasedLikelihood;
+
     // True if likelihood has been set
     INDEBUG(bool m_likelihoodSet);
 
@@ -606,6 +608,7 @@ public:
         , m_likelihood(0)
         , m_dupCount(0)
         , m_visited(false)
+        , m_heuristicBasedLikelihood(false)
 #ifdef DEBUG
         , m_likelihoodSet(false)
 #endif // DEBUG
@@ -662,7 +665,8 @@ public:
 
     void clearLikelihood()
     {
-        m_likelihood = 0.0;
+        m_likelihood               = 0.0;
+        m_heuristicBasedLikelihood = false;
         INDEBUG(m_likelihoodSet = false);
     }
 
@@ -680,15 +684,15 @@ public:
         return m_dupCount;
     }
 
-    void incrementDupCount()
+    void incrementDupCount(unsigned dupCount = 1)
     {
-        m_dupCount++;
+        m_dupCount += dupCount;
     }
 
-    void decrementDupCount()
+    void decrementDupCount(unsigned dupCount = 1)
     {
-        assert(m_dupCount >= 1);
-        m_dupCount--;
+        assert(m_dupCount >= dupCount);
+        m_dupCount -= dupCount;
     }
 
     bool visited() const
@@ -706,6 +710,16 @@ public:
     {
         assert(visited());
         m_visited = false;
+    }
+
+    bool isHeuristicBased() const
+    {
+        return m_heuristicBasedLikelihood;
+    }
+
+    void setHeuristicBased(bool isHeuristicBased)
+    {
+        m_heuristicBasedLikelihood = isHeuristicBased;
     }
 };
 
@@ -847,6 +861,14 @@ public:
         return bbTargetEdge;
     }
 
+    FlowEdge*& TargetEdgeRef()
+    {
+        assert(HasInitializedTarget());
+        assert(bbTargetEdge->getSourceBlock() == this);
+        assert(bbTargetEdge->getDestinationBlock() != nullptr);
+        return bbTargetEdge;
+    }
+
     void SetTargetEdge(FlowEdge* targetEdge)
     {
         // SetKindAndTarget() nulls target for non-jump kinds,
@@ -866,6 +888,15 @@ public:
     }
 
     FlowEdge* GetTrueEdge() const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(bbTrueEdge != nullptr);
+        assert(bbTrueEdge->getSourceBlock() == this);
+        assert(bbTrueEdge->getDestinationBlock() != nullptr);
+        return bbTrueEdge;
+    }
+
+    FlowEdge*& TrueEdgeRef()
     {
         assert(KindIs(BBJ_COND));
         assert(bbTrueEdge != nullptr);
@@ -899,6 +930,15 @@ public:
     }
 
     FlowEdge* GetFalseEdge() const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(bbFalseEdge != nullptr);
+        assert(bbFalseEdge->getSourceBlock() == this);
+        assert(bbFalseEdge->getDestinationBlock() != nullptr);
+        return bbFalseEdge;
+    }
+
+    FlowEdge*& FalseEdgeRef()
     {
         assert(KindIs(BBJ_COND));
         assert(bbFalseEdge != nullptr);
@@ -1150,10 +1190,6 @@ public:
     {
         return HasFlag(BBF_RUN_RARELY);
     }
-    bool isLoopHead() const
-    {
-        return HasFlag(BBF_LOOP_HEAD);
-    }
 
     bool isLoopAlign() const
     {
@@ -1311,7 +1347,7 @@ public:
 
     bool isBBWeightCold(Compiler* comp) const
     {
-        return getBBWeight(comp) < BB_COLD_WEIGHT;
+        return bbWeight < (getCalledCount(comp) * BB_COLD_WEIGHT);
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement
@@ -2262,10 +2298,9 @@ struct BBswtDesc
     FlowEdge** bbsDstTab; // case label table address
     unsigned   bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
 
-    // Case number and likelihood of most likely case
+    // Case number of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
     unsigned bbsDominantCase;
-    weight_t bbsDominantFraction;
 
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case

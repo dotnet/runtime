@@ -44,13 +44,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_JIT_PITCHING)
-EXTERN_C void CheckStacksAndPitch();
-EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode);
-EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD);
-EXTERN_C void MarkMethodNotPitchingCandidate(MethodDesc* pMD);
-#endif
-
 EXTERN_C void STDCALL ThePreStubPatch();
 
 #if defined(HAVE_GCCOVER)
@@ -429,16 +422,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
-#ifdef FEATURE_INTERPRETER
-        if (pConfig->IsInterpreterCode())
-        {
-            AllocMemTracker amt;
-            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
-            amt.SuppressRelease();
-            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
-            SetNativeCodeInterlocked(pCode);
-        }
-#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -607,10 +590,6 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
         IsILStub() ? "true" : "false",
         GetMethodTable()->GetDebugClassName(),
         m_pszDebugMethodName));
-
-#if defined(FEATURE_JIT_PITCHING)
-    CheckStacksAndPitch();
-#endif
 
     PCODE pCode = (PCODE)NULL;
     {
@@ -826,12 +805,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     // (don't want this for OSR, need to see how it works)
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER* pilHeader = GetAndVerifyILHeader(this, pConfig, &ilDecoderTemp);
+    bool isInterpreterCode = false;
 
     if (!ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
     }
     else
     {
@@ -844,13 +824,24 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             &methodSignature);
 #endif //FEATURE_EVENT_TRACE
 
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
+
 #ifdef FEATURE_EVENT_TRACE
+        PCODE pNativeCodeStartAddress = pCode;
+#ifdef FEATURE_INTERPRETER
+        if (isInterpreterCode)
+        {
+            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+            InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+            pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
+        }
+#endif // FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,
             &methodSignature,
-            pCode,
+            pNativeCodeStartAddress,
             pConfig);
 #endif //FEATURE_EVENT_TRACE
     }
@@ -908,7 +899,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     return pCode;
 }
 
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
+PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode, bool *pIsInterpreterCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pConfig != NULL);
@@ -922,7 +913,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 
-        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pIsInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -944,8 +935,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             pEntry->m_hrResultCode = E_FAIL;
             EX_RETHROW;
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     if (pOtherCode != (PCODE)NULL)
     {
@@ -1001,6 +993,15 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         return pOtherCode;
     }
 
+#ifdef FEATURE_INTERPRETER
+    if (*pIsInterpreterCode)
+    {
+        InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+        InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+        pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
 #endif
@@ -1009,10 +1010,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         pConfig->SetShouldCountCalls();
     }
-#endif
-
-#if defined(FEATURE_JIT_PITCHING)
-    SavePitchingCandidate(this, *pSizeOfCode);
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
@@ -1081,9 +1078,6 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_jitSwitchedToMinOpt(false),
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
-#endif
-#ifdef FEATURE_INTERPRETER
-    m_isInterpreterCode(false),
 #endif
     m_nextInSameThread(nullptr)
 {}
@@ -1972,7 +1966,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         {
             HardwareExceptionHolder;
@@ -1990,7 +1984,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
@@ -2016,13 +2010,15 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
     }
     frames(pTransitionBlock);
 
-    frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
     frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = sp;
+    frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 
     frames.interpreterFrame.Pop();
+
+    return frames.interpMethodContextFrame.pRetVal;
 }
 #endif // FEATURE_INTERPRETER
 
@@ -2178,12 +2174,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         if (doBackpatch)
         {
-            RETURN DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+            pCode = DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+        }
+        else
+        {
+            _ASSERTE(!doFullBackpatch);
         }
 
         _ASSERTE(pCode != (PCODE)NULL);
-        _ASSERTE(!doFullBackpatch);
-        RETURN pCode;
+        goto Return;
     }
 #endif
 
@@ -2191,11 +2190,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         LOG((LF_CLASSLOADER, LL_INFO10000,
             "    In PreStubWorker, method already jitted, backpatching call point\n"));
-        #if defined(FEATURE_JIT_PITCHING)
-            MarkMethodNotPitchingCandidate(this);
-        #endif
 
-        RETURN DoBackpatch(pMT, pDispatchingMT, TRUE);
+        pCode = DoBackpatch(pMT, pDispatchingMT, TRUE);
+        goto Return;
     }
 
     /**************************   CODE CREATION  *************************/
@@ -2317,7 +2314,19 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     _ASSERTE(!IsPointingToPrestub());
     _ASSERTE(HasStableEntryPoint());
 
-    RETURN DoBackpatch(pMT, pDispatchingMT, FALSE);
+
+    pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
+
+Return:
+#ifdef FEATURE_INTERPRETER
+    InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
+    if (pInterpreterCode != NULL)
+    {
+        CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
+    }
+#endif // FEATURE_INTERPRETER
+
+    RETURN pCode;
 }
 
 #endif // !DACCESS_COMPILE
@@ -2740,10 +2749,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
         }
-
-#if defined (FEATURE_JIT_PITCHING)
-        DeleteFromPitchingCandidate(pMD);
-#endif
     }
 
     // Force a GC on every jit if the stress level is high enough
@@ -2845,7 +2850,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->
             AllocMem(S_SIZE_T(sizeof(StaticFieldAddressArgs))));
 
-    pArgs->staticBaseHelper = (FnStaticBaseHelper)CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
+    pArgs->staticBaseHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
 
     switch(helpFunc)
     {
@@ -2881,8 +2886,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
     }
     pArgs->offset = pFD->GetOffset();
 
+    BinderMethodID managedHelperId = fUnbox ? 
+        METHOD__STATICSHELPERS__STATICFIELDADDRESSUNBOX_DYNAMIC :
+        METHOD__STATICSHELPERS__STATICFIELDADDRESS_DYNAMIC;
+
+    MethodDesc *pManagedHelper = CoreLibBinder::GetMethod(managedHelperId);
+
     PCODE pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pArgs,
-        fUnbox ? GetEEFuncEntryPoint(JIT_StaticFieldAddressUnbox_Dynamic) : GetEEFuncEntryPoint(JIT_StaticFieldAddress_Dynamic));
+        pManagedHelper->GetMultiCallableAddrOfCode());
 
     amTracker.SuppressRelease();
 
@@ -3300,7 +3311,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         EX_CATCH
         {
         }
-        EX_END_CATCH (SwallowAllExceptions);
+        EX_END_CATCH
     }
     else
     {

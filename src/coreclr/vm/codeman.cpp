@@ -25,7 +25,6 @@
 
 #include "rtlfunctions.h"
 
-#include "shimload.h"
 #include "debuginfostore.h"
 #include "strsafe.h"
 
@@ -212,7 +211,7 @@ void UnwindInfoTable::Register()
             iRangeStart, iRangeEnd);
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /*****************************************************************************/
@@ -506,7 +505,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         STRESS_LOG1(LF_JIT, LL_ERROR, "Exception happened when doing unwind Info rundown. EIP of last AV = %p\n", g_LastAccessViolationEIP);
         _ASSERTE(!"Exception thrown while publishing 'catchup' ETW unwind information");
         s_publishingActive = false;     // Try to minimize damage.
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 #endif // defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
@@ -1261,45 +1260,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Base);
     }
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE);
-    }
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE2))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE2);
-    }
-
     // x86-64-v2
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse3) != 0) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3_4))
-    {
-        // We need to additionally check that EXTERNAL_EnableSSE3_4 is set, as that
-        // is a prexisting config flag that controls the SSE3+ ISAs
-        CPUCompileFlags.Set(InstructionSet_SSE3);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Ssse3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSSE3))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSSE3);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse41) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE41))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE41);
-    }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Sse42) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE42))
     {
         CPUCompileFlags.Set(InstructionSet_SSE42);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Popcnt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePOPCNT))
-    {
-        CPUCompileFlags.Set(InstructionSet_POPCNT);
     }
 
     // x86-64-v3
@@ -1314,100 +1279,68 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX2);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Bmi1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableBMI1))
-    {
-        CPUCompileFlags.Set(InstructionSet_BMI1);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Bmi2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableBMI2))
-    {
-        CPUCompileFlags.Set(InstructionSet_BMI2);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Fma) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableFMA))
-    {
-        CPUCompileFlags.Set(InstructionSet_FMA);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Lzcnt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableLZCNT))
-    {
-        CPUCompileFlags.Set(InstructionSet_LZCNT);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Movbe) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableMOVBE))
-    {
-        CPUCompileFlags.Set(InstructionSet_MOVBE);
-    }
-
     // x86-64-v4
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512))
     {
-        // While the AVX-512 ISAs can be individually lit-up, they really
-        // need F, BW, CD, DQ, and VL to be fully functional without adding
-        // significant complexity into the JIT. Additionally, unlike AVX/AVX2
-        // there was never really any hardware that didn't provide all 5 at
-        // once, with the notable exception being Knight's Landing which
-        // provided a similar but not quite the same feature.
-
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F_VL) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW_VL) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD_VL) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
-        {
-            CPUCompileFlags.Set(InstructionSet_EVEX);
-            CPUCompileFlags.Set(InstructionSet_AVX512F);
-            CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
-            CPUCompileFlags.Set(InstructionSet_AVX512BW);
-            CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
-            CPUCompileFlags.Set(InstructionSet_AVX512CD);
-            CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
-            CPUCompileFlags.Set(InstructionSet_AVX512DQ);
-            CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
-        }
+        CPUCompileFlags.Set(InstructionSet_AVX512);
     }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0)
+    // x86-64-vFuture
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512v2))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
-        {
-            CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-            CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
-        }
+        CPUCompileFlags.Set(InstructionSet_AVX512v2);
     }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512v3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512v3))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512v3);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX10v1);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX10v2);
+    }
+
+#if defined(TARGET_AMD64)
+    if (((cpuFeatures & XArchIntrinsicConstants_Apx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAPX))
+    {
+        CPUCompileFlags.Set(InstructionSet_APX);
+    }
+#endif  // TARGET_AMD64
 
     // Unversioned
 
     if (((cpuFeatures & XArchIntrinsicConstants_Aes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
     {
         CPUCompileFlags.Set(InstructionSet_AES);
+
+        if (((cpuFeatures & XArchIntrinsicConstants_Vaes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVAES))
+        {
+            CPUCompileFlags.Set(InstructionSet_AES_V256);
+            CPUCompileFlags.Set(InstructionSet_AES_V512);
+        }
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Pclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vp2intersect) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VP2INTERSECT))
     {
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
+        CPUCompileFlags.Set(InstructionSet_AVX512VP2INTERSECT);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Vpclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVPCLMULQDQ))
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxIfma) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXIFMA))
     {
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V256);
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
+        CPUCompileFlags.Set(InstructionSet_AVXIFMA);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
     {
         CPUCompileFlags.Set(InstructionSet_AVXVNNI);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Serialize) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
-    {
-        CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
@@ -1417,56 +1350,26 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_GFNI_V512);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
+    if (((cpuFeatures & XArchIntrinsicConstants_Sha) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSHA))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
-        {
-            CPUCompileFlags.Set(InstructionSet_EVEX);
-            CPUCompileFlags.Set(InstructionSet_AVX10v1);
-            CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
-        }
+        CPUCompileFlags.Set(InstructionSet_SHA);
     }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_WaitPkg) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWAITPKG))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
-        {
-            CPUCompileFlags.Set(InstructionSet_AVX10v2);
-            CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
-        }
+        CPUCompileFlags.Set(InstructionSet_WAITPKG);
     }
 
-    #if defined(TARGET_AMD64)
-    if ((cpuFeatures & XArchIntrinsicConstants_Apx) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_X86Serialize) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAPX))
-        {
-            CPUCompileFlags.Set(InstructionSet_APX);
-        }
+        CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
-    #endif  // TARGET_AMD64
 #elif defined(TARGET_ARM64)
-
-#if !defined(TARGET_WINDOWS)
-    // Linux may still support no AdvSimd
-    if ((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) == 0)
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("AdvSimd processor support required."));
-    }
-#else
-    _ASSERTE((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) != 0);
-#endif
-
     CPUCompileFlags.Set(InstructionSet_VectorT128);
 
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
         CPUCompileFlags.Set(InstructionSet_ArmBase);
-    }
-
-    if (((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64AdvSimd))
-    {
         CPUCompileFlags.Set(InstructionSet_AdvSimd);
     }
 
@@ -1899,7 +1802,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         {
             LogJITInitializationError("LoadAndInitializeJIT: LoadAndInitializeJIT: caught an exception trying to initialize %s", utf8JitName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
     else
     {
@@ -1924,7 +1827,7 @@ static ICorJitCompiler* InitializeStaticJIT()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return newJitCompiler;
 }
@@ -2758,7 +2661,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
         pHp = NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (pHp == NULL)
     {
@@ -2961,13 +2864,6 @@ void EECodeGenManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     TCodeHeader * pCodeHdrRW = NULL;
 
     CodeHeapRequestInfo requestInfo(pMD);
-#if defined(FEATURE_JIT_PITCHING)
-    if (pMD && pMD->IsPitchable() && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMethodSizeThreshold) < blockSize)
-    {
-        requestInfo.SetDynamicDomain();
-    }
-#endif
-
     SIZE_T realHeaderSize;
 #ifdef FEATURE_INTERPRETER
     if (std::is_same<TCodeHeader, InterpreterCodeHeader>::value)
@@ -3757,7 +3653,7 @@ BOOL InterpreterJitManager::LoadInterpreter()
     m_interpreter = NULL;
 
 // If both JIT and interpret are available, statically link the JIT. Interpreter can be loaded dynamically
-// via config switch for testing purposes. 
+// via config switch for testing purposes.
 #if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_JIT)
     newInterpreter = InitializeStaticJIT();
 #else // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
@@ -4375,8 +4271,71 @@ BOOL InterpreterJitManager::JitCodeToMethodInfo(
 
 TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 {
-    // Interpreter-TODO: Verify that this is correct
-    return pCodeInfo->GetCodeAddress() - pCodeInfo->GetRelOffset();
+    EH_CLAUSE_ENUMERATOR enumState;
+    unsigned ehCount;
+
+    IJitManager *pJitMan = pCodeInfo->GetJitManager();
+    ehCount = pJitMan->InitializeEHEnumeration(pCodeInfo->GetMethodToken(), &enumState);
+    DWORD relOffset = pCodeInfo->GetRelOffset();
+    TADDR methodBaseAddress = pCodeInfo->GetCodeAddress() - relOffset;
+
+    for (unsigned i = 0; i < ehCount; i++)
+    {
+        EE_ILEXCEPTION_CLAUSE ehClause;
+        pJitMan->GetNextEHClause(&enumState, &ehClause);
+
+        if ((ehClause.HandlerStartPC <= relOffset) && (relOffset < ehClause.HandlerEndPC))
+        {
+            return methodBaseAddress + ehClause.HandlerStartPC;
+        }
+
+        // For filters, we also need to check the filter funclet range. The filter funclet is always stored right
+        // before its handler funclet (according to ECMA-355). So the filter end offset is equal to the start offset of the handler funclet.
+        if (IsFilterHandler(&ehClause) && (ehClause.FilterOffset <= relOffset) && (relOffset < ehClause.HandlerStartPC))
+        {
+            return methodBaseAddress + ehClause.FilterOffset;
+        }
+    }
+
+    return methodBaseAddress;
+}
+
+DWORD InterpreterJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    EH_CLAUSE_ENUMERATOR enumState;
+    unsigned ehCount;
+
+    ehCount = InitializeEHEnumeration(MethodToken, &enumState);
+
+    DWORD nFunclets = 0;
+    for (unsigned i = 0; i < ehCount; i++)
+    {
+        EE_ILEXCEPTION_CLAUSE ehClause;
+        GetNextEHClause(&enumState, &ehClause);
+        if (nFunclets < dwLength)
+        {
+            pStartFuncletOffsets[nFunclets] = ehClause.HandlerStartPC;
+        }
+        nFunclets++;
+        if (IsFilterHandler(&ehClause))
+        {
+            if (nFunclets < dwLength)
+            {
+                pStartFuncletOffsets[nFunclets] = ehClause.FilterOffset;
+            }
+
+            nFunclets++;
+        }
+    }
+
+    return nFunclets;
 }
 
 void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)

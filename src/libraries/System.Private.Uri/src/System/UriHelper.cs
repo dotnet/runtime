@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -10,13 +11,28 @@ namespace System
 {
     internal static class UriHelper
     {
-        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        public static string SpanToLowerInvariantString(ReadOnlySpan<char> span)
         {
             return string.Create(span.Length, span, static (buffer, span) =>
             {
                 int charsWritten = span.ToLowerInvariant(buffer);
                 Debug.Assert(charsWritten == buffer.Length);
             });
+        }
+
+        public static string NormalizeAndConcat(string? start, ReadOnlySpan<char> toNormalize)
+        {
+            var vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
+
+            int charsWritten;
+            while (!toNormalize.TryNormalize(vsb.RawChars, out charsWritten, NormalizationForm.FormC))
+            {
+                vsb.EnsureCapacity(vsb.Capacity + 1);
+            }
+
+            string result = string.Concat(start, vsb.RawChars.Slice(0, charsWritten));
+            vsb.Dispose();
+            return result;
         }
 
         // http://host/Path/Path/File?Query is the base of
@@ -212,7 +228,7 @@ namespace System
             return result;
         }
 
-        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+        internal static void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
@@ -591,10 +607,20 @@ namespace System
             char.IsBetween(ch, '\u200E', '\u202E') && !char.IsBetween(ch, '\u2010', '\u2029');
 
         // Strip Bidirectional control characters from this string
-        internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
+        public static string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
             Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
+            if (StripBidiControlCharacters(strToClean, out string? stripped))
+            {
+                return stripped;
+            }
+
+            return backingString ?? strToClean.ToString();
+        }
+
+        public static bool StripBidiControlCharacters(ReadOnlySpan<char> strToClean, [NotNullWhen(true)] out string? stripped)
+        {
             int charsToRemove = 0;
 
             int indexOfPossibleCharToRemove = strToClean.IndexOfAnyInRange('\u200E', '\u202E');
@@ -613,10 +639,11 @@ namespace System
             if (charsToRemove == 0)
             {
                 // Hot path
-                return backingString ?? new string(strToClean);
+                stripped = null;
+                return false;
             }
 
-            return string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
+            stripped = string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
             {
                 int destIndex = 0;
                 foreach (char c in strToClean)
@@ -628,6 +655,7 @@ namespace System
                 }
                 Debug.Assert(buffer.Length == destIndex);
             });
+            return true;
         }
     }
 }

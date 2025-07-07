@@ -488,6 +488,36 @@ namespace ILLink.Shared.TrimAnalysis
                     _diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile, calledMethod.GetDisplayName());
                     break;
 
+                case IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping:
+                {
+                    if (calledMethod.Method.Instantiation[0].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                    {
+                        // We only support GetOrCreateExternalTypeMapping for a fully specified type.
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined,
+                            calledMethod.Method.Instantiation[0].GetDisplayName());
+                    }
+                    else
+                    {
+                        TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
+                        _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ExternalTypeMapRequest(typeMapGroup), "TypeMapping.GetOrCreateExternalTypeMapping called on type");
+                    }
+                    break;
+                }
+                case IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping:
+                {
+                    if (calledMethod.Method.Instantiation[0].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                    {
+                        // We only support GetOrCreateProxyTypeMapping for a fully specified type.
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined,
+                            calledMethod.Method.Instantiation[0].GetDisplayName());
+                    }
+                    else
+                    {
+                        TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
+                        _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ProxyTypeMapRequest(typeMapGroup), "TypeMapping.GetOrCreateProxyTypeMapping called on type");
+                    }
+                    break;
+                }
                 default:
                     return false;
             }
