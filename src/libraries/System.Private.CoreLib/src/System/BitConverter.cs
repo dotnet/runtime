@@ -653,7 +653,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a 128-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// Returns a 128-bit unsigned integer converted from sixteen bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
