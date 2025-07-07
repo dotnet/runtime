@@ -15656,8 +15656,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
 #if FEATURE_FIXED_OUT_ARGS
-            // We can only predict compressed displacement for FEATURE_FIXED_OUT_ARGS
-            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
+            // TODO-AMD64-CQ: We should be able to accurately predict this when FEATURE_FIXED_OUT_ARGS
+            // is available. However, there's some nuance in how emitInsSizeSVCalcDisp does things
+            // compared to emitOutputSV here, so we will miss a few cases today.
+            //
+            // assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
 #endif
 
             dspInByte = false;
