@@ -512,8 +512,16 @@ namespace pal
 
         // For all entries in the directory
         struct dirent* entry;
-        while ((entry = readdir(dir)) != nullptr)
+        while (true)
         {
+            do
+            {
+                errno = 0;
+                entry = readdir(dir);
+            }
+            while (entry == nullptr && errno == EINTR);
+            if (entry == nullptr) break;
+
 #if HAVE_DIRENT_D_TYPE
             int dirEntryType = entry->d_type;
 #else

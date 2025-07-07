@@ -277,18 +277,23 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
     DIR* pDir = opendir(dirUtf8.c_str());
     if (pDir != nullptr)
     {
-        errno = 0;
-        dirent *pEntry = readdir(pDir);
-        while (pEntry != nullptr)
+        dirent *pEntry;
+        while (true)
         {
+            do
+            {
+                errno = 0;
+                pEntry = readdir(pDir);
+            }
+            while (pEntry == nullptr && errno == EINTR);
+            if (pEntry == nullptr) break;
+
             if ((fnmatch(searchPatternUtf8.c_str(), pEntry->d_name, 0) == 0) && filter(pEntry))
             {
                 FindData findData(pEntry->d_type, ConvertMultiByteToWideChar(pEntry->d_name));
                 first = new findDataList(&findData, first);
                 ++elemCount;
             }
-            errno = 0;
-            pEntry = readdir(pDir);
         }
 
         if (errno != 0)

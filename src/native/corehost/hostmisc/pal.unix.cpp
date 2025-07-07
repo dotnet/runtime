@@ -1009,8 +1009,16 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
     if (dir != nullptr)
     {
         struct dirent* entry = nullptr;
-        while ((entry = readdir(dir)) != nullptr)
+        while (true)
         {
+            do
+            {
+                errno = 0;
+                entry = readdir(dir);
+            }
+            while (entry == nullptr && errno == EINTR);
+            if (entry == nullptr) break;
+
             if (fnmatch(pattern.c_str(), entry->d_name, FNM_PATHNAME) != 0)
             {
                 continue;

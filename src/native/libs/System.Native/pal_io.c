@@ -506,8 +506,13 @@ int32_t SystemNative_ReadDir(DIR* dir, DirectoryEntry* outputEntry)
     assert(dir != NULL);
     assert(outputEntry != NULL);
 
-    errno = 0;
-    struct dirent* entry = readdir(dir);
+    struct dirent* entry;
+    do
+    {
+        errno = 0;
+        entry = readdir(dir);
+    }
+    while (entry == NULL && errno == EINTR);
 
     // 0 returned with null result -> end-of-stream
     if (entry == NULL)

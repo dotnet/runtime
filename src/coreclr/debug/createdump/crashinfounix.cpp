@@ -121,8 +121,16 @@ CrashInfo::EnumerateAndSuspendThreads()
     }
 
     struct dirent* entry;
-    while ((entry = readdir(taskDir)) != nullptr)
+    while (true)
     {
+        do
+        {
+            errno = 0;
+            entry = readdir(taskDir);
+        }
+        while (entry == nullptr && errno == EINTR);
+        if (entry == nullptr) break;
+
         pid_t tid = static_cast<pid_t>(strtol(entry->d_name, nullptr, 10));
         if (tid != 0)
         {

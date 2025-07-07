@@ -5,6 +5,7 @@
 
 #include "../Common/pal_safecrt.h"
 #include <assert.h>
+#include <cstddef>
 #include <dirent.h>
 #include <stdbool.h>
 #include <string.h>
@@ -477,8 +478,16 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
     assert((size_t)offset < pathTmpSize);
     size_t remaining = pathTmpSize - (size_t)offset;
 
-    while ((next = readdir(dir)) != NULL)
+    while (true)
     {
+        do
+        {
+            errno = 0;
+            next = readdir(dir);
+        }
+        while (next == NULL && errno == EINTR);
+        if (next == NULL) break;
+
         size_t len = strnlen(next->d_name, sizeof(next->d_name));
 
         if (len > 4 && 0 == strncasecmp(".pfx", next->d_name + len - 4, 4))

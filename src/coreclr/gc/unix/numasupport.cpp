@@ -31,8 +31,16 @@ static int GetNodeNum(const char* path, bool firstOnly)
     dir = opendir(path);
     if (dir)
     {
-        while ((entry = readdir(dir)) != NULL)
+        while (true)
         {
+            do
+            {
+                errno = 0;
+                entry = readdir(dir);
+            }
+            while (entry == nullptr && errno == EINTR);
+            if (entry == nullptr) break;
+
             if (strncmp(entry->d_name, "node", STRING_LENGTH("node")))
                 continue;
 
