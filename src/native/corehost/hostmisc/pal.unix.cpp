@@ -1005,7 +1005,9 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
 
     std::vector<pal::string_t>& files = *list;
 
-    auto dir = opendir(path.c_str());
+    DIR *dir;
+    while ((dir = opendir(path.c_str())) == nullptr && errno == EINTR);
+
     if (dir != nullptr)
     {
         struct dirent* entry = nullptr;

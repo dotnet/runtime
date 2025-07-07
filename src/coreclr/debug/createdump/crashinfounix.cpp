@@ -113,7 +113,9 @@ CrashInfo::EnumerateAndSuspendThreads()
         return false;
     }
 
-    DIR* taskDir = opendir(taskPath);
+    DIR* taskDir;
+    while ((taskDir = opendir(taskPath)) == nullptr && errno == EINTR);
+
     if (taskDir == nullptr)
     {
         printf_error("Problem enumerating threads: opendir(%s) FAILED %s (%d)\n", taskPath, strerror(errno), errno);

@@ -28,7 +28,7 @@ static int GetNodeNum(const char* path, bool firstOnly)
     struct dirent *entry;
     int result = -1;
 
-    dir = opendir(path);
+    while ((dir = opendir(path)) == nullptr && errno == EINTR);
     if (dir)
     {
         while (true)

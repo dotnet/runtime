@@ -437,7 +437,8 @@ X509* CryptoNative_X509UpRef(X509* x509)
 
 static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmpSize, char** nextFileWrite)
 {
-    DIR* trustDir = opendir(storePath);
+    DIR* trustDir;
+    while ((trustDir = opendir(storePath)) == NULL && errno == EINTR);
 
     if (trustDir == NULL)
     {

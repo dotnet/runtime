@@ -504,7 +504,9 @@ namespace pal
         assert(ext != nullptr);
         const size_t ext_len = pal::strlen(ext);
 
-        DIR* dir = opendir(directory.c_str());
+        DIR* dir;
+        while ((dir = opendir(directory.c_str())) == nullptr && errno == EINTR);
+
         if (dir == nullptr)
             return {};
 

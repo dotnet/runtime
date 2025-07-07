@@ -274,7 +274,9 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
     std::string dirUtf8 = ConvertToUtf8(dir);
     std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
 
-    DIR* pDir = opendir(dirUtf8.c_str());
+    DIR* pDir;
+    while ((pDir = opendir(dirUtf8.c_str())) == nullptr && errno == EINTR);
+
     if (pDir != nullptr)
     {
         dirent *pEntry;
