@@ -994,7 +994,12 @@ void emitter::emitIns_R_R_R(
 bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
-    assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
+    // TODO: Disable this early return once compresed instructions are allowed in prolog / epilog
+    if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
+    {
+        return false;
+    }
+
     instruction compressedIns = tryGetCompressedIns_R_R_R(ins, attr, rd, rs1, rs2, opt);
     if (compressedIns == INS_none)
     {
