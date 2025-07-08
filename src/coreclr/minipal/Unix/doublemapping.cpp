@@ -70,9 +70,9 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         char name[24];
         sprintf(name, "/shm-dotnet-%d", getpid());
         name[sizeof(name) - 1] = '\0';
-        shm_unlink(name);
+        while (-1 == shm_unlink(name) && errno == EINTR);
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
-        shm_unlink(name);
+        while (-1 == shm_unlink(name) && errno == EINTR);
     }
 #endif // !TARGET_ANDROID
 
@@ -383,9 +383,9 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
             char name[24];
             sprintf(name, "/shm-dotnet-template-%d", getpid());
             name[sizeof(name) - 1] = '\0';
-            shm_unlink(name);
+            while (-1 == shm_unlink(name) && errno == EINTR);
             fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
-            shm_unlink(name);
+            while (-1 == shm_unlink(name) && errno == EINTR);
         }
 #endif // !TARGET_ANDROID
 #endif
