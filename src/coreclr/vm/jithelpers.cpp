@@ -2386,9 +2386,12 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* secretArg)
 {
     _ASSERTE(frame != NULL && pMD != NULL);
+    _ASSERTE(!pMD->IsILStub() || secretArg != NULL);
 
-    if (pMD->IsILStub() && secretArg != NULL)
+    UMEntryThunk* pEntryThunk = NULL;
+    if (secretArg != NULL)
     {
+        pEntryThunk = ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk;
         pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
     }
     frame->pMD = pMD;
@@ -2415,14 +2418,14 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), pMD->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), pEntryThunk);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), pMD->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), pEntryThunk);
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
