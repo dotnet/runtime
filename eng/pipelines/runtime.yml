@@ -506,7 +506,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_Bootstrapped
-            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -rc Checked --bootstrap
+            buildArgs: -s clr+libs+host+packs+tools.cdac -c $(_BuildConfig) -rc Checked --bootstrap
             timeoutInMinutes: 120
             condition: >-
               or(
