@@ -653,6 +653,33 @@ LEAF_ENTRY Store_Stack, _TEXT
         jmp qword ptr [r11]
 LEAF_END Store_Stack, _TEXT
 
+LEAF_ENTRY Load_Stack_Ref, _TEXT
+        mov esi, dword ptr [r11 + 8]  ; SP offset
+        mov edi, dword ptr [r11 + 12] ; size of the value type
+        add rsi, 8; return address
+        add rsi, rsp
+        mov qword ptr [rsi], r10
+        add r10, rdi
+        lea r10, [r10 + 7]
+        and r10, 0fffffffffffffff8h
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Stack_Ref, _TEXT
+
+LEAF_ENTRY Store_Stack_Ref, _TEXT
+        mov esi, dword ptr [r11 + 8]  ; SP offset
+        mov ecx, dword ptr [r11 + 12] ; size of the value type
+        mov rsi, [rsp + rsi + 8 + __InterpreterStubArgumentRegistersOffset]
+        mov rdi, r10
+        rep movsb
+        ; align rdi up to the stack slot size
+        lea rdi, [rdi + 7]
+        and rdi, 0fffffffffffffff8h
+        mov r10, rdi
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Store_Stack_Ref, _TEXT
+
 ; Routines for passing value type arguments by reference in general purpose registers RCX, RDX, R8, R9
 ; from native code to the interpreter
 
