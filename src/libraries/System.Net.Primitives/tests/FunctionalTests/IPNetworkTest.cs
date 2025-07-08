@@ -1,9 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -26,17 +30,17 @@ namespace System.Net.Primitives.Functional.Tests
         {
             { "127.0.0.1/33" }, // PrefixLength max is 32 for IPv4
             { "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/129" }, // PrefixLength max is 128 for IPv6
-            { "127.0.0.1/31" }, // Bits exceed the prefix length of 31 (32nd bit is on)
-            { "198.51.255.0/23" }, // Bits exceed the prefix length of 23
-            { "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/127" }, // Bits exceed the prefix length of 31
-            { "2a01:110:8012::/45" }, // Bits exceed the prefix length of 45 (47th bit is on)
         };
 
         public static TheoryData<string> ValidIPNetworkData = new TheoryData<string>()
         {
             { "0.0.0.0/32" }, // the whole IPv4 space
             { "0.0.0.0/0" },
+            { "192.168.0.10/0" },
             { "128.0.0.0/1" },
+            { "127.0.0.1/8" },
+            { "127.0.0.1/31" },
+            { "198.51.255.0/23" },
             { "::/128" }, // the whole IPv6 space
             { "255.255.255.255/32" },
             { "198.51.254.0/23" },
@@ -44,7 +48,33 @@ namespace System.Net.Primitives.Functional.Tests
             { "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128" },
             { "2a01:110:8012::/47" },
             { "2a01:110:8012::/100" },
+            { "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/127" },
+            { "2a01:110:8012::/45" },
         };
+
+        private uint GetMask32(int prefix)
+        {
+            Debug.Assert(prefix != 0);
+
+            uint mask = uint.MaxValue << (32 - prefix);
+            return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(mask) : mask;
+        }
+        private UInt128 GetMask128(int prefix)
+        {
+            Debug.Assert(prefix != 0);
+
+            UInt128 mask = UInt128.MaxValue << (128 - prefix);
+            return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(mask) : mask;
+        }
+        private IPAddress GetBaseAddress(IPAddress address, int prefix)
+            => (address.AddressFamily, prefix) switch
+            {
+                (AddressFamily.InterNetwork, 0) => new IPAddress([0, 0, 0, 0]),
+                (AddressFamily.InterNetwork, _) => new IPAddress(MemoryMarshal.Read<uint>(address.GetAddressBytes()) & GetMask32(prefix)),
+                (AddressFamily.InterNetworkV6, 0) => new IPAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                (AddressFamily.InterNetworkV6, _) => new IPAddress(MemoryMarshal.AsBytes([MemoryMarshal.Read<UInt128>(address.GetAddressBytes()) & GetMask128(prefix)])),
+                _ => throw new ArgumentOutOfRangeException($"Unexpected address family {address.AddressFamily} of {address}.")
+            };
 
         [Theory]
         [MemberData(nameof(ValidIPNetworkData))]
@@ -52,12 +82,12 @@ namespace System.Net.Primitives.Functional.Tests
         {
             string[] splitInput = input.Split('/');
             IPAddress address = IPAddress.Parse(splitInput[0]);
-            int prefixLegth = int.Parse(splitInput[1]);
+            int prefixLength = int.Parse(splitInput[1]);
 
-            IPNetwork network = new IPNetwork(address, prefixLegth);
+            IPNetwork network = new IPNetwork(address, prefixLength);
 
-            Assert.Equal(address, network.BaseAddress);
-            Assert.Equal(prefixLegth, network.PrefixLength);
+            Assert.Equal(GetBaseAddress(address, prefixLength), network.BaseAddress);
+            Assert.Equal(prefixLength, network.PrefixLength);
         }
 
         [Fact]
@@ -75,17 +105,6 @@ namespace System.Net.Primitives.Functional.Tests
         {
             IPAddress address = IPAddress.Parse(ipStr);
             Assert.Throws<ArgumentOutOfRangeException>(() => new IPNetwork(address, prefixLength));
-        }
-
-        [Theory]
-        [InlineData("192.168.0.1", 31)]
-        [InlineData("42.42.192.0", 17)]
-        [InlineData("128.0.0.0", 0)]
-        [InlineData("2a01:110:8012::", 46)]
-        public void Constructor_NonZeroBitsAfterNetworkPrefix_ThrowsArgumentException(string ipStr, int prefixLength)
-        {
-            IPAddress address = IPAddress.Parse(ipStr);
-            Assert.Throws<ArgumentException>(() => new IPNetwork(address, prefixLength));
         }
 
         [Theory]

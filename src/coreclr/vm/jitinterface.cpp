@@ -14498,12 +14498,12 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     }
 
 #ifdef TARGET_X86
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+
     if (msig.HasGenericContextArg())
     {
         sigBuilder.AppendElementType(ELEMENT_TYPE_I);
     }
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
 #endif
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
@@ -14574,14 +14574,15 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     }
 
 #ifdef TARGET_X86
+    // Continuation
+    pCode->EmitLDARG(0);
+
     if (msig.HasGenericContextArg())
     {
         pCode->EmitLDC(0);
         numArgs++;
     }
 
-    // Continuation
-    pCode->EmitLDARG(0);
     numArgs++;
 #endif
 
