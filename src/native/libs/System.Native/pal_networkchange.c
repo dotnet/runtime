@@ -27,6 +27,15 @@
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
 
+#if defined(__clang__) || defined(__GNUC__)
+  #define unreachable() __builtin_unreachable()
+#elif defined(_MSC_VER)
+  #include <intrin.h>
+  #define unreachable() __assume(0)
+#else
+  #define unreachable() ((void)0)  // fallback, does nothing
+#endif
+
 Error SystemNative_CreateNetworkChangeListenerSocket(intptr_t* retSocket)
 {
 #if HAVE_LINUX_RTNETLINK_H
@@ -179,8 +188,7 @@ Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     (void)sock;
     (void)onNetworkChange;
-    // unreachable
     abort();
-    return Error_EINVAL;
+    unreachable();
 }
 #endif
