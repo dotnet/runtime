@@ -1811,8 +1811,9 @@ namespace CorUnix
                         iNChanges = 0;
                     }
 
-                    iRet = kevent(m_iKQueue, &keChanges, iNChanges,
-                                  &m_keProcessPipeEvent, 1, pts);
+                    while (-1 == (iRet = kevent(m_iKQueue, &keChanges, iNChanges,
+                                                &m_keProcessPipeEvent, 1, pts))
+                           && errno == EINTR);
 
                     if (0 < iRet)
                     {
