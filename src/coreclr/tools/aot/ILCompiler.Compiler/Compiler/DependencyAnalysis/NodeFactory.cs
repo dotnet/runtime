@@ -925,13 +925,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISortableSymbolNode ExternDataSymbol(string name)
         {
-            string mangledName = NameMangler.NodeMangler.ExternVariable(name);
-            return _externDataSymbols.GetOrAdd(mangledName);
+            return _externDataSymbols.GetOrAdd(name);
         }
 
         public ISortableSymbolNode ExternVariable(string name)
         {
-            return _externDataSymbols.GetOrAdd(name);
+            string mangledName = NameMangler.NodeMangler.ExternVariable(name);
+            return _externDataSymbols.GetOrAdd(mangledName);
         }
 
         private NodeCache<PInvokeModuleData, PInvokeModuleFixupNode> _pInvokeModuleFixups;
