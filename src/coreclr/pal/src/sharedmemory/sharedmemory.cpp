@@ -722,7 +722,8 @@ bool SharedMemoryHelpers::TryAcquireFileLock(SharedMemorySystemCallErrors *error
 
     while (true)
     {
-        int flockResult = flock(fileDescriptor, operation);
+        int flockResult;
+        while (-1 == (flockResult = flock(fileDescriptor, operation)) && errno == EINTR);
         if (flockResult == 0)
         {
             return true;

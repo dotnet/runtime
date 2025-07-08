@@ -83,5 +83,7 @@ bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryTy
     if (write(fd, buffer, ARRAY_SIZE(buffer)) != ARRAY_SIZE(buffer))
         return false;
 
-    return flock(fd, LOCK_SH | LOCK_NB) == 0;
+    int flock_result;
+    while (-1 == (flock_result = flock(fd, LOCK_SH | LOCK_NB)) && errno == EINTR);
+    return flock_result == 0;
 }
