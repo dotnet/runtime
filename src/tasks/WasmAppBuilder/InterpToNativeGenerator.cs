@@ -156,9 +156,16 @@ internal sealed class InterpToNativeGenerator
 #endif
                     break;
                 case 'F':
-                case 'D':
                     argIndex = farg;
                     farg += 1;
+                    break;
+                case 'D':
+                    argIndex = farg;
+#if Interp2NativeWasm64
+                    farg += 1;
+#else
+                    farg += 2;
+#endif
                     break;
                 default:
                     throw new InvalidSignatureCharException(c);
