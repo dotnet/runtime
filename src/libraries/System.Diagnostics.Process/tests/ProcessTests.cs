@@ -81,27 +81,33 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        public static IEnumerable<object[]> SignalTestData()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                // .NET already maps POSIX signals to Windows console events
+                // https://github.com/dotnet/runtime/blob/d221687c3724d26d653d022f4b254bc1d7eb1a6b/src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/PosixSignalRegistration.Windows.cs#L17-L18
+                // GenerateConsoleCtrlEvent only supports sending CTRL_C_EVENT and CTRL_BREAK_EVENT
+                yield return new object[] { PosixSignal.SIGINT };
+                yield return new object[] { PosixSignal.SIGQUIT };
+            }
+            else
+            {
+                foreach (PosixSignal signal in Enum.GetValues<PosixSignal>())
+                {
+                    yield return new object[] { signal };
+                }
+                // Test a few raw signals.
+                yield return new object[] { (PosixSignal)3 }; // SIGQUIT
+                yield return new object[] { (PosixSignal)15 }; // SIGTERM
+            }
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(PosixSignal.SIGTSTP)]
-        [InlineData(PosixSignal.SIGTTOU)]
-        [InlineData(PosixSignal.SIGTTIN)]
-        [InlineData(PosixSignal.SIGWINCH)]
-        [InlineData(PosixSignal.SIGCONT)]
-        [InlineData(PosixSignal.SIGCHLD)]
-        [InlineData(PosixSignal.SIGTERM)]
-        [InlineData(PosixSignal.SIGQUIT)]
-        [InlineData(PosixSignal.SIGINT)]
-        [InlineData(PosixSignal.SIGHUP)]
-        [InlineData((PosixSignal)3)] // SIGQUIT
-        [InlineData((PosixSignal)15)] // SIGTERM
+        [MemberData(nameof(SignalTestData))]
         public void TestCreateNewProcessGroup_HandlerReceivesExpectedSignal(PosixSignal signal)
         {
             const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created...";
-
-            if (OperatingSystem.IsWindows() && signal is not (PosixSignal.SIGINT or PosixSignal.SIGQUIT))
-            {
-                throw new SkipTestException("GenerateConsoleCtrlEvent does not support sending this signal.");
-            }
 
             var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
