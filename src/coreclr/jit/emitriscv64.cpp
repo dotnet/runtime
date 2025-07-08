@@ -5155,7 +5155,7 @@ void emitter::emitDispInsName(
             }
             else
             {
-                NO_WAY("illegal ins within emitDisInsName!");
+                return emitDispIllegalInstruction(code);
             }
             return;
         }
@@ -5191,7 +5191,7 @@ void emitter::emitDispInsName(
             }
             else
             {
-                NO_WAY("illegal ins within emitDisInsName!");
+                emitDispIllegalInstruction(code);
             }
             return;
         }
