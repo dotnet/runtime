@@ -191,6 +191,11 @@ internal readonly struct StackWalk_1 : IStackWalk
     {
         byte[] bytes = new byte[context.Size];
         Span<byte> buffer = new Span<byte>(bytes);
+        // The underlying ICLRDataTarget.GetThreadContext has some variance depending on the host.
+        // SOS's managed implementation sets the ContextFlags to platform specific values defined in ThreadService.cs (diagnostics repo)
+        // SOS's native implementation keeps the ContextFlags passed into this function.
+        // To match the DAC behavior, the DefaultContextFlags are what the DAC passes in in DacGetThreadContext.
+        // In most implementations, this will be overridden by the host, but in some cases, it may not be.
         if (!_target.TryGetThreadContext(threadData.OSId.Value, context.DefaultContextFlags, buffer))
         {
             throw new InvalidOperationException($"GetThreadContext failed for thread {threadData.OSId.Value}");

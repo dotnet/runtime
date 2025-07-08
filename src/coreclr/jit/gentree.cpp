@@ -32424,20 +32424,15 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         // fold the unnecessary back and forth conversions away where possible.
 
         genTreeOps effectiveOper = oper;
-        GenTree*   actualOp2     = op2;
-
-        if (oper == GT_NOT)
-        {
-            assert(op2 == nullptr);
-            op2 = op1;
-        }
 
         // We need both operands to be ConvertMaskToVector in
         // order to optimize this to a direct mask operation
 
         if (op1->OperIsConvertMaskToVector())
         {
-            if (!op2->OperIsHWIntrinsic())
+            assert((oper == GT_NOT) == (op2 == nullptr));
+
+            if ((op2 != nullptr) && !op2->OperIsHWIntrinsic())
             {
                 if ((oper == GT_XOR) && op2->IsVectorAllBitsSet())
                 {
@@ -32445,14 +32440,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     // some platforms don't have direct support for ~op1
 
                     effectiveOper = GT_NOT;
-                    op2           = op1;
                 }
             }
 
-            if (op2->OperIsConvertMaskToVector())
+            if ((effectiveOper == GT_NOT) || op2->OperIsConvertMaskToVector())
             {
                 GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
-                GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
+                GenTreeHWIntrinsic* cvtOp2 = (effectiveOper == GT_NOT) ? cvtOp1 : op2->AsHWIntrinsic();
 
                 unsigned simdBaseTypeSize = genTypeSize(simdBaseType);
 
@@ -32518,9 +32512,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         tree->Op(2) = cvtOp2->Op(1);
                     }
 
-                    if (actualOp2 != nullptr)
+                    if (op2 != nullptr)
                     {
-                        DEBUG_DESTROY_NODE(actualOp2);
+                        DEBUG_DESTROY_NODE(op2);
                     }
                     tree->SetMorphed(this);
 
