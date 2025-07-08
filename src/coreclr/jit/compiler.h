@@ -6697,15 +6697,6 @@ private:
     GenTree* fgMorphHWIntrinsicOptional(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-#ifdef TARGET_ARM64
-    bool canMorphVectorOperandToMask(GenTree* node);
-    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
-    GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
-    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
-#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
@@ -9613,6 +9604,13 @@ private:
 
         return false;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    CORINFO_InstructionSet lookupInstructionSet(const char* className);
+    CORINFO_InstructionSet lookupIsa(const char* className,
+                                     const char* innerEnclosingClassName,
+                                     const char* outerEnclosingClassName);
+#endif // FEATURE_HW_INTRINSICS
 
 #ifdef DEBUG
     // Answer the question: Is a particular ISA supported?

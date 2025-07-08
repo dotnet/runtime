@@ -838,17 +838,6 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
         return false;
     }
 
-    // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
-    // (if they are valid).
-    //
-    for (BasicBlock* const predBlock : target->PredBlocks())
-    {
-        if (predBlock->KindIs(BBJ_SWITCH))
-        {
-            return false;
-        }
-    }
-
     return true;
 }
 

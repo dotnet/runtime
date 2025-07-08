@@ -84,37 +84,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svabalb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
         ///   SABALB Ztied1.H, Zop2.B, Zop3.B
         /// </summary>
-        public static Vector<short> AbsoluteDifferenceAddWideningLower(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceAddWideningLower(addend, left, right);
+        public static Vector<short> AbsoluteDifferenceWideningLowerAndAddEven(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceWideningLowerAndAddEven(addend, left, right);
 
         /// <summary>
         /// svint32_t svabalb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
         ///   SABALB Ztied1.S, Zop2.H, Zop3.H
         /// </summary>
-        public static Vector<int> AbsoluteDifferenceAddWideningLower(Vector<int> addend, Vector<short> left, Vector<short> right) => AbsoluteDifferenceAddWideningLower(addend, left, right);
+        public static Vector<int> AbsoluteDifferenceWideningLowerAndAddEven(Vector<int> addend, Vector<short> left, Vector<short> right) => AbsoluteDifferenceWideningLowerAndAddEven(addend, left, right);
 
         /// <summary>
         /// svint64_t svabalb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
         ///   SABALB Ztied1.D, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<long> AbsoluteDifferenceAddWideningLower(Vector<long> addend, Vector<int> left, Vector<int> right) => AbsoluteDifferenceAddWideningLower(addend, left, right);
+        public static Vector<long> AbsoluteDifferenceWideningLowerAndAddEven(Vector<long> addend, Vector<int> left, Vector<int> right) => AbsoluteDifferenceWideningLowerAndAddEven(addend, left, right);
 
         /// <summary>
         /// svuint16_t svabalb[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
         ///   UABALB Ztied1.H, Zop2.B, Zop3.B
         /// </summary>
-        public static Vector<ushort> AbsoluteDifferenceAddWideningLower(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceAddWideningLower(addend, left, right);
+        public static Vector<ushort> AbsoluteDifferenceWideningLowerAndAddEven(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceWideningLowerAndAddEven(addend, left, right);
 
         /// <summary>
         /// svuint32_t svabalb[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
         ///   UABALB Ztied1.S, Zop2.H, Zop3.H
         /// </summary>
-        public static Vector<uint> AbsoluteDifferenceAddWideningLower(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceAddWideningLower(addend, left, right);
+        public static Vector<uint> AbsoluteDifferenceWideningLowerAndAddEven(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceWideningLowerAndAddEven(addend, left, right);
 
         /// <summary>
         /// svuint64_t svabalb[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
         ///   UABALB Ztied1.D, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<ulong> AbsoluteDifferenceAddWideningLower(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceAddWideningLower(addend, left, right);
+        public static Vector<ulong> AbsoluteDifferenceWideningLowerAndAddEven(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningLowerAndAddEven(addend, left, right);
 
         // Absolute difference and accumulate long (top)
 
@@ -122,37 +122,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svabalt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
         ///   SABALT Ztied1.H, Zop2.B, Zop3.B
         /// </summary>
-        public static Vector<short> AbsoluteDifferenceAddWideningUpper(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceAddWideningUpper(addend, left, right);
+        public static Vector<short> AbsoluteDifferenceWideningLowerAndAddOdd(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceWideningLowerAndAddOdd(addend, left, right);
 
         /// <summary>
         /// svint32_t svabalt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
         ///   SABALT Ztied1.S, Zop2.H, Zop3.H
         /// </summary>
-        public static Vector<int> AbsoluteDifferenceAddWideningUpper(Vector<int> addend, Vector<short> left, Vector<short> right) => AbsoluteDifferenceAddWideningUpper(addend, left, right);
+        public static Vector<int> AbsoluteDifferenceWideningLowerAndAddOdd(Vector<int> addend, Vector<short> left, Vector<short> right) => AbsoluteDifferenceWideningLowerAndAddOdd(addend, left, right);
 
         /// <summary>
         /// svint64_t svabalt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
         ///   SABALT Ztied1.D, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<long> AbsoluteDifferenceAddWideningUpper(Vector<long> addend, Vector<int> left, Vector<int> right) => AbsoluteDifferenceAddWideningUpper(addend, left, right);
+        public static Vector<long> AbsoluteDifferenceWideningLowerAndAddOdd(Vector<long> addend, Vector<int> left, Vector<int> right) => AbsoluteDifferenceWideningLowerAndAddOdd(addend, left, right);
 
         /// <summary>
         /// svuint16_t svabalt[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
         ///   UABALT Ztied1.H, Zop2.B, Zop3.B
         /// </summary>
-        public static Vector<ushort> AbsoluteDifferenceAddWideningUpper(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceAddWideningUpper(addend, left, right);
+        public static Vector<ushort> AbsoluteDifferenceWideningLowerAndAddOdd(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceWideningLowerAndAddOdd(addend, left, right);
 
         /// <summary>
         /// svuint32_t svabalt[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
         ///   UABALT Ztied1.S, Zop2.H, Zop3.H
         /// </summary>
-        public static Vector<uint> AbsoluteDifferenceAddWideningUpper(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceAddWideningUpper(addend, left, right);
+        public static Vector<uint> AbsoluteDifferenceWideningLowerAndAddOdd(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceWideningLowerAndAddOdd(addend, left, right);
 
         /// <summary>
         /// svuint64_t svabalt[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
         ///   UABALT Ztied1.D, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<ulong> AbsoluteDifferenceAddWideningUpper(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceAddWideningUpper(addend, left, right);
+        public static Vector<ulong> AbsoluteDifferenceWideningLowerAndAddOdd(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningLowerAndAddOdd(addend, left, right);
 
         // Absolute difference long (bottom)
 
@@ -160,37 +160,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svabdlb[_s16](svint8_t op1, svint8_t op2)
         ///   SABDLB Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> AbsoluteDifferenceWideningLower(Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceWideningLower(left, right);
+        public static Vector<short> AbsoluteDifferenceWideningEven(Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceWideningEven(left, right);
 
         /// <summary>
         /// svint32_t svabdlb[_s32](svint16_t op1, svint16_t op2)
         ///   SABDLB Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> AbsoluteDifferenceWideningLower(Vector<short> left, Vector<short> right) => AbsoluteDifferenceWideningLower(left, right);
+        public static Vector<int> AbsoluteDifferenceWideningEven(Vector<short> left, Vector<short> right) => AbsoluteDifferenceWideningEven(left, right);
 
         /// <summary>
         /// svint64_t svabdlb[_s64](svint32_t op1, svint32_t op2)
         ///   SABDLB Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> AbsoluteDifferenceWideningLower(Vector<int> left, Vector<int> right) => AbsoluteDifferenceWideningLower(left, right);
+        public static Vector<long> AbsoluteDifferenceWideningEven(Vector<int> left, Vector<int> right) => AbsoluteDifferenceWideningEven(left, right);
 
         /// <summary>
         /// svuint16_t svabdlb[_u16](svuint8_t op1, svuint8_t op2)
         ///   UABDLB Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<ushort> AbsoluteDifferenceWideningLower(Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceWideningLower(left, right);
+        public static Vector<ushort> AbsoluteDifferenceWideningEven(Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceWideningEven(left, right);
 
         /// <summary>
         /// svuint32_t svabdlb[_u32](svuint16_t op1, svuint16_t op2)
         ///   UABDLB Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<uint> AbsoluteDifferenceWideningLower(Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceWideningLower(left, right);
+        public static Vector<uint> AbsoluteDifferenceWideningEven(Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceWideningEven(left, right);
 
         /// <summary>
         /// svuint64_t svabdlb[_u64](svuint32_t op1, svuint32_t op2)
         ///   UABDLB Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<ulong> AbsoluteDifferenceWideningLower(Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningLower(left, right);
+        public static Vector<ulong> AbsoluteDifferenceWideningEven(Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningEven(left, right);
 
         // Absolute difference long (top)
 
@@ -198,37 +198,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svabdlt[_s16](svint8_t op1, svint8_t op2)
         ///   SABDLT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> AbsoluteDifferenceWideningUpper(Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceWideningUpper(left, right);
+        public static Vector<short> AbsoluteDifferenceWideningOdd(Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceWideningOdd(left, right);
 
         /// <summary>
         /// svint32_t svabdlt[_s32](svint16_t op1, svint16_t op2)
         ///   SABDLT Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> AbsoluteDifferenceWideningUpper(Vector<short> left, Vector<short> right) => AbsoluteDifferenceWideningUpper(left, right);
+        public static Vector<int> AbsoluteDifferenceWideningOdd(Vector<short> left, Vector<short> right) => AbsoluteDifferenceWideningOdd(left, right);
 
         /// <summary>
         /// svint64_t svabdlt[_s64](svint32_t op1, svint32_t op2)
         ///   SABDLT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> AbsoluteDifferenceWideningUpper(Vector<int> left, Vector<int> right) => AbsoluteDifferenceWideningUpper(left, right);
+        public static Vector<long> AbsoluteDifferenceWideningOdd(Vector<int> left, Vector<int> right) => AbsoluteDifferenceWideningOdd(left, right);
 
         /// <summary>
         /// svuint16_t svabdlt[_u16](svuint8_t op1, svuint8_t op2)
         ///   UABDLT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<ushort> AbsoluteDifferenceWideningUpper(Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceWideningUpper(left, right);
+        public static Vector<ushort> AbsoluteDifferenceWideningOdd(Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceWideningOdd(left, right);
 
         /// <summary>
         /// svuint32_t svabdlt[_u32](svuint16_t op1, svuint16_t op2)
         ///   UABDLT Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<uint> AbsoluteDifferenceWideningUpper(Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceWideningUpper(left, right);
+        public static Vector<uint> AbsoluteDifferenceWideningOdd(Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceWideningOdd(left, right);
 
         /// <summary>
         /// svuint64_t svabdlt[_u64](svuint32_t op1, svuint32_t op2)
         ///   UABDLT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<ulong> AbsoluteDifferenceWideningUpper(Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningUpper(left, right);
+        public static Vector<ulong> AbsoluteDifferenceWideningOdd(Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningOdd(left, right);
 
         // Add with carry long (bottom)
 
@@ -236,13 +236,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svadclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   ADCLB Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static unsafe Vector<uint> AddCarryWideningLower(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningLower(op1, op2, op3);
+        public static unsafe Vector<uint> AddCarryWideningEven(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningEven(op1, op2, op3);
 
         /// <summary>
         /// svuint64_t svadclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   ADCLB Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> AddCarryWideningLower(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningLower(op1, op2, op3);
+        public static unsafe Vector<ulong> AddCarryWideningEven(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningEven(op1, op2, op3);
 
         // Add with carry long (top)
 
@@ -250,13 +250,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svadclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   ADCLT Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static unsafe Vector<uint> AddCarryWideningUpper(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningUpper(op1, op2, op3);
+        public static unsafe Vector<uint> AddCarryWideningOdd(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningOdd(op1, op2, op3);
 
         /// <summary>
         /// svuint64_t svadclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   ADCLT Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> AddCarryWideningUpper(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningUpper(op1, op2, op3);
+        public static unsafe Vector<ulong> AddCarryWideningOdd(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningOdd(op1, op2, op3);
 
         // Add narrow high part (bottom)
 
@@ -333,6 +333,475 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ADDHNT Ztied.S, Zop1.D, Zop2.D
         /// </summary>
         public static unsafe Vector<uint> AddHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) => AddHighNarrowingOdd(even, left, right);
+
+        // Add pairwise
+
+        /// <summary>
+        /// svuint8_t svaddp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svaddp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> AddPairwise(Vector<byte> left, Vector<byte> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svfloat64_t svaddp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svaddp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> AddPairwise(Vector<double> left, Vector<double> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svint16_t svaddp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svaddp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> AddPairwise(Vector<short> left, Vector<short> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svint32_t svaddp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svaddp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> AddPairwise(Vector<int> left, Vector<int> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svint64_t svaddp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svaddp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> AddPairwise(Vector<long> left, Vector<long> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svint8_t svaddp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svaddp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> AddPairwise(Vector<sbyte> left, Vector<sbyte> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svfloat32_t svaddp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svaddp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> AddPairwise(Vector<float> left, Vector<float> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svuint16_t svaddp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svaddp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> AddPairwise(Vector<ushort> left, Vector<ushort> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svuint32_t svaddp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svaddp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> AddPairwise(Vector<uint> left, Vector<uint> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// svuint64_t svaddp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svaddp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> AddPairwise(Vector<ulong> left, Vector<ulong> right) => AddPairwise(left, right);
+
+        // Add and accumulate long pairwise
+
+        /// <summary>
+        /// svint16_t svadalp[_s16]_m(svbool_t pg, svint16_t op1, svint8_t op2)
+        /// svint16_t svadalp[_s16]_x(svbool_t pg, svint16_t op1, svint8_t op2)
+        /// svint16_t svadalp[_s16]_z(svbool_t pg, svint16_t op1, svint8_t op2)
+        ///   SADALP Ztied1.H, Pg/M, Zop2.B
+        ///   SADALP Ztied1.H, Pg/M, Zop2.B
+        /// </summary>
+        public static Vector<short> AddPairwiseWidening(Vector<short> left, Vector<sbyte> right) => AddPairwiseWidening(left, right);
+
+        /// <summary>
+        /// svint32_t svadalp[_s32]_m(svbool_t pg, svint32_t op1, svint16_t op2)
+        /// svint32_t svadalp[_s32]_x(svbool_t pg, svint32_t op1, svint16_t op2)
+        /// svint32_t svadalp[_s32]_z(svbool_t pg, svint32_t op1, svint16_t op2)
+        ///   SADALP Ztied1.S, Pg/M, Zop2.H
+        ///   SADALP Ztied1.S, Pg/M, Zop2.H
+        /// </summary>
+        public static Vector<int> AddPairwiseWidening(Vector<int> left, Vector<short> right) => AddPairwiseWidening(left, right);
+
+        /// <summary>
+        /// svint64_t svadalp[_s64]_m(svbool_t pg, svint64_t op1, svint32_t op2)
+        /// svint64_t svadalp[_s64]_x(svbool_t pg, svint64_t op1, svint32_t op2)
+        /// svint64_t svadalp[_s64]_z(svbool_t pg, svint64_t op1, svint32_t op2)
+        ///   SADALP Ztied1.D, Pg/M, Zop2.S
+        ///   SADALP Ztied1.D, Pg/M, Zop2.S
+        /// </summary>
+        public static Vector<long> AddPairwiseWidening(Vector<long> left, Vector<int> right) => AddPairwiseWidening(left, right);
+
+        /// <summary>
+        /// svuint16_t svadalp[_u16]_m(svbool_t pg, svuint16_t op1, svuint8_t op2)
+        /// svuint16_t svadalp[_u16]_x(svbool_t pg, svuint16_t op1, svuint8_t op2)
+        /// svuint16_t svadalp[_u16]_z(svbool_t pg, svuint16_t op1, svuint8_t op2)
+        ///   UADALP Ztied1.H, Pg/M, Zop2.B
+        ///   UADALP Ztied1.H, Pg/M, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AddPairwiseWidening(Vector<ushort> left, Vector<byte> right) => AddPairwiseWidening(left, right);
+
+        /// <summary>
+        /// svuint32_t svadalp[_u32]_m(svbool_t pg, svuint32_t op1, svuint16_t op2)
+        /// svuint32_t svadalp[_u32]_x(svbool_t pg, svuint32_t op1, svuint16_t op2)
+        /// svuint32_t svadalp[_u32]_z(svbool_t pg, svuint32_t op1, svuint16_t op2)
+        ///   UADALP Ztied1.S, Pg/M, Zop2.H
+        ///   UADALP Ztied1.S, Pg/M, Zop2.H
+        /// </summary>
+        public static Vector<uint> AddPairwiseWidening(Vector<uint> left, Vector<ushort> right) => AddPairwiseWidening(left, right);
+
+        /// <summary>
+        /// svuint64_t svadalp[_u64]_m(svbool_t pg, svuint64_t op1, svuint32_t op2)
+        /// svuint64_t svadalp[_u64]_x(svbool_t pg, svuint64_t op1, svuint32_t op2)
+        /// svuint64_t svadalp[_u64]_z(svbool_t pg, svuint64_t op1, svuint32_t op2)
+        ///   UADALP Ztied1.D, Pg/M, Zop2.S
+        ///   UADALP Ztied1.D, Pg/M, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AddPairwiseWidening(Vector<ulong> left, Vector<uint> right) => AddPairwiseWidening(left, right);
+
+
+        // Saturating add
+
+        /// <summary>
+        /// svuint8_t svqadd[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svqadd[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svqadd[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UQADD Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        ///   UQADD Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static new Vector<byte> AddSaturate(Vector<byte> left, Vector<byte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint16_t svqadd[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svqadd[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svqadd[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SQADD Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        ///   SQADD Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static new Vector<short> AddSaturate(Vector<short> left, Vector<short> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint32_t svqadd[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svqadd[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svqadd[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SQADD Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        ///   SQADD Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static new Vector<int> AddSaturate(Vector<int> left, Vector<int> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint64_t svqadd[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svqadd[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svqadd[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SQADD Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        ///   SQADD Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static new Vector<long> AddSaturate(Vector<long> left, Vector<long> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint8_t svqadd[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svqadd[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svqadd[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SQADD Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        ///   SQADD Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static new Vector<sbyte> AddSaturate(Vector<sbyte> left, Vector<sbyte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint16_t svqadd[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svqadd[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svqadd[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UQADD Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        ///   UQADD Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static new Vector<ushort> AddSaturate(Vector<ushort> left, Vector<ushort> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint32_t svqadd[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svqadd[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svqadd[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UQADD Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        ///   UQADD Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static new Vector<uint> AddSaturate(Vector<uint> left, Vector<uint> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint64_t svqadd[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svqadd[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svqadd[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UQADD Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        ///   UQADD Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static new Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) => AddSaturate(left, right);
+
+        // Saturating add with signed addend
+
+        /// <summary>
+        /// svuint8_t svsqadd[_u8]_m(svbool_t pg, svuint8_t op1, svint8_t op2)
+        /// svuint8_t svsqadd[_u8]_x(svbool_t pg, svuint8_t op1, svint8_t op2)
+        /// svuint8_t svsqadd[_u8]_z(svbool_t pg, svuint8_t op1, svint8_t op2)
+        ///   USQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   USQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> AddSaturateWithSignedAddend(Vector<byte> left, Vector<sbyte> right) => AddSaturateWithSignedAddend(left, right);
+
+        /// <summary>
+        /// svuint16_t svsqadd[_u16]_m(svbool_t pg, svuint16_t op1, svint16_t op2)
+        /// svuint16_t svsqadd[_u16]_x(svbool_t pg, svuint16_t op1, svint16_t op2)
+        /// svuint16_t svsqadd[_u16]_z(svbool_t pg, svuint16_t op1, svint16_t op2)
+        ///   USQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   USQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> AddSaturateWithSignedAddend(Vector<ushort> left, Vector<short> right) => AddSaturateWithSignedAddend(left, right);
+
+        /// <summary>
+        /// svuint32_t svsqadd[_u32]_m(svbool_t pg, svuint32_t op1, svint32_t op2)
+        /// svuint32_t svsqadd[_u32]_x(svbool_t pg, svuint32_t op1, svint32_t op2)
+        /// svuint32_t svsqadd[_u32]_z(svbool_t pg, svuint32_t op1, svint32_t op2)
+        ///   USQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   USQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> AddSaturateWithSignedAddend(Vector<uint> left, Vector<int> right) => AddSaturateWithSignedAddend(left, right);
+
+        /// <summary>
+        /// svuint64_t svsqadd[_u64]_m(svbool_t pg, svuint64_t op1, svint64_t op2)
+        /// svuint64_t svsqadd[_u64]_x(svbool_t pg, svuint64_t op1, svint64_t op2)
+        /// svuint64_t svsqadd[_u64]_z(svbool_t pg, svuint64_t op1, svint64_t op2)
+        ///   USQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   USQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> AddSaturateWithSignedAddend(Vector<ulong> left, Vector<long> right) => AddSaturateWithSignedAddend(left, right);
+
+        // Saturating add with unsigned addend
+
+        /// <summary>
+        /// svint16_t svuqadd[_s16]_m(svbool_t pg, svint16_t op1, svuint16_t op2)
+        /// svint16_t svuqadd[_s16]_x(svbool_t pg, svint16_t op1, svuint16_t op2)
+        /// svint16_t svuqadd[_s16]_z(svbool_t pg, svint16_t op1, svuint16_t op2)
+        ///   SUQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SUQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> AddSaturateWithUnsignedAddend(Vector<short> left, Vector<ushort> right) => AddSaturateWithUnsignedAddend(left, right);
+
+        /// <summary>
+        /// svint32_t svuqadd[_s32]_m(svbool_t pg, svint32_t op1, svuint32_t op2)
+        /// svint32_t svuqadd[_s32]_x(svbool_t pg, svint32_t op1, svuint32_t op2)
+        /// svint32_t svuqadd[_s32]_z(svbool_t pg, svint32_t op1, svuint32_t op2)
+        ///   SUQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SUQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> AddSaturateWithUnsignedAddend(Vector<int> left, Vector<uint> right) => AddSaturateWithUnsignedAddend(left, right);
+
+        /// <summary>
+        /// svint64_t svuqadd[_s64]_m(svbool_t pg, svint64_t op1, svuint64_t op2)
+        /// svint64_t svuqadd[_s64]_x(svbool_t pg, svint64_t op1, svuint64_t op2)
+        /// svint64_t svuqadd[_s64]_z(svbool_t pg, svint64_t op1, svuint64_t op2)
+        ///   SUQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SUQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> AddSaturateWithUnsignedAddend(Vector<long> left, Vector<ulong> right) => AddSaturateWithUnsignedAddend(left, right);
+
+        /// <summary>
+        /// svint8_t svuqadd[_s8]_m(svbool_t pg, svint8_t op1, svuint8_t op2)
+        /// svint8_t svuqadd[_s8]_x(svbool_t pg, svint8_t op1, svuint8_t op2)
+        /// svint8_t svuqadd[_s8]_z(svbool_t pg, svint8_t op1, svuint8_t op2)
+        ///   SUQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SUQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> AddSaturateWithUnsignedAddend(Vector<sbyte> left, Vector<byte> right) => AddSaturateWithUnsignedAddend(left, right);
+
+        // Add wide (bottom)
+
+        /// <summary>
+        /// svint16_t svaddwb[_s16](svint16_t op1, svint8_t op2)
+        ///   SADDWB Zresult.H, Zop1.H, Zop2.B
+        /// </summary>
+        public static Vector<short> AddWideLower(Vector<short> left, Vector<sbyte> right) => AddWideLower(left, right);
+
+        /// <summary>
+        /// svint32_t svaddwb[_s32](svint32_t op1, svint16_t op2)
+        ///   SADDWB Zresult.S, Zop1.S, Zop2.H
+        /// </summary>
+        public static Vector<int> AddWideLower(Vector<int> left, Vector<short> right) => AddWideLower(left, right);
+
+        /// <summary>
+        /// svint64_t svaddwb[_s64](svint64_t op1, svint32_t op2)
+        ///   SADDWB Zresult.D, Zop1.D, Zop2.S
+        /// </summary>
+        public static Vector<long> AddWideLower(Vector<long> left, Vector<int> right) => AddWideLower(left, right);
+
+        /// <summary>
+        /// svuint16_t svaddwb[_u16](svuint16_t op1, svuint8_t op2)
+        ///   UADDWB Zresult.H, Zop1.H, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AddWideLower(Vector<ushort> left, Vector<byte> right) => AddWideLower(left, right);
+
+        /// <summary>
+        /// svuint32_t svaddwb[_u32](svuint32_t op1, svuint16_t op2)
+        ///   UADDWB Zresult.S, Zop1.S, Zop2.H
+        /// </summary>
+        public static Vector<uint> AddWideLower(Vector<uint> left, Vector<ushort> right) => AddWideLower(left, right);
+
+        /// <summary>
+        /// svuint64_t svaddwb[_u64](svuint64_t op1, svuint32_t op2)
+        ///   UADDWB Zresult.D, Zop1.D, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AddWideLower(Vector<ulong> left, Vector<uint> right) => AddWideLower(left, right);
+
+        // Add wide (top)
+
+        /// <summary>
+        /// svint16_t svaddwt[_s16](svint16_t op1, svint8_t op2)
+        ///   SADDWT Zresult.H, Zop1.H, Zop2.B
+        /// </summary>
+        public static Vector<short> AddWideUpper(Vector<short> left, Vector<sbyte> right) => AddWideUpper(left, right);
+
+        /// <summary>
+        /// svint32_t svaddwt[_s32](svint32_t op1, svint16_t op2)
+        ///   SADDWT Zresult.S, Zop1.S, Zop2.H
+        /// </summary>
+        public static Vector<int> AddWideUpper(Vector<int> left, Vector<short> right) => AddWideUpper(left, right);
+
+        /// <summary>
+        /// svint64_t svaddwt[_s64](svint64_t op1, svint32_t op2)
+        ///   SADDWT Zresult.D, Zop1.D, Zop2.S
+        /// </summary>
+        public static Vector<long> AddWideUpper(Vector<long> left, Vector<int> right) => AddWideUpper(left, right);
+
+        /// <summary>
+        /// svuint16_t svaddwt[_u16](svuint16_t op1, svuint8_t op2)
+        ///   UADDWT Zresult.H, Zop1.H, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AddWideUpper(Vector<ushort> left, Vector<byte> right) => AddWideUpper(left, right);
+
+        /// <summary>
+        /// svuint32_t svaddwt[_u32](svuint32_t op1, svuint16_t op2)
+        ///   UADDWT Zresult.S, Zop1.S, Zop2.H
+        /// </summary>
+        public static Vector<uint> AddWideUpper(Vector<uint> left, Vector<ushort> right) => AddWideUpper(left, right);
+
+        /// <summary>
+        /// svuint64_t svaddwt[_u64](svuint64_t op1, svuint32_t op2)
+        ///   UADDWT Zresult.D, Zop1.D, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AddWideUpper(Vector<ulong> left, Vector<uint> right) => AddWideUpper(left, right);
+
+        // Add long (bottom)
+
+        /// <summary>
+        /// svint16_t svaddlb[_s16](svint8_t op1, svint8_t op2)
+        ///   SADDLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AddWideningLower(Vector<sbyte> left, Vector<sbyte> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// svint32_t svaddlb[_s32](svint16_t op1, svint16_t op2)
+        ///   SADDLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AddWideningLower(Vector<short> left, Vector<short> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// svint64_t svaddlb[_s64](svint32_t op1, svint32_t op2)
+        ///   SADDLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AddWideningLower(Vector<int> left, Vector<int> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// svuint16_t svaddlb[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UADDLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AddWideningLower(Vector<byte> left, Vector<byte> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// svuint32_t svaddlb[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UADDLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> AddWideningLower(Vector<ushort> left, Vector<ushort> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// svuint64_t svaddlb[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UADDLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AddWideningLower(Vector<uint> left, Vector<uint> right) => AddWideningLower(left, right);
+
+        // Add long (bottom + top)
+
+        /// <summary>
+        /// svint16_t svaddlbt[_s16](svint8_t op1, svint8_t op2)
+        ///   SADDLBT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AddWideningLowerUpper(Vector<sbyte> left, Vector<sbyte> right) => AddWideningLowerUpper(left, right);
+
+        /// <summary>
+        /// svint32_t svaddlbt[_s32](svint16_t op1, svint16_t op2)
+        ///   SADDLBT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AddWideningLowerUpper(Vector<short> left, Vector<short> right) => AddWideningLowerUpper(left, right);
+
+        /// <summary>
+        /// svint64_t svaddlbt[_s64](svint32_t op1, svint32_t op2)
+        ///   SADDLBT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AddWideningLowerUpper(Vector<int> left, Vector<int> right) => AddWideningLowerUpper(left, right);
+
+        // Add long (top)
+
+        /// <summary>
+        /// svint16_t svaddlt[_s16](svint8_t op1, svint8_t op2)
+        ///   SADDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AddWideningUpper(Vector<sbyte> left, Vector<sbyte> right) => AddWideningUpper(left, right);
+
+        /// <summary>
+        /// svint32_t svaddlt[_s32](svint16_t op1, svint16_t op2)
+        ///   SADDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AddWideningUpper(Vector<short> left, Vector<short> right) => AddWideningUpper(left, right);
+
+        /// <summary>
+        /// svint64_t svaddlt[_s64](svint32_t op1, svint32_t op2)
+        ///   SADDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AddWideningUpper(Vector<int> left, Vector<int> right) => AddWideningUpper(left, right);
+
+        /// <summary>
+        /// svuint16_t svaddlt[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UADDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AddWideningUpper(Vector<byte> left, Vector<byte> right) => AddWideningUpper(left, right);
+
+        /// <summary>
+        /// svuint32_t svaddlt[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UADDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> AddWideningUpper(Vector<ushort> left, Vector<ushort> right) => AddWideningUpper(left, right);
+
+        /// <summary>
+        /// svuint64_t svaddlt[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UADDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AddWideningUpper(Vector<uint> left, Vector<uint> right) => AddWideningUpper(left, right);
 
         // Bitwise clear and exclusive OR
 

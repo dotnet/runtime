@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     /// <summary>
     /// Provider for the <see cref="NullLogger"/>.
     /// </summary>
-    public class NullLoggerProvider : ILoggerProvider
+    public sealed class NullLoggerProvider : ILoggerProvider
     {
         /// <summary>
         /// Returns an instance of <see cref="NullLoggerProvider"/>.
