@@ -3490,7 +3490,8 @@ PROCGetProcessStatusExit:
 #ifdef __APPLE__
 bool GetApplicationContainerFolder(PathCharString& buffer, const char *applicationGroupId, int applicationGroupIdLength)
 {
-    const char *homeDir = getpwuid(getuid())->pw_dir;
+    const char *homeDir;
+    while (nullptr == (homeDir = getpwuid(getuid())->pw_dir) && errno == EINTR);
     int homeDirLength = strlen(homeDir);
 
     // The application group container folder is defined as:
