@@ -237,4 +237,7 @@
   <data name="Sign1VerifyAlgIsRequired" xml:space="preserve">
     <value>Algorithm (alg) header is required and it must be a protected header.</value>
   </data>
+  <data name="CoseSignerPssSaltLengthMustBeHashLength" xml:space="preserve">
+    <value>COSE does not support custom salt length for PSS signatures.</value>
+  </data>
 </root>
