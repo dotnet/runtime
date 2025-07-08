@@ -889,7 +889,62 @@ LOCAL_LABEL(StoreCopyLoop):
     bne LOCAL_LABEL(StoreCopyLoop)
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
-LEAF_END Load_Stack
+LEAF_END Store_Stack
+
+LEAF_ENTRY Load_Stack_Ref, _TEXT
+        ldr w11, [x10], #4 // SP offset
+        ldr w12, [x10], #4 // size of the value type
+        add x11, sp, x11
+        str x9, [x11]
+        add x9, x9, x12
+        // Align x9 to the stack slot size
+        add x9, x9, 7
+        and x9, x9, 0xfffffffffffffff8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_Ref, _TEXT
+
+
+.macro Copy_Ref argReg
+    cmp x11, #16
+    blt LOCAL_LABEL(CopyBy8\argReg)
+LOCAL_LABEL(RefCopyLoop16\argReg):
+    ldp x13, x14, [\argReg], #16
+    stp x13, x14, [x9], #16
+    subs x11, x11, #16
+    bgt LOCAL_LABEL(RefCopyLoop16\argReg)
+    beq LOCAL_LABEL(RefCopyDone\argReg)
+    add x11, x11, #16
+LOCAL_LABEL(CopyBy8\argReg):
+    cmp x11, #8
+    blt LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyLoop8\argReg):
+    ldr x13, [\argReg], #8
+    str x13, [x9], #8
+    subs x11, x11, #8
+    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
+    beq LOCAL_LABEL(RefCopyDone\argReg)
+    add x11, x11, #8
+LOCAL_LABEL(RefCopyLoop1\argReg):
+    ldrb w13, [\argReg], #1
+    strb w13, [x9], #1
+    subs x11, x11, #1
+    bne  LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyDone\argReg):
+    // Align x9 to the stack slot size
+    add x9, x9, 7
+    and x9, x9, 0xfffffffffffffff8
+.endm
+
+LEAF_ENTRY Store_Stack_Ref, _TEXT
+        ldr w12, [x10], #4 // SP offset
+        ldr w11, [x10], #4 // size of the value type
+        add x12, sp, x12
+        ldr x12, [x12, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+        Copy_Ref x12
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+LEAF_END Store_Stack_Ref, _TEXT
 
 #ifdef TARGET_APPLE
 
@@ -932,34 +987,7 @@ LEAF_END Store_Stack_4B
 
 LEAF_ENTRY Store_Ref_\argReg
     ldr x11, [x10], #8 // size of the value type
-    cmp x11, #16
-    blt LOCAL_LABEL(CopyBy8\argReg)
-LOCAL_LABEL(RefCopyLoop16\argReg):
-    ldp x13, x14, [\argReg], #16
-    stp x13, x14, [x9], #16
-    subs x11, x11, #16
-    bgt LOCAL_LABEL(RefCopyLoop16\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
-    add x11, x11, #16
-LOCAL_LABEL(CopyBy8\argReg):
-    cmp x11, #8
-    blt LOCAL_LABEL(RefCopyLoop1\argReg)
-LOCAL_LABEL(RefCopyLoop8\argReg):
-    ldr x13, [\argReg], #8
-    str x13, [x9], #8
-    subs x11, x11, #8
-    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
-    add x11, x11, #8
-LOCAL_LABEL(RefCopyLoop1\argReg):
-    ldrb w13, [\argReg], #1
-    strb w13, [x9], #1
-    subs x11, x11, #1
-    bne  LOCAL_LABEL(RefCopyLoop1\argReg)
-LOCAL_LABEL(RefCopyDone\argReg):
-    // Align x9 to the stack slot size
-    add x9, x9, 7
-    and x9, x9, 0xfffffffffffffff8
+    Copy_Ref \argReg
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Store_Ref_\argReg
