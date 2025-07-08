@@ -52,6 +52,7 @@ internal readonly struct Loader_1 : ILoader
         return new ModuleHandle(modulePointer);
     }
 
+
     IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
     {
         if (appDomain == TargetPointer.Null)

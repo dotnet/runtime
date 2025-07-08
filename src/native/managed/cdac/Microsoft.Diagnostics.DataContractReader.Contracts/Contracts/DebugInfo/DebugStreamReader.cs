@@ -42,13 +42,6 @@ internal sealed class DebugStreamReader
         return result;
     }
 
-    public int ReadEncodedInt32()
-    {
-        uint result = ReadEncodedU32();
-        int x = (int)(result >> 1);
-        return (result & 1) != 0 ? -x : x;
-    }
-
     private Nibble ReadNibble()
     {
         if (_currentNibble / 2 >= _size) throw new InvalidOperationException("No more nibbles to read.");
