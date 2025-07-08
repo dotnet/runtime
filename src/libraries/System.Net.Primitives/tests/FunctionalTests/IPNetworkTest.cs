@@ -76,19 +76,26 @@ namespace System.Net.Primitives.Functional.Tests
                 _ => throw new ArgumentOutOfRangeException($"Unexpected address family {address.AddressFamily} of {address}.")
             };
 
-        [Theory]
-        [MemberData(nameof(ValidIPNetworkData))]
-        public void Constructor_Valid_Succeeds(string input)
+        private (IPAddress, IPAddress, int, string) ParseInput(string input)
         {
             string[] splitInput = input.Split('/');
             IPAddress address = IPAddress.Parse(splitInput[0]);
             int prefixLength = int.Parse(splitInput[1]);
             IPAddress baseAddress = GetBaseAddress(address, prefixLength);
+            return (address, baseAddress, prefixLength, $"{baseAddress}/{prefixLength}");
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIPNetworkData))]
+        public void Constructor_Valid_Succeeds(string input)
+        {
+            var (address, baseAddress, prefixLength, toString) = ParseInput(input);
 
             IPNetwork network = new IPNetwork(address, prefixLength);
 
             Assert.Equal(baseAddress, network.BaseAddress);
             Assert.Equal(prefixLength, network.PrefixLength);
+            Assert.Equal(toString, network.ToString());
         }
 
         [Fact]
@@ -156,19 +163,15 @@ namespace System.Net.Primitives.Functional.Tests
             var stringParsedNetwork = IPNetwork.Parse(input);
             var utf8ParsedNetwork = IPNetwork.Parse(utf8Bytes);
 
-            string[] splitInput = input.Split('/');
-            IPAddress address = IPAddress.Parse(splitInput[0]);
-            int prefixLength = int.Parse(splitInput[1]);
-            IPAddress baseAddress = GetBaseAddress(address, prefixLength);
-            string expectedString = $"{baseAddress}/{prefixLength}";
+            var (_, baseAddress, prefixLength, toString) = ParseInput(input);
 
-            Assert.Equal(GetBaseAddress(address, prefixLength), stringParsedNetwork.BaseAddress);
+            Assert.Equal(baseAddress, stringParsedNetwork.BaseAddress);
             Assert.Equal(prefixLength, stringParsedNetwork.PrefixLength);
-            Assert.Equal(expectedString, stringParsedNetwork.ToString());
+            Assert.Equal(toString, stringParsedNetwork.ToString());
 
-            Assert.Equal(GetBaseAddress(address, prefixLength), utf8ParsedNetwork.BaseAddress);
+            Assert.Equal(baseAddress, utf8ParsedNetwork.BaseAddress);
             Assert.Equal(prefixLength, utf8ParsedNetwork.PrefixLength);
-            Assert.Equal(expectedString, utf8ParsedNetwork.ToString());
+            Assert.Equal(toString, utf8ParsedNetwork.ToString());
         }
 
         [Theory]
@@ -177,21 +180,17 @@ namespace System.Net.Primitives.Functional.Tests
         {
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
 
-            string[] splitInput = input.Split('/');
-            IPAddress address = IPAddress.Parse(splitInput[0]);
-            int prefixLength = int.Parse(splitInput[1]);
-            IPAddress baseAddress = GetBaseAddress(address, prefixLength);
-            string expectedString = $"{baseAddress}/{prefixLength}";
+            var (_, baseAddress, prefixLength, toString) = ParseInput(input);
 
             Assert.True(IPNetwork.TryParse(input, out IPNetwork stringParsedNetwork));
-            Assert.Equal(GetBaseAddress(address, prefixLength), stringParsedNetwork.BaseAddress);
+            Assert.Equal(baseAddress, stringParsedNetwork.BaseAddress);
             Assert.Equal(prefixLength, stringParsedNetwork.PrefixLength);
-            Assert.Equal(expectedString, stringParsedNetwork.ToString());
+            Assert.Equal(toString, stringParsedNetwork.ToString());
 
             Assert.True(IPNetwork.TryParse(utf8Bytes, out IPNetwork utf8ParsedNetwork));
-            Assert.Equal(GetBaseAddress(address, prefixLength), utf8ParsedNetwork.BaseAddress);
+            Assert.Equal(baseAddress, utf8ParsedNetwork.BaseAddress);
             Assert.Equal(prefixLength, utf8ParsedNetwork.PrefixLength);
-            Assert.Equal(expectedString, utf8ParsedNetwork.ToString());
+            Assert.Equal(toString, utf8ParsedNetwork.ToString());
         }
 
         [Fact]
