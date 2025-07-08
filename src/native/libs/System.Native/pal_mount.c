@@ -102,12 +102,14 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
     struct statfs stats;
     memset(&stats, 0, sizeof(struct statfs));
 
-    int result = statfs(name, &stats);
+    int result;
+    while (-1 == (result = statfs(name, &stats)) && errno == EINTR);
 #else
     struct statvfs stats;
     memset(&stats, 0, sizeof(struct statvfs));
 
-    int result = statvfs(name, &stats);
+    int result;
+    while (-1 == (result = statvfs(name, &stats)) && errno == EINTR);
 #endif
     if (result == 0)
     {
@@ -139,10 +141,12 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
 
 #if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
-    int result = statfs(name, &stats);
+    int result;
+    while (-1 == (result = statfs(name, &stats)) && errno == EINTR);
 #else
     struct statvfs stats;
-    int result = statvfs(name, &stats);
+    int result;
+    while (-1 == (result = statvfs(name, &stats)) && errno == EINTR);
 #endif
 
     if (result == 0)
