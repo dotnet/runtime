@@ -350,7 +350,6 @@ namespace System.Net.Security
                         // TODO: Wait for connection cancellation through status update with TCS.
                         _disposed = true;
                         _connectionHandle.Dispose();
-                        _framerHandle?.Dispose();
                         _outputBuffer.Dispose();
                     }
                 }
@@ -483,7 +482,7 @@ namespace System.Net.Security
                 {
                     case NetworkFrameworkStatusUpdates.FramerStart:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "FramerStart", "StatusUpdateCallback");
-                        nwContext?.FramerStartCallback(new SafeNwHandle(data, true));
+                        nwContext?.FramerStartCallback(new SafeNwHandle(Interop.NetworkFramework.Retain(data), true));
                         break;
                     case NetworkFrameworkStatusUpdates.FramerStop:
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "FramerStop", "StatusUpdateCallback");
