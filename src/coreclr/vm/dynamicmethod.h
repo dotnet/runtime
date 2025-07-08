@@ -159,7 +159,7 @@ public:
     MethodDesc* GetDynamicMethod() { LIMITED_METHOD_CONTRACT; return m_pDynamicMethod; }
     OBJECTREF GetManagedResolver();
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
-    void RecordCodePointer(void* recordCodePointer);
+    void** AllocateRecordCodePointer();
     DynamicMethodDesc* GetNextDynamicMethodToDestroy() { LIMITED_METHOD_CONTRACT; return m_delayDestroyNext; }
     void SetNextDynamicMethodToDestroy(DynamicMethodDesc* next)
     {

@@ -48,12 +48,15 @@ void FinalizerThread::EnableFinalization()
 
 namespace
 {
-    VolatilePtr<LCGMethodResolver> s_delayDestroyLCGMethod = nullptr;
+    // This is a linked list of the LCGMethodResolvers that represent DynamicMethodDescs
+    // waiting to be destroyed. The resolvers are used since they can be chained together
+    // to avoid allocations when destroying multiple DynamicMethodDescs.
+    VolatilePtr<LCGMethodResolver> s_delayDestroyDynamicMethod = nullptr;
 
     bool HasDelayedDynamicMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        return s_delayDestroyLCGMethod != nullptr;
+        return s_delayDestroyDynamicMethod != nullptr;
     }
 
     void AddDelayedDynamicMethod(DynamicMethodDesc* pDMD)
@@ -64,30 +67,29 @@ namespace
         // Get the LCGMethodResolver from the DynamicMethodDesc.
         LCGMethodResolver* lcgResolver = pDMD->GetLCGMethodResolver();
 
-        // Add it to the implicit list to avoid allocations.
-        if (s_delayDestroyLCGMethod != nullptr)
-            lcgResolver->SetNextDynamicMethodToDestroy((DynamicMethodDesc*)s_delayDestroyLCGMethod->GetDynamicMethod());
+        // Append any existing resolvers to form a linked list.
+        if (s_delayDestroyDynamicMethod != nullptr)
+            lcgResolver->SetNextDynamicMethodToDestroy((DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod());
 
-        s_delayDestroyLCGMethod = lcgResolver;
+        s_delayDestroyDynamicMethod = lcgResolver;
     }
 
     void CleanupDelayedDynamicMethods()
     {
         STANDARD_VM_CONTRACT;
 
-        while (s_delayDestroyLCGMethod != nullptr)
+        while (s_delayDestroyDynamicMethod != nullptr)
         {
             // Get the next method to destroy.
-            DynamicMethodDesc* next = s_delayDestroyLCGMethod->GetNextDynamicMethodToDestroy();
+            DynamicMethodDesc* next = s_delayDestroyDynamicMethod->GetNextDynamicMethodToDestroy();
 
             // Destroy the current method.
-            DynamicMethodDesc* curr = (DynamicMethodDesc*)s_delayDestroyLCGMethod->GetDynamicMethod();
+            DynamicMethodDesc* curr = (DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod();
             if (!curr->TryDestroy())
                 return;
 
-            // Delete the current method and update the head of the list.
-            delete curr;
-            s_delayDestroyLCGMethod = next == nullptr ? nullptr : next->GetLCGMethodResolver();
+            // Update the head of the list.
+            s_delayDestroyDynamicMethod = next == nullptr ? nullptr : next->GetLCGMethodResolver();
         }
     }
 }

@@ -1535,20 +1535,21 @@ OBJECTREF LCGMethodResolver::GetManagedResolver()
     return ObjectFromHandle(m_managedResolver);
 }
 
-void LCGMethodResolver::RecordCodePointer(void* recordCodePointer)
+void** LCGMethodResolver::AllocateRecordCodePointer()
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(recordCodePointer != NULL);
     }
     CONTRACTL_END;
 
     DynamicCodePointer* codePointer = (DynamicCodePointer*)m_jitTempData.New(sizeof(DynamicCodePointer));
-    codePointer->m_pEntry = recordCodePointer;
+    *codePointer = {};
     codePointer->m_pNext = m_DynamicCodePointers;
     m_DynamicCodePointers = codePointer;
+
+    return &codePointer->m_pEntry;
 }
 
 //

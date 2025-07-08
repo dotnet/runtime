@@ -1918,7 +1918,7 @@ public:
 #endif
                   );
 
-    BYTE *AllocFromJitMetaHeap(MethodDesc *pMD, DWORD blockSize, size_t * pAllocationSize);
+    BYTE *AllocFromJitMetaHeap(MethodDesc *pMD, size_t blockSize);
 
     // Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);

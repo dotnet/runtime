@@ -2846,16 +2846,19 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     {
         CrstHolder ch(&m_CodeHeapLock);
 
+        // Allocate the record code pointer early to avoid allocation failures.
+        void* dummyRecordedCodePtr;
+        void** recordedCodePtr = pMD->IsLCGMethod()
+            ? pMD->AsDynamicMethodDesc()->GetLCGMethodResolver()->AllocateRecordCodePointer()
+            : &dummyRecordedCodePtr;
+
         *ppCodeHeap = NULL;
         TADDR pCode = (TADDR) AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), totalSize, alignment, ppCodeHeap);
         _ASSERTE(*ppCodeHeap);
-
-        if (pMD->IsLCGMethod())
-        {
-            pMD->AsDynamicMethodDesc()->GetLCGMethodResolver()->RecordCodePointer((void*)pCode);
-        }
-
         _ASSERTE(IS_ALIGNED(pCode, alignment));
+
+        // Record the code pointer
+        *recordedCodePtr = (void*)pCode;
 
         pCodeHdr = ((TCodeHeader *)pCode) - 1;
 
@@ -3199,7 +3202,7 @@ void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment
     RETURN((void *)mem);
 }
 
-BYTE* EECodeGenManager::AllocFromJitMetaHeap(MethodDesc* pMD, DWORD blockSize, size_t * pAllocationSize)
+BYTE* EECodeGenManager::AllocFromJitMetaHeap(MethodDesc* pMD, size_t blockSize)
 {
     CONTRACTL {
         THROWS;
@@ -3216,8 +3219,6 @@ BYTE* EECodeGenManager::AllocFromJitMetaHeap(MethodDesc* pMD, DWORD blockSize, s
     {
         pMem = (BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize));
     }
-
-    *pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
 
     return pMem;
 }
@@ -3352,7 +3353,7 @@ void EECodeGenManager::Unload(LoaderAllocator* pAllocator)
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(pAllocator != NULL);
     }
@@ -3393,12 +3394,14 @@ void EECodeGenManager::Unload(LoaderAllocator* pAllocator)
 
 void EECodeGenManager::UnloadWorker(LoaderAllocator* pAllocator)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
         PRECONDITION(pAllocator != NULL);
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     DomainCodeHeapList **ppList = m_DomainCodeHeaps.Table();
     int count = m_DomainCodeHeaps.Count();

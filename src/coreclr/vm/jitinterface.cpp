@@ -10699,8 +10699,6 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     , m_pCodeHeap(NULL)
     , m_ILHeader(header)
     , m_MethodInfo()
-    , m_GCinfo_len(0)
-    , m_EHinfo_len(0)
     , m_iOffsetMapping(0)
     , m_pOffsetMapping(NULL)
     , m_iNativeVarInfo(0)
@@ -10990,17 +10988,6 @@ void CEEJitInfo::PublishFinalCodeAddress(PCODE addr)
     }
 }
 
-/*********************************************************************/
-void CEEJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    WriteCodeBytes();
-}
-
 template<class TCodeHeader>
 void CEECodeGenInfo::NibbleMapSet()
 {
@@ -11287,7 +11274,7 @@ void * CInterpreterJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, size);
     _ASSERTE(block);      // AllocFromJitMetaHeap throws if there's not enough memory
 
     ((InterpreterCodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
@@ -11329,16 +11316,6 @@ void CInterpreterJitInfo::WriteCodeBytes()
     LIMITED_METHOD_CONTRACT;
 
     SetRealCodeHeader<InterpreterCodeHeader>();
-}
-
-void CInterpreterJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    WriteCodeBytes();
 }
 
 void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
@@ -12614,7 +12591,7 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
+    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, size);
     _ASSERTE(block);      // AllocFromJitMetaHeap throws if there's not enough memory
 
     ((CodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
@@ -12647,9 +12624,8 @@ void CEECodeGenInfo::setEHcountWorker(unsigned cEH)
     if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
         COMPlusThrowOM();
 
-    BYTE *pEHInfo = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize, &m_EHinfo_len);
+    BYTE *pEHInfo = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize);
     _ASSERTE(pEHInfo);      // AllocFromJitMetaHeap throws if there's not enough memory
-    _ASSERTE(m_EHinfo_len != 0);
 
     pCodeHeaderRW->SetEHInfo((EE_ILEXCEPTION*)(pEHInfo + sizeof(size_t)));
     pCodeHeaderRW->GetEHInfo()->Init(cEH);
@@ -12802,7 +12778,6 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
         if (FAILED(ret))
         {
-            comp->BackoutJitData(jitMgr);
             comp->ResetForJitRetry();
             ret = CORJIT_SKIPPED;
         }
@@ -12823,7 +12798,6 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
                                          nativeSizeOfCode);
         if (FAILED(ret))
         {
-            comp->BackoutJitData(jitMgr);
             comp->ResetForJitRetry();
             ret = CORJIT_SKIPPED;
         }
@@ -13094,7 +13068,6 @@ static TADDR UnsafeJitFunctionWorker(
     }
     else
     {
-        pJitInfo->BackoutJitData(pJitMgr);
         ThrowExceptionForJit(res);
     }
 
@@ -13183,8 +13156,7 @@ public:
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         if (jitInfo.IsJumpStubOverflow())
         {
-            // Backout and try again with fAllowRel32 == FALSE.
-            jitInfo.BackoutJitData(jitMgr);
+            // Try again with fAllowRel32 == FALSE.
 
 #if defined(TARGET_AMD64)
             // Disallow rel32 relocs in future.
