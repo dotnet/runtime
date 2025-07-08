@@ -1614,32 +1614,32 @@ int32_t ILToNativeMapArrays::CompareILOffsets(uint32_t ilOffsetA, uint32_t ilOff
         return 0; 
     }
 
-    if (ilOffsetA == ICorDebugInfo::PROLOG)
+    if (ilOffsetA == (uint32_t)ICorDebugInfo::PROLOG)
     {
         // Prolog entries are always at the start of the list.
         return -1;
     }
-    if (ilOffsetB == ICorDebugInfo::PROLOG)
+    if (ilOffsetB == (uint32_t)ICorDebugInfo::PROLOG)
     {
         // Prolog entries are always at the start of the list.
         return 1;
     }
-    else if (ilOffsetA == ICorDebugInfo::NO_MAPPING)
+    else if (ilOffsetA == (uint32_t)ICorDebugInfo::NO_MAPPING)
     {
         // No mappings are always at the end of the list.
         return 1;
     }
-    else if (ilOffsetB == ICorDebugInfo::NO_MAPPING)
+    else if (ilOffsetB == (uint32_t)ICorDebugInfo::NO_MAPPING)
     {
         // No mappings are always at the end of the list.
         return -1;
     }
-    else if (ilOffsetA == ICorDebugInfo::EPILOG)
+    else if (ilOffsetA == (uint32_t)ICorDebugInfo::EPILOG)
     {
         // Epilog entries are always just before the NO_MAPPING regions
         return 1;
     }
-    else if (ilOffsetB == ICorDebugInfo::EPILOG)
+    else if (ilOffsetB == (uint32_t)ICorDebugInfo::EPILOG)
     {
         // Epilog entries are always just before the NO_MAPPING regions
         return -1;
@@ -1791,7 +1791,7 @@ void ILToNativeMapArrays::AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping)
         // If there is a non-prolog entry, then print the next prolog entry.
         // If there is a call_instruction entry, then don't add it, but if there are enough of them
         // then we will allow duplicates in the prolog entries.
-        if (pOffsetMapping->ilOffset == ICorDebugInfo::PROLOG)
+        if (pOffsetMapping->ilOffset == (uint32_t)ICorDebugInfo::PROLOG)
         {
             callInstrSequence = 0;
             if (!m_fNextReplacesLast)
