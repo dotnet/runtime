@@ -66,12 +66,14 @@ internal static partial class Interop
                        ? Span<uint>.Empty
                        : options.CipherSuitesPolicy.Pal.TlsCipherSuites;
 
+                    string idnHost = TargetHostNameHelper.NormalizeHostName(options.TargetHost);
+
                     unsafe
                     {
                         fixed (byte* alpnPtr = alpn)
                         fixed (uint* ciphersPtr = ciphers)
                         {
-                            SetTlsOptions(nwHandle, state, options.TargetHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length);
+                            SetTlsOptions(nwHandle, state, idnHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length);
                         }
                     }
                 }
