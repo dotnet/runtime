@@ -874,7 +874,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		_exit (1);
 	} else if (need_to_fork && pid > 0) {
 		int status;
-		waitpid (pid, &status, 0);
+		while (-1 == waitpid (pid, &status, 0) && errno == EINTR);
 	} else {
 		// If we can't fork, do as little as possible before exiting
 	}

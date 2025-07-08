@@ -487,7 +487,7 @@ done:;
         if (processId > 0)
         {
             int status;
-            waitpid(processId, &status, 0);
+            while (-1 == waitpid(processId, &status, 0) && errno == EINTR);
         }
 
         *stdinFd = -1;

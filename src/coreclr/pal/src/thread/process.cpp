@@ -2303,7 +2303,8 @@ PROCCreateCrashDump(
 
         // Parent waits until the child process is done
         int wstatus = 0;
-        int result = waitpid(childpid, &wstatus, 0);
+        int result;
+        while (-1 == (result = waitpid(childpid, &wstatus, 0)) && errno == EINTR);
         if (result != childpid)
         {
             fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %08x errno %s (%d)\n",

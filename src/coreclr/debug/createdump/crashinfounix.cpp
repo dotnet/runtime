@@ -84,7 +84,7 @@ CrashInfo::CleanupAndResumeProcess()
         if (ptrace(PTRACE_DETACH, thread->Tid(), nullptr, nullptr) != -1)
         {
             int waitStatus;
-            waitpid(thread->Tid(), &waitStatus, __WALL);
+            while (-1 == waitpid(thread->Tid(), &waitStatus, __WALL) && errno == EINTR);
         }
     }
     if (m_fdMem != -1)
@@ -140,7 +140,7 @@ CrashInfo::EnumerateAndSuspendThreads()
             if (ptrace(PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
             {
                 int waitStatus;
-                waitpid(tid, &waitStatus, __WALL);
+                while (-1 == waitpid(tid, &waitStatus, __WALL) && errno == EINTR);
             }
             else
             {
