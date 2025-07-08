@@ -63,25 +63,16 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
     }
 
     private readonly Target _target = target;
-    private readonly ICodeVersions _cv = target.Contracts.CodeVersions;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
     IEnumerable<IOffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset)
     {
-        NativeCodeVersionHandle requestedNativeCodeVersion = _cv.GetNativeCodeVersionForIP(pCode);
-        if (!requestedNativeCodeVersion.Valid || _cv.GetNativeCode(requestedNativeCodeVersion) == TargetCodePointer.Null)
-        {
-            // E_INVALIDARG
-            throw new InvalidOperationException(
-                $"The provided pCode {pCode} does not correspond to a valid native code version.");
-        }
-        TargetCodePointer nativeCodeStart = _cv.GetNativeCode(requestedNativeCodeVersion);
-
         // Get the method's DebugInfo
-        if (_eman.GetCodeBlockHandle(nativeCodeStart) is not CodeBlockHandle cbh)
-            throw new InvalidOperationException($"No CodeBlockHandle found for native code start {nativeCodeStart}.");
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
         TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool hasFlagByte);
 
+        TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
         codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
 
         return RestoreBoundaries(debugInfo, hasFlagByte);
