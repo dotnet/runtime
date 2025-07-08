@@ -52,21 +52,21 @@ public:
 };
 
 // Asserts that no error occurred during a simdhash add, but does not mind if no new item was inserted
-inline void assertNoError(dn_simdhash_add_result result)
+inline void checkNoError(dn_simdhash_add_result result)
 {
     if (result == DN_SIMDHASH_OUT_OF_MEMORY)
         NOMEM();
     else if (result < 0)
-        assert(!"Internal error in simdhash");
+        NO_WAY("Internal error in simdhash");
 }
 
 // Asserts that a new item was successfully inserted into the simdhash
-inline void assertAddedNew(dn_simdhash_add_result result)
+inline void checkAddedNew(dn_simdhash_add_result result)
 {
     if (result == DN_SIMDHASH_OUT_OF_MEMORY)
         NOMEM();
     else if (result != DN_SIMDHASH_ADD_INSERTED)
-        assert(!"Failed to add new item into simdhash");
+        NO_WAY("Failed to add new item into simdhash");
 }
 
 #endif // _SIMDHASH_H_

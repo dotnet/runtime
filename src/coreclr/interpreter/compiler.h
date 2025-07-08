@@ -490,7 +490,7 @@ private:
     }
     void AddPointerToNameMap(void* ptr, const char* name)
     {
-        assertNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
+        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
     }
     void PrintNameInPointerMap(void* ptr);
 #endif
@@ -807,7 +807,7 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
     memcpy(&pLookup->payload, &lookup, sizeof(T));
 
-    assertAddedNew(dn_simdhash_ght_try_insert(
+    checkAddedNew(dn_simdhash_ght_try_insert(
         hash, (void*)pLookup, (void*)(size_t)dataItemIndex, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE
     ));
 

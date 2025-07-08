@@ -11,7 +11,11 @@
 
 void
 dn_simdhash_assert_fail (const char* file, int line, const char* condition) {
+#if DEBUG
     assertAbort(condition, file, line);
+#else
+    NO_WAY(condition);
+#endif
 }
 
 thread_local dn_simdhash_ptr_ptr_t *t_sharedStackMapLookup = nullptr;
@@ -27,7 +31,7 @@ InterpreterStackMap* GetInterpreterStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_
     if (!dn_simdhash_ptr_ptr_try_get_value(t_sharedStackMapLookup, classHandle, (void **)&result))
     {
         result = new InterpreterStackMap(jitInfo, classHandle);
-        assertAddedNew(dn_simdhash_ptr_ptr_try_add(t_sharedStackMapLookup, classHandle, result));
+        checkAddedNew(dn_simdhash_ptr_ptr_try_add(t_sharedStackMapLookup, classHandle, result));
     }
     return result;
 }
