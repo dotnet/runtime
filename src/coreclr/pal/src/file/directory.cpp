@@ -526,7 +526,7 @@ SetCurrentDirectoryA(
     }
 
     TRACE("Attempting to open Unix dir [%s]\n", lpPathName);
-    result = chdir(lpPathName);
+    while (-1 == (result = chdir (lpPathName)) && errno == EINTR);
 
     if ( result == 0 )
     {
