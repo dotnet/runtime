@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <errno.h>
 #include <pal.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -24,7 +25,9 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 
     while (-1 == unlink(m_inPipeName) && errno == EINTR);
 
-    if (mkfifo(m_inPipeName, S_IRWXU) == -1)
+    int mkfifo_result;
+    while (-1 == (mkfifo_result = mkfifo(m_inPipeName, S_IRWXU)) && errno == EINTR);
+    if (mkfifo_result == -1)
     {
         return false;
     }
@@ -32,7 +35,8 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 
     while (-1 == unlink(m_outPipeName) && errno == EINTR);
 
-    if (mkfifo(m_outPipeName, S_IRWXU) == -1)
+    while (-1 == (mkfifo_result = mkfifo(m_outPipeName, S_IRWXU)) && errno == EINTR);
+    if (mkfifo_result == -1)
     {
         while (-1 == unlink(m_inPipeName) && errno == EINTR);
         return false;

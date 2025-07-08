@@ -2718,7 +2718,9 @@ namespace CorUnix
         }
 
         /* create the pipe, with full access to the owner only */
-        if (mkfifo(szPipeFilename, S_IRWXU) == -1)
+        int mkfifo_result;
+        while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR);
+        if (mkfifo_result == -1)
         {
             if (errno == EEXIST)
             {
@@ -2734,7 +2736,8 @@ namespace CorUnix
                 }
                 else
                 {
-                    if (mkfifo(szPipeFilename, S_IRWXU) == -1)
+                    while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR);
+                    if (mkfifo_result == -1)
                     {
                         ERROR( "Still unable to create the process pipe...giving up!\n" );
                         fRet = false;
