@@ -846,7 +846,10 @@ namespace Internal.IL
             {
                 TypeDesc isinstCheckType = (TypeDesc)_canonMethodIL.GetObject(_isInstCheckPatternAnalyzer.Token);
                 if (ConstructedEETypeNode.CreationAllowed(isinstCheckType)
-                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                    // Below makes sure we don't need to worry about variance
+                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any)
+                    // However, we still need to worry about variant-by-size casting with arrays
+                    && !_factory.TypeSystemContext.IsArrayVariantCastable(isinstCheckType))
                 {
                     condition = _factory.MaximallyConstructableType(isinstCheckType);
                 }
