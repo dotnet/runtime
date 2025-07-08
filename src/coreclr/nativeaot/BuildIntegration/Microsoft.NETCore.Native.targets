@@ -239,7 +239,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup>
       <_IlcMethodBodyFoldingValue Condition="$(IlcFoldIdenticalMethodBodies) == 'true' or $(StackTraceSupport) == 'false'">all</_IlcMethodBodyFoldingValue>
-      <_IlcMethodBodyFoldingValue Condition="$(_IlcMethodBodyFoldingValue) == '' and $(IlcFoldIdenticalMethodBodies) != 'false'">generic</_IlcMethodBodyFoldingValue>
+      <_IlcMethodBodyFoldingValue Condition="$(_IlcMethodBodyFoldingValue) == '' and $(IlcFoldIdenticalMethodBodies) != 'false' and $(IlcMultiModule) != 'true'">generic</_IlcMethodBodyFoldingValue>
       <_IlcMethodBodyFoldingValue Condition="$(_IlcMethodBodyFoldingValue) == ''">none</_IlcMethodBodyFoldingValue>
     </PropertyGroup>
 
