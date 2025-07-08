@@ -2420,7 +2420,7 @@ void InterpCompiler::EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT
         AddIns(INTOP_CALL_HELPER_V_AGS);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_UNBOX_NULLABLE);
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
-        
+
         m_pLastNewIns->SetSVars2(handleData.genericVar, arg2);
         m_pLastNewIns->SetDVar(resultVar);
     }
@@ -2520,7 +2520,7 @@ int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &e
     PushStackType(StackTypeI, NULL);
     int resultVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
-    
+
     GenericHandleData handleData = GenericHandleToGenericHandleData(embedInfo);
 
     if (handleData.argType == HelperArgType::GenericResolution)
@@ -2622,8 +2622,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
-// Interpreter-FIXME: Necessary to work around InterpConfig members only being defined in DEBUG configurations.
-#if DEBUG
             if (InterpConfig.InterpMode() >= 3)
             {
                 NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
@@ -2633,7 +2631,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     return;
                 }
             }
-#endif
         }
 
         if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
@@ -2727,7 +2724,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             PushInterpType(ctorType, resolvedCallToken.hClass);
 
             CORINFO_GENERICHANDLE_RESULT newObjGenericHandleEmbedInfo;
-            m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo); 
+            m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo);
             newObjData = GenericHandleToGenericHandleData(newObjGenericHandleEmbedInfo);
         }
         newObjDVar = m_pStackPointer[-2].var;
@@ -2875,9 +2872,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
             {
                 CORINFO_GENERICHANDLE_RESULT newObjGenericHandleEmbedInfo;
-                m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo); 
+                m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo);
                 newObjData = GenericHandleToGenericHandleData(newObjGenericHandleEmbedInfo);
-                
+
                 if (newObjData.argType == HelperArgType::GenericResolution)
                 {
                     AddIns(INTOP_NEWMDARR_GENERIC);
@@ -5430,17 +5427,17 @@ DO_LDFTN:
                     {
                         // Unbox.any of a reference type is just a cast
                         CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, true /* throwing */);
-                        
+
                         CORINFO_GENERICHANDLE_RESULT embedInfo;
                         InterpEmbedGenericResult result;
                         m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
-                        
+
                         EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
                     }
                     else
                     {
                         CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                        
+
                         if (helpFunc == CORINFO_HELP_UNBOX)
                         {
                             EmitPushUnboxAny(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
@@ -5483,7 +5480,7 @@ DO_LDFTN:
                     AddIns(INTOP_NEWARR_GENERIC);
                     m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(helpFunc);
                     m_pLastNewIns->data[1] = handleData.dataItemIndex;
-                    
+
                     m_pLastNewIns->SetSVars2(handleData.genericVar, newArrLenVar);
                     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }

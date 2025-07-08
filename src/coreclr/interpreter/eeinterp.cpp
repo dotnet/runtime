@@ -55,14 +55,13 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     {
 // Interpreter-FIXME: Necessary to work around InterpConfig members only being defined in DEBUG.
-#if DEBUG
         switch (InterpConfig.InterpMode())
         {
             // 0: default, do not use interpreter except explicit opt-in via DOTNET_Interpreter
             case 0:
                 break;
 
-            // 1: use interpreter for everything except (1) methods that have R2R compiled code and (2) all code in System.Private.CoreLib. All code in System.Private.CoreLib falls back to JIT if there is no R2R available for it. This mode should have good balance between speed and coverage.
+            // 1: use interpreter for everything except (1) methods that have R2R compiled code and (2) all code in System.Private.CoreLib. All code in System.Private.CoreLib falls back to JIT if there is no R2R available for it.
             case 1:
             {
                 doInterpret = true;
@@ -77,16 +76,15 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 doInterpret = !(compHnd->getMethodAttribs(methodInfo->ftn) & CORINFO_FLG_INTRINSIC);
                 break;
 
-            // 3: use interpreter for everything, the full interpreter-only mode, no fallbacks to R2R or JIT whatsoever. Implies DOTNET_ReadyToRun=0, DOTNET_EnableHWIntrinsic=0,
+            // 3: use interpreter for everything, the full interpreter-only mode, no fallbacks to R2R or JIT whatsoever. Implies DOTNET_ReadyToRun=0, DOTNET_EnableHWIntrinsic=0
             case 3:
                 doInterpret = true;
                 break;
 
             default:
-                assert(!"Unsupported value for DOTNET_InterpMode");
+                NO_WAY("Unsupported value for DOTNET_InterpMode");
                 break;
         }
-#endif
 
 #ifdef TARGET_WASM
         // interpret everything on wasm
