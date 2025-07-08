@@ -40,11 +40,11 @@ public class CleanTests : BlazorWasmTestBase
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
-                .EnsureSuccessful();
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!);
+        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
+            .EnsureSuccessful();
 
         AssertEmptyOrNonExistentDirectory(relinkDir);
     }
@@ -88,9 +88,9 @@ public class CleanTests : BlazorWasmTestBase
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!);
+        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
 

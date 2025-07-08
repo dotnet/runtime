@@ -233,16 +233,17 @@ jobs:
       publishArtifactsForWorkload: true
       publishWBT: true
 
-  - template: /eng/pipelines/common/templates/wasm-build-only.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        - browser_wasm_win
-      nameSuffix: MultiThreaded
-      extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
-      publishArtifactsForWorkload: true
-      publishWBT: false
+  # disabled: https://github.com/dotnet/runtime/issues/116492
+  # - template: /eng/pipelines/common/templates/wasm-build-only.yml
+  #   parameters:
+  #     platforms:
+  #       - browser_wasm
+  #       - browser_wasm_win
+  #     nameSuffix: MultiThreaded
+  #     extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+  #     condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
+  #     publishArtifactsForWorkload: true
+  #     publishWBT: false
 
   # Browser Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
