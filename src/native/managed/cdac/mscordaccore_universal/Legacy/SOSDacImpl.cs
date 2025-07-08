@@ -226,7 +226,56 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] modules, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAssemblyModuleList(assembly, count, modules, pNeeded) : HResults.E_NOTIMPL;
+    {
+        if (assembly == 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        int hr = HResults.S_OK;
+        TargetPointer addr = 0;
+        try
+        {
+            addr = assembly.ToTargetPointer(_target);
+            Contracts.ILoader contract = _target.Contracts.Loader;
+
+            if (modules is not null)
+            {
+                modules[0] = contract.GetModulePointer(addr).ToClrDataAddress(_target);
+            }
+
+            if (pNeeded is not null)
+            {
+                *pNeeded = 1;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress[] modulesLocal = new ClrDataAddress[count];
+            uint neededLocal;
+            int hrLocal = _legacyImpl.GetAssemblyModuleList(assembly, count, modulesLocal, &neededLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+
+                // in theory, these don't need to be in the same order, but for consistency it is
+                // easiest for consumers and verification if the DAC and cDAC return the same order
+                for (int i = 0; i < neededLocal; i++)
+                {
+                    Debug.Assert(modules![i] == modulesLocal![i], $"cDAC: {modules[i]:x}, DAC: {modulesLocal[i]:x}");
+                }
+            }
+        }
+#endif
+        return hr;
+
+    }
     int ISOSDacInterface.GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
