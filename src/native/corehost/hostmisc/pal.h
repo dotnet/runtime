@@ -259,7 +259,14 @@ namespace pal
     }
 
     inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
-    inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
+
+    inline int rename(const char_t* old_name, const char_t* new_name)
+    {
+        int result;
+        while (-1 == (result = ::rename(old_name, new_name)) && errno == EINTR);
+        return result;
+    }
+
     inline int remove(const char_t* path) { return ::remove(path); }
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }

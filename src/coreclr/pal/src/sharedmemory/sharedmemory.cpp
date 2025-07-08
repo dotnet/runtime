@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal/dbgmsg.h"
+#include <errno.h>
 SET_DEFAULT_DEBUG_CHANNEL(SHMEM); // some headers have code with asserts, so do this first
 
 #include "pal/sharedmemory.h"
@@ -270,7 +271,9 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
 
-        if (rename(tempPath, path) == 0)
+        int rename_result;
+        while (-1 == (rename_result = rename(tempPath, path)) && errno == EINTR);
+        if (rename_result == 0)
         {
             return true;
         }

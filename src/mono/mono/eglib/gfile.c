@@ -167,7 +167,9 @@ g_rename (const gchar *src_path, const gchar *dst_path)
 		return ret;
 	}
 #else
-	return rename (src_path, dst_path);
+        int rename_result;
+        while (-1 == (rename_result = rename(src_path, dst_path)) && errno == EINTR);
+	return rename_result;
 #endif
 }
 
