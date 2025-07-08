@@ -3290,6 +3290,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             // These ctrl-flow opcodes don't need any special handling
             case CEE_NEWOBJ: // CTRL_CALL
+                opts.callInstrCount++;
                 break;
 
             // what's left are forgotten instructions
