@@ -2882,7 +2882,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
 
             if (cMap == 0)
             {
-                if (DebugInfoManager::GetBoundariesAndVars(diq, nullptr, nullptr, pcMap, nullptr, nullptr, nullptr))
+                if (DebugInfoManager::GetBoundariesAndVars(diq, nullptr, nullptr, true /* preferInstrumentedBounds */, pcMap, nullptr, nullptr, nullptr))
                 {
                     return S_OK;
                 }
@@ -2891,7 +2891,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
             }
 
             ICorDebugInfo::OffsetMapping* pMap = nullptr;
-            if (DebugInfoManager::GetBoundariesAndVars(diq, InteropSafeNoThrowNew, nullptr, pcMap, &pMap, nullptr, nullptr))
+            if (DebugInfoManager::GetBoundariesAndVars(diq, InteropSafeNoThrowNew, nullptr, true /* preferInstrumentedBounds */, pcMap, &pMap, nullptr, nullptr))
             {
                 for (ULONG32 i = 0; i < cMap; ++i)
                 {

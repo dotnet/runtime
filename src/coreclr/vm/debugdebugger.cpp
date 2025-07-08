@@ -1372,7 +1372,7 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
     }
     else
     {
-        bWalkILOffsets = codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback);
+        bWalkILOffsets = codeInfo.GetJitManager()->WalkILOffsets(request, true /* preferInstrumentedBounds */, &data, WalkILOffsetsCallback);
         if (bWalkILOffsets)
             dwILOffsetWalk = data.dwFinalILOffset;
         else
@@ -1389,7 +1389,7 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
             printf("Mismatch in IL offsets for %p at IP %p Native Offset %d:\n", pFunc, ip, dwNativeOffset);
             printf("  Debug Interface IL Offset: %d\n", dwILOffsetDebugInterface);
             printf("  Walk IL Offsets IL Offset: %d\n", dwILOffsetWalk);
-            codeInfo.GetJitManager()->WalkILOffsets(request, NULL, WalkILOffsetsCallback_Printer);
+            codeInfo.GetJitManager()->WalkILOffsets(request, true /* preferInstrumentedBounds */, NULL, WalkILOffsetsCallback_Printer);
         }
         _ASSERTE(dwILOffsetWalk == dwILOffsetDebugInterface);
     }
@@ -1399,7 +1399,7 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
         printf("Mismatch in IL offsets validity for %p at IP %p Native Offset %d:\n", pFunc, ip, dwNativeOffset);
         printf("  Debug Interface IL Offset: %d Valid = %s\n", dwILOffsetDebugInterface, bResGetILOffsetFromNative ? "true" : "false");
         printf("  Walk IL Offsets IL Offset: %d Valid = %s\n", dwILOffsetWalk, bWalkILOffsets ? "true" : "false");
-        codeInfo.GetJitManager()->WalkILOffsets(request, NULL, WalkILOffsetsCallback_Printer);
+        codeInfo.GetJitManager()->WalkILOffsets(request, true /* preferInstrumentedBounds */, NULL, WalkILOffsetsCallback_Printer);
         _ASSERTE(bWalkILOffsets == bResGetILOffsetFromNative);
     }
 }
@@ -1447,7 +1447,7 @@ void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, 
         request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
 
         ILToNativeMapArrays context(kMapEntriesMax);
-        codeInfo.GetJitManager()->WalkILOffsets(request, &context, ComputeILOffsetArrays);
+        codeInfo.GetJitManager()->WalkILOffsets(request, true /* preferInstrumentedBounds */, &context, ComputeILOffsetArrays);
 
         uint32_t cMapWalk;
         uint32_t* rguiILOffsetWalk;
@@ -1479,7 +1479,7 @@ void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, 
 
         if (failure)
         {
-            codeInfo.GetJitManager()->WalkILOffsets(request, NULL, WalkILOffsetsCallback_Printer);
+            codeInfo.GetJitManager()->WalkILOffsets(request, true /* preferInstrumentedBounds */, NULL, WalkILOffsetsCallback_Printer);
 
             printf("cMap: %d\n", cMap);
             printf("cMapWalk: %d\n", cMapWalk);
@@ -1576,7 +1576,7 @@ void DebugStackTrace::Element::InitPass2()
             WalkILOffsetsData data(fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset);
             DebugInfoRequest request;
             request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
-            if (!codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback))
+            if (!codeInfo.GetJitManager()->WalkILOffsets(request, true /* preferInstrumentedBounds */, &data, WalkILOffsetsCallback))
             {
                 data.dwFinalILOffset = 0; // If we didn't find any IL offsets, set the final IL offset to 0
             }

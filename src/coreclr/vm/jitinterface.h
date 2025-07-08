@@ -548,7 +548,7 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo(PCODE nativeEntry);
+    void CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nativeCodeVersion);
     virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()

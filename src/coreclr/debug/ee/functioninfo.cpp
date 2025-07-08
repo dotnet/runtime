@@ -920,6 +920,7 @@ void DebuggerJitInfo::LazyInitBounds()
         BOOL fSuccess = DebugInfoManager::GetBoundariesAndVars(
             request,
             InteropSafeNew, NULL, // allocator
+            false /* preferInstrumentedBounds */,  // TODO We currently don't use the instrumented bounds here but we should and remove the instrumented bounds logic from the SetBoundaries function.
             &cMap, &pMap,
             &cVars, &pVars);
 
@@ -1044,6 +1045,9 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     m_sequenceMapCount = cMap;
 
     DebuggerILToNativeMap *m = m_sequenceMap;
+
+    // TODO: Consider removing this handling since we now have the ability to get
+    // an instrumented IL offset mapping directly from the VM.
 
     // For the instrumented-IL case, we need to remove all duplicate entries.
     // So we keep a record of the last old IL offset. If the current old IL

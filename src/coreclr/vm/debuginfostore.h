@@ -87,6 +87,7 @@ public:
     static PTR_BYTE CompressBoundariesAndVars(
         IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
         IN ULONG            iOffsetMapping,
+        const InstrumentedILOffsetMapping *  pInstrumentedILBounds,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
         IN PatchpointInfo * patchpointInfo,
@@ -100,17 +101,9 @@ public:
 
     // Uncompress data supplied by Compress functions.
     static void RestoreBoundariesAndVars(
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
-        IN PTR_BYTE                         pDebugInfo,
-        OUT ULONG32                       * pcMap, // number of entries in ppMap
-        OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
-        OUT ULONG32                         *pcVars,
-        OUT ICorDebugInfo::NativeVarInfo    **ppVars,
-        BOOL hasFlagByte
-    );
-#define USE_V2_BOUNDS_COMPRESSION
-    static void RestoreBoundariesAndVars_V2(
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        bool preferInstrumentedBounds,
         IN PTR_BYTE                         pDebugInfo,
         OUT ULONG32                       * pcMap, // number of entries in ppMap
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
@@ -122,14 +115,7 @@ public:
     // Walk the ILOffsets without needing to allocate a buffer
     static size_t WalkILOffsets(
         IN PTR_BYTE                         pDebugInfo,
-        BOOL hasFlagByte,
-        void* pContext,
-        size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
-    );
-
-    // Walk the ILOffsets without needing to allocate a buffer
-    static size_t WalkILOffsets_V2(
-        IN PTR_BYTE                         pDebugInfo,
+        bool preferInstrumentedBounds,
         BOOL hasFlagByte,
         void* pContext,
         size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
@@ -165,7 +151,9 @@ class DebugInfoManager
 public:
     static BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        bool preferInstrumentedBounds,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping ** ppMap,
         OUT ULONG32 * pcVars,
