@@ -262,7 +262,7 @@ namespace System.Threading
             }
 
             // Call wait with the timeout milliseconds
-            return Wait(totalMilliseconds == timeout.Infinite ? Timeout.UnsignedInfinite : (uint)totalMilliseconds, cancellationToken);
+            return Wait(totalMilliseconds == Timeout.Infinite ? Timeout.UnsignedInfinite : (uint)totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
