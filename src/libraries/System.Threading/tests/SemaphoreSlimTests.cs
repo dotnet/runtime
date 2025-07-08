@@ -14,6 +14,8 @@ namespace System.Threading.Tests
     /// </summary>
     public class SemaphoreSlimTests
     {
+        private const uint TimerMaxSupportedTimeout = 0xfffffffe;
+
         /// <summary>
         /// SemaphoreSlim public methods and properties to be tested
         /// </summary>
@@ -60,7 +62,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_Wait_Helper(10, 10, 10, true, null);
             RunSemaphoreSlimTest1_Wait_Helper(1, 10, 10, true, null);
             RunSemaphoreSlimTest1_Wait_Helper(0, 10, 10, false, null);
-            RunSemaphoreSlimTest1_Wait_Helper(1, 10, TimeSpan.FromMilliseconds(Timer.MaxSupportedTimeout), true, null);
+            RunSemaphoreSlimTest1_Wait_Helper(1, 10, TimeSpan.FromMilliseconds(TimerMaxSupportedTimeout), true, null);
         }
 
         [Fact]
@@ -69,7 +71,7 @@ namespace System.Threading.Tests
             // Invalid timeout
             RunSemaphoreSlimTest1_Wait_Helper(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
             RunSemaphoreSlimTest1_Wait_Helper
-               (10, 10, TimeSpan.FromMilliseconds(Timer.MaxSupportedTimeout + 1), true, typeof(ArgumentOutOfRangeException));
+               (10, 10, TimeSpan.FromMilliseconds(TimerMaxSupportedTimeout + 1), true, typeof(ArgumentOutOfRangeException));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -88,7 +90,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, 10, true, null);
             RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, 10, true, null);
             RunSemaphoreSlimTest1_WaitAsync_Helper(0, 10, 10, false, null);
-            RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, TimeSpan.FromMilliseconds(Timer.MaxSupportedTimeout), true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, TimeSpan.FromMilliseconds(TimerMaxSupportedTimeout), true, null);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -98,7 +100,7 @@ namespace System.Threading.Tests
             // Invalid timeout
             RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
             RunSemaphoreSlimTest1_WaitAsync_Helper
-               (10, 10, TimeSpan.FromMilliseconds(Timer.MaxSupportedTimeout + 1), true, typeof(ArgumentOutOfRangeException));
+               (10, 10, TimeSpan.FromMilliseconds(TimerMaxSupportedTimeout + 1), true, typeof(ArgumentOutOfRangeException));
             RunSemaphoreSlimTest1_WaitAsync2();
         }
 
