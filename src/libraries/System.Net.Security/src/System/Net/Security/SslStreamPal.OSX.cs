@@ -339,9 +339,16 @@ namespace System.Net.Security
         internal static Task<Exception?> AsyncHandshakeAsync(ref SafeDeleteContext? context, SslAuthenticationOptions sslAuthenticationOptions, Stream transportStream, CancellationToken cancellationToken)
         {
             Debug.Assert(context == null);
-            SafeDeleteNwContext nwContext = CreateAsyncSecurityContext(sslAuthenticationOptions, transportStream);
-            context = nwContext;
-            return nwContext.HandshakeAsync(cancellationToken);
+            try
+            {
+                SafeDeleteNwContext nwContext = CreateAsyncSecurityContext(sslAuthenticationOptions, transportStream);
+                context = nwContext;
+                return nwContext.HandshakeAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                return Task.FromResult<Exception?>(e);
+            }
         }
 
         internal static Task AsyncWriteAsync(SafeDeleteContext securityContext, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)

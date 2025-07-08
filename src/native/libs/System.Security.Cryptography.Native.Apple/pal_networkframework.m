@@ -15,9 +15,11 @@ static dispatch_queue_t _inputQueue;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
-#define LOG(msg) \
+#define LOG(...) \
     do { \
-        _statusFunc(0, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(msg)); \
+        char buff[256]; \
+        snprintf(buff, sizeof(buff), __VA_ARGS__); \
+        _statusFunc(0, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(buff)); \
     } while (0)
 
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
@@ -65,21 +67,15 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
         [num getValue:&ptr];
         size_t size = message_length;
 
-        // Log through callback system instead of printf
-        (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 1, message_length); // 1 = framer_output_handler called
-        
         nw_framer_parse_output(framer, 1, message_length, NULL, ^size_t(uint8_t *buffer, size_t buffer_length, bool is_complete2) {
-            (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 2, buffer_length); // 2 = calling writeFunc
             void* length = (void*)buffer_length;
             (_writeFunc)(ptr, buffer, &length);
-            (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 3, 0); // 3 = writeFunc completed
             (void)is_complete2;
             (void)message;
             return buffer_length;
         });
 
         nw_release(framer_options);
-        (_statusFunc)((size_t)ptr, PAL_NwStatusUpdates_DebugLog, 4, 0); // 4 = parse output completed
     }
     else
     {
@@ -123,22 +119,16 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
     [num getValue:&state];
 
-    // Log through callback system
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 10, 0); // 10 = framer_start called
-
     // Notify SafeHandle with framer instance so we can submit to it directly.
     (_statusFunc)(state, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0);
 
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 11, 0); // 11 = setting output handler
     nw_framer_set_output_handler(framer, framer_output_handler);
 
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 12, 0); // 12 = setting stop/cleanup handlers
     nw_framer_set_stop_handler(framer, framer_stop_handler);
     nw_framer_set_cleanup_handler(framer, framer_cleanup_handler);
 
     nw_release(framer_options);
 
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 13, 0); // 13 = returning ready
     return nw_framer_start_result_ready;
 };
 
@@ -214,10 +204,8 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
         }
     });
 
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 22, 0); // 22 = setting queue and starting
     nw_connection_set_queue(connection, _tlsQueue);
     nw_connection_start(connection);
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 23, 0); // 23 = connection started
 
     return 0;
 }
@@ -299,7 +287,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 }
 
 // This configures TLS properties
-PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint16_t* cipherSuites, int cipherSuitesLength)
+PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
 {
     (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 30, (size_t)minTlsProtocol); // 30 = minTlsProtocol
     (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 31, (size_t)maxTlsProtocol); // 31 = maxTlsProtocol
@@ -339,7 +327,9 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
     {
         for (int i = 0; i < cipherSuitesLength; i++)
         {
-            sec_protocol_options_append_tls_ciphersuite(sec_options, (uint16_t)cipherSuites[i]);
+            uint16_t cipherSuite = (uint16_t)cipherSuites[i];
+            LOG("Appending cipher suite: 0x%04x", cipherSuite);
+            sec_protocol_options_append_tls_ciphersuite(sec_options, cipherSuite);
         }
     }
 
@@ -351,8 +341,6 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
         (void)trust_ref;
         complete(true);
     }, _tlsQueue);
-
-
 
     nw_release(sec_options);
 
@@ -476,8 +464,6 @@ PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, Writ
 {
     assert(statusFunc != NULL);
     assert(writeFunc != NULL);
-
-    printf("%s:%d: AppleCryptoNative_NwInit called\n", __func__, __LINE__);
 
     if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
     {

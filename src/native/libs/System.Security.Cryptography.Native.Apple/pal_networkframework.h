@@ -48,7 +48,7 @@ PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, Writ
 PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, size_t state, uint8_t* buffer, int length, void* context, CompletionCallback completionCallback);
 PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state, uint32_t length, void* context, ReadCompletionCallback readCompletionCallback);
 PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength, void* context, CompletionCallback completionCallback);
-PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint16_t* cipherSuites, int cipherSuitesLength);
+PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength);
 PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength);
 PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* count);
 PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection);
