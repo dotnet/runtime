@@ -150,34 +150,7 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 {
-    assert((node != nullptr) && (endExclusive != nullptr));
-
-    // Quick early-out for unary cases
-    //
-    if (node->gtNext == endExclusive)
-    {
-        return true;
-    }
-
-    if (node->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, node);
-
-    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirInvariantInRange(comp, node, endExclusive);
 }
 
 //------------------------------------------------------------------------
@@ -196,42 +169,7 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
 {
-    assert((node != nullptr) && (endExclusive != nullptr));
-
-    if (ignoreNode == nullptr)
-    {
-        return IsInvariantInRange(node, endExclusive);
-    }
-
-    if ((node->gtNext == endExclusive) || ((node->gtNext == ignoreNode) && (node->gtNext->gtNext == endExclusive)))
-    {
-        return true;
-    }
-
-    if (node->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, node);
-
-    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        if (cur == ignoreNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirInvariantInRange(comp, node, endExclusive, ignoreNode);
 }
 
 //------------------------------------------------------------------------
@@ -258,50 +196,7 @@ bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart,
                                        GenTree* endExclusive,
                                        GenTree* ignoreNode) const
 {
-    assert((rangeStart != nullptr) && (rangeEnd != nullptr));
-
-    if ((rangeEnd->gtNext == endExclusive) ||
-        ((ignoreNode != nullptr) && (rangeEnd->gtNext == ignoreNode) && (rangeEnd->gtNext->gtNext == endExclusive)))
-    {
-        return true;
-    }
-
-    if (rangeStart->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    GenTree* cur = rangeStart;
-    while (true)
-    {
-        m_scratchSideEffects.AddNode(comp, cur);
-
-        if (cur == rangeEnd)
-        {
-            break;
-        }
-
-        cur = cur->gtNext;
-        assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
-    }
-
-    for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        if (cur == ignoreNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirRangeInvariantInRange(comp, rangeStart, rangeEnd, endExclusive, ignoreNode);
 }
 
 //------------------------------------------------------------------------
