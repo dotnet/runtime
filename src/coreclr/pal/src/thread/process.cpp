@@ -3710,7 +3710,9 @@ checkFileType( LPCSTR lpFileName)
     }
 
     /* if it's not a PE/COFF file, check if it is executable */
-    if ( -1 != stat( lpFileName, &stat_data ) )
+    int stat_result;
+    while (-1 == (stat_result = stat( lpFileName, &stat_data )) && errno == EINTR);
+    if ( -1 != stat_result )
     {
         if((stat_data.st_mode & S_IFMT) == S_IFDIR )
         {

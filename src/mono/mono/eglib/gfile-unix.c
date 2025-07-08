@@ -67,7 +67,11 @@ g_file_test (const gchar *filename, GFileTest test)
 		 * such, workaround it.
 		 */
 		if (!have_stat)
-			have_stat = (stat (filename, &st) == 0);
+		{
+			int stat_result;
+			while (-1 == (stat_result = stat (filename, &st)) && errno == EINTR);
+			have_stat = (stat_result == 0);
+		}
 		/* Hairy parens, but just manually try all permission bits */
 		if (have_stat && (
 			((st.st_mode & S_IXOTH)
@@ -86,13 +90,21 @@ g_file_test (const gchar *filename, GFileTest test)
 
 	if ((test & G_FILE_TEST_IS_REGULAR) != 0) {
 		if (!have_stat)
-			have_stat = (stat (filename, &st) == 0);
+		{
+			int stat_result;
+			while (-1 == (stat_result = stat (filename, &st)) && errno == EINTR);
+			have_stat = (stat_result == 0);
+		}
 		if (have_stat && S_ISREG (st.st_mode))
 			return TRUE;
 	}
 	if ((test & G_FILE_TEST_IS_DIR) != 0) {
 		if (!have_stat)
-			have_stat = (stat (filename, &st) == 0);
+		{
+			int stat_result;
+			while (-1 == (stat_result = stat (filename, &st)) && errno == EINTR);
+			have_stat = (stat_result == 0);
+		}
 		if (have_stat && S_ISDIR (st.st_mode))
 			return TRUE;
 	}

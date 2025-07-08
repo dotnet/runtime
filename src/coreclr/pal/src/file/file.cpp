@@ -202,9 +202,14 @@ void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode )
         /* If the last path component is a directory,
            we return file not found. If it's a file or
            doesn't exist, we return path not found. */
-        if ( '\0' == *lpDupedPath ||
-             ( stat( lpDupedPath, &stat_data ) == 0 &&
-             ( stat_data.st_mode & S_IFMT ) == S_IFDIR ) )
+        bool condition = '\0' == *lpDupedPath;
+        if (!condition)
+        {
+            int stat_result;
+            while (-1 == (stat_result = stat( lpDupedPath, &stat_data )) && errno == EINTR);
+            condition = stat_result == 0 && ( stat_data.st_mode & S_IFMT ) == S_IFDIR;
+        }
+        if (condition)
         {
             TRACE( "ERROR_FILE_NOT_FOUND\n" );
             *lpErrorCode = ERROR_FILE_NOT_FOUND;
@@ -524,7 +529,9 @@ CorUnix::InternalCreateFile(
     } else {
         struct stat st;
 
-        if (stat(lpUnixPath, &st) == 0 && (st.st_mode & S_IFDIR))
+        int stat_result;
+        while (-1 == (stat_result = stat(lpUnixPath, &st)) && errno == EINTR);
+        if (stat_result == 0 && (st.st_mode & S_IFDIR))
         {
             /* The file exists and it is a directory.  Without
                    FILE_FLAG_BACKUP_SEMANTICS, Win32 CreateFile always fails

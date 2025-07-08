@@ -178,7 +178,8 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
 
     // Check if the path already exists
     struct stat statInfo;
-    int statResult = stat(path, &statInfo);
+    int statResult;
+    while (-1 == (statResult = stat(path, &statInfo)) && errno == -1);
     if (statResult != 0 && errno == ENOENT)
     {
         if (!createIfNotExist)
@@ -276,7 +277,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
         // Another process may have beaten us to it. Delete the temp directory and continue to check the requested directory to
         // see if it meets our needs.
         rmdir(tempPath);
-        statResult = stat(path, &statInfo);
+        while (-1 == (statResult = stat(path, &statInfo)) && errno == EINTR);
     }
 
     // If the path exists, check that it's a directory

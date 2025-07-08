@@ -572,7 +572,9 @@ PalCreateDumpInitialize()
         strncat(program, DumpGeneratorName, programLen);
 
         struct stat fileData;
-        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
+        int stat_result;
+        while (-1 == (stat_result = stat(program, &fileData)) && errno == EINTR);
+        if (stat_result == -1 || !S_ISREG(fileData.st_mode))
         {
             fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
             return true;

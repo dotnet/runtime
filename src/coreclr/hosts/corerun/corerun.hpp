@@ -441,7 +441,9 @@ namespace pal
     {
         // Check if the specified path exists
         struct stat sb;
-        if (stat(file_path, &sb) == -1)
+        int result;
+        while (-1 == (result = stat(file_path, &sb)) && errno == EINTR);
+        if (result == -1)
         {
             perror(W("Path not found"));
             return false;

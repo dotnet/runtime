@@ -993,7 +993,9 @@ bool pal::file_exists(const pal::string_t& path)
 bool pal::is_directory(const pal::string_t& path)
 {
     struct stat sb;
-    if (::stat(path.c_str(), &sb) != 0)
+    int result;
+    while (-1 == (result = ::stat(path.c_str(), &sb)) && errno == EINTR);
+    if (result != 0)
         return false;
 
     return S_ISDIR(sb.st_mode);

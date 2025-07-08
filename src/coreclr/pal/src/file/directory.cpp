@@ -144,7 +144,9 @@ RemoveDirectoryHelper (
         {
             struct stat stat_data;
 
-            if ( stat( lpPathName, &stat_data) == 0 &&
+            int stat_result;
+            while (-1 == (stat_result = stat( lpPathName, &stat_data)) && stat_result == EINTR);
+            if ( stat_result == 0 &&
                  (stat_data.st_mode & S_IFMT) == S_IFREG )
             {
                 /* Not a directory, it is a file. */
@@ -534,7 +536,9 @@ SetCurrentDirectoryA(
         {
             struct stat stat_data;
 
-            if ( stat( lpPathName, &stat_data) == 0 &&
+            int stat_result;
+            while (-1 == (stat_result = stat( lpPathName, &stat_data)) && errno == EINTR);
+            if ( stat_result == 0 &&
                  (stat_data.st_mode & S_IFMT) == S_IFREG )
             {
                 /* Not a directory, it is a file. */

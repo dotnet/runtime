@@ -474,7 +474,8 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 #else  // TARGET_WINDOWS
         struct stat fileStat;
         char *fileFullPathUtf8 = ConvertWideCharToMultiByte(fileFullPath);
-        int st = stat(fileFullPathUtf8, &fileStat);
+        int st;
+        while (-1 == (st = stat(fileFullPathUtf8, &fileStat)) && errno == EINTR);
         if (st != 0)
         {
             LogError("Failed to stat file '%s'. errno=%d", fileFullPathUtf8, errno);
