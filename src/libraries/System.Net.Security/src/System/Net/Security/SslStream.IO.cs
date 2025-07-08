@@ -505,14 +505,14 @@ namespace System.Net.Security
         {
             int chunkSize = frameSize;
 
-            ReadOnlyMemory<byte> availableData = _buffer.EncryptedReadOnlyMemory;
+            ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
             while (_buffer.EncryptedLength - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
-                if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize).Span, ref nextHeader))
+                if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize), ref nextHeader))
                 {
                     break;
                 }
@@ -801,7 +801,7 @@ namespace System.Net.Security
                 ThrowIfExceptionalOrNotAuthenticated();
 
                 // Decrypt will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-                status = Decrypt(_buffer.EncryptedMemorySliced(frameSize), out int decryptedOffset, out int decryptedCount);
+                status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
                 _buffer.OnDecrypted(decryptedOffset, decryptedCount, frameSize);
 
                 if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)

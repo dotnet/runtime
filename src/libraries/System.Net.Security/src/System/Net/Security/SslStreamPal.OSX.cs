@@ -18,7 +18,7 @@ using PAL_TlsIo = Interop.AppleCrypto.PAL_TlsIo;
 
 namespace System.Net.Security
 {
-    internal static partial class SslStreamPal
+    internal static class SslStreamPal
     {
         public static Exception GetException(SecurityStatusPal status)
         {
@@ -100,26 +100,22 @@ namespace System.Net.Security
         public static ProtocolToken AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteContext? context,
-            ReadOnlyMemory<byte> inputBuffer,
+            ReadOnlySpan<byte> inputBuffer,
             out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            ProtocolToken token = HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
-            consumed = inputBuffer.Length;
-            return token;
+            return HandshakeInternal(ref context, inputBuffer, out consumed, sslAuthenticationOptions);
         }
 
         public static ProtocolToken InitializeSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteContext? context,
             string? _ /*targetName*/,
-            ReadOnlyMemory<byte> inputBuffer,
+            ReadOnlySpan<byte> inputBuffer,
             out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            ProtocolToken token = HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
-            consumed = inputBuffer.Length;
-            return token;
+            return HandshakeInternal(ref context, inputBuffer, out consumed, sslAuthenticationOptions);
         }
 
         public static ProtocolToken Renegotiate(
@@ -205,7 +201,7 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteContext securityContext,
-            Memory<byte> buffer,
+            Span<byte> buffer,
             out int offset,
             out int count)
         {
@@ -219,11 +215,11 @@ namespace System.Net.Security
             {
                 SafeSslHandle sslHandle = sslContext.SslContext;
 
-                sslContext.Write(buffer.Span);
+                sslContext.Write(buffer);
 
                 unsafe
                 {
-                    fixed (byte* ptr = buffer.Span)
+                    fixed (byte* ptr = buffer)
                     {
                         PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, buffer.Length, out int written);
                         if (status < 0)
@@ -367,10 +363,12 @@ namespace System.Net.Security
 
         private static ProtocolToken HandshakeInternal(
             ref SafeDeleteContext? context,
-            ReadOnlyMemory<byte> inputBuffer,
+            ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             ProtocolToken token = default;
+            consumed = 0;
 
             try
             {
@@ -389,8 +387,10 @@ namespace System.Net.Security
 
                 if (inputBuffer.Length > 0)
                 {
-                    sslContext.Write(inputBuffer.Span);
+                    sslContext.Write(inputBuffer);
                 }
+
+                consumed = inputBuffer.Length;
 
                 token.Status = PerformHandshake(sslContext.SslContext);
 
@@ -402,7 +402,6 @@ namespace System.Net.Security
                 }
 
                 sslContext.ReadPendingWrites(ref token);
-
                 return token;
             }
             catch (Exception exc)

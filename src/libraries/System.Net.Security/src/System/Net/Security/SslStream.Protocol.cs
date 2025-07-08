@@ -822,7 +822,7 @@ namespace System.Net.Security
         }
 
         //
-        internal ProtocolToken NextMessage(ReadOnlyMemory<byte> incomingBuffer, out int consumed)
+        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer, out int consumed)
         {
             ProtocolToken token = GenerateToken(incomingBuffer, out consumed);
             if (NetEventSource.Log.IsEnabled())
@@ -849,7 +849,7 @@ namespace System.Net.Security
             Return:
                 token - ProtocolToken with status and optionally buffer.
         --*/
-        private ProtocolToken GenerateToken(ReadOnlyMemory<byte> inputBuffer, out int consumed)
+        private ProtocolToken GenerateToken(ReadOnlySpan<byte> inputBuffer, out int consumed)
         {
             bool cachedCreds = false;
             bool sendTrustList = false;
@@ -901,7 +901,7 @@ namespace System.Net.Security
                                 token = SslStreamPal.AcceptSecurityContext(
                                         ref _credentialsHandle!,
                                         ref _securityContext,
-                                        ReadOnlyMemory<byte>.Empty,
+                                        ReadOnlySpan<byte>.Empty,
                                         out _,
                                         _sslAuthenticationOptions);
                             }
@@ -930,7 +930,7 @@ namespace System.Net.Security
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        hostName,
-                                       ReadOnlyMemory<byte>.Empty,
+                                       ReadOnlySpan<byte>.Empty,
                                        out _,
                                        _sslAuthenticationOptions);
                         }
@@ -1026,12 +1026,12 @@ namespace System.Net.Security
             return token;
         }
 
-        internal SecurityStatusPal Decrypt(Memory<byte> buffer, out int outputOffset, out int outputCount)
+        internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
         {
             SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
-                NetEventSource.DumpBuffer(this, buffer.Span.Slice(outputOffset, outputCount));
+                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
             }
 
             return status;
