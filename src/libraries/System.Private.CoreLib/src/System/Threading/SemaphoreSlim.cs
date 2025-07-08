@@ -658,6 +658,21 @@ namespace System.Threading
             return WaitAsync(millisecondsTimeout == Timeout.Infinite ? Timeout.UnsignedInfinite : (uint)millisecondsTimeout, cancellationToken);
         }
 
+        /// <summary>
+        /// Asynchronously waits to enter the <see cref="SemaphoreSlim"/>,
+        /// using a 32-bit unsigned integer to measure the time interval,
+        /// while observing a <see cref="CancellationToken"/>.
+        /// </summary>
+        /// <param name="millisecondsTimeout">
+        /// The number of milliseconds to wait, or <see cref="Timeout.UnsignedInfinite"/> to wait indefinitely.
+        /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>
+        /// A task that will complete with a result of true if the current thread successfully entered
+        /// the <see cref="SemaphoreSlim"/>, otherwise with a result of false.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The current instance has already been
+        /// disposed.</exception>
         private Task<bool> WaitAsync(uint millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
