@@ -711,10 +711,9 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
 
         case BBJ_SWITCH:
         {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            for (unsigned i = 0; i < bbSwtTargets->GetSuccCount(); i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
+                RETURN_ON_ABORT(func(bbSwtTargets->GetSucc(i)->getDestinationBlock()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -778,10 +777,9 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
         case BBJ_SWITCH:
         {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            for (unsigned i = 0; i < bbSwtTargets->GetSuccCount(); i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
+                RETURN_ON_ABORT(func(bbSwtTargets->GetSucc(i)->getDestinationBlock()));
             }
 
             return BasicBlockVisit::Continue;

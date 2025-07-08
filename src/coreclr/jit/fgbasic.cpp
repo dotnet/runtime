@@ -204,42 +204,15 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     // Walk the switch's jump table, updating the predecessor for each branch.
     BBswtDesc* swtDesc = oldSwitchBlock->GetSwitchTargets();
 
-    for (unsigned i = 0; i < swtDesc->bbsCount; i++)
+    for (unsigned i = 0; i < swtDesc->GetSuccCount(); i++)
     {
-        FlowEdge* succEdge = swtDesc->bbsDstTab[i];
-        assert(succEdge != nullptr);
+        FlowEdge* succEdge = swtDesc->GetSucc(i);
+        assert(succEdge->getSourceBlock() == oldSwitchBlock);
 
-        if (succEdge->getSourceBlock() != oldSwitchBlock)
-        {
-            // swtDesc can have duplicate targets, so we may have updated this edge already
-            //
-            assert(succEdge->getSourceBlock() == newSwitchBlock);
-            assert(succEdge->getDupCount() > 1);
-        }
-        else
-        {
-            // Redirect edge's source block from oldSwitchBlock to newSwitchBlock,
-            // and keep successor block's pred list in order
-            //
-            fgReplacePred(succEdge, newSwitchBlock);
-        }
-    }
-
-    if (m_switchDescMap != nullptr)
-    {
-        SwitchUniqueSuccSet uniqueSuccSet;
-
-        // If already computed and cached the unique descriptors for the old block, let's
-        // update those for the new block.
-        if (m_switchDescMap->Lookup(oldSwitchBlock, &uniqueSuccSet))
-        {
-            m_switchDescMap->Set(newSwitchBlock, uniqueSuccSet, BlockToSwitchDescMap::Overwrite);
-        }
-        else
-        {
-            fgInvalidateSwitchDescMapEntry(newSwitchBlock);
-        }
-        fgInvalidateSwitchDescMapEntry(oldSwitchBlock);
+        // Redirect edge's source block from oldSwitchBlock to newSwitchBlock,
+        // and keep successor block's pred list in order
+        //
+        fgReplacePred(succEdge, newSwitchBlock);
     }
 }
 
@@ -468,8 +441,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 
         case BBJ_SWITCH:
         {
-            unsigned const   jumpCnt = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** const jumpTab = block->GetSwitchTargets()->bbsDstTab;
+            unsigned const   jumpCnt = block->GetSwitchTargets()->GetCaseCount();
+            FlowEdge** const jumpTab = block->GetSwitchTargets()->GetCases();
             FlowEdge*        oldEdge = nullptr;
             FlowEdge*        newEdge = nullptr;
             bool             changed = false;
@@ -520,8 +493,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 assert(newEdge->getDestinationBlock() == newTarget);
                 newEdge->addLikelihood(oldEdge->getLikelihood());
 
-                // Remove 'oldEdge' from the switch map entry, if it exists.
-                fgRemoveSuccFromSwitchDescMapEntry(block, oldEdge);
+                for (unsigned i = block->GetSwitchTargets()->GetSuccCount(); i != 0; i--)
+                {
+                    if (block->GetSwitchTargets()->GetSucc(i - 1) == oldEdge)
+                    {
+                        // Remove the old edge from the unique successor table.
+                        block->GetSwitchTargets()->RemoveSucc(i - 1);
+                        break;
+                    }
+                }
             }
 
             // If we simply redirected 'oldEdge' to 'newTarget', we don't need to update the switch map entry,
@@ -2835,26 +2815,34 @@ void Compiler::fgLinkBasicBlocks()
 
             case BBJ_SWITCH:
             {
-                const unsigned numSucc = curBBdesc->GetSwitchTargets()->bbsCount;
-                unsigned       jumpCnt = numSucc;
-                FlowEdge**     jumpPtr = curBBdesc->GetSwitchTargets()->bbsDstTab;
+                const unsigned   numCases  = curBBdesc->GetSwitchTargets()->GetCaseCount();
+                FlowEdge** const cases     = curBBdesc->GetSwitchTargets()->GetCases();
+                FlowEdge** const succs     = cases - numCases;
+                unsigned         numUnique = 0;
 
-                do
+                for (unsigned i = 0; i < numCases; i++)
                 {
-                    BasicBlock*     jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
+                    BasicBlock*     jumpDest = fgLookupBB((unsigned)*(size_t*)(cases + i));
                     FlowEdge* const newEdge  = fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
 
-                    newEdge->setLikelihood((1.0 / numSucc) * newEdge->getDupCount());
-                    *jumpPtr = newEdge;
-                    if (jumpDest->bbNum <= curBBdesc->bbNum)
+                    newEdge->setLikelihood((1.0 / numCases) * newEdge->getDupCount());
+                    cases[i] = newEdge;
+
+                    if (newEdge->getDupCount() == 1)
                     {
-                        fgMarkBackwardJump(jumpDest, curBBdesc);
+                        succs[numUnique++] = newEdge;
+                        if (jumpDest->bbNum <= curBBdesc->bbNum)
+                        {
+                            fgMarkBackwardJump(jumpDest, curBBdesc);
+                        }
                     }
-                } while (++jumpPtr, --jumpCnt);
+                }
 
-                /* Default case of CEE_SWITCH (next block), is at end of jumpTab[] */
+                curBBdesc->GetSwitchTargets()->SetSuccs(succs, numUnique);
 
-                noway_assert(curBBdesc->NextIs((*(jumpPtr - 1))->getDestinationBlock()));
+                /* Default case of CEE_SWITCH (next block), is at end of cases[] */
+
+                noway_assert(curBBdesc->NextIs(cases[numCases - 1]->getDestinationBlock()));
                 break;
             }
 
@@ -3013,56 +3001,42 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             case CEE_SWITCH:
             {
-                unsigned jmpBase;
-                unsigned jmpCnt; // # of switch cases (excluding default)
-
-                FlowEdge** jmpTab;
-                FlowEdge** jmpPtr;
-
-                /* Allocate the switch descriptor */
-
-                swtDsc = new (this, CMK_BasicBlock) BBswtDesc;
-
                 /* Read the number of entries in the table */
 
-                jmpCnt = getU4LittleEndian(codeAddr);
+                const unsigned jmpCnt = getU4LittleEndian(codeAddr); // # of switch cases (excluding default)
                 codeAddr += 4;
 
                 /* Compute  the base offset for the opcode */
 
-                jmpBase = (IL_OFFSET)((codeAddr - codeBegp) + jmpCnt * sizeof(DWORD));
+                const unsigned jmpBase = (IL_OFFSET)((codeAddr - codeBegp) + jmpCnt * sizeof(DWORD));
 
-                /* Allocate the jump table */
+                /* Allocate the jump table, ensuring there's space for all cases, the default case, and unique succs */
 
-                jmpPtr = jmpTab = new (this, CMK_FlowEdge) FlowEdge*[jmpCnt + 1];
+                FlowEdge** const jmpTab = new (this, CMK_FlowEdge) FlowEdge*[(jmpCnt + 1) * 2];
+                FlowEdge** const cases  = jmpTab + (jmpCnt + 1);
 
                 /* Fill in the jump table */
 
-                for (unsigned count = jmpCnt; count; count--)
+                for (unsigned i = 0; i < jmpCnt; i++)
                 {
                     jmpDist = getI4LittleEndian(codeAddr);
                     codeAddr += 4;
 
                     // store the offset in the pointer.  We change these in fgLinkBasicBlocks().
-                    *jmpPtr++ = (FlowEdge*)(size_t)(jmpBase + jmpDist);
+                    cases[i] = (FlowEdge*)(size_t)(jmpBase + jmpDist);
                 }
 
                 /* Append the default label to the target table */
 
-                *jmpPtr++ = (FlowEdge*)(size_t)jmpBase;
-
-                /* Make sure we found the right number of labels */
-
-                noway_assert(jmpPtr == jmpTab + jmpCnt + 1);
+                cases[jmpCnt] = (FlowEdge*)(size_t)jmpBase;
 
                 /* Compute the size of the switch opcode operands */
 
                 sz = sizeof(DWORD) + jmpCnt * sizeof(DWORD);
 
-                /* Fill in the remaining fields of the switch descriptor */
+                /* Allocate the switch descriptor; we will initialize the unique successors in fgLinkBasicBlocks */
 
-                swtDsc->bbsCount  = jmpCnt + 1;
-                swtDsc->bbsDstTab = jmpTab;
+                swtDsc = new (this, CMK_BasicBlock) BBswtDesc(nullptr, 0, cases, jmpCnt + 1, true);
 
                 /* This is definitely a jump */
 
@@ -4197,7 +4171,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 break;
 
             case BBJ_SWITCH: // block ends with a switch statement
-                for (BasicBlock* const bTarget : blk->SwitchTargets())
+                for (BasicBlock* const bTarget : blk->SwitchCases())
                 {
                     fgControlFlowPermitted(blk, bTarget);
                 }

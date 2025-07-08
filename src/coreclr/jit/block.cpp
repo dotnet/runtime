@@ -589,39 +589,10 @@ unsigned BasicBlock::dspPreds() const
 void BasicBlock::dspSuccs(Compiler* compiler)
 {
     bool first = true;
-
-    // If this is a switch, we don't want to call `Succs(Compiler*)` because it will eventually call
-    // `GetSwitchDescMap()`, and that will have the side-effect of allocating the unique switch descriptor map
-    // and/or compute this switch block's unique succ set if it is not present. Debug output functions should
-    // never have an effect on codegen. We also don't want to assume the unique succ set is accurate, so we
-    // compute it ourselves here.
-    if (bbKind == BBJ_SWITCH)
+    for (const BasicBlock* const succ : Succs(compiler))
     {
-        // Create a set with all the successors.
-        unsigned     bbNumMax = compiler->fgBBNumMax;
-        BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
-        BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-        for (BasicBlock* const bTarget : SwitchTargets())
-        {
-            BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbNum);
-        }
-        BitVecOps::Iter iter(&bitVecTraits, uniqueSuccBlocks);
-        unsigned        bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            // Note that we will output switch successors in increasing numerical bbNum order, which is
-            // not related to their order in the bbSwtTargets->bbsDstTab table.
-            printf("%s" FMT_BB, first ? "" : ",", bbNum);
-            first = false;
-        }
-    }
-    else
-    {
-        for (const BasicBlock* const succ : Succs(compiler))
-        {
-            printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
-            first = false;
-        }
+        printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
+        first = false;
     }
 }
 
@@ -736,20 +707,20 @@ void BasicBlock::dspKind() const
         {
             printf(" ->");
 
-            const unsigned   jumpCnt = bbSwtTargets->bbsCount;
-            FlowEdge** const jumpTab = bbSwtTargets->bbsDstTab;
+            const unsigned   jumpCnt = bbSwtTargets->GetCaseCount();
+            FlowEdge** const jumpTab = bbSwtTargets->GetCases();
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
                 printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
-                const bool isDefault = bbSwtTargets->bbsHasDefault && (i == jumpCnt - 1);
+                const bool isDefault = bbSwtTargets->HasDefaultCase() && (i == jumpCnt - 1);
                 if (isDefault)
                 {
                     printf("[def]");
                 }
 
-                const bool isDominant = bbSwtTargets->bbsHasDominantCase && (i == bbSwtTargets->bbsDominantCase);
+                const bool isDominant = bbSwtTargets->HasDominantCase() && (i == bbSwtTargets->GetDominantCase());
                 if (isDominant)
                 {
                     printf("[dom]");
@@ -1187,7 +1158,7 @@ unsigned BasicBlock::NumSucc() const
             return bbEhfTargets->GetSuccCount();
 
         case BBJ_SWITCH:
-            return bbSwtTargets->bbsCount;
+            return bbSwtTargets->GetCaseCount();
 
         default:
             unreached();
@@ -1232,7 +1203,7 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
             return bbEhfTargets->GetSucc(i);
 
         case BBJ_SWITCH:
-            return bbSwtTargets->bbsDstTab[i];
+            return bbSwtTargets->GetCase(i);
 
         default:
             unreached();
@@ -1309,10 +1280,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             }
 
         case BBJ_SWITCH:
-        {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            return sd.numDistinctSuccs;
-        }
+            return bbSwtTargets->GetSuccCount();
 
         default:
             unreached();
@@ -1365,11 +1333,7 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
             }
 
         case BBJ_SWITCH:
-        {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            assert(i < sd.numDistinctSuccs); // Range check.
-            return sd.nonDuplicates[i];
-        }
+            return bbSwtTargets->GetSucc(i);
 
         default:
             unreached();
@@ -1758,21 +1722,6 @@ bool BasicBlock::hasEHBoundaryOut() const
 }
 
 //------------------------------------------------------------------------
-// BBswtDesc copy ctor: copy a switch descriptor, but don't set up the jump table
-//
-// Arguments:
-//    other - existing switch descriptor to copy (except for its jump table)
-//
-BBswtDesc::BBswtDesc(const BBswtDesc* other)
-    : bbsDstTab(nullptr)
-    , bbsCount(other->bbsCount)
-    , bbsDominantCase(other->bbsDominantCase)
-    , bbsHasDefault(other->bbsHasDefault)
-    , bbsHasDominantCase(other->bbsHasDominantCase)
-{
-}
-
-//------------------------------------------------------------------------
 // BBswtDesc copy ctor: copy a switch descriptor
 //
 // Arguments:
@@ -1780,16 +1729,17 @@ BBswtDesc::BBswtDesc(const BBswtDesc* other)
 //    other - existing switch descriptor to copy
 //
 BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
-    : bbsDstTab(nullptr)
-    , bbsCount(other->bbsCount)
+    : BBJumpTable(new(comp, CMK_FlowEdge) FlowEdge*[other->succCount + other->caseCount], other -> succCount)
+    , caseCount(other->caseCount)
+    , cases(succs + succCount)
     , bbsDominantCase(other->bbsDominantCase)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {
-    // Allocate and fill in a new dst tab
+    // Fill in the new tables
     //
-    bbsDstTab = new (comp, CMK_FlowEdge) FlowEdge*[bbsCount];
-    memcpy(bbsDstTab, other->bbsDstTab, sizeof(FlowEdge*) * bbsCount);
+    memcpy(succs, other->succs, sizeof(FlowEdge*) * succCount);
+    memcpy(cases, other->cases, sizeof(FlowEdge*) * caseCount);
 }
 
 //------------------------------------------------------------------------
