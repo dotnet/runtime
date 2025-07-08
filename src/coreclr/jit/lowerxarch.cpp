@@ -2672,6 +2672,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_WAITPKG_TimedPause:
+        case NI_WAITPKG_WaitForUserLevelMonitor:
+        {
+            GenTree* cc = LowerNodeCC(node, GenCondition::C);
+
+            node->gtType = TYP_VOID;
+            node->ClearUnusedValue();
+            break;
+        }
+
         default:
             break;
     }

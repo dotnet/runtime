@@ -940,13 +940,12 @@ protected:
         GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival, insOpts instOptions);
 
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genHWIntrinsicSpecial(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
-    void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
 
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,

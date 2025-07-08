@@ -4275,6 +4275,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_X86Base_Prefetch1:
         case NI_X86Base_Prefetch2:
         case NI_X86Base_PrefetchNonTemporal:
+        case NI_WAITPKG_SetUpUserLevelMonitor:
         {
             assert(sig->numArgs == 1);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
@@ -4312,6 +4313,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2     = impPopStack().val;
             op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, NI_X86Base_StoreNonTemporal, argJitType, 0);
+            break;
+        }
+
+        case NI_WAITPKG_TimedPause:
+        case NI_WAITPKG_WaitForUserLevelMonitor:
+        {
+            assert(sig->numArgs == 2);
+            assert(JITtype2varType(sig->retType) == TYP_BYTE);
+            assert(simdSize == 0);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTree* op2Hi = nullptr;
+            GenTree* op2Lo = nullptr;
+
+            GenTree* op2Dup = fgMakeMultiUse(&op2);
+
+            op2Hi = gtFoldExpr(gtNewOperNode(GT_RSZ, TYP_LONG, op2, gtNewIconNode(32)));
+            op2Hi = gtFoldExpr(gtNewCastNode(TYP_INT, op2Hi, false, TYP_INT));
+            op2Lo = gtFoldExpr(gtNewCastNode(TYP_INT, op2Dup, false, TYP_INT));
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2Hi, op2Lo, intrinsic, CORINFO_TYPE_INT, 0);
             break;
         }
 

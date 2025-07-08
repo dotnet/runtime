@@ -511,8 +511,8 @@ unsafe class Program
         Check("Pclmulqdq.V256", ExpectedPclmulqdqV256, &PclmulqdqV256IsSupported, Pclmulqdq.V256.IsSupported, () => Pclmulqdq.V256.CarrylessMultiply(Vector256<long>.Zero, Vector256<long>.Zero, 0).Equals(Vector256<long>.Zero));
         Check("Pclmulqdq.V512", ExpectedPclmulqdqV512, &PclmulqdqV512IsSupported, Pclmulqdq.V512.IsSupported, () => Pclmulqdq.V512.CarrylessMultiply(Vector512<long>.Zero, Vector512<long>.Zero, 0).Equals(Vector512<long>.Zero));
 
-        // Check("WaitPkg", ExpectedWaitPkg, &WaitPkgIsSupported, WaitPkg.IsSupported, null);
-        // Check("WaitPkg.X64", ExpectedWaitPkg, &WaitPkgX64IsSupported, WaitPkg.X64.IsSupported, null);
+        Check("WaitPkg", ExpectedWaitPkg, &WaitPkgIsSupported, WaitPkg.IsSupported, null);
+        Check("WaitPkg.X64", ExpectedWaitPkg, &WaitPkgX64IsSupported, WaitPkg.X64.IsSupported, null);
 
         Check("X86Serialize", ExpectedX86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => { X86Serialize.Serialize(); return true; } );
         Check("X86Serialize.X64", ExpectedX86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, null);
@@ -647,8 +647,8 @@ unsafe class Program
     static bool PclmulqdqV256IsSupported() => Pclmulqdq.V256.IsSupported;
     static bool PclmulqdqV512IsSupported() => Pclmulqdq.V512.IsSupported;
 
-    // static bool WaitPkgIsSupported() => WaitPkg.IsSupported;
-    // static bool WaitPkgX64IsSupported() => WaitPkg.X64.IsSupported;
+    static bool WaitPkgIsSupported() => WaitPkg.IsSupported;
+    static bool WaitPkgX64IsSupported() => WaitPkg.X64.IsSupported;
 
     static bool X86SerializeIsSupported() => X86Serialize.IsSupported;
     static bool X86SerializeX64IsSupported() => X86Serialize.X64.IsSupported;

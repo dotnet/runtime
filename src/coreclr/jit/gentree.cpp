@@ -29069,6 +29069,9 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_X86Base_Prefetch1:
             case NI_X86Base_Prefetch2:
             case NI_X86Base_PrefetchNonTemporal:
+            case NI_WAITPKG_SetUpUserLevelMonitor:
+            case NI_WAITPKG_TimedPause:
+            case NI_WAITPKG_WaitForUserLevelMonitor:
             {
                 return true;
             }
@@ -29274,6 +29277,9 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_X86Base_Prefetch1:
             case NI_X86Base_Prefetch2:
             case NI_X86Base_PrefetchNonTemporal:
+            case NI_WAITPKG_SetUpUserLevelMonitor:
+            case NI_WAITPKG_TimedPause:
+            case NI_WAITPKG_WaitForUserLevelMonitor:
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);

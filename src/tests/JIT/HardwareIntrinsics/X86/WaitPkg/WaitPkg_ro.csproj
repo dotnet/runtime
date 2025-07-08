@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <AssemblyName>WaitPkg_ro</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- Would have to translate Illegal instruction to PNSE -->
@@ -7,9 +8,9 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
-    <Optimize />
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Serialize.X64.cs" />
+    <Compile Include="WaitPkg.cs" />
   </ItemGroup>
 </Project>

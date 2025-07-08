@@ -2858,6 +2858,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_WAITPKG_TimedPause:
+            case NI_WAITPKG_WaitForUserLevelMonitor:
+            {
+                assert(numArgs == 3);
+                SingleTypeRegSet apxAwareRegCandidates =
+                    ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                srcCount += BuildOperandUses(op1, apxAwareRegCandidates);
+                srcCount += BuildOperandUses(op2, SRBM_EDX);
+                srcCount += BuildOperandUses(op3, SRBM_EAX);
+
+                buildUses = false;
+                break;
+            }
+
             default:
             {
                 assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));

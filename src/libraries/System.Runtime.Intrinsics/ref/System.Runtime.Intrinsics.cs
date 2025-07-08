@@ -10516,7 +10516,20 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
-
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class WaitPkg : System.Runtime.Intrinsics.X86.X86Base
+    {
+        internal WaitPkg() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static unsafe void SetUpUserLevelMonitor(void* address) { throw null; }
+        public static bool TimedPause(uint control, ulong counter) { throw null; }
+        public static bool WaitForUserLevelMonitor(uint control, ulong counter) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
     [System.CLSCompliantAttribute(false)]
     public abstract partial class X86Base
     {
