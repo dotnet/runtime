@@ -1489,7 +1489,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
     /* ftruncate is a standard function, but the behavior of enlarging files is
     non-standard.  So I will try to enlarge a file, and if that fails try the
     less efficient way.*/
-    TruncateRetVal = ftruncate( UnixFD, NewSize );
+    while (-1 == (TruncateRetVal = ftruncate( UnixFD, NewSize )) && errno == EINTR);
     fstat( UnixFD, &FileInfo );
 
     if ( TruncateRetVal != 0 || FileInfo.st_size != NewSize )

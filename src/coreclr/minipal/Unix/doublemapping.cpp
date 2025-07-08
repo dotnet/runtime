@@ -82,7 +82,9 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     }
 #endif
 
-    if (ftruncate(fd, MaxDoubleMappedSize) == -1)
+    int ftruncate_result;
+    while (-1 == (ftruncate_result = ftruncate(fd, MaxDoubleMappedSize)) && errno == EINTR);
+    if (ftruncate_result == -1)
     {
         close(fd);
         return false;
@@ -390,7 +392,9 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         if (fd != -1)
         {
             off_t maxFileSize = MAX_TEMPLATE_THUNK_TYPES * 0x10000; // The largest page size we support currently is 64KB.
-            if (ftruncate(fd, maxFileSize) == -1) // Reserve a decent size chunk of logical memory for these things.
+            int ftruncate_result;
+            while (-1 == (ftruncate_result = ftruncate(fd, maxFileSize)) && errno == EINTR);
+            if (ftruncate_result == -1) // Reserve a decent size chunk of logical memory for these things.
             {
                 close(fd);
             }

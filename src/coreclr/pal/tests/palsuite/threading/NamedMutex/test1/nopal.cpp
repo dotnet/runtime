@@ -71,7 +71,9 @@ bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryTy
     }
 
     *fdRef = fd;
-    if (ftruncate(fd, getpagesize()) != 0)
+    int result;
+    while (-1 == (result = ftruncate(fd, getpagesize())) && errno == EINTR);
+    if (result != 0)
         return false;
     if (lseek(fd, 0, SEEK_SET) != 0)
         return false;
