@@ -113,11 +113,14 @@ internal static partial class Interop
                     Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length);
 
                     int offset = 0;
+
                     foreach (SslApplicationProtocol protocol in applicationProtocols)
                     {
                         buffer[offset] = (byte)protocol.Protocol.Length; // preffix len
                         protocol.Protocol.Span.CopyTo(buffer.Slice(offset + 1)); // ALPN
                         buffer[offset + protocol.Protocol.Length + 1] = 0; // null-terminator
+
+                        offset += protocol.Protocol.Length + 2;
                     }
                 }
 
