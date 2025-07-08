@@ -214,7 +214,9 @@ CreateCrashDump(
     int cbErrorMessageBuffer)
 {
     int pipe_descs[2];
-    if (pipe(pipe_descs) == -1)
+    int pipe_result;
+    while (-1 == (pipe_result = pipe(pipe_descs)) && errno == EINTR);
+    if (pipe_result == -1)
     {
         if (errorMessageBuffer != nullptr)
         {

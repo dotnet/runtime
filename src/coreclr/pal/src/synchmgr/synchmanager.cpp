@@ -2767,12 +2767,14 @@ namespace CorUnix
         }
 #else // !CORECLR
         int rgiPipe[] = { -1, -1 };
-        int pipeRv =
+        int pipeRv;
+        while (-1 == (pipeRv =
 #if HAVE_PIPE2
-            pipe2(rgiPipe, O_CLOEXEC);
+            pipe2(rgiPipe, O_CLOEXEC)
 #else
-            pipe(rgiPipe);
+            pipe(rgiPipe)
 #endif // HAVE_PIPE2
+        ) && errno == EINTR);
         if (pipeRv == -1)
         {
             ERROR("Unable to create the process pipe\n");

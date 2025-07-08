@@ -773,7 +773,9 @@ CorUnix::InternalCreateProcess(
     {
         int pipe_descs[2];
 
-        if (-1 == pipe(pipe_descs))
+        int pipe_result;
+        while (-1 == (pipe_result = pipe(pipe_descs)) && errno == EINTR);
+        if (-1 == pipe_result)
         {
             ERROR("pipe() failed! error is %d (%s)\n", errno, strerror(errno));
             palError = ERROR_NOT_ENOUGH_MEMORY;
@@ -2216,7 +2218,9 @@ PROCCreateCrashDump(
     }
 
     int pipe_descs[2];
-    if (pipe(pipe_descs) == -1)
+    int pipe_result;
+    while (-1 == (pipe_result = pipe(pipe_descs)) && errno == EINTR);
+    if (pipe_result == -1)
     {
         if (errorMessageBuffer != nullptr)
         {

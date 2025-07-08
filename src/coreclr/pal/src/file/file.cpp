@@ -2172,7 +2172,9 @@ CorUnix::InternalCreatePipe(
         goto InternalCreatePipeExit;
     }
 
-    if (pipe(readWritePipeDes) == -1)
+    int pipe_result;
+    while (-1 == (pipe_result = pipe(readWritePipeDes)) && errno == EINTR);
+    if (pipe_result == -1)
     {
         ERROR("pipe() call failed errno:%d (%s) \n", errno, strerror(errno));
         palError = ERROR_INTERNAL_ERROR;

@@ -2897,7 +2897,9 @@ static void
 start_helper_thread (void)
 {
 #ifdef HAVE_COMMAND_PIPES
-	if (pipe (log_profiler.pipes) == -1) {
+	int pipe_result;
+	while (-1 == (pipe_result = pipe (log_profiler.pipes)) && errno == EINTR);
+	if (pipe_result == -1) {
 		mono_profiler_printf_err ("Could not create log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}

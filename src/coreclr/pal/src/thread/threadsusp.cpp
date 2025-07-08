@@ -74,12 +74,14 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
     ReleaseSuspensionLock(pThread);
 
     int pipe_descs[2];
-    int pipeRv =
+    int pipeRv;
+    while (-1 == (pipeRv =
 #if HAVE_PIPE2
         pipe2(pipe_descs, O_CLOEXEC);
 #else
         pipe(pipe_descs);
 #endif // HAVE_PIPE2
+    ) && errno == EINTR);
     if (pipeRv == -1)
     {
         ERROR("pipe() failed! error is %d (%s)\n", errno, strerror(errno));
