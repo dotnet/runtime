@@ -359,21 +359,22 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
 }
 
 // This wil get TLS details after handshake is finished
-PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength)
+PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
     if (meta != NULL)
     {
         sec_protocol_metadata_t secMeta = nw_tls_copy_sec_protocol_metadata(meta);
+
         const char* alpn = sec_protocol_metadata_get_negotiated_protocol(secMeta);
         if (alpn != NULL)
         {
-            *negotiatedAlpn = alpn;
+            strcpy(negotiatedAlpn, alpn);
             *negotiatedAlpnLength = (int32_t)strlen(alpn);
         }
         else
         {
-            *negotiatedAlpn = NULL;
+            negotiatedAlpn[0] = '\0';
             *negotiatedAlpnLength = 0;
         }
 

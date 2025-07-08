@@ -171,7 +171,7 @@ internal static partial class Interop
 
             // gets TLS connection information
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwGetConnectionInfo")]
-            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, ref byte* negotiatedAlpn, out int negotiatedAlpnLength);
+            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
 
             // copies the certificate chain from the connection
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]

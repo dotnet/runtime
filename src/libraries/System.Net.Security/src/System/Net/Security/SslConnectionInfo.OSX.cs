@@ -30,16 +30,18 @@ namespace System.Net.Security
             SafeNwHandle nwContext = context.ConnectionHandle;
             SslProtocols protocol;
             TlsCipherSuite cipherSuite;
-            IntPtr alpnPtr = IntPtr.Zero;
-            int alpnLength;
+
+            Span<byte> alpn = stackalloc byte[256]; // Ensure the stack is initialized for alpnPtr
+            int alpnLength = alpn.Length;
 
             int osStatus;
             unsafe
             {
-                byte* alpnVoidPtr = (byte*)alpnPtr;
-                osStatus = Interop.NetworkFramework.Tls.GetConnectionInfo(nwContext, out protocol, out cipherSuite, ref alpnVoidPtr, out int alpnIntLength);
-                alpnPtr = (IntPtr)alpnVoidPtr;
-                alpnLength = (int)alpnIntLength;
+                fixed (byte* alpnPtr = alpn)
+                {
+                    // Call the native method to get connection info
+                    osStatus = Interop.NetworkFramework.Tls.GetConnectionInfo(nwContext, out protocol, out cipherSuite, alpnPtr, ref alpnLength);
+                }
             }
 
             if (osStatus != 0)
@@ -47,13 +49,9 @@ namespace System.Net.Security
                 throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
             }
 
-            if (alpnPtr != IntPtr.Zero && alpnLength > 0)
+            if (alpnLength > 0)
             {
-                unsafe
-                {
-                    Span<byte> alpn = new Span<byte>((void*)alpnPtr, alpnLength);
-                    ApplicationProtocol = alpn.ToArray();
-                }
+                ApplicationProtocol = alpn.Slice(0, alpnLength).ToArray();
             }
 
             Protocol = (int)protocol;
