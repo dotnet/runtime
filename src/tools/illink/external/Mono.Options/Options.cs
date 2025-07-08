@@ -507,7 +507,7 @@ namespace Mono.Options
         {
             Type tt = typeof(T);
 #if PCL
-			TypeInfo ti = tt.GetTypeInfo ();
+            TypeInfo ti = tt.GetTypeInfo();
 #else
             Type ti = tt;
 #endif
@@ -517,7 +517,7 @@ namespace Mono.Options
                 !ti.IsGenericTypeDefinition &&
                 ti.GetGenericTypeDefinition() == typeof(Nullable<>);
 #if PCL
-			Type targetType = nullable ? tt.GenericTypeArguments [0] : tt;
+            Type targetType = nullable ? tt.GenericTypeArguments [0] : tt;
 #else
             Type targetType = nullable ? tt.GetGenericArguments()[0] : tt;
 #endif
@@ -527,10 +527,10 @@ namespace Mono.Options
                 if (value != null)
                 {
 #if PCL
-					if (targetType.GetTypeInfo ().IsEnum)
-						t = (T) Enum.Parse (targetType, value, true);
-					else
-						t = (T) Convert.ChangeType (value, targetType);
+                    if (targetType.GetTypeInfo().IsEnum)
+                        t = (T)Enum.Parse(targetType, value, true);
+                    else
+                        t = (T)Convert.ChangeType(value, targetType);
 #else
                     TypeConverter conv = TypeDescriptor.GetConverter(targetType);
                     t = (T)conv.ConvertFromString(value);
@@ -794,13 +794,13 @@ namespace Mono.Options
 
 #if !PCL && !NET
 #pragma warning disable 618 // SecurityPermissionAttribute is obsolete
-		[SecurityPermission (SecurityAction.LinkDemand, SerializationFormatter = true)]
+        [SecurityPermission (SecurityAction.LinkDemand, SerializationFormatter = true)]
 #pragma warning restore 618
-		public override void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData (info, context);
-			info.AddValue ("OptionName", option);
-		}
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("OptionName", option);
+        }
 #endif
     }
 
