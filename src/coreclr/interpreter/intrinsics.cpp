@@ -67,14 +67,7 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     {
         if (!strcmp(namespaceName, "System.Runtime.CompilerServices"))
         {
-            if (!strcmp(className, "Unsafe"))
-            {
-                // The members of the S.R.CS.Unsafe namespace have IL generated for them elsewhere in the runtime;
-                //  we want to use that generated IL. It should Just Work once we support unsafe accessors.
-                // If the JIT is available our fallback to calling the JITted code will also work.
-                return NI_Illegal;
-            }
-            else if (!strcmp(className, "StaticsHelpers"))
+            if (!strcmp(className, "StaticsHelpers"))
             {
                 if (!strcmp(methodName, "VolatileReadAsByref"))
                     return NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref;
