@@ -1,6 +1,6 @@
 # Using Native AOT
 
-See the official documentation at https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/.
+See the official documentation at https://learn.microsoft.com/dotnet/core/deploying/native-aot/.
 
 - [Compiling with Native AOT (advanced topics)](compiling.md)
 - [Building Native AOT apps in containers](containers.md)
