@@ -57,7 +57,7 @@ namespace LibraryImportGenerator.UnitTests
             // Not LibraryImportAttribute
             yield return new object[] { ID(), CodeSnippets.UserDefinedPrefixedAttributes, Array.Empty<DiagnosticResult>() };
 
-            // Bug: crashes
+            // Bug: https://github.com/dotnet/runtime/issues/117448
             // yield return new[] { ID(), CodeSnippets.ImproperCollectionWithMarshalUsingOnElements };
 
             // No explicit marshalling for char or string
