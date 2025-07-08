@@ -1035,10 +1035,7 @@ namespace System.IO
 
                     bool hasRootWatch = RootDirectory is not null;
 
-                    if (hasRootWatch)
-                    {
-                        _ = DequeueEvents();
-                    }
+                    _ = DequeueEvents();
 
                     return hasRootWatch;
                 }
