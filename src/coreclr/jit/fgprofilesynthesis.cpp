@@ -250,14 +250,53 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoConsistent  = !m_approximate;
 
     // A simple check whether the current method has more than one edge.
-    m_comp->fgPgoSingleEdge = true;
-    for (BasicBlock* const block : m_comp->Blocks())
+    // Ignore static constructors - they're never expected to be called more than once.
+    const bool preferSize = m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    const bool isCctor    = ((m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR);
+    m_comp->fgPgoSingleEdge = !isCctor && !preferSize;
+
+    if (m_comp->fgPgoSingleEdge)
     {
-        if (block->NumSucc() > 1)
+        for (BasicBlock* const block : m_comp->Blocks())
         {
-            m_comp->fgPgoSingleEdge = false;
-            break;
+            if (block->NumSucc() > 1)
+            {
+                m_comp->fgPgoSingleEdge = false;
+                break;
+            }
         }
+    }
+
+    // fgPgoSingleEdge targets mostly small wrapper-like methods, so we ignore single-edge code
+    // with a lot of calls.
+    int callsCount = 0;
+    const int MaxCallsForSingleEdgeBlocks = 10;
+    if (m_comp->fgPgoSingleEdge)
+    {
+        // Loop all BBs again because the previous block-only loop was more likely to
+        // bail out early.
+        for (BasicBlock* const block : m_comp->Blocks())
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                if ((stmt->GetRootNode() != nullptr) && ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0))
+                {
+                    for (GenTree* const tree : stmt->TreeList())
+                    {
+                        if (tree->IsCall())
+                        {
+                            callsCount++;
+                            if (callsCount > MaxCallsForSingleEdgeBlocks)
+                            {
+                                m_comp->fgPgoSingleEdge = false;
+                                goto TOO_MANY_CALLS;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    TOO_MANY_CALLS:
     }
 
     m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
