@@ -258,7 +258,12 @@ namespace pal
         return false;
     }
 
-    inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
+    inline bool rmdir(const char_t* path)
+    {
+        int result;
+        while (-1 == (result = ::rmdir(path)) && errno == EINTR);
+        return result == 0;
+    }
 
     inline int rename(const char_t* old_name, const char_t* new_name)
     {

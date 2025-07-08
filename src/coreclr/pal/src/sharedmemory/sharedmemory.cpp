@@ -229,7 +229,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
                         GetFriendlyErrorCodeString(errorCode));
                 }
 
-                rmdir(path);
+                while (-1 == rmdir(path) && errno == EINTR);
                 throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
             }
 
@@ -267,7 +267,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
                     GetFriendlyErrorCodeString(errorCode));
             }
 
-            rmdir(tempPath);
+            while (-1 == rmdir(tempPath) && errno == EINTR);
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
 
@@ -280,7 +280,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
 
         // Another process may have beaten us to it. Delete the temp directory and continue to check the requested directory to
         // see if it meets our needs.
-        rmdir(tempPath);
+        while (-1 == rmdir(tempPath) && errno == EINTR);
         while (-1 == (statResult = stat(path, &statInfo)) && errno == EINTR);
     }
 
@@ -1048,7 +1048,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
             {
                 _ASSERTE(*m_filePath != nullptr);
                 m_filePath->CloseBuffer(m_sessionDirectoryPathCharCount);
-                rmdir(*m_filePath);
+                while (-1 == rmdir(*m_filePath) && errno == EINTR);
             }
 
             if (m_acquiredCreationDeletionFileLockForId != nullptr)
@@ -1401,7 +1401,7 @@ void SharedMemoryProcessDataHeader::Close()
         SharedMemoryHelpers::VerifyStringOperation(path.Append(m_id.GetName(), m_id.GetNameCharCount()));
         while (-1 == unlink(path) && errno == EINTR);
         path.CloseBuffer(sessionDirectoryPathCharCount);
-        rmdir(path);
+        while (-1 == rmdir(path) && errno == EINTR);
     }
     catch (SharedMemoryException)
     {
