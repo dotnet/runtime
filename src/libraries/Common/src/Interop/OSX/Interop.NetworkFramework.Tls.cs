@@ -186,10 +186,7 @@ internal static partial class Interop
             FramerStart = 1,
             FramerStop = 2,
             HandshakeFinished = 3,
-            HandshakeFailed = 4,
-            ConnectionReadFinished = 100,
-            ConnectionWriteFinished = 101,
-            ConnectionWriteFailed = 102,
+            ConnectionFailed = 4,
             ConnectionCancelled = 103,
             DebugLog = 200,
         }

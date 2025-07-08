@@ -18,28 +18,6 @@ namespace System.Net
             bool isServer,
             string? hostName)
         {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(securityContext, $"CertificateValidationPal.VerifyCertificateProperties called - Context type: {securityContext.GetType().Name}");
-
-            return securityContext switch
-            {
-                SafeDeleteNwContext nwContext => VerifyNwCertificateProperties(nwContext, chain, remoteCertificate, checkCertName, isServer, hostName),
-                SafeDeleteSslContext sslContext => VerifySslCertificateProperties(sslContext, chain, remoteCertificate, checkCertName, isServer, hostName),
-                _ => throw new ArgumentException("Invalid context type", nameof(securityContext))
-            };
-        }
-
-        private static SslPolicyErrors VerifySslCertificateProperties(
-            SafeDeleteSslContext securityContext,
-            X509Chain chain,
-            X509Certificate2? remoteCertificate,
-            bool checkCertName,
-            bool isServer,
-            string? hostName)
-        {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(securityContext, "Using SecureTransport certificate validation path");
-
             SslPolicyErrors errors = SslPolicyErrors.None;
 
             if (remoteCertificate == null)
@@ -55,88 +33,33 @@ namespace System.Net
 
                 if (!isServer && checkCertName)
                 {
-                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(securityContext.SslContext, hostName!, remoteCertificate.NotBefore, out int osStatus))
+                    switch (securityContext)
                     {
-                        errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+                        case SafeDeleteSslContext sslContext:
+                            if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName!, remoteCertificate.NotBefore, out int osStatus))
+                            {
+                                errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
 
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Error(securityContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
+                                if (NetEventSource.Log.IsEnabled())
+                                    NetEventSource.Error(sslContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
+                            }
+                            break;
+
+                        case SafeDeleteNwContext nwContext:
+                            if (!ValidateHostname(hostName!, remoteCertificate))
+                            {
+                                errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+
+                                if (NetEventSource.Log.IsEnabled())
+                                    NetEventSource.Error(nwContext, $"Hostname validation for '{hostName}' failed - certificate does not match hostname");
+                            }
+                            break;
+
+                        default:
+                            throw new ArgumentException("Invalid context type", nameof(securityContext));
                     }
                 }
             }
-
-            return errors;
-        }
-
-        private static SslPolicyErrors VerifyNwCertificateProperties(
-            SafeDeleteNwContext securityContext,
-            X509Chain chain,
-            X509Certificate2? remoteCertificate,
-            bool checkCertName,
-            bool isServer,
-            string? hostName)
-        {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(securityContext, "Using Network Framework certificate validation path");
-
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(securityContext, $"Starting certificate validation - isServer: {isServer}, checkCertName: {checkCertName}, hostName: '{hostName}'");
-
-            SslPolicyErrors errors = SslPolicyErrors.None;
-
-            if (remoteCertificate == null)
-            {
-                errors |= SslPolicyErrors.RemoteCertificateNotAvailable;
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Error(securityContext, "Remote certificate not available");
-            }
-            else
-            {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Info(securityContext, $"Remote certificate found - Subject: '{remoteCertificate.Subject}', Issuer: '{remoteCertificate.Issuer}', ValidFrom: {remoteCertificate.NotBefore}, ValidTo: {remoteCertificate.NotAfter}");
-
-                if (!chain.Build(remoteCertificate))
-                {
-                    errors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Error(securityContext, "Certificate chain validation failed");
-                        for (int i = 0; i < chain.ChainStatus.Length; i++)
-                        {
-                            NetEventSource.Error(securityContext, $"Chain error {i}: {chain.ChainStatus[i].Status} - {chain.ChainStatus[i].StatusInformation}");
-                        }
-                    }
-                }
-                else if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(securityContext, "Certificate chain validation passed");
-                }
-
-                if (!isServer && checkCertName)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Info(securityContext, $"Starting hostname validation for '{hostName}' against certificate");
-
-                    // Network Framework accepts all certificates in native layer, so we must validate hostname here
-                    if (!ValidateHostname(hostName!, remoteCertificate))
-                    {
-                        errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Error(securityContext, $"Hostname validation for '{hostName}' failed - certificate does not match hostname");
-                    }
-                    else if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Info(securityContext, $"Hostname validation for '{hostName}' passed");
-                    }
-                }
-                else if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(securityContext, $"Skipping hostname validation - isServer: {isServer}, checkCertName: {checkCertName}");
-                }
-            }
-
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(securityContext, $"Certificate validation completed - Final errors: {errors}");
 
             return errors;
         }
@@ -227,6 +150,8 @@ namespace System.Net
             X509Certificate2? result = null;
 
             Interop.NetworkFramework.Tls.CopyCertChain(nwContext, out certificates, out int chainSize);
+
+            using SafeCFArrayHandle _ = certificates;
 
             if (retrieveChainCertificates && chainSize > 1)
             {
@@ -336,6 +261,7 @@ namespace System.Net
             return store;
         }
 
+        // TODO: replace by Interop.AppleCrypto.SslCheckHostnameMatch
         private static bool ValidateHostname(string hostName, X509Certificate2 certificate)
         {
             if (NetEventSource.Log.IsEnabled())

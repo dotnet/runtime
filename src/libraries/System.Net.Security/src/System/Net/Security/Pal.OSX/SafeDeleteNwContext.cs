@@ -30,10 +30,9 @@ namespace System.Net.Security
     internal sealed class SafeDeleteNwContext : SafeDeleteContext
     {
         // AppContext switch to enable Network Framework usage
-        private const string EnableNetworkFrameworkSwitch = "System.Net.Security.UseNetworkFramework";
-        private const string EnableNetworkFrameworkEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK";
-
-        private static bool? s_isNetworkFrameworkEnabled;
+        internal static bool IsSwitchEnabled { get; } = AppContextSwitchHelper.GetBooleanConfig(
+            "System.Net.Security.UseNetworkFramework",
+            "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK");
         private static readonly Lazy<bool> s_isNetworkFrameworkAvailable = new Lazy<bool>(CheckNetworkFrameworkAvailability);
 
         // Network Framework handles
@@ -57,20 +56,11 @@ namespace System.Net.Security
             Failed
         }
 
-        private HandshakeState _handshakeState = HandshakeState.NotStarted;
-        private Exception? _handshakeException;
         private readonly Stream _transportStream;
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
         private ArrayBuffer _appReceiveBuffer = new(InitialBufferSize);
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
-
-        // TaskSourceCompletion objects for decrypt operations
-        internal TaskCompletionSource<SecurityStatusPalErrorCode>? DecryptTask { get; private set; }
-
-        // Read/Write Status
-        private volatile int _readStatus;
-        private volatile int _writeStatus;
 
         // Buffers
         private const int InitialBufferSize = 2 * 1024;
@@ -92,18 +82,7 @@ namespace System.Net.Security
             SetTlsOptions(sslAuthenticationOptions);
         }
 
-        public static bool IsNetworkFrameworkAvailable
-        {
-            get
-            {
-                // First check if Network Framework is enabled via switch
-                if (!IsNetworkFrameworkEnabled())
-                    return false;
-
-                // Then check if it's technically available
-                return s_isNetworkFrameworkAvailable.Value;
-            }
-        }
+        public static bool IsNetworkFrameworkAvailable => IsSwitchEnabled && s_isNetworkFrameworkAvailable.Value;
 
         internal Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
@@ -168,13 +147,13 @@ namespace System.Net.Security
 
             if (status != 0)
             {
-                throw Interop.AppleCrypto.CreateExceptionForOSStatus(_writeStatus);
+                throw Interop.AppleCrypto.CreateExceptionForOSStatus((int)status);
             }
 
             [UnmanagedCallersOnly]
             static void CompletionCallback(IntPtr context, long status)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", "WriteAsync");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", nameof(WriteAsync));
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 TaskCompletionSource<long> tcs = (TaskCompletionSource<long>)handle.Target!;
 
@@ -185,10 +164,9 @@ namespace System.Net.Security
 
         internal async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes");
-
             if (_appReceiveBuffer.ActiveLength == 0)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Internal buffer empty, refilling.");
                 int read = await FillAppDataBufferAsync(_appReceiveBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
 
                 if (read == 0)
@@ -206,14 +184,12 @@ namespace System.Net.Security
             int length = Math.Min(_appReceiveBuffer.ActiveLength, buffer.Length);
             _appReceiveBuffer.ActiveSpan.Slice(0, length).CopyTo(buffer.Span);
             _appReceiveBuffer.Discard(length);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReadAsync returning {length} bytes from buffer");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Read {length} bytes");
             return length;
         }
 
         internal async Task<int> FillAppDataBufferAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", nameof(FillAppDataBufferAsync));
-
             TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using CancellationTokenRegistration registration = cancellationToken.Register(() =>
@@ -225,7 +201,7 @@ namespace System.Net.Security
             Tuple<TaskCompletionSource<int>, Memory<byte>> state = new(tcs, buffer);
             GCHandle handle = GCHandle.Alloc(state, GCHandleType.Normal);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Waiting for read from connection");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
             unsafe
             {
                 Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
@@ -236,13 +212,12 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, long status, byte* buffer, int length)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing ReadAsync, status: {status}, len: {length}", nameof(FillAppDataBufferAsync));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing ConnectionRead, status: {status}, len: {length}", nameof(FillAppDataBufferAsync));
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 (TaskCompletionSource<int> tcs, Memory<byte> state) = (Tuple<TaskCompletionSource<int>, Memory<byte>>)handle.Target!;
 
                 if (status != 0)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ReadAsync failed with status: {status}", nameof(FillAppDataBufferAsync));
                     tcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status)));
                 }
                 else
@@ -254,40 +229,6 @@ namespace System.Net.Security
                 handle.Free();
             }
 
-        }
-
-        private static bool IsNetworkFrameworkEnabled()
-        {
-            // Cache the result
-            if (s_isNetworkFrameworkEnabled.HasValue)
-                return s_isNetworkFrameworkEnabled.Value;
-
-            // Check AppContext switch first
-            if (AppContext.TryGetSwitch(EnableNetworkFrameworkSwitch, out bool isEnabled))
-            {
-                s_isNetworkFrameworkEnabled = isEnabled;
-                return isEnabled;
-            }
-
-            // Fall back to environment variable
-            string? envVar = Environment.GetEnvironmentVariable(EnableNetworkFrameworkEnvironmentVariable);
-            if (!string.IsNullOrEmpty(envVar))
-            {
-                if (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase))
-                {
-                    s_isNetworkFrameworkEnabled = true;
-                    return true;
-                }
-                else if (envVar == "0" || envVar.Equals("false", StringComparison.OrdinalIgnoreCase))
-                {
-                    s_isNetworkFrameworkEnabled = false;
-                    return false;
-                }
-            }
-
-            // Default to disabled if no explicit setting
-            s_isNetworkFrameworkEnabled = false;
-            return false;
         }
 
         private static bool CheckNetworkFrameworkAvailability()
@@ -402,18 +343,17 @@ namespace System.Net.Security
 
         private void WriteOutboundWireData(ReadOnlySpan<byte> data)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {data.Length} bytes", "WriteOutboundWireData");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Sending {data.Length} bytes");
 
             lock (_lockObject)
             {
                 _transportStream.Write(data);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Sent {data.Length} bytes,", "WriteOutboundWireData");
             }
         }
 
-        internal async Task WriteInboundWireDataAsync(ReadOnlyMemory<byte> buf)
+        private async Task WriteInboundWireDataAsync(ReadOnlyMemory<byte> buf)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buf.Length} bytes", "WriteInboundWireDataAsync");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Receiving {buf.Length} bytes");
 
             if (_framerHandle != null && buf.Length > 0)
             {
@@ -434,7 +374,6 @@ namespace System.Net.Security
             {
                 Debug.Assert(status == 0, $"CompletionCallback called with status {status}");
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing", "WriteInboundWireDataAsync");
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 TaskCompletionSource tcs = (TaskCompletionSource)handle.Target!;
 
@@ -443,26 +382,11 @@ namespace System.Net.Security
             }
         }
 
-
-        internal int Read(Span<byte> buf)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buf.Length} bytes", "Read");
-
-            lock (_lockObject)
-            {
-                // int length = Math.Min(_inputBuffer.ActiveLength, buf.Length);
-                // _inputBuffer.ActiveSpan.Slice(0, length).CopyTo(buf);
-                // _inputBuffer.Discard(length);
-                return 0;
-            }
-        }
-
         public override bool IsInvalid => _connectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
 
         [UnmanagedCallersOnly]
         private static unsafe void StatusUpdateCallback(IntPtr thisHandle, NetworkFrameworkStatusUpdates statusUpdate, IntPtr data, IntPtr data2)
         {
-            if (NetEventSource.Log.IsEnabled() && statusUpdate != NetworkFrameworkStatusUpdates.DebugLog) NetEventSource.Info(null, $"Received status update: {statusUpdate}", "StatusUpdateCallback");
             SafeDeleteNwContext? nwContext = null;
 
             if (thisHandle != IntPtr.Zero)
@@ -470,10 +394,12 @@ namespace System.Net.Security
                 nwContext = ResolveThisHandle(thisHandle);
                 if (nwContext == null)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, "Failed to resolve context handle", "StatusUpdateCallback");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, "Failed to resolve context handle");
                     return;
                 }
             }
+
+            if (NetEventSource.Log.IsEnabled() && statusUpdate != NetworkFrameworkStatusUpdates.DebugLog) NetEventSource.Info(nwContext, $"Received status update: {statusUpdate}");
 
             try
             {
@@ -481,49 +407,32 @@ namespace System.Net.Security
                 switch (statusUpdate)
                 {
                     case NetworkFrameworkStatusUpdates.FramerStart:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "FramerStart", "StatusUpdateCallback");
                         nwContext?.FramerStartCallback(new SafeNwHandle(Interop.NetworkFramework.Retain(data), true));
                         break;
                     case NetworkFrameworkStatusUpdates.FramerStop:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "FramerStop", "StatusUpdateCallback");
                         nwContext?.FramerStopCallback();
                         break;
                     case NetworkFrameworkStatusUpdates.HandshakeFinished:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "HandshakeFinished", "StatusUpdateCallback");
                         nwContext?.HandshakeFinished();
                         break;
-                    case NetworkFrameworkStatusUpdates.HandshakeFailed:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"HandshakeFailed - errorCode: {data.ToInt32()}", "StatusUpdateCallback");
+                    case NetworkFrameworkStatusUpdates.ConnectionFailed:
                         nwContext?.ConnectionFailed(data.ToInt32());
                         break;
-                    case NetworkFrameworkStatusUpdates.ConnectionReadFinished:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, $"ConnectionReadFinished - dataLength: {data.ToInt32()}", "StatusUpdateCallback");
-                        //nwContext.ConnectionReadFinished(new ReadOnlySpan<byte>((void*)data2, data.ToInt32()));
-                        break;
-                    case NetworkFrameworkStatusUpdates.ConnectionWriteFinished:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "ConnectionWriteFinished", "StatusUpdateCallback");
-                        nwContext?.SetConnectionWriteStatus(data.ToInt32());
-                        break;
-                    case NetworkFrameworkStatusUpdates.ConnectionWriteFailed:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"ConnectionWriteFailed - errorCode: {data.ToInt32()}", "StatusUpdateCallback");
-                        nwContext?.SetConnectionWriteStatus(data.ToInt32());
-                        break;
                     case NetworkFrameworkStatusUpdates.ConnectionCancelled:
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(nwContext, "ConnectionCancelled", "StatusUpdateCallback");
-                        nwContext?.ConnectionCancelled();
+                        nwContext?.ConnectionClosed();
                         break;
                     case NetworkFrameworkStatusUpdates.DebugLog:
-                        HandleDebugLog(data, data2);
+                        HandleDebugLog(nwContext, data, data2);
                         break;
                     default: // We shouldn't hit here.
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"Unknown status update: {statusUpdate}", "StatusUpdateCallback");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"Unknown status update: {statusUpdate}");
                         Debug.Assert(false);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"Exception: {ex.Message}", "StatusUpdateCallback");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"Exception: {ex.Message}");
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(nwContext, $"StatusUpdateCallback failed: {ex}");
@@ -536,84 +445,37 @@ namespace System.Net.Security
         }
         private void FramerStartCallback(SafeNwHandle framerHandle)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Framer started", "FramerStartCallback");
             _framerHandle = framerHandle;
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Framer handle assigned", "FramerStartCallback");
-
-            // The framer is now ready and output handler is set up
-            // Network Framework should automatically generate ClientHello and call framer_output_handler
-            // which should call WriteToConnection to buffer the data
-            if (_handshakeState != HandshakeState.NotStarted && _handshakeState != HandshakeState.Completed)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Handshake in progress, framer ready", "FramerStartCallback");
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Waiting for Network Framework to generate ClientHello automatically", "FramerStartCallback");
-            }
         }
 
         private void FramerStopCallback()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Framer stopped", "FramerStopCallback");
             _framerHandle?.Dispose();
             _framerHandle = null;
         }
 
         private void HandshakeFinished()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "TLS handshake completed successfully", "HandshakeFinished");
-            _handshakeState = HandshakeState.Completed;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "TLS handshake completed successfully");
             _handshakeCompletionSource.TrySetResult(null);
         }
 
         private void ConnectionFailed(int errorCode)
         {
             Exception ex = Interop.AppleCrypto.CreateExceptionForOSStatus(errorCode);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"TLS handshake failed with error code: {errorCode} ({ex.Message})", "HandshakeFailed");
-            _handshakeException = ex;
-            _handshakeState = HandshakeState.Failed;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"TLS handshake failed with error code: {errorCode} ({ex.Message})");
             _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
-            _readStatus = errorCode;
         }
 
-        private void SetConnectionWriteStatus(int statusCode)
+        private void ConnectionClosed()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Write status: {statusCode}", "SetConnectionWriteStatus");
-            _writeStatus = statusCode;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connection was cancelled");
         }
 
-        private void ConnectionCancelled()
+        private static void HandleDebugLog(SafeDeleteNwContext? nwContext, IntPtr _, IntPtr data)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connection was cancelled", "ConnectionCancelled");
-            OperationCanceledException ex = new();
-            _handshakeException = ex;
-            _handshakeState = HandshakeState.Failed;
-            DecryptTask?.TrySetException(ex);
-            DecryptTask = null;
-            _writeStatus = (int)NwOSStatus.SecUserCanceled;
-            _readStatus = (int)NwOSStatus.SecUserCanceled;
-        }
-
-        private static void HandleDebugLog(IntPtr logType, IntPtr data)
-        {
-            switch (logType)
-            {
-                case 1: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"framer_output_handler called with message_length: {data}", "Native"); break;
-                case 2: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"calling writeFunc with buffer_length: {data}", "Native"); break;
-                case 3: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "writeFunc completed", "Native"); break;
-                case 4: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "parse output completed", "Native"); break;
-                case 10: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "framer_start called", "Native"); break;
-                case 11: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "setting output handler", "Native"); break;
-                case 12: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "setting stop/cleanup handlers", "Native"); break;
-                case 13: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "returning nw_framer_start_result_ready", "Native"); break;
-                case 20: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "StartTlsHandshake called", "Native"); break;
-                case 21: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"connection state changed to: {data}", "Native"); break;
-                case 22: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "setting queue and starting connection", "Native"); break;
-                case 23: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "connection started", "Native"); break;
-                case 30: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"minTlsProtocol: {data}", "Native"); break;
-                case 31: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"maxTlsProtocol: {data}", "Native"); break;
-                case 32: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"native min TLS version: {data}", "Native"); break;
-                case 33: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"native max TLS version: {data}", "Native"); break;
-                default: if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, Marshal.PtrToStringAnsi(data)!, "Native"); break;
-            }
+            if (NetEventSource.Log.IsEnabled())
+                NetEventSource.Info(nwContext, Marshal.PtrToStringAnsi(data)!, "Native");
         }
     }
 }

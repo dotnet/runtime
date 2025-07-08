@@ -15,11 +15,11 @@ static dispatch_queue_t _inputQueue;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
-#define LOG(...) \
+#define LOG(state, ...) \
     do { \
         char buff[256]; \
         snprintf(buff, sizeof(buff), __VA_ARGS__); \
-        _statusFunc(0, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(buff)); \
+        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(buff)); \
     } while (0)
 
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
@@ -169,10 +169,9 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
         return -1;
 
     nw_retain(connection); // hold a reference until canceled
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 20, 0); // 20 = StartTlsHandshake called
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
-        (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 21, status); // 21 = status changed
+        LOG(state, "Connection state changed: %d, errorCode: %d", status, errorCode);
         switch (status)
         {
             case nw_connection_state_preparing:
@@ -181,7 +180,7 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
             {
                 if (errorCode != 0 || status == nw_connection_state_failed)
                 {
-                    (_statusFunc)(state, PAL_NwStatusUpdates_HandshakeFailed, (size_t)errorCode, 0);
+                    (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionFailed, (size_t)errorCode, 0);
                 }
             }
             break;
@@ -231,7 +230,6 @@ PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, 
 // This is used by decrypt. We feed data in via AppleCryptoNative_NwProcessInputData and we try to read from the connection.
 PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state, uint32_t length, void* context, ReadCompletionCallback readCompletionCallback)
 {
-    LOG("AppleCryptoNative_NwReadFromConnection called");
     nw_connection_receive(connection, 0, length, ^(dispatch_data_t content, nw_content_context_t ctx, bool is_complete, nw_error_t error) {
         int errorCode = error ? nw_error_get_error_code(error) : 0;
 
@@ -289,9 +287,6 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 // This configures TLS properties
 PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
 {
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 30, (size_t)minTlsProtocol); // 30 = minTlsProtocol
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 31, (size_t)maxTlsProtocol); // 31 = maxTlsProtocol
-    
     nw_protocol_options_t tls_options = nw_tls_create_options();
     sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tls_options);
     if (targetName != NULL)
@@ -300,15 +295,15 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
     }
 
     tls_protocol_version_t version = PalSslProtocolToTlsProtocolVersion(minTlsProtocol);
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 32, (size_t)version); // 32 = native min version
     if ((int)version != 0)
     {
+        LOG(state, "Min TLS version: %d", version);
         sec_protocol_options_set_min_tls_protocol_version(sec_options, version);
     }
     version = PalSslProtocolToTlsProtocolVersion(maxTlsProtocol);
-    (_statusFunc)(state, PAL_NwStatusUpdates_DebugLog, 33, (size_t)version); // 33 = native max version
     if ((int)version != 0)
     {
+        LOG(state, "Max TLS version: %d", version);
         sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
     }
 
@@ -318,7 +313,9 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
         while (offset < alpnLength)
         {
             uint8_t length = alpnBuffer[offset];
-            sec_protocol_options_add_tls_application_protocol(sec_options, (const char*) &alpnBuffer[offset + 1]);
+            const char* alpn = (const char*) &alpnBuffer[offset + 1];
+            LOG(state, "Appending ALPN: %s", alpn);
+            sec_protocol_options_add_tls_application_protocol(sec_options, alpn);
             offset += length + 2;
         }
     }
@@ -328,14 +325,14 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
         for (int i = 0; i < cipherSuitesLength; i++)
         {
             uint16_t cipherSuite = (uint16_t)cipherSuites[i];
-            LOG("Appending cipher suite: 0x%04x", cipherSuite);
+            LOG(state, "Appending cipher suite: 0x%04x", cipherSuite);
             sec_protocol_options_append_tls_ciphersuite(sec_options, cipherSuite);
         }
     }
 
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete) {
-        LOG("Cert validation callback called");
+        LOG(state, "Cert validation callback called");
 
         (void)metadata;
         (void)trust_ref;

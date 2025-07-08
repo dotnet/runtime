@@ -26,12 +26,9 @@ typedef enum
     PAL_NwStatusUpdates_FramerStart = 1,
     PAL_NwStatusUpdates_FramerStop = 2,
     PAL_NwStatusUpdates_HandshakeFinished = 3,
-    PAL_NwStatusUpdates_HandshakeFailed = 4,
-
-    PAL_NwStatusUpdates_ConnectionReadFinished = 100,
-    PAL_NwStatusUpdates_ConnectionWriteFinished = 101,
-    PAL_NwStatusUpdates_ConnectionWriteFailed = 102,
+    PAL_NwStatusUpdates_ConnectionFailed = 4,
     PAL_NwStatusUpdates_ConnectionCancelled = 103,
+
     PAL_NwStatusUpdates_DebugLog = 200,
 } PAL_NwStatusUpdates;
 
