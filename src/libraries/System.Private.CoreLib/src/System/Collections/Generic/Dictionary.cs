@@ -409,7 +409,7 @@ namespace System.Collections.Generic
                 if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                     comparer == null)
                 {
-                    uint hashCode = (uint)key.GetHashCode();
+                    uint hashCode = (uint)EqualityComparer<TKey>.Default.GetHashCode(key);
                     int i = GetBucket(hashCode);
                     Entry[]? entries = _entries;
                     uint collisionCount = 0;
