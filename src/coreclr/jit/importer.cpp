@@ -57,8 +57,7 @@ bool Compiler::impILConsumesAddr(var_types typ, const BYTE* codeAddr, const BYTE
     {
         case CEE_LDFLD:
         {
-            // addr followed by LDFLD for non-struct types
-            return !varTypeIsStruct(typ);
+            return true;
         }
 
         default:
