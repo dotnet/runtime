@@ -254,8 +254,9 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // infrequently executed methods, we apply the following heuristics to exclude:
     //
     const bool preferSize   = m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    const bool isCctor      = ((m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR);
-    m_comp->fgPgoSingleEdge = !isCctor && !preferSize && m_comp->opts.callInstrCount < 10;
+    const bool isCctor      = (m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR;
+    m_comp->fgPgoSingleEdge = !isCctor && !preferSize && (m_comp->opts.callInstrCount < 10);
+
     if (m_comp->fgPgoSingleEdge)
     {
         for (BasicBlock* const block : m_comp->Blocks())
