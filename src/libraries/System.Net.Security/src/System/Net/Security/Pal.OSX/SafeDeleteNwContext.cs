@@ -150,11 +150,11 @@ namespace System.Net.Security
 
             TaskCompletionSource<long> tcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Cancellation requested for WriteAsync");
-                tcs.TrySetCanceled();
-            });
+                ((TaskCompletionSource<long>)state!).TrySetCanceled(token);
+            }, tcs);
 
             GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
 
