@@ -2868,7 +2868,8 @@ helper_thread (void *arg)
 		}
 
 		if (FD_ISSET (log_profiler.server_socket, &rfds)) {
-			int fd = accept (log_profiler.server_socket, NULL, NULL);
+			int fd;
+			while (-1 == (fd = accept (log_profiler.server_socket, NULL, NULL)) && errno == EINTR);
 
 			if (fd != -1) {
 #ifndef HOST_WIN32

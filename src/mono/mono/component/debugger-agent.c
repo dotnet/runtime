@@ -981,7 +981,7 @@ static SOCKET
 socket_transport_accept (SOCKET socket_fd)
 {
 	MONO_REQ_GC_SAFE_MODE;
-	conn_fd = accept (socket_fd, NULL, NULL);
+	while (-1 == (conn_fd = accept (socket_fd, NULL, NULL)) && errno == EINTR);
 
 	if (conn_fd == INVALID_SOCKET) {
 		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d: %s.\n", (int)socket_fd, strerror (get_last_sock_error()));
