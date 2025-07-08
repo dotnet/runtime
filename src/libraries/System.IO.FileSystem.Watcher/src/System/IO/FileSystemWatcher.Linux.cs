@@ -206,6 +206,8 @@ namespace System.IO
 
             private WatchedDirectory? AddOrUpdateWatchedDirectory(Watcher watcher, WatchedDirectory? parent, string directoryPath, Interop.Sys.NotifyEvents watchFilters, bool followLinks = false, bool ignoreMissing = true)
             {
+                Debug.Assert(!Monitor.IsEntered(watcher)); // We musn't hold the watcher lock prior to taking the _addLock.
+
                 WatchedDirectory? inotifyWatchesToRemove = null;
                 WatchedDirectory dir;
 
@@ -280,6 +282,7 @@ namespace System.IO
                         {
                             Debug.Assert(watcher.RootDirectory is null);
                             dir = new WatchedDirectory(watch, watcher, "", parent);
+                            watcher.RootDirectory = dir;
                         }
                         else
                         {
@@ -342,6 +345,8 @@ namespace System.IO
 
             private void RemoveUnusedINotifyWatches(WatchedDirectory removedDir, int ignoredFd = -1)
             {
+                Debug.Assert(!Monitor.IsEntered(removedDir.Watcher)); // We musn't hold the watcher lock prior to taking the _addLock.
+
                 // _addLock stops handles from being added while we'll removing watches.
                 // This is needed to prevent removing watch descriptors between INotifyAddWatch and adding them to the Watch.Watchers.
                 // _addLock is also used to synchronizes with Stop.
@@ -362,12 +367,12 @@ namespace System.IO
                     }
 
                     if (removedDir.Children is { } children)
+                    {
+                        foreach (var child in children)
                         {
-                            foreach (var child in children)
-                            {
-                                RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
-                            }
+                            RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
                         }
+                    }
                 }
                 finally
                 {
@@ -997,6 +1002,7 @@ namespace System.IO
                     Debug.Assert(_inotify is null);
 
                     INotify? inotify;
+                    WatchedDirectory? rootDirectory;
                     lock (s_watchersLock)
                     {
                         inotify = s_currentInotify;
@@ -1010,21 +1016,27 @@ namespace System.IO
 
                         _inotify = inotify;
 
-                        if (CreateRootWatch())
+                        rootDirectory = CreateRootWatch();
+                        if (rootDirectory is not null)
                         {
                             _inotify.AddWatcher(this);
                         }
                     }
 
-                    if (RootDirectory is { } dir && IncludeSubdirectories)
+                    _ = DequeueEvents();
+
+                    if (rootDirectory is not null && IncludeSubdirectories)
                     {
                         if (IncludeSubdirectories)
                         {
-                            WatchChildDirectories(dir, BasePath, includeBasePath: false);
+                            WatchChildDirectories(rootDirectory, BasePath, includeBasePath: false);
                         }
                     }
 
                     _emitEvents = true;
+
+                    WatchedDirectory? CreateRootWatch()
+                        => _inotify.AddOrUpdateWatchedDirectory(this, parent: null, BasePath, WatchFilters, followLinks: true, ignoreMissing: false);
                 }
 
                 public void Stop()
@@ -1049,19 +1061,6 @@ namespace System.IO
                         Debug.Assert(_inotify is not null);
                         _inotify.RemoveWatchedDirectory(root);
                     }
-                }
-
-                private bool CreateRootWatch()
-                {
-                    Debug.Assert(_inotify is not null);
-
-                    RootDirectory = _inotify.AddOrUpdateWatchedDirectory(this, parent: null, BasePath, WatchFilters, followLinks: true, ignoreMissing: false);
-
-                    bool hasRootWatch = RootDirectory is not null;
-
-                    _ = DequeueEvents();
-
-                    return hasRootWatch;
                 }
 
                 private async Task DequeueEvents()
