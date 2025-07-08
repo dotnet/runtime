@@ -972,10 +972,6 @@ public class InterpreterTest
         // HACK: The below try block is constructed to always throw and provides an easy way to test how intrinsics behave in the interpreter
         //  depending on which of our various modes you're in (native fallback, all intrinsics disabled, etc.)
         try {
-            // HACK: FIXME: This console writeline is needed right now because throws at the start of a try block in the interpreter
-            //  aren't currently caught correctly
-            Console.WriteLine("Inside try block");
-
             // NOTE: Depending on the target architecture, these method calls will not have FLG_INTRINSIC, so the interpreter will not
             //  recognize them as intrinsics and handle them. This *should* be fine, because we conditionally compile CoreLib based on
             //  architecture, providing pure-managed implementations of the relevant methods that throw a PNSE.
