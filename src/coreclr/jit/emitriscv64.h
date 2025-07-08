@@ -62,11 +62,14 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
-instruction getCompressedIns_R_R_R(
-    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
-
 bool tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
+instruction tryGetCompressedIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
+
+regNumber   tryGetRvcRegisterNumber(regNumber reg);
+instruction tryGetCompressedArithmeticIns(instruction ins);
+regNumber   getRegNumberFromRvcReg(unsigned rvcReg);
 
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
@@ -106,7 +109,8 @@ static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20);
 static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13);
 static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21);
 
-static code_t insEncodeCRTypeInstr(instruction ins, unsigned rd_rs1, unsigned rs2);
+static code_t insEncodeCRTypeInstr(instruction ins, unsigned rdRs1, unsigned rs2);
+static code_t insEncodeCATypeInstr(instruction ins, unsigned rdRs1Rvc, unsigned rs2Rvc);
 
 #ifdef DEBUG
 static void emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);

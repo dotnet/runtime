@@ -994,7 +994,7 @@ void emitter::emitIns_R_R_R(
 bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
-    instruction compressedIns = getCompressedIns_R_R_R(ins, attr, rd, rs1, rs2, opt);
+    instruction compressedIns = tryGetCompressedIns_R_R_R(ins, attr, rd, rs1, rs2, opt);
     if (compressedIns == INS_none)
     {
         return false;
@@ -1003,9 +1003,25 @@ bool emitter::tryEmitCompressedIns_R_R_R(
     code_t code;
     switch (compressedIns)
     {
+        case INS_c_mv:
+            code = insEncodeCRTypeInstr(compressedIns, rd, rs2);
+            break;
         case INS_c_add:
             code = insEncodeCRTypeInstr(compressedIns, rd, rs2);
             break;
+        case INS_c_and:
+        case INS_c_or:
+        case INS_c_xor:
+        case INS_c_sub:
+        case INS_c_addw:
+        case INS_c_subw:
+        {
+            regNumber rdRvc  = tryGetRvcRegisterNumber(rd);
+            regNumber rs2Rvc = tryGetRvcRegisterNumber(rs2);
+            assert((rdRvc != REG_NA) && (rs2Rvc != REG_NA));
+            code = insEncodeCATypeInstr(compressedIns, rdRvc, rs2Rvc);
+            break;
+        }
         default:
             return false;
     };
@@ -1024,21 +1040,114 @@ bool emitter::tryEmitCompressedIns_R_R_R(
     return true;
 }
 
-instruction emitter::getCompressedIns_R_R_R(
+instruction emitter::tryGetCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
     switch (ins)
     {
         case INS_add:
-            if ((rd == rs1) && rd != REG_R0 && rs2 != REG_R0)
+        {
+            if ((rs1 == REG_R0) && (rd != REG_R0) && (rs2 != REG_R0))
+            {
+                return INS_c_mv;
+            }
+            else if ((rd == rs1) && (rd != REG_R0) && (rs2 != REG_R0))
             {
                 return INS_c_add;
             }
             break;
+        }
+        case INS_and:
+        case INS_or:
+        case INS_xor:
+        case INS_sub:
+        case INS_addw:
+        case INS_subw:
+        {
+            regNumber rdRvc  = tryGetRvcRegisterNumber(rd);
+            regNumber rs2Rvc = tryGetRvcRegisterNumber(rs2);
+            if ((rd == rs1) && (rdRvc != REG_NA) && (rs2Rvc != REG_NA))
+            {
+                return tryGetCompressedArithmeticIns(ins);
+            }
+            break;
+        }
         default:
             break;
     };
     return INS_none;
+}
+
+regNumber emitter::tryGetRvcRegisterNumber(regNumber reg)
+{
+    switch (reg)
+    {
+        case REG_FP:
+            return (regNumber)0;
+        case REG_S1:
+            return (regNumber)1;
+        case REG_A0:
+            return (regNumber)2;
+        case REG_A1:
+            return (regNumber)3;
+        case REG_A2:
+            return (regNumber)4;
+        case REG_A3:
+            return (regNumber)5;
+        case REG_A4:
+            return (regNumber)6;
+        case REG_A5:
+            return (regNumber)7;
+        default:
+            return REG_NA;
+    }
+}
+
+regNumber emitter::getRegNumberFromRvcReg(unsigned rvcReg)
+{
+    assert((rvcReg >> 3) == 0);
+    switch (rvcReg)
+    {
+        case 0:
+            return REG_FP;
+        case 1:
+            return REG_S1;
+        case 2:
+            return REG_A0;
+        case 3:
+            return REG_A1;
+        case 4:
+            return REG_A2;
+        case 5:
+            return REG_A3;
+        case 6:
+            return REG_A4;
+        case 7:
+            return REG_A5;
+        default:
+            unreached();
+    }
+}
+
+instruction emitter::tryGetCompressedArithmeticIns(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_and:
+            return INS_c_and;
+        case INS_or:
+            return INS_c_or;
+        case INS_xor:
+            return INS_c_xor;
+        case INS_sub:
+            return INS_c_sub;
+        case INS_addw:
+            return INS_c_addw;
+        case INS_subw:
+            return INS_c_subw;
+        default:
+            return INS_none;
+    }
 }
 
 /*****************************************************************************
@@ -2738,16 +2847,39 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ emitter::code_t emitter::insEncodeCRTypeInstr(instruction ins, unsigned rd_rs1, unsigned rs2)
+/*static*/ emitter::code_t emitter::insEncodeCRTypeInstr(instruction ins, unsigned rdRs1, unsigned rs2)
 {
-    assert(ins == INS_c_add);
+    assert((INS_c_mv <= ins) && (ins <= INS_c_add));
     code_t insCode = emitInsCode(ins);
 
     assertCodeLength(insCode, 16);
-    assertCodeLength(rd_rs1, 5);
+    assertCodeLength(rdRs1, 5);
     assertCodeLength(rs2, 5);
 
-    return insCode | (rs2 << 2) | (rd_rs1 << 7);
+    return insCode | (rs2 << 2) | (rdRs1 << 7);
+}
+
+/*****************************************************************************
+ *
+ *  Emit a 16-bit RISCV64C CA-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter "Compressed Instruction Formats"
+ *  CA Format:
+ *  15-----------------------10-9----------7-6------5-4---------2-1---0
+ *  |          funct6          |  rd'/rs1' | funct2 |    rs2'   | op |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeCATypeInstr(instruction ins, unsigned rdRs1Rvc, unsigned rs2Rvc)
+{
+    assert((INS_c_and <= ins) && (ins <= INS_c_subw));
+    code_t insCode = emitInsCode(ins);
+
+    assertCodeLength(insCode, 16);
+    assertCodeLength(rdRs1Rvc, 3);
+    assertCodeLength(rs2Rvc, 3);
+
+    return insCode | (rs2Rvc << 2) | (rdRs1Rvc << 7);
 }
 
 static constexpr unsigned kInstructionOpcodeMask = 0x7f;
@@ -5011,11 +5143,51 @@ void emitter::emitDispInsName(
         case MajorOpcode::JrJalrMvAdd:
         {
             unsigned funct4 = (code >> 12) & 0xf;
-            unsigned rd_rs1 = (code >> 7) & 0x1f;
+            unsigned rdRs1  = (code >> 7) & 0x1f;
             unsigned rs2    = (code >> 2) & 0x1f;
-            if (funct4 == 0b1001 && rd_rs1 != REG_R0 && rs2 != REG_R0)
+            if (funct4 == 0b1001 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
-                printf("add            %s, %s, %s\n", RegNames[rd_rs1], RegNames[rd_rs1], RegNames[rs2]);
+                printf("add            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+            }
+            else if (funct4 == 0b1000 && rdRs1 != REG_R0 && rs2 != REG_R0)
+            {
+                printf("mv             %s, %s\n", RegNames[rdRs1], RegNames[rs2]);
+            }
+            else
+            {
+                NO_WAY("illegal ins within emitDisInsName!");
+            }
+            return;
+        }
+        case MajorOpcode::MiscAlu:
+        {
+            unsigned funct6 = (code >> 10) & 0x3f;
+            unsigned funct2 = (code >> 5) & 0x3;
+            unsigned rdRs1  = getRegNumberFromRvcReg(((code >> 7) & 0x7));
+            unsigned rs2    = getRegNumberFromRvcReg(((code >> 2) & 0x7));
+            if (funct6 == 0b100011 && funct2 == 0b00)
+            {
+                printf("sub            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+            }
+            else if (funct6 == 0b100011 && funct2 == 0b01)
+            {
+                printf("xor            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+            }
+            else if (funct6 == 0b100011 && funct2 == 0b10)
+            {
+                printf("or             %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+            }
+            else if (funct6 == 0b100011 && funct2 == 0b11)
+            {
+                printf("and            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+            }
+            else if (funct6 == 0b100111 && funct2 == 0b00)
+            {
+                printf("subw           %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+            }
+            else if (funct6 == 0b100111 && funct2 == 0b01)
+            {
+                printf("addw           %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
             }
             else
             {
@@ -5827,6 +5999,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case MajorOpcode::NmSub:
         case MajorOpcode::OpFp:
         case MajorOpcode::JrJalrMvAdd:
+        case MajorOpcode::MiscAlu:
             if (id->idInsIs(INS_fadd_s, INS_fsub_s, INS_fmul_s, INS_fmadd_s, INS_fmsub_s, INS_fnmadd_s, INS_fnmsub_s))
             {
                 result.insLatency = PERFSCORE_LATENCY_5C;
