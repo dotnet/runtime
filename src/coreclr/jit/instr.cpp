@@ -1465,7 +1465,7 @@ insOpts CodeGen::AddEmbBroadcastMode(insOpts instOptions)
 {
     assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     unsigned result = static_cast<unsigned>(instOptions);
-    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb_er_rd);
+    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb);
 }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 
