@@ -9127,14 +9127,16 @@ mono_jiterp_get_simd_opcode (int arity, int index)
 #define JITERP_OPINFO_TYPE_DREGS 3
 #define JITERP_OPINFO_TYPE_OPARGTYPE 4
 
-EMSCRIPTEN_KEEPALIVE int
+EMSCRIPTEN_KEEPALIVE intptr_t
 mono_jiterp_get_opcode_info (int opcode, int type)
 {
+	MH_LOG("Test jiterp opcode %d type %d\n", opcode, type);
 	g_assert ((opcode >= 0) && (opcode <= MINT_LASTOP));
 	switch (type) {
 		case JITERP_OPINFO_TYPE_NAME:
 			// We know this conversion is safe because wasm pointers are 32 bits
-			return (int)(void*)(mono_interp_opname (opcode));
+			// not in wasm64 they aren't			
+			return (intptr_t)(mono_interp_opname (opcode));
 		case JITERP_OPINFO_TYPE_LENGTH:
 			return mono_interp_oplen [opcode];
 		case JITERP_OPINFO_TYPE_SREGS:

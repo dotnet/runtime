@@ -1213,7 +1213,11 @@ class Cfg {
         this.entryIp = ip;
         // Skip over the enter opcode
         const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
-        this.firstOpcodeIp = ip + <any>(enterSizeU16 * 2);
+        if (typeof enterSizeU16 === "bigint") {
+            this.firstOpcodeIp = (ip as unknown as bigint) + (enterSizeU16 * 2n) as unknown as MintOpcodePtr;
+        } else if (typeof enterSizeU16 == "number") {
+            this.firstOpcodeIp = ((ip as unknown as number) + (enterSizeU16 * 2)) as unknown as MintOpcodePtr;
+        }
         this.appendBlob();
         mono_assert(this.segments.length === 1, "expected 1 segment");
         mono_assert(this.segments[0].type === "blob", "expected blob");

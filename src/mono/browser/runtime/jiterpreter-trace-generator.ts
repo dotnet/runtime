@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MonoMethod } from "./types/internal";
-import { NativePointer } from "./types/emscripten";
+import { NativePointer, VoidPtr } from "./types/emscripten";
 import {
     getU16, getI16,
     getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned, localHeapViewU8,
@@ -176,7 +176,13 @@ function getOpcodeLengthU16 (ip: MintOpcodePtr, opcode: MintOpcode) {
             // len = MINT_SWITCH_LEN (n);
             const numDisplacements = getArgU32(ip, 2);
             // #define MINT_SWITCH_LEN(n) (4 + (n) * 2)
-            result = 4 + (numDisplacements * 2);
+            if (typeof opLengthU16 === "bigint" || typeof numDisplacements === "bigint") {
+                // Ensure both operands are bigint for arithmetic
+                const n = BigInt(numDisplacements);
+                result = (4n + (n * 2n)) as unknown as VoidPtr;
+            } else {
+                result = (4 + (numDisplacements * 2)) as unknown as VoidPtr;
+            }
         }
         return result;
     } catch (err) {
@@ -232,7 +238,7 @@ export function generateBackwardBranchTable (
         // IP of the current opcode in U16s, relative to startOfBody. This is what the back branch table uses
         const rip16 = (<any>ip - <any>startOfBody) / 2;
         const opcode = <MintOpcode>getU16(ip);
-        const opLengthU16 = getOpcodeLengthU16(ip, opcode);
+        const opLengthU16 = getOpcodeLengthU16(ip, opcode) as any as number;
 
         if (opcode === MintOpcode.MINT_SWITCH) {
             // FIXME: Once the cfg supports back-branches in jump tables, uncomment this to
@@ -355,9 +361,9 @@ export function generateWasmBody (
         }
 
         let opcode = getU16(ip);
-        const numSregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
-            numDregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Dregs),
-            opLengthU16 = getOpcodeLengthU16(ip, opcode);
+        const numSregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs) as any as number,
+            numDregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Dregs) as any as number,
+            opLengthU16 = getOpcodeLengthU16(ip, opcode) as any as number;
 
         const isSimdIntrins = (opcode >= MintOpcode.MINT_SIMD_INTRINS_P_P) &&
             (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP);
@@ -2839,8 +2845,8 @@ function append_call_handler_store_ret_ip (
 function getBranchDisplacement (
     ip: MintOpcodePtr, opcode: MintOpcode
 ): number | undefined {
-    const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
-        payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
+    const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType) as any as number,
+        payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs) as any as number,
         payloadAddress = <any>ip + 2 + (payloadOffset * 2);
 
     let result: number;
@@ -2963,7 +2969,7 @@ function emit_branch (
             if (relopbranchTable[opcode] === undefined)
                 throw new Error(`Unsupported relop branch opcode: ${getOpcodeName(opcode)}`);
 
-            if (cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length) !== 4)
+            if (cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length) as any as number !== 4)
                 throw new Error(`Unsupported long branch opcode: ${getOpcodeName(opcode)}`);
 
             break;
@@ -4088,7 +4094,7 @@ function emit_atomics (
 }
 
 function emit_switch (builder: WasmBuilder, ip: MintOpcodePtr, exitOpcodeCounter: number) : boolean {
-    const lengthU16 = getOpcodeLengthU16(ip, MintOpcode.MINT_SWITCH),
+    const lengthU16 = getOpcodeLengthU16(ip, MintOpcode.MINT_SWITCH) as any as number,
         table = decodeSwitch(ip);
     let failed = false;
 

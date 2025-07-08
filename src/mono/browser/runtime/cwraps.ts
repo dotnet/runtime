@@ -243,7 +243,7 @@ export interface t_Cwraps {
     mono_jiterp_get_simd_intrinsic(arity: number, index: number): VoidPtr;
     mono_jiterp_get_simd_opcode(arity: number, index: number): number;
     mono_jiterp_get_arg_offset(imethod: number, sig: number, index: number): number;
-    mono_jiterp_get_opcode_info(opcode: number, type: number): number;
+    mono_jiterp_get_opcode_info(opcode: number, type: number): VoidPtr;
     mono_wasm_is_zero_page_reserved(): number;
     mono_jiterp_is_special_interface(klass: number): number;
     mono_jiterp_initialize_table(type: number, firstIndex: number, lastIndex: number): void;
