@@ -994,6 +994,7 @@ void emitter::emitIns_R_R_R(
 bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
+    assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
     instruction compressedIns = tryGetCompressedIns_R_R_R(ins, attr, rd, rs1, rs2, opt);
     if (compressedIns == INS_none)
     {
