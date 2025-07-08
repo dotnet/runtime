@@ -272,7 +272,13 @@ namespace pal
         return result;
     }
 
-    inline int remove(const char_t* path) { return ::remove(path); }
+    inline int remove(const char_t* path)
+    {
+        int result;
+        while (-1 == (result = ::remove(path)) && errno == EINTR);
+        return result;
+    }
+
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }

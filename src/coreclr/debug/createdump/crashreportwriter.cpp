@@ -48,7 +48,7 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
         printf_error("Writing the crash report file FAILED\n");
 
         // Delete the partial json file on error
-        remove(crashReportFile.c_str());
+        while (-1 == remove(crashReportFile.c_str()) && errno == EINTR);
     }
 }
 

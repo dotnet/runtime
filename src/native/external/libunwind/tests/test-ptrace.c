@@ -234,7 +234,7 @@ main (int argc, char **argv)
       /* child */
 
       if (!verbose)
-	while (-1 == dup2 (open ("/dev/null", O_WRONLY), 1) && errno == EINTR);
+	dup2 (open ("/dev/null", O_WRONLY), 1);
 
 #if HAVE_DECL_PTRACE_TRACEME
       long stat = ptrace (PTRACE_TRACEME, 0, 0, 0);

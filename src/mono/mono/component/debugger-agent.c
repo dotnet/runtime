@@ -874,7 +874,7 @@ mono_debugger_agent_cleanup (void)
 	mono_de_cleanup ();
 
 	if (file_check_valid_memory != -1) {
-		remove (filename_check_valid_memory);
+		while (-1 == remove (filename_check_valid_memory) && errno == EINTR);
 		g_free (filename_check_valid_memory);
 		close (file_check_valid_memory);
 	}

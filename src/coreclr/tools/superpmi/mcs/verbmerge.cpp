@@ -6,6 +6,7 @@
 #include "simpletimer.h"
 #include "logging.h"
 #include "spmiutil.h"
+#include <errno.h>
 #include <stdio.h>
 #ifdef TARGET_UNIX
 #include <sys/types.h>
@@ -678,7 +679,8 @@ CLEAN_UP:
     if (result != 0)
     {
         // There was a failure. Delete the output file, to avoid leaving some half-created file.
-        int st = remove(nameOfOutputFile);
+        int st;
+        while (-1 == (st = remove(nameOfOutputFile)) && errno == EINTR);
         if (st != 0)
         {
             LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());
