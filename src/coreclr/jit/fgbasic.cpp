@@ -2310,11 +2310,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // generate for this ldfld, and we require that we
                     // won't need the address of this local at all
 
-                    const bool notStruct    = !varTypeIsStruct(lvaGetDesc(varNum));
                     const bool notLastInstr = (codeAddr < codeEndp - sz);
                     const bool notDebugCode = !opts.compDbgCode;
 
-                    if (notStruct && notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz))
+                    if (notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz, codeEndp))
                     {
                         // We can skip the addrtaken, as next IL instruction consumes
                         // the address.
