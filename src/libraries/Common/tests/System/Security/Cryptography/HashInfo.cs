@@ -32,13 +32,23 @@ namespace Test.Cryptography
         public static readonly HashInfo Sha384 = new HashInfo(Sha384Oid, 384 / 8, HashAlgorithmName.SHA384);
         public static readonly HashInfo Sha512 = new HashInfo(Sha512Oid, 512 / 8, HashAlgorithmName.SHA512);
 
+        private static readonly HashAlgorithmName HashAlgSHAKE128 = new HashAlgorithmName("BOGUS-SHAKE128");
+        private static readonly HashAlgorithmName HashAlgSHAKE256 = new HashAlgorithmName("BOGUS-SHAKE256");
 #if NET
-        public static readonly HashInfo Sha3_256 = new HashInfo(Sha3_256Oid, 256 / 8, HashAlgorithmName.SHA3_256);
-        public static readonly HashInfo Sha3_384 = new HashInfo(Sha3_384Oid, 384 / 8, HashAlgorithmName.SHA3_384);
-        public static readonly HashInfo Sha3_512 = new HashInfo(Sha3_512Oid, 512 / 8, HashAlgorithmName.SHA3_512);
-        public static readonly HashInfo Shake128 = new HashInfo(Shake128Oid, 256 / 8, new HashAlgorithmName("SHAKE128"));
-        public static readonly HashInfo Shake256 = new HashInfo(Shake256Oid, 512 / 8, new HashAlgorithmName("SHAKE256"));
+        private static readonly HashAlgorithmName HashAlgSHA3_256 = HashAlgorithmName.SHA3_256;
+        private static readonly HashAlgorithmName HashAlgSHA3_384 = HashAlgorithmName.SHA3_384;
+        private static readonly HashAlgorithmName HashAlgSHA3_512 = HashAlgorithmName.SHA3_512;
+#else
+        private static readonly HashAlgorithmName HashAlgSHA3_256 = new HashAlgorithmName("BOGUS-SHA3_256");
+        private static readonly HashAlgorithmName HashAlgSHA3_384 = new HashAlgorithmName("BOGUS-SHA3_384");
+        private static readonly HashAlgorithmName HashAlgSHA3_512 = new HashAlgorithmName("BOGUS-SHA3_512");
 #endif
+
+        public static readonly HashInfo Sha3_256 = new HashInfo(Sha3_256Oid, 256 / 8, HashAlgSHA3_256);
+        public static readonly HashInfo Sha3_384 = new HashInfo(Sha3_384Oid, 384 / 8, HashAlgSHA3_384);
+        public static readonly HashInfo Sha3_512 = new HashInfo(Sha3_512Oid, 512 / 8, HashAlgSHA3_512);
+        public static readonly HashInfo Shake128 = new HashInfo(Shake128Oid, 256 / 8, HashAlgSHAKE128);
+        public static readonly HashInfo Shake256 = new HashInfo(Shake256Oid, 512 / 8, HashAlgSHAKE256);
 
         public string Oid { get; }
         public HashAlgorithmName Name { get; }

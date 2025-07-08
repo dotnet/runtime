@@ -114,6 +114,8 @@
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CommonAEADTests.cs"
              Link="CommonTest\System\Security\Cryptography\CommonAEADTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HashInfo.cs"
+             Link="CommonTest\System\Security\Cryptography\HashInfo.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
