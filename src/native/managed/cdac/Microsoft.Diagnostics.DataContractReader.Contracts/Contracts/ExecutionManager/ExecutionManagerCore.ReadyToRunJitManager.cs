@@ -85,16 +85,21 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfo);
 
-            NativeReader reader = new NativeReader(Target, imageBase);
-            NativeArray debugInfoArray = new NativeArray(reader, debugInfoData.VirtualAddress);
+            ILCompiler.Reflection.ReadyToRun.NativeReader imageReader = new(
+                new TargetStream(Target, imageBase, debugInfoData.Size),
+                Target.IsLittleEndian
+            );
+            ILCompiler.Reflection.ReadyToRun.NativeArray debugInfoArray = new(imageReader, debugInfoData.VirtualAddress);
 
-            if (!debugInfoArray.TryGetAt(index, out uint offset))
+            int offset = 0;
+            if (!debugInfoArray.TryGetAt(index, ref offset))
                 // If the index is not found in the debug info array, return null
                 return TargetPointer.Null;
 
-            uint debugInfoOffset = reader.DecodeUnsigned(offset, out uint lookBack);
+            uint lookBack = 0;
+            uint debugInfoOffset = imageReader.DecodeUnsigned((uint)offset, ref lookBack);
             if (lookBack != 0)
-                debugInfoOffset = offset - lookBack;
+                debugInfoOffset = (uint)offset - lookBack;
 
             return imageBase + debugInfoOffset;
         }

@@ -17,5 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>
 </Project>
