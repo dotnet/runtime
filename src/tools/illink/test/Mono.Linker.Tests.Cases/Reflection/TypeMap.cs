@@ -16,24 +16,24 @@ using Mono.Linker.Tests.Cases.Reflection;
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), By = Tool.Trimmer)]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
-[assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckClass", typeof(TargetType2), typeof(AllocatedNoTypeCheckClass))]
-[assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckStruct", typeof(TargetType3), typeof(AllocatedNoTypeCheckStruct))]
-[assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnreferenced", typeof(UnreferencedTargetType), typeof(UnreferencedTrimTarget))]
+[assembly: TypeMap<UsedTypeMap>(nameof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClass))]
+[assembly: TypeMap<UsedTypeMap>(nameof(AlloctedNoTypeCheckStructTarget), typeof(AlloctedNoTypeCheckStructTarget), typeof(AllocatedNoTypeCheckStruct))]
+[assembly: TypeMap<UsedTypeMap>(nameof(UnreferencedTargetType), typeof(UnreferencedTargetType), typeof(UnreferencedTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TypeMapEntryOnly", typeof(TypeMapEntryOnly))]
-[assembly: TypeMap<UsedTypeMap>("UnboxedOnlyType", typeof(TargetType6), typeof(UnboxedOnly))]
-[assembly: TypeMap<UsedTypeMap>("TypedRefSource", typeof(TargetType7), typeof(TypedRefSource))]
-[assembly: TypeMap<UsedTypeMap>("TypedRefTarget", typeof(TargetType8), typeof(TypedRefTarget))]
-[assembly: TypeMap<UsedTypeMap>("Constrained", typeof(TargetType9), typeof(Constrained))]
-[assembly: TypeMap<UsedTypeMap>("ConstrainedStatic", typeof(TargetType10), typeof(ConstrainedStatic))]
-[assembly: TypeMap<UsedTypeMap>("Ldobj", typeof(TargetType11), typeof(LdobjType))]
-[assembly: TypeMap<UsedTypeMap>("ArrayElement", typeof(TargetType12), typeof(ArrayElement))]
-[assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(TargetType13), typeof(ConstructedNoTypeCheckNoBoxStruct))]
+[assembly: TypeMap<UsedTypeMap>(nameof(UnboxedOnlyTarget), typeof(UnboxedOnlyTarget), typeof(UnboxedOnly))]
+[assembly: TypeMap<UsedTypeMap>("TypedRefSource", typeof(MakeRefTargetType), typeof(MakeRef))]
+[assembly: TypeMap<UsedTypeMap>("TypedRefTarget", typeof(RefValueTargetType), typeof(RefValue))]
+[assembly: TypeMap<UsedTypeMap>("Constrained", typeof(ConstrainedTarget), typeof(Constrained))]
+[assembly: TypeMap<UsedTypeMap>("ConstrainedStatic", typeof(ConstraintedStaticTarget), typeof(ConstrainedStatic))]
+[assembly: TypeMap<UsedTypeMap>("Ldobj", typeof(LdobjTarget), typeof(LdobjType))]
+[assembly: TypeMap<UsedTypeMap>("ArrayElement", typeof(ArrayElementTarget), typeof(ArrayElement))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(ConstructedNoTypeCheckOrBoxTarget), typeof(ConstructedNoTypeCheckNoBoxStruct))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
-[assembly: TypeMapAssociation<UsedTypeMap>(typeof(TypeCheckOnlyClass), typeof(ProxyType2))]
-[assembly: TypeMapAssociation<UsedTypeMap>(typeof(AllocatedNoBoxStructType), typeof(ProxyType3))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(TypeCheckOnlyClass), typeof(TypeCheckOnlyProxy))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(AllocatedNoBoxStructType), typeof(AllocatedNoBoxProxy))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(I), typeof(IImpl))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(IInterfaceWithDynamicImpl), typeof(IDynamicImpl))]
-[assembly: TypeMapAssociation<UsedTypeMap>(typeof(ArrayElement), typeof(ProxyType4))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(ArrayElement), typeof(ArrayElementProxy))]
 
 [assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
@@ -43,6 +43,8 @@ using Mono.Linker.Tests.Cases.Reflection;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
     [Kept]
+    [Define("IL_ASSEMBLY_AVAILABLE")]
+    [SetupCompileBefore("ILTypeMap.dll", [ "Dependencies/ILTypeMap.il" ])]
     [SetupCompileArgument("/unsafe")]
     class TypeMap
     {
@@ -83,11 +85,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
                 staticMethodPtr();
             }
 
-            TypedRefSource s = default;
+            MakeRef s = default;
 
             TypedReference r = __makeref(s);
 
-            TypedRefTarget t2 = __refvalue(r, TypedRefTarget);
+            RefValue t2 = __refvalue(r, RefValue);
 
             ConstrainedCall<Constrained>(default);
 
@@ -114,6 +116,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
             Console.WriteLine(new ArrayElement[1]);
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
+
+#if IL_ASSEMBLY_AVAILABLE
+            Console.WriteLine(TypeMapping.GetOrCreateExternalTypeMapping<ILTypeMap>());
+            ILTypeMap.Run();
+#endif
         }
 
         [Kept]
@@ -258,10 +265,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class TypeMapEntryOnly;
 
     [Kept]
-    class TargetType2;
+    class AllocatedNoTypeCheckClassTarget;
 
     [Kept]
-    class TargetType3;
+    class AlloctedNoTypeCheckStructTarget;
 
     [Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
     class TypeCheckOnlyClass;
@@ -287,25 +294,25 @@ namespace Mono.Linker.Tests.Cases.Reflection
     }
 
     [Kept]
-    class TargetType6;
+    class UnboxedOnlyTarget;
 
     [Kept]
     struct UnboxedOnly;
 
     [Kept]
-    class TargetType7;
+    class MakeRefTargetType;
 
     [Kept]
-    class TargetType8;
+    class RefValueTargetType;
 
     [Kept]
-    struct TypedRefSource;
+    struct MakeRef;
 
     [Kept]
-    struct TypedRefTarget;
+    struct RefValue;
 
     [Kept(By = Tool.Trimmer)] // NativeAOT can devirtualize the constrained call, so it can remove the interface entirely.
-    class TargetType9;
+    class ConstrainedTarget;
 
     [Kept(By = Tool.Trimmer)]
     interface IInterface
@@ -326,7 +333,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     }
 
     [Kept(By = Tool.Trimmer)] // NativeAot can devirtualize the constrained call, so it can remove the interface entirely.
-    class TargetType10;
+    class ConstraintedStaticTarget;
 
     [Kept(By = Tool.Trimmer)]
     interface IStaticInterface
@@ -347,7 +354,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     }
 
     [Kept(By = Tool.Trimmer)] // If LdobjType is never boxed or unboxed, it can be removed by NativeAot.
-    class TargetType11;
+    class LdobjTarget;
 
     [Kept(By = Tool.Trimmer)]
     struct LdobjType
@@ -357,16 +364,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
     }
 
     [Kept]
-    class TargetType12;
+    class ArrayElementTarget;
 
     [Kept]
-    class ProxyType4;
+    class ArrayElementProxy;
 
     [Kept]
     struct ArrayElement;
 
     [Kept(By = Tool.Trimmer)] // If ConstructedNoTypeCheckNoBoxStruct is never boxed or unboxed, it can be removed by NativeAot.
-    class TargetType13;
+    class ConstructedNoTypeCheckOrBoxTarget;
 
     [Kept]
     struct ConstructedNoTypeCheckNoBoxStruct
@@ -382,7 +389,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         public int Value { [Kept] get; }
     }
 
-    class ProxyType2;
+    class TypeCheckOnlyProxy;
 
     [Kept]
     struct AllocatedNoBoxStructType
@@ -399,7 +406,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     }
 
     [Kept]
-    class ProxyType3;
+    class AllocatedNoBoxProxy;
 }
 
 // Polyfill for the type map types until we use an LKG runtime that has them with an updated LinkAttributes XML.
