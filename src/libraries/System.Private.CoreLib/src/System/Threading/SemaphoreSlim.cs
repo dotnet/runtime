@@ -757,7 +757,9 @@ namespace System.Threading
             Debug.Assert(asyncWaiter is not null, "Waiter should have been constructed");
             Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
-            await ((Task)asyncWaiter.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), cancellationToken)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            await ((Task)asyncWaiter.WaitAsync(
+                TimeSpan.FromMilliseconds(millisecondsTimeout == Timeout.UnsignedInfinite ? (long)Timeout.Infinite : (long)millisecondsTimeout),
+                cancellationToken)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
             if (cancellationToken.IsCancellationRequested)
             {
