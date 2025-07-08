@@ -281,7 +281,9 @@ static int sync_file(minipal_log_flags flags)
 #include <unistd.h>
 static int sync_file(minipal_log_flags flags)
 {
-    if (fsync(fileno(get_std_file(flags))) == 0)
+    int result;
+    while (-1 == (result = fsync(fileno(get_std_file(flags)))) && errno == EINTR);
+    if (result == 0)
         return 0;
 
     return errno;

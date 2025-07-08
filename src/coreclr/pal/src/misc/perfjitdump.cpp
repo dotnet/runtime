@@ -5,6 +5,7 @@
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 
+#include <errno.h>
 #include <cstddef>
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -222,7 +223,7 @@ struct PerfJitDumpState
         if (result == -1)
             return FatalError();
 
-        result = fsync(fd);
+        while (-1 == (result = fsync(fd)) && errno == EINTR);
 
         if (result == -1)
             return FatalError();
@@ -348,7 +349,7 @@ exit:
 
             mmapAddr = MAP_FAILED;
 
-            result = fsync(fd);
+            while (-1 == (result = fsync(fd)) && errno == EINTR);
 
             if (result == -1)
                 return FatalError();
