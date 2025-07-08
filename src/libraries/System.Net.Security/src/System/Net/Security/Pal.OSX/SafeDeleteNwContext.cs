@@ -46,8 +46,6 @@ namespace System.Net.Security
 
         // Lock object
         private readonly object _lockObject = new();
-        private readonly ManualResetEventSlim _readWaiter = new();
-        private readonly ManualResetEventSlim _writeWaiter = new();
 
         // Handshake state machine
         private enum HandshakeState
@@ -64,6 +62,7 @@ namespace System.Net.Security
         private readonly Stream _transportStream;
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
+        private ArrayBuffer _appReceiveBuffer = new(InitialBufferSize);
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
         // TaskSourceCompletion objects for decrypt operations
@@ -186,13 +185,40 @@ namespace System.Net.Security
 
         internal async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", "ReadAsync");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes");
+
+            if (_appReceiveBuffer.ActiveLength == 0)
+            {
+                int read = await FillAppDataBufferAsync(_appReceiveBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
+
+                if (read == 0)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "ReadAsync returning 0 bytes, end of stream reached");
+                    return 0; // EOF
+                }
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReadAsync filled buffer with {read} bytes");
+
+                _appReceiveBuffer.Commit(read);
+            }
+
+            // If we have data in the buffer, copy it directly
+            int length = Math.Min(_appReceiveBuffer.ActiveLength, buffer.Length);
+            _appReceiveBuffer.ActiveSpan.Slice(0, length).CopyTo(buffer.Span);
+            _appReceiveBuffer.Discard(length);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReadAsync returning {length} bytes from buffer");
+            return length;
+        }
+
+        internal async Task<int> FillAppDataBufferAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Called with {buffer.Length} bytes", nameof(FillAppDataBufferAsync));
 
             TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Cancellation requested for ReadAsync");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cancellation requested for {nameof(FillAppDataBufferAsync)}");
                 tcs.TrySetCanceled();
             });
 
@@ -210,13 +236,13 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, long status, byte* buffer, int length)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing ReadAsync, status: {status}, len: {length}", "ReadAsync");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing ReadAsync, status: {status}, len: {length}", nameof(FillAppDataBufferAsync));
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 (TaskCompletionSource<int> tcs, Memory<byte> state) = (Tuple<TaskCompletionSource<int>, Memory<byte>>)handle.Target!;
 
                 if (status != 0)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ReadAsync failed with status: {status}", "ReadAsync");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ReadAsync failed with status: {status}", nameof(FillAppDataBufferAsync));
                     tcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status)));
                 }
                 else
@@ -227,6 +253,7 @@ namespace System.Net.Security
 
                 handle.Free();
             }
+
         }
 
         private static bool IsNetworkFrameworkEnabled()
@@ -325,8 +352,6 @@ namespace System.Net.Security
                         _connectionHandle.Dispose();
                         _framerHandle?.Dispose();
                         _outputBuffer.Dispose();
-                        _readWaiter.Dispose();
-                        _writeWaiter.Dispose();
                     }
                 }
             }
@@ -554,7 +579,6 @@ namespace System.Net.Security
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Write status: {statusCode}", "SetConnectionWriteStatus");
             _writeStatus = statusCode;
-            _writeWaiter.Set();
         }
 
         private void ConnectionCancelled()
@@ -567,8 +591,6 @@ namespace System.Net.Security
             DecryptTask = null;
             _writeStatus = (int)NwOSStatus.SecUserCanceled;
             _readStatus = (int)NwOSStatus.SecUserCanceled;
-            _writeWaiter.Set();
-            _readWaiter.Set();
         }
 
         private static void HandleDebugLog(IntPtr logType, IntPtr data)
