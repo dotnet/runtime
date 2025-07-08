@@ -312,6 +312,17 @@ namespace System.Threading
             return Wait(millisecondsTimeout == Timeout.Infinite ? Timeout.UnsignedInfinite : (uint)millisecondsTimeout, cancellationToken);
         }
 
+        /// <summary>
+        /// Blocks the current thread until it can enter the <see cref="SemaphoreSlim"/>,
+        /// using a 32-bit unsigned integer to measure the time interval,
+        /// while observing a <see cref="CancellationToken"/>.
+        /// </summary>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.UnsignedInfinite"/> to
+        /// wait indefinitely.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>; otherwise, false.</returns>
+        /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         private bool Wait(uint millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
