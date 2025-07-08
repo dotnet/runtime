@@ -57,6 +57,7 @@ namespace System.Net.Security
         }
 
         private readonly Stream _transportStream;
+        private readonly SslAuthenticationOptions _sslAuthenticationOptions;
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
         private ArrayBuffer _appReceiveBuffer = new(InitialBufferSize);
@@ -67,11 +68,13 @@ namespace System.Net.Security
         private ArrayBuffer _outputBuffer = new(InitialBufferSize);
 
         private bool _disposed;
+        private bool _clientCertificateRequested;
 
         public SafeDeleteNwContext(SslAuthenticationOptions sslAuthenticationOptions, Stream transportStream) : base(IntPtr.Zero)
         {
             _connectionHandle = Interop.NetworkFramework.Tls.CreateContext(sslAuthenticationOptions.IsServer);
             _transportStream = transportStream;
+            _sslAuthenticationOptions = sslAuthenticationOptions;
             if (_connectionHandle.IsInvalid)
             {
                 throw new Exception("Failed to create Network Framework connection"); // TODO: Make this string resource
@@ -83,6 +86,8 @@ namespace System.Net.Security
         }
 
         public static bool IsNetworkFrameworkAvailable => IsSwitchEnabled && s_isNetworkFrameworkAvailable.Value;
+
+        internal bool ClientCertificateRequested => _clientCertificateRequested;
 
         internal Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
@@ -239,7 +244,7 @@ namespace System.Net.Security
                 {
                     // Call Init with null callbacks to check if Network Framework is available
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Checking Network Framework availability...");
-                    return !Interop.NetworkFramework.Tls.Init(&StatusUpdateCallback, &WriteOutboundWireData, &WriteOutboundWireData);
+                    return !Interop.NetworkFramework.Tls.Init(&StatusUpdateCallback, &WriteOutboundWireData, &ChallengeCallback);
                 }
             }
             catch
@@ -334,6 +339,94 @@ namespace System.Net.Security
                     NetEventSource.Error(nwContext, $"WriteOutboundWireData Failed: {e.Message}");
                 }
                 return (int)NwOSStatus.WritErr;
+            }
+            finally
+            {
+                nwContext?.EnsureKeepAlive();
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static IntPtr ChallengeCallback(IntPtr thisHandle)
+        {
+            SafeDeleteNwContext? nwContext = ResolveThisHandle(thisHandle);
+            if (nwContext == null || nwContext._disposed)
+            {
+                return IntPtr.Zero;
+            }
+
+            try
+            {
+                nwContext.EnsureKeepAlive();
+
+                nwContext._clientCertificateRequested = true;
+
+                if (nwContext._sslAuthenticationOptions.CertificateContext != null)
+                {
+                    X509Certificate2 cert = nwContext._sslAuthenticationOptions.CertificateContext.TargetCertificate;
+                    if (cert.HasPrivateKey)
+                    {
+                        return cert.Handle;
+                    }
+                }
+
+                if (nwContext._sslAuthenticationOptions.CertSelectionDelegate != null)
+                {
+                    X509Certificate2? selectedCert = null;
+                    try
+                    {
+                        // Get the local certificates collection
+                        X509CertificateCollection localCertificates = nwContext._sslAuthenticationOptions.ClientCertificates ?? new X509CertificateCollection();
+
+                        // TODO: Get the remote certificate and acceptable issuers from the TLS metadata
+                        // This would require accessing sec_protocol_metadata_access_distinguished_names
+                        // from the native challenge block and passing that information here.
+                        // For now, pass null for remote certificate and empty array for issuers
+                        X509Certificate? remoteCertificate = null;
+                        string[] acceptableIssuers = Array.Empty<string>();
+
+                        X509Certificate? selected = nwContext._sslAuthenticationOptions.CertSelectionDelegate(
+                            nwContext,
+                            nwContext._sslAuthenticationOptions.TargetHost,
+                            localCertificates,
+                            remoteCertificate,
+                            acceptableIssuers);
+
+                        if (selected is X509Certificate2 cert2)
+                        {
+                            selectedCert = cert2;
+                        }
+                        else if (selected != null)
+                        {
+                            selectedCert = new X509Certificate2(selected);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Error(nwContext, $"LocalCertificateSelectionCallback failed: {ex.Message}");
+                        }
+                    }
+
+                    if (selectedCert != null && selectedCert.HasPrivateKey)
+                    {
+                        if (selectedCert.HasPrivateKey)
+                        {
+                            return selectedCert.Handle;
+                        }
+                    }
+                }
+
+                return IntPtr.Zero;
+            }
+            catch (Exception e)
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(nwContext, $"ChallengeCallback Failed: {e.Message}");
+                }
+                return IntPtr.Zero;
             }
             finally
             {

@@ -185,8 +185,23 @@ namespace System.Net
         }
 
         // This is only called when we selected local client certificate.
-        // Currently this is only when Apple crypto asked for it.
-        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _1, SafeDeleteContext? _2) => true;
+        // We need to check if the server actually requested it during handshake.
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _, SafeDeleteContext? context)
+        {
+            return context switch
+            {
+                SafeDeleteNwContext nwContext => IsLocalCertificateUsed(nwContext),
+                SafeDeleteSslContext => true,
+                _ => true
+            };
+        }
+
+        private static bool IsLocalCertificateUsed(SafeDeleteNwContext nwContext)
+        {
+            // For Network Framework, we need to check if the server actually requested
+            // a client certificate during the handshake.
+            return nwContext.ClientCertificateRequested;
+        }
 
         //
         // Used only by client SSL code, never returns null.

@@ -4,9 +4,11 @@
 #include "pal_networkframework.h"
 #include <Foundation/Foundation.h>
 #include <Network/Network.h>
+#include <Security/Security.h>
 
 static WriteCallback _writeFunc;
 static StatusUpdateCallback _statusFunc;
+static ChallengeCallback _challengeFunc;
 static nw_protocol_definition_t _framerDefinition;
 static nw_protocol_definition_t _tlsDefinition;
 static dispatch_queue_t _tlsQueue;
@@ -171,7 +173,7 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
     nw_retain(connection); // hold a reference until canceled
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
-        LOG(state, "Connection state changed: %d, errorCode: %d", status, errorCode);
+        LOG(state, "Connection state changed: %d, errorCode: %d", (int)status, errorCode);
         switch (status)
         {
             case nw_connection_state_preparing:
@@ -330,6 +332,32 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
         }
     }
 
+    // Set up challenge block to detect when server requests client certificate
+    sec_protocol_options_set_challenge_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_protocol_challenge_complete_t complete) {
+        (void)metadata;
+        
+        // Call the managed callback to get the client identity
+        void* identity = NULL;
+        if (_challengeFunc != NULL)
+        {
+            identity = _challengeFunc(state);
+        }
+        
+        if (identity != NULL)
+        {
+            // Convert to sec_identity_t and set it
+            SecIdentityRef secIdentityRef = (SecIdentityRef)identity;
+            sec_identity_t sec_identity = sec_identity_create(secIdentityRef);
+            if (sec_identity != NULL)
+            {
+                complete(sec_identity);
+                return;
+            }
+        }
+        
+        complete(NULL);
+    }, _tlsQueue);
+
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete) {
         LOG(state, "Cert validation callback called");
@@ -458,7 +486,7 @@ PALEXPORT void AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFA
 #pragma clang diagnostic pop
 
 // this is called once to set everything up
-PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, WriteCallback writeFunc)
+PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, WriteCallback writeFunc, ChallengeCallback challengeFunc)
 {
     assert(statusFunc != NULL);
     assert(writeFunc != NULL);
@@ -467,6 +495,7 @@ PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, Writ
     {
         _writeFunc = writeFunc;
         _statusFunc = statusFunc;
+        _challengeFunc = challengeFunc;
         _framerDefinition = nw_framer_create_definition("com.dotnet.networkframework.tlsframer",
             NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
         _tlsDefinition = nw_protocol_copy_tls_definition();

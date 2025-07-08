@@ -290,6 +290,14 @@ namespace System.Net.Security
             SafeDeleteContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
+            // Check if this is a Network Framework context
+            if (context is SafeDeleteNwContext)
+            {
+                // For Network Framework, the certificate is handled via the challenge callback
+                // which is already set up during context creation
+                return true;
+            }
+
             SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
             if (sslAuthenticationOptions.CertificateContext != null)
@@ -314,10 +322,7 @@ namespace System.Net.Security
                 (sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.None ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
-                    (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13))) &&
-                sslAuthenticationOptions.ClientCertificates == null &&
-                sslAuthenticationOptions.CertificateContext == null &&
-                sslAuthenticationOptions.CertSelectionDelegate == null;
+                    (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13)));
         }
 
         private static SafeDeleteNwContext CreateAsyncSecurityContext(

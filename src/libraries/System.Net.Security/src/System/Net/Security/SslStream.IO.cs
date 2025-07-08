@@ -298,6 +298,17 @@ namespace System.Net.Security
 #if TARGET_OSX
                 if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
                 {
+                    // For Network Framework, we need to select client certificate before handshake
+                    if (_sslAuthenticationOptions.IsClient)
+                    {
+                        X509Certificate2? selectedCert = SelectClientCertificate();
+                        if (selectedCert != null && _sslAuthenticationOptions.CertificateContext == null)
+                        {
+                            // Build certificate context if not already provided
+                            _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
+                        }
+                    }
+
                     Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, _sslAuthenticationOptions, InnerStream, cancellationToken);
                     await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
                     if (await handshakeTask.ConfigureAwait(false) is Exception ex)
