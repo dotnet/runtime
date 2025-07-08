@@ -19,10 +19,8 @@
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(RuntimeFlavor)' == 'Mono'">false</SupportsNativeAotComponents>
         <!-- disable on linux-bionic, for now -->
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(TargetsLinuxBionic)' == 'true'">false</SupportsNativeAotComponents>
-        <!-- NativeAOT doesn't support cross-OS compilation. disable for crossdac-->
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(HostOS)' != '$(TargetOS)'">false</SupportsNativeAotComponents>
-        <!-- consider everything else supported -->
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">true</SupportsNativeAotComponents>
+        <!-- use global property for the rest -->
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">$(NativeAotSupported)</SupportsNativeAotComponents>
     </PropertyGroup>
 
     <ItemGroup>
