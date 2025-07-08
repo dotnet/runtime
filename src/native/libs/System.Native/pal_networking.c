@@ -3540,7 +3540,7 @@ int32_t SystemNative_Disconnect(intptr_t socket)
     memset(&addr, 0, sizeof(addr));
     addr.sa_family = AF_UNSPEC;
 
-    err = connect(fd, &addr, sizeof(addr));
+    while (-1 == (err = connect(fd, &addr, sizeof(addr))) && errno == EINTR);
     if (err != 0)
     {
         // On some older kernels connect(AF_UNSPEC) may fail. Fall back to shutdown in these cases:

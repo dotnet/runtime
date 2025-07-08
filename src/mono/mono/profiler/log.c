@@ -2522,7 +2522,9 @@ signal_helper_thread (char c)
 
 		gulong non_blocking = 1;
 		ioctlsocket (client_socket, FIONBIO, &non_blocking);
-		if (connect (client_socket, (SOCKADDR *)&client_addr, sizeof (client_addr)) == SOCKET_ERROR) {
+		int connect_result;
+		while (-1 == (connect_result = connect (client_socket, (SOCKADDR *)&client_addr, sizeof (client_addr))) && errno == EINTR);
+		if (connect_result == SOCKET_ERROR) {
 			if (WSAGetLastError () == WSAEWOULDBLOCK) {
 				fd_set wfds;
 				int max_fd = -1;

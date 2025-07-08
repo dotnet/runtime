@@ -1185,7 +1185,7 @@ socket_transport_connect (const char *address)
 					setsockopt(sfd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&timeout, sizeof(timeout));
 				}
 
-				res = connect (sfd, &sockaddr.addr, sock_len);
+				while (-1 == (res = connect (sfd, &sockaddr.addr, sock_len)) && errno == EINTR);
 
 				if (res != SOCKET_ERROR)
 					break;       /* Success */
