@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a symbol that is defined externally and statically linked to the output obj file.
-    /// When making a new node, do not derived from this class directly, derive from one of its subclasses
+    /// When making a new node, do not derive from this class directly, derive from one of its subclasses
     /// (ExternFunctionSymbolNode / ExternDataSymbolNode) instead.
     /// </summary>
     public abstract class ExternSymbolNode : SortableDependencyNode, ISortableSymbolNode
