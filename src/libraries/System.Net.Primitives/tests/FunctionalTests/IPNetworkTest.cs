@@ -83,10 +83,11 @@ namespace System.Net.Primitives.Functional.Tests
             string[] splitInput = input.Split('/');
             IPAddress address = IPAddress.Parse(splitInput[0]);
             int prefixLength = int.Parse(splitInput[1]);
+            IPAddress baseAddress = GetBaseAddress(address, prefixLength);
 
             IPNetwork network = new IPNetwork(address, prefixLength);
 
-            Assert.Equal(GetBaseAddress(address, prefixLength), network.BaseAddress);
+            Assert.Equal(baseAddress, network.BaseAddress);
             Assert.Equal(prefixLength, network.PrefixLength);
         }
 
@@ -155,8 +156,19 @@ namespace System.Net.Primitives.Functional.Tests
             var stringParsedNetwork = IPNetwork.Parse(input);
             var utf8ParsedNetwork = IPNetwork.Parse(utf8Bytes);
 
-            Assert.Equal(input, stringParsedNetwork.ToString());
-            Assert.Equal(input, utf8ParsedNetwork.ToString());
+            string[] splitInput = input.Split('/');
+            IPAddress address = IPAddress.Parse(splitInput[0]);
+            int prefixLength = int.Parse(splitInput[1]);
+            IPAddress baseAddress = GetBaseAddress(address, prefixLength);
+            string expectedString = $"{baseAddress}/{prefixLength}";
+
+            Assert.Equal(GetBaseAddress(address, prefixLength), stringParsedNetwork.BaseAddress);
+            Assert.Equal(prefixLength, stringParsedNetwork.PrefixLength);
+            Assert.Equal(expectedString, stringParsedNetwork.ToString());
+
+            Assert.Equal(GetBaseAddress(address, prefixLength), utf8ParsedNetwork.BaseAddress);
+            Assert.Equal(prefixLength, utf8ParsedNetwork.PrefixLength);
+            Assert.Equal(expectedString, utf8ParsedNetwork.ToString());
         }
 
         [Theory]
@@ -165,11 +177,21 @@ namespace System.Net.Primitives.Functional.Tests
         {
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
 
-            Assert.True(IPNetwork.TryParse(input, out IPNetwork network));
-            Assert.Equal(input, network.ToString());
+            string[] splitInput = input.Split('/');
+            IPAddress address = IPAddress.Parse(splitInput[0]);
+            int prefixLength = int.Parse(splitInput[1]);
+            IPAddress baseAddress = GetBaseAddress(address, prefixLength);
+            string expectedString = $"{baseAddress}/{prefixLength}";
 
-            Assert.True(IPNetwork.TryParse(utf8Bytes, out network));
-            Assert.Equal(input, network.ToString());
+            Assert.True(IPNetwork.TryParse(input, out IPNetwork stringParsedNetwork));
+            Assert.Equal(GetBaseAddress(address, prefixLength), stringParsedNetwork.BaseAddress);
+            Assert.Equal(prefixLength, stringParsedNetwork.PrefixLength);
+            Assert.Equal(expectedString, stringParsedNetwork.ToString());
+
+            Assert.True(IPNetwork.TryParse(utf8Bytes, out IPNetwork utf8ParsedNetwork));
+            Assert.Equal(GetBaseAddress(address, prefixLength), utf8ParsedNetwork.BaseAddress);
+            Assert.Equal(prefixLength, utf8ParsedNetwork.PrefixLength);
+            Assert.Equal(expectedString, utf8ParsedNetwork.ToString());
         }
 
         [Fact]
