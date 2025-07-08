@@ -214,6 +214,18 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
 
 #ifndef DACCESS_COMPILE
 
+void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)
+{
+#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+    // While the allocation of a stub will use a memory mapping technique, and not actually write to the set of instructions,
+    // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
+    // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
+    // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
+    // happened in the Init routine above.
+    ClrFlushInstructionCache(code, size);
+#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+}
+
 #ifdef FEATURE_INTERPRETER
 InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
                                                         LoaderAllocator *  pLoaderAllocator,
@@ -230,14 +242,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
     InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
     pPrecode->Init(pPrecode, byteCode);
 
-#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
-    // While the allocation of a precode will use a memory mapping technique, and not actually write to the set of instructions,
-    // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
-    // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
-    // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
-    // happened in the Init routine above.
-    ClrFlushInstructionCache(pPrecode, sizeof(InterpreterPrecode));
-#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+    FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
 
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, sizeof(InterpreterPrecode), PerfMapStubType::IndividualWithinBlock);
@@ -264,6 +269,16 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     {
         pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetFixupPrecodeHeap()->AllocStub());
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
+
+        // PRECODE_FIXUP is the most common precode type, and we are able to optimize creation of it in a special
+        // way that allows us to avoid the need for FlushInstructionCache when the precode is created. Notably,
+        // Before we map the memory for the executable section of the FixupPrecodeThunks into the process, we fill
+        // the Target with pointers so that Target points at the second portion of the FixupPrecodeThunk. So when
+        // we map the executable memory in, we get a natural FlushInstructionCache for that scenario. So there is
+        // never a case where we need to worry about the Target field being set to NULL. Then we either are able
+        // to see the actual final Target (which doesn't require any further synchronization), or we'll hit the memory
+        // barrier in the second portion of the FixupPrecodeThunk and find that the MethodDesc/PrecodeFixupThunk are
+        // properly set. See FixupPrecode::GenerateDataPage for the code to fill in the target.
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "FixupPrecode", (PCODE)pPrecode, sizeof(FixupPrecode), PerfMapStubType::IndividualWithinBlock);
 #endif
@@ -276,14 +291,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         pThisPtrRetBufPrecode->Init(pData, pMD, pLoaderAllocator);
         pPrecode = (Precode*)pThisPtrRetBufPrecode;
 
-#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
-        // While the allocation of a precode will use a memory mapping technique, and not actually write to the set of instructions,
-        // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
-        // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
-        // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
-        // happened in the Init routine above.
-        ClrFlushInstructionCache(pPrecode, sizeof(ThisPtrRetBufPrecode));
-#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+        FlushCacheForDynamicMappedStub(pPrecode, sizeof(ThisPtrRetBufPrecode));
 
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "ThisPtrRetBuf", (PCODE)pPrecode, sizeof(ThisPtrRetBufPrecodeData), PerfMapStubType::IndividualWithinBlock);
@@ -296,14 +304,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
 
-#ifdef FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
-        // While the allocation of a precode will use a memory mapping technique, and not actually write to the set of instructions,
-        // the set of instructions in the stub has non-barrier protected reads from the StubPrecodeData structure. In order to protect those
-        // reads we would either need barrier instructions in the stub, or we need to ensure that the precode is flushed in the instruction cache
-        // which will have the side effect of ensuring that the reads within the stub will happen *after* the writes to the StubPrecodeData structure which
-        // happened in the Init routine above.
-        ClrFlushInstructionCache(pPrecode, sizeof(StubPrecode));
-#endif // FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS
+        FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, t == PRECODE_STUB ? "StubPrecode" : "PInvokeImportPrecode", (PCODE)pPrecode, sizeof(StubPrecode), PerfMapStubType::IndividualWithinBlock);

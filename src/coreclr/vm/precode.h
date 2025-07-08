@@ -778,6 +778,8 @@ public:
 #endif
 };
 
+void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
+
 // Verify that the type for each precode is different
 static_assert_no_msg(StubPrecode::Type != NDirectImportPrecode::Type);
 static_assert_no_msg(StubPrecode::Type != FixupPrecode::Type);
