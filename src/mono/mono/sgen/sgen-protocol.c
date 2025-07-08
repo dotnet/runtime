@@ -263,7 +263,7 @@ binary_protocol_check_file_overflow (void)
 
 	if (current_file_index > 0) {
 		char *filename = filename_for_index (current_file_index - 1);
-		unlink (filename);
+		while (-1 == unlink (filename) && errno == EINTR);
 		free_filename (filename);
 	}
 

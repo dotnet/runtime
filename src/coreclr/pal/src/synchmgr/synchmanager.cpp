@@ -2724,7 +2724,9 @@ namespace CorUnix
             {
                 /* Some how no one deleted the pipe, perhaps it was left behind
                 from a crash?? Delete the pipe and try again. */
-                if (-1 == unlink(szPipeFilename))
+                int unlink_result;
+                while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR);
+                if (-1 == unlink_result)
                 {
                     ERROR( "Unable to delete the process pipe that was left behind.\n" );
                     fRet = false;
@@ -2814,7 +2816,7 @@ namespace CorUnix
             // Failed
             if (0 != szPipeFilename[0])
             {
-                unlink(szPipeFilename);
+                while (-1 == unlink(szPipeFilename) && errno == EINTR);
             }
             if (-1 != iPipeRd)
             {
@@ -2862,7 +2864,9 @@ namespace CorUnix
 
         if (GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
-            if (unlink(szPipeFilename) == -1)
+            int unlink_result;
+            while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR);
+            if (unlink_result == -1)
             {
                 ERROR("Unable to unlink the pipe file name errno=%d (%s)\n",
                       errno, strerror(errno));

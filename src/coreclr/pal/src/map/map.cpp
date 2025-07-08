@@ -195,7 +195,7 @@ FileMappingCleanupRoutine(
 
     if (pImmutableData->bPALCreatedTempFile)
     {
-        unlink(pImmutableData->lpFileName);
+        while (-1 == unlink(pImmutableData->lpFileName) && errno == EINTR);
     }
 
     if (FALSE == fShutdown)
@@ -655,7 +655,7 @@ ExitInternalCreateFileMapping:
 
         if (bPALCreatedTempFile)
         {
-            unlink(pImmutableData->lpFileName);
+            while (-1 == unlink(pImmutableData->lpFileName) && errno == EINTR);
         }
 
         if (-1 != UnixFd)

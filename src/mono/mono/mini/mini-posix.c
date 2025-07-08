@@ -1006,7 +1006,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	g_async_safe_printf ("mono_gdb_render_native_backtraces not supported on this platform, unable to find gdb or lldb\n");
 
 	close (commands_handle);
-	unlink (commands_filename);
+	while (-1 == unlink (commands_filename) && errno == EINTR);
 	return;
 
 exec:

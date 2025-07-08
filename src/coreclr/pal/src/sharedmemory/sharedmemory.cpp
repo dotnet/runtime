@@ -570,7 +570,7 @@ int SharedMemoryHelpers::CreateOrOpenFile(
         }
 
         CloseFile(fileDescriptor);
-        unlink(path);
+        while (-1 == unlink(path) && errno == EINTR);
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
     }
 
@@ -1037,7 +1037,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
             if (m_createdFile)
             {
                 _ASSERTE(m_filePath != nullptr);
-                unlink(*m_filePath);
+                while (-1 == unlink(m_filePath) && errno == EINTR);
             }
 
             if (m_sessionDirectoryPathCharCount != 0)
@@ -1395,7 +1395,7 @@ void SharedMemoryProcessDataHeader::Close()
             path.Append('/'));
         SIZE_T sessionDirectoryPathCharCount = path.GetCount();
         SharedMemoryHelpers::VerifyStringOperation(path.Append(m_id.GetName(), m_id.GetNameCharCount()));
-        unlink(path);
+        while (-1 == unlink(path) && errno == EINTR);
         path.CloseBuffer(sessionDirectoryPathCharCount);
         rmdir(path);
     }

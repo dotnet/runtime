@@ -1209,7 +1209,7 @@ ds_ipc_listen (
 #ifdef DS_IPC_PAL_AF_UNIX
 		int result_unlink;
 		DS_ENTER_BLOCKING_PAL_SECTION;
-		result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path);
+		while (-1 == (result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path)) && errno == EINTR);
 		DS_EXIT_BLOCKING_PAL_SECTION;
 
 		EP_ASSERT (result_unlink != -1);
@@ -1351,7 +1351,7 @@ ds_ipc_close (
 		// reference to it is closed." - unix(7) man page
 		int result_unlink;
 		DS_ENTER_BLOCKING_PAL_SECTION;
-		result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path);
+		while (-1 == (result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path)) && errno == EINTR);
 		DS_EXIT_BLOCKING_PAL_SECTION;
 
 		if (result_unlink == -1) {

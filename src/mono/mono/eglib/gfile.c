@@ -189,6 +189,8 @@ g_unlink (const gchar *path)
 		return ret;
 	}
 #else
-	return unlink (path);
+	int result;
+	while (-1 == (result = unlink (path)) && errno == EINTR);
+	return result;
 #endif
 }

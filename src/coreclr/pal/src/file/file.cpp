@@ -728,7 +728,9 @@ done:
         }
         if (bFileCreated)
         {
-            if (-1 == unlink(lpUnixPath))
+            int ulink_result;
+            while (-1 == (unlink_result = unlink(lpUnixPath)) && errno == EINTR);
+            if (-1 == unlink_result)
             {
                 WARN("can't delete file; unlink() failed with errno %d (%s)\n",
                      errno, strerror(errno));
@@ -957,7 +959,7 @@ DeleteFileA(
         }
     }
 
-    result = unlink( lpFullunixFileName );
+    while (-1 == (result = unlink( lpFullunixFileName )) && errno == EINTR);
 
     if (result < 0)
     {

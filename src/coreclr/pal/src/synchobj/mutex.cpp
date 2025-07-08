@@ -1154,7 +1154,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
                 if (m_createdLockFile)
                 {
                     _ASSERTE(m_lockFilePath != nullptr);
-                    unlink(*m_lockFilePath);
+                    while (-1 == unlink(*m_lockFilePath) && errno == EINTR);
                 }
 
                 if (m_sessionDirectoryPathCharCount != 0)
@@ -1423,7 +1423,7 @@ void NamedMutexProcessData::Close(bool isAbruptShutdown, bool releaseSharedData)
             path.Append('/'));
         SIZE_T sessionDirectoryPathCharCount = path.GetCount();
         SharedMemoryHelpers::VerifyStringOperation(path.Append(id->GetName(), id->GetNameCharCount()));
-        unlink(path);
+        while (-1 == unlink(path) && errno == EINTR);
         path.CloseBuffer(sessionDirectoryPathCharCount);
         rmdir(path);
     }

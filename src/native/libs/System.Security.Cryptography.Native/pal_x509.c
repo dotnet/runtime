@@ -1158,7 +1158,7 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
     // may have been reported while determining we want to delete it and ask again fresh.
     if (ret == PAL_X509_V_ERR_UNABLE_TO_GET_CRL)
     {
-        unlink(fullPath);
+        while (-1 == unlink(fullPath) && errno == EINTR);
         ERR_clear_error();
     }
 
@@ -1272,7 +1272,7 @@ static int32_t X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, X509* subject, X509
             if (clearErr)
             {
                 ERR_clear_error();
-                unlink(fullPath);
+                while (-1 == unlink(fullPath) && errno == EINTR);
             }
 
             free(fullPath);
