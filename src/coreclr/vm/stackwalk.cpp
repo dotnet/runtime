@@ -2845,16 +2845,16 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 
             if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
             {
-                if (GetIP(pRD->pCurrentContext) != (TADDR)InterpreterFrame::DummyCallerIP)
+                if (GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP)
                 {
                     // We have hit the InterpreterFrame while we were not processing the interpreter frames.
                     // Switch to walking the underlying interpreted frames.
                     // Save the registers the interpreter frames walking reuses so that we can restore them
                     // after we are done with the interpreter frames.
-                    m_interpExecMethodIP = (TADDR)GetIP(pRD->pCurrentContext);
-                    m_interpExecMethodSP = (TADDR)GetSP(pRD->pCurrentContext);
-                    m_interpExecMethodFP = (TADDR)GetFP(pRD->pCurrentContext);
-                    m_interpExecMethodFirstArgReg = (TADDR)GetFirstArgReg(pRD->pCurrentContext);
+                    m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
+                    m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
+                    m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
+                    m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
 
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
                     if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
@@ -2877,15 +2877,16 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SyncRegDisplayToCurrentContext(pRD);
                 }
             }
-            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && m_crawl.pFrame->PtrNextFrame() != FRAME_TOP && m_crawl.pFrame->PtrNextFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) &&
+                     (m_crawl.pFrame->PtrNextFrame() != FRAME_TOP) &&
+                     (m_crawl.pFrame->PtrNextFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
             {
                 // There is an active inlined call frame and the next frame is the interpreter frame. This is a special case where we need to save the current context registers that the interpreter frames walking reuses.
-                m_interpExecMethodIP = (TADDR)GetIP(pRD->pCurrentContext);
-                m_interpExecMethodSP = (TADDR)GetSP(pRD->pCurrentContext);
-                m_interpExecMethodFP = (TADDR)GetFP(pRD->pCurrentContext);
-                m_interpExecMethodFirstArgReg = (TADDR)GetFirstArgReg(pRD->pCurrentContext);
+                m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
+                m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
+                m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
+                m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
             }
-
         }
 #endif // FEATURE_INTERPRETER
 

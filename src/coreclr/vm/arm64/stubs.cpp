@@ -319,7 +319,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContextPointers->Fp = (DWORD64 *)&m_pCalleeSavedFP;
 
 #ifdef FEATURE_INTERPRETER
-    if (m_Next != FRAME_TOP && m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
         SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
