@@ -299,7 +299,6 @@ MONO_JIT_ICALL (mono_throw_platform_not_supported) \
 MONO_JIT_ICALL (mono_throw_invalid_program) \
 MONO_JIT_ICALL (mono_throw_type_load) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
-MONO_JIT_ICALL (mono_trace_samplepoint_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_trace_tail_method) \
 MONO_JIT_ICALL (mono_upgrade_remote_class_wrapper) \
