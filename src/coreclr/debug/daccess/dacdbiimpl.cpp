@@ -867,7 +867,8 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
     ULONG32 entryCount;
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                InfoStoreNew, false, NULL, // allocator
+                                                InfoStoreNew, NULL, // allocator
+                                                /* preferInstrumentedBounds */ false,
                                                 NULL, NULL,
                                                 &entryCount, &nativeVars);
 

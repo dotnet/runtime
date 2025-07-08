@@ -1762,34 +1762,7 @@ void ILToNativeMapArrays::AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping)
 {
     if (m_rguiNativeOffset.GetCount() < m_cMapEntriesMax)
     {
-        if (m_fNextReplacesLast)
-        {
-            if ((pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION) == ICorDebugInfo::CALL_INSTRUCTION)
-            {
-                // Remove the excess mapping, and reset the m_fNextReplacesLast flag.
-                callInstrSequence++;
-                m_rguiILOffset.SetCount(m_rguiILOffset.GetCount() - 1);
-                m_rguiNativeOffset.SetCount(m_rguiNativeOffset.GetCount() - 1);
-                m_fNextReplacesLast = false;
-            }
-            else
-            {
-                // Check to see if we should prefer to drop this mapping in favor of a future mapping.
-                if ((m_rguiILOffset.GetCount() > 1) && 
-                    (m_rguiILOffset[m_rguiILOffset.GetCount() - 2] == pOffsetMapping->ilOffset))
-                {
-                    m_fNextReplacesLast = true;
-                }
-                else
-                {
-                    m_fNextReplacesLast = false;
-                }
-
-                m_rguiNativeOffset[m_rguiNativeOffset.GetCount() - 1] = pOffsetMapping->nativeOffset;
-                m_rguiILOffset[m_rguiNativeOffset.GetCount() - 1] = pOffsetMapping->ilOffset;
-            }
-        }
-        else if ((pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION) != ICorDebugInfo::CALL_INSTRUCTION)
+        if ((pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION) != ICorDebugInfo::CALL_INSTRUCTION)
         {
             if (callInstrSequence < 2)
             {
@@ -1797,7 +1770,8 @@ void ILToNativeMapArrays::AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping)
                 if ((m_rguiILOffset.GetCount() > 0) && 
                     (m_rguiILOffset[m_rguiILOffset.GetCount() - 1] == pOffsetMapping->ilOffset))
                 {
-                    m_fNextReplacesLast = true;
+                    callInstrSequence = 0;
+                    return;
                 }
             }
             m_rguiNativeOffset.Append(pOffsetMapping->nativeOffset);
@@ -1815,7 +1789,8 @@ void ILToNativeMapArrays::AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping)
         // Once we reach this stage, we will not add any more entries other than prolog entries.
 
         // If there is a non-prolog entry, then print the next prolog entry.
-        // If there is a call_instruction entry, then don't add it, but it 
+        // If there is a call_instruction entry, then don't add it, but if there are enough of them
+        // then we will allow duplicates in the prolog entries.
         if (pOffsetMapping->ilOffset == ICorDebugInfo::PROLOG)
         {
             callInstrSequence = 0;

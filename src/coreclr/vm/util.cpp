@@ -196,6 +196,9 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     case ICorDebugInfo::VLT_FPSTK:
         return varLoc1.vlFPstk.vlfReg == varLoc2.vlFPstk.vlfReg;
 
+    case ICorDebugInfo::VLT_FIXED_VA:
+        return varLoc1.vlFixedVarArg.vlfvOffset == varLoc2.vlFixedVarArg.vlfvOffset;
+
     default:
         _ASSERTE(!"Bad vlType"); return false;
     }

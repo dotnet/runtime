@@ -597,7 +597,6 @@ void CompressDebugInfo::CompressBoundaries(
 
     if (cMap != 0)
     {
-#ifdef USE_V2_BOUNDS_COMPRESSION
         // Get max IL offset and native offsets
         uint32_t maxNativeOffsetDelta = 0;
         uint32_t maxILOffset = 0;
@@ -710,13 +709,6 @@ void CompressDebugInfo::CompressBoundaries(
             _ASSERTE(bitsInProgressCount < 8);
             pWriter->WriteRawByte(bitsInProgress);
         }
-#else
-        // Use the old compression format.
-        pWriter->WriteEncodedU32(cMap);
-
-        TransferWriter t(*pWriter);
-        DoBounds(t, cMap, pMap);
-#endif // USE_V2_COMPRESSION
         pWriter->Flush();
     }
 
@@ -978,8 +970,8 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         uint32_t instrumentedEntryCount = iOffsetMapping;
         ComposeMapping(pInstrumentedILBounds, pInstrumentedILBoundsArray, &instrumentedEntryCount);
 
-        CompressDebugInfo::CompressBoundaries(instrumentedEntryCount, pInstrumentedILBoundsArray, &boundsBuffer);
-        pInstrumentedBounds = boundsBuffer.GetBlob(&cbInstrumentedBounds);
+        CompressDebugInfo::CompressBoundaries(instrumentedEntryCount, pInstrumentedILBoundsArray, &instrumentedILBoundsBuffer);
+        pInstrumentedBounds = instrumentedILBoundsBuffer.GetBlob(&cbInstrumentedBounds);
     }
 
     NibbleWriter varsBuffer;
@@ -1076,7 +1068,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     ICorDebugInfo::OffsetMapping *pNewMap = NULL;
     ICorDebugInfo::NativeVarInfo *pNewVars = NULL;
     RestoreBoundariesAndVars(
-        DecompressNew, false, NULL, ptrStart, &cNewBounds, &pNewMap, &cNewVars, &pNewVars, writeFlagByte);
+        DecompressNew, NULL, false, ptrStart, &cNewBounds, &pNewMap, &cNewVars, &pNewVars, writeFlagByte);
 
     _ASSERTE(cNewBounds == iOffsetMapping);
     _ASSERTE(cNewBounds == 0 || pNewMap != NULL);
@@ -1101,6 +1093,10 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     if (pNewMap != NULL)
     {
         DecompressDelete(pNewMap);
+    }
+    if (pNewVars != NULL)
+    {
+        DecompressDelete(pNewVars);
     }
 #endif // _DEBUG
 

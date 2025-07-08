@@ -132,26 +132,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (offsetMapping == null || offsetMapping.Length == 0)
                 return null;
 
-#if USE_V1_BOUNDS_COMPRESSION
-            NibbleWriter writer = new NibbleWriter();
-            writer.WriteUInt((uint)offsetMapping.Length);
-
-            uint previousNativeOffset = 0;
-            uint maxNativeDelta = 0;
-            uint maxILValue = 0;
-            foreach (var locInfo in offsetMapping)
-            {
-                writer.WriteUInt(locInfo.nativeOffset - previousNativeOffset);
-                maxNativeDelta = Math.Max(maxNativeDelta, locInfo.nativeOffset - previousNativeOffset);
-                writer.WriteUInt(locInfo.ilOffset + 3); // Count of items in Internal.JitInterface.MappingTypes to adjust the IL offset by
-                maxILValue = Math.Max(maxILValue, locInfo.ilOffset + 3);
-                writer.WriteUInt((uint)locInfo.source);
-
-                previousNativeOffset = locInfo.nativeOffset;
-            }
-
-            return writer.ToArray();
-#else
             uint previousNativeOffset = 0;
             uint maxNativeDelta = 0;
             uint maxILValue = 0;
@@ -249,7 +229,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 boundsBlob.Add(bitsInProgress);
             }
             return boundsBlob.ToArray();
-#endif // USE_V1_BOUNDS_COMPRESSION
         }
 
         public static byte[] CreateVarBlobForMethod(NativeVarInfo[] varInfos, TargetDetails target)
