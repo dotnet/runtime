@@ -1046,8 +1046,11 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     DebuggerILToNativeMap *m = m_sequenceMap;
 
-    // TODO: Consider removing this handling since we now have the ability to get
-    // an instrumented IL offset mapping directly from the VM.
+    // TODO: Consider removing the handling for the InstrumentedILMap here.
+    //  since we now have the ability to get an instrumented IL offset mapping
+    // directly from the VM. This work was not done when adding the instrumented
+    // IL mapping due to the work ocurring too close to the shipping deadline for .NET 10.
+    // If we do so, we need to change the input to this function to be the instrumented IL offset mapping
 
     // For the instrumented-IL case, we need to remove all duplicate entries.
     // So we keep a record of the last old IL offset. If the current old IL

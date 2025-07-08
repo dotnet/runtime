@@ -172,6 +172,6 @@ public:
 #endif
 };
 
-
+#define DebugInfoBoundsHasInstrumentedBounds 0xFFFFFFFF;
 
 #endif // __DebugInfoStore_H_

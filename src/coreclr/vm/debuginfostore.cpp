@@ -996,7 +996,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     NibbleWriter w;
     if (cbInstrumentedBounds != 0)
     {
-        w.WriteEncodedU32(0xFFFFFFFF); // 0xFFFFFFFF is used to indicate that the instrumented bounds are present.
+        w.WriteEncodedU32(DebugInfoBoundsHasInstrumentedBounds); // 0xFFFFFFFF is used to indicate that the instrumented bounds are present.
         w.WriteEncodedU32(cbBounds);
         w.WriteEncodedU32(cbInstrumentedBounds);
     }
@@ -1164,7 +1164,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
 
     ULONG cbBounds = r.ReadEncodedU32();
     ULONG cbInstrumentedBounds = 0;
-    if (cbBounds == 0xFFFFFFFF)
+    if (cbBounds == DebugInfoBoundsHasInstrumentedBounds)
     {
         // This means we have instrumented bounds.
         cbBounds = r.ReadEncodedU32();
@@ -1316,7 +1316,7 @@ size_t CompressDebugInfo::WalkILOffsets(
 
     ULONG cbBounds = r.ReadEncodedU32_NoThrow();
     ULONG cbInstrumentedBounds = 0;
-    if (cbBounds == 0xFFFFFFFF)
+    if (cbBounds == DebugInfoBoundsHasInstrumentedBounds)
     {
         // This means we have instrumented bounds.
         cbBounds = r.ReadEncodedU32();
