@@ -638,7 +638,7 @@ static int parse_netlink_reply(struct netlink_session *session, struct ifaddrs *
         netlink_reply.msg_iovlen = 1;
         netlink_reply.msg_iov = &reply_vector;
 
-        length = recvmsg(session->sock_fd, &netlink_reply, 0);
+        while ((length = recvmsg(session->sock_fd, &netlink_reply, 0)) < 0 && errno == EINTR);
         LOG_DEBUG("  length == %d\n", (int)length);
 
         if (length < 0) {
