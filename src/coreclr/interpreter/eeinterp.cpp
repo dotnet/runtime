@@ -54,7 +54,6 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         doInterpret = true;
 
     {
-// Interpreter-FIXME: Necessary to work around InterpConfig members only being defined in DEBUG.
         switch (InterpConfig.InterpMode())
         {
             // 0: default, do not use interpreter except explicit opt-in via DOTNET_Interpreter
@@ -95,7 +94,6 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         if (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args))
         {
             doInterpret = true;
-            // FIXME: What if there are multiple modules specified by the DOTNET_Interpreter config variable?
             g_interpModule = methodInfo->scope;
         }
 #endif

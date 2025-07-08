@@ -2197,20 +2197,22 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             return true;
 
         case NI_Throw_PlatformNotSupportedException:
-            // Interpreter-FIXME: If an INTOP_THROW_PNSE is the first opcode in a try block, catch doesn't catch the exception
-            // For now, insert a safepoint as padding.
-            AddIns(INTOP_SAFEPOINT);
             AddIns(INTOP_THROW_PNSE);
             return true;
 
         default:
         {
-            const char* className = NULL;
-            const char* namespaceName = NULL;
-            const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
-            printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
+#ifdef DEBUG
+            if (m_verbose)
+            {
+                const char* className = NULL;
+                const char* namespaceName = NULL;
+                const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+                printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
+            }
+#endif
             if (mustExpand)
-                assert(!"EmitNamedIntrinsicCall not implemented must-expand intrinsic");
+                NO_WAY("EmitNamedIntrinsicCall not implemented must-expand intrinsic");
             return false;
         }
     }
