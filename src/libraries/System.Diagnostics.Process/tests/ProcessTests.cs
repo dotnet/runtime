@@ -125,9 +125,9 @@ namespace System.Diagnostics.Tests
                     });
 
                     Console.WriteLine(PosixSignalRegistrationCreatedMessage);
-                    
+
                     receivedSignalEvent.WaitOne(WaitInMS);
-                        
+
                     return 0;
                 },
                 arg: $"{signal}",

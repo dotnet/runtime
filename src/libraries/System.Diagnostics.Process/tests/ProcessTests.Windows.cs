@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -27,7 +28,10 @@ namespace System.Diagnostics.Tests
                 _ => throw new ArgumentOutOfRangeException(nameof(signal))
             };
 
-            Assert.True(Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)processId));
+            if (!Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)processId))
+            {
+                throw new Win32Exception();
+            }
         }
 
         // See https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw#remarks:
@@ -37,7 +41,10 @@ namespace System.Diagnostics.Tests
         {
             if (signal is PosixSignal.SIGINT)
             {
-                Assert.True(Interop.Kernel32.SetConsoleCtrlHandler(null, false));
+                if (!Interop.Kernel32.SetConsoleCtrlHandler(null, false))
+                {
+                    throw new Win32Exception();
+                }
             }
         }
     }
