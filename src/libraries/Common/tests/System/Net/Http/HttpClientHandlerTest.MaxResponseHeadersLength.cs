@@ -159,7 +159,7 @@ namespace System.Net.Http.Functional.Tests
                     // Do not use HandleRequestAsync. It sends GO_AWAY before sending the response, making client close the connection right after the stream abort.
                     // QUIC is based on UDP and packet ordering is not preserved, so the connection close might race with the expected stream error in H/3 case.
                     await connection.ReadRequestDataAsync();
-                    await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
+                    await connection.SendResponseAsync(headers: headers);
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
