@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.SLHDsa.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
