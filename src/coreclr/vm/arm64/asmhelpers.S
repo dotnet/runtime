@@ -892,8 +892,8 @@ LOCAL_LABEL(StoreCopyLoop):
 LEAF_END Store_Stack
 
 LEAF_ENTRY Load_Stack_Ref, _TEXT
-        ldr w11, [x10], #4 ; SP offset
-        ldr w12, [x10], #4 ; size of the value type
+        ldr w11, [x10], #4 // SP offset
+        ldr w12, [x10], #4 // size of the value type
         add x11, sp, x11
         str x9, [x11]
         add x9, x9, x12
@@ -937,8 +937,8 @@ LOCAL_LABEL(RefCopyDone\argReg):
 .endm
 
 LEAF_ENTRY Store_Stack_Ref, _TEXT
-        ldr w12, [x10], #4 ; SP offset
-        ldr w11, [x10], #4 ; size of the value type
+        ldr w12, [x10], #4 // SP offset
+        ldr w11, [x10], #4 // size of the value type
         add x12, sp, x12
         ldr x12, [x12, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
         Copy_Ref x12
