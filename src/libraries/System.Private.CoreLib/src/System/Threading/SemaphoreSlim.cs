@@ -224,7 +224,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -258,7 +258,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -611,7 +611,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
