@@ -250,7 +250,7 @@ CreateCrashDump(
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_pipe, STDERR_FILENO);
+            while (-1 == dup2(child_pipe, STDERR_FILENO) && errno == EINTR);
         }
         // Execute the createdump program
         if (execv(argv[0], (char* const *)argv) == -1)

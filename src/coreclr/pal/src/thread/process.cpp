@@ -897,19 +897,23 @@ CorUnix::InternalCreateProcess(
                fd to the corresponding standard one.  The API that I use,
                dup2, will copy the source to the destination, automatically
                closing the existing destination, in an atomic way */
-            if (dup2(iFdIn, STDIN_FILENO) == -1)
+            int dup2_result;
+            while (-1 == (dup2_result = dup2(iFdIn, STDIN_FILENO)) && errno == EINTR);
+            if (dup2_result == -1)
             {
                 // Didn't duplicate standard in.
                 _exit(EXIT_FAILURE);
             }
 
-            if (dup2(iFdOut, STDOUT_FILENO) == -1)
+            while (-1 == (dup2_result = dup2(iFdOut, STDOUT_FILENO)) && errno == EINTR);
+            if (dup2_result == -1)
             {
                 // Didn't duplicate standard out.
                 _exit(EXIT_FAILURE);
             }
 
-            if (dup2(iFdErr, STDERR_FILENO) == -1)
+            while (-1 == (dup2_result = dup2(iFdErr, STDERR_FILENO)) && errno == EINTR);
+            if (dup2_result == -1)
             {
                 // Didn't duplicate standard error.
                 _exit(EXIT_FAILURE);
@@ -2254,7 +2258,7 @@ PROCCreateCrashDump(
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_pipe, STDERR_FILENO);
+            while (-1 == dup2(child_pipe, STDERR_FILENO) && errno == EINTR);
         }
         if (g_createdumpCallback != nullptr)
         {

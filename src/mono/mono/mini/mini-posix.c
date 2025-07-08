@@ -865,7 +865,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 #endif
 
 	if (!mini_debug_options.no_gdb_backtrace && pid == 0) {
-		dup2 (STDERR_FILENO, STDOUT_FILENO);
+		while (-1 == dup2 (STDERR_FILENO, STDOUT_FILENO) && errno == EINTR);
 
 		g_async_safe_printf ("\n=================================================================\n");
 		g_async_safe_printf("\tExternal Debugger Dump:\n");
