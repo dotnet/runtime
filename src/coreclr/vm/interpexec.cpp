@@ -10,11 +10,6 @@
 // for numeric_limits
 #include <limits>
 
-FCDECL1(float, JIT_ULng2Flt, uint64_t val);
-FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
-FCDECL1(float, JIT_Lng2Flt, int64_t val);
-FCDECL1(double, JIT_Lng2Dbl, int64_t val);
-
 #ifdef TARGET_WASM
 void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
 #else
