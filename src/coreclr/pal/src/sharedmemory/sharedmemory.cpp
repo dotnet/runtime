@@ -196,7 +196,8 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
 
         if (isGlobalLockAcquired)
         {
-            int operationResult = mkdir(path, permissionsMask);
+            int operationResult;
+            while (-1 == (mkdir_result = mkdir(path, permissionsMask)) && errno == EINTR);
             if (operationResult != 0)
             {
                 if (errors != nullptr)

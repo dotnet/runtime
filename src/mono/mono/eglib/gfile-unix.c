@@ -131,8 +131,12 @@ g_mkdtemp (char *temp)
 #else
 	temp = mktemp (g_strdup (temp));
 	/* 0700 is the mode specified in specs */
-	if (temp && *temp && mkdir (temp, 0700) == 0)
-		return temp;
+	if (temp && *temp)
+	{
+		int mkdir_result;
+		while (-1 == (mkdir_result = mkdir (temp, 0700)) && errno == EINTR);
+		if (mkdir_result == 0) return temp;
+	}
 
 	g_free (temp);
 	return NULL;

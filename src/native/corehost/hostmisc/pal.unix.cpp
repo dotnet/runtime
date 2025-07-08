@@ -402,7 +402,9 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
 
     // Create $HOME/.net with rwx access to the owner
-    if (::mkdir(extraction_dir.c_str(), S_IRWXU) == 0)
+    int mkdir_error;
+    while (-1 == (mkdir_error = ::mkdir(extraction_dir.c_str(), S_IRWXU)) && errno == EINTR);
+    if (mkdir_error == 0)
     {
         return true;
     }

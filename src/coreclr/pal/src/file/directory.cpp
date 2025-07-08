@@ -457,7 +457,9 @@ CreateDirectoryA(
     // Canonicalize the path so we can determine its length.
     FILECanonicalizePath(realPathBuf);
 
-    if ( mkdir(realPathBuf, mode) != 0 )
+    int mkdir_result;
+    while (-1 == (mkdir_result = mkdir(realPathBuf, mode)) && errno == EINTR);
+    if ( mkdir_result != 0 )
     {
         TRACE("Creation of directory [%s] was unsuccessful, errno = %d.\n",
               unixPathName, errno);

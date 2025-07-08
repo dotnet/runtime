@@ -248,7 +248,9 @@ namespace pal
 
     inline bool mkdir(const char_t* dir, int mode, int& error_code)
     {
-        int ret = ::mkdir(dir, mode);
+        int ret;
+        while (-1 == (ret = ::mkdir(dir, mode)) && errno == EINTR);
+
         if (ret == 0)
             return true;
 

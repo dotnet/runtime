@@ -291,7 +291,7 @@ g_ensure_directory_exists (const gchar *filename)
 		p = strchr (p, '/');
 		if (p)
 			*p = '\0';
-		retval = mkdir (dir, 0777);
+		while (-1 == (retval = mkdir (dir, 0777)) && errno == EINTR);
 		if (retval != 0 && errno != EEXIST) {
 			g_free (dir);
 			return FALSE;
