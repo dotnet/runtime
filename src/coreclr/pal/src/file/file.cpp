@@ -1506,7 +1506,7 @@ InternalSetFilePointerForUnixFd(
         struct stat fileData;
         int result;
 
-        result = fstat(iUnixFd, &fileData);
+        while (-1 == (result = fstat(iUnixFd, &fileData)) && errno == EINTR);
         if (result == -1)
         {
             // It's a bad fd. This shouldn't happen because
@@ -1785,7 +1785,9 @@ CorUnix::InternalGetFileSize(
         goto InternalGetFileSizeExit;
     }
 
-    if (fstat(pLocalData->unix_fd, &stat_data) != 0)
+    int fstat_result;
+    while (-1 == (fstat_result = fstat(pLocalData->unix_fd, &stat_data)) && errno == EINTR);
+    if (fstat_result != 0)
     {
         ERROR("fstat failed of file descriptor %d\n", pLocalData->unix_fd);
         palError = FILEGetLastErrorFromErrno();

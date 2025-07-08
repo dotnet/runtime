@@ -81,7 +81,9 @@ static void* map_file(const pal::string_t& path, size_t* length, int prot, int f
     }
 
     struct stat buf;
-    if (fstat(fd, &buf) != 0)
+    int fstat_result;
+    while (-1 == (fstat_result = fstat(fd, &buf)) && errno == EINTR);
+    if (fstat_result != 0)
     {
         trace::error(_X("Failed to map file. fstat(%s) failed with error %d"), path.c_str(), errno);
         close(fd);

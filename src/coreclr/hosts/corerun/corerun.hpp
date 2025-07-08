@@ -472,7 +472,9 @@ namespace pal
             return false;
 
         struct stat buf;
-        if (fstat(fd, &buf) == -1)
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(fd, &buf)) && errno == EINTR);
+        if (fstat_result == -1)
         {
             close(fd);
             return false;

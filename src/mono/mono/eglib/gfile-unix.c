@@ -82,7 +82,9 @@ g_file_test (const gchar *filename, GFileTest test)
 	}
 #ifdef HAVE_LSTAT
 	if ((test & G_FILE_TEST_IS_SYMLINK) != 0) {
-		have_stat = (lstat (filename, &st) == 0);
+		int lstat_result;
+		while (-1 == (lstat_result = lstat (filename, &st)) && errno == EINTR);
+		have_stat = (lstat_result == 0);
 		if (have_stat && S_ISLNK (st.st_mode))
 			return TRUE;
 	}

@@ -519,7 +519,9 @@ CorUnix::InternalCreateFileMapping(
 #endif // !CORECLR
         }
 
-        if (-1 == fstat(UnixFd, &UnixFileInformation))
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(UnixFd, &UnixFileInformation)) && errno == EINTR);
+        if (-1 == fstat_result)
         {
             ASSERT("fstat() failed for this reason %s.\n", strerror(errno));
             palError = ERROR_INTERNAL_ERROR;
@@ -598,7 +600,9 @@ CorUnix::InternalCreateFileMapping(
     {
         struct stat st;
 
-        if (0 == fstat(UnixFd, &st))
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(UnixFd, &st)) && errno == EINTR);
+        if (0 == fstat_result)
         {
             pLocalData->MappedFileDevNum = st.st_dev;
             pLocalData->MappedFileInodeNum = st.st_ino;
@@ -1490,7 +1494,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
     non-standard.  So I will try to enlarge a file, and if that fails try the
     less efficient way.*/
     while (-1 == (TruncateRetVal = ftruncate( UnixFD, NewSize )) && errno == EINTR);
-    fstat( UnixFD, &FileInfo );
+    while (-1 == fstat( UnixFD, &FileInfo ) && errno == EINTR);
 
     if ( TruncateRetVal != 0 || FileInfo.st_size != NewSize )
     {

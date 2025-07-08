@@ -262,7 +262,8 @@ int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
     struct stat_ result;
-    int ret = lstat_(path, &result);
+    int ret;
+    while (-1 == (ret = lstat_(path, &result)) && errno == EINTR);
 
     if (ret == 0)
     {

@@ -75,7 +75,9 @@ g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GEr
 		return FALSE;
 	}
 
-	if (fstat (fd, &st) != 0) {
+	int fstat_result;
+	while (-1 == (fstat_result = fstat (fd, &st)) && errno == EINTR);
+	if (fstat_result != 0) {
 		if (gerror != NULL) {
 			int err = errno;
 			*gerror = g_error_new (G_LOG_DOMAIN, g_file_error_from_errno (err), "Error in fstat()");

@@ -482,7 +482,8 @@ int SharedMemoryHelpers::CreateOrOpenFile(
         if (id->IsUserScope())
         {
             struct stat statInfo;
-            int statResult = fstat(fileDescriptor, &statInfo);
+            int statResult;
+            while (-1 == (statResult = fstat(fileDescriptor, &statInfo)) && errno == EINTR);
             if (statResult != 0)
             {
                 if (errors != nullptr)
