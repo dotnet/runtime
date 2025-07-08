@@ -91,7 +91,7 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	ep_rt_thread_params_t *thread_params = (ep_rt_thread_params_t *)data;
 
 	EventPipeSession *const session = (EventPipeSession *)thread_params->thread_params;
-	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
+	if (!ep_session_type_uses_streaming_thread (session->session_type))
 		return 1;
 
 	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
@@ -100,28 +100,44 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	session->streaming_thread = thread_params->thread;
 
 	bool success = true;
-	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
 	EP_GCX_PREEMP_ENTER
-		while (ep_session_get_streaming_enabled (session)) {
-			bool events_written = false;
-			if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
-				success = false;
-				break;
-			}
+		if (ep_session_type_uses_buffer_manager (session->session_type)) {
+			ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
+			while (ep_session_get_streaming_enabled (session)) {
+				bool events_written = false;
+				if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
+					success = false;
+					break;
+				}
 
-			if (!events_written) {
-				// No events were available, sleep until more are available
-				ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
-			}
+				if (!events_written) {
+					// No events were available, sleep until more are available
+					ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
+				}
 
-			// Wait until it's time to sample again.
-			const uint32_t timeout_ns = 100000000; // 100 msec.
-			ep_rt_thread_sleep (timeout_ns);
+				// Wait until it's time to sample again.
+				const uint32_t timeout_ns = 100000000; // 100 msec.
+				ep_rt_thread_sleep (timeout_ns);
+			}
+		} else if (session->session_type == EP_SESSION_TYPE_USEREVENTS) {
+			// User events session, write all user events tracepoints to the file.
+			while (ep_session_get_streaming_enabled (session)) {
+				EP_ASSERT (session->continuation_stream != NULL);
+				if (ep_ipc_continuation_stream_connection_closed (session->continuation_stream)) {
+					success = false;
+					break;
+				}
+
+				// Wait until it's time to sample again.
+				const uint32_t timeout_ns = 100000000; // 100 msec.
+				ep_rt_thread_sleep (timeout_ns);
+			}
+		} else {
+			EP_UNREACHABLE ("Unsupported session type for streaming thread.");
 		}
-
 		session->streaming_thread = NULL;
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
 	EP_GCX_PREEMP_EXIT
@@ -159,19 +175,19 @@ void
 session_create_streaming_thread (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM);
+	EP_ASSERT (ep_session_type_uses_streaming_thread (session->session_type));
 
 	ep_requires_lock_held ();
 
 	ep_session_set_streaming_enabled (session, true);
 	ep_rt_wait_event_alloc (&session->rt_thread_shutdown_event, true, false);
 	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
-		EP_UNREACHABLE ("Unable to create stream flushing thread shutdown event.");
+		EP_UNREACHABLE ("Unable to create streaming thread shutdown event.");
 
 #ifndef PERFTRACING_DISABLE_THREADS
 	ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
-		EP_UNREACHABLE ("Unable to create stream flushing thread.");
+		EP_UNREACHABLE ("Unable to create streaming thread.");
 #else
 	ep_session_inc_ref (session);
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
@@ -183,18 +199,19 @@ static
 void
 session_disable_streaming_thread (EventPipeSession *session)
 {
-	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM);
+	EP_ASSERT (ep_session_type_uses_streaming_thread (session->session_type));
 	EP_ASSERT (ep_session_get_streaming_enabled (session));
 
 	EP_ASSERT (!ep_rt_process_detach ());
-	EP_ASSERT (session->buffer_manager != NULL);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (session->session_type) || session->buffer_manager != NULL);
 
 	// The streaming thread will watch this value and exit
 	// when profiling is disabled.
 	ep_session_set_streaming_enabled (session, false);
 
 	// Thread could be waiting on the event that there is new data to read.
-	ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager));
+	if (ep_session_type_uses_buffer_manager (session->session_type))
+		ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager));
 
 	// Wait for the streaming thread to clean itself up.
 	ep_rt_wait_event_handle_t *rt_thread_shutdown_event = &session->rt_thread_shutdown_event;
@@ -282,6 +299,8 @@ ep_session_alloc (
 	instance->rundown_keyword = rundown_keyword;
 	instance->synchronous_callback = sync_callback;
 	instance->callback_additional_data = callback_additional_data;
+	instance->user_events_data_fd = -1;
+	instance->continuation_stream = NULL;
 
 	// Hard coded 10MB for now, we'll probably want to make
 	// this configurable later.
@@ -320,6 +339,7 @@ ep_session_alloc (
 	case EP_SESSION_TYPE_USEREVENTS:
 		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
 		ep_raise_error_if_nok (session_user_events_tracepoints_init (instance, user_events_data_fd));
+		instance->continuation_stream = (IpcContinuationStream *)stream;
 		break;
 
 	default:
@@ -550,7 +570,7 @@ ep_session_start_streaming (EventPipeSession *session)
 	if (session->file != NULL)
 		ep_file_initialize_file (session->file);
 
-	if (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM)
+	if (ep_session_type_uses_streaming_thread (session->session_type))
 		session_create_streaming_thread (session);
 
 	if (session->session_type == EP_SESSION_TYPE_SYNCHRONOUS) {
@@ -558,7 +578,7 @@ ep_session_start_streaming (EventPipeSession *session)
 		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 	}
 
-	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
+	if (!ep_session_type_uses_streaming_thread (session->session_type))
 		ep_rt_volatile_store_uint32_t_without_barrier (&session->started, 1);
 
 	ep_requires_lock_held ();
@@ -590,7 +610,7 @@ ep_session_disable (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	if ((session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM) && ep_session_get_streaming_enabled (session))
+	if ((ep_session_type_uses_streaming_thread (session->session_type)) && ep_session_get_streaming_enabled (session))
 		session_disable_streaming_thread (session);
 
 	if (session->session_type == EP_SESSION_TYPE_USEREVENTS)
@@ -945,8 +965,8 @@ ep_session_get_next_event (EventPipeSession *session)
 	EP_ASSERT (session != NULL);
 	ep_requires_lock_not_held ();
 
-	if (!session->buffer_manager) {
-		EP_ASSERT (!"Shouldn't call get_next_event on a synchronous session.");
+	if (!ep_session_type_uses_buffer_manager (session->session_type)) {
+		EP_ASSERT (!"Shouldn't call get_next_event on a session that doesn't use the buffer manager.");
 		return NULL;
 	}
 
@@ -958,8 +978,8 @@ ep_session_get_wait_event (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	if (!session->buffer_manager) {
-		EP_ASSERT (!"Shouldn't call get_wait_event on a synchronous session.");
+	if (!ep_session_type_uses_buffer_manager (session->session_type)) {
+		EP_ASSERT (!"Shouldn't call get_wait_event on a session that doesn't use the buffer manager.");
 		return NULL;
 	}
 
@@ -1030,6 +1050,12 @@ bool
 ep_session_type_uses_buffer_manager (EventPipeSessionType session_type)
 {
 	return (session_type != EP_SESSION_TYPE_SYNCHRONOUS && session_type != EP_SESSION_TYPE_USEREVENTS);
+}
+
+bool
+ep_session_type_uses_streaming_thread (EventPipeSessionType session_type)
+{
+	return (session_type == EP_SESSION_TYPE_IPCSTREAM || session_type == EP_SESSION_TYPE_FILESTREAM || session_type == EP_SESSION_TYPE_USEREVENTS);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
