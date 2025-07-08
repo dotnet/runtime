@@ -258,6 +258,8 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_MLDsaGetPalId)
     DllImportEntry(CryptoNative_MLDsaSignPure)
     DllImportEntry(CryptoNative_MLDsaVerifyPure)
+    DllImportEntry(CryptoNative_MLDsaSignPreEncoded)
+    DllImportEntry(CryptoNative_MLDsaVerifyPreEncoded)
     DllImportEntry(CryptoNative_NewX509Stack)
     DllImportEntry(CryptoNative_ObjNid2Obj)
     DllImportEntry(CryptoNative_ObjObj2Txt)

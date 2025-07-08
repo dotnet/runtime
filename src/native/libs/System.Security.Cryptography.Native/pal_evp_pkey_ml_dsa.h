@@ -44,6 +44,26 @@ PALEXPORT int32_t CryptoNative_MLDsaVerifyPure(EVP_PKEY *pkey,
                                                uint8_t* sig, int32_t sigLen);
 
 /*
+Sign an encoded message using the provided ML-DSA key.
+
+Returns 1 on success, 0 on a mismatched signature, -1 on error.
+*/
+PALEXPORT int32_t CryptoNative_MLDsaSignPreEncoded(EVP_PKEY *pkey,
+                                                   void* extraHandle,
+                                                   uint8_t* msg, int32_t msgLen,
+                                                   uint8_t* destination, int32_t destinationLen);
+
+/*
+Verify an encoded message using the provided ML-DSA key.
+
+Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
+*/   
+PALEXPORT int32_t CryptoNative_MLDsaVerifyPreEncoded(EVP_PKEY *pkey,
+                                                     void* extraHandle,
+                                                     uint8_t* msg, int32_t msgLen,
+                                                     uint8_t* sig, int32_t sigLen);
+
+/*
 Export the secret key from the given ML-DSA key.
 */
 PALEXPORT int32_t CryptoNative_MLDsaExportSecretKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);
