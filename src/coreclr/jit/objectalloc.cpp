@@ -1733,7 +1733,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
                 break;
             }
 
-            if (comp->bbIsTryBeg(rpoBlock))
+            if (rpoBlock->hasTryIndex())
             {
                 mayExecuteAfterEH = true;
                 break;
