@@ -24,7 +24,8 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
     assert(windowSize != NULL);
 
 #if HAVE_IOCTL && HAVE_TIOCGWINSZ
-    int error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize);
+    int error;
+    while (-1 == (error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize)) && errno == EINTR);
 
     if (error != 0)
     {
