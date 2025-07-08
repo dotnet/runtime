@@ -221,7 +221,9 @@ namespace System.IO
                     // This ensures the WatchedDirectory matches with the most recent INotifyAddWatch directory.
                     lock (watcher)
                     {
-                        if (_isProcessThreadStopping || watcher.IsStopped)
+                        if (_isProcessThreadStopping // inotify thread stopping
+                            || watcher.IsStopped     // user stopped raising events
+                            || (parent is not null && watcher.RootDirectory is null)) // process events removed the root
                         {
                             return null;
                         }
