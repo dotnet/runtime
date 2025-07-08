@@ -175,14 +175,6 @@ Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
     return Error_SUCCESS;
 }
 #else
-#if defined(__clang__) || defined(__GNUC__)
-  #define unreachable() __builtin_unreachable()
-#elif defined(_MSC_VER)
-  #include <intrin.h>
-  #define unreachable() __assume(0)
-#else
-  #define unreachable() ((void)0)  // fallback, does nothing
-#endif // defined(__clang__) || defined(__GNUC__)
 Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     (void)sock;
