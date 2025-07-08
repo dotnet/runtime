@@ -12,11 +12,11 @@
 
   <ItemGroup>
     <PackageFile Include="$(RuntimeBinDir)ILCompiler.Reflection.ReadyToRun.dll">
-       <TargetPath>\lib\netstandard2.0\</TargetPath>
+       <TargetPath>\lib\$(NetCoreAppMinimum)\</TargetPath>
     </PackageFile>
     <Dependency Include="System.Reflection.Metadata">
        <Version>$(SystemReflectionMetadataVersion)</Version>
-       <TargetFramework>netstandard2.0</TargetFramework>
+       <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
        <Exclude>Build,Analyzers</Exclude>
     </Dependency>
   </ItemGroup>

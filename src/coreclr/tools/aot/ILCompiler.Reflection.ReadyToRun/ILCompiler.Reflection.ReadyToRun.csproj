@@ -7,8 +7,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-    <!-- ILSpy requires this assembly to target netstandard2.0 -->
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);8002;NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
@@ -16,11 +15,6 @@
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunAnalyzers>false</RunAnalyzers>
-    <!--
-      The SDK warns if a project targets a framework that doesn't support trimming and IsTrimmable is true.
-      We set IsTrimmable higher up in the Directory.Build.props files, so we reset it to false here.
-    -->
-    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
