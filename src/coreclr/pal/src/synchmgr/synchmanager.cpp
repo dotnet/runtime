@@ -1849,7 +1849,7 @@ namespace CorUnix
                 Poll.events = POLLIN;
                 Poll.revents = 0;
 
-                iRet = poll(&Poll, 1, iTimeout);
+                while (-1 == (iRet = poll(&Poll, 1, iTimeout)) && errno == EINTR);
 
                 TRACE("Woken up from poll() with ret=%d [iTimeout=%d]\n",
                        iRet, iTimeout);
@@ -3111,7 +3111,7 @@ namespace CorUnix
             ERROR("Failed creating thread synchronization mutex [error=%d (%s)]\n", iRet, strerror(iRet));
             if (EAGAIN == iRet && MaxUnavailableResourceRetries >= ++iEagains)
             {
-                poll(NULL, 0, std::min(100,10*iEagains));
+                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR);
                 goto Mutex_retry;
             }
             else if (ENOMEM == iRet)
@@ -3137,7 +3137,7 @@ namespace CorUnix
                   "[error=%d (%s)]\n", iRet, strerror(iRet));
             if (EAGAIN == iRet && MaxUnavailableResourceRetries >= ++iEagains)
             {
-                poll(NULL, 0, std::min(100,10*iEagains));
+                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR);
                 goto Cond_retry;
             }
             else if (ENOMEM == iRet)

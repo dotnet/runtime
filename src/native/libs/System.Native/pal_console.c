@@ -370,7 +370,9 @@ int32_t SystemNative_StdinReady(void)
 {
     SystemNative_InitializeConsoleBeforeRead(/* minChars */ 1, /* decisecondsTimeout */ 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
-    int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
+    int poll_result;
+    while (-1 == (poll_result = poll(&fd, 1, 0)) && errno == EINTR);
+    int rv = poll_result > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
     return rv;
 }
