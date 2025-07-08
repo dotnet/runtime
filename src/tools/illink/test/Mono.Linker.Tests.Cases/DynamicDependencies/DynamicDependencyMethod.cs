@@ -195,7 +195,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
         [Kept]
         public static void Test()
         {
-            var i = new Impl ); // Avoid removal of non-implemented abstract methods
+            var i = new Impl(); // Avoid removal of non-implemented abstract methods
 
             typeof(ReferenceViaReflection).RequiresPublicMethods();
             typeof(AbstractMethods).RequiresPublicMethods();
