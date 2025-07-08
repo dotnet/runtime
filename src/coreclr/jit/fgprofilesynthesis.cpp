@@ -249,12 +249,13 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
-    // A simple check whether the current method has more than one edge.
-    // Ignore static constructors - they're never expected to be called more than once.
+    // If a method has just one edge, we simulate having PGO data for it since we typically
+    // don't instrument such methods. To avoid giving excessive inlining boost to large and/or
+    // infrequently executed methods, we apply the following heuristics to exclude:
+    //
     const bool preferSize   = m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
     const bool isCctor      = ((m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR);
-    m_comp->fgPgoSingleEdge = !isCctor && !preferSize;
-
+    m_comp->fgPgoSingleEdge = !isCctor && !preferSize && m_comp->opts.callInstrCount < 10;
     if (m_comp->fgPgoSingleEdge)
     {
         for (BasicBlock* const block : m_comp->Blocks())
@@ -266,39 +267,6 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             }
         }
     }
-
-    // fgPgoSingleEdge targets mostly small wrapper-like methods, so we ignore single-edge code
-    // with a lot of calls.
-    int       callsCount                  = 0;
-    const int MaxCallsForSingleEdgeBlocks = 10;
-    if (m_comp->fgPgoSingleEdge)
-    {
-        // Loop all BBs again because the previous block-only loop was more likely to
-        // bail out early.
-        for (BasicBlock* const block : m_comp->Blocks())
-        {
-            for (Statement* const stmt : block->Statements())
-            {
-                if ((stmt->GetRootNode() != nullptr) && ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0))
-                {
-                    for (GenTree* const tree : stmt->TreeList())
-                    {
-                        if (tree->IsCall())
-                        {
-                            callsCount++;
-                            if (callsCount > MaxCallsForSingleEdgeBlocks)
-                            {
-                                m_comp->fgPgoSingleEdge = false;
-                                JITDUMP("Too many calls for fgPgoSingleEdge - bail out.\n")
-                                goto TOO_MANY_CALLS;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-TOO_MANY_CALLS:
 
     m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
 
