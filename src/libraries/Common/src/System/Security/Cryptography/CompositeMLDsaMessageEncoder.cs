@@ -30,7 +30,11 @@ namespace Internal.Cryptography
                                      1 +                                    // len(ctx)
                                      context.Length +                       // ctx
                                      r.Length +                             // r
+#if NET
                                      hash.HashLengthInBytes);               // PH( M )
+#else
+                                     hash.GetHashLengthInBytes());          // PH( M )
+#endif
 
                 byte[] M_prime = new byte[length];
 
@@ -60,11 +64,12 @@ namespace Internal.Cryptography
                 hash.AppendData(message);
 #if NET
                 hash.GetHashAndReset(M_prime.AsSpan(offset, hash.HashLengthInBytes));
+                offset += hash.HashLengthInBytes;
 #else
                 byte[] hashBytes = hash.GetHashAndReset();
-                hashBytes.CopyTo(M_prime.AsSpan(offset, hash.HashLengthInBytes));
+                hashBytes.CopyTo(M_prime.AsSpan(offset, hash.GetHashLengthInBytes()));
+                offset += hash.GetHashLengthInBytes();
 #endif
-                offset += hash.HashLengthInBytes;
 
                 Debug.Assert(offset == M_prime.Length);
 
