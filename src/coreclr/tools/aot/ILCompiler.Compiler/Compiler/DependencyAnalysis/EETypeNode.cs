@@ -1039,23 +1039,33 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NecessaryTypeSymbol(interfaceType.NormalizeInstantiation());
         }
 
-        protected virtual void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
+        private void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            // Canonical types (type loader templates) do not generate an interface list - we build
-            // one for the loaded type at runtime dynamically from template data.
-            bool isCanonicalType = _type.IsCanonicalSubtype(CanonicalFormKind.Any);
-
-            foreach (var itf in _type.RuntimeInterfaces)
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                IEETypeNode interfaceTypeNode = GetInterfaceTypeNode(factory, itf);
-
-                // Only emit interfaces that were not optimized away.
-                if (interfaceTypeNode.Marked)
+                // Canonical types (type loader templates) do not generate an interface list - we build
+                // one for the loaded type at runtime dynamically from template data.
+                foreach (DefType itf in _type.RuntimeInterfaces)
                 {
-                    if (isCanonicalType)
+                    // If the interface was optimized away, skip it
+                    if (factory.InterfaceUse(itf.GetTypeDefinition()).Marked)
+                    {
+                        // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
                         objData.EmitZeroPointer();
-                    else
+                    }
+                }
+            }
+            else
+            {
+                foreach (var itf in _type.RuntimeInterfaces)
+                {
+                    IEETypeNode interfaceTypeNode = GetInterfaceTypeNode(factory, itf);
+
+                    // Only emit interfaces that were not optimized away.
+                    if (interfaceTypeNode.Marked)
+                    {
                         objData.EmitPointerReloc(interfaceTypeNode);
+                    }
                 }
             }
         }
