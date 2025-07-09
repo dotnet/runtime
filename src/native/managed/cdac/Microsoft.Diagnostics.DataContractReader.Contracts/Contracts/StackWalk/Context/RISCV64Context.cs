@@ -16,7 +16,7 @@ internal struct RISCV64Context : IPlatformContext
     [Flags]
     public enum ContextFlagsValues : uint
     {
-        CONTEXT_RISCV64 = 0x00800000,
+        CONTEXT_RISCV64 = 0x01000000,
         CONTEXT_CONTROL = CONTEXT_RISCV64 | 0x1,
         CONTEXT_INTEGER = CONTEXT_RISCV64 | 0x2,
         CONTEXT_FLOATING_POINT = CONTEXT_RISCV64 | 0x4,
@@ -34,12 +34,9 @@ internal struct RISCV64Context : IPlatformContext
         CONTEXT_AREA_MASK = 0xFFFF,
     }
 
-    public readonly uint Size => 0x300; // Approximate size, may need adjustment
+    public readonly uint Size => 0x220;
 
-    public readonly uint DefaultContextFlags => (uint)(ContextFlagsValues.CONTEXT_CONTROL |
-                                                       ContextFlagsValues.CONTEXT_INTEGER |
-                                                       ContextFlagsValues.CONTEXT_FLOATING_POINT |
-                                                       ContextFlagsValues.CONTEXT_DEBUG_REGISTERS);
+    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public TargetPointer StackPointer
     {
