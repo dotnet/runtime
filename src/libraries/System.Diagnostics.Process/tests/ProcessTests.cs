@@ -85,8 +85,6 @@ namespace System.Diagnostics.Tests
         {
             if (OperatingSystem.IsWindows())
             {
-                // .NET already maps POSIX signals to Windows console events
-                // https://github.com/dotnet/runtime/blob/d221687c3724d26d653d022f4b254bc1d7eb1a6b/src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/PosixSignalRegistration.Windows.cs#L17-L18
                 // GenerateConsoleCtrlEvent only supports sending CTRL_C_EVENT and CTRL_BREAK_EVENT
                 yield return new object[] { PosixSignal.SIGINT };
                 yield return new object[] { PosixSignal.SIGQUIT };
@@ -144,10 +142,19 @@ namespace System.Diagnostics.Tests
                 Thread.Sleep(20);
             }
 
-            SendSignal(signal, remoteHandle.Process.Id);
+            try
+            {
+                SendSignal(signal, remoteHandle.Process.Id);
 
-            Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
-            Assert.Equal(0, remoteHandle.Process.ExitCode);
+                Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
+                Assert.Equal(0, remoteHandle.Process.ExitCode);
+            }
+            finally
+            {
+                // If sending the signal fails, we want to kill the process ASAP
+                // to prevent RemoteExecutor's timeout from hiding it.
+                remoteHandle.Process.Kill();
+            }
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
