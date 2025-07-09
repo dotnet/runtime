@@ -780,7 +780,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
             srcCount = BuildReturn(tree);
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             BuildKills(tree, killMask);
             break;
 
@@ -789,7 +789,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR.GetIntRegSet());
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             BuildKills(tree, killMask);
             break;
 #endif // SWIFT_SUPPORT
@@ -2287,8 +2287,8 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             assert(delayFreeOp != nullptr);
             break;
 
-        case NI_Sve2_AddCarryWideningLower:
-        case NI_Sve2_AddCarryWideningUpper:
+        case NI_Sve2_AddCarryWideningEven:
+        case NI_Sve2_AddCarryWideningOdd:
             // RMW operates on the third op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(3);
@@ -2400,6 +2400,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
     {
         case NI_AdvSimd_Arm64_VectorTableLookup:
         case NI_AdvSimd_VectorTableLookup:
+        case NI_Sve2_VectorTableLookup:
             consecutiveOp = intrin.op1;
             assert(consecutiveOp != nullptr);
             break;

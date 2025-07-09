@@ -121,6 +121,8 @@ static bool IsSSEOrAVXInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsKMOVInstruction(instruction ins);
+static bool IsAVXVNNIFamilyInstruction(instruction ins);
+static bool IsAVXVNNIINTInstruction(instruction ins);
 static bool Is3OpRmwInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
@@ -264,7 +266,7 @@ bool IsExtendedGPReg(regNumber reg) const;
 //    ins - The instruction to check.
 //
 // Returns:
-//    `true` if Evex encoding requires KMAsk support.
+//    `true` if Evex encoding requires KMask support.
 //
 bool HasKMaskRegisterDest(instruction ins) const
 {
@@ -495,15 +497,26 @@ code_t AddX86PrefixIfNeededAndNotPresent(const instrDesc* id, code_t code, emitA
 //    instOptions - emit options
 void SetEvexBroadcastIfNeeded(instrDesc* id, insOpts instOptions)
 {
-    if ((instOptions & INS_OPTS_EVEX_b_MASK) == INS_OPTS_EVEX_eb_er_rd)
+    assert(id->idHasMem());
+
+    if ((instOptions & INS_OPTS_EVEX_eb) != INS_OPTS_NONE)
     {
         assert(UseEvexEncoding());
-        id->idSetEvexbContext(instOptions);
+        id->idSetEvexBroadcastBit();
     }
-    else
-    {
-        assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
-    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexCompressedDisplacement: set compressed displacement
+//
+// Arguments:
+//    id - instruction descriptor
+void SetEvexCompressedDisplacement(instrDesc* id)
+{
+    assert(id->idHasMem());
+
+    assert(UseEvexEncoding());
+    id->idSetEvexCompressedDisplacementBit();
 }
 
 //------------------------------------------------------------------------
@@ -525,6 +538,25 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
     {
         assert(UseEvexEncoding());
         id->idSetEvexZContext();
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexEmbRoundIfNeeded: set embedded round if needed.
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexEmbRoundIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    assert(!id->idHasMem());
+
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
+    {
+        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
     }
 }
 
@@ -652,7 +684,7 @@ bool hasVexOrEvexPrefix(code_t code)
     return (hasVexPrefix(code) || hasEvexPrefix(code));
 }
 
-ssize_t TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte);
+bool TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, ssize_t* compressedDsp, bool* fitsInByte) const;
 
 //------------------------------------------------------------------------
 // codeEvexMigrationCheck: Temporary check to use when adding EVEX codepaths
@@ -670,7 +702,7 @@ bool codeEvexMigrationCheck(code_t code)
     return hasEvexPrefix(code);
 }
 
-ssize_t GetInputSizeInBytes(instrDesc* id) const;
+ssize_t GetInputSizeInBytes(const instrDesc* id) const;
 
 bool containsAVXInstruction = false;
 bool ContainsAVX()
@@ -865,7 +897,8 @@ void emitIns_R_I(instruction ins,
                  insOpts instOptions = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
+bool emitIns_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip, bool useApxNdd = false);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions = INS_OPTS_NONE);
 
@@ -1286,21 +1319,37 @@ inline bool emitIsUncondJump(instrDesc* jmp)
 //
 inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 {
-    return id->idIsEvexbContextSet();
+    assert(id->idHasMem());
+    return (id->idGetEvexbContext() & INS_OPTS_EVEX_eb) != 0;
 }
 
 //------------------------------------------------------------------------
-// HasEmbeddedBroadcast: Do we consider embedded broadcast while encoding.
+// HasEmbeddedMask: Do we consider embedded masking while encoding.
 //
 // Arguments:
 //    id - Instruction descriptor.
 //
 // Returns:
-//    `true` if the instruction does embedded broadcast.
+//    `true` if the instruction does embedded masking.
 //
 inline bool HasEmbeddedMask(const instrDesc* id) const
 {
     return id->idIsEvexAaaContextSet() || id->idIsEvexZContextSet();
+}
+
+//------------------------------------------------------------------------
+// HasCompressedDisplacement: Do we consider compressed displacement while encoding.
+//
+// Arguments:
+//    id - Instruction descriptor.
+//
+// Returns:
+//    `true` if the instruction does compressed displacement.
+//
+inline bool HasCompressedDisplacement(const instrDesc* id) const
+{
+    assert(id->idHasMem());
+    return (id->idGetEvexbContext() & INS_OPTS_EVEX_cd) != 0;
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;

@@ -394,4 +394,6 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
 
 void log_init_error_to_host (const char* format, ...);
 
+uint64_t GetHighPrecisionTimeStamp();
+
 #endif // __GC_H
