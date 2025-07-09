@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
     }
-    public partial class NullLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
+    public sealed partial class NullLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
     {
         internal NullLoggerProvider() { }
         public static Microsoft.Extensions.Logging.Abstractions.NullLoggerProvider Instance { get { throw null; } }

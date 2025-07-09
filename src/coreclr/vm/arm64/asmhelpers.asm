@@ -1247,13 +1247,23 @@ StoreCopyLoop
         bne StoreCopyLoop
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
-    LEAF_END Load_Stack
+    LEAF_END Store_Stack
     
-    MACRO 
-        Store_Ref $argReg
+    LEAF_ENTRY Load_Stack_Ref
+        ldr w11, [x10], #4 ; SP offset
+        ldr w12, [x10], #4 ; size of the value type
+        add x11, sp, x11
+        str x9, [x11]
+        add x9, x9, x12
+        ; Align x9 to the stack slot size
+        add x9, x9, 7
+        and x9, x9, 0xfffffffffffffff8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_Stack_Ref
 
-    LEAF_ENTRY Store_Ref_$argReg
-        ldr x11, [x10], #8 ; size of the value type
+    MACRO
+        Copy_Ref $argReg
         cmp x11, #16
         blt CopyBy8$argReg
 RefCopyLoop16$argReg
@@ -1282,6 +1292,24 @@ RefCopyDone$argReg
         ; Align x9 to the stack slot size
         add x9, x9, 7
         and x9, x9, 0xfffffffffffffff8
+    MEND
+
+    LEAF_ENTRY Store_Stack_Ref
+        ldr w12, [x10], #4 ; SP offset
+        ldr w11, [x10], #4 ; size of the value type
+        add x12, sp, x12
+        ldr x12, [x12, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+        Copy_Ref x12
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_Stack_Ref
+
+    MACRO
+        Store_Ref $argReg
+
+    LEAF_ENTRY Store_Ref_$argReg
+        ldr x11, [x10], #8 ; size of the value type
+        Copy_Ref $argReg
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
     LEAF_END Store_Ref_$argReg

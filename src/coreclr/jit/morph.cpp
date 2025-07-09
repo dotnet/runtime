@@ -9882,8 +9882,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 const bool reverseCond = true;
 
                 var_types lookupType =
-                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType, op1SimdSize,
-                                                              reverseCond);
+                    op1IsScalar ? op1RetType
+                                : GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType,
+                                                                            op1SimdSize, reverseCond);
                 NamedIntrinsic newId =
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op1Oper, lookupType, cmpOp1, cmpOp2,
                                                                  op1SimdBaseType, op1SimdSize, op1IsScalar,
@@ -9920,8 +9921,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 switch (op1Intrinsic)
                 {
                     case NI_AVX_Compare:
-                    case NI_AVX512_Compare:
                     case NI_AVX_CompareScalar:
+                    case NI_AVX512_CompareMask:
                     {
                         assert(op1Intrin->GetOperandCount() == 3);
 
@@ -11384,7 +11385,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
         switch (intrinsic)
         {
             case NI_AVX_Compare:
-            case NI_AVX512_Compare:
+            case NI_AVX512_CompareMask:
             {
                 assert(tree->GetOperandCount() == 3);
 
