@@ -595,7 +595,7 @@ struct AMD64GcInfoEncoding {
     static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
     static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
     static const int REVERSE_PINVOKE_FRAME_ENCBASE = 6;
-    static const int NUM_REGISTERS_ENCBASE = 3;
+    static const int NUM_REGISTERS_ENCBASE = 2;
     static const int NUM_STACK_SLOTS_ENCBASE = 2;
     static const int NUM_UNTRACKED_SLOTS_ENCBASE = 1;
     static const int NORM_PROLOG_SIZE_ENCBASE = 5;

@@ -16850,26 +16850,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     pRD->pCurrentContextPointers->R14 = &(pDE->m_context.R14);
     pRD->pCurrentContextPointers->R15 = &(pDE->m_context.R15);
 
-#if defined(TARGET_UNIX)
-    // This would mean we need to update winnt.h in windows sdk.
-    pRD->volatileCurrContextPointers.R16 = &(pDE->m_context.R16);
-    pRD->volatileCurrContextPointers.R17 = &(pDE->m_context.R17);
-    pRD->volatileCurrContextPointers.R18 = &(pDE->m_context.R18);
-    pRD->volatileCurrContextPointers.R19 = &(pDE->m_context.R19);
-    pRD->volatileCurrContextPointers.R20 = &(pDE->m_context.R20);
-    pRD->volatileCurrContextPointers.R21 = &(pDE->m_context.R21);
-    pRD->volatileCurrContextPointers.R22 = &(pDE->m_context.R22);
-    pRD->volatileCurrContextPointers.R23 = &(pDE->m_context.R23);
-    pRD->volatileCurrContextPointers.R24 = &(pDE->m_context.R24);
-    pRD->volatileCurrContextPointers.R25 = &(pDE->m_context.R25);
-    pRD->volatileCurrContextPointers.R26 = &(pDE->m_context.R26);
-    pRD->volatileCurrContextPointers.R27 = &(pDE->m_context.R27);
-    pRD->volatileCurrContextPointers.R28 = &(pDE->m_context.R28);
-    pRD->volatileCurrContextPointers.R29 = &(pDE->m_context.R29);
-    pRD->volatileCurrContextPointers.R30 = &(pDE->m_context.R30);
-    pRD->volatileCurrContextPointers.R31 = &(pDE->m_context.R31);
-#endif // TARGET_UNIX
-
     // SyncRegDisplayToCurrentContext() sets the pRD->SP and pRD->ControlPC on AMD64.
     SyncRegDisplayToCurrentContext(pRD);
 
