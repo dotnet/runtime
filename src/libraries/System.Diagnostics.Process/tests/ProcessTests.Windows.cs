@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -30,7 +31,14 @@ namespace System.Diagnostics.Tests
 
             if (!Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)processId))
             {
-                throw new Win32Exception();
+                int error = Marshal.GetLastWin32Error();
+                if (error == Interop.Errors.ERROR_INVALID_FUNCTION)
+                {
+                    // This is the case for Docker in CI.
+                    throw new SkipTestException($"GenerateConsoleCtrlEvent failed with ERROR_INVALID_FUNCTION. The process is not a console process or does not have a console.");
+                }
+
+                throw new Win32Exception(error);
             }
         }
 
