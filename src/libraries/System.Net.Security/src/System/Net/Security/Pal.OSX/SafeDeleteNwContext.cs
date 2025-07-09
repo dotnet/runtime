@@ -119,6 +119,7 @@ namespace System.Net.Security
                         else
                         {
                             // EOF reached, signal completion
+                            //Interop.NetworkFramework.Tls.CancelConnection(_connectionHandle);
                             break;
                         }
                     }

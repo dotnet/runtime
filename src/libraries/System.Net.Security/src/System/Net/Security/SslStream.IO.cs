@@ -295,7 +295,7 @@ namespace System.Net.Security
             }
             try
             {
-#if TARGET_OSX
+#if TARGET_APPLE
                 if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
                 {
                     // For Network Framework, we need to select client certificate before handshake
@@ -324,7 +324,7 @@ namespace System.Net.Security
                     CompleteHandshake(_sslAuthenticationOptions);
                     return;
                 }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
                 if (!receiveFirst)
                 {
@@ -864,14 +864,14 @@ namespace System.Net.Security
             try
             {
 
-#if TARGET_OSX
+#if TARGET_APPLE
                 if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
                 {
                     Task<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
                     await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
                     return await task.ConfigureAwait(false);
                 }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
                 int processedLength = 0;
                 int nextTlsFrameLength = UnknownTlsFrameLength;
@@ -1014,14 +1014,14 @@ namespace System.Net.Security
 
             try
             {
-#if TARGET_OSX
+#if TARGET_APPLE
                 if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
                 {
                     Task task = SslStreamPal.AsyncWriteAsync(_securityContext!, buffer, cancellationToken);
                     await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
                     return;
                 }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
                 ValueTask t = buffer.Length < MaxDataSize ?
                     WriteSingleChunk<TIOAdapter>(buffer, cancellationToken) :

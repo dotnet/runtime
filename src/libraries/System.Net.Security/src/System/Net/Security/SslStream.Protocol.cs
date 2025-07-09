@@ -51,7 +51,7 @@ namespace System.Net.Security
 
         private SafeFreeCredentials? _credentialsHandle;
 
-#if TARGET_OSX
+#if TARGET_APPLE
         // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
         private SafeDeleteContext? _securityContext;
 #else
@@ -1141,7 +1141,7 @@ namespace System.Net.Security
 
                 if (!success)
                 {
-#if TARGET_OSX
+#if TARGET_APPLE
 #pragma warning disable CS0162 // unreachable code detected (compile time const)
                     if (SslStreamPal.CanGenerateCustomAlerts)
                     {
