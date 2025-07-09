@@ -10,10 +10,10 @@ namespace ILLink.RoslynAnalyzer.Tests.Interop
     {
         protected override string TestSuiteName => "Interop/InternalCalls";
 
-	[Fact]
-	public Task NoSpecialMarking ()
-	{
-	    return RunTest ();
-	 }
+        [Fact]
+        public Task NoSpecialMarking ()
+        {
+            return RunTest ();
+        }
     }
 }
