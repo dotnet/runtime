@@ -779,13 +779,13 @@ void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t locatio
 
 double Registers_REGDISPLAY::getFloatRegister(int num) const
 {
-    assert(validFloatRegister(regNum));
+    assert(validFloatRegister(num));
     return unwindhelpers_bitcast<double>(D[num - UNW_ARM64_D8]);
 }
 
 void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 {
-    assert(validFloatRegister(regNum));
+    assert(validFloatRegister(num));
     D[num - UNW_ARM64_D8] = unwindhelpers_bitcast<uint64_t>(value);
 }
 
@@ -1040,13 +1040,13 @@ void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t locatio
 
 double Registers_REGDISPLAY::getFloatRegister(int num) const
 {
-    assert(validFloatRegister(regNum));
+    assert(validFloatRegister(num));
     return unwindhelpers_bitcast<double>(F[num - UNW_LOONGARCH_F24]);
 }
 
 void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 {
-    assert(validFloatRegister(regNum));
+    assert(validFloatRegister(num));
     F[num - UNW_LOONGARCH_F24] = unwindhelpers_bitcast<uint64_t>(value);
 }
 
@@ -1067,8 +1067,8 @@ struct Registers_REGDISPLAY : REGDISPLAY
     uint64_t    getRegister(int num) const;
     void        setRegister(int num, uint64_t value, uint64_t location);
 
-    double      getFloatRegister(int num) const { abort(); }
-    void        setFloatRegister(int num, double value) { abort(); }
+    double      getFloatRegister(int num) const;
+    void        setFloatRegister(int num, double value);
 
     libunwind::v128    getVectorRegister(int num) const { abort(); }
     void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
