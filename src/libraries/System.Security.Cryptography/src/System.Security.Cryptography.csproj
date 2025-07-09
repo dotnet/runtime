@@ -455,6 +455,8 @@
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs"
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.Pkcs1.cs"
+             Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Pkcs1.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsa.cs"
@@ -614,6 +616,7 @@
     <Compile Include="System\Security\Cryptography\Kmac256.cs" />
     <Compile Include="System\Security\Cryptography\KmacXof128.cs" />
     <Compile Include="System\Security\Cryptography\KmacXof256.cs" />
+    <Compile Include="System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="System\Security\Cryptography\LiteHashProvider.cs" />
     <Compile Include="System\Security\Cryptography\LiteHashProvider.Xof.cs" />
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />

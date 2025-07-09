@@ -137,7 +137,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO If we know exact size of signature, then we can allocate instead of renting and copying.
-            byte[] rented = CryptoPool.Rent(32 + Algorithm.MaxSignatureSizeInBytes);
+            byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
 
             try
             {
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (destination.Length < 32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            if (destination.Length < CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
@@ -316,8 +316,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            // TODO change this to 32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes. Check other places too.
-            if (signature.Length < 32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            if (signature.Length < CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
             {
                 return false;
             }

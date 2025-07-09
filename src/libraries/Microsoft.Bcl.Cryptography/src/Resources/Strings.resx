@@ -177,6 +177,9 @@
   <data name="Cryptography_InvalidOidFormat" xml:space="preserve">
     <value>Invalid OID format.</value>
   </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
+  </data>
   <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
   </data>
@@ -218,6 +221,9 @@
   </data>
   <data name="Cryptography_PqcNoSeed" xml:space="preserve">
     <value>The current instance does not contain a seed.</value>
+  </data>
+  <data name="Cryptography_RSAPrivateKey_VersionTooNew" xml:space="preserve">
+    <value>The provided RSAPrivateKey value has version '{0}', but version '{1}' is the maximum supported.</value>
   </data>
   <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
     <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>

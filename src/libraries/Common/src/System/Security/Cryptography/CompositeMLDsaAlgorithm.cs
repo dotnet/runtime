@@ -14,6 +14,8 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class CompositeMLDsaAlgorithm : IEquatable<CompositeMLDsaAlgorithm>
     {
+        internal const int RandomizerSizeInBytes = 32;
+
         /// <summary>
         ///   Gets the name of the algorithm.
         /// </summary>
@@ -56,8 +58,7 @@ namespace System.Security.Cryptography
             DomainSeparator = domainSeparator;
             HashAlgorithmName = hashAlgorithmName;
 
-            // 32 bytes for randomizer
-            MaxSignatureSizeInBytes = 32 + MLDsaAlgorithm.SignatureSizeInBytes + maxTraditionalSignatureSize;
+            MaxSignatureSizeInBytes = RandomizerSizeInBytes + MLDsaAlgorithm.SignatureSizeInBytes + maxTraditionalSignatureSize;
         }
 
         /// <summary>

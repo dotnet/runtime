@@ -65,5 +65,47 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
+
+#if !NET
+        extension (IncrementalHash hash)
+        {
+            // TODO remove when https://github.com/dotnet/roslyn-analyzers/issues/7646 is fixed
+#pragma warning disable CA1822 // Mark members as static
+            internal int HashLengthInBytes
+#pragma warning restore CA1822 // Mark members as static
+            {
+                get
+                {
+                    HashAlgorithmName hashAlgorithmName = hash.AlgorithmName;
+
+                    if (hash.AlgorithmName == HashAlgorithmName.SHA1)
+                    {
+                        return 160 / 8;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+                    {
+                        return 256 / 8;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+                    {
+                        return 384 / 8;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+                    {
+                        return 512 / 8;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.MD5)
+                    {
+                        return 128 / 8;
+                    }
+                    else
+                    {
+                        Debug.Fail($"Unexpected hash algorithm: {hashAlgorithmName}");
+                        throw new CryptographicException();
+                    }
+                }
+            }
+        }
+#endif
     }
 }

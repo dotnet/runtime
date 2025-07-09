@@ -15,6 +15,10 @@ namespace System.Security.Cryptography
             Oids.Rsa,
         };
 
+        // TODO Currently reading PKCS#1 keys uses BigInteger which is not optimal and uses APIs that are not
+        // available downlevel. These methods should eventually be replaced with a more efficient implementation
+        // and they should be moved into the RSAKeyFormatHelper.Pkcs1 (which is shared between S.S.C. and M.B.C.).
+
         internal static void FromPkcs1PrivateKey(
             ReadOnlyMemory<byte> keyData,
             in AlgorithmIdentifierAsn algId,
@@ -253,58 +257,6 @@ namespace System.Security.Cryptography
             writer.WriteNull();
 
             writer.PopSequence();
-        }
-
-        internal static AsnWriter WritePkcs1PublicKey(in RSAParameters rsaParameters)
-        {
-            if (rsaParameters.Modulus == null || rsaParameters.Exponent == null)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-            }
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.PushSequence();
-            writer.WriteKeyParameterInteger(rsaParameters.Modulus);
-            writer.WriteKeyParameterInteger(rsaParameters.Exponent);
-            writer.PopSequence();
-
-            return writer;
-        }
-
-        internal static AsnWriter WritePkcs1PrivateKey(in RSAParameters rsaParameters)
-        {
-            if (rsaParameters.Modulus == null || rsaParameters.Exponent == null)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-            }
-
-            if (rsaParameters.D == null ||
-                rsaParameters.P == null ||
-                rsaParameters.Q == null ||
-                rsaParameters.DP == null ||
-                rsaParameters.DQ == null ||
-                rsaParameters.InverseQ == null)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
-            }
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            writer.PushSequence();
-
-            // Format version 0
-            writer.WriteInteger(0);
-            writer.WriteKeyParameterInteger(rsaParameters.Modulus);
-            writer.WriteKeyParameterInteger(rsaParameters.Exponent);
-            writer.WriteKeyParameterInteger(rsaParameters.D);
-            writer.WriteKeyParameterInteger(rsaParameters.P);
-            writer.WriteKeyParameterInteger(rsaParameters.Q);
-            writer.WriteKeyParameterInteger(rsaParameters.DP);
-            writer.WriteKeyParameterInteger(rsaParameters.DQ);
-            writer.WriteKeyParameterInteger(rsaParameters.InverseQ);
-
-            writer.PopSequence();
-            return writer;
         }
     }
 }

@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 
@@ -127,11 +129,7 @@ namespace System.Security.Cryptography
             //  1.  If len(ctx) > 255:
             //      return error
 
-            if (context.Length > 255)
-            {
-                Debug.Fail("This should have been validated by caller.");
-                throw new CryptographicException();
-            }
+            Debug.Assert(context.Length <= 255, $"Caller should have checked context.Length, got {context.Length}");
 
             //  2.  Compute the Message representative M'.
             //      As in FIPS 204, len(ctx) is encoded as a single unsigned byte.
@@ -142,22 +140,16 @@ namespace System.Security.Cryptography
             //                                              || PH( M )
 
 #if NET
-            Span<byte> r = stackalloc byte[32];
+            Span<byte> r = stackalloc byte[CompositeMLDsaAlgorithm.RandomizerSizeInBytes];
             RandomNumberGenerator.Fill(r);
 #else
             // TODO: add polyfill for RandomNumberGenerator.Fill
-            byte[] rBytes = new byte[32];
+            byte[] rBytes = new byte[CompositeMLDsaAlgorithm.RandomizerSizeInBytes];
             new Random().NextBytes(rBytes);
             Span<byte> r = rBytes;
 #endif
 
-            ReadOnlySpan<byte> M_prime;
-
-            using (CompositeMLDsaMessageEncoder encoder = new(Algorithm, context, r))
-            {
-                encoder.AppendData(data);
-                M_prime = encoder.GetMessageRepresentativeAndDispose();
-            }
+            byte[] M_prime = CompositeMLDsaMessageEncoder.GetMessageRepresentative(Algorithm, context, r, data);
 
             //  3.  Separate the private key into component keys
             //      and re-generate the ML-DSA key from seed.
@@ -178,9 +170,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                // TODO should we use a temporary buffer for the signature? Currently if ML-DSA succeeds but the traditional fails,
-                // then the ML-DSA signature will be observable briefly before we clear it.
-                _mldsa.SignData(M_prime, destination.Slice(32, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes), Algorithm.DomainSeparator);
+                _mldsa.SignData(M_prime, destination.Slice(r.Length, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes), Algorithm.DomainSeparator);
                 mldsaSigned = true;
             }
             catch (CryptographicException)
@@ -192,7 +182,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                tradResult = _componentAlgorithm.TrySignData(M_prime, destination.Slice(32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes), out tradBytesWritten);
+                tradResult = _componentAlgorithm.TrySignData(M_prime, destination.Slice(r.Length + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes), out tradBytesWritten);
                 tradSigned = true;
             }
             catch (CryptographicException)
@@ -205,12 +195,12 @@ namespace System.Security.Cryptography
             //          if NOT mldsaSig or NOT tradSig:
             //              output "Signature generation error"
 
-            if (mldsaSigned is false || tradSigned is false)
+            if (!mldsaSigned || !tradSigned)
             {
                 CryptographicOperations.ZeroMemory(destination);
                 throw new CryptographicException(); // TODO resx
             }
-            else if (tradResult is false)
+            else if (!tradResult)
             {
                 CryptographicOperations.ZeroMemory(destination);
                 bytesWritten = 0;
@@ -222,8 +212,8 @@ namespace System.Security.Cryptography
             //          s = SerializeSignatureValue(r, mldsaSig, tradSig)
             //          return s
 
-            r.CopyTo(destination.Slice(0, 32));
-            bytesWritten = 32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes + tradBytesWritten;
+            r.CopyTo(destination);
+            bytesWritten = r.Length + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes + tradBytesWritten;
             return true;
         }
 
@@ -233,11 +223,7 @@ namespace System.Security.Cryptography
             //  1.  If len(ctx) > 255
             //          return error
 
-            if (context.Length > 255)
-            {
-                Debug.Fail("This should have been validated by caller.");
-                throw new CryptographicException();
-            }
+            Debug.Assert(context.Length <= 255, $"Caller should have checked context.Length, got {context.Length}");
 
             //  2.  Separate the keys and signatures
             //
@@ -249,9 +235,9 @@ namespace System.Security.Cryptography
             //      length for the given component algorithm then output
             //      "Invalid signature" and stop.
 
-            ReadOnlySpan<byte> r = signature.Slice(0, 32);
-            ReadOnlySpan<byte> mldsaSig = signature.Slice(32, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
-            ReadOnlySpan<byte> tradSig = signature.Slice(32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
+            ReadOnlySpan<byte> r = signature.Slice(0, CompositeMLDsaAlgorithm.RandomizerSizeInBytes);
+            ReadOnlySpan<byte> mldsaSig = signature.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
+            ReadOnlySpan<byte> tradSig = signature.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
 
             //  3.  Compute a Hash of the Message.
             //      As in FIPS 204, len(ctx) is encoded as a single unsigned byte.
@@ -259,13 +245,7 @@ namespace System.Security.Cryptography
             //          M' = Prefix || Domain || len(ctx) || ctx || r
             //                                                   || PH( M )
 
-            ReadOnlySpan<byte> M_prime;
-
-            using (CompositeMLDsaMessageEncoder encoder = new(Algorithm, context, r))
-            {
-                encoder.AppendData(data);
-                M_prime = encoder.GetMessageRepresentativeAndDispose();
-            }
+            byte[] M_prime = CompositeMLDsaMessageEncoder.GetMessageRepresentative(Algorithm, context, r, data);
 
             //  4.  Check each component signature individually, according to its
             //      algorithm specification.
@@ -364,8 +344,23 @@ namespace System.Security.Cryptography
 
             internal abstract bool TryExportPublicKey(Span<byte> destination, out int bytesWritten);
             internal abstract bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten);
-            internal abstract bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten);
-            internal abstract bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature);
+
+            internal abstract bool TrySignData(
+#if NET
+                ReadOnlySpan<byte> data,
+#else
+                byte[] data,
+#endif
+                Span<byte> destination,
+                out int bytesWritten);
+
+            internal abstract bool VerifyData(
+#if NET
+                ReadOnlySpan<byte> data,
+#else
+                byte[] data,
+#endif
+                ReadOnlySpan<byte> signature);
 
             public void Dispose()
             {
@@ -442,15 +437,20 @@ namespace System.Security.Cryptography
                 }
             }
 
-            internal override bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten)
+            internal override bool TrySignData(
+#if NET
+                ReadOnlySpan<byte> data,
+#else
+                byte[] data,
+#endif
+                Span<byte> destination,
+                out int bytesWritten)
             {
 #if NET
                 return _rsa.TrySignData(data, destination, _hashAlgorithmName, _padding, out bytesWritten);
 #else
-                // TODO data (msg representative) can be passed as an array (caller of TrySignData can allocate instead of rent)
-
-                // Composite ML-DSA virtual methods only accept ROS<byte> so we need to use ToArray() for signature
-                byte[] signature = _rsa.SignData(data.ToArray(), _hashAlgorithmName, _padding);
+                // Composite ML-DSA virtual methods only accept ROS<byte> so we need to use CopyTo() for signature
+                byte[] signature = _rsa.SignData(data, _hashAlgorithmName, _padding);
 
                 if (signature.AsSpan().TryCopyTo(destination))
                 {
@@ -464,15 +464,19 @@ namespace System.Security.Cryptography
 #endif
             }
 
-            internal override bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
+            internal override bool VerifyData(
+#if NET
+                ReadOnlySpan<byte> data,
+#else
+                byte[] data,
+#endif
+                ReadOnlySpan<byte> signature)
             {
 #if NET
                 return _rsa.VerifyData(data, signature, _hashAlgorithmName, _padding);
 #else
-                // TODO data (msg representative) can be passed as an array (caller of VerifyData can allocate instead of rent)
-
                 // Composite ML-DSA virtual methods only accept ROS<byte> so we need to use ToArray() for signature
-                return _rsa.VerifyData(data.ToArray(), signature.ToArray(), _hashAlgorithmName, _padding);
+                return _rsa.VerifyData(data, signature.ToArray(), _hashAlgorithmName, _padding);
 #endif
             }
 
@@ -480,16 +484,23 @@ namespace System.Security.Cryptography
             public static RsaComponent ImportPrivateKey(CompositeMLDsaAlgorithm.RsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
                 Debug.Assert(IsAlgorithmSupported(algorithm));
-#if NETFRAMEWORK || NETSTANDARD2_0
-                // TODO netfx only has ImportParameters, so we need to implement the conversion from raw key to parameters
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RSA)));
-#else
+
+                // TODO move browser to different file
+#if !NETFRAMEWORK
                 Debug.Assert(!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")));
+#endif
 
                 RSA? rsa = null;
 
                 try
                 {
+#if NETFRAMEWORK
+                    rsa = new RSACng();
+                    ConvertRSAPrivateKeyToParameters(algorithm, source, (in RSAParameters parameters) =>
+                    {
+                        rsa.ImportParameters(parameters);
+                    });
+#else
                     rsa = RSA.Create();
                     rsa.ImportRSAPrivateKey(source, out int bytesRead);
 
@@ -498,6 +509,7 @@ namespace System.Security.Cryptography
                         // TODO resx
                         throw new CryptographicException();
                     }
+#endif
                 }
                 catch (CryptographicException)
                 {
@@ -506,24 +518,28 @@ namespace System.Security.Cryptography
                 }
 
                 return new RsaComponent(rsa, algorithm.HashAlgorithmName, algorithm.Padding);
-#endif
             }
 
             public static RsaComponent ImportPublicKey(CompositeMLDsaAlgorithm.RsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
                 Debug.Assert(IsAlgorithmSupported(algorithm));
 
-#if NETFRAMEWORK || NETSTANDARD2_0
-                // TODO netfx only has ImportParameters, so we need to implement the conversion from raw key to parameters
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RSA)));
-#else
                 // TODO move browser to different file
+#if !NETFRAMEWORK
                 Debug.Assert(!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")));
+#endif
 
                 RSA? rsa = null;
 
                 try
                 {
+#if NETFRAMEWORK
+                    rsa = new RSACng();
+                    ConvertRSAPublicKeyToParameters(algorithm, source, (in RSAParameters parameters) =>
+                    {
+                        rsa.ImportParameters(parameters);
+                    });
+#else
                     rsa = RSA.Create();
                     rsa.ImportRSAPublicKey(source, out int bytesRead);
 
@@ -532,6 +548,7 @@ namespace System.Security.Cryptography
                         // TODO resx
                         throw new CryptographicException();
                     }
+#endif
                 }
                 catch (CryptographicException)
                 {
@@ -540,14 +557,14 @@ namespace System.Security.Cryptography
                 }
 
                 return new RsaComponent(rsa, algorithm.HashAlgorithmName, algorithm.Padding);
-#endif
             }
 
             internal override bool TryExportPublicKey(Span<byte> destination, out int bytesWritten)
             {
-#if NETFRAMEWORK || NETSTANDARD2_0
-                // TODO netfx only has ImportParameters, so we need to implement the conversion from raw key to parameters
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RSA)));
+#if NETFRAMEWORK
+                RSAParameters parameters = _rsa.ExportParameters(includePrivateParameters: false);
+                AsnWriter writer = RSAKeyFormatHelper.WritePkcs1PublicKey(in parameters);
+                return writer.TryEncode(destination, out bytesWritten);
 #else
                 return _rsa.TryExportRSAPublicKey(destination, out bytesWritten);
 #endif
@@ -555,9 +572,28 @@ namespace System.Security.Cryptography
 
             internal override bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten)
             {
-#if NETFRAMEWORK || NETSTANDARD2_0
-                // TODO netfx only has ImportParameters, so we need to implement the conversion from raw key to parameters
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RSA)));
+#if NETFRAMEWORK
+                RSAParameters parameters = _rsa.ExportParameters(includePrivateParameters: true);
+
+                using (PinAndClear.Track(parameters.D))
+                using (PinAndClear.Track(parameters.P))
+                using (PinAndClear.Track(parameters.Q))
+                using (PinAndClear.Track(parameters.DP))
+                using (PinAndClear.Track(parameters.DQ))
+                using (PinAndClear.Track(parameters.InverseQ))
+                {
+                    AsnWriter? writer = null;
+
+                    try
+                    {
+                        writer = RSAKeyFormatHelper.WritePkcs1PrivateKey(in parameters);
+                        return writer.TryEncode(destination, out bytesWritten);
+                    }
+                    finally
+                    {
+                        writer?.Reset();
+                    }
+                }
 #else
                 return _rsa.TryExportRSAPrivateKey(destination, out bytesWritten);
 #endif
@@ -573,6 +609,110 @@ namespace System.Security.Cryptography
 
                 base.Dispose(disposing);
             }
+
+#if NETFRAMEWORK
+            private delegate void ConvertRSAKeyToParametersCallback(in RSAParameters source);
+
+            private static unsafe void ConvertRSAPublicKeyToParameters(
+                CompositeMLDsaAlgorithm.RsaAlgorithm algorithm,
+                ReadOnlySpan<byte> key,
+                ConvertRSAKeyToParametersCallback callback)
+            {
+                int modulusLength = algorithm.KeySizeInBits / 8;
+
+                AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
+                AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
+
+                byte[] modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                if (modulus.Length != modulusLength)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+                }
+
+                byte[] exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                sequenceReader.ThrowIfNotEmpty();
+                reader.ThrowIfNotEmpty();
+
+                RSAParameters parameters = new()
+                {
+                    Modulus = modulus,
+                    Exponent = exponent,
+                };
+
+                callback(in parameters);
+            }
+
+            private static unsafe void ConvertRSAPrivateKeyToParameters(
+                CompositeMLDsaAlgorithm.RsaAlgorithm algorithm,
+                ReadOnlySpan<byte> key,
+                ConvertRSAKeyToParametersCallback callback)
+            {
+                int modulusLength = algorithm.KeySizeInBits / 8;
+                int halfModulusLength = modulusLength / 2;
+
+                AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
+                AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
+
+                if (!sequenceReader.TryReadInt32(out int version))
+                {
+                    sequenceReader.ThrowIfNotEmpty();
+                }
+
+                const int MaxSupportedVersion = 0;
+
+                if (version > MaxSupportedVersion)
+                {
+                    throw new CryptographicException(
+                        SR.Format(
+                            SR.Cryptography_RSAPrivateKey_VersionTooNew,
+                            version,
+                            MaxSupportedVersion));
+                }
+
+                byte[] modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                if (modulus.Length != modulusLength)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+                }
+
+                byte[] exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                RSAParameters parameters = new()
+                {
+                    Modulus = modulus,
+                    Exponent = exponent,
+                    D = new byte[modulusLength],
+                    P = new byte[halfModulusLength],
+                    Q = new byte[halfModulusLength],
+                    DP = new byte[halfModulusLength],
+                    DQ = new byte[halfModulusLength],
+                    InverseQ = new byte[halfModulusLength],
+                };
+
+                using (PinAndClear.Track(parameters.D))
+                using (PinAndClear.Track(parameters.P))
+                using (PinAndClear.Track(parameters.Q))
+                using (PinAndClear.Track(parameters.DP))
+                using (PinAndClear.Track(parameters.DQ))
+                using (PinAndClear.Track(parameters.InverseQ))
+                {
+                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.D);
+                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.P);
+                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.Q);
+                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DP);
+                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DQ);
+                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.InverseQ);
+
+                    sequenceReader.ThrowIfNotEmpty();
+                    reader.ThrowIfNotEmpty();
+
+                    callback(in parameters);
+                }
+            }
+#endif
         }
 
         private sealed class ECDsaComponent : ComponentAlgorithm
@@ -590,8 +730,23 @@ namespace System.Security.Cryptography
 
             internal override bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
             internal override bool TryExportPublicKey(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-            internal override bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) => throw new NotImplementedException();
-            internal override bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+
+            internal override bool VerifyData(
+#if NET
+                ReadOnlySpan<byte> data,
+#else
+                byte[] data,
+#endif
+                ReadOnlySpan<byte> signature) => throw new NotImplementedException();
+
+            internal override bool TrySignData(
+#if NET
+                ReadOnlySpan<byte> data,
+#else
+                byte[] data,
+#endif
+                Span<byte> destination,
+                out int bytesWritten) => throw new NotImplementedException();
         }
     }
 }
