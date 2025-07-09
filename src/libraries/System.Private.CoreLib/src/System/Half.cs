@@ -1536,7 +1536,7 @@ namespace System
                 }
 
                 Debug.Assert(IsSubnormal(x));
-                return MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
+                return MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
             }
 
             return x.Exponent;
@@ -2122,16 +2122,24 @@ namespace System
             }
             else if (typeof(TOther) == typeof(uint))
             {
+#if MONO
                 uint actualResult = (value == PositiveInfinity) ? uint.MaxValue :
                                     (value <= Zero) ? uint.MinValue : (uint)value;
+#else
+                uint actualResult = (uint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
+#if MONO
                 ulong actualResult = (value == PositiveInfinity) ? ulong.MaxValue :
                                      (value <= Zero) ? ulong.MinValue :
                                      IsNaN(value) ? 0 : (ulong)value;
+#else
+                ulong actualResult = (ulong)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -2144,8 +2152,12 @@ namespace System
             }
             else if (typeof(TOther) == typeof(nuint))
             {
+#if MONO
                 nuint actualResult = (value == PositiveInfinity) ? nuint.MaxValue :
                                      (value <= Zero) ? nuint.MinValue : (nuint)value;
+#else
+                nuint actualResult = (nuint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }

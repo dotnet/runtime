@@ -78,15 +78,12 @@ void InteropSyncBlockInfo::FreeUMEntryThunk()
     }
     CONTRACTL_END
 
-    if (!g_fEEShutDown)
+    UMEntryThunkData *pUMEntryThunk = m_pUMEntryThunk;
+    if (pUMEntryThunk != NULL)
     {
-        void *pUMEntryThunk = GetUMEntryThunk();
-        if (pUMEntryThunk != NULL)
-        {
-            UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
-        }
+        UMEntryThunkData::FreeUMEntryThunk(pUMEntryThunk);
+        m_pUMEntryThunk = NULL;
     }
-    m_pUMEntryThunk = NULL;
 }
 
 #ifdef FEATURE_COMINTEROP

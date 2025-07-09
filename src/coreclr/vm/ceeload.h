@@ -372,12 +372,6 @@ struct VASigCookieBlock
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 
-//
-// A Module is the primary unit of code packaging in the runtime.  It
-// corresponds mostly to an OS executable image, although other kinds
-// of modules exist.
-//
-class UMEntryThunk;
 
 // Hashtable of absolute addresses of IL blobs for dynamics, keyed by token
 

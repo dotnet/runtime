@@ -8,7 +8,6 @@
 
 typedef DPTR(M128A)  PTR_M128A;
 
-#ifndef FEATURE_CDAC_UNWINDER
 //---------------------------------------------------------------------------------------
 //
 // Read 64 bit unsigned value from the specified address. When the unwinder is built
@@ -52,29 +51,9 @@ static M128A MemoryRead128(PM128A addr)
 {
     return *dac_cast<PTR_M128A>((TADDR)addr);
 }
-#else
-// Read 64 bit unsigned value from the specified addres when the unwinder is build
-// for the cDAC. This triggers a callback to the cDAC host to read the memory from
-// the target process.
-static ULONG64 MemoryRead64(PULONG64 addr)
-{
-    ULONG64 value;
-    t_pCallbacks->readFromTarget((uint64_t)addr, &value, sizeof(value), t_pCallbacks->callbackContext);
-    return value;
-}
 
-// Read 128 bit value from the specified addres when the unwinder is build
-// for the cDAC. This triggers a callback to the cDAC host to read the memory from
-// the target process.
-static M128A MemoryRead128(PM128A addr)
-{
-    M128A value;
-    t_pCallbacks->readFromTarget((uint64_t)addr, &value, sizeof(value), t_pCallbacks->callbackContext);
-    return value;
-}
-#endif // FEATURE_CDAC_UNWINDER
+#ifdef DACCESS_COMPILE
 
-#if defined(DACCESS_COMPILE) || defined(FEATURE_CDAC_UNWINDER)
 //---------------------------------------------------------------------------------------
 //
 // The InstructionBuffer class abstracts accessing assembler instructions in the function
@@ -89,19 +68,6 @@ class InstructionBuffer
     UCHAR m_buffer[32];
 
     // Load the instructions from the target process being debugged
-#ifdef FEATURE_CDAC_UNWINDER
-    HRESULT Load()
-    {
-        HRESULT hr = t_pCallbacks->readFromTarget(m_address, m_buffer, sizeof(m_buffer), t_pCallbacks->callbackContext);
-        if (SUCCEEDED(hr))
-        {
-            // TODO: Implement breakpoint patching for cDAC
-            // https://github.com/dotnet/runtime/issues/112273#issue-2838620747
-        }
-
-        return hr;
-    }
-#else // FEATURE_CDAC_UNWINDER
     HRESULT Load()
     {
         HRESULT hr = DacReadAll(TO_TADDR(m_address), m_buffer, sizeof(m_buffer), false);
@@ -116,7 +82,6 @@ class InstructionBuffer
 
         return hr;
     }
-#endif // FEATURE_CDAC_UNWINDER
 
 public:
 
@@ -161,7 +126,7 @@ public:
     }
 
     // Get the byte at the given index from the current position
-    // Assert that the index is within the buffer
+    // Invoke DacError if the index is out of the buffer
     UCHAR operator[](int index)
     {
         int realIndex = m_offset + index;
@@ -169,9 +134,7 @@ public:
         return m_buffer[realIndex];
     }
 };
-#endif // DACCESS_COMPILE || FEATURE_CDAC_UNWINDER
 
-#ifdef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
 //
 // Given the target address of an UNWIND_INFO structure, this function retrieves all the memory used for
@@ -251,57 +214,47 @@ BOOL DacUnwindStackFrame(CONTEXT * pContext, KNONVOLATILE_CONTEXT_POINTERS* pCon
     return res;
 }
 
-#elif defined(FEATURE_CDAC_UNWINDER)
+//---------------------------------------------------------------------------------------
+//
+// Unwind the given CONTEXT to the caller CONTEXT.  The given CONTEXT will be overwritten.
+//
+// Arguments:
+//    pContext - in-out parameter storing the specified CONTEXT on entry and the unwound CONTEXT on exit
+//
+// Return Value:
+//    TRUE if the unwinding is successful
+//
 
-BOOL amd64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, UnwinderFail unwinderFail, void* callbackContext)
+BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 {
-    CDACCallbacks callbacks { readFromTarget, getAllocatedBuffer, getStackWalkInfo, unwinderFail, callbackContext };
-    t_pCallbacks = &callbacks;
-    BOOL res = OOPStackUnwinderAMD64::Unwind((CONTEXT*) pContext);
-    t_pCallbacks = nullptr;
+    HRESULT hr = E_FAIL;
 
-    return res;
+    ULONG64 uControlPC = (DWORD64)dac_cast<PCODE>(::GetIP(pContext));
+
+    // get the module base
+    ULONG64 uImageBase;
+    hr = GetModuleBase(uControlPC, &uImageBase);
+    if (FAILED(hr))
+    {
+        return FALSE;
+    }
+
+    // get the function entry
+    IMAGE_RUNTIME_FUNCTION_ENTRY functionEntry;
+    hr = GetFunctionEntry(uControlPC, &functionEntry, sizeof(functionEntry));
+    if (FAILED(hr))
+    {
+        return FALSE;
+    }
+
+    // call VirtualUnwind() to do the real work
+    ULONG64 EstablisherFrame;
+    hr = VirtualUnwind(0, uImageBase, uControlPC, &functionEntry, pContext, NULL, &EstablisherFrame, NULL, NULL);
+
+    return (hr == S_OK);
 }
 
-UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
-{
-    UNWIND_INFO unwindInfo;
-    if(t_pCallbacks->readFromTarget((uint64_t)taUnwindInfo, &unwindInfo, sizeof(unwindInfo), t_pCallbacks->callbackContext) != S_OK)
-    {
-        return NULL;
-    }
-
-    DWORD cbUnwindInfo = offsetof(UNWIND_INFO, UnwindCode) +
-        unwindInfo.CountOfUnwindCodes * sizeof(UNWIND_CODE);
-
-    // Check if there is a chained unwind info.  If so, it has an extra RUNTIME_FUNCTION tagged to the end.
-    if ((unwindInfo.Flags & UNW_FLAG_CHAININFO) != 0)
-    {
-        // If there is an odd number of UNWIND_CODE, we need to adjust for alignment.
-        if ((unwindInfo.CountOfUnwindCodes & 1) != 0)
-        {
-            cbUnwindInfo += sizeof(UNWIND_CODE);
-        }
-        cbUnwindInfo += sizeof(T_RUNTIME_FUNCTION);
-    }
-
-    // Allocate a buffer for the unwind info from cDAC callback.
-    // This buffer will be freed by the cDAC host once unwinding is done.
-    UNWIND_INFO* pUnwindInfo;
-    if(t_pCallbacks->getAllocatedBuffer(cbUnwindInfo, (void**)&pUnwindInfo, t_pCallbacks->callbackContext) != S_OK)
-    {
-        return NULL;
-    }
-
-    if(t_pCallbacks->readFromTarget(taUnwindInfo, pUnwindInfo, cbUnwindInfo, t_pCallbacks->callbackContext) != S_OK)
-    {
-        return NULL;
-    }
-
-    return pUnwindInfo;
-}
-
-#else // !DACCESS_COMPILE && !FEATURE_CDAC_UNWINDER
+#else // DACCESS_COMPILE
 
 // For unwinding of the jitted code on non-Windows platforms, the Instruction buffer is
 // just a plain pointer to the instruction data.
@@ -385,57 +338,13 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
         ContextPointers,
         &handlerRoutine);
 
-    UNWINDER_ASSERT(SUCCEEDED(res));
+    _ASSERTE(SUCCEEDED(res));
 
     return handlerRoutine;
 }
 
-#endif // !DACCESS_COMPILE && !FEATURE_CDAC_UNWINDER
 
-//---------------------------------------------------------------------------------------
-//
-// Unwind the given CONTEXT to the caller CONTEXT.  The given CONTEXT will be overwritten.
-//
-// Arguments:
-//    pContext - in-out parameter storing the specified CONTEXT on entry and the unwound CONTEXT on exit
-//
-// Return Value:
-//    TRUE if the unwinding is successful
-//
-
-BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
-{
-    HRESULT hr = E_FAIL;
-
-    ULONG64 uControlPC =
-#ifndef FEATURE_CDAC_UNWINDER
-    (DWORD64)dac_cast<PCODE>(::GetIP(pContext));
-#else // FEATURE_CDAC_UNWINDER
-    pContext->Rip;
-#endif // FEATURE_CDAC_UNWINDER
-
-    // get the module base
-    ULONG64 uImageBase;
-    hr = GetModuleBase(uControlPC, &uImageBase);
-    if (FAILED(hr))
-    {
-        return FALSE;
-    }
-
-    // get the function entry
-    IMAGE_RUNTIME_FUNCTION_ENTRY functionEntry;
-    hr = GetFunctionEntry(uControlPC, &functionEntry, sizeof(functionEntry));
-    if (FAILED(hr))
-    {
-        return FALSE;
-    }
-
-    // call VirtualUnwind() to do the real work
-    ULONG64 EstablisherFrame;
-    hr = VirtualUnwind(0, uImageBase, uControlPC, &functionEntry, pContext, NULL, &EstablisherFrame, NULL, NULL);
-
-    return (hr == S_OK);
-}
+#endif // DACCESS_COMPILE
 
 //
 //
@@ -1936,4 +1845,3 @@ Return Value:
 
     return Slots;
 }
-
