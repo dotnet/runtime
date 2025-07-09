@@ -2270,7 +2270,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             CHECK_STACK(3);
             InterpType retType = GetInterpType(sig.retType);
 
-            // Interpreter-FIXME: Implement conversion before INTOP_COMPARE_EXCHANGE to avoid multiple opcodes
             int32_t opcode;
             switch (retType)
             {
