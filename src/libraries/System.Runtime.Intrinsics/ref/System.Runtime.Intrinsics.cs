@@ -5766,7 +5766,15 @@ namespace System.Runtime.Intrinsics.Arm
         // public static void Scatter16BitNarrowing(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<int> data) { throw null; }
         public static void Scatter16BitNarrowing(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
         // public static void Scatter16BitNarrowing(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<uint> data) { throw null; }
-        public static void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<int> indices, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<uint> indices, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<int> indices, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<uint> indices, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<int> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<int> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<long> data) { throw null; }
@@ -5775,8 +5783,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
-        public static void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
-        public static void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<long> data) { throw null; }
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<long> data) { throw null; }
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
@@ -5793,6 +5805,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<uint> mask, byte* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static void SetFfr(System.Numerics.Vector<byte> value) { throw null; }
         public static void SetFfr(System.Numerics.Vector<short> value) { throw null; }
         public static void SetFfr(System.Numerics.Vector<int> value) { throw null; }
@@ -8011,6 +8035,76 @@ namespace System.Runtime.Intrinsics.X86
                 internal X64() { }
                 public static new bool IsSupported { get { throw null; } }
             }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class AvxVnniInt8 : System.Runtime.Intrinsics.X86.Avx2
+    {
+        internal AvxVnniInt8() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class AvxVnniInt16 : System.Runtime.Intrinsics.X86.Avx2
+    {
+        internal AvxVnniInt16() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static Vector128<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+        public static Vector256<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static Vector128<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+        public static Vector256<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+            public static Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+            public static Vector512<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+            public static Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+            public static Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+            public static Vector512<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         }
     }
 

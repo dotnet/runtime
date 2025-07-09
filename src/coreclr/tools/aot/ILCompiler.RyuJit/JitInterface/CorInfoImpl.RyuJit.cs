@@ -2251,6 +2251,10 @@ namespace Internal.JitInterface
             if (!ConstructedEETypeNode.CreationAllowed(type))
                 return false;
 
+            // We don't track information that would allow us to deal with array variance
+            if (_compilation.TypeSystemContext.IsArrayVariantCastable(type))
+                return false;
+
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
             // If we don't have a constructed MethodTable for the exact type or for its template,
