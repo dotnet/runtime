@@ -62,11 +62,11 @@ namespace System.Net.Security.Tests
             }
 
             try
-                {
-                    new CipherSuitesPolicy(Array.Empty<TlsCipherSuite>());
-                    return true;
-                }
-                catch (PlatformNotSupportedException) { }
+            {
+                new CipherSuitesPolicy(Array.Empty<TlsCipherSuite>());
+                return true;
+            }
+            catch (PlatformNotSupportedException) { }
 
             return false;
         });
