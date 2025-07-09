@@ -959,10 +959,10 @@ namespace System.Net.Test.Common
             return SendResponseAsync(statusCode, headers, content, isFinal, requestId: 0);
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false)
         {
             int streamId = _lastStreamId;
-            return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: true, headers);
+            return SendResponseHeadersAsync(streamId, endStream: isTrailingHeader, statusCode, isTrailingHeader: isTrailingHeader, endHeaders: true, headers);
         }
 
         public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)

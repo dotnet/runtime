@@ -229,9 +229,15 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+        public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false)
         {
-            return _currentStream.SendResponseHeadersAsync(statusCode, headers);
+            await _currentStream.SendResponseHeadersAsync(statusCode: isTrailingHeader ? null : statusCode, headers);
+
+            if (isTrailingHeader)
+            {
+                _currentStream.Stream.CompleteWrites();
+                await DisposeCurrentStream().ConfigureAwait(false);
+            }
         }
 
         public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)

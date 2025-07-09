@@ -148,7 +148,7 @@ namespace System.Net.Test.Common
         /// If isFinal is false, the body is not completed and you can call SendResponseBodyAsync to send more.</summary>
         public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true);
         /// <summary>Sends response headers.</summary>
-        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
+        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false);
         /// <summary>Sends valid but incomplete headers. Once called, there is no way to continue the response past this point.</summary>
         public abstract Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
