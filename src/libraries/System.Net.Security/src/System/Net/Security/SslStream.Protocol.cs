@@ -1141,13 +1141,14 @@ namespace System.Net.Security
 
                 if (!success)
                 {
+#if TARGET_OSX
 #pragma warning disable CS0162 // unreachable code detected (compile time const)
                     if (SslStreamPal.CanGenerateCustomAlerts)
                     {
                         CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
                     }
 #pragma warning restore CS0162 // unreachable code detected (compile time const)
-
+#endif
                     if (chain != null)
                     {
                         foreach (X509ChainStatus status in chain.ChainStatus)
