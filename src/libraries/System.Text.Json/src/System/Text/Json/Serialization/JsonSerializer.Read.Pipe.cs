@@ -371,15 +371,15 @@ namespace System.Text.Json
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
-                PipeReadBufferState bufferState = new PipeReadBufferState(utf8Json);//, listTypeInfo.Options.DefaultBufferSize);
+                PipeReadBufferState bufferState = default;
 
                 try
                 {
                     bool success;
                     do
                     {
-                        bufferState = await bufferState.ReadAsync(cancellationToken, fillBuffer: false).ConfigureAwait(false);
-                        success = listTypeInfo.ContinueDeserialize(
+                        bufferState = await bufferState.ReadAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                        success = listTypeInfo.ContinueDeserialize<PipeReadBufferState, PipeReader>(
                             ref bufferState,
                             ref jsonReaderState,
                             ref readStack,

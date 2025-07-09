@@ -11,10 +11,8 @@ using System.Threading.Tasks;
 namespace System.Text.Json.Serialization
 {
     [StructLayout(LayoutKind.Auto)]
-    internal struct StreamReadBufferState : IReadBufferState<StreamReadBufferState>
+    internal struct StreamReadBufferState : IReadBufferState<StreamReadBufferState, Stream>
     {
-        private readonly Stream _stream;
-
         private byte[] _buffer;
         private byte _offset; // Read bytes offset typically used when skipping the UTF-8 BOM.
         private int _count; // Number of read bytes yet to be consumed by the serializer.
@@ -43,9 +41,8 @@ namespace System.Text.Json.Serialization
         private const int UnsuccessfulReadCountThreshold = 5;
         private int _unsuccessfulReadCount;
 
-        public StreamReadBufferState(Stream stream, int initialBufferSize)
+        public StreamReadBufferState(int initialBufferSize)
         {
-            _stream = stream;
             _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(initialBufferSize, JsonConstants.Utf8Bom.Length));
             _maxCount = _count = _offset = 0;
             _isFirstBlock = true;
@@ -61,7 +58,7 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        public readonly async ValueTask<StreamReadBufferState> ReadAsync(
+        public readonly async ValueTask<StreamReadBufferState> ReadAsync(Stream stream,
             CancellationToken cancellationToken,
             bool fillBuffer = true)
         {
@@ -72,7 +69,7 @@ namespace System.Text.Json.Serialization
             int minBufferCount = fillBuffer || _unsuccessfulReadCount > UnsuccessfulReadCountThreshold ? bufferState._buffer.Length : 0;
             do
             {
-                int bytesRead = await _stream.ReadAsync(bufferState._buffer.AsMemory(bufferState._count), cancellationToken).ConfigureAwait(false);
+                int bytesRead = await stream.ReadAsync(bufferState._buffer.AsMemory(bufferState._count), cancellationToken).ConfigureAwait(false);
 
                 if (bytesRead == 0)
                 {
@@ -93,11 +90,11 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        public void Read()
+        public void Read(Stream stream)
         {
             do
             {
-                int bytesRead = _stream.Read(
+                int bytesRead = stream.Read(
 #if NET
                     _buffer.AsSpan(_count));
 #else
