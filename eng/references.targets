@@ -36,10 +36,10 @@
 
     <_projectReferenceExcludedWithFilename Include="@(_projectReferenceWithFilename)"
                                            Exclude="@(NetCoreAppLibrary)" />
-    <_projectReferenceIncludedWithFilename Include="@(_projectReferenceWithFilename)"
-                                           Exclude="@(_projectReferenceExcludedWithFilename)" />
+    <_frameworkProjectReference Include="@(_projectReferenceWithFilename)"
+                                Exclude="@(_projectReferenceExcludedWithFilename)" />
 
-    <ProjectReference Update="@(_projectReferenceIncludedWithFilename->Metadata('OriginalIdentity'))">
+    <ProjectReference Update="@(_frameworkProjectReference->Metadata('OriginalIdentity'))">
       <PrivateAssets Condition="'%(PrivateAssets)' == ''">all</PrivateAssets>
       <Private Condition="'%(Private)' == ''">false</Private>
     </ProjectReference>

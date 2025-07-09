@@ -163,6 +163,8 @@ In the src directory for a library there should be only **one** `.csproj` file t
 
 Libraries should use `ProjectReference` items to reference live dependencies.
 
+`Reference` items should only be used when targeting .NET Framework to  reference prebuilt assemblies from the targeting pack and which aren't included by default (i.e. `System.DirectoryServices`). For anything else, `Reference` items should not be used as they are not supported in those frameworks.
+
 ### src\ILLink
 Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).
 
