@@ -507,6 +507,16 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
+        // Wrap with the reference equality check for Equals.
+        // We believe it's less likely to be useful for StartsWith/EndsWith.
+        if (kind == StringComparisonKind::Equals)
+        {
+            GenTreeColon* refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
+            unrolled =
+                gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsStr)),
+                               refEqualityColon);
+        }
+
         impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
@@ -673,6 +683,16 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
 
     if (unrolled != nullptr)
     {
+        // Wrap with the reference equality check for Equals.
+        // We believe it's less likely to be useful for StartsWith/EndsWith.
+        if (kind == StringComparisonKind::Equals)
+        {
+            GenTreeColon* refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
+            unrolled                       = gtNewQmarkNode(TYP_INT,
+                                                            gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(spanReferenceFld), gtCloneExpr(cnsStr)),
+                                                            refEqualityColon);
+        }
+
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
             impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
