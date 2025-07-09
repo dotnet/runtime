@@ -6,15 +6,16 @@
 #include "interpreter.h"
 #include "stackmap.h"
 
-#include "../../native/containers/dn-simdhash.h"
-#include "../../native/containers/dn-simdhash-specializations.h"
-#include "../../native/containers/dn-simdhash-utils.h"
-
-extern "C" void assertAbort(const char* why, const char* file, unsigned line);
+#include "failures.h"
+#include "simdhash.h"
 
 void
 dn_simdhash_assert_fail (const char* file, int line, const char* condition) {
+#if DEBUG
     assertAbort(condition, file, line);
+#else
+    NO_WAY(condition);
+#endif
 }
 
 thread_local dn_simdhash_ptr_ptr_t *t_sharedStackMapLookup = nullptr;
@@ -24,10 +25,13 @@ InterpreterStackMap* GetInterpreterStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_
     InterpreterStackMap* result = nullptr;
     if (!t_sharedStackMapLookup)
         t_sharedStackMapLookup = dn_simdhash_ptr_ptr_new(0, nullptr);
+    if (!t_sharedStackMapLookup)
+        NOMEM();
+
     if (!dn_simdhash_ptr_ptr_try_get_value(t_sharedStackMapLookup, classHandle, (void **)&result))
     {
         result = new InterpreterStackMap(jitInfo, classHandle);
-        dn_simdhash_ptr_ptr_try_add(t_sharedStackMapLookup, classHandle, result);
+        checkAddedNew(dn_simdhash_ptr_ptr_try_add(t_sharedStackMapLookup, classHandle, result));
     }
     return result;
 }

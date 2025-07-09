@@ -234,6 +234,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_NativeToILOffsetCacheSize, W("NativeToILOffsetCacheSize"), 1024, "")
 CONFIG_DWORD_INFO(INTERNAL_LogStackOverflowExit, W("LogStackOverflowExit"), 0, "Temporary flag to log stack overflow exit process")
 
 ///
@@ -683,6 +684,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,                    W("EnableAES"), 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VP2INTERSECT,     W("EnableAVX512VP2INTERSECT"),  1, "Allows AVX512VP2INTERSECT and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXIFMA,                W("EnableAVXIFMA"),             1, "Allows AVXIFMA and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,                W("EnableAVXVNNI"),             1, "Allows AVXVNNI and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNIINT,             W("EnableAVXVNNIINT"),          1, "Allows VEX versions (AVXVNNI8 & AVXVNNIINT16) hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableGFNI,                   W("EnableGFNI"),                1, "Allows GFNI and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSHA,                    W("EnableSHA"),                 1, "Allows SHA and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableVAES,                   W("EnableVAES"),                1, "Allows VAES, VPCLMULQDQ, and dependent hardware intrinsics to be disabled")
