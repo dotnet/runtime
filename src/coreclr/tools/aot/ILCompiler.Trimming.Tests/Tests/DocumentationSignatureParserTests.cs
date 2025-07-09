@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests
                     CheckUniqueParsedString(member, attributeString);
                     break;
                 case nameof(ExpectGeneratedDocumentationSignatureAttribute):
-                    // CheckGeneratedString (member, attributeString);
+                    // CheckGeneratedString(member, attributeString);
                     break;
                 case nameof(ExpectResolvedDocumentationSignatureAttribute):
                     CheckParsedString(member, attributeString);
@@ -76,11 +76,11 @@ namespace Mono.Linker.Tests
         // Currently NativeAOT has only a partial implementation of the generator since it doesn't need it for anything
         // other than signature parsing (which uses the generator for certain parts).
 #if false
-        private static void CheckGeneratedString (TypeSystemEntity member, string expected)
+        private static void CheckGeneratedString(TypeSystemEntity member, string expected)
         {
-            var builder = new StringBuilder ();
-            DocumentationSignatureGenerator.PartVisitor.Instance.AppendName (builder, type);
-            Assert.Equal (expected, builder.ToString ());
+            var builder = new StringBuilder();
+            DocumentationSignatureGenerator.PartVisitor.Instance.AppendName(builder, type);
+            Assert.Equal(expected, builder.ToString());
         }
 #endif
 
@@ -235,7 +235,7 @@ namespace Mono.Linker.Tests
             }
 
             [ExpectGeneratedDocumentationSignature("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32,)")]
-            //[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32,)")]
+            //[ExpectExactlyResolvedDocumentationSignature("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32,)")]
             // there's no way to reference this, since the parsing logic doesn't like it.
             public static void M(int abo, __arglist)
             {
@@ -295,9 +295,9 @@ namespace Mono.Linker.Tests
             public static implicit operator bool(A a) => false;
 
             // C# will not generate a return type for this method, but we will.
-            // [ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_Implicit(Mono.Linker.Tests.DocumentationSignatureParserTests.A)~System.Boolean")]
-            // [ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_Implicit(Mono.Linker.Tests.DocumentationSignatureParserTests.A)~System.Boolean")]
-            //public static int op_Implicit (A a) => 0;
+            // [ExpectGeneratedDocumentationSignature("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_Implicit(Mono.Linker.Tests.DocumentationSignatureParserTests.A)~System.Boolean")]
+            // [ExpectExactlyResolvedDocumentationSignature("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_Implicit(Mono.Linker.Tests.DocumentationSignatureParserTests.A)~System.Boolean")]
+            //public static int op_Implicit(A a) => 0;
 
             [ExpectGeneratedDocumentationSignature("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_UnaryPlus(Mono.Linker.Tests.DocumentationSignatureParserTests.A)")]
             [ExpectExactlyResolvedDocumentationSignature("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_UnaryPlus(Mono.Linker.Tests.DocumentationSignatureParserTests.A)")]

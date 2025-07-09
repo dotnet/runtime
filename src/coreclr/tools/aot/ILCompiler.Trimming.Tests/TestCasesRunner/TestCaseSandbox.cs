@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
     partial class TestCaseSandbox
     {
-        private const string _linkerAssemblyPath = "";//typeof (Trimmer).Assembly.Location;
+        private const string _linkerAssemblyPath = ""; // typeof(Trimmer).Assembly.Location;
 
         private static partial NPath GetArtifactsTestPath()
         {

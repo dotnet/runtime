@@ -51,18 +51,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         // Note: It's enough to exclude the type name, all of its members will also be excluded then
         private static readonly HashSet<string> ExcludeDisplayNames = new() {
-				// Ignore compiler injected attributes to describe language version
-				"Microsoft.CodeAnalysis.EmbeddedAttribute",
-                "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+            // Ignore compiler injected attributes to describe language version
+            "Microsoft.CodeAnalysis.EmbeddedAttribute",
+            "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
 
-				// Ignore NativeAOT injected members
-				"<Module>.StartupCodeMain(Int32,IntPtr)",
-                "<Module>.MainMethodWrapper()",
-                "<Module>.MainMethodWrapper(String[])",
+            // Ignore NativeAOT injected members
+            "<Module>.StartupCodeMain(Int32,IntPtr)",
+            "<Module>.MainMethodWrapper()",
+            "<Module>.MainMethodWrapper(String[])",
 
-				// Ignore compiler generated code which can't be reasonably matched to the source method
-				"<PrivateImplementationDetails>",
-            };
+            // Ignore compiler generated code which can't be reasonably matched to the source method
+            "<PrivateImplementationDetails>",
+        };
 
         public AssemblyChecker(
             BaseAssemblyResolver originalsResolver,
@@ -94,21 +94,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
         IEnumerable<string> VerifyImpl()
         {
             // There are no type forwarders left after compilation in Native AOT
-            // VerifyExportedTypes (originalAssembly, linkedAssembly);
+            // VerifyExportedTypes(originalAssembly, linkedAssembly);
 
             // TODO
-            // VerifyCustomAttributes (originalAssembly, linkedAssembly);
-            // VerifySecurityAttributes (originalAssembly, linkedAssembly);
+            // VerifyCustomAttributes(originalAssembly, linkedAssembly);
+            // VerifySecurityAttributes(originalAssembly, linkedAssembly);
 
             // TODO - this is mostly attribute verification
             // foreach (var originalModule in originalAssembly.Modules)
-            //   VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name));
+            //   VerifyModule(originalModule, linkedAssembly.Modules.FirstOrDefault(m => m.Name == originalModule.Name));
 
             // TODO
-            // VerifyResources (originalAssembly, linkedAssembly);
+            // VerifyResources(originalAssembly, linkedAssembly);
 
             // There are no assembly reference in Native AOT
-            // VerifyReferences (originalAssembly, linkedAssembly);
+            // VerifyReferences(originalAssembly, linkedAssembly);
 
             PopulateLinkedMembers();
 
@@ -395,15 +395,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 // For now always fail on this attribute since we don't know how to validate it
                 throw new NotSupportedException("CreatedMemberAttribute is not yet supported by the test infra");
 #if false
-				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
-					var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString ();
+                foreach (var attr in original.CustomAttributes.Where(l => l.AttributeType.Name == nameof(CreatedMemberAttribute)))
+                {
+                    var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString();
 
-					var linkedMemberName = linkedMembers.Keys.FirstOrDefault (l => l.Contains (newName));
-					if (linkedMemberName == null)
-						yield return $"Newly created member '{newName}' was not found";
+                    var linkedMemberName = linkedMembers.Keys.FirstOrDefault(l => l.Contains(newName));
+                    if (linkedMemberName == null)
+                        yield return $"Newly created member '{newName}' was not found";
 
-					linkedMembers.Remove (linkedMemberName);
-				}
+                    linkedMembers.Remove(linkedMemberName);
+                }
 #endif
             }
         }
@@ -423,29 +424,30 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
 
 #if false
-			if (!SkipKeptItemsValidation (original)) {
-				foreach(var err in VerifyKeptByAttributes (original, linked))
-					yield return err;
-				if (!original.IsInterface)
-				{
-					foreach(var err in VerifyBaseType (original, linked))
-						yield return err;
-				}
+            if (!SkipKeptItemsValidation(original))
+            {
+                foreach (var err in VerifyKeptByAttributes(original, linked))
+                    yield return err;
+                if (!original.IsInterface)
+                {
+                    foreach (var err in VerifyBaseType(original, linked))
+                        yield return err;
+                }
 
-				foreach(var err in VerifyInterfaces (original, linked))
-					yield return err;
-				foreach(var err in VerifyPseudoAttributes (original, linked))
-					yield return err;
-				foreach(var err in VerifyGenericParameters (original, linked, skipKeptItemsValidation: false))
-					yield return err;
-				foreach(var err in VerifyCustomAttributes (original, linked))
-					yield return err;
-				foreach(var err in VerifySecurityAttributes (original, linked))
-					yield return err;
+                foreach (var err in VerifyInterfaces(original, linked))
+                    yield return err;
+                foreach (var err in VerifyPseudoAttributes(original, linked))
+                    yield return err;
+                foreach (var err in VerifyGenericParameters(original, linked, skipKeptItemsValidation: false))
+                    yield return err;
+                foreach (var err in VerifyCustomAttributes(original, linked))
+                    yield return err;
+                foreach (var err in VerifySecurityAttributes(original, linked))
+                    yield return err;
 
-				foreach(var err in VerifyFixedBufferFields (original, linked))
-					yield return err;
-			}
+                foreach (var err in VerifyFixedBufferFields(original, linked))
+                    yield return err;
+            }
 #endif
 
             foreach (var td in original.NestedTypes)
@@ -486,15 +488,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
 
 #if false
-			// Need to check delegate cache fields before the normal field check
-			VerifyDelegateBackingFields (original, linked);
+            // Need to check delegate cache fields before the normal field check
+            VerifyDelegateBackingFields(original, linked);
 
-			foreach (var f in original.Fields) {
-				if (verifiedGeneratedFields.Contains (f.FullName))
-					continue;
-				VerifyField (f, linked.Fields.FirstOrDefault (l => f.Name == l.Name));
-				linkedMembers.Remove (f.FullName);
-			}
+            foreach (var f in original.Fields)
+            {
+                if (verifiedGeneratedFields.Contains(f.FullName))
+                    continue;
+                VerifyField(f, linked.Fields.FirstOrDefault(l => f.Name == l.Name));
+                linkedMembers.Remove(f.FullName);
+            }
 #endif
 
             foreach (var m in original.Methods)
@@ -612,17 +615,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (src.HasConstant)
                 throw new NotImplementedException("Constant value for a field is not yet supported by the test infra.");
 #if false
-			if (!Equals (src.Constant, linked.Constant)) {
-				yield return $"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}";
-			}
+            if (!Equals(src.Constant, linked.Constant)) {
+                yield return $"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}";
+            }
 #endif
 
 #if false
-			foreach(var err in VerifyPseudoAttributes (src, linked))
-				yield return err;
-			if (!skipKeptItemsValidation)
-				foreach(var err in VerifyCustomAttributes (src, linked))
-					yield return err;
+            foreach (var err in VerifyPseudoAttributes (src, linked))
+                yield return err;
+            if (!skipKeptItemsValidation)
+                foreach (var err in VerifyCustomAttributes (src, linked))
+                    yield return err;
 #endif
         }
 
@@ -651,19 +654,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (src.HasConstant)
                 throw new NotSupportedException("Constant value for a property is not yet supported by the test infra.");
 #if false
-			if (src.Constant != linked.Constant) {
-				yield return $"Property '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}";
-			}
+            if (src.Constant != linked.Constant)
+            {
+                yield return $"Property '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}";
+            }
 #endif
 
 #if false
-			foreach(var err in VerifyPseudoAttributes (src, linked))
-					yield return err;
-			if (!skipKeptItemsValidation)
-			{
-				foreach(var err in VerifyCustomAttributes (src, linked))
-					yield return err;
-			}
+            foreach (var err in VerifyPseudoAttributes(src, linked))
+                yield return err;
+            if (!skipKeptItemsValidation)
+            {
+                foreach (var err in VerifyCustomAttributes(src, linked))
+                    yield return err;
+            }
 #endif
         }
 
@@ -711,13 +715,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
 
 #if false
-			foreach(var err in VerifyPseudoAttributes (src, linked))
-				yield return err;
-			if (!skipKeptItemsValidation)
-			{
-				foreach(var err in VerifyCustomAttributes (src, linned))
-					yield return err;
-			}
+            foreach (var err in VerifyPseudoAttributes(src, linked))
+                yield return err;
+            if (!skipKeptItemsValidation)
+            {
+                foreach (var err in VerifyCustomAttributes(src, linned))
+                    yield return err;
+            }
 #endif
         }
 
@@ -788,30 +792,31 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
 
 #if false
-			foreach(var err in VerifyPseudoAttributes (src, linked))
-				yield return err;
-			foreach(var err in VerifyGenericParameters (src, linked, skipKeptItemsValidation))
-				yield return err;
-			if (!skipKeptItemsValidation) {
-				foreach(var err in VerifyCustomAttributes (src, linked))
-					yield return err;
-				foreach(var err in VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType))
-					yield return err;
-			}
+            foreach (var err in VerifyPseudoAttributes(src, linked))
+                yield return err;
+            foreach (var err in VerifyGenericParameters(src, linked, skipKeptItemsValidation))
+                yield return err;
+            if (!skipKeptItemsValidation)
+            {
+                foreach (var err in VerifyCustomAttributes(src, linked))
+                    yield return err;
+                foreach (var err in VerifyCustomAttributes(src.MethodReturnType, linked.MethodReturnType))
+                    yield return err;
+            }
 #endif
             foreach (var err in VerifyParameters(src, linked, skipKeptItemsValidation))
                 yield return err;
 #if false
-			foreach(var err in VerifySecurityAttributes (src, linked))
-				yield return err;
-			foreach(var err in VerifyArrayInitializers (src, linked))
-				yield return err;
+            foreach (var err in VerifySecurityAttributes(src, linked))
+                yield return err;
+            foreach (var err in VerifyArrayInitializers(src, linked))
+                yield return err;
 
-			// Method bodies are not very different in Native AOT
-			foreach(var err in VerifyMethodBody (src, linked))
-				yield return err;
-			foreach(var err in VerifyKeptByAttributes (src, linked))
-				yield return err;
+            // Method bodies are not very different in Native AOT
+            foreach (var err in VerifyMethodBody (src, linked))
+                yield return err;
+            foreach (var err in VerifyKeptByAttributes (src, linked))
+                yield return err;
 #endif
         }
 
@@ -1014,14 +1019,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 .ToArray();
 
             /*
-			 - The test case will always need to have at least 1 reference.
-			 - Forcing all tests to define their expected references seems tedious
+             - The test case will always need to have at least 1 reference.
+             - Forcing all tests to define their expected references seems tedious
 
-			 Given the above, let's assume that when no [KeptReference] attributes are present,
-			 the test case does not want to make any assertions regarding references.
+             Given the above, let's assume that when no [KeptReference] attributes are present,
+             the test case does not want to make any assertions regarding references.
 
-			 Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
-			*/
+             Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
+            */
             if (expected.Length == 0)
                 yield break;
 
@@ -1152,74 +1157,81 @@ namespace Mono.Linker.Tests.TestCasesRunner
         }
 
 #if false
-		protected virtual IEnumerable<string> VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
-		{
-			var expectedIndices = GetCustomAttributeCtorValues<object> (src, nameof (KeptInitializerData))
-				.Cast<int> ()
-				.ToArray ();
+        protected virtual IEnumerable<string> VerifyArrayInitializers(MethodDefinition src, MethodDefinition linked)
+        {
+            var expectedIndices = GetCustomAttributeCtorValues<object>(src, nameof(KeptInitializerData))
+                .Cast<int>()
+                .ToArray();
 
-			var expectKeptAll = src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptInitializerData) && !attr.HasConstructorArguments);
+            var expectKeptAll = src.CustomAttributes.Any(attr => attr.AttributeType.Name == nameof(KeptInitializerData) && !attr.HasConstructorArguments);
 
-			if (expectedIndices.Length == 0 && !expectKeptAll)
-				return;
+            if (expectedIndices.Length == 0 && !expectKeptAll)
+                return;
 
-			if (!src.HasBody)
-				yield return $"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies";
+            if (!src.HasBody)
+                yield return $"`{nameof(KeptInitializerData)}` cannot be used on methods that don't have bodies";
 
-			var srcImplementationDetails = src.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+            var srcImplementationDetails = src.Module.Types.FirstOrDefault(t => string.IsNullOrEmpty(t.Namespace) && t.Name.StartsWith("<PrivateImplementationDetails>"));
 
-			if (srcImplementationDetails == null) {
-				yield return "Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?";
-				return;
-			}
+            if (srcImplementationDetails == null)
+            {
+                yield return "Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?";
+                return;
+            }
 
-			var linkedImplementationDetails = linked.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+            var linkedImplementationDetails = linked.Module.Types.FirstOrDefault(t => string.IsNullOrEmpty(t.Namespace) && t.Name.StartsWith("<PrivateImplementationDetails>"));
 
-			if (linkedImplementationDetails == null) {
-				yield return "Could not locate <PrivateImplementationDetails> in the linked assembly";
-				return;
-			}
+            if (linkedImplementationDetails == null)
+            {
+                yield return "Could not locate <PrivateImplementationDetails> in the linked assembly";
+                return;
+            }
 
-			var possibleInitializerFields = src.Body.Instructions
-				.Where (ins => IsLdtokenOnPrivateImplementationDetails (srcImplementationDetails, ins))
-				.Select (ins => ((FieldReference) ins.Operand).Resolve ())
-				.ToArray ();
+            var possibleInitializerFields = src.Body.Instructions
+                .Where(ins => IsLdtokenOnPrivateImplementationDetails(srcImplementationDetails, ins))
+                .Select(ins => ((FieldReference)ins.Operand).Resolve())
+                .ToArray();
 
-			if (possibleInitializerFields.Length == 0)
-				yield return $"`{src}` does not make use of any initializers";
+            if (possibleInitializerFields.Length == 0)
+                yield return $"`{src}` does not make use of any initializers";
 
-			if (expectKeptAll) {
-				foreach (var srcField in possibleInitializerFields) {
-					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
-					foreach(var err in VerifyInitializerField (srcField, linkedField))
-						yield return err;
-				}
-			} else {
-				foreach (var index in expectedIndices) {
-					if (index < 0 || index > possibleInitializerFields.Length)
-						yield return $"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndices.Length}";
+            if (expectKeptAll)
+            {
+                foreach (var srcField in possibleInitializerFields)
+                {
+                    var linkedField = linkedImplementationDetails.Fields.FirstOrDefault(f => f.InitialValue.SequenceEqual(srcField.InitialValue));
+                    foreach (var err in VerifyInitializerField(srcField, linkedField))
+                        yield return err;
+                }
+            }
+            else
+            {
+                foreach (var index in expectedIndices)
+                {
+                    if (index < 0 || index > possibleInitializerFields.Length)
+                        yield return $"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndices.Length}";
 
-					var srcField = possibleInitializerFields[index];
-					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
+                    var srcField = possibleInitializerFields[index];
+                    var linkedField = linkedImplementationDetails.Fields.FirstOrDefault(f => f.InitialValue.SequenceEqual(srcField.InitialValue));
 
-					foreach(var err in VerifyInitializerField (srcField, linkedField))
-						yield return err;
-				}
-			}
-		}
+                    foreach (var err in VerifyInitializerField(srcField, linkedField))
+                        yield return err;
+                }
+            }
+        }
 
-		private IEnumerable<string> VerifyInitializerField (FieldDefinition src, FieldDefinition? linked)
-		{
-			foreach(var err in VerifyFieldKept (src, linked, skipKeptItemsValidation: true))
-					yield return err;
-			verifiedGeneratedFields.Add (linked!.FullName);
-			linkedMembers.Remove (new (linked));
-			// foreach(var err in VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ()))
-			//     yield return err;
-			linkedMembers.Remove (new (linked.FieldType.Resolve ()));
-			linkedMembers.Remove (new (linked.DeclaringType.Resolve ()));
-			verifiedGeneratedTypes.Add (linked.DeclaringType.FullName);
-		}
+        private IEnumerable<string> VerifyInitializerField(FieldDefinition src, FieldDefinition? linked)
+        {
+            foreach (var err in VerifyFieldKept(src, linked, skipKeptItemsValidation: true))
+                yield return err;
+            verifiedGeneratedFields.Add(linked!.FullName);
+            linkedMembers.Remove(new(linked));
+            // foreach (var err in VerifyTypeDefinitionKept(src.FieldType.Resolve(), linked.FieldType.Resolve()))
+            //     yield return err;
+            linkedMembers.Remove(new(linked.FieldType.Resolve()));
+            linkedMembers.Remove(new(linked.DeclaringType.Reolve()));
+            verifiedGeneratedTypes.Add(linked.DeclaringType.FullName);
+        }
 #endif
 
         private static bool IsLdtokenOnPrivateImplementationDetails(TypeDefinition privateImplementationDetails, Instruction instruction)
@@ -1294,65 +1306,69 @@ namespace Mono.Linker.Tests.TestCasesRunner
         }
 
 #if false
-		private IEnumerable<string> VerifyFixedBufferFields (TypeDefinition src, TypeDefinition linked)
-		{
-			var fields = src.Fields.Where (f => f.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptFixedBufferAttribute)));
+        private IEnumerable<string> VerifyFixedBufferFields(TypeDefinition src, TypeDefinition linked)
+        {
+            var fields = src.Fields.Where(f => f.CustomAttributes.Any(attr => attr.AttributeType.Name == nameof(KeptFixedBufferAttribute)));
 
-			foreach (var field in fields) {
-				// The name of the generated fixed buffer type is a little tricky.
-				// Some versions of csc name it `<fieldname>e__FixedBuffer0`
-				// while mcs and other versions of csc name it `<fieldname>__FixedBuffer0`
-				var originalCompilerGeneratedBufferType = src.NestedTypes.FirstOrDefault (t => t.FullName.Contains ($"<{field.Name}>") && t.FullName.Contains ("__FixedBuffer"));
-				if (originalCompilerGeneratedBufferType == null) {
-					yield return $"Could not locate original compiler generated fixed buffer type for field {field}";
-					yield break;
-				}
+            foreach (var field in fields)
+            {
+                // The name of the generated fixed buffer type is a little tricky.
+                // Some versions of csc name it `<fieldname>e__FixedBuffer0`
+                // while mcs and other versions of csc name it `<fieldname>__FixedBuffer0`
+                var originalCompilerGeneratedBufferType = src.NestedTypes.FirstOrDefault(t => t.FullName.Contains($"<{field.Name}>") && t.FullName.Contains("__FixedBuffer"));
+                if (originalCompilerGeneratedBufferType == null)
+                {
+                    yield return $"Could not locate original compiler generated fixed buffer type for field {field}";
+                    yield break;
+                }
 
-				var linkedCompilerGeneratedBufferType = linked.NestedTypes.FirstOrDefault (t => t.Name == originalCompilerGeneratedBufferType.Name);
-				if (linkedCompilerGeneratedBufferType == null) {
-					yield return $"Missing expected type {originalCompilerGeneratedBufferType}";
-					yield break;
-				}
+                var linkedCompilerGeneratedBufferType = linked.NestedTypes.FirstOrDefault(t => t.Name == originalCompilerGeneratedBufferType.Name);
+                if (linkedCompilerGeneratedBufferType == null)
+                {
+                    yield return $"Missing expected type {originalCompilerGeneratedBufferType}";
+                    yield break;
+                }
 
-				// Have to verify the field before the type
-				var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault ();
-				if (originalElementField == null) {
-					yield return $"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}";
-					yield break;
-				}
+                // Have to verify the field before the type
+                var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault();
+                if (originalElementField == null)
+                {
+                    yield return $"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}";
+                    yield break;
+                }
 
-				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault ();
-				foreach(var err in VerifyFieldKept (originalElementField, linkedField, skipKeptItemsValidation: true))
-					yield return err;
-				verifiedGeneratedFields.Add (originalElementField.FullName);
-				linkedMembers.Remove (new (linkedField!));
+                var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault();
+                foreach (var err in VerifyFieldKept(originalElementField, linkedField, skipKeptItemsValidation: true))
+                    yield return err;
+                verifiedGeneratedFields.Add(originalElementField.FullName);
+                linkedMembers.Remove(new(linkedField!));
 
-				// foreach(var err in VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType))
-				//     yield return err;
-				verifiedGeneratedTypes.Add (originalCompilerGeneratedBufferType.FullName);
-			}
-		}
+                // foreach (var err in VerifyTypeDefinitionKept(originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType))
+                //     yield return err;
+                verifiedGeneratedTypes.Add(originalCompilerGeneratedBufferType.FullName);
+            }
+        }
 
-		private IEnumerable<string> VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
-		{
-			var expectedFieldNames = GetCustomAttributeCtorValues<string> (src, nameof (KeptDelegateCacheFieldAttribute))
-				.Select (unique => $"<>f__mg$cache{unique}")
-				.ToList ();
+        private IEnumerable<string> VerifyDelegateBackingFields(TypeDefinition src, TypeDefinition linked)
+        {
+            var expectedFieldNames = GetCustomAttributeCtorValues<string>(src, nameof(KeptDelegateCacheFieldAttribute))
+                .Select(unique => $"<>f__mg$cache{unique}")
+                .ToList();
 
-			if (expectedFieldNames.Count == 0)
-				yield break;
+            if (expectedFieldNames.Count == 0)
+                yield break;
 
-			foreach (var srcField in src.Fields) {
-				if (!expectedFieldNames.Contains (srcField.Name))
-					continue;
+            foreach (var srcField in src.Fields) {
+                if (!expectedFieldNames.Contains(srcField.Name))
+                    continue;
 
-				var linkedField = linked?.Fields.FirstOrDefault (l => l.Name == srcField.Name);
-				foreach(var err in VerifyFieldKept (srcField, linkedField, skipKeptItemsValidation: true))
-					yield return err;
-				verifiedGeneratedFields.Add (srcField.FullName);
-				linkedMembers.Remove (new (srcField));
-			}
-		}
+                var linkedField = linked?.Fields.FirstOrDefault(l => l.Name == srcField.Name);
+                foreach (var err in VerifyFieldKept(srcField, linkedField, skipKeptItemsValidation: true))
+                    yield return err;
+                verifiedGeneratedFields.Add(srcField.FullName);
+                linkedMembers.Remove(new(srcField));
+            }
+        }
 #endif
 
         private IEnumerable<string> VerifyGenericParameters(IGenericParameterProvider src, IGenericParameterProvider linked, bool skipKeptItemsValidation)
@@ -1406,8 +1422,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if false
                     if (!skipKeptItemsValidation)
                     {
-    					foreach(var err in VerifyCustomAttributes (srcp, lnkp))
-	    					yield return err;
+                        foreach (var err in VerifyCustomAttributes(srcp, lnkp))
+                            yield return err;
                     }
 #endif
 
@@ -1545,10 +1561,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 errs.AddRange(VerifyKeptAllTypesAndMembersInAssembly(assemblyName, linkedMembersInAssembly));
                                 continue;
                             case nameof(KeptAttributeInAssemblyAttribute):
-                                // errs.AddRange(VerifyKeptAttributeInAssembly (checkAttrInAssembly, linkedAssembly))
+                                // errs.AddRange(VerifyKeptAttributeInAssembly(checkAttrInAssembly, linkedAssembly))
                                 continue;
                             case nameof(RemovedAttributeInAssembly):
-                                // errs.AddRange(VerifyRemovedAttributeInAssembly (checkAttrInAssembly, linkedAssembly))
+                                // errs.AddRange(VerifyRemovedAttributeInAssembly(checkAttrInAssembly, linkedAssembly))
                                 continue;
                             default:
                                 break;
@@ -1562,18 +1578,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         MetadataType? linkedType = linkedTypeEntity?.Entity as MetadataType;
 
 #if false
-						if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
-							ExportedType? exportedType = linkedAssembly.MainModule.ExportedTypes
-									.FirstOrDefault (exported => exported.FullName == expectedTypeName);
+                        if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
+                            ExportedType? exportedType = linkedAssembly.MainModule.ExportedTypes
+                                .FirstOrDefault(exported => exported.FullName == expectedTypeName);
 
-							// Note that copied assemblies could have dangling references.
-							if (exportedType != null && original.EntryPoint.DeclaringType.CustomAttributes.FirstOrDefault (
-								ca => ca.AttributeType.Name == nameof (RemovedAssemblyAttribute)
-								&& ca.ConstructorArguments[0].Value.ToString () == exportedType.Scope.Name + ".dll") != null)
-								continue;
+                            // Note that copied assemblies could have dangling references.
+                            if (exportedType != null && original.EntryPoint.DeclaringType.CustomAttributes.FirstOrDefault(
+                                ca => ca.AttributeType.Name == nameof(RemovedAssemblyAttribute)
+                                && ca.ConstructorArguments[0].Value.ToString() == exportedType.Scope.Name + ".dll") != null)
+                                continue;
 
-							linkedType = exportedType?.Resolve ();
-						}
+                            linkedType = exportedType?.Resolve();
+                        }
 #endif
 
                         switch (attributeTypeName)
@@ -1588,76 +1604,76 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                     errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
                                 break;
 #if false
-						case nameof (RemovedInterfaceOnTypeInAssemblyAttribute):
-							if (linkedType == null)
-							{
-								errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
-								break;
-							}
-							errs.AddRange(VerifyRemovedInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType));
-							break;
-						case nameof (KeptInterfaceOnTypeInAssemblyAttribute):
-							if (linkedType == null)
-							{
-								errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
-								break;
-							}
-							errs.AddRange(VerifyKeptInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType));
-							break;
-						case nameof (RemovedMemberInAssemblyAttribute):
-							if (linkedType == null)
-								continue;
+                        case nameof(RemovedInterfaceOnTypeInAssemblyAttribute):
+                            if (linkedType == null)
+                            {
+                                errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+                                break;
+                            }
+                            errs.AddRange(VerifyRemovedInterfaceOnTypeInAssembly(checkAttrInAssembly, linkedType));
+                            break;
+                        case nameof(KeptInterfaceOnTypeInAssemblyAttribute):
+                            if (linkedType == null)
+                            {
+                                errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+                                break;
+                            }
+                            errs.AddRange(VerifyKeptInterfaceOnTypeInAssembly(checkAttrInAssembly, linkedType));
+                            break;
+                        case nameof(RemovedMemberInAssemblyAttribute):
+                            if (linkedType == null)
+                                continue;
 
-							errs.AddRange(VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType));
-							break;
-						case nameof (KeptBaseOnTypeInAssemblyAttribute):
-							if (linkedType == null)
-							{
-								errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
-								break;
-							}
-							errs.AddRange(VerifyKeptBaseOnTypeInAssembly (checkAttrInAssembly, linkedType));
-							break;
-						case nameof (KeptMemberInAssemblyAttribute):
-							if (linkedType == null)
-							{
-								errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
-								break;
-							}
+                            errs.AddRange(VerifyRemovedMemberInAssembly(checkAttrInAssembly, linkedType));
+                            break;
+                        case nameof(KeptBaseOnTypeInAssemblyAttribute):
+                            if (linkedType == null)
+                            {
+                                errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+                                break;
+                            }
+                            errs.AddRange(VerifyKeptBaseOnTypeInAssembly(checkAttrInAssembly, linkedType));
+                            break;
+                        case nameof(KeptMemberInAssemblyAttribute):
+                            if (linkedType == null)
+                            {
+                                errs.Add($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+                                break;
+                            }
 
-							errs.AddRange(VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType));
-							break;
-						case nameof (RemovedForwarderAttribute):
-							if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
-								errs.Add($"Forwarder `{expectedTypeName}' should have been removed from assembly {assemblyName}");
+                            errs.AddRange(VerifyKeptMemberInAssembly(checkAttrInAssembly, linkedType));
+                            break;
+                        case nameof(RemovedForwarderAttribute):
+                            if (linkedAssembly.MainModule.ExportedTypes.Any(l => l.Name == expectedTypeName))
+                                errs.Add($"Forwarder `{expectedTypeName}' should have been removed from assembly {assemblyName}");
 
-							break;
+                            break;
 
-						case nameof (RemovedAssemblyReferenceAttribute):
-							if (linkedAssembly.MainModule.AssemblyReferences.Any (l => l.Name == expectedTypeName) != false)
-								errs.Add($"AssemblyRef '{expectedTypeName}' should have been removed from assembly {assemblyName}");
-							break;
+                        case nameof(RemovedAssemblyReferenceAttribute):
+                            if (linkedAssembly.MainModule.AssemblyReferences.Any(l => l.Name == expectedTypeName) != false)
+                                errs.Add($"AssemblyRef '{expectedTypeName}' should have been removed from assembly {assemblyName}");
+                            break;
 
-						case nameof (KeptResourceInAssemblyAttribute):
-							errs.AddRange(VerifyKeptResourceInAssembly (checkAttrInAssembly));
-							break;
-						case nameof (RemovedResourceInAssemblyAttribute):
-							errs.AddRange(VerifyRemovedResourceInAssembly (checkAttrInAssembly));
-							break;
-						case nameof (KeptReferencesInAssemblyAttribute):
-							errs.AddRange(VerifyKeptReferencesInAssembly (checkAttrInAssembly))
-							break;
-						case nameof (ExpectedInstructionSequenceOnMemberInAssemblyAttribute):
-							if (linkedType == null)
-							{
-								errs.Add($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
-								break;
-							}
-							errs.AddRange(VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType));
-							break;
-						default:
-							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
-							break;
+                        case nameof(KeptResourceInAssemblyAttribute):
+                            errs.AddRange(VerifyKeptResourceInAssembly(checkAttrInAssembly));
+                            break;
+                        case nameof(RemovedResourceInAssemblyAttribute):
+                            errs.AddRange(VerifyRemovedResourceInAssembly(checkAttrInAssembly));
+                            break;
+                        case nameof(KeptReferencesInAssemblyAttribute):
+                            errs.AddRange(VerifyKeptReferencesInAssembly(checkAttrInAssembly))
+                            break;
+                        case nameof(ExpectedInstructionSequenceOnMemberInAssemblyAttribute):
+                            if (linkedType == null)
+                            {
+                                errs.Add($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
+                                break;
+                            }
+                            errs.AddRange(VerifyExpectedInstructionSequenceOnMemberInAssembly checkAttrInAssembly, linkedType));
+                            break;
+                        default:
+                            UnhandledOtherAssemblyAssertion(expectedTypeName, checkAttrInAssembly, linkedType);
+                            break;
 #else
                             default:
                                 break;
@@ -1994,13 +2010,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
         private IEnumerable<string> VerifyKeptReferencesInAssembly(CustomAttribute inAssemblyAttribute)
         {
 #if false
-			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
-			var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select (attr => (string) attr.Value).ToList ();
-			for (int i = 0; i < expectedReferenceNames.Count; i++)
-				if (expectedReferenceNames[i].EndsWith (".dll"))
-					expectedReferenceNames[i] = expectedReferenceNames[i].Substring (0, expectedReferenceNames[i].LastIndexOf ("."));
+            var assembly = ResolveLinkedAssembly(inAssemblyAttribute.ConstructorArguments[0].Value.ToString()!);
+            var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select(attr => (string) attr.Value).ToList();
+            for (int i = 0; i < expectedReferenceNames.Count; i++)
+                if (expectedReferenceNames[i].EndsWith(".dll"))
+                    expectedReferenceNames[i] = expectedReferenceNames[i].Substring(0, expectedReferenceNames[i].LastIndexOf("."));
 
-			Assert.Equal (assembly.MainModule.AssemblyReferences.Select (asm => asm.Name), expectedReferenceNames);
+            Assert.Equal(assembly.MainModule.AssemblyReferences.Select(asm => asm.Name), expectedReferenceNames);
 #endif
             yield break;
         }
@@ -2008,10 +2024,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
         private IEnumerable<string> VerifyKeptResourceInAssembly(CustomAttribute inAssemblyAttribute)
         {
 #if false
-			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
-			var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString ();
+            var assembly = ResolveLinkedAssembly(inAssemblyAttribute.ConstructorArguments[0].Value.ToString()!);
+            var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString();
 
-			Assert.Contains (resourceName, assembly.MainModule.Resources.Select (r => r.Name));
+            Assert.Contains(resourceName, assembly.MainModule.Resources.Select(r => r.Name));
 #endif
             yield break;
         }
@@ -2019,10 +2035,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
         private IEnumerable<string> VerifyRemovedResourceInAssembly(CustomAttribute inAssemblyAttribute)
         {
 #if false
-			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
-			var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString ();
+            var assembly = ResolveLinkedAssembly(inAssemblyAttribute.ConstructorArguments[0].Value.ToString()!);
+            var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString();
 
-			Assert.DoesNotContain (resourceName, assembly.MainModule.Resources.Select (r => r.Name));
+            Assert.DoesNotContain(resourceName, assembly.MainModule.Resources.Select(r => r.Name));
 #endif
             yield break;
         }

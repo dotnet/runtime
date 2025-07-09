@@ -58,8 +58,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     // TODO Validate presence of the main assembly - if it makes sense (reflection only somehow)
 
                     // IL verification is impossible for NativeAOT since there's no IL output
-                    // if (ShouldValidateIL (original))
-                    //   VerifyIL ();
+                    // if (ShouldValidateIL(original))
+                    //   VerifyIL();
 
                     InitialChecking(testResult, original);
 
@@ -121,33 +121,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 name = Path.GetFileNameWithoutExtension(name);
 
 #if false
-                if (assemblyAttr.AttributeType.Name == nameof (RemovedAssemblyAttribute))
-                    Assert.IsFalse (expectedPath.FileExists (), $"Expected the assembly {name} to not exist in {outputDirectory}, but it did");
-                else if (assemblyAttr.AttributeType.Name == nameof (KeptAssemblyAttribute))
-                    Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
-                else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerActionAttribute)) {
+                if (assemblyAttr.AttributeType.Name == nameof(RemovedAssemblyAttribute))
+                    Assert.IsFalse(expectedPath.FileExists(), $"Expected the assembly {name} to not exist in {outputDirectory}, but it did");
+                else if (assemblyAttr.AttributeType.Name == nameof(KeptAssemblyAttribute))
+                    Assert.IsTrue(expectedPath.FileExists(), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
+                else if (assemblyAttr.AttributeType.Name == nameof(SetupLinkerActionAttribute)) {
                     string assemblyName = (string) assemblyAttr.ConstructorArguments[1].Value;
                     if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy") {
-                        VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+                        VerifyCopyAssemblyIsKeptUnmodified(outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
                     }
 
-                    actionAssemblies.Add (assemblyName);
-                } else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerTrimModeAttribute)) {
+                    actionAssemblies.Add(assemblyName);
+                } else if (assemblyAttr.AttributeType.Name == nameof(SetupLinkerTrimModeAttribute)) {
                     // We delay checking that everything was copied after processing all assemblies
                     // with a specific action, since assembly action wins over trim mode.
                     if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy")
                         trimModeIsCopy = true;
                 } else
-                    throw new NotImplementedException ($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
+                    throw new NotImplementedException($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
 #endif
             }
 
 #if false
-            if (trimModeIsCopy) {
-                foreach (string assemblyName in Directory.GetFiles (Directory.GetParent (outputDirectory).ToString (), "input")) {
-                    var fileInfo = new FileInfo (assemblyName);
-                    if (fileInfo.Extension == ".dll" && !actionAssemblies.Contains (assemblyName))
-                        VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+            if (trimModeIsCopy)
+            {
+                foreach (string assemblyName in Directory.GetFiles(Directory.GetParent(outputDirectory).ToString(), "input")) {
+                    var fileInfo = new FileInfo(assemblyName);
+                    if (fileInfo.Extension == ".dll" && !actionAssemblies.Contains(assemblyName))
+                        VerifyCopyAssemblyIsKeptUnmodified(outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
                 }
             }
 #endif
