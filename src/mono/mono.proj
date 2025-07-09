@@ -127,7 +127,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HostOS)' == 'windows' and '$(TargetsBrowser)' == 'true'">
-    <PythonCmd>setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+    <PythonCmd>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'python', 'python.exe'))</PythonCmd>
   </PropertyGroup>
 
   <!-- CI specific build options -->
