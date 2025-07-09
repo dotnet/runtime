@@ -366,11 +366,14 @@ namespace System.IO
                         return;
                     }
 
-                    if (removedDir.Children is { } children)
+                    lock (removedDir.Watcher)
                     {
-                        foreach (var child in children)
+                        if (removedDir.Children is { } children)
                         {
-                            RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
+                            foreach (var child in children)
+                            {
+                                RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
+                            }
                         }
                     }
                 }
@@ -979,13 +982,27 @@ namespace System.IO
                 private readonly Channel<WatcherEvent> _eventQueue;
                 private INotify? _inotify;
                 private bool _emitEvents;
+                private WatchedDirectory? _rootDirectory;
 
                 public string BasePath { get; }
                 public NotifyFilters NotifyFilters { get; }
                 public Interop.Sys.NotifyEvents WatchFilters { get; }
                 public bool IncludeSubdirectories { get; }
                 public bool IsStopped { get; set; }
-                public WatchedDirectory? RootDirectory { get; set; }
+
+                public WatchedDirectory? RootDirectory
+                {
+                    get
+                    {
+                        Debug.Assert(Monitor.IsEntered(this));
+                        return _rootDirectory;
+                    }
+                    set
+                    {
+                        Debug.Assert(Monitor.IsEntered(this));
+                        _rootDirectory = value;
+                    }
+                }
 
                 public Watcher(FileSystemWatcher fsw)
                 {
@@ -1274,6 +1291,8 @@ namespace System.IO
 
             internal sealed class WatchedDirectory
             {
+                private List<WatchedDirectory>? _children;
+
                 public Watch Watch { get; }
                 public Watcher Watcher { get; }
                 public string Name { get; }
@@ -1288,7 +1307,19 @@ namespace System.IO
                     Parent = parent;
                 }
 
-                public List<WatchedDirectory>? Children;
+                public List<WatchedDirectory>? Children
+                {
+                    get
+                    {
+                        Debug.Assert(Monitor.IsEntered(Watcher));
+                        return _children;
+                    }
+                    set
+                    {
+                        Debug.Assert(Monitor.IsEntered(Watcher));
+                        _children = value;
+                    }
+                }
                 public List<WatchedDirectory> InitializedChildren => Children ??= new List<WatchedDirectory>();
 
                 public int FindChild(string name)
@@ -1350,8 +1381,17 @@ namespace System.IO
 
             internal sealed class Watch
             {
+                private List<WatchedDirectory> _watchers = new();
+
                 public int WatchDescriptor { get; }
-                public List<WatchedDirectory> Watchers { get; } = new();
+                public List<WatchedDirectory> Watchers
+                {
+                    get
+                    {
+                        Debug.Assert(Monitor.IsEntered(this));
+                        return _watchers;
+                    }
+                }
 
                 public Watch(int watchDescriptor)
                 {
