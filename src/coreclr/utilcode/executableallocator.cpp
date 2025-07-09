@@ -124,7 +124,7 @@ bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64) || defined(HOST_WASM)
     return false;
 #else
     return g_isWXorXEnabled;

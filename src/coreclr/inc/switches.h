@@ -165,3 +165,7 @@
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
+
+#ifdef TARGET_WASM
+#define PEIMAGE_FLAT_LAYOUT_ONLY
+#endif // !TARGET_WASM

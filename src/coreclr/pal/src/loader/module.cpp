@@ -926,6 +926,16 @@ PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destina
     }
     return param.result;
 }
+#elif defined(__wasm__)
+// WASM-TODO: get rid of whole module loading on wasm
+PALIMPORT
+int
+PALAPI
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    _ASSERTE(!"PAL_CopyModuleData not implemented for wasm");
+    return 0;
+}
 #else
 static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
 {

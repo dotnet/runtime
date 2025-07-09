@@ -52,8 +52,10 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #elif defined(TARGET_WASM)
 
-#define SIZEOF_PRECODE_BASE         0
+// on wasm we have "fake" precode, with precode type and MethodDesc information stored
+#define SIZEOF_PRECODE_BASE         2*sizeof(void*)
 #define OFFSETOF_PRECODE_TYPE       0
+#define OFFSETOF_PRECODE_MD         4
 
 #endif // TARGET_AMD64
 
@@ -77,7 +79,6 @@ struct InvalidPrecode
 #elif defined(TARGET_RISCV64)
     static const int Type = 0xff;
 #elif defined(TARGET_WASM)
-    // unreachable instruction
     static const int Type = 0;
 #endif
 };
@@ -131,7 +132,7 @@ struct StubPrecode
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_WASM)
     static const int Type = 0;
-    static const SIZE_T CodeSize = 0;
+    static const SIZE_T CodeSize = 3*sizeof(void*);
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
@@ -419,7 +420,7 @@ struct FixupPrecode
     static const int FixupCodeOffset = 10;
 #elif defined(TARGET_WASM)
     static const int Type = 2;
-    static const SIZE_T CodeSize = 0;
+    static const SIZE_T CodeSize = 2*sizeof(void*);
     static const int FixupCodeOffset = 0;
 #endif // TARGET_AMD64
 
@@ -568,6 +569,10 @@ inline BYTE StubPrecode::GetType()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     TADDR type = GetData()->Type;
+
+#ifdef TARGET_WASM
+    return (BYTE)type;
+#endif
 
     // There are a limited number of valid bit patterns here. Restrict to those, so that the
     // speculative variant of GetPrecodeFromEntryPoint is more robust. Type is stored as a TADDR
@@ -830,6 +835,11 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+#ifdef FEATURE_INTERPRETER
+// check that the InterpreterPrecodeData fits into the StubPrecode
+static_assert_no_msg(sizeof(InterpreterPrecodeData) <= sizeof(StubPrecode));
+#endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
 // A summary of the precode layout for diagnostic purposes

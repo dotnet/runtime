@@ -31,6 +31,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/palinternal.h"
 
+#include "retaddr.h"
+
 #include <clrconfignocache.h>
 
 #include <errno.h>
@@ -219,6 +221,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             return FALSE;
         }
 
+#ifndef TARGET_BROWSER
         // create a guard page for the alternate stack
         int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
         if (st != 0)
@@ -226,6 +229,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
             return FALSE;
         }
+#endif // TARGET_BROWSER
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
 #endif // HAVE_MACH_EXCEPTIONS
@@ -876,7 +880,7 @@ Parameters :
 __attribute__((noinline))
 static void InvokeActivationHandler(CONTEXT *pWinContext)
 {
-    g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
+    g_InvokeActivationHandlerReturnAddress = _ReturnAddress();
     g_activationFunction(pWinContext);
 }
 

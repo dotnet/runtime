@@ -222,7 +222,7 @@ bool GCToOSInterface::Initialize()
     //
     // support for FlusProcessWriteBuffers
     //
-
+#ifndef TARGET_WASM
     assert(s_flushUsingMemBarrier == 0);
 
     if (CanFlushUsingMembarrier())
@@ -262,6 +262,7 @@ bool GCToOSInterface::Initialize()
         }
     }
 #endif // !TARGET_APPLE
+#endif // !TARGET_WASM
 
     InitializeCGroup();
 
@@ -576,7 +577,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -624,9 +625,13 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
+#ifndef TARGET_BROWSER
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
+#else
+    bool success = true;
+#endif // !TARGET_BROWSER
 
-#ifdef MADV_DODUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.

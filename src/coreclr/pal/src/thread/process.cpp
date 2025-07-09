@@ -2597,7 +2597,7 @@ InitializeFlushProcessWriteBuffers()
     }
 #endif
 
-#ifdef TARGET_APPLE
+#if defined(TARGET_APPLE) || defined(TARGET_WASM)
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2627,7 +2627,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_APPLE
+#endif // TARGET_APPLE || TARGET_WASM
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2664,18 +2664,22 @@ FlushProcessWriteBuffers()
         int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
 
+#ifndef TARGET_BROWSER
         // Changing a helper memory page protection from read / write to no access
         // causes the OS to issue IPI to flush TLBs on all processors. This also
         // results in flushing the processor buffers.
         status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
         FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
+#endif // !TARGET_BROWSER
 
         // Ensure that the page is dirty before we change the protection so that
         // we prevent the OS from skipping the global TLB flush.
         InterlockedIncrement(s_helperPage);
 
+#ifndef TARGET_BROWSER
         status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
         FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
+#endif // !TARGET_BROWSER
 
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
