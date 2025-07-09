@@ -9,6 +9,7 @@ namespace System.Data.Odbc.Tests
 {
     public class ConnectionTests : IntegrationTestBase
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         // Bug #96278 fixed only on .NET, not on .NET Framework
         [ConditionalFact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
