@@ -23,8 +23,8 @@ namespace System.Text.Json.Serialization.Metadata
             return result;
         }
 
-        internal async ValueTask<T?> DeserializeAsync<TReadBufferState>(TReadBufferState bufferState, CancellationToken cancellationToken)
-            where TReadBufferState : struct, IReadBufferState<TReadBufferState>
+        internal async ValueTask<T?> DeserializeAsync<TReadBufferState, TStream>(TStream utf8Json, TReadBufferState bufferState, CancellationToken cancellationToken)
+            where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
         {
             Debug.Assert(IsConfigured);
             JsonSerializerOptions options = Options;
@@ -36,8 +36,8 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 while (true)
                 {
-                    bufferState = await bufferState.ReadAsync(cancellationToken).ConfigureAwait(false);
-                    bool success = ContinueDeserialize(
+                    bufferState = await bufferState.ReadAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                    bool success = ContinueDeserialize<TReadBufferState, TStream>(
                         ref bufferState,
                         ref jsonReaderState,
                         ref readStack,
@@ -58,14 +58,14 @@ namespace System.Text.Json.Serialization.Metadata
         internal ValueTask<T?> DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
         {
             // Note: The ReadBufferState ctor rents pooled buffers.
-            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, Options.DefaultBufferSize);
-            return DeserializeAsync(bufferState, cancellationToken);
+            StreamReadBufferState bufferState = new StreamReadBufferState(Options.DefaultBufferSize);
+            return DeserializeAsync(utf8Json, bufferState, cancellationToken);
         }
 
         internal ValueTask<T?> DeserializeAsync(PipeReader utf8Json, CancellationToken cancellationToken)
         {
-            PipeReadBufferState bufferState = new PipeReadBufferState(utf8Json);
-            return DeserializeAsync(bufferState, cancellationToken);
+            PipeReadBufferState bufferState = default;
+            return DeserializeAsync(utf8Json, bufferState, cancellationToken);
         }
 
         internal T? Deserialize(Stream utf8Json)
@@ -76,14 +76,14 @@ namespace System.Text.Json.Serialization.Metadata
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
             // Note: The ReadBufferState ctor rents pooled buffers.
-            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, options.DefaultBufferSize);
+            StreamReadBufferState bufferState = new StreamReadBufferState(options.DefaultBufferSize);
 
             try
             {
                 while (true)
                 {
-                    bufferState.Read();
-                    bool success = ContinueDeserialize(
+                    bufferState.Read(utf8Json);
+                    bool success = ContinueDeserialize<StreamReadBufferState, Stream>(
                         ref bufferState,
                         ref jsonReaderState,
                         ref readStack,
@@ -115,26 +115,26 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken)
         {
             // Note: The ReadBufferState ctor rents pooled buffers.
-            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, Options.DefaultBufferSize);
-            T? result = await DeserializeAsync(bufferState, cancellationToken).ConfigureAwait(false);
+            StreamReadBufferState bufferState = new StreamReadBufferState(Options.DefaultBufferSize);
+            T? result = await DeserializeAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
             return result;
         }
 
         internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(PipeReader utf8Json, CancellationToken cancellationToken)
         {
-            T? result = await DeserializeAsync(new PipeReadBufferState(utf8Json), cancellationToken).ConfigureAwait(false);
+            T? result = await DeserializeAsync<PipeReadBufferState, PipeReader>(utf8Json, bufferState: default, cancellationToken).ConfigureAwait(false);
             return result;
         }
 
         internal sealed override object? DeserializeAsObject(Stream utf8Json)
             => Deserialize(utf8Json);
 
-        internal bool ContinueDeserialize<TReadBufferState>(
+        internal bool ContinueDeserialize<TReadBufferState, TStream>(
             ref TReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,
             ref ReadStack readStack,
             out T? value)
-            where TReadBufferState : struct, IReadBufferState<TReadBufferState>
+            where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
         {
             Utf8JsonReader reader;
             if (bufferState.Bytes.IsSingleSegment)

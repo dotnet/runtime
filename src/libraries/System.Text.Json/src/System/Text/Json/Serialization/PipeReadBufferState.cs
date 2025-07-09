@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.Text.Json.Serialization
 {
     [StructLayout(LayoutKind.Auto)]
-    internal struct PipeReadBufferState : IReadBufferState<PipeReadBufferState>
+    internal struct PipeReadBufferState : IReadBufferState<PipeReadBufferState, PipeReader>
     {
         private readonly PipeReader _utf8Json;
 
@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        public async ValueTask<PipeReadBufferState> ReadAsync(CancellationToken cancellationToken, bool fillBuffer = true)
+        public async ValueTask<PipeReadBufferState> ReadAsync(PipeReader utf8Json, CancellationToken cancellationToken, bool fillBuffer = true)
         {
             Debug.Assert(_sequence.Equals(ReadOnlySequence<byte>.Empty), "ReadAsync should only be called when the buffer is empty.");
 
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization
             return bufferState;
         }
 
-        public void Read() => throw new NotImplementedException();
+        public void Read(PipeReader utf8Json) => throw new NotImplementedException();
 
         private void ProcessReadBytes()
         {

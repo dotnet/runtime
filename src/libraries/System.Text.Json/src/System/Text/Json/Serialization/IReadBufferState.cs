@@ -7,17 +7,17 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization
 {
-    internal interface IReadBufferState<TReadBufferState> : IDisposable
-        where TReadBufferState : struct, IReadBufferState<TReadBufferState>
+    internal interface IReadBufferState<TReadBufferState, TStream> : IDisposable
+        where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
     {
         public abstract bool IsFinalBlock { get; }
 
         public abstract ReadOnlySequence<byte> Bytes { get; }
 
-        public abstract ValueTask<TReadBufferState> ReadAsync(CancellationToken cancellationToken,
+        public abstract ValueTask<TReadBufferState> ReadAsync(TStream utf8Json, CancellationToken cancellationToken,
             bool fillBuffer = true);
 
-        public abstract void Read();
+        public abstract void Read(TStream utf8Json);
 
         public abstract void Advance(long bytesConsumed);
     }
