@@ -62,10 +62,21 @@ if (CLR_CMAKE_TARGET_APPLE)
   set(FEATURE_OBJCMARSHAL 1)
 endif()
 
+if(NOT DEFINED FEATURE_JAVAMARSHAL)
+  if(CLR_CMAKE_TARGET_ANDROID)
+    set(FEATURE_JAVAMARSHAL 1)
+  else()
+    set(FEATURE_JAVAMARSHAL $<IF:$<CONFIG:Debug,Checked>,1,0>)
+  endif()
+endif()
+
 if (CLR_CMAKE_TARGET_WIN32)
   set(FEATURE_TYPEEQUIVALENCE 1)
 endif(CLR_CMAKE_TARGET_WIN32)
 
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS)
+  set(FEATURE_STUBPRECODE_DYNAMIC_HELPERS 1)
+endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_ARCH_WASM)
   set(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH 1)
@@ -80,6 +91,12 @@ else()
   endif()
   set(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH 1)
 endif()
+
+# We use a flush instruction cache to protect reads from the StubPrecodeData/CallCountingStub structures in the stubs.
+# This is needed because the StubPrecodeData structure is initialized after the stub code is written, and we need to ensure that
+# the reads in the stub happen after the writes to the StubPrecodeData structure. We could do this with a barrier instruction in the stub,
+# but that would be more expensive.
+set(FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS 1)
 
 if (CLR_CMAKE_HOST_UNIX AND CLR_CMAKE_HOST_ARCH_AMD64)
   # Allow 16 byte compare-exchange (cmpxchg16b)
