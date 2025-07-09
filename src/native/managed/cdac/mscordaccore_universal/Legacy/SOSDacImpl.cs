@@ -238,7 +238,7 @@ internal sealed unsafe partial class SOSDacImpl
             addr = assembly.ToTargetPointer(_target);
             Contracts.ILoader contract = _target.Contracts.Loader;
 
-            if (modules is not null)
+            if (modules is not null && modules.Length > 0)
             {
                 modules[0] = contract.GetModulePointer(addr).ToClrDataAddress(_target);
             }
