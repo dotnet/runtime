@@ -51,7 +51,6 @@
     <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="System\Net\Security\NetSecurityTelemetry.cs" />
     <Compile Include="System\Net\Security\ProtectionLevel.cs" />
-    <Compile Include="System\Net\Security\ResettableTaskSource.cs" />
     <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslCertificateTrust.cs" />
