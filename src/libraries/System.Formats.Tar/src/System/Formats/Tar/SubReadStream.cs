@@ -66,7 +66,7 @@ namespace System.Formats.Tar
 
         internal long Remaining => _endInSuperStream - _positionInSuperStream;
 
-        private int LimitByRemaining(int bufferSize) => Math.Min(bufferSize, (int)Math.Min(Remaining, int.MaxValue));
+        private int LimitByRemaining(int bufferSize) => (int)Math.Min(Remaining, bufferSize);
 
         internal void SetReachedEnd()
         {
