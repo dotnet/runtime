@@ -745,53 +745,64 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
 
-        [Fact]
-        [OuterLoop]
-        public void Ping_TimedOut_Sync_Success()
+        private async Task Ping_TimedOut_Core(Func<Ping, string, Task<PingReply>> sendPing)
         {
-            var sender = new Ping();
-            PingReply reply = sender.Send(TestSettings.UnreachableAddress);
-            Assert.Equal(IPStatus.TimedOut, reply.Status);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public async Task Ping_TimedOut_EAP_Success()
-        {
-            var sender = new Ping();
-            sender.PingCompleted += (s, e) =>
+            Ping sender = new Ping();
+            PingReply reply = await sendPing(sender, TestSettings.UnreachableAddress);
+            if (reply.Status == IPStatus.DestinationNetworkUnreachable)
             {
-                var tcs = (TaskCompletionSource<PingReply>)e.UserState;
+                // A network middleware has dropped the packed and replied with DestinationNetworkUnreachable. Repeat the PING attempt on another address.
+                reply = await sendPing(sender, TestSettings.UnreachableAddress2);
+            }
 
-                if (e.Cancelled)
-                {
-                    tcs.TrySetCanceled();
-                }
-                else if (e.Error != null)
-                {
-                    tcs.TrySetException(e.Error);
-                }
-                else
-                {
-                    tcs.TrySetResult(e.Reply);
-                }
-            };
+            if (reply.Status == IPStatus.DestinationNetworkUnreachable)
+            {
+                // Do yet another attempt.
+                reply = await sendPing(sender, TestSettings.UnreachableAddress3);
+            }
 
-            var tcs = new TaskCompletionSource<PingReply>();
-            sender.SendAsync(TestSettings.UnreachableAddress, tcs);
-
-            PingReply reply = await tcs.Task;
             Assert.Equal(IPStatus.TimedOut, reply.Status);
         }
 
         [Fact]
         [OuterLoop]
-        public async Task Ping_TimedOut_TAP_Success()
-        {
-            var sender = new Ping();
-            PingReply reply = await sender.SendPingAsync(TestSettings.UnreachableAddress);
-            Assert.Equal(IPStatus.TimedOut, reply.Status);
-        }
+        public Task Ping_TimedOut_Sync_Success()
+            => Ping_TimedOut_Core((sender, address) => Task.Run(() => sender.Send(address)));
+
+        [Fact]
+        [OuterLoop]
+        public Task Ping_TimedOut_EAP_Success()
+            => Ping_TimedOut_Core(async (sender, address) =>
+            {
+                static void PingCompleted(object sender, PingCompletedEventArgs e)
+                {
+                    var tcs = (TaskCompletionSource<PingReply>)e.UserState;
+
+                    if (e.Cancelled)
+                    {
+                        tcs.TrySetCanceled();
+                    }
+                    else if (e.Error != null)
+                    {
+                        tcs.TrySetException(e.Error);
+                    }
+                    else
+                    {
+                        tcs.TrySetResult(e.Reply);
+                    }
+                }
+                sender.PingCompleted += PingCompleted;
+                var tcs = new TaskCompletionSource<PingReply>();
+                sender.SendAsync(address, tcs);
+                PingReply reply = await tcs.Task;
+                sender.PingCompleted -= PingCompleted;
+                return reply;
+            });
+
+        [Fact]
+        [OuterLoop]
+        public Task Ping_TimedOut_TAP_Success()
+            => Ping_TimedOut_Core((sender, address) => sender.SendPingAsync(address));
 
         private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
