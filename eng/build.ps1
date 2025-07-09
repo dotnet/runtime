@@ -176,8 +176,8 @@ if ($vs) {
   }
 
   # Auto-generated solution file that still uses the sln format 
-  if ($vs -ieq "coreclr.sln") {
-    # If someone passes in coreclr.sln (case-insensitive),
+  if ($vs -ieq "coreclr.sln" -or $vs -ieq "coreclr") {
+    # If someone passes in coreclr.sln or just coreclr (case-insensitive),
     # launch the generated CMake solution.
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
     if (-Not (Test-Path $vs)) {
@@ -192,7 +192,7 @@ if ($vs) {
     }
   }
   # Auto-generated solution file that still uses the sln format
-  elseif ($vs -ieq "corehost.sln") {
+  elseif ($vs -ieq "corehost.sln" -or $vs -ieq "corehost") {
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true"
@@ -214,6 +214,11 @@ if ($vs) {
     } else {
       # Search for the solution in coreclr
       $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
+      
+      # Also, search for the solution in coreclr\tools\aot
+      if (-Not (Test-Path $vs)) {
+        $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\tools\aot\$solution.slnx"
+      }
     }
 
     if (-Not (Test-Path $vs)) {

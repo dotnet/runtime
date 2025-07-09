@@ -15,6 +15,8 @@ namespace System.Net.Http.Headers
     // Use HeaderDescriptor.TryGet to resolve an arbitrary header name to a HeaderDescriptor.
     internal readonly struct HeaderDescriptor : IEquatable<HeaderDescriptor>
     {
+        private static readonly SearchValues<byte> s_dangerousCharacterBytes = SearchValues.Create((byte)'\0', (byte)'\r', (byte)'\n');
+
         /// <summary>
         /// Either a <see cref="KnownHeader"/> or <see cref="string"/>.
         /// </summary>
@@ -169,7 +171,16 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            return (valueEncoding ?? HttpRuleParser.DefaultHttpEncoding).GetString(headerValue);
+            string value = (valueEncoding ?? HttpRuleParser.DefaultHttpEncoding).GetString(headerValue);
+            if (headerValue.ContainsAny(s_dangerousCharacterBytes))
+            {
+                // Depending on the encoding, 'value' may contain a dangerous character.
+                // We are replacing them with SP to conform with https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-5.
+                // This is a low-occurrence corner case, so we don't care about the cost of Replace() and the extra allocations.
+                value = value.Replace('\0', ' ').Replace('\r', ' ').Replace('\n', ' ');
+            }
+
+            return value;
         }
 
         internal static string? GetKnownContentType(ReadOnlySpan<byte> contentTypeValue)
