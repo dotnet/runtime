@@ -365,10 +365,6 @@ OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 // In the case where a shared generic lookup is needed an extra argument is passed as an svar, which is a pointer to the generic context.
 // If there is a generic context argument it is always the first SVar to the instruction.
 
-OPDEF(INTOP_METHODTABLE, "methodtable", 3, 1, 1, InterpOpInt)
-OPDEF(INTOP_COMPARE_EXCHANGE_I4, "compare.exchange.i4", 5, 1, 3, InterpOpInt)
-OPDEF(INTOP_COMPARE_EXCHANGE_O, "compare.exchange.o", 5, 1, 3, InterpOpInt)
-
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg))
 OPDEF(INTOP_CALL_HELPER_P_P, "call.helper.p.p", 4, 1, 0, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_P_G, "call.helper.p.g", 5, 1, 1, InterpOpGenericHelperFtn)
@@ -406,6 +402,12 @@ OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_GC_COLLECT, "gc.collect", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
+
+// Intrinsics
+OPDEF(INTOP_METHODTABLE, "methodtable", 3, 1, 1, InterpOpInt)
+OPDEF(INTOP_COMPARE_EXCHANGE_I4, "compare.exchange.i4", 5, 1, 3, InterpOpInt)
+OPDEF(INTOP_COMPARE_EXCHANGE_I8, "compare.exchange.i8", 5, 1, 3, InterpOpInt)
+OPDEF(INTOP_COMPARE_EXCHANGE_O, "compare.exchange.o", 5, 1, 3, InterpOpInt)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)

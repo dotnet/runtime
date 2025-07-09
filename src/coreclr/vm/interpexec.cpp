@@ -1977,7 +1977,6 @@ CALL_INTERP_METHOD:
                     void *vtThis = stack + returnOffset;
 
                     // Interpreter-TODO: Clear the valuetype memory for GC encoding
-                    // memset(vtThis, 0, vtSize);
 
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;

@@ -15,9 +15,7 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
 
     // Array methods don't have metadata
     if (!namespaceName)
-    {
         return NI_Illegal;
-    }
 
     // Namespace is zero-terinated empty string
     if (!strcmp(className, "Arm64"))
