@@ -69,7 +69,7 @@ namespace
 
         // Append any existing resolvers to form a linked list.
         if (s_delayDestroyDynamicMethod != nullptr)
-            lcgResolver->SetNextDynamicMethodToDestroy((DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod());
+            lcgResolver->SetNextDynamicMethodForDelayCleanup((DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod());
 
         s_delayDestroyDynamicMethod = lcgResolver;
     }
@@ -81,7 +81,7 @@ namespace
         while (s_delayDestroyDynamicMethod != nullptr)
         {
             // Get the next method to destroy.
-            DynamicMethodDesc* next = s_delayDestroyDynamicMethod->GetNextDynamicMethodToDestroy();
+            DynamicMethodDesc* next = s_delayDestroyDynamicMethod->GetNextDynamicMethodForDelayCleanup();
 
             // Destroy the current method.
             DynamicMethodDesc* curr = (DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod();

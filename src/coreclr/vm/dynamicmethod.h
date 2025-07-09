@@ -124,7 +124,7 @@ struct DynamicCodePointer final
 //
 //  a jit resolver for managed dynamic methods
 //
-class LCGMethodResolver : public DynamicResolver
+class LCGMethodResolver final : public DynamicResolver
 {
     friend class DynamicMethodDesc;
     friend class DynamicMethodTable;
@@ -139,6 +139,13 @@ class LCGMethodResolver : public DynamicResolver
     void DestroyResolver();
 
 public:
+    LCGMethodResolver(DynamicMethodDesc* pDynamicMethod, DynamicMethodTable* pDynamicMethodTable)
+        : m_pDynamicMethod{ pDynamicMethod }
+        , m_pDynamicMethodTable{ pDynamicMethodTable }
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
     void FreeCompileTimeState();
     void GetJitContext(SecurityControlFlags * securityControlFlags,
                        TypeHandle * typeOwner);
@@ -160,14 +167,31 @@ public:
     OBJECTREF GetManagedResolver();
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
     void** AllocateRecordCodePointer();
-    DynamicMethodDesc* GetNextDynamicMethodToDestroy() { LIMITED_METHOD_CONTRACT; return m_delayDestroyNext; }
-    void SetNextDynamicMethodToDestroy(DynamicMethodDesc* next)
+
+private:
+    DynamicMethodDesc* GetNextFreeDynamicMethodDesc() { LIMITED_METHOD_CONTRACT; return m_next; }
+    void SetNextFreeDynamicMethod(DynamicMethodDesc* next)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(next != NULL);
-        _ASSERTE(m_delayDestroyNext == NULL);
-        m_delayDestroyNext = next;
+        // In this path, we permit the case where next is NULL or m_next is not NULL.
+        // This is because this method is used to set the next pointer when we are
+        // working with the free list of DynamicMethodDescs and the field may have been
+        // used to hold the next DynamicMethodDesc for delay clean-up.
+        m_next = next;
     }
+
+public:
+    DynamicMethodDesc* GetNextDynamicMethodForDelayCleanup() { LIMITED_METHOD_CONTRACT; return m_next; }
+    void SetNextDynamicMethodForDelayCleanup(DynamicMethodDesc* next)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(next != NULL && m_next == NULL);
+
+        // We shouldn't be overriding an existing next pointer.
+        // See declaration of the field for its uses.
+        m_next = next;
+    }
+
     STRINGREF GetStringLiteral(mdToken metaTok);
     STRINGREF * GetOrInternString(STRINGREF *pString);
     void AddToUsedIndCellList(BYTE * indcell);
@@ -187,6 +211,7 @@ private:
     };
 
     DynamicMethodDesc* m_pDynamicMethod;
+    DynamicMethodTable* m_pDynamicMethodTable;
     OBJECTHANDLE m_managedResolver;
     BYTE* m_Code;
     DWORD m_CodeSize;
@@ -194,9 +219,12 @@ private:
     unsigned short m_StackSize;
     CorInfoOptions m_Options;
     unsigned m_EHSize;
-    DynamicMethodTable* m_DynamicMethodTable;
+
+    // The next field is currently used for clean-up purposes.
+    // It holds the next free DynamicMethodDesc that is available for reuse
+    // or it holds the next DynamicMethodDesc that is scheduled for delayed
+    // destruction.
     DynamicMethodDesc* m_next;
-    DynamicMethodDesc* m_delayDestroyNext;
     ChunkAllocator m_jitMetaHeap;
     ChunkAllocator m_jitTempData;
     DynamicCodePointer* m_DynamicCodePointers;
@@ -249,9 +277,9 @@ private:
 public:
     void Destroy();
     DynamicMethodDesc* GetDynamicMethod(BYTE *psig, DWORD sigSize, PTR_CUTF8 name);
-    void LinkMethod(DynamicMethodDesc *pMethod);
+    void AddToFreeList(DynamicMethodDesc *pMethod);
 
-#endif
+#endif // !DACCESS_COMPILE
 
 #ifdef _DEBUG
 public:

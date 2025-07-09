@@ -182,10 +182,7 @@ void DynamicMethodTable::AddMethodsToList()
                         | DynamicMethodDesc::FlagStatic
                         | DynamicMethodDesc::FlagIsLCGMethod);
 
-        LCGMethodResolver* pResolver = new (pResolvers) LCGMethodResolver();
-        pResolver->m_pDynamicMethod = pNewMD;
-        pResolver->m_DynamicMethodTable = this;
-        pNewMD->m_pResolver = pResolver;
+        pNewMD->m_pResolver = new (pResolvers) LCGMethodResolver(pNewMD, this);
 
         pNewMD->SetTemporaryEntryPoint(&amt);
 
@@ -195,7 +192,7 @@ void DynamicMethodTable::AddMethodsToList()
 
         if (pPrevMD)
         {
-            pPrevMD->GetLCGMethodResolver()->m_next = pNewMD;
+            pPrevMD->GetLCGMethodResolver()->SetNextFreeDynamicMethod(pNewMD);
         }
         pPrevMD = pNewMD;
         pNewMD = (DynamicMethodDesc *)(dac_cast<TADDR>(pNewMD) + pNewMD->SizeOf());
@@ -244,7 +241,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
             pNewMD = m_DynamicMethodList;
             if (pNewMD)
             {
-                m_DynamicMethodList = pNewMD->GetLCGMethodResolver()->m_next;
+                m_DynamicMethodList = pNewMD->GetLCGMethodResolver()->GetNextFreeDynamicMethodDesc();
 #ifdef _DEBUG
                 m_Used++;
 #endif
@@ -291,7 +288,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     RETURN pNewMD;
 }
 
-void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
+void DynamicMethodTable::AddToFreeList(DynamicMethodDesc *pMethod)
 {
     CONTRACTL
     {
@@ -302,10 +299,10 @@ void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
     }
     CONTRACTL_END;
 
-    LOG((LF_BCL, LL_INFO10000, "Level4 - Returning DynamicMethod to free list {0x%p} (used %d)\n", pMethod, m_Used));
+    LOG((LF_BCL, LL_INFO10000, "Level4 - Returning DynamicMethod to free list {%p} (used %d)\n", pMethod, m_Used));
     {
         LockHolder lh(this);
-        pMethod->GetLCGMethodResolver()->m_next = m_DynamicMethodList;
+        pMethod->GetLCGMethodResolver()->SetNextFreeDynamicMethod(m_DynamicMethodList);
         m_DynamicMethodList = pMethod;
 #ifdef _DEBUG
         m_Used--;
@@ -930,7 +927,6 @@ void LCGMethodResolver::Reset()
     m_UsedIndCellList       = NULL;
     m_pJumpStubCache        = NULL;
     m_next                  = NULL;
-    m_delayDestroyNext      = NULL;
     m_Code                  = NULL;
 }
 
@@ -1005,14 +1001,17 @@ bool LCGMethodResolver::TryDestroyCodeHeapMemory()
 
     while (m_DynamicCodePointers != NULL)
     {
-        // Remove the unwind information (if applicable)
         void* recordCodePointer = m_DynamicCodePointers->m_pEntry;
-        UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)recordCodePointer);
+        if (recordCodePointer != NULL)
+        {
+            // Remove the unwind information (if applicable)
+            UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)recordCodePointer);
 
-        HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)recordCodePointer);
-        LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", this, pHeap, *(size_t*)pHeap));
-        if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, recordCodePointer))
-            return false;
+            HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)recordCodePointer);
+            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", this, pHeap, *(size_t*)pHeap));
+            if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, recordCodePointer))
+                return false;
+        }
 
         m_DynamicCodePointers = m_DynamicCodePointers->m_pNext;
     }
@@ -1108,7 +1107,7 @@ void LCGMethodResolver::DestroyResolver()
         m_managedResolver = NULL;
     }
 
-    m_DynamicMethodTable->LinkMethod(m_pDynamicMethod);
+    m_pDynamicMethodTable->AddToFreeList(m_pDynamicMethod);
 }
 
 void LCGMethodResolver::FreeCompileTimeState()
