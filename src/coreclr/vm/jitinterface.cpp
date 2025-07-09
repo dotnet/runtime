@@ -8609,23 +8609,29 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // We must ensure that pObjMT actually implements the
         // interface corresponding to pBaseMD.
         //
+        bool isArrayImplicitInterface = false;
+
         if (pObjMT->IsArray())
         {
-            // If we're in a shared context we'll devirt to a shared
-            // generic method and won't be able to inline, so just bail.
+            // Does the array implicitly implement this interface?
             //
-            if (pBaseMT->IsSharedByGenericInstantiations())
-            {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-            }
+            isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
 
-            // Ensure we can cast the array to the interface type
-            //
-            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+            if (!isArrayImplicitInterface)
             {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-                return false;
+                if (pBaseMT->IsSharedByGenericInstantiations())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                // Ensure we can cast the array to the interface type
+                //
+                if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return false;
+                }
             }
         }
         else if (!pBaseMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
@@ -8640,7 +8646,21 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         {
             MethodTable* interfaceMT = nullptr;
 
-            if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
+            if (isArrayImplicitInterface)
+            {
+                _ASSERTE(pObjMT->IsArray());
+
+                // We cannot devirtualize unless we know the exact array element type
+                //
+                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
+                if (elemType.IsCanonicalSubtype())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
+                }
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
+            }
+            else if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
             {
                 MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
                 
@@ -10234,6 +10254,8 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
     pAsyncInfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
     pAsyncInfoOut->continuationsNeedMethodHandle = m_pMethodBeingCompiled->GetLoaderAllocator()->CanUnload();
+    pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
+    pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
 
     EE_TO_JIT_TRANSITION();
 }
@@ -14472,12 +14494,12 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     }
 
 #ifdef TARGET_X86
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+
     if (msig.HasGenericContextArg())
     {
         sigBuilder.AppendElementType(ELEMENT_TYPE_I);
     }
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
 #endif
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
@@ -14548,14 +14570,15 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     }
 
 #ifdef TARGET_X86
+    // Continuation
+    pCode->EmitLDARG(0);
+
     if (msig.HasGenericContextArg())
     {
         pCode->EmitLDC(0);
         numArgs++;
     }
 
-    // Continuation
-    pCode->EmitLDARG(0);
     numArgs++;
 #endif
 

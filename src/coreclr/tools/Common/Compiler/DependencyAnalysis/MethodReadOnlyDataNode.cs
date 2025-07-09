@@ -18,6 +18,14 @@ namespace ILCompiler.DependencyAnalysis
             _owningMethod = owningMethod;
         }
 
+#if !READYTORUN
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            IMethodNode owningBody = factory.MethodEntrypoint(_owningMethod);
+            return factory.ObjectInterner.GetDeduplicatedSymbol(factory, owningBody) != owningBody;
+        }
+#endif
+
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
         public override bool StaticDependenciesAreComputed => _data != null;
 

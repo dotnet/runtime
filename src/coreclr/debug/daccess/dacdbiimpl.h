@@ -822,9 +822,8 @@ public:
     // (or a dump was generated while in this callback)
     VMPTR_OBJECTHANDLE GetCurrentCustomDebuggerNotification(VMPTR_Thread vmThread);
 
-
-    // Return the current appdomain the specified thread is in.
-    VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
+    // Return the current appdomain
+    VMPTR_AppDomain GetCurrentAppDomain();
 
     // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
     VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef);

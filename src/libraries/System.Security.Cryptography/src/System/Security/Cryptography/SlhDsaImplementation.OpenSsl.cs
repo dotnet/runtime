@@ -50,6 +50,8 @@ namespace System.Security.Cryptography
                 _key?.Dispose();
                 _key = null!;
             }
+
+            base.Dispose(disposing);
         }
 
         internal static partial SlhDsaImplementation GenerateKeyCore(SlhDsaAlgorithm algorithm)

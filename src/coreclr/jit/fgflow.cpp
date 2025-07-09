@@ -367,157 +367,54 @@ FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* new
 }
 
 //------------------------------------------------------------------------
-// fgRedirectTargetEdge: Sets block->bbTargetEdge's target block to newTarget,
-// updating pred lists as necessary.
+// fgRedirectEdge: Sets the given edge's target block to 'newTarget',
+// updating pred lists as needed.
 //
 // Arguments:
-//    block -- The block we want to make a predecessor of newTarget.
-//             It could be one already, in which case nothing changes.
-//    newTarget -- The new successor of block.
+//    edge -- The edge to update. Note that this is a reference type
+//    to support automatic updates to BasicBlock members (bbTargetEdge et al).
+//    newTarget -- The new successor of the edge.
 //
-void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
+void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
 {
-    assert(block != nullptr);
+    assert(edge != nullptr);
     assert(newTarget != nullptr);
 
-    FlowEdge* edge = block->GetTargetEdge();
-    assert(edge->getDupCount() == 1);
+    BasicBlock* const block    = edge->getSourceBlock();
+    const unsigned    dupCount = edge->getDupCount();
+    fgRemoveAllRefPreds(edge->getDestinationBlock(), block);
 
-    // Update oldTarget's pred list.
-    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
-    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
-    //
-    BasicBlock* oldTarget = edge->getDestinationBlock();
-    fgRemoveAllRefPreds(oldTarget, block);
-
-    // Splice edge into new target block's pred list
-    //
-    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
-    edge->setNextPredEdge(*predListPtr);
-    edge->setDestinationBlock(newTarget);
-    *predListPtr = edge;
-
-    // Pred list of target should (still) be ordered
-    //
-    assert(newTarget->checkPredListOrder());
-
-    // Edge should still have only one ref
-    assert(edge->getDupCount() == 1);
-    newTarget->bbRefs++;
-}
-
-//------------------------------------------------------------------------
-// fgRedirectTrueEdge: Sets block->bbTrueEdge's target block to newTarget,
-// updating pred lists as necessary.
-//
-// Arguments:
-//    block -- The block we want to make a predecessor of newTarget.
-//             It could be one already, in which case nothing changes.
-//    newTarget -- The new successor of block.
-//
-// Notes:
-//    This assumes block's true and false targets are different.
-//    If setting block's true target to its false target,
-//    fgRedirectTrueEdge increments the false edge's dup count,
-//    and ensures block->bbTrueEdge == block->bbFalseEdge.
-//    We don't update newTarget->bbPreds in this case,
-//    as we don't want to have more than one edge from the same predecessor.
-//
-void Compiler::fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget)
-{
-    assert(block != nullptr);
-    assert(newTarget != nullptr);
-    assert(block->KindIs(BBJ_COND));
-    assert(!block->TrueEdgeIs(block->GetFalseEdge()));
-
-    // Update oldTarget's pred list.
-    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
-    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
-    //
-    FlowEdge*   trueEdge  = block->GetTrueEdge();
-    BasicBlock* oldTarget = trueEdge->getDestinationBlock();
-    fgRemoveAllRefPreds(oldTarget, block);
-
-    // Splice edge into new target block's pred list
-    //
     FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
     FlowEdge*  predEdge    = *predListPtr;
 
-    if (block->FalseEdgeIs(predEdge))
+    if ((predEdge != nullptr) && (predEdge->getSourceBlock() == block))
     {
-        block->SetTrueEdge(predEdge);
-        predEdge->incrementDupCount();
+        edge = predEdge;
+        edge->incrementDupCount(dupCount);
     }
     else
     {
-        trueEdge->setNextPredEdge(predEdge);
-        trueEdge->setDestinationBlock(newTarget);
-        *predListPtr = trueEdge;
+        edge->setNextPredEdge(predEdge);
+        *predListPtr = edge;
+        edge->setDestinationBlock(newTarget);
     }
 
-    newTarget->bbRefs++;
+    newTarget->bbRefs += dupCount;
 
-    // Pred list of target should (still) be ordered
-    //
+    // Pred list of target should still be ordered
     assert(newTarget->checkPredListOrder());
 }
 
 //------------------------------------------------------------------------
-// fgRedirectFalseEdge: Sets block->bbFalseEdge's target block to newTarget,
-// updating pred lists as necessary.
+// GetDescriptorForSwitch: Returns the SwitchUniqueSuccSet corresponding to 'switchBlk'.
+// If it does not exist in the map yet, we build and insert the entry.
 //
 // Arguments:
-//    block -- The block we want to make a predecessor of newTarget.
-//             It could be one already, in which case nothing changes.
-//    newTarget -- The new successor of block.
+//    switchBlk -- The switch block
 //
-// Notes:
-//    This assumes block's true and false targets are different.
-//    If setting block's false target to its true target,
-//    fgRedirectFalseEdge increments the true edge's dup count,
-//    and ensures block->bbTrueEdge == block->bbFalseEdge.
-//    We don't update newTarget->bbPreds in this case,
-//    as we don't want to have more than one edge from the same predecessor.
+// Returns:
+//    The SwitchUniqueSuccSet corresponding to 'switchBlk'
 //
-void Compiler::fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget)
-{
-    assert(block != nullptr);
-    assert(newTarget != nullptr);
-    assert(block->KindIs(BBJ_COND));
-    assert(!block->TrueEdgeIs(block->GetFalseEdge()));
-
-    // Update oldTarget's pred list.
-    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
-    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
-    //
-    FlowEdge*   falseEdge = block->GetFalseEdge();
-    BasicBlock* oldTarget = falseEdge->getDestinationBlock();
-    fgRemoveAllRefPreds(oldTarget, block);
-
-    // Splice edge into new target block's pred list
-    //
-    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
-    FlowEdge*  predEdge    = *predListPtr;
-
-    if (block->TrueEdgeIs(predEdge))
-    {
-        block->SetFalseEdge(predEdge);
-        predEdge->incrementDupCount();
-    }
-    else
-    {
-        falseEdge->setNextPredEdge(predEdge);
-        falseEdge->setDestinationBlock(newTarget);
-        *predListPtr = falseEdge;
-    }
-
-    newTarget->bbRefs++;
-
-    // Pred list of target should (still) be ordered
-    //
-    assert(newTarget->checkPredListOrder());
-}
-
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
     assert(switchBlk->KindIs(BBJ_SWITCH));
@@ -570,12 +467,74 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
     }
 }
 
-/*****************************************************************************
- *
- *  Simple utility function to remove an entry for a block in the switch desc
- *  map. So it can be called from other phases.
- *
- */
+//------------------------------------------------------------------------
+// GetDescriptorForSwitchIfAvailable: Gets the SwitchUniqueSuccSet corresponding to 'switchBlk',
+// if it exists. Unlike Compiler::GetDescriptorForSwitch, this will not modify the map.
+//
+// Arguments:
+//    switchBlk -- The switch block
+//    res [out] -- Pointer to the SwitchUniqueSuccSet to populate
+//
+// Returns:
+//    True if the map exists, and contains an entry for 'switchBlk'
+//
+bool Compiler::GetDescriptorForSwitchIfAvailable(BasicBlock* switchBlk, SwitchUniqueSuccSet* res)
+{
+    assert(switchBlk->KindIs(BBJ_SWITCH));
+    return (m_switchDescMap != nullptr) && m_switchDescMap->Lookup(switchBlk, res);
+}
+
+//------------------------------------------------------------------------
+// fgRemoveSuccFromSwitchDescMapEntry: Removes a successor edge from the map entry
+// for 'switchBlk', if the entry exists.
+//
+// Arguments:
+//    switchBlk -- The switch block
+//    edge      -- The successor edge to remove
+//
+void Compiler::fgRemoveSuccFromSwitchDescMapEntry(BasicBlock* switchBlk, FlowEdge* edge)
+{
+    assert(switchBlk->KindIs(BBJ_SWITCH));
+
+    SwitchUniqueSuccSet uniqueSuccSet;
+    if (!GetDescriptorForSwitchIfAvailable(switchBlk, &uniqueSuccSet))
+    {
+        return;
+    }
+
+    const unsigned   succCount = uniqueSuccSet.numDistinctSuccs;
+    FlowEdge** const succTab   = uniqueSuccSet.nonDuplicates;
+    bool             found     = false;
+    assert(succCount > 0);
+    assert(succTab != nullptr);
+
+    for (unsigned i = 0; !found && (i < succCount); i++)
+    {
+        if (succTab[i] == edge)
+        {
+            // If 'edge' is not the last entry, move everything after in the table down one slot.
+            if ((i + 1) < succCount)
+            {
+                memmove_s(&succTab[i], (succCount - i) * sizeof(FlowEdge*), &succTab[i + 1],
+                          (succCount - i - 1) * sizeof(FlowEdge*));
+            }
+
+            found = true;
+        }
+    }
+
+    assert(found);
+    uniqueSuccSet.numDistinctSuccs--;
+    m_switchDescMap->Set(switchBlk, uniqueSuccSet, BlockToSwitchDescMap::SetKind::Overwrite);
+}
+
+//------------------------------------------------------------------------
+// fgInvalidateSwitchDescMapEntry: Removes the entry for 'block' from the
+// switch map, if the map exists.
+//
+// Arguments:
+//    block -- The switch block
+//
 void Compiler::fgInvalidateSwitchDescMapEntry(BasicBlock* block)
 {
     // Check if map has no entries yet.
