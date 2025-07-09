@@ -38,7 +38,7 @@ namespace Microsoft.Interop
                 {
                     return DiagnosticInfo.Create(descriptor, location, DiagnosticProperties, NotSupportedDetails, elementName);
                 }
-                return DiagnosticInfo.Create(descriptor, location, DiagnosticProperties, TypePositionInfo.ManagedType.DiagnosticFormattedName, elementName);
+                return DiagnosticInfo.Create(descriptor, location, DiagnosticProperties, TypePositionInfo.ManagedType?.DiagnosticFormattedName ?? "<unknown>", elementName);
             }
         }
 
