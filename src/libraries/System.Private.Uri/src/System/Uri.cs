@@ -4021,11 +4021,9 @@ namespace System
                     if (hasUnicode)
                     {
                         // Normalize any other host or do idn
-                        string user = new string(pString, startInput, end - startInput);
-
                         try
                         {
-                            newHost += user.Normalize(NormalizationForm.FormC);
+                            newHost = UriHelper.NormalizeAndConcat(newHost, new ReadOnlySpan<char>(pString + startInput, end - startInput));
                         }
                         catch (ArgumentException)
                         {
@@ -4067,10 +4065,9 @@ namespace System
                         if (hasUnicode)
                         {
                             // Normalize any other host
-                            string user = new string(pString, startOtherHost, end - startOtherHost);
                             try
                             {
-                                newHost += user.Normalize(NormalizationForm.FormC);
+                                newHost = UriHelper.NormalizeAndConcat(newHost, new ReadOnlySpan<char>(pString + startOtherHost, end - startOtherHost));
                             }
                             catch (ArgumentException)
                             {
@@ -4101,10 +4098,16 @@ namespace System
 
             if (hasUnicode)
             {
-                string temp = UriHelper.StripBidiControlCharacters(new ReadOnlySpan<char>(pString + start, end - start));
+                ReadOnlySpan<char> host = new ReadOnlySpan<char>(pString + start, end - start);
+
+                if (UriHelper.StripBidiControlCharacters(host, out string? stripped))
+                {
+                    host = stripped;
+                }
+
                 try
                 {
-                    newHost += temp.Normalize(NormalizationForm.FormC);
+                    newHost = UriHelper.NormalizeAndConcat(newHost, host);
                 }
                 catch (ArgumentException)
                 {
