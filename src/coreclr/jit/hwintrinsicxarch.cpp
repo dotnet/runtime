@@ -2397,7 +2397,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if ((simdSize == 64) || (varTypeIsShort(simdBaseType) && canUseEvexEncoding()))
+            if ((simdSize == 64) || canUseEvexEncoding())
             {
                 intrinsic = NI_AVX512_MoveMask;
             }
@@ -4962,6 +4962,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE42_BlendVariable:
+        case NI_AVX_BlendVariable:
+        case NI_AVX2_BlendVariable:
         case NI_AVX512_BlendVariable:
         {
             assert(sig->numArgs == 3);
@@ -4970,9 +4973,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            op3     = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, NI_AVX512_BlendVariableMask, simdBaseJitType,
-                                               simdSize);
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                if ((intrinsic != NI_AVX512_BlendVariable) && varTypeIsIntegral(simdBaseType))
+                {
+                    // The pre-EVEX intrinsics for integers all emitted pblendvb and so we need
+                    // to preserve that behavior when using the EVEX variant as otherwise we'll
+                    // get slightly different results for certain masks.
+
+                    if (varTypeIsSigned(simdBaseType))
+                    {
+                        simdBaseJitType = CORINFO_TYPE_BYTE;
+                        simdBaseType    = TYP_BYTE;
+                    }
+                    else
+                    {
+                        simdBaseJitType = CORINFO_TYPE_UBYTE;
+                        simdBaseType    = TYP_UBYTE;
+                    }
+                }
+                intrinsic = NI_AVX512_BlendVariableMask;
+                op3       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
+            }
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4989,26 +5012,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 intrinsic = NI_AVX512_ClassifyScalarMask;
             }
+            retType = TYP_MASK;
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
         case NI_AVX_Compare:
-        case NI_AVX_CompareScalar:
         case NI_AVX512_Compare:
         {
-            assert(sig->numArgs == 3);
-
-            if (intrinsic == NI_AVX512_Compare)
+            if ((simdSize == 64) || canUseEvexEncoding())
             {
                 intrinsic = NI_AVX512_CompareMask;
                 retType   = TYP_MASK;
             }
+            FALLTHROUGH;
+        }
+
+        case NI_AVX_CompareScalar:
+        {
+            assert(sig->numArgs == 3);
 
             int immLowerBound = 0;
             int immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
@@ -5039,168 +5065,240 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
             }
-
-            if (retType == TYP_MASK)
-            {
-                retType = getSIMDTypeForSize(simdSize);
-                retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
-            }
             break;
         }
 
+        case NI_X86Base_CompareEqual:
+        case NI_SSE42_CompareEqual:
+        case NI_AVX_CompareEqual:
+        case NI_AVX2_CompareEqual:
         case NI_AVX512_CompareEqual:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareEqualMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode =
-                gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareEqualMask, simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareGreaterThan:
+        case NI_SSE42_CompareGreaterThan:
+        case NI_AVX_CompareGreaterThan:
+        case NI_AVX2_CompareGreaterThan:
         case NI_AVX512_CompareGreaterThan:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareGreaterThanMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareGreaterThanMask, simdBaseJitType,
-                                               simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareGreaterThanOrEqual:
+        case NI_AVX_CompareGreaterThanOrEqual:
         case NI_AVX512_CompareGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareGreaterThanOrEqualMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareGreaterThanOrEqualMask,
-                                               simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareLessThan:
+        case NI_SSE42_CompareLessThan:
+        case NI_AVX_CompareLessThan:
+        case NI_AVX2_CompareLessThan:
         case NI_AVX512_CompareLessThan:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareLessThanMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode =
-                gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareLessThanMask, simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareLessThanOrEqual:
+        case NI_AVX_CompareLessThanOrEqual:
         case NI_AVX512_CompareLessThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareLessThanOrEqualMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareLessThanOrEqualMask,
-                                               simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareNotEqual:
+        case NI_AVX_CompareNotEqual:
         case NI_AVX512_CompareNotEqual:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareNotEqualMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode =
-                gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareNotEqualMask, simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareNotGreaterThan:
+        case NI_AVX_CompareNotGreaterThan:
         case NI_AVX512_CompareNotGreaterThan:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareNotGreaterThanMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareNotGreaterThanMask, simdBaseJitType,
-                                               simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareNotGreaterThanOrEqual:
+        case NI_AVX_CompareNotGreaterThanOrEqual:
         case NI_AVX512_CompareNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareNotGreaterThanOrEqualMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareNotGreaterThanOrEqualMask,
-                                               simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareNotLessThan:
+        case NI_AVX_CompareNotLessThan:
         case NI_AVX512_CompareNotLessThan:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareNotLessThanMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareNotLessThanMask, simdBaseJitType,
-                                               simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareNotLessThanOrEqual:
+        case NI_AVX_CompareNotLessThanOrEqual:
         case NI_AVX512_CompareNotLessThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareNotLessThanOrEqualMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareNotLessThanOrEqualMask,
-                                               simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareOrdered:
+        case NI_AVX_CompareOrdered:
         case NI_AVX512_CompareOrdered:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareOrderedMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode =
-                gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareOrderedMask, simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
+        case NI_X86Base_CompareUnordered:
+        case NI_AVX_CompareUnordered:
         case NI_AVX512_CompareUnordered:
         {
             assert(sig->numArgs == 2);
 
+            if ((simdSize == 64) || canUseEvexEncoding())
+            {
+                intrinsic = NI_AVX512_CompareUnorderedMask;
+                retType   = TYP_MASK;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode =
-                gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512_CompareUnorderedMask, simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
@@ -5429,7 +5527,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (isMinMaxIntrinsic)
+    if (retType == TYP_MASK)
+    {
+        retType = getSIMDTypeForSize(simdSize);
+        assert(retType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+    }
+    else if (isMinMaxIntrinsic)
     {
         assert(sig->numArgs == 2);
         assert(retNode == nullptr);
