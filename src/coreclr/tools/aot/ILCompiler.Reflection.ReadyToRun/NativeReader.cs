@@ -9,7 +9,6 @@ using System.Text;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
-
     public class NativeReader(Stream backingStream, bool littleEndian = true)
     {
         private const int BITS_PER_BYTE = 8;
@@ -18,11 +17,22 @@ namespace ILCompiler.Reflection.ReadyToRun
         private readonly Stream _backingStream = backingStream;
         private readonly bool _littleEndian = littleEndian;
 
+        /// <summary>
+        /// Reads a byte from the image at the specified index
+        /// </summary>
         public int this[int index]
         {
             get => ReadByte(ref index);
         }
 
+        /// <summary>
+        /// Reads a span of bytes from the image at the specified start index
+        /// </summary>
+        /// <param name="start">Starting index of the value</param>
+        /// <param name="buffer">Span to be filled with the read bytes</param>
+        /// <remarks>
+        /// The <paramref name="start"/> gets incremented by the size of the buffer
+        /// </remarks>
         public void ReadSpanAt(ref int start, Span<byte> buffer)
         {
             if (start < 0 || start + buffer.Length > _backingStream.Length)
