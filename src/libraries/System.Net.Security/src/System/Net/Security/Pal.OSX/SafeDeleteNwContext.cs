@@ -235,7 +235,6 @@ namespace System.Net.Security
 
                 handle.Free();
             }
-
         }
 
         private static bool CheckNetworkFrameworkAvailability()

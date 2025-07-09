@@ -314,6 +314,10 @@ namespace System.Net.Security
                     if (await handshakeTask.ConfigureAwait(false) is Exception ex)
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex, "Async handshake failed");
+                        if (ex is ArgumentException)
+                        {
+                            throw ex;
+                        }
                         throw new AuthenticationException(SR.net_auth_SSPI, ex);
                     }
 
