@@ -393,6 +393,7 @@ namespace System.Net.Security
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by
             // SSLHandshake.
+            Debug.Assert(CanGenerateCustomAlerts);
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 #pragma warning restore IDE0060
