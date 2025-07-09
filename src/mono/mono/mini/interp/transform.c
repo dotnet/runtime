@@ -2188,7 +2188,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				return FALSE;
 			}
 
-			MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
 			MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
 
 			// The same applies for when the type sizes do not match, as this will always throw
@@ -2214,7 +2213,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 
 			if (mov_op == MINT_MOV_VT ) {
 				if (size <= 4) {
-				    *op = MINT_MOV_4;
+					*op = MINT_MOV_4;
 				} else if (size <= 8) {
 					*op = MINT_MOV_8;
 				} else {
