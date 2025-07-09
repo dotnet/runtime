@@ -24,6 +24,8 @@
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
 #ifdef FEATURE_INTERPRETER
+    SETALIAS Thread_GetInterpThreadContext, ?GetInterpThreadContext@Thread@@QEAAPEAUInterpThreadContext@@XZ
+    IMPORT $Thread_GetInterpThreadContext
     IMPORT ExecuteInterpretedMethod
 #endif
 
@@ -1064,13 +1066,22 @@ JIT_PollGCRarePath
 
         INLINE_GETTHREAD x20, x19
 
+        ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
+        cbnz x11, HaveInterpThreadContext
+
+        mov x0, x20
+        bl $Thread_GetInterpThreadContext
+        mov x11, x0
+        RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+        RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+
+HaveInterpThreadContext
         ; IR bytecode address
         mov x19, METHODDESC_REGISTER
         ldr x9, [METHODDESC_REGISTER]
         ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
         add x10, x9, #OFFSETOF__CallStubHeader__Routines
-        ldr x9, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
-        ldr x9, [x9, #OFFSETOF__InterpThreadContext__pStackPointer]
+        ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
         ; x19 contains IR bytecode address
         ; Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
         ldr x11, [x10], #8
