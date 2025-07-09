@@ -654,18 +654,8 @@ MONO_RESTORE_WARNING
 			return NULL;
 		}
 
-		// We also always throw for Nullable<T> inputs, so fallback to the
-		// managed implementation here as well.
-
 		MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
-		if (mono_class_is_nullable (tfrom_klass)) {
-			return NULL;
-		}
-
 		MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
-		if (mono_class_is_nullable (tto_klass)) {
-			return NULL;
-		}
 
 		// The same applies for when the type sizes do not match, as this will always throw
 		// and so its not an expected case and we can fallback to the managed implementation

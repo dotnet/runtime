@@ -105,6 +105,12 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
+  <data name="Argument_PrivateKeyTooShortForAlgorithm" xml:space="preserve">
+    <value>The private key is too short for the indicated algorithm.</value>
+  </data>
+  <data name="Argument_PublicKeyTooShortForAlgorithm" xml:space="preserve">
+    <value>The public key is too short for the indicated algorithm.</value>
+  </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>
   </data>
@@ -138,6 +144,12 @@
   <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
     <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_ArgMLDsaRequiresMLDsaKey" xml:space="preserve">
+    <value>Keys used with the MLDsaCng algorithm must have an algorithm group of MLDsa.</value>
+  </data>
+  <data name="Cryptography_ArgMLKemRequiresMLKemKey" xml:space="preserve">
+    <value>Keys used with the MLKemCng algorithm must have an algorithm group of MLKem.</value>
+  </data>
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
   </data>
@@ -170,6 +182,9 @@
   </data>
   <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
     <value>The current instance does not contain a decapsulation key.</value>
+  </data>
+  <data name="Cryptography_KeyNotExtractable" xml:space="preserve">
+    <value>The key does not permit being exported.</value>
   </data>
   <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The specified key is not the correct size for the indicated algorithm.</value>

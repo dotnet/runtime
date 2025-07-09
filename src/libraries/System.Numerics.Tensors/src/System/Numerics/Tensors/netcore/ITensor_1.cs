@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics.Tensors
 {
     /// <summary>Represents a tensor.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface ITensor<TSelf, T> : ITensor, IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type

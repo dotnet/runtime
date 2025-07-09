@@ -6,29 +6,29 @@ using ILLink.Shared;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-	ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
-	ILLink.CodeFix.DynamicallyAccessedMembersCodeFixProvider>;
+    ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
+    ILLink.CodeFix.DynamicallyAccessedMembersCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public class DynamicallyAccessedMembersAnalyzerTests
-	{
-		static Task VerifyDynamicallyAccessedMembersAnalyzer (
-			string source,
-			bool consoleApplication,
-			params DiagnosticResult[] expected)
-		{
-			return VerifyCS.VerifyAnalyzerAsync (
-				source,
-				consoleApplication,
-				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer),
-				expected: expected);
-		}
+    public class DynamicallyAccessedMembersAnalyzerTests
+    {
+        static Task VerifyDynamicallyAccessedMembersAnalyzer(
+            string source,
+            bool consoleApplication,
+            params DiagnosticResult[] expected)
+        {
+            return VerifyCS.VerifyAnalyzerAsync(
+                source,
+                consoleApplication,
+                TestCaseUtils.UseMSBuildProperties(MSBuildPropertyOptionNames.EnableTrimAnalyzer),
+                expected: expected);
+        }
 
-		[Fact]
-		public Task NoWarningsIfAnalyzerIsNotEnabled ()
-		{
-			var TargetParameterWithAnnotations = $$"""
+        [Fact]
+        public Task NoWarningsIfAnalyzerIsNotEnabled()
+        {
+            var TargetParameterWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -54,14 +54,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 			""";
-			return VerifyCS.VerifyAnalyzerAsync (TargetParameterWithAnnotations, consoleApplication: false);
-		}
+            return VerifyCS.VerifyAnalyzerAsync(TargetParameterWithAnnotations, consoleApplication: false);
+        }
 
-		#region SourceParameter
-		[Fact]
-		public Task SourceParameterDoesNotMatchTargetParameterAnnotations ()
-		{
-			var TargetParameterWithAnnotations = $$"""
+        #region SourceParameter
+        [Fact]
+        public Task SourceParameterDoesNotMatchTargetParameterAnnotations()
+        {
+            var TargetParameterWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -86,24 +86,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 			""";
-			// (21,3): warning IL2067: 'parameter' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.NeedsPublicMethodsOnParameter(Type)'.
-			// The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
-				.WithSpan (21, 3, 21, 38)
-				.WithSpan (19, 24, 19, 33)
-				.WithArguments ("parameter",
-					"C.NeedsPublicMethodsOnParameter(Type)",
-					"type",
-					"C.M(Type)",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (21,3): warning IL2067: 'parameter' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.NeedsPublicMethodsOnParameter(Type)'.
+            // The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetParameterWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
+                .WithSpan(21, 3, 21, 38)
+                .WithSpan(19, 24, 19, 33)
+                .WithArguments("parameter",
+                    "C.NeedsPublicMethodsOnParameter(Type)",
+                    "type",
+                    "C.M(Type)",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceParameterDoesNotMatchTargetMethodReturnTypeAnnotations ()
-		{
-			var TargetMethodReturnTypeWithAnnotations = $$"""
+        [Fact]
+        public Task SourceParameterDoesNotMatchTargetMethodReturnTypeAnnotations()
+        {
+            var TargetMethodReturnTypeWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -126,23 +126,23 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 			""";
 
-			// (18,10): warning IL2068: 'C.M(Type)' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType)
-				.WithSpan (18, 10, 18, 14)
-				.WithSpan (16, 24, 16, 33)
-				.WithArguments ("C.M(Type)",
-					"type",
-					"C.M(Type)",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (18,10): warning IL2068: 'C.M(Type)' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType)
+                .WithSpan(18, 10, 18, 14)
+                .WithSpan(16, 24, 16, 33)
+                .WithArguments("C.M(Type)",
+                    "type",
+                    "C.M(Type)",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceParameterDoesNotMatchTargetFieldAnnotations ()
-		{
-			var TargetFieldWithAnnotations = $$"""
+        [Fact]
+        public Task SourceParameterDoesNotMatchTargetFieldAnnotations()
+        {
+            var TargetFieldWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -167,23 +167,23 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 			""";
 
-			// (17,3): warning IL2069: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField)
-				.WithSpan (17, 3, 17, 11)
-				.WithSpan (15, 24, 15, 33)
-				.WithArguments ("C.f",
-					"type",
-					"C.M(Type)",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (17,3): warning IL2069: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetFieldWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField)
+                .WithSpan(17, 3, 17, 11)
+                .WithSpan(15, 24, 15, 33)
+                .WithArguments("C.f",
+                    "type",
+                    "C.M(Type)",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceParameterDoesNotMatchTargetMethodAnnotations ()
-		{
-			var TargetMethodWithAnnotations = $$"""
+        [Fact]
+        public Task SourceParameterDoesNotMatchTargetMethodAnnotations()
+        {
+            var TargetMethodWithAnnotations = $$"""
 			using System;
 
 			public class Foo
@@ -203,27 +203,27 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 			""";
-			// The warning will be generated once dataflow is able to handle GetMethod intrinsic
+            // The warning will be generated once dataflow is able to handle GetMethod intrinsic
 
-			// (16,3): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
-			// The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
-				.WithSpan (16, 3, 16, 24)
-				.WithSpan (14, 24, 14, 33)
-				.WithArguments ("System.Type.GetMethod(String)",
-					"type",
-					"C.M(Type)",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
-		#endregion
+            // (16,3): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
+            // The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
+                .WithSpan(16, 3, 16, 24)
+                .WithSpan(14, 24, 14, 33)
+                .WithArguments("System.Type.GetMethod(String)",
+                    "type",
+                    "C.M(Type)",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
+        #endregion
 
-		#region SourceMethodReturnType
-		[Fact]
-		public Task SourceMethodReturnTypeDoesNotMatchTargetParameterAnnotations ()
-		{
-			var TargetParameterWithAnnotations = $$"""
+        #region SourceMethodReturnType
+        [Fact]
+        public Task SourceMethodReturnTypeDoesNotMatchTargetParameterAnnotations()
+        {
+            var TargetParameterWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -250,20 +250,20 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 			""";
 
-			// (12,3): warning IL2072: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.NeedsPublicMethodsOnParameter(Type)'.
-			// The return value of method 'C.GetT()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
-				.WithSpan (12, 3, 12, 40)
-				.WithSpan (20, 2, 23, 3)
-				.WithArguments ("type", "C.NeedsPublicMethodsOnParameter(Type)", "C.GetT()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (12,3): warning IL2072: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.NeedsPublicMethodsOnParameter(Type)'.
+            // The return value of method 'C.GetT()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetParameterWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
+                .WithSpan(12, 3, 12, 40)
+                .WithSpan(20, 2, 23, 3)
+                .WithArguments("type", "C.NeedsPublicMethodsOnParameter(Type)", "C.GetT()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceMethodReturnTypeDoesNotMatchTargetMethodReturnTypeAnnotations ()
-		{
-			var TargetMethodReturnTypeWithAnnotations = $$"""
+        [Fact]
+        public Task SourceMethodReturnTypeDoesNotMatchTargetMethodReturnTypeAnnotations()
+        {
+            var TargetMethodReturnTypeWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -291,20 +291,20 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 			""";
 
-			// (18,10): warning IL2073: 'C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The return value of method 'C.GetT()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType)
-				.WithSpan (18, 10, 18, 18)
-				.WithSpan (21, 2, 24, 3)
-				.WithArguments ("C.M()", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (18,10): warning IL2073: 'C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The return value of method 'C.GetT()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType)
+                .WithSpan(18, 10, 18, 18)
+                .WithSpan(21, 2, 24, 3)
+                .WithArguments("C.M()", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceMethodReturnTypeDoesNotMatchTargetFieldAnnotations ()
-		{
-			var TargetFieldWithAnnotations = $$"""
+        [Fact]
+        public Task SourceMethodReturnTypeDoesNotMatchTargetFieldAnnotations()
+        {
+            var TargetFieldWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -329,22 +329,22 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 			""";
 
-			// (12,3): warning IL2074: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The return value of method 'C.M()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField)
-				.WithSpan (12, 3, 12, 10)
-				.WithSpan (15, 2, 18, 3)
-				.WithArguments ("C.f",
-					"C.M()",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (12,3): warning IL2074: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The return value of method 'C.M()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetFieldWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField)
+                .WithSpan(12, 3, 12, 10)
+                .WithSpan(15, 2, 18, 3)
+                .WithArguments("C.f",
+                    "C.M()",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceMethodReturnTypeDoesNotMatchTargetMethod ()
-		{
-			var TargetMethodWithAnnotations = $$"""
+        [Fact]
+        public Task SourceMethodReturnTypeDoesNotMatchTargetMethod()
+        {
+            var TargetMethodWithAnnotations = $$"""
 			using System;
 
 			public class Foo
@@ -365,24 +365,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 			""";
-			// The warning will be generated once dataflow is able to handle GetMethod intrinsic
+            // The warning will be generated once dataflow is able to handle GetMethod intrinsic
 
-			// (11,3): warning IL2075: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
-			// The return value of method 'C.GetT()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
-				.WithSpan (11, 3, 11, 28)
-				.WithSpan (15, 2, 18, 3)
-				.WithArguments ("System.Type.GetMethod(String)", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
-		#endregion
+            // (11,3): warning IL2075: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
+            // The return value of method 'C.GetT()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
+                .WithSpan(11, 3, 11, 28)
+                .WithSpan(15, 2, 18, 3)
+                .WithArguments("System.Type.GetMethod(String)", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
+        #endregion
 
-		#region SourceField
-		[Fact]
-		public Task SourceFieldDoesNotMatchTargetParameterAnnotations ()
-		{
-			var TargetParameterWithAnnotations = $$"""
+        #region SourceField
+        [Fact]
+        public Task SourceFieldDoesNotMatchTargetParameterAnnotations()
+        {
+            var TargetParameterWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -406,23 +406,23 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 			""";
 
-			// (14,3): warning IL2077: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.NeedsPublicMethods(Type)'.
-			// The field 'C.f' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter)
-				.WithSpan (14, 3, 14, 24)
-				.WithSpan (10, 22, 10, 37)
-				.WithArguments ("type",
-					"C.NeedsPublicMethods(Type)",
-					"C.f",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (14,3): warning IL2077: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.NeedsPublicMethods(Type)'.
+            // The field 'C.f' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetParameterWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter)
+                .WithSpan(14, 3, 14, 24)
+                .WithSpan(10, 22, 10, 37)
+                .WithArguments("type",
+                    "C.NeedsPublicMethods(Type)",
+                    "C.f",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceFieldDoesNotMatchTargetMethodReturnTypeAnnotations ()
-		{
-			var TargetMethodReturnTypeWithAnnotations = $$"""
+        [Fact]
+        public Task SourceFieldDoesNotMatchTargetMethodReturnTypeAnnotations()
+        {
+            var TargetMethodReturnTypeWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -447,21 +447,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 			""";
 
-			// (20,10): warning IL2078: 'C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The field 'C.f' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType)
-				.WithSpan (20, 10, 20, 11)
-				.WithSpan (10, 22, 10, 37)
-				.WithArguments ("C.M()", "C.f",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (20,10): warning IL2078: 'C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The field 'C.f' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType)
+                .WithSpan(20, 10, 20, 11)
+                .WithSpan(10, 22, 10, 37)
+                .WithArguments("C.M()", "C.f",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceFieldDoesNotMatchTargetFieldAnnotations ()
-		{
-			var TargetFieldWithAnnotations = $$"""
+        [Fact]
+        public Task SourceFieldDoesNotMatchTargetFieldAnnotations()
+        {
+            var TargetFieldWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -482,22 +482,22 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 			""";
-			// (17,3): warning IL2079: value stored in field 'C.f2' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The field 'C.f1' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField)
-				.WithSpan (17, 3, 17, 10)
-				.WithSpan (10, 22, 10, 38)
-				.WithArguments ("C.f2",
-					"C.f1",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (17,3): warning IL2079: value stored in field 'C.f2' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The field 'C.f1' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetFieldWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField)
+                .WithSpan(17, 3, 17, 10)
+                .WithSpan(10, 22, 10, 38)
+                .WithArguments("C.f2",
+                    "C.f1",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceFieldDoesNotMatchTargetMethodAnnotations ()
-		{
-			var TargetMethodWithAnnotations = $$"""
+        [Fact]
+        public Task SourceFieldDoesNotMatchTargetMethodAnnotations()
+        {
+            var TargetMethodWithAnnotations = $$"""
 			using System;
 
 			public class Foo
@@ -514,26 +514,26 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 			""";
-			// The warning will be generated once dataflow is able to handle GetMethod intrinsic
+            // The warning will be generated once dataflow is able to handle GetMethod intrinsic
 
-			// (13,3): warning IL2080: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
-			// The field 'C.f' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
-				.WithSpan (13, 3, 13, 21)
-				.WithSpan (9, 22, 9, 37)
-				.WithArguments ("System.Type.GetMethod(String)",
-					"C.f",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
-		#endregion
+            // (13,3): warning IL2080: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
+            // The field 'C.f' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
+                .WithSpan(13, 3, 13, 21)
+                .WithSpan(9, 22, 9, 37)
+                .WithArguments("System.Type.GetMethod(String)",
+                    "C.f",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
+        #endregion
 
-		#region SourceMethod
+        #region SourceMethod
 
-		public static string GetSystemTypeBase ()
-		{
-			return $$"""
+        public static string GetSystemTypeBase()
+        {
+            return $$"""
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -722,12 +722,12 @@ namespace System
 	}
 }
 """;
-		}
+        }
 
-		[Fact]
-		public Task SourceMethodDoesNotMatchTargetParameterAnnotations ()
-		{
-			var TargetParameterWithAnnotations = $$"""
+        [Fact]
+        public Task SourceMethodDoesNotMatchTargetParameterAnnotations()
+        {
+            var TargetParameterWithAnnotations = $$"""
 			namespace System
 			{
 				class C : TestSystemTypeBase
@@ -751,20 +751,20 @@ namespace System
 			}
 			""";
 
-			// (198,4): warning IL2082: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'.
-			// The implicit 'this' argument of method 'System.C.M1()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetParameterWithAnnotations), consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter)
-				.WithSpan (198, 4, 198, 12)
-				.WithSpan (196, 3, 199, 4)
-				.WithArguments ("type", "System.C.M2(Type)", "System.C.M1()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (198,4): warning IL2082: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'.
+            // The implicit 'this' argument of method 'System.C.M1()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(string.Concat(GetSystemTypeBase(), TargetParameterWithAnnotations), consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter)
+                .WithSpan(198, 4, 198, 12)
+                .WithSpan(196, 3, 199, 4)
+                .WithArguments("type", "System.C.M2(Type)", "System.C.M1()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task ConversionOperation ()
-		{
-			var ConversionOperation = $$"""
+        [Fact]
+        public Task ConversionOperation()
+        {
+            var ConversionOperation = $$"""
 			namespace System
 			{
 				class ConvertsToType
@@ -793,19 +793,19 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), ConversionOperation), consoleApplication: false,
-				// (203,4): warning IL2072: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'. The return value of method 'System.ConvertsToType.implicit operator Type(ConvertsToType)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
-				.WithSpan (203, 4, 203, 28)
-				.WithSpan (191, 3, 191, 89)
-				.WithArguments ("type", "System.C.M2(Type)", "System.ConvertsToType.implicit operator Type(ConvertsToType)", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(string.Concat(GetSystemTypeBase(), ConversionOperation), consoleApplication: false,
+                // (203,4): warning IL2072: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'. The return value of method 'System.ConvertsToType.implicit operator Type(ConvertsToType)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
+                .WithSpan(203, 4, 203, 28)
+                .WithSpan(191, 3, 191, 89)
+                .WithArguments("type", "System.C.M2(Type)", "System.ConvertsToType.implicit operator Type(ConvertsToType)", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
 
-		[Fact]
-		public Task ConversionOperationAnnotationDoesNotMatch ()
-		{
-			var AnnotatedConversionOperation = $$"""
+        [Fact]
+        public Task ConversionOperationAnnotationDoesNotMatch()
+        {
+            var AnnotatedConversionOperation = $$"""
 			namespace System
 			{
 				class ConvertsToType
@@ -836,17 +836,17 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), AnnotatedConversionOperation), consoleApplication: false,
-				// (205,4): warning IL2072: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'. The return value of method 'System.ConvertsToType.implicit operator Type(ConvertsToType)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
-				.WithSpan (205, 4, 205, 28)
-				.WithArguments ("type", "System.C.M2(Type)", "System.ConvertsToType.implicit operator Type(ConvertsToType)", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(string.Concat(GetSystemTypeBase(), AnnotatedConversionOperation), consoleApplication: false,
+                // (205,4): warning IL2072: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.C.M2(Type)'. The return value of method 'System.ConvertsToType.implicit operator Type(ConvertsToType)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
+                .WithSpan(205, 4, 205, 28)
+                .WithArguments("type", "System.C.M2(Type)", "System.ConvertsToType.implicit operator Type(ConvertsToType)", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task ConversionOperationAnnotationMatches ()
-		{
-			var AnnotatedConversionOperation = $$"""
+        [Fact]
+        public Task ConversionOperationAnnotationMatches()
+        {
+            var AnnotatedConversionOperation = $$"""
 			namespace System
 			{
 				class ConvertsToType
@@ -877,14 +877,14 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), AnnotatedConversionOperation), consoleApplication: false);
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(string.Concat(GetSystemTypeBase(), AnnotatedConversionOperation), consoleApplication: false);
+        }
 
 
-		[Fact]
-		public Task SourceMethodDoesNotMatchTargetMethodReturnTypeAnnotations ()
-		{
-			var TargetMethodReturnTypeWithAnnotations = $$"""
+        [Fact]
+        public Task SourceMethodDoesNotMatchTargetMethodReturnTypeAnnotations()
+        {
+            var TargetMethodReturnTypeWithAnnotations = $$"""
 			namespace System
 			{
 				class C : TestSystemTypeBase
@@ -904,20 +904,20 @@ namespace System
 			}
 			""";
 
-			// (200,11): warning IL2083: 'System.C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetMethodReturnTypeWithAnnotations), consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType)
-				.WithSpan (200, 11, 200, 15)
-				.WithSpan (196, 3, 201, 4)
-				.WithArguments ("System.C.M()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (200,11): warning IL2083: 'System.C.M()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(string.Concat(GetSystemTypeBase(), TargetMethodReturnTypeWithAnnotations), consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType)
+                .WithSpan(200, 11, 200, 15)
+                .WithSpan(196, 3, 201, 4)
+                .WithArguments("System.C.M()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceMethodDoesNotMatchTargetFieldAnnotations ()
-		{
-			var TargetFieldWithAnnotations = $$"""
+        [Fact]
+        public Task SourceMethodDoesNotMatchTargetFieldAnnotations()
+        {
+            var TargetFieldWithAnnotations = $$"""
 			namespace System
 			{
 				class C : TestSystemTypeBase
@@ -939,22 +939,22 @@ namespace System
 			}
 			""";
 
-			// (198,4): warning IL2084: value stored in field 'System.C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetFieldWithAnnotations), consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField)
-				.WithSpan (198, 4, 198, 12)
-				.WithSpan (196, 3, 199, 4)
-				.WithArguments ("System.C.f",
-					"System.C.M()",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (198,4): warning IL2084: value stored in field 'System.C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(string.Concat(GetSystemTypeBase(), TargetFieldWithAnnotations), consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField)
+                .WithSpan(198, 4, 198, 12)
+                .WithSpan(196, 3, 199, 4)
+                .WithArguments("System.C.f",
+                    "System.C.M()",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceMethodDoesNotMatchTargetMethodAnnotations ()
-		{
-			var TargetMethodWithAnnotations = $$"""
+        [Fact]
+        public Task SourceMethodDoesNotMatchTargetMethodAnnotations()
+        {
+            var TargetMethodWithAnnotations = $$"""
 			namespace System
 			{
 				class C : TestSystemTypeBase
@@ -972,21 +972,21 @@ namespace System
 			}
 			""";
 
-			// (198,4): warning IL2085: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethods()'.
-			// The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (string.Concat (GetSystemTypeBase (), TargetMethodWithAnnotations), consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter)
-				.WithSpan (198, 4, 198, 21)
-				.WithSpan (196, 3, 199, 4)
-				.WithArguments ("System.Type.GetMethods()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
-		#endregion
+            // (198,4): warning IL2085: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethods()'.
+            // The implicit 'this' argument of method 'System.C.M()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(string.Concat(GetSystemTypeBase(), TargetMethodWithAnnotations), consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter)
+                .WithSpan(198, 4, 198, 21)
+                .WithSpan(196, 3, 199, 4)
+                .WithArguments("System.Type.GetMethods()", "System.C.M()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
+        #endregion
 
-		[Fact]
-		public Task SourceGenericParameterDoesNotMatchTargetParameterAnnotations ()
-		{
-			var TargetParameterWithAnnotations = $$"""
+        [Fact]
+        public Task SourceGenericParameterDoesNotMatchTargetParameterAnnotations()
+        {
+            var TargetParameterWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1009,20 +1009,20 @@ namespace System
 			}
 			""";
 
-			// (18,3): warning IL2087: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.M1(Type)'.
-			// The generic parameter 'T' of 'C.M2<T>()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter)
-				.WithSpan (18, 3, 18, 16)
-				.WithSpan (16, 25, 16, 26)
-				.WithArguments ("type", "C.M1(Type)", "T", "C.M2<T>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (18,3): warning IL2087: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'C.M1(Type)'.
+            // The generic parameter 'T' of 'C.M2<T>()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetParameterWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter)
+                .WithSpan(18, 3, 18, 16)
+                .WithSpan(16, 25, 16, 26)
+                .WithArguments("type", "C.M1(Type)", "T", "C.M2<T>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceGenericParameterDoesNotMatchTargetMethodReturnTypeAnnotations ()
-		{
-			var TargetMethodReturnTypeWithAnnotations = $$"""
+        [Fact]
+        public Task SourceGenericParameterDoesNotMatchTargetMethodReturnTypeAnnotations()
+        {
+            var TargetMethodReturnTypeWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1041,20 +1041,20 @@ namespace System
 			}
 			""";
 
-			// (14,10): warning IL2088: 'C.M<T>()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicConstructors' requirements.
-			// The generic parameter 'T' of 'C.M<T>()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType)
-				.WithSpan (14, 10, 14, 19)
-				.WithSpan (12, 24, 12, 25)
-				.WithArguments ("C.M<T>()", "T", "C.M<T>()", "'DynamicallyAccessedMemberTypes.PublicConstructors'"));
-		}
+            // (14,10): warning IL2088: 'C.M<T>()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicConstructors' requirements.
+            // The generic parameter 'T' of 'C.M<T>()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodReturnTypeWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType)
+                .WithSpan(14, 10, 14, 19)
+                .WithSpan(12, 24, 12, 25)
+                .WithArguments("C.M<T>()", "T", "C.M<T>()", "'DynamicallyAccessedMemberTypes.PublicConstructors'"));
+        }
 
-		[Fact]
-		public Task SourceGenericParameterDoesNotMatchTargetFieldAnnotations ()
-		{
-			var TargetFieldWithAnnotations = $$"""
+        [Fact]
+        public Task SourceGenericParameterDoesNotMatchTargetFieldAnnotations()
+        {
+            var TargetFieldWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1075,23 +1075,23 @@ namespace System
 			}
 			""";
 
-			// (16,3): warning IL2089: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
-			// The generic parameter 'T' of 'C.M<T>()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField)
-				.WithSpan (16, 3, 16, 16)
-				.WithSpan (14, 24, 14, 25)
-				.WithArguments ("C.f",
-					"T",
-					"C.M<T>()",
-					"'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (16,3): warning IL2089: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
+            // The generic parameter 'T' of 'C.M<T>()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetFieldWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField)
+                .WithSpan(16, 3, 16, 16)
+                .WithSpan(14, 24, 14, 25)
+                .WithArguments("C.f",
+                    "T",
+                    "C.M<T>()",
+                    "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceGenericParameterDoesNotMatchTargetGenericParameterAnnotations ()
-		{
-			var TargetGenericParameterWithAnnotations = $$"""
+        [Fact]
+        public Task SourceGenericParameterDoesNotMatchTargetGenericParameterAnnotations()
+        {
+            var TargetGenericParameterWithAnnotations = $$"""
 			using System.Diagnostics.CodeAnalysis;
 
 			class C
@@ -1112,20 +1112,20 @@ namespace System
 			}
 			""";
 
-			// (16,3): warning IL2091: 'T' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods'
-			// in 'C.M1<T>()'. The generic parameter 'S' of 'C.M2<S>()' does not have matching annotations.
-			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetGenericParameterWithAnnotations, consoleApplication: false,
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
-				.WithSpan (16, 3, 16, 10)
-				.WithSpan (14, 25, 14, 26)
-				.WithArguments ("T", "C.M1<T>()", "S", "C.M2<S>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // (16,3): warning IL2091: 'T' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods'
+            // in 'C.M1<T>()'. The generic parameter 'S' of 'C.M2<S>()' does not have matching annotations.
+            // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetGenericParameterWithAnnotations, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
+                .WithSpan(16, 3, 16, 10)
+                .WithSpan(14, 25, 14, 26)
+                .WithArguments("T", "C.M1<T>()", "S", "C.M2<S>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task SourceTypeofFlowsIntoTargetParameterAnnotations ()
-		{
-			var TargetParameterWithAnnotations = $$"""
+        [Fact]
+        public Task SourceTypeofFlowsIntoTargetParameterAnnotations()
+        {
+            var TargetParameterWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1145,13 +1145,13 @@ namespace System
 				}
 			}
 			""";
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations, consoleApplication: false);
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetParameterWithAnnotations, consoleApplication: false);
+        }
 
-		[Fact]
-		public Task SourceTypeofFlowsIntoTargetMethodReturnTypeAnnotation ()
-		{
-			var TargetMethodReturnTypeWithAnnotations = $$"""
+        [Fact]
+        public Task SourceTypeofFlowsIntoTargetMethodReturnTypeAnnotation()
+        {
+            var TargetMethodReturnTypeWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1174,13 +1174,13 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations, consoleApplication: false);
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodReturnTypeWithAnnotations, consoleApplication: false);
+        }
 
-		[Fact]
-		public Task SourceParameterFlowsInfoTargetMethodReturnTypeAnnotations ()
-		{
-			var TargetMethodReturnTypeWithAnnotations = $$"""
+        [Fact]
+        public Task SourceParameterFlowsInfoTargetMethodReturnTypeAnnotations()
+        {
+            var TargetMethodReturnTypeWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1203,13 +1203,13 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations, consoleApplication: false);
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodReturnTypeWithAnnotations, consoleApplication: false);
+        }
 
-		[Fact]
-		public Task SourceParameterFlowsIntoTargetFieldAnnotations ()
-		{
-			var TargetFieldWithAnnotations = $$"""
+        [Fact]
+        public Task SourceParameterFlowsIntoTargetFieldAnnotations()
+        {
+            var TargetFieldWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1234,13 +1234,13 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations, consoleApplication: false);
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetFieldWithAnnotations, consoleApplication: false);
+        }
 
-		[Fact]
-		public Task SourceParameterFlowsIntoTargetMethodAnnotations ()
-		{
-			var TargetMethodWithAnnotations = $$"""
+        [Fact]
+        public Task SourceParameterFlowsIntoTargetMethodAnnotations()
+        {
+            var TargetMethodWithAnnotations = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1262,13 +1262,13 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations, consoleApplication: false);
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(TargetMethodWithAnnotations, consoleApplication: false);
+        }
 
-		[Fact]
-		public Task MethodArgumentIsInvalidOperation ()
-		{
-			var Source = """
+        [Fact]
+        public Task MethodArgumentIsInvalidOperation()
+        {
+            var Source = """
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1283,15 +1283,15 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
-				// (8,14): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 14, 8, 18).WithArguments ("type"));
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: false,
+                // (8,14): error CS0103: The name 'type' does not exist in the current context
+                DiagnosticResult.CompilerError("CS0103").WithSpan(8, 14, 8, 18).WithArguments("type"));
+        }
 
-		[Fact]
-		public Task MethodReturnIsInvalidOperation ()
-		{
-			var Source = """
+        [Fact]
+        public Task MethodReturnIsInvalidOperation()
+        {
+            var Source = """
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1307,17 +1307,17 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
-				// (12,34): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (12, 34, 12, 38).WithArguments ("type"),
-				// (12,34): warning IL2063: Value returned from method 'C.GetTypeWithAll()' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
-				VerifyCS.Diagnostic (DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined).WithSpan(12, 34, 12, 38).WithArguments("C.GetTypeWithAll()"));
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: false,
+                // (12,34): error CS0103: The name 'type' does not exist in the current context
+                DiagnosticResult.CompilerError("CS0103").WithSpan(12, 34, 12, 38).WithArguments("type"),
+                // (12,34): warning IL2063: Value returned from method 'C.GetTypeWithAll()' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+                VerifyCS.Diagnostic(DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined).WithSpan(12, 34, 12, 38).WithArguments("C.GetTypeWithAll()"));
+        }
 
-		[Fact]
-		public Task AssignmentSourceIsInvalidOperation ()
-		{
-			var Source = """
+        [Fact]
+        public Task AssignmentSourceIsInvalidOperation()
+        {
+            var Source = """
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1333,17 +1333,17 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
-				// (8,22): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 22, 8, 26).WithArguments ("type"),
-				// (8,3): warning IL2064: Value assigned to C.fieldRequiresAll can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
-				VerifyCS.Diagnostic(DiagnosticId.FieldValueCannotBeStaticallyDetermined).WithSpan(8, 3, 8, 26).WithArguments("C.fieldRequiresAll"));
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: false,
+                // (8,22): error CS0103: The name 'type' does not exist in the current context
+                DiagnosticResult.CompilerError("CS0103").WithSpan(8, 22, 8, 26).WithArguments("type"),
+                // (8,3): warning IL2064: Value assigned to C.fieldRequiresAll can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+                VerifyCS.Diagnostic(DiagnosticId.FieldValueCannotBeStaticallyDetermined).WithSpan(8, 3, 8, 26).WithArguments("C.fieldRequiresAll"));
+        }
 
-		[Fact]
-		public Task AssignmentTargetIsInvalidOperation ()
-		{
-			var Source = """
+        [Fact]
+        public Task AssignmentTargetIsInvalidOperation()
+        {
+            var Source = """
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1359,15 +1359,15 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
-				// (8,9): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 3, 8, 7).WithArguments ("type"));
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: false,
+                // (8,9): error CS0103: The name 'type' does not exist in the current context
+                DiagnosticResult.CompilerError("CS0103").WithSpan(8, 3, 8, 7).WithArguments("type"));
+        }
 
-		[Fact]
-		public Task AssignmentTargetIsCapturedInvalidOperation ()
-		{
-			var Source = """
+        [Fact]
+        public Task AssignmentTargetIsCapturedInvalidOperation()
+        {
+            var Source = """
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -1383,34 +1383,34 @@ namespace System
 			}
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
-				// (8,3): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 3, 8, 7).WithArguments ("type"));
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: false,
+                // (8,3): error CS0103: The name 'type' does not exist in the current context
+                DiagnosticResult.CompilerError("CS0103").WithSpan(8, 3, 8, 7).WithArguments("type"));
+        }
 
-		[Fact]
-		public Task AssignmentTargetHasNestedInvalidOperation ()
-		{
-			// The assignment target is an IBinaryOperation whose right-hand side is an IInvalidOperation.
-			var Source = $$"""
+        [Fact]
+        public Task AssignmentTargetHasNestedInvalidOperation()
+        {
+            // The assignment target is an IBinaryOperation whose right-hand side is an IInvalidOperation.
+            var Source = $$"""
 				int a, b = 0;
 				a + = 3;
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: true,
-				// (2,6): error CS1525: Invalid expression term '='
-				DiagnosticResult.CompilerError("CS1525").WithSpan(2, 6, 2, 7).WithArguments("="),
-				// (2,2): error CS0165: Use of unassigned local variable 'a'
-				DiagnosticResult.CompilerError("CS0165").WithSpan(2, 2, 2, 3).WithArguments("a"),
-				// (1,9): warning CS0219: The variable 'b' is assigned but its value is never used
-				DiagnosticResult.CompilerWarning("CS0219").WithSpan(1, 9, 1, 10).WithArguments("b")
-			);
-		}
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: true,
+                // (2,6): error CS1525: Invalid expression term '='
+                DiagnosticResult.CompilerError("CS1525").WithSpan(2, 6, 2, 7).WithArguments("="),
+                // (2,2): error CS0165: Use of unassigned local variable 'a'
+                DiagnosticResult.CompilerError("CS0165").WithSpan(2, 2, 2, 3).WithArguments("a"),
+                // (1,9): warning CS0219: The variable 'b' is assigned but its value is never used
+                DiagnosticResult.CompilerWarning("CS0219").WithSpan(1, 9, 1, 10).WithArguments("b")
+            );
+        }
 
-		[Fact]
-		public Task CRefGenericParameterAnalysis ()
-		{
-			var Source = """
+        [Fact]
+        public Task CRefGenericParameterAnalysis()
+        {
+            var Source = """
 			using System.Diagnostics.CodeAnalysis;
 
 			class C<TOuter>
@@ -1426,23 +1426,23 @@ namespace System
 			class CRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TInner> { public static bool IsIt => false; }
 			""";
 
-			// The actual usage (ctor call) should warn, about missing annotation, but the cref should not.
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
-				// (10,36): warning IL2091: 'TInner' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in 'CRequires<TInner>'. The generic parameter 'TOuter' of 'C<TOuter>' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter).WithSpan (10, 36, 10, 60).WithSpan (3, 9, 3, 15).WithArguments ("TInner", "CRequires<TInner>", "TOuter", "C<TOuter>", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
-		}
+            // The actual usage (ctor call) should warn, about missing annotation, but the cref should not.
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: false,
+                // (10,36): warning IL2091: 'TInner' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in 'CRequires<TInner>'. The generic parameter 'TOuter' of 'C<TOuter>' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter).WithSpan(10, 36, 10, 60).WithSpan(3, 9, 3, 15).WithArguments("TInner", "CRequires<TInner>", "TOuter", "C<TOuter>", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
 
-		[Fact]
-		public Task MethodParameterWithoutLocationAnalysis ()
-		{
-			// The implicit main method has parameters
-			var Source = """
+        [Fact]
+        public Task MethodParameterWithoutLocationAnalysis()
+        {
+            // The implicit main method has parameters
+            var Source = """
 			using System;
 			foreach (var arg in args)
 				Console.WriteLine (arg);
 			""";
 
-			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: true);
-		}
-	}
+            return VerifyDynamicallyAccessedMembersAnalyzer(Source, consoleApplication: true);
+        }
+    }
 }

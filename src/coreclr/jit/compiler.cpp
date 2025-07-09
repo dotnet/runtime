@@ -2508,7 +2508,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             }
 
             // Stash pointers to PGO info on the context so
-            // we can access contextually it later.
+            // we can access it contextually later.
             //
             compInlineContext->SetPgoInfo(PgoInfo(this));
         }
@@ -2550,8 +2550,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.genFPorder = true;
     opts.genFPopt   = true;
 
-    opts.instrCount = 0;
-    opts.lvRefCount = 0;
+    opts.instrCount     = 0;
+    opts.callInstrCount = 0;
+    opts.lvRefCount     = 0;
 
 #ifdef PROFILING_SUPPORTED
     opts.compJitELTHookEnabled = false;
@@ -4377,6 +4378,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
+    // Capture and restore contexts around awaited calls, if needed.
+    //
+    DoPhase(this, PHASE_ASYNC_SAVE_CONTEXTS, &Compiler::SaveAsyncContexts);
+
     // If we're importing for inlining, we're done.
     if (compIsForInlining())
     {
@@ -4412,6 +4417,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Try and resolve GDV checks if improved types were found during inlining
+        //
+        DoPhase(this, PHASE_RESOLVE_GDVS, &Compiler::fgResolveGDVs);
+
         // Build post-order and remove dead blocks
         //
         DoPhase(this, PHASE_DFS_BLOCKS1, &Compiler::fgDfsBlocksAndRemove);

@@ -109,6 +109,7 @@ class CallStubGenerator
 
 #ifndef UNIX_AMD64_ABI
     PCODE GetGPRegRefRoutine(int r);
+    PCODE GetStackRefRoutine();
 #endif // !UNIX_AMD64_ABI
     PCODE GetStackRoutine();
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)

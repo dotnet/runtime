@@ -25,8 +25,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static T MinMagnitudeNumber<T>(ReadOnlySpan<T> x)
-            where T : INumberBase<T> =>
-            MinMaxCore<T, MinMagnitudeNumberOperator<T>>(x);
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MinMagnitudeNumberOperator<float>>(x, out T result))
+            {
+                return result;
+            }
+
+            return MinMaxCore<T, MinMagnitudeNumberOperator<T>>(x);
+        }
 
         /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -51,8 +58,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MinMagnitudeNumber<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinMagnitudeNumberOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MinMagnitudeNumberOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -75,8 +89,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MinMagnitudeNumber<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinMagnitudeNumberOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MinMagnitudeNumberOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Operator to get x or y based on which has the smaller MathF.Abs</summary>
         internal readonly struct MinMagnitudeNumberOperator<T> : IAggregationOperator<T>

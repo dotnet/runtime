@@ -90,12 +90,6 @@
 #include <minipal/mutex.h>
 
 #define ShutDown_Start                          0x00000001
-#define ShutDown_Finalize1                      0x00000002
-#define ShutDown_Finalize2                      0x00000004
-#define ShutDown_Profiler                       0x00000008
-#define ShutDown_COM                            0x00000010
-#define ShutDown_SyncBlock                      0x00000020
-#define ShutDown_IUnknown                       0x00000040
 #define ShutDown_Phase2                         0x00000080
 
 // Total count of Crst lock  of the type (Shutdown) that are currently in use
