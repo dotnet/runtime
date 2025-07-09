@@ -492,32 +492,33 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ;
         ; RCX = throwable
         ; RDX = PC to invoke
-        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R8 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
         ;  Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
-        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
-        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi - OFFSETOF__CONTEXT__Rbx]
-        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi - OFFSETOF__CONTEXT__Rbx]
-        mov     r12, [r8 + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
-        mov     r13, [r8 + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
-        mov     r14, [r8 + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
-        mov     r15, [r8 + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+        mov     rbx, [r8 + OFFSETOF__CONTEXT__Rbx]
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp]
+        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi]
+        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi]
+        mov     r12, [r8 + OFFSETOF__CONTEXT__R12]
+        mov     r13, [r8 + OFFSETOF__CONTEXT__R13]
+        mov     r14, [r8 + OFFSETOF__CONTEXT__R14]
+        mov     r15, [r8 + OFFSETOF__CONTEXT__R15]
 
         ; Restore XMM registers from CONTEXT
-        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6]
+        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7]
+        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8]
+        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9]
+        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10]
+        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11]
+        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12]
+        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13]
+        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14]
+        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15]
 
          ; Save the SP of this function.
         mov     [r9], rsp
@@ -652,6 +653,33 @@ LEAF_ENTRY Store_Stack, _TEXT
         add r11, 16
         jmp qword ptr [r11]
 LEAF_END Store_Stack, _TEXT
+
+LEAF_ENTRY Load_Stack_Ref, _TEXT
+        mov esi, dword ptr [r11 + 8]  ; SP offset
+        mov edi, dword ptr [r11 + 12] ; size of the value type
+        add rsi, 8; return address
+        add rsi, rsp
+        mov qword ptr [rsi], r10
+        add r10, rdi
+        lea r10, [r10 + 7]
+        and r10, 0fffffffffffffff8h
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Stack_Ref, _TEXT
+
+LEAF_ENTRY Store_Stack_Ref, _TEXT
+        mov esi, dword ptr [r11 + 8]  ; SP offset
+        mov ecx, dword ptr [r11 + 12] ; size of the value type
+        mov rsi, [rsp + rsi + 8 + __InterpreterStubArgumentRegistersOffset]
+        mov rdi, r10
+        rep movsb
+        ; align rdi up to the stack slot size
+        lea rdi, [rdi + 7]
+        and rdi, 0fffffffffffffff8h
+        mov r10, rdi
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Store_Stack_Ref, _TEXT
 
 ; Routines for passing value type arguments by reference in general purpose registers RCX, RDX, R8, R9
 ; from native code to the interpreter

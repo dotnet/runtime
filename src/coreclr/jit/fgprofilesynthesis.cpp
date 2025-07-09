@@ -249,14 +249,23 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
-    // A simple check whether the current method has more than one edge.
-    m_comp->fgPgoSingleEdge = true;
-    for (BasicBlock* const block : m_comp->Blocks())
+    // If a method has just one edge, we simulate having PGO data for it since we typically
+    // don't instrument such methods. To avoid giving excessive inlining boost to large and/or
+    // infrequently executed methods, we apply the following heuristics to exclude:
+    //
+    const bool preferSize   = m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    const bool isCctor      = (m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR;
+    m_comp->fgPgoSingleEdge = !isCctor && !preferSize && (m_comp->opts.callInstrCount < 10);
+
+    if (m_comp->fgPgoSingleEdge)
     {
-        if (block->NumSucc() > 1)
+        for (BasicBlock* const block : m_comp->Blocks())
         {
-            m_comp->fgPgoSingleEdge = false;
-            break;
+            if (block->NumSucc() > 1)
+            {
+                m_comp->fgPgoSingleEdge = false;
+                break;
+            }
         }
     }
 
