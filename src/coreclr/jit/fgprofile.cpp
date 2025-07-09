@@ -5019,7 +5019,7 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
     //
     weight_t const weight = removedEdge->getLikelyWeight();
 
-    if (weight == 0.0)
+    if (weight == BB_ZERO_WEIGHT)
     {
         return;
     }
@@ -5056,30 +5056,28 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
     if (alternate->hasProfileWeight())
     {
-        weight_t const alternateNewWeight = alternate->bbWeight - weight;
-
-        // If profile weights are consistent, expect at worst a slight underflow.
-        //
-        const bool checkProfileConsistency = hasFlag(activePhaseChecks, PhaseChecks::CHECK_PROFILE);
-        if (checkProfileConsistency && fgPgoConsistent && (alternateNewWeight < 0.0))
-        {
-            assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
-        }
-        alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+        alternate->decreaseBBProfileWeight(weight);
     }
     else
     {
         missingProfileData = true;
     }
 
-    // Check for the special case where the block's postdominator
-    // is target's target (simple if/then/else/join).
+    // Check for the special cases where both successors are leaves,
+    // or the block's postdominator is target's target (simple if/then/else/join).
     //
     // TODO: try a bit harder to find a postdominator, if it's "nearby"
     //
-    if (!missingProfileData && target->KindIs(BBJ_ALWAYS))
+    if (!missingProfileData)
     {
-        repairWasComplete = alternate->KindIs(BBJ_ALWAYS) && (alternate->GetTarget() == target->GetTarget());
+        if ((target->NumSucc() == 0) && (alternate->NumSucc() == 0))
+        {
+            repairWasComplete = true;
+        }
+        else if (target->KindIs(BBJ_ALWAYS))
+        {
+            repairWasComplete = target->TargetIs(alternate->GetUniqueSucc());
+        }
     }
 
     if (missingProfileData)
