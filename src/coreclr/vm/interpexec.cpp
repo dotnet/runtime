@@ -1904,38 +1904,6 @@ CALL_INTERP_METHOD:
 
                     goto CALL_INTERP_SLOT;
                 }
-                case INTOP_METHODTABLE:
-                {
-                    OBJECTREF obj = LOCAL_VAR(ip[2], OBJECTREF);
-                    MethodTable* pMT = obj->GetMethodTable();
-                    LOCAL_VAR(ip[1], MethodTable*) = pMT;
-                    ip += 3;
-                    break;
-                }
-                case INTOP_COMPARE_EXCHANGE_I4:
-                {
-                    int32_t* dst = (int32_t*)LOCAL_VAR(ip[2], void*);
-                    NULL_CHECK(dst);
-                    int32_t newValue = LOCAL_VAR(ip[3], int32_t);
-                    int32_t comparand = LOCAL_VAR(ip[4], int32_t);
-                    int32_t old = InterlockedCompareExchangeT(dst, newValue, comparand);
-                    LOCAL_VAR(ip[1], int32_t) = old;
-
-                    ip += 5;
-                    break;
-                }
-                case INTOP_COMPARE_EXCHANGE_O:
-                {
-                    OBJECTREF* dst = (OBJECTREF*)LOCAL_VAR(ip[2], void*);
-                    NULL_CHECK(dst);
-                    OBJECTREF newValue = LOCAL_VAR(ip[3], OBJECTREF);
-                    OBJECTREF comparand = LOCAL_VAR(ip[4], OBJECTREF);
-                    OBJECTREF old = InterlockedCompareExchangeT(dst, newValue, comparand);
-                    LOCAL_VAR(ip[1], OBJECTREF) = old;
-
-                    ip += 5;
-                    break;
-                }
                 case INTOP_NEWOBJ:
                 {
                     returnOffset = ip[1];
@@ -2389,6 +2357,44 @@ do {                                                                           \
                     void* result = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     LOCAL_VAR(dreg, void*) = result;
                     ip += 4;
+                    break;
+                }
+
+                case INTOP_METHODTABLE:
+                {
+                    OBJECTREF obj = LOCAL_VAR(ip[2], OBJECTREF);
+                    MethodTable* pMT = obj->GetMethodTable();
+                    LOCAL_VAR(ip[1], MethodTable*) = pMT;
+                    ip += 3;
+                    break;
+                }
+
+#define COMPARE_EXCHANGE(type)                                          \
+do                                                                      \
+{                                                                       \
+    type* dst = (type*)LOCAL_VAR(ip[2], void*);                         \
+    NULL_CHECK(dst);                                                    \
+    type newValue = LOCAL_VAR(ip[3], type);                             \
+    type comparand = LOCAL_VAR(ip[4], type);                            \
+    type old = InterlockedCompareExchangeT(dst, newValue, comparand);   \
+    LOCAL_VAR(ip[1], type) = old;                                       \
+    ip += 5;                                                            \
+} while (0)
+                case INTOP_COMPARE_EXCHANGE_I4:
+                {
+                    COMPARE_EXCHANGE(int32_t);
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_I8:
+                {
+                    COMPARE_EXCHANGE(int64_t);
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_O:
+                {
+                    COMPARE_EXCHANGE(OBJECTREF);
                     break;
                 }
 
