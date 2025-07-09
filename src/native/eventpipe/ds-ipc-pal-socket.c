@@ -420,9 +420,7 @@ ipc_socket_close (ds_ipc_socket_t s)
 #ifdef HOST_WIN32
 	result_close = closesocket (s);
 #else
-	do {
-		result_close = close (s);
-	} while (ipc_retry_syscall (result_close));
+	result_close = close (s);
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return result_close;

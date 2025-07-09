@@ -123,10 +123,6 @@ namespace Microsoft.Win32.SafeHandles
             return handle;
         }
 
-        // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
-        [ThreadStatic]
-        internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
-
         protected override bool ReleaseHandle()
         {
             // If DeleteOnClose was requested when constructed, delete the file now.
@@ -152,15 +148,8 @@ namespace Microsoft.Win32.SafeHandles
                 _isLocked = false;
             }
 
-            // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
-            // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
-            // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
-            int result = Interop.Sys.Close(handle);
-            if (result != 0)
-            {
-                t_lastCloseErrorInfo = Interop.Sys.GetLastErrorInfo();
-            }
-            return result == 0;
+            // Close the descriptor.
+            return Interop.Sys.Close(handle) == 0;
         }
 
         public override bool IsInvalid
