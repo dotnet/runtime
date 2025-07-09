@@ -132,17 +132,12 @@ namespace System.Net
         {
             return context switch
             {
-                SafeDeleteNwContext nwContext => IsLocalCertificateUsed(nwContext),
+                // For Network Framework, we need to check if the server actually requested
+                // a client certificate during the handshake.
+                SafeDeleteNwContext nwContext => nwContext.ClientCertificateRequested,
                 SafeDeleteSslContext => true,
                 _ => true
             };
-        }
-
-        private static bool IsLocalCertificateUsed(SafeDeleteNwContext nwContext)
-        {
-            // For Network Framework, we need to check if the server actually requested
-            // a client certificate during the handshake.
-            return nwContext.ClientCertificateRequested;
         }
 
         //
