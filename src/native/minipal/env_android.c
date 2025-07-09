@@ -4,10 +4,12 @@
 #include "minipalconfig.h"
 #include <errno.h>
 #include <assert.h>
+#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 #include "minipal/env.h"
-#include "minipal/atomic.h"
+#include "minipal/volatile.h"
 #include "minipal/utils.h"
 #include "minipal/strings.h"
 
@@ -15,8 +17,8 @@
 #include <sys/system_properties.h>
 
 // Android system properties are checked once and cached in a global variable.
-// -1 means not initialized, 0 means disabled, 1 means enabled.
-static volatile int g_android_system_properties_enabled = -1;
+// UINT32_MAX means not initialized, 0 means disabled, 1 means enabled.
+static volatile uint32_t g_android_system_properties_enabled = UINT32_MAX;
 
 // Passed to __system_property_foreach callback.
 typedef struct _SystemPropertyValues
@@ -69,8 +71,8 @@ static bool is_android_system_properties_enabled(void)
 {
     char value[PROP_VALUE_MAX];
 
-    int enabled = minipal_atomic_load_int(&g_android_system_properties_enabled);
-    if (enabled == -1)
+    uint32_t enabled = minipal_volatile_load_uint32_t(&g_android_system_properties_enabled);
+    if (enabled == UINT32_MAX)
     {
         int ret = get_android_system_property(SYS_PROPS_DEBUG_PREFIX SYS_PROPS_DOTNET_PREFIX ENABLED_SYS_PROPS, value, ARRAY_SIZE(value));
         if (ret == -1)
@@ -87,7 +89,7 @@ static bool is_android_system_properties_enabled(void)
             enabled = 0;
         }
 
-        minipal_atomic_store_int(&g_android_system_properties_enabled, enabled);
+        minipal_volatile_store_uint32_t(&g_android_system_properties_enabled, enabled);
     }
 
     assert(enabled == 0 || enabled == 1);
@@ -123,15 +125,15 @@ static void android_system_property_callback(const prop_info* info, void* cookie
     const char* property_name = name;
     const char* property_value = value;
 
-    if (minipal_strncasecmp(property_name, SYS_PROPS_DEBUG_PREFIX, SYS_PROPS_DEBUG_PREFIX_LEN) == 0)
+    if (strncmp(property_name, SYS_PROPS_DEBUG_PREFIX, SYS_PROPS_DEBUG_PREFIX_LEN) == 0)
     {
         property_name += SYS_PROPS_DEBUG_PREFIX_LEN;
     }
 
-    if (minipal_strncasecmp(property_name, SYS_PROPS_DOTNET_PREFIX, SYS_PROPS_DOTNET_PREFIX_LEN) == 0)
+    if (strncmp(property_name, SYS_PROPS_DOTNET_PREFIX, SYS_PROPS_DOTNET_PREFIX_LEN) == 0)
     {
         property_name += SYS_PROPS_DOTNET_PREFIX_LEN;
-        if (minipal_strncasecmp(property_name, ENABLED_SYS_PROPS, ENABLED_SYS_PROPS_LEN) == 0)
+        if (strncmp(property_name, ENABLED_SYS_PROPS, ENABLED_SYS_PROPS_LEN) == 0)
         {
             return;
         }
@@ -190,7 +192,7 @@ static void android_system_property_callback(const prop_info* info, void* cookie
                 property_delimiter = "";
             }
 
-            if (minipal_strncasecmp(property_name, ENV_DOTNET_PREFIX, ENV_DOTNET_PREFIX_LEN) != 0)
+            if (strncmp(property_name, ENV_DOTNET_PREFIX, ENV_DOTNET_PREFIX_LEN) != 0)
             {
                 property_name_prefix = ENV_DOTNET_PREFIX;
             }
@@ -225,7 +227,7 @@ static void android_system_property_callback(const prop_info* info, void* cookie
 
                     do
                     {
-                        minipal_sprintf_s(name2, ARRAY_SIZE(name2), "%s.%d", name, index);
+                        snprintf(name2, ARRAY_SIZE(name2), "%s.%d", name, index);
                         ret = get_android_system_property(name2, value2, ARRAY_SIZE(value2));
                         if (ret > 0)
                         {

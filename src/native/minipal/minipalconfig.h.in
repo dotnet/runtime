@@ -15,12 +15,10 @@
 #cmakedefine01 HAVE_FSYNC
 #cmakedefine01 HAVE__NSGETENVIRON
 #cmakedefine01 HAVE__ENVIRON
-#cmakedefine01 HAVE_VSPRINTF_S
-#cmakedefine01 HAVE_STRNCASECMP
+#cmakedefine01 HAVE_ENVIRON
+#cmakedefine01 HAVE_GETENV
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRNCPY_S
 #cmakedefine01 HAVE_STRCAT_S
-#cmakedefine01 HAVE_GETENV
-#cmakedefine01 HAVE_GETENV_S
 
 #endif

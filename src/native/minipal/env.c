@@ -11,7 +11,9 @@
 #include <stddef.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
 #include "minipal/env.h"
+#include "minipal/volatile.h"
 #include "minipal/atomic.h"
 #include "minipal/utils.h"
 #include "minipal/strings.h"
@@ -41,6 +43,11 @@ static bool g_env_loaded;
 // Global environment, only accessed when holding lock,
 // except when accessed from minipal_env_get_environ_unsafe.
 static EnvironmentVariables g_env;
+
+// Empty environ for platforms without env support.
+#if !defined(HAVE__NSGETENVIRON) && !defined(HAVE__ENVIRON) && !defined(HAVE_ENVIRON)
+char* g_empty_environ[] = { NULL };
+#endif
 
 //Forward declarations.
 static char* get_system_env_unsafe(const char* name);
@@ -163,9 +170,6 @@ static void free_system_env(char* value)
  */
 static int get_system_env_s(size_t *required_len, char *buffer, size_t buffer_len, const char *name)
 {
-#if HAVE_GETENV_S
-    return (int)getenv_s(required_len, buffer, buffer_len, name);
-#else
     if (name == NULL || required_len == NULL || (buffer == NULL && buffer_len > 0))
     {
         return EINVAL;
@@ -195,7 +199,6 @@ static int get_system_env_s(size_t *required_len, char *buffer, size_t buffer_le
     }
 
     return 0;
-#endif
 }
 
 /**
@@ -214,9 +217,11 @@ static char** get_system_environ_unsafe(void)
     sys_env = *(_NSGetEnviron());
 #elif HAVE__ENVIRON
     sys_env = _environ;
-#else
+#elif HAVE_ENVIRON
     extern char **environ;
     sys_env = environ;
+#else
+    sys_env = g_empty_environ;
 #endif
 
     return sys_env;
@@ -241,7 +246,7 @@ static bool use_cached_env(void)
         return true;
     }
 
-    char** cached_env_data = (char**)minipal_atomic_load_ptr((volatile void **)&g_env.data);
+    char** cached_env_data = (char**)minipal_volatile_load_ptr((void**)&g_env.data);
     return cached_env_data != NULL;
 }
 
@@ -252,7 +257,7 @@ static bool use_cached_env(void)
  */
 static minipal_mutex* atomic_load_env_lock_ptr(void)
 {
-    return (minipal_mutex *)minipal_atomic_load_ptr((volatile void **)&g_env_lock);
+    return (minipal_mutex *)minipal_volatile_load_ptr((void **)&g_env_lock);
 }
 
 /**
@@ -268,7 +273,7 @@ static minipal_mutex* atomic_load_env_lock_ptr(void)
 static bool atomic_cas_env_lock_ptr(minipal_mutex* lock)
 {
     assert(lock != NULL);
-    return (minipal_atomic_cas_ptr((volatile void **)&g_env_lock, (void *)lock, NULL) == NULL);
+    return (minipal_atomic_compare_exchange_ptr((volatile void **)&g_env_lock, (void *)lock, NULL) == NULL);
 }
 
 /**
@@ -345,12 +350,12 @@ static bool resize_env(EnvironmentVariables* env, int new_size)
             if (env->data != NULL)
             {
                 char**old_env = env->data;
-                minipal_atomic_store_ptr((volatile void**)&env->data, NULL);
+                minipal_volatile_store_ptr((void**)&env->data, NULL);
                 free(old_env);
             }
 
             env->capacity = new_size;
-            minipal_atomic_store_ptr((volatile void**)&env->data, (void*)new_env);
+            minipal_volatile_store_ptr((void**)&env->data, (void*)new_env);
 
             result = true;
         }
@@ -371,7 +376,7 @@ static void destroy_env(EnvironmentVariables* env)
 
     char** data = env->data;
 
-    minipal_atomic_store_ptr((volatile void**)&env->data, NULL);
+    minipal_volatile_store_ptr((void**)&env->data, NULL);
     env->capacity = 0;
     env->size = 0;
 
@@ -557,7 +562,7 @@ static void assign_env(const EnvironmentVariables* src, EnvironmentVariables* de
 
     dest->capacity = src->capacity;
     dest->size = src->size;
-    minipal_atomic_store_ptr((volatile void**)&dest->data, (void*)src->data);
+    minipal_volatile_store_ptr((void**)&dest->data, (void*)src->data);
 }
 
 /**
@@ -641,7 +646,7 @@ static const char* cache_env_string(EnvironmentVariables* env, const char* name)
                 env_s = (char*)malloc(env_s_len);
                 if (env_s != NULL)
                 {
-                    minipal_sprintf_s(env_s, env_s_len, "%s=", name);
+                    snprintf(env_s, env_s_len, "%s=", name);
                     provider->getenv_s_func(&value_len, env_s + name_len + 1, value_len, name);
                     break;
                 }
@@ -656,7 +661,7 @@ static const char* cache_env_string(EnvironmentVariables* env, const char* name)
                 env_s = (char *) malloc(env_s_len);
                 if (env_s != NULL)
                 {
-                    minipal_sprintf_s(env_s, env_s_len, "%s=%s", name, value);
+                    snprintf(env_s, env_s_len, "%s=%s", name, value);
                 }
 
                 if (provider->free_env_func != NULL)
@@ -1030,7 +1035,7 @@ static bool set_env(EnvironmentVariables* env, const char* name, const char* val
         return false;
     }
 
-    minipal_sprintf_s(env_var, len, "%s=%s", name, value);
+    snprintf(env_var, len, "%s=%s", name, value);
     if (!put_env(env, env_var))
     {
         free(env_var);
@@ -1211,7 +1216,7 @@ char** minipal_env_get_environ_unsafe(void)
     }
     else
     {
-        result = (char**)minipal_atomic_load_ptr((volatile void **)&g_env.data);
+        result = (char**)minipal_volatile_load_ptr((void **)&g_env.data);
     }
 
     return result;

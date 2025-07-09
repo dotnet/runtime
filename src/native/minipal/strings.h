@@ -36,16 +36,6 @@ CHAR16_T minipal_tolower_invariant(CHAR16_T code);
 size_t minipal_u16_strlen(const CHAR16_T* str);
 
 /**
- * @brief xplat implementation of sprintf_s.
- */
-int minipal_sprintf_s(char* buffer, size_t count, const char* format, ...);
-
-/**
- * @brief xplat implementation of strncasecmp.
- */
-int minipal_strncasecmp(const char* str1, const char* str2, size_t n);
-
-/**
  * @brief xplat implementation of strdup.
  */
 char* minipal_strdup(const char *str);

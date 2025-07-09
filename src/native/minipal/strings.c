@@ -4,8 +4,6 @@
 #include "strings.h"
 #include <errno.h>
 #include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
 
 #ifdef HOST_WINDOWS
 #include <wchar.h>
@@ -25,68 +23,6 @@ size_t minipal_u16_strlen(const CHAR16_T* str)
         len++;
     }
     return len;
-#endif
-}
-
-/**
-* @see strings.h
-*/
-int minipal_sprintf_s(char* buffer, size_t count, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-#if HAVE_VSPRINTF_S
-    int result = vsprintf_s(buffer, count, format, args);
-#else
-    int result = vsnprintf(buffer, count, format, args);
-#endif
-
-    va_end(args);
-    return result;
-}
-
-/**
-* @see strings.h
-*/
-int minipal_strncasecmp(const char* str1, const char* str2, size_t count)
-{
-#if HAVE_STRNCASECMP
-    return strncasecmp(str1, str2, count);
-#elif HOST_WINDOWS
-    return _strnicmp(str1, str2, count);
-#else
-    if (str1 == NULL || str2 == NULL || count == 0)
-    {
-        return 0;
-    }
-
-    for (size_t i = 0; i < count; ++i)
-    {
-        char c1 = str1[i];
-        char c2 = str2[i];
-        if (c1 == '\0' || c2 == '\0')
-        {
-            return (unsigned char)c1 - (unsigned char)c2;
-        }
-
-        if (c1 >= 'A' && c1 <= 'Z')
-        {
-            c1 += ('a' - 'A');
-        }
-
-        if (c2 >= 'A' && c2 <= 'Z')
-        {
-            c2 += ('a' - 'A');
-        }
-
-        if (c1 != c2)
-        {
-            return (unsigned char)c1 - (unsigned char)c2;
-        }
-    }
-
-    return 0;
 #endif
 }
 
