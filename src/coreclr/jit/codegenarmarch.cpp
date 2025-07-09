@@ -701,38 +701,6 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
-
-        case NI_System_Math_Max:
-        {
-            genConsumeOperands(treeNode->AsOp());
-            GetEmitter()->emitIns_R_R_R(INS_fmax, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
-            break;
-        }
-
-        case NI_System_Math_MaxNumber:
-        {
-            genConsumeOperands(treeNode->AsOp());
-            GetEmitter()->emitIns_R_R_R(INS_fmaxnm, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
-            break;
-        }
-
-        case NI_System_Math_Min:
-        {
-            genConsumeOperands(treeNode->AsOp());
-            GetEmitter()->emitIns_R_R_R(INS_fmin, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
-            break;
-        }
-
-        case NI_System_Math_MinNumber:
-        {
-            genConsumeOperands(treeNode->AsOp());
-            GetEmitter()->emitIns_R_R_R(INS_fminnm, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
-            break;
-        }
 #endif // TARGET_ARM64
 
         case NI_System_Math_Sqrt:

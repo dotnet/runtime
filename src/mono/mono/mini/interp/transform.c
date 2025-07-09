@@ -739,7 +739,7 @@ handle_branch (TransformData *td, int long_op, int offset)
 		guint16 samplepoint_profiling = 0;
 		if (mono_jit_trace_calls != NULL && mono_trace_eval (rtm->method))
 			samplepoint_profiling |= TRACING_FLAG;
-		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT ))
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT))
 			samplepoint_profiling |= PROFILING_FLAG;
 		if (samplepoint_profiling) {
 			interp_add_ins (td, MINT_PROF_SAMPLEPOINT);

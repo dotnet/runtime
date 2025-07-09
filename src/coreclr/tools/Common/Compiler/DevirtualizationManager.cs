@@ -218,6 +218,8 @@ namespace ILCompiler
         public virtual bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type) => true;
 
         public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
+
+        public virtual bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => true;
 #endif
     }
 }

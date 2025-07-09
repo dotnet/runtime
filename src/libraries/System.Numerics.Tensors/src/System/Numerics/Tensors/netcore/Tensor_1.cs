@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,110 +15,66 @@ namespace System.Numerics.Tensors
     /// <summary>
     /// Represents a tensor.
     /// </summary>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public sealed class Tensor<T> : ITensor<Tensor<T>, T>
+    public sealed class Tensor<T> : ITensor<Tensor<T>, T>, IEnumerable<T>
     {
         /// <summary>Gets an empty tensor.</summary>
         public static Tensor<T> Empty { get; } = new();
 
         internal readonly TensorShape _shape;
         internal readonly T[] _values;
-
         internal readonly int _start;
-        internal readonly bool _isPinned;
-
-        internal Tensor(scoped ReadOnlySpan<nint> lengths, bool pinned)
-        {
-            _shape = TensorShape.Create(lengths);
-            _values = GC.AllocateArray<T>(checked((int)(_shape.LinearLength)), pinned);
-
-            _start = 0;
-            _isPinned = pinned;
-        }
 
         internal Tensor(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            _shape = TensorShape.Create(lengths, strides);
+            _shape = TensorShape.Create(lengths, strides, pinned);
             _values = GC.AllocateArray<T>(checked((int)(_shape.LinearLength)), pinned);
-
             _start = 0;
-            _isPinned = pinned;
         }
 
         internal Tensor(T[]? array)
         {
             _shape = TensorShape.Create(array);
             _values = (array is not null) ? array : [];
-
             _start = 0;
-            _isPinned = false;
-        }
-
-        internal Tensor(T[]? array, scoped ReadOnlySpan<nint> lengths)
-        {
-            _shape = TensorShape.Create(array, lengths);
-            _values = (array is not null) ? array : [];
-
-            _start = 0;
-            _isPinned = false;
         }
 
         internal Tensor(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             _shape = TensorShape.Create(array, lengths, strides);
             _values = (array is not null) ? array : [];
-
             _start = 0;
-            _isPinned = false;
         }
 
         internal Tensor(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             _shape = TensorShape.Create(array, start, lengths, strides);
             _values = (array is not null) ? array : [];
-
             _start = start;
-            _isPinned = false;
         }
 
-        internal Tensor(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder)
+        internal Tensor(T[] array, in TensorShape shape)
         {
-            _shape = TensorShape.Create(array, start, lengths, strides, linearRankOrder);
-            _values = (array is not null) ? array : [];
-
-            _start = start;
-            _isPinned = false;
-        }
-
-        internal Tensor(T[] array, in TensorShape shape, bool isPinned)
-        {
-            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+            ThrowHelper.ThrowIfArrayTypeMismatch(array);
 
             _shape = shape;
             _values = array;
-
             _start = 0;
-            _isPinned = isPinned;
         }
 
-        internal Tensor(T[] array, int start, in TensorShape shape, bool isPinned)
+        internal Tensor(T[] array, int start, in TensorShape shape)
         {
-            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+            ThrowHelper.ThrowIfArrayTypeMismatch(array);
 
             _shape = shape;
             _values = array;
-
             _start = start;
-            _isPinned = isPinned;
         }
 
         private Tensor()
         {
             _shape = default;
             _values = [];
-
             _start = 0;
-            _isPinned = false;
         }
 
         /// <inheritdoc cref="TensorSpan{T}.this[ReadOnlySpan{nint}]" />
@@ -154,7 +109,7 @@ namespace System.Numerics.Tensors
         public bool IsEmpty => _shape.IsEmpty;
 
         /// <inheritdoc cref="IReadOnlyTensor.IsPinned" />
-        public bool IsPinned => _isPinned;
+        public bool IsPinned => _shape.IsPinned;
 
         /// <inheritdoc cref="IReadOnlyTensor.Lengths" />
         public ReadOnlySpan<nint> Lengths => _shape.Lengths;
@@ -242,7 +197,8 @@ namespace System.Numerics.Tensors
             return ref ret;
         }
 
-        /// <inheritdoc cref="IReadOnlyTensor.GetPinnedHandle()" />
+        /// <summary>Pins and gets a <see cref="MemoryHandle"/> to the backing memory.</summary>
+        /// <returns><see cref="MemoryHandle"/></returns>
         public unsafe MemoryHandle GetPinnedHandle()
         {
             GCHandle handle = GCHandle.Alloc(_values, GCHandleType.Pinned);
@@ -260,8 +216,7 @@ namespace System.Numerics.Tensors
             return new Tensor<T>(
                 _values,
                 (int)(_start + linearOffset),
-                in shape,
-                _isPinned
+                in shape
             );
         }
 
@@ -276,8 +231,7 @@ namespace System.Numerics.Tensors
             return new Tensor<T>(
                 _values,
                 (int)(_start + linearOffset),
-                in shape,
-                _isPinned
+                in shape
             );
         }
 
@@ -292,8 +246,7 @@ namespace System.Numerics.Tensors
             return new Tensor<T>(
                 _values,
                 (int)(_start + linearOffset),
-                in shape,
-                _isPinned
+                in shape
             );
         }
 
@@ -401,9 +354,9 @@ namespace System.Numerics.Tensors
 
         static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.Create<T>(lengths, strides, pinned);
 
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.Create<T>(lengths, pinned);
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.CreateUninitialized<T>(lengths, pinned);
 
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.Create<T>(lengths, strides, pinned);
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.CreateUninitialized<T>(lengths, strides, pinned);
 
         /// <summary>Enumerates the elements of a tensor.</summary>
         public struct Enumerator : IEnumerator<T>

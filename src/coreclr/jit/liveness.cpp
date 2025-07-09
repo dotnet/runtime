@@ -1624,7 +1624,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
         // (as opposed to side effects of their children).
         // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-        if (!node->gtSetFlags() && !node->NodeOrContainedOperandsMayThrow(this))
+        if (!node->gtSetFlags() && !node->OperMayThrow(this) && fgCanUncontainOrRemoveOperands(node))
         {
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);
@@ -1681,6 +1681,38 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
     fgStmtRemoved = true;
 
     return true;
+}
+
+//---------------------------------------------------------------------
+// fgCanUncontainOrRemoveOperands - Check if the operands of a node that is
+// slated for removal can be either uncontained or deleted entirely.
+//
+// Arguments:
+//   node - The node whose operands are to be checked
+//
+// Return Value:
+//   Whether the operands can be uncontained or removed.
+//
+// Remarks:
+//   Only embedded mask ops do not support standalone codegen. All other
+//   nodes can be uncontained.
+//
+bool Compiler::fgCanUncontainOrRemoveOperands(GenTree* node)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    auto visit = [=](GenTree* op) {
+        if (!op->isContained() || !op->IsEmbMaskOp() || !op->NodeOrContainedOperandsMayThrow(this))
+        {
+            return GenTree::VisitResult::Continue;
+        }
+
+        return GenTree::VisitResult::Abort;
+    };
+
+    return node->VisitOperands(visit) != GenTree::VisitResult::Abort;
+#else
+    return true;
+#endif
 }
 
 //---------------------------------------------------------------------

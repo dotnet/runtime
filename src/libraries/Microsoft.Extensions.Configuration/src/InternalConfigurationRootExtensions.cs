@@ -39,5 +39,20 @@ namespace Microsoft.Extensions.Configuration
                 return children.ToList();
             }
         }
+
+        internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
+        {
+            foreach (IConfigurationProvider provider in root.Providers)
+            {
+                if (provider.TryGet(key, out value))
+                {
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
+
     }
 }
