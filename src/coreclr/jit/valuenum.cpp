@@ -9145,6 +9145,30 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 {
                     // (y & x) | (z & ~x)
 
+#if defined(TARGET_ARM64)
+                    if (ni == NI_Sve_ConditionalSelect)
+                    {
+                        assert(TypeOfVN(arg0VN) == TYP_MASK);
+                        assert(type == TYP_SIMD16);
+
+                        ValueNum maskVNSimd = EvaluateSimdCvtMaskToVector(this, type, baseType, arg0VN);
+                        simd16_t maskVal    = ::GetConstantSimd16(this, baseType, maskVNSimd);
+
+                        simd16_t arg1 = ::GetConstantSimd16(this, baseType, arg1VN);
+                        simd16_t arg2 = ::GetConstantSimd16(this, baseType, arg2VN);
+
+                        simd16_t result = {};
+                        EvaluateBinarySimd<simd16_t>(GT_AND, false, baseType, &result, arg1, maskVal);
+                        ValueNum trueVN = VNForSimd16Con(result);
+
+                        result = {};
+                        EvaluateBinarySimd<simd16_t>(GT_AND_NOT, false, baseType, &result, arg2, maskVal);
+                        ValueNum falseVN = VNForSimd16Con(result);
+
+                        return EvaluateBinarySimd(this, GT_OR, false, type, baseType, trueVN, falseVN);
+                    }
+#endif // TARGET_ARM64
+
                     ValueNum trueVN  = EvaluateBinarySimd(this, GT_AND, false, type, baseType, arg1VN, arg0VN);
                     ValueNum falseVN = EvaluateBinarySimd(this, GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
 
@@ -15191,8 +15215,25 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 
     *offset = 0;
     VNFuncApp app;
-    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    while (GetVNFunc(*vn, &app) && ((app.m_func == VNF_ADD) || (app.m_func == VNF_Cast)))
     {
+        if (app.m_func == VNF_Cast)
+        {
+            // Ignore GC -> I_IMPL casts during peeling
+            if (TypeOfVN(*vn) == TYP_I_IMPL)
+            {
+                var_types castToType;
+                bool      srcIsUnsigned;
+                GetCastOperFromVN(app.m_args[1], &castToType, &srcIsUnsigned);
+                if (varTypeIsI(castToType) && varTypeIsI(TypeOfVN(app.m_args[0])))
+                {
+                    *vn = app.m_args[0];
+                    continue;
+                }
+            }
+            break;
+        }
+
         // We don't treat handles and null as constant offset.
 
         if (IsVNConstantNonHandle(app.m_args[0]) && (app.m_args[0] != VNForNull()))

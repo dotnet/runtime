@@ -81,16 +81,23 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void MLKemCng_Key(MLKemAlgorithm algorithm)
+        public static void MLKemCng_GetKey(MLKemAlgorithm algorithm)
         {
             using CngKey key = MLKemCngTests.GenerateCngKey(
                 algorithm,
                 CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 
-            using MLKemCng mlKemKey = new(key);
+            using (MLKemCng mlKemKey = new(key))
+            using (CngKey getKey1 = mlKemKey.GetKey())
+            {
+                using (CngKey getKey2 = mlKemKey.GetKey())
+                {
+                    Assert.NotSame(key, getKey1);
+                    Assert.NotSame(getKey1, getKey2);
+                }
 
-            Assert.NotSame(key, mlKemKey.Key);
-            Assert.Same(mlKemKey.Key, mlKemKey.Key);
+                Assert.Equal(key.Algorithm, getKey1.Algorithm); // Assert.NoThrow on getKey1.Algorithm
+            }
         }
     }
 

@@ -52,10 +52,31 @@ typedef struct dn_simdhash_t dn_simdhash_t;
 
 typedef struct dn_simdhash_meta_t {
 	// type metadata for generic implementation
+	// NOTE: key_size and value_size are not used consistently by every part of the implementation,
+	//  a specialization is still strongly typed based on its KEY_T and VALUE_T. But they need to match.
 	uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size,
 	// Allocate this many bytes of extra data inside the dn_simdhash_t
 		data_size;
 } dn_simdhash_meta_t;
+
+typedef enum dn_simdhash_insert_mode {
+	// Ensures that no matching key exists in the hash, then adds the key/value pair
+	DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE,
+	// If a matching key exists in the hash, overwrite its value but leave the key alone
+	DN_SIMDHASH_INSERT_MODE_OVERWRITE_VALUE,
+	// If a matching key exists in the hash, overwrite both the key and the value
+	DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE,
+	// Do not scan for existing matches before adding the new key/value pair.
+	DN_SIMDHASH_INSERT_MODE_REHASHING,
+} dn_simdhash_insert_mode;
+
+typedef enum dn_simdhash_add_result {
+	DN_SIMDHASH_INTERNAL_ERROR = -2,
+	DN_SIMDHASH_OUT_OF_MEMORY = -1,
+	DN_SIMDHASH_ADD_FAILED = 0,
+	DN_SIMDHASH_ADD_INSERTED = 1,
+	DN_SIMDHASH_ADD_OVERWROTE = 2,
+} dn_simdhash_add_result;
 
 typedef enum dn_simdhash_insert_result {
 	DN_SIMDHASH_INSERT_OK_ADDED_NEW,
@@ -139,8 +160,9 @@ dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers);
 
 // If a resize happens, this will allocate new buffers and return the old ones.
 // It is your responsibility to rehash and then free the old buffers.
+// If growing failed due to an out of memory condition *ok will be 0, otherwise it will be 1.
 dn_simdhash_buffers_t
-dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity);
+dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity, uint8_t *ok);
 
 // Erases the contents of the table, but does not shrink it.
 void
@@ -161,8 +183,9 @@ uint32_t
 dn_simdhash_overflow_count (dn_simdhash_t *hash);
 
 // Automatically resizes the table if it is too small to hold the requested number
-//  of items. Will not shrink the table if it is already bigger.
-void
+//  of items. Will not shrink the table if it is already bigger. Returns whether
+//  the operation was successful - 0 indicates allocation failure.
+uint8_t
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
 
 #ifdef __cplusplus

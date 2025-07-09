@@ -1530,6 +1530,17 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
             (fn)(PTR_PTR_Object(pThis), sc, CHECK_APP_DOMAIN);
     }
 
+    // Promote async continuation for async methods
+    if (argit.HasAsyncContinuation())
+    {
+        PTR_PTR_VOID pAsyncCont = dac_cast<PTR_PTR_VOID>(pTransitionBlock + argit.GetAsyncContinuationArgOffset());
+        LOG((LF_GC, INFO3,
+             "    async continuation argument at " FMT_ADDR "promoted from" FMT_ADDR "\n",
+             DBG_ADDR(pAsyncCont), DBG_ADDR(*pAsyncCont) ));
+
+        (fn)(PTR_PTR_Object(pAsyncCont), sc, CHECK_APP_DOMAIN);
+    }
+
     int argOffset;
     while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
@@ -1894,6 +1905,11 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
     SetSP(pContext, dac_cast<TADDR>(pFrame));
     SetFP(pContext, (TADDR)pFrame->pStack);
     SetFirstArgReg(pContext, dac_cast<TADDR>(this));
+    pContext->ContextFlags = CONTEXT_FULL;
+    if (m_isFaulting)
+    {
+        pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    }
 }
 
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
