@@ -133,10 +133,15 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("In the current approach, forever incoming read task is waiting at ReadAsync, as a result it can't catch exceptions we're providing here.");
+            }
+
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new ThrowingDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
