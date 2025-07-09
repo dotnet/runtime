@@ -314,7 +314,7 @@ namespace System.Net.Security
                     if (await handshakeTask.ConfigureAwait(false) is Exception ex)
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex, "Async handshake failed");
-                        if (ex is ArgumentException)
+                        if (ex is ArgumentException or IOException)
                         {
                             throw ex;
                         }

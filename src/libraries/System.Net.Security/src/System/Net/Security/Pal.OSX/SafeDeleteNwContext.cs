@@ -93,11 +93,15 @@ namespace System.Net.Security
 
         internal bool ClientCertificateRequested => _clientCertificateRequested;
 
-        internal Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
+        internal async Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
             Interop.NetworkFramework.Tls.StartTlsHandshake(_connectionHandle, GCHandle.ToIntPtr(_thisHandle));
 
-            // TODO: Handle cancellation token
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Handshake cancellation requested");
+                ((TaskCompletionSource<Exception?>)state!).TrySetCanceled(token);
+            }, _handshakeCompletionSource);
 
             _transportReadTask = Task.Run(async () =>
             {
@@ -119,7 +123,8 @@ namespace System.Net.Security
                         else
                         {
                             // EOF reached, signal completion
-                            //Interop.NetworkFramework.Tls.CancelConnection(_connectionHandle);
+                            // TODO: can this race with actual handshake completion?
+                            Interop.NetworkFramework.Tls.CancelConnection(_connectionHandle);
                             break;
                         }
                     }
@@ -130,7 +135,7 @@ namespace System.Net.Security
                 }
             }, cancellationToken);
 
-            return _handshakeCompletionSource.Task;
+            return await _handshakeCompletionSource.Task.ConfigureAwait(false);
         }
 
         internal async Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -167,7 +172,7 @@ namespace System.Net.Security
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 TaskCompletionSource<long> tcs = (TaskCompletionSource<long>)handle.Target!;
 
-                tcs.SetResult(status);
+                tcs.TrySetResult(status);
                 handle.Free();
             }
         }
@@ -202,11 +207,11 @@ namespace System.Net.Security
         {
             TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cancellation requested for {nameof(FillAppDataBufferAsync)}");
-                tcs.TrySetCanceled();
-            });
+                ((TaskCompletionSource<int>)state!).TrySetCanceled(token);
+            }, tcs);
 
             Tuple<TaskCompletionSource<int>, Memory<byte>> state = new(tcs, buffer);
             GCHandle handle = GCHandle.Alloc(state, GCHandleType.Normal);
@@ -598,6 +603,9 @@ namespace System.Net.Security
         private void ConnectionClosed()
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connection was cancelled");
+            _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(
+                new IOException(SR.net_io_eof)));
+            _thisHandle.Free();
         }
 
         private void CertificateAvailable(SafeX509ChainHandle peerCertChainHandle)
