@@ -968,6 +968,7 @@ public class InterpreterTest
         Console.WriteLine(System.Runtime.Intrinsics.X86.X86Base.IsSupported);
         Console.WriteLine("ArmBase.IsSupported=");
         Console.WriteLine(System.Runtime.Intrinsics.Arm.ArmBase.IsSupported);
+        return true;
     }
 
     public static void TestExceptionHandling()
