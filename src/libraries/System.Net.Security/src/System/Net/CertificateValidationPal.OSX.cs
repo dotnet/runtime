@@ -210,7 +210,7 @@ namespace System.Net
         {
             return securityContext switch
             {
-                SafeDeleteNwContext nwContext => GetRequestCertificateAuthorities(nwContext),
+                SafeDeleteNwContext => Array.Empty<string>(),
                 SafeDeleteSslContext sslContext => GetRequestCertificateAuthorities(sslContext),
                 _ => throw new ArgumentException("Invalid context type", nameof(securityContext))
             };
@@ -255,18 +255,6 @@ namespace System.Net
 
                 return distinguishedNames;
             }
-        }
-
-        private static string[] GetRequestCertificateAuthorities(SafeDeleteNwContext securityContext)
-        {
-            // Network Framework doesn't expose CA distinguished names in the same way
-            // This functionality is typically handled during the handshake process
-            // Return empty array for now, but this could be extended if Network Framework
-            // provides access to this information in the future
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(securityContext, "GetRequestCertificateAuthorities not implemented for Network Framework");
-
-            return Array.Empty<string>();
         }
 
         private static X509Store OpenStore(StoreLocation storeLocation)

@@ -37,7 +37,7 @@ typedef void (*StatusUpdateCallback)(size_t context, PAL_NwStatusUpdates status,
 typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, void** length);
 typedef void (*CompletionCallback)(void* context, int64_t status);
 typedef void (*ReadCompletionCallback)(void* context, int64_t status, const uint8_t* buffer, size_t length);
-typedef void* (*ChallengeCallback)(size_t context);
+typedef void* (*ChallengeCallback)(size_t context, CFArrayRef acceptableIssuers, SecCertificateRef remoteCertificate);
 
 // Only TLS-specific Network Framework functions are exported
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer);

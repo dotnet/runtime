@@ -24,7 +24,7 @@ internal static partial class Interop
             internal static unsafe partial bool Init(
                 delegate* unmanaged<IntPtr, StatusUpdates, IntPtr, IntPtr, void> statusCallback,
                 delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback,
-                delegate* unmanaged<IntPtr, IntPtr> challengeCallback);
+                delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr> challengeCallback);
 
             // Create a new connection context
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCreateContext")]

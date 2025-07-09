@@ -69,6 +69,8 @@ namespace System.Net.Security
 
         private bool _disposed;
         private bool _clientCertificateRequested;
+        private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
+        private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
 
         public SafeDeleteNwContext(SslAuthenticationOptions sslAuthenticationOptions, Stream transportStream) : base(IntPtr.Zero)
         {
@@ -347,7 +349,7 @@ namespace System.Net.Security
         }
 
         [UnmanagedCallersOnly]
-        private static IntPtr ChallengeCallback(IntPtr thisHandle)
+        private static IntPtr ChallengeCallback(IntPtr thisHandle, IntPtr acceptableIssuersHandle, IntPtr remoteCertificateHandle)
         {
             SafeDeleteNwContext? nwContext = ResolveThisHandle(thisHandle);
             if (nwContext == null || nwContext._disposed)
@@ -359,34 +361,52 @@ namespace System.Net.Security
             {
                 nwContext.EnsureKeepAlive();
 
+                // Check if we've already processed the challenge callback
+                if (Interlocked.CompareExchange(ref nwContext._challengeCallbackCompleted, 1, 0) != 0)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(nwContext, $"ChallengeCallback already processed, returning cached result: {nwContext._selectedClientCertificate}");
+                    }
+                    return nwContext._selectedClientCertificate;
+                }
+
                 nwContext._clientCertificateRequested = true;
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(nwContext, $"ChallengeCallback invoked, acceptableIssuersHandle: {acceptableIssuersHandle}, remoteCertificateHandle: {remoteCertificateHandle}");
+                }
 
                 if (nwContext._sslAuthenticationOptions.CertificateContext != null)
                 {
                     X509Certificate2 cert = nwContext._sslAuthenticationOptions.CertificateContext.TargetCertificate;
                     if (cert.HasPrivateKey)
                     {
-                        return cert.Handle;
+                        nwContext._selectedClientCertificate = cert.Handle;
+                        return nwContext._selectedClientCertificate;
                     }
                 }
 
                 if (nwContext._sslAuthenticationOptions.CertSelectionDelegate != null)
                 {
                     X509Certificate2? selectedCert = null;
+                    X509Certificate2? remoteCertificate = null;
                     try
                     {
                         // Get the local certificates collection
                         X509CertificateCollection localCertificates = nwContext._sslAuthenticationOptions.ClientCertificates ?? new X509CertificateCollection();
 
-                        // TODO: Get the remote certificate and acceptable issuers from the TLS metadata
-                        // This would require accessing sec_protocol_metadata_access_distinguished_names
-                        // from the native challenge block and passing that information here.
-                        // For now, pass null for remote certificate and empty array for issuers
-                        X509Certificate? remoteCertificate = null;
-                        string[] acceptableIssuers = Array.Empty<string>();
+                        // Extract acceptable issuers from the CFArrayRef
+                        string[] acceptableIssuers = ExtractAcceptableIssuers(acceptableIssuersHandle);
+
+                        if (remoteCertificateHandle != IntPtr.Zero)
+                        {
+                            remoteCertificate = new X509Certificate2(remoteCertificateHandle);
+                        }
 
                         X509Certificate? selected = nwContext._sslAuthenticationOptions.CertSelectionDelegate(
-                            nwContext,
+                            nwContext._sslAuthenticationOptions, // TODO: Should we pass SslStream instance here?
                             nwContext._sslAuthenticationOptions.TargetHost,
                             localCertificates,
                             remoteCertificate,
@@ -408,17 +428,21 @@ namespace System.Net.Security
                             NetEventSource.Error(nwContext, $"LocalCertificateSelectionCallback failed: {ex.Message}");
                         }
                     }
+                    finally
+                    {
+                        remoteCertificate?.Dispose();
+                    }
 
                     if (selectedCert != null && selectedCert.HasPrivateKey)
                     {
-                        if (selectedCert.HasPrivateKey)
-                        {
-                            return selectedCert.Handle;
-                        }
+                        nwContext._selectedClientCertificate = selectedCert.Handle;
+                        return nwContext._selectedClientCertificate;
                     }
                 }
 
-                return IntPtr.Zero;
+                // No certificate selected
+                nwContext._selectedClientCertificate = IntPtr.Zero;
+                return nwContext._selectedClientCertificate;
             }
             catch (Exception e)
             {
@@ -426,7 +450,8 @@ namespace System.Net.Security
                 {
                     NetEventSource.Error(nwContext, $"ChallengeCallback Failed: {e.Message}");
                 }
-                return IntPtr.Zero;
+                nwContext._selectedClientCertificate = IntPtr.Zero;
+                return nwContext._selectedClientCertificate;
             }
             finally
             {
@@ -569,6 +594,61 @@ namespace System.Net.Security
         {
             if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Info(nwContext, Marshal.PtrToStringAnsi(data)!, "Native");
+        }
+
+        private static string[] ExtractAcceptableIssuers(IntPtr acceptableIssuersHandle)
+        {
+            if (acceptableIssuersHandle == IntPtr.Zero)
+            {
+                return Array.Empty<string>();
+            }
+
+            var issuers = new List<string>();
+
+            try
+            {
+                using var arrayHandle = new Microsoft.Win32.SafeHandles.SafeCFArrayHandle(acceptableIssuersHandle, ownsHandle: false);
+                int count = (int)Interop.CoreFoundation.CFArrayGetCount(arrayHandle);
+
+                for (int i = 0; i < count; i++)
+                {
+                    IntPtr dataRef = Interop.CoreFoundation.CFArrayGetValueAtIndex(arrayHandle, i);
+                    if (dataRef != IntPtr.Zero)
+                    {
+                        // Create a non-owning handle for the CFData
+                        using var dataHandle = new Microsoft.Win32.SafeHandles.SafeCFDataHandle(dataRef, ownsHandle: false);
+                        // Get the DER-encoded DN data
+                        byte[] derData = Interop.CoreFoundation.CFGetData(dataHandle);
+
+                        if (derData.Length > 0)
+                        {
+                            // Convert DER-encoded DN to string using X500DistinguishedName
+                            try
+                            {
+                                X500DistinguishedName dn = new X500DistinguishedName(derData);
+                                string issuerDn = dn.Name;
+                                issuers.Add(issuerDn);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (NetEventSource.Log.IsEnabled())
+                                {
+                                    NetEventSource.Error(null, $"Failed to parse DN at index {i}: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(null, $"Failed to extract acceptable issuers: {ex.Message}");
+                }
+            }
+
+            return issuers.ToArray();
         }
     }
 }

@@ -334,13 +334,64 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
 
     // Set up challenge block to detect when server requests client certificate
     sec_protocol_options_set_challenge_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_protocol_challenge_complete_t complete) {
-        (void)metadata;
+        // Extract acceptable issuers from metadata
+        CFMutableArrayRef acceptableIssuers = NULL;
+        __block SecCertificateRef remoteCertificate = NULL;
+        
+        if (metadata != NULL)
+        {
+            // Extract the peer certificate
+            __block bool firstCert = true;
+            sec_protocol_metadata_access_peer_certificate_chain(metadata, ^(sec_certificate_t certificate) {
+                if (firstCert && certificate != NULL)
+                {
+                    firstCert = false;
+                    remoteCertificate = sec_certificate_copy_ref(certificate);
+                }
+            });
+            
+            // Create array to hold distinguished names
+            acceptableIssuers = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
+            
+            // Access distinguished names from the metadata
+            sec_protocol_metadata_access_distinguished_names(metadata, ^(dispatch_data_t dn) {
+                // Convert dispatch_data to CFData
+                const void* dnBytes = NULL;
+                size_t dnLength = 0;
+                dispatch_data_t contiguousDN = dispatch_data_create_map(dn, &dnBytes, &dnLength);
+                
+                if (dnBytes != NULL && dnLength > 0)
+                {   
+                    CFDataRef dnData = CFDataCreate(NULL, (const UInt8*)dnBytes, (CFIndex)dnLength);
+                    if (dnData != NULL)
+                    {
+                        CFArrayAppendValue(acceptableIssuers, dnData);
+                        CFRelease(dnData);
+                    }
+                }
+                
+                if (contiguousDN != NULL)
+                {
+                    dispatch_release(contiguousDN);
+                }
+            });
+        }
         
         // Call the managed callback to get the client identity
         void* identity = NULL;
         if (_challengeFunc != NULL)
         {
-            identity = _challengeFunc(state);
+            identity = _challengeFunc(state, acceptableIssuers, remoteCertificate);
+        }
+        
+        // Clean up
+        if (acceptableIssuers != NULL)
+        {
+            CFRelease(acceptableIssuers);
+        }
+        if (remoteCertificate != NULL)
+        {
+            CFRelease(remoteCertificate);
         }
         
         if (identity != NULL)
