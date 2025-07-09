@@ -126,6 +126,10 @@
     <PythonCmd>$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_56_Python_win-x64)', 'tools', 'python'))</PythonCmd>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(HostOS)' == 'windows' and '$(TargetsBrowser)' == 'true'">
+    <PythonCmd>setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+  </PropertyGroup>
+
   <!-- CI specific build options -->
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DotNetBuildFromVMR)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(Targetsillumos)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
@@ -252,8 +256,7 @@ set EMSDK_PATH=%CURRENT_SCRIPT:~0,-1%\
 
 set EMSDK_PYTHON=%EMSDK_PATH%python\python.exe
 set DOTNET_EMSCRIPTEN_LLVM_ROOT=%EMSDK_PATH%bin\
-set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\bin\node
-set DOTNET_EMSCRIPTEN_NODE_PATH=%EMSDK_PATH%node\bin\
+set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\bin\node.exe
 set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
 
       </_EmsdkPaths>
@@ -271,7 +274,6 @@ FROZEN_CACHE = bool(os.getenv('EM_FROZEN_CACHE', 'True'))
 COMPILER_ENGINE = NODE_JS
 JS_ENGINES = [NODE_JS]
       </_EmscriptenPaths>
-      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
@@ -761,7 +763,9 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' != 'windows'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
-      <_MonoCMakeBuildCommand Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(_EmsdkEnvScriptPath) 2>&amp;1 &amp;&amp; $(_MonoCMakeBuildCommand)'</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$(_EmsdkEnvScriptPath)&quot; &amp;&amp; $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsWasi)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
