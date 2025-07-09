@@ -82,7 +82,7 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         {
             if (!strcmp(className, "MemoryMarshal"))
             {
-                if (!strcmp(methodName, "GetArrayDataReference`1"))
+                if (!strcmp(methodName, "GetArrayDataReference"))
                     return NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
             }
         }
