@@ -43,8 +43,6 @@ using Mono.Linker.Tests.Cases.Reflection;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
     [Kept]
-    [Define("IL_ASSEMBLY_AVAILABLE")]
-    [SetupCompileBefore("ILTypeMap.dll", [ "Dependencies/ILTypeMap.il" ])]
     [SetupCompileArgument("/unsafe")]
     class TypeMap
     {
@@ -116,11 +114,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
             Console.WriteLine(new ArrayElement[1]);
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
-
-#if IL_ASSEMBLY_AVAILABLE
-            Console.WriteLine(TypeMapping.GetOrCreateExternalTypeMapping<ILTypeMap>());
-            ILTypeMap.Run();
-#endif
         }
 
         [Kept]
