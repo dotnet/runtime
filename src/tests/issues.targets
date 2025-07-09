@@ -576,9 +576,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/**">
             <Issue>https://github.com/dotnet/runtime/issues/109309</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109310</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/arrres_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/109311</Issue>
         </ExcludeList>
