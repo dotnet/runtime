@@ -13,11 +13,7 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector4 AsVector4(this Quaternion value)
         {
-#if MONO
-            return Unsafe.As<Quaternion, Vector4>(ref value);
-#else
             return Unsafe.BitCast<Quaternion, Vector4>(value);
-#endif
         }
     }
 }

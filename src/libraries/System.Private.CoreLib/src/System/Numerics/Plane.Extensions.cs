@@ -13,11 +13,7 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector4 AsVector4(this Plane value)
         {
-#if MONO
-            return Unsafe.As<Plane, Vector4>(ref value);
-#else
             return Unsafe.BitCast<Plane, Vector4>(value);
-#endif
         }
     }
 }

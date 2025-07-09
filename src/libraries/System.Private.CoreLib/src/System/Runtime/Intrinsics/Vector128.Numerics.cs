@@ -55,11 +55,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Plane AsPlane(this Vector128<float> value)
         {
-#if MONO
-            return Unsafe.As<Vector128<float>, Plane>(ref value);
-#else
             return Unsafe.BitCast<Vector128<float>, Plane>(value);
-#endif
         }
 
         /// <summary>Reinterprets a <see langword="Vector128&lt;Single&gt;" /> as a new <see cref="Quaternion" />.</summary>
@@ -68,11 +64,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Quaternion AsQuaternion(this Vector128<float> value)
         {
-#if MONO
-            return Unsafe.As<Vector128<float>, Quaternion>(ref value);
-#else
             return Unsafe.BitCast<Vector128<float>, Quaternion>(value);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Plane" /> as a new <see langword="Vector128&lt;Single&gt;" />.</summary>
@@ -81,11 +73,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector128<float> AsVector128(this Plane value)
         {
-#if MONO
-            return Unsafe.As<Plane, Vector128<float>>(ref value);
-#else
             return Unsafe.BitCast<Plane, Vector128<float>>(value);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Quaternion" /> as a new <see langword="Vector128&lt;Single&gt;" />.</summary>
@@ -94,11 +82,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector128<float> AsVector128(this Quaternion value)
         {
-#if MONO
-            return Unsafe.As<Quaternion, Vector128<float>>(ref value);
-#else
             return Unsafe.BitCast<Quaternion, Vector128<float>>(value);
-#endif
         }
 
         /// <summary>Reinterprets a <see langword="Vector2" /> as a new <see cref="Vector128&lt;Single&gt;" /> with the new elements zeroed.</summary>
@@ -119,11 +103,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector128<float> AsVector128(this Vector4 value)
         {
-#if MONO
-            return Unsafe.As<Vector4, Vector128<float>>(ref value);
-#else
             return Unsafe.BitCast<Vector4, Vector128<float>>(value);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector128{T}" />.</summary>

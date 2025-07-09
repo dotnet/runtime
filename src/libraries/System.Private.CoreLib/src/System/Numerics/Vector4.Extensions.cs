@@ -14,11 +14,7 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
         public static Plane AsPlane(this Vector4 value)
         {
-#if MONO
-            return Unsafe.As<Vector4, Plane>(ref value);
-#else
             return Unsafe.BitCast<Vector4, Plane>(value);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Quaternion" />.</summary>
@@ -26,11 +22,7 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
         public static Quaternion AsQuaternion(this Vector4 value)
         {
-#if MONO
-            return Unsafe.As<Vector4, Quaternion>(ref value);
-#else
             return Unsafe.BitCast<Vector4, Quaternion>(value);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector2" />.</summary>
