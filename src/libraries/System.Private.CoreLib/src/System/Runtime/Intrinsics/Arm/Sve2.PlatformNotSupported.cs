@@ -2395,7 +2395,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SSUBLBT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
         public static Vector<long> SubtractWideningEvenOdd(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
-        
+
 
         // Subtract wide (top)
 
