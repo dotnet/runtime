@@ -4761,7 +4761,7 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
 
     ILToNativeMapArrays context(kMapEntriesMax);
-    codeInfo.GetJitManager()->WalkILOffsets(request, true /* preferInstrumentedBounds */, &context, ComputeILOffsetArrays);
+    codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, &context, ComputeILOffsetArrays);
 
     uint32_t cMap;
     uint32_t* rguiILOffset;

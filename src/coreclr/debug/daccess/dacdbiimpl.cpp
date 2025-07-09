@@ -868,7 +868,7 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
                                                 InfoStoreNew, NULL, // allocator
-                                                /* preferInstrumentedBounds */ false,
+                                                BoundsType::Instrumented,
                                                 NULL, NULL,
                                                 &entryCount, &nativeVars);
 
@@ -916,7 +916,7 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
                                                       InfoStoreNew, 
                                                       NULL, // allocator
-                                                      /* preferInstrumentedBounds */ true,
+                                                      BoundsType::Uninstrumented,
                                                       &entryCount, &mapCopy,
                                                       NULL, NULL);
     if (!success)

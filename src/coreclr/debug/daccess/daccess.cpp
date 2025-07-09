@@ -5990,7 +5990,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
-        false /*preferInstrumentedBounds*/, 
+        BoundsType::Instrumented, 
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
 
@@ -6053,7 +6053,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
-        false, /*preferInstrumentedMapping*/
+        BoundsType::Instrumented,
         &countMapCopy, &mapCopy,
         NULL, NULL);
 

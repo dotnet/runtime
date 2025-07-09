@@ -3884,7 +3884,7 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
         PTR_BYTE pDebugInfo,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -3915,7 +3915,7 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew,
         pNewData, // allocators
-        preferInstrumentedBounds,
+        boundsType,
         pDebugInfo,      // input
         pcMap, ppMap,    // output
         pcVars, ppVars,  // output
@@ -3929,7 +3929,7 @@ BOOL EEJitManager::GetBoundariesAndVars(
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -3946,12 +3946,12 @@ BOOL EEJitManager::GetBoundariesAndVars(
 
     PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
-    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, preferInstrumentedBounds, pcMap, ppMap, pcVars, ppVars);
+    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, boundsType, pcMap, ppMap, pcVars, ppVars);
 }
 
 size_t EEJitManager::WalkILOffsets(
     const DebugInfoRequest & request,
-    bool preferInstrumentedBounds,
+    BoundsType boundsType,
     void* pContext,
     size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
 {
@@ -3966,11 +3966,11 @@ size_t EEJitManager::WalkILOffsets(
 
     PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
-    return WalkILOffsetsWorker(pDebugInfo, preferInstrumentedBounds, pContext, pfnWalkILOffsets);
+    return WalkILOffsetsWorker(pDebugInfo, boundsType, pContext, pfnWalkILOffsets);
 }
 
 size_t EECodeGenManager::WalkILOffsetsWorker(PTR_BYTE pDebugInfo,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         void* pContext,
         size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
 {
@@ -3998,7 +3998,7 @@ size_t EECodeGenManager::WalkILOffsetsWorker(PTR_BYTE pDebugInfo,
     // Uncompress. This allocates memory and may throw.
     return CompressDebugInfo::WalkILOffsets(
         pDebugInfo,      // input
-        preferInstrumentedBounds,
+        boundsType,
         hasFlagByte,
         pContext,
         pfnWalkILOffsets
@@ -4065,7 +4065,7 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
     const DebugInfoRequest & request,
     IN FP_IDS_NEW fpNew,
     IN void * pNewData,
-    bool preferInstrumentedBounds,
+    BoundsType boundsType,
     OUT ULONG32 * pcMap,
     OUT ICorDebugInfo::OffsetMapping **ppMap,
     OUT ULONG32 * pcVars,
@@ -4092,12 +4092,12 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
         return TRUE;
     }
 
-    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, preferInstrumentedBounds, pcMap, ppMap, pcVars, ppVars);
+    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, boundsType, pcMap, ppMap, pcVars, ppVars);
 }
 
 size_t InterpreterJitManager::WalkILOffsets(
     const DebugInfoRequest & request,
-    bool preferInstrumentedBounds,
+    BoundsType boundsType,
     void* pContext,
     size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
 {
@@ -4118,7 +4118,7 @@ size_t InterpreterJitManager::WalkILOffsets(
         return 0;
     }
 
-    return WalkILOffsetsWorker(pDebugInfo, preferInstrumentedBounds, pContext, pfnWalkILOffsets);
+    return WalkILOffsetsWorker(pDebugInfo, boundsType, pContext, pfnWalkILOffsets);
 }
 
 
@@ -6349,7 +6349,7 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -6376,7 +6376,7 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew,
         pNewData, // allocators
-        preferInstrumentedBounds,
+        boundsType,
         pDebugInfo,      // input
         pcMap, ppMap,    // output
         pcVars, ppVars,  // output
@@ -6387,7 +6387,7 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
 
 size_t ReadyToRunJitManager::WalkILOffsets(
     const DebugInfoRequest & request,
-    bool preferInstrumentedBounds,
+    BoundsType boundsType,
     void* pContext,
     size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
 {   
@@ -6411,7 +6411,7 @@ size_t ReadyToRunJitManager::WalkILOffsets(
     // Uncompress. This allocates memory and may throw.
     return CompressDebugInfo::WalkILOffsets(
         pDebugInfo,      // input
-        preferInstrumentedBounds,
+        boundsType,
         FALSE, // no patchpoint info
         pContext, pfnWalkILOffsets);
 }

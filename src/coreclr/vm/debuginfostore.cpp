@@ -41,6 +41,7 @@ static uint32_t u32_max(uint32_t a, uint32_t b)
 static uint64_t ReadFromBitOffsets(PTR_UINT64 pArray, uint32_t bitStart, uint32_t bitCount)
 {
     uint32_t elementBitSize = (sizeof(uint64_t) * 8);
+    _ASSERTE(bitCount <= elementBitSize);
     uint32_t lowOffset = bitStart / elementBitSize;
 
     uint64_t low = pArray[lowOffset];
@@ -55,7 +56,7 @@ static uint64_t ReadFromBitOffsets(PTR_UINT64 pArray, uint32_t bitStart, uint32_
     uint64_t loBitMask = ((1ULL << (bitsInLow)) - 1);
     uint64_t result = (lowShift1 & loBitMask);
 
-    if (bitsInLow < elementBitSize)
+    if (bitsInLow < bitCount)
     {
         uint64_t high = pArray[lowOffset + 1];
         int32_t bitsInHigh = bitCount - bitsInLow;
@@ -312,107 +313,6 @@ static int g_CDI_bVarsTotalCompress     = 0;
 static int g_CDI_bRichDebugInfoTotalUncompress = 0;
 static int g_CDI_bRichDebugInfoTotalCompress = 0;
 #endif
-
-//-----------------------------------------------------------------------------
-// Serialize Bounds info.
-//-----------------------------------------------------------------------------
-template <class T>
-static void DoBounds(
-    T trans, // transfer object.
-    ULONG32                       cMap,
-    ICorDebugInfo::OffsetMapping *pMap
-)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-
-    // Bounds info contains (Native Offset, IL Offset, flags)
-    // - Sorted by native offset (so use a delta encoding for that).
-    // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
-    //   They may also include a sentinel value from MappingTypes.
-    // - flags is 3 independent bits.
-
-    // Loop through and transfer each Entry in the Mapping.
-    uint32_t dwLastNativeOffset = 0;
-    for(uint32_t i = 0; i < cMap; i++)
-    {
-        ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
-
-        trans.DoEncodedDeltaU32(pBound->nativeOffset, dwLastNativeOffset);
-        dwLastNativeOffset = pBound->nativeOffset;
-
-
-        trans.DoEncodedAdjustedU32(pBound->ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
-
-        trans.DoEncodedSourceType(pBound->source);
-
-        trans.DoCookie(0xA);
-    }
-}
-
-template <class T>
-static size_t DoBoundsCallback(
-    T trans, // transfer object.
-    ULONG32 cMap,
-    void* pContext,
-    size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
-)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-
-    // Bounds info contains (Native Offset, IL Offset, flags)
-    // - Sorted by native offset (so use a delta encoding for that).
-    // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
-    //   They may also include a sentinel value from MappingTypes.
-    // - flags is 3 independent bits.
-
-    // Loop through and transfer each Entry in the Mapping.
-    uint32_t dwLastNativeOffset = 0;
-    ICorDebugInfo::OffsetMapping bound;
-    bound.nativeOffset = 0;
-    bound.ilOffset = 0;
-    bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
-
-    for(uint32_t i = 0; i < cMap; i++)
-    {
-        trans.DoEncodedDeltaU32(bound.nativeOffset, bound.nativeOffset);
-
-        trans.DoEncodedAdjustedU32(bound.ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
-
-        trans.DoEncodedSourceType(bound.source);
-
-        trans.DoCookie(0xA);
-        size_t callbackResult = pfnWalkILOffsets(&bound, pContext);
-        if (callbackResult != 0)
-        {
-            // We have a callback that wants to stop the walk.
-            return callbackResult;
-        }
-    }
-
-    bound.nativeOffset = 0xFFFFFFFF;
-    bound.ilOffset = ICorDebugInfo::NO_MAPPING;
-    bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
-
-    return pfnWalkILOffsets(&bound, pContext);
-}
-
-
 
 // Helper to write a compressed Native Var Info
 template<class T>
@@ -958,8 +858,8 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     }
 
     NibbleWriter instrumentedILBoundsBuffer;
-    DWORD cbInstrumentedBounds = 0;
-    PVOID pInstrumentedBounds = NULL;
+    DWORD cbUninstrumentedBounds = 0;
+    PVOID pUninstrumentedBounds = NULL;
     if (pInstrumentedILBounds != NULL)
     {
         NewArrayHolder<ICorDebugInfo::OffsetMapping> pInstrumentedILBoundsArray(
@@ -971,7 +871,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         ComposeMapping(pInstrumentedILBounds, pInstrumentedILBoundsArray, &instrumentedEntryCount);
 
         CompressDebugInfo::CompressBoundaries(instrumentedEntryCount, pInstrumentedILBoundsArray, &instrumentedILBoundsBuffer);
-        pInstrumentedBounds = instrumentedILBoundsBuffer.GetBlob(&cbInstrumentedBounds);
+        pUninstrumentedBounds = instrumentedILBoundsBuffer.GetBlob(&cbUninstrumentedBounds);
     }
 
     NibbleWriter varsBuffer;
@@ -994,11 +894,11 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 
     // Now write it all out to the buffer in a compact fashion.
     NibbleWriter w;
-    if (cbInstrumentedBounds != 0)
+    if (cbUninstrumentedBounds != 0)
     {
         w.WriteEncodedU32(DebugInfoBoundsHasInstrumentedBounds); // 0xFFFFFFFF is used to indicate that the instrumented bounds are present.
         w.WriteEncodedU32(cbBounds);
-        w.WriteEncodedU32(cbInstrumentedBounds);
+        w.WriteEncodedU32(cbUninstrumentedBounds);
     }
     else
     {
@@ -1016,7 +916,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 
     cbFinalSize += cbPatchpointInfo;
     cbFinalSize += S_UINT32(4) + S_UINT32(cbRichDebugInfo);
-    cbFinalSize += S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbInstrumentedBounds) + S_UINT32(cbVars);
+    cbFinalSize += S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbUninstrumentedBounds) + S_UINT32(cbVars);
 
     if (cbFinalSize.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
@@ -1054,9 +954,9 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         memcpy(ptr, pBounds, cbBounds);
     ptr += cbBounds;
 
-    if (cbInstrumentedBounds > 0)
-        memcpy(ptr, pInstrumentedBounds, cbInstrumentedBounds);
-    ptr += cbInstrumentedBounds;
+    if (cbUninstrumentedBounds > 0)
+        memcpy(ptr, pUninstrumentedBounds, cbUninstrumentedBounds);
+    ptr += cbUninstrumentedBounds;
 
     if (cbVars > 0)
         memcpy(ptr, pVars, cbVars);
@@ -1068,7 +968,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     ICorDebugInfo::OffsetMapping *pNewMap = NULL;
     ICorDebugInfo::NativeVarInfo *pNewVars = NULL;
     RestoreBoundariesAndVars(
-        DecompressNew, NULL, false, ptrStart, &cNewBounds, &pNewMap, &cNewVars, &pNewVars, writeFlagByte);
+        DecompressNew, NULL, BoundsType::Instrumented, ptrStart, &cNewBounds, &pNewMap, &cNewVars, &pNewVars, writeFlagByte);
 
     _ASSERTE(cNewBounds == iOffsetMapping);
     _ASSERTE(cNewBounds == 0 || pNewMap != NULL);
@@ -1164,7 +1064,7 @@ static void DoBounds(PTR_BYTE addrBounds, uint32_t cbBounds, TNumBounds countHan
 void CompressDebugInfo::RestoreBoundariesAndVars(
     IN FP_IDS_NEW fpNew,
     IN void * pNewData,
-    bool preferInstrumentedBounds,
+    BoundsType boundsType,
     IN PTR_BYTE                         pDebugInfo,
     OUT ULONG32                       * pcMap, // number of entries in ppMap
     OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
@@ -1214,23 +1114,23 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     NibbleReader r(pDebugInfo, 24 /* maximum size of compressed 4 UINT32s */);
 
     ULONG cbBounds = r.ReadEncodedU32();
-    ULONG cbInstrumentedBounds = 0;
+    ULONG cbUninstrumentedBounds = 0;
     if (cbBounds == DebugInfoBoundsHasInstrumentedBounds)
     {
         // This means we have instrumented bounds.
         cbBounds = r.ReadEncodedU32();
-        cbInstrumentedBounds = r.ReadEncodedU32();
+        cbUninstrumentedBounds = r.ReadEncodedU32();
     }
     ULONG cbVars   = r.ReadEncodedU32();
 
     PTR_BYTE addrBounds = pDebugInfo + r.GetNextByteIndex();
-    PTR_BYTE addrVars   = addrBounds + cbBounds + cbInstrumentedBounds;
+    PTR_BYTE addrVars   = addrBounds + cbBounds + cbUninstrumentedBounds;
 
-    if (preferInstrumentedBounds && cbInstrumentedBounds != 0)
+    if ((boundsType == BoundsType::Uninstrumented) && cbUninstrumentedBounds != 0)
     {
-        // If we have instrumented bounds, we will use them instead of the regular bounds.
+        // If we have uninstrumented bounds, we will use them instead of the regular bounds.
         addrBounds = addrBounds + cbBounds;
-        cbBounds = cbInstrumentedBounds;
+        cbBounds = cbUninstrumentedBounds;
     }
 
     if ((pcMap != NULL || ppMap != NULL) && (cbBounds != 0))
@@ -1293,7 +1193,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
 
 size_t CompressDebugInfo::WalkILOffsets(
     IN PTR_BYTE pDebugInfo,
-    bool preferInstrumentedBounds,
+    BoundsType boundsType,
     BOOL hasFlagByte,
     void* pContext,
     size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
@@ -1335,23 +1235,23 @@ size_t CompressDebugInfo::WalkILOffsets(
     NibbleReader r(pDebugInfo, 24 /* maximum size of compressed 4 UINT32s */);
 
     ULONG cbBounds = r.ReadEncodedU32_NoThrow();
-    ULONG cbInstrumentedBounds = 0;
+    ULONG cbUninstrumentedBounds = 0;
     if (cbBounds == DebugInfoBoundsHasInstrumentedBounds)
     {
         // This means we have instrumented bounds.
         cbBounds = r.ReadEncodedU32();
-        cbInstrumentedBounds = r.ReadEncodedU32();
+        cbUninstrumentedBounds = r.ReadEncodedU32();
     }
     ULONG cbVars   = r.ReadEncodedU32_NoThrow();
 
     PTR_BYTE addrBounds = pDebugInfo + r.GetNextByteIndex();
-    PTR_BYTE addrVars   = addrBounds + cbBounds + cbInstrumentedBounds;
+    PTR_BYTE addrVars   = addrBounds + cbBounds + cbUninstrumentedBounds;
 
-    if (preferInstrumentedBounds && cbInstrumentedBounds != 0)
+    if ((boundsType == BoundsType::Uninstrumented) && cbUninstrumentedBounds != 0)
     {
-        // If we have instrumented bounds, we will use them instead of the regular bounds.
+        // If we have uninstrumented bounds, we will use them instead of the regular bounds.
         addrBounds = addrBounds + cbBounds;
-        cbBounds = cbInstrumentedBounds;
+        cbBounds = cbUninstrumentedBounds;
     }
 
     if (cbBounds != 0)
@@ -1544,7 +1444,7 @@ BOOL DebugInfoManager::GetBoundariesAndVars(
     const DebugInfoRequest & request,
     IN FP_IDS_NEW fpNew,
     IN void * pNewData,
-    bool preferInstrumentedBounds,
+    BoundsType boundsType,
     OUT ULONG32 * pcMap,
     OUT ICorDebugInfo::OffsetMapping ** ppMap,
     OUT ULONG32 * pcVars,
@@ -1564,7 +1464,7 @@ BOOL DebugInfoManager::GetBoundariesAndVars(
         return FALSE; // no info available.
     }
 
-    return pJitMan->GetBoundariesAndVars(request, fpNew, pNewData, preferInstrumentedBounds, pcMap, ppMap, pcVars, ppVars);
+    return pJitMan->GetBoundariesAndVars(request, fpNew, pNewData, boundsType, pcMap, ppMap, pcVars, ppVars);
 }
 
 BOOL DebugInfoManager::GetRichDebugInfo(

@@ -2879,10 +2879,11 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
         {
             DebugInfoRequest diq;
             diq.InitFromStartingAddr(fd, pNativeCodeStartAddress);
+            // TODO This is currently returning the instrumented boundaries, but the path for non-dynamic methods returns uninstrumented ones.
 
             if (cMap == 0)
             {
-                if (DebugInfoManager::GetBoundariesAndVars(diq, nullptr, nullptr, true /* preferInstrumentedBounds */, pcMap, nullptr, nullptr, nullptr))
+                if (DebugInfoManager::GetBoundariesAndVars(diq, nullptr, nullptr, BoundsType::Instrumented, pcMap, nullptr, nullptr, nullptr))
                 {
                     return S_OK;
                 }
@@ -2891,7 +2892,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
             }
 
             ICorDebugInfo::OffsetMapping* pMap = nullptr;
-            if (DebugInfoManager::GetBoundariesAndVars(diq, InteropSafeNoThrowNew, nullptr, true /* preferInstrumentedBounds */, pcMap, &pMap, nullptr, nullptr))
+            if (DebugInfoManager::GetBoundariesAndVars(diq, InteropSafeNoThrowNew, nullptr, BoundsType::Instrumented, pcMap, &pMap, nullptr, nullptr))
             {
                 for (ULONG32 i = 0; i < cMap; ++i)
                 {
@@ -2995,7 +2996,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
 //         events for the same MethodDesc (each time it's EnC'd), with each event
 //         corresponding to the most recent EnC version at the time.
 //
-
+#ifdef DEBUG
 HRESULT Debugger::GetILToNativeMappingIntoArrays(
     MethodDesc * pMethodDesc,
     PCODE pNativeCodeStartAddress,
@@ -3066,8 +3067,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
 
     return S_OK;
 }
-
-
+#endif // DEBUG
 
 
 #endif // #ifndef DACCESS_COMPILE

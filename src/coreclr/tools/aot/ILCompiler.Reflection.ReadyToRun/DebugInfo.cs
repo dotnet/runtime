@@ -139,7 +139,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             // Bounds info contains (Native Offset, IL Offset, flags)
             // - Sorted by native offset (so use a delta encoding for that).
-            // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
+            // - IL offsets aren't sorted
             //   They may also include a sentinel value from MappingTypes.
             // - flags is 3 independent bits.
             if (_runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion >= 16)

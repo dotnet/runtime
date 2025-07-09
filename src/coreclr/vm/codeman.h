@@ -1724,7 +1724,7 @@ public:
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -1732,7 +1732,7 @@ public:
 
     virtual size_t WalkILOffsets(
         const DebugInfoRequest & request,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         void* pContext,
         size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)) = 0;
 
@@ -1860,7 +1860,7 @@ protected:
         PTR_BYTE pDebugInfo,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -1868,7 +1868,7 @@ protected:
 
     size_t WalkILOffsetsWorker(
         PTR_BYTE pDebugInfo,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         void* pContext,
         size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
@@ -2074,7 +2074,7 @@ public:
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -2082,7 +2082,7 @@ public:
 
     virtual size_t WalkILOffsets(
         const DebugInfoRequest & request,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         void* pContext,
         size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
@@ -2643,7 +2643,7 @@ public:
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -2651,7 +2651,7 @@ public:
 
     virtual size_t WalkILOffsets(
         const DebugInfoRequest & request,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         void* pContext,
         size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
@@ -2770,7 +2770,7 @@ public:
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -2778,7 +2778,7 @@ public:
 
     virtual size_t WalkILOffsets(
         const DebugInfoRequest & request,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         void* pContext,
         size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 

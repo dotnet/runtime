@@ -54,6 +54,11 @@ protected:
 // Eg, perhaps we have multiple heaps (eg, loader-heaps per appdomain).
 typedef BYTE* (*FP_IDS_NEW)(void * pData, size_t cBytes);
 
+enum class BoundsType
+{
+    Instrumented, // Get the instrumented bounds (or the uninstrumented bounds if no instrumented bounds are available)
+    Uninstrumented, // Get the uninstrumented bounds
+};
 
 //-----------------------------------------------------------------------------
 // Utility routines used for compression
@@ -103,7 +108,7 @@ public:
     static void RestoreBoundariesAndVars(
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         IN PTR_BYTE                         pDebugInfo,
         OUT ULONG32                       * pcMap, // number of entries in ppMap
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
@@ -115,7 +120,7 @@ public:
     // Walk the ILOffsets without needing to allocate a buffer
     static size_t WalkILOffsets(
         IN PTR_BYTE                         pDebugInfo,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         BOOL hasFlagByte,
         void* pContext,
         size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
@@ -153,7 +158,7 @@ public:
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew,
         IN void * pNewData,
-        bool preferInstrumentedBounds,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping ** ppMap,
         OUT ULONG32 * pcVars,
