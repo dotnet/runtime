@@ -154,7 +154,7 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslIsHostnameMatch(
-            SafeSslHandle handle,
+            SafeX509ChainHandle certChain,
             SafeCreateHandle cfHostname,
             SafeCFDateHandle cfValidTime,
             out int pOSStatus);
@@ -463,7 +463,7 @@ internal static partial class Interop
             }
         }
 
-        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore, out int osStatus)
+        public static bool SslCheckHostnameMatch(SafeX509ChainHandle certChain, string hostName, DateTime notBefore, out int osStatus)
         {
             int result;
             // The IdnMapping converts Unicode input into the IDNA punycode sequence.
@@ -480,7 +480,7 @@ internal static partial class Interop
             using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
             using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))
             {
-                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore, out osStatus);
+                result = AppleCryptoNative_SslIsHostnameMatch(certChain, cfHostname, cfNotBefore, out osStatus);
             }
 
             switch (result)

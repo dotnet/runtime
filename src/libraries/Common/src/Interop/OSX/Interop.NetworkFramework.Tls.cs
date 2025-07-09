@@ -188,6 +188,7 @@ internal static partial class Interop
             HandshakeFinished = 3,
             ConnectionFailed = 4,
             ConnectionCancelled = 103,
+            CertificateAvailable = 104,
             DebugLog = 200,
         }
     }

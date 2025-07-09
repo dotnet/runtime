@@ -413,6 +413,10 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete) {
         LOG(state, "Cert validation callback called");
 
+        SecTrustRef chain = sec_trust_copy_ref(trust_ref);
+
+        _statusFunc(state, PAL_NwStatusUpdates_CertificateAvailable, (size_t)chain, 0);
+
         (void)metadata;
         (void)trust_ref;
         complete(true);

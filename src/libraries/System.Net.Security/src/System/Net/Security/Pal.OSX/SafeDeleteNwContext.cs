@@ -36,9 +36,11 @@ namespace System.Net.Security
         private static readonly Lazy<bool> s_isNetworkFrameworkAvailable = new Lazy<bool>(CheckNetworkFrameworkAvailability);
 
         // Network Framework handles
-        private readonly Interop.SafeNwHandle _connectionHandle;
-        private Interop.SafeNwHandle? _framerHandle;
-        internal Interop.SafeNwHandle ConnectionHandle => _connectionHandle;
+        private readonly SafeNwHandle _connectionHandle;
+        private SafeNwHandle? _framerHandle;
+        private SafeX509ChainHandle? _peerCertChainHandle;
+        internal SafeX509ChainHandle? PeerX509ChainHandle => _peerCertChainHandle;
+        internal SafeNwHandle ConnectionHandle => _connectionHandle;
 
         // Keep-Alive Handles
         private readonly GCHandle _thisHandle;
@@ -298,6 +300,7 @@ namespace System.Net.Security
                         _disposed = true;
                         _connectionHandle.Dispose();
                         _outputBuffer.Dispose();
+                        _peerCertChainHandle?.Dispose();
                     }
                 }
             }
@@ -538,6 +541,13 @@ namespace System.Net.Security
                     case NetworkFrameworkStatusUpdates.ConnectionCancelled:
                         nwContext?.ConnectionClosed();
                         break;
+                    case NetworkFrameworkStatusUpdates.CertificateAvailable:
+                        //handle.SetHandle(data);
+                        global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeX509ChainHandle>.ManagedToUnmanagedOut marshaller = new();
+                        marshaller.FromUnmanaged(data);
+                        nwContext?.CertificateAvailable(marshaller.ToManaged());
+                        marshaller.Free();
+                        break;
                     case NetworkFrameworkStatusUpdates.DebugLog:
                         HandleDebugLog(nwContext, data, data2);
                         break;
@@ -587,6 +597,11 @@ namespace System.Net.Security
         private void ConnectionClosed()
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connection was cancelled");
+        }
+
+        private void CertificateAvailable(SafeX509ChainHandle peerCertChainHandle)
+        {
+            _peerCertChainHandle = peerCertChainHandle;
         }
 
         private static void HandleDebugLog(SafeDeleteNwContext? nwContext, IntPtr _, IntPtr data)

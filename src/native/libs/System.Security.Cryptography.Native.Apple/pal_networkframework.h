@@ -28,6 +28,7 @@ typedef enum
     PAL_NwStatusUpdates_HandshakeFinished = 3,
     PAL_NwStatusUpdates_ConnectionFailed = 4,
     PAL_NwStatusUpdates_ConnectionCancelled = 103,
+    PAL_NwStatusUpdates_CertificateAvailable = 104,
 
     PAL_NwStatusUpdates_DebugLog = 200,
 } PAL_NwStatusUpdates;

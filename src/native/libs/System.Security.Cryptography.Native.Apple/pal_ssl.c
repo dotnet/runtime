@@ -416,12 +416,12 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
     return OSStatusToPAL_TlsIo(status);
 }
 
-int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
+int32_t AppleCryptoNative_SslIsHostnameMatch(SecTrustRef existingTrust, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
 {
     if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (sslContext == NULL || notBefore == NULL || pOSStatus == NULL)
+    if (existingTrust == NULL || notBefore == NULL || pOSStatus == NULL)
         return -1;
 
     if (cfHostname == NULL)
@@ -437,25 +437,15 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (certs == NULL)
         return -4;
 
-    SecTrustRef existingTrust = NULL;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    OSStatus osStatus = SSLCopyPeerTrust(sslContext, &existingTrust);
 #pragma clang diagnostic pop
-
-    if (osStatus != noErr)
-    {
-        CFRelease(certs);
-        *pOSStatus = osStatus;
-        return -5;
-    }
 
     CFMutableArrayRef anchors = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
 
     if (anchors == NULL)
     {
         CFRelease(certs);
-        CFRelease(existingTrust);
         return -6;
     }
 
@@ -479,7 +469,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     }
 
     SecTrustRef trust = NULL;
-    osStatus = SecTrustCreateWithCertificates(certs, sslPolicy, &trust);
+    OSStatus osStatus = SecTrustCreateWithCertificates(certs, sslPolicy, &trust);
     int32_t ret = INT_MIN;
 
     if (osStatus == noErr)
@@ -583,9 +573,6 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
 
     if (anchors != NULL)
         CFRelease(anchors);
-
-    if (existingTrust != NULL)
-        CFRelease(existingTrust);
 
     CFRelease(sslPolicy);
     return ret;
