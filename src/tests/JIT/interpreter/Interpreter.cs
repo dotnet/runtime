@@ -968,19 +968,6 @@ public class InterpreterTest
         Console.WriteLine(System.Runtime.Intrinsics.X86.X86Base.IsSupported);
         Console.WriteLine("ArmBase.IsSupported=");
         Console.WriteLine(System.Runtime.Intrinsics.Arm.ArmBase.IsSupported);
-
-        // HACK: The below try block is constructed to always throw and provides an easy way to test how intrinsics behave in the interpreter
-        //  depending on which of our various modes you're in (native fallback, all intrinsics disabled, etc.)
-        try {
-            // NOTE: Depending on the target architecture, these method calls will not have FLG_INTRINSIC, so the interpreter will not
-            //  recognize them as intrinsics and handle them. This *should* be fine, because we conditionally compile CoreLib based on
-            //  architecture, providing pure-managed implementations of the relevant methods that throw a PNSE.
-            System.Runtime.Intrinsics.X86.X86Base.Pause();
-            System.Runtime.Intrinsics.Arm.ArmBase.Yield();
-            return false;
-        } catch (PlatformNotSupportedException) {
-            return true;
-        }
     }
 
     public static void TestExceptionHandling()
