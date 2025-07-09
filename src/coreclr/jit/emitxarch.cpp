@@ -5109,215 +5109,79 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 {
     instruction    ins  = id->idIns();
     UNATIVE_OFFSET size = emitInsSize(id, code, /* includeRexPrefixSize */ true);
-    UNATIVE_OFFSET offs;
-    bool           offsIsUpperBound = true;
-    bool           EBPbased         = true;
 
-    /*  Is this a temporary? */
+    int  adr;
+    bool EBPbased;
+    bool dspInByte;
+    bool dspIsZero;
 
-    if (var < 0)
+    adr = emitComp->lvaFrameAddress(var, &EBPbased);
+    dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
+
+    dspIsZero = (dsp == 0);
+
+    bool tryCompress = true;
+
+    if (EBPbased)
     {
-        /* An address off of ESP takes an extra byte */
-
-        if (!emitHasFramePtr)
-        {
-            size++;
-        }
-
-        // The offset is already assigned. Find the temp.
-        TempDsc* tmp = codeGen->regSet.tmpFindNum(var, RegSet::TEMP_USAGE_USED);
-        if (tmp == nullptr)
-        {
-            // It might be in the free lists, if we're working on zero initializing the temps.
-            tmp = codeGen->regSet.tmpFindNum(var, RegSet::TEMP_USAGE_FREE);
-        }
-        assert(tmp != nullptr);
-        offs = tmp->tdTempOffs();
-
-        // We only care about the magnitude of the offset here, to determine instruction size.
-        if (emitComp->isFramePointerUsed())
-        {
-            if ((int)offs < 0)
-            {
-                offs = -(int)offs;
-            }
-        }
-        else
-        {
-            // SP-based offsets must already be positive.
-            assert((int)offs >= 0);
-        }
+        // EBP always requires a displacement
+        dspIsZero = false;
     }
     else
     {
-
-        /* Get the frame offset of the (non-temp) variable */
-
-        offs = dsp + emitComp->lvaFrameAddress(var, &EBPbased);
-
-        /* An address off of ESP takes an extra byte */
-
-        if (!EBPbased)
-        {
-            ++size;
-        }
-
-        /* Is this a stack parameter reference? */
-
-        if ((emitComp->lvaIsParameter(var) && !emitComp->lvaParamHasLocalStackSpace(var)) ||
-            (static_cast<unsigned>(var) == emitComp->lvaRetAddrVar))
-        {
-            /* If no EBP frame, arguments and ret addr are off of ESP, above temps */
-
-            if (!EBPbased)
-            {
-                assert((int)offs >= 0);
-            }
-        }
-        else
-        {
-            /* Locals off of EBP are at negative offsets */
-
-            if (EBPbased)
-            {
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-                // If localloc is not used, then ebp chaining is done and hence
-                // offset of locals will be at negative offsets, Otherwise offsets
-                // will be positive.  In future, when RBP gets positioned in the
-                // middle of the frame so as to optimize instruction encoding size,
-                // the below asserts needs to be modified appropriately.
-                // However, for Unix platforms, we always do frame pointer chaining,
-                // so offsets from the frame pointer will always be negative.
-                if (emitComp->compLocallocUsed || emitComp->opts.compDbgEnC)
-                {
-                    noway_assert((int)offs >= 0);
-                }
-                else
-#endif
-                {
-                    // Dev10 804810 - failing this assert can lead to bad codegen and runtime crashes
-
-#ifdef UNIX_AMD64_ABI
-                    const LclVarDsc* varDsc         = emitComp->lvaGetDesc(var);
-                    bool             isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
-                    // Register passed args could have a stack offset of 0.
-                    noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
-#else  // !UNIX_AMD64_ABI
-
-                    // OSR transitioning to RBP frame currently can have mid-frame FP
-                    noway_assert(((int)offs < 0) || emitComp->opts.IsOSR());
-#endif // !UNIX_AMD64_ABI
-                }
-
-                assert(emitComp->lvaTempsHaveLargerOffsetThanVars());
-
-                if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
-                {
-                    ssize_t compressedDsp;
-                    bool    fitsInByte;
-
-                    if (TryEvexCompressDisp8Byte(id, int(offs), &compressedDsp, &fitsInByte))
-                    {
-                        if (!TakesEvexPrefix(id))
-                        {
-                            // We mispredicted the adjusted size since we didn't know we'd use the EVEX
-                            // encoding due to comprssed displacement. So we need an additional adjustment
-                            size += emitGetEvexPrefixSize(id) - emitGetVexPrefixSize(id);
-                        }
-                        SetEvexCompressedDisplacement(id);
-                    }
-
-                    return size + (fitsInByte ? sizeof(char) : sizeof(int));
-                }
-                else if ((int)offs < 0)
-                {
-                    // offset is negative
-                    return size + ((int(offs) >= SCHAR_MIN) ? sizeof(char) : sizeof(int));
-                }
-#ifdef TARGET_AMD64
-                else
-                {
-                    // This case arises for localloc frames
-                    return size + ((offs <= SCHAR_MAX) ? sizeof(char) : sizeof(int));
-                }
-#endif // TARGET_AMD64
-            }
-        }
-    }
-
-    assert((int)offs >= 0);
+        // An address off of ESP takes an extra byte
+        size++;
 
 #if !FEATURE_FIXED_OUT_ARGS
+        // Adjust the offset by the amount currently pushed on the CPU stack
+        dsp += emitCurStackLvl;
 
-    /* Are we addressing off of ESP? */
-
-    if (!emitHasFramePtr)
-    {
-        /* Adjust the effective offset if necessary */
-
-        if (emitCntStackDepth)
-            offs += emitCurStackLvl;
-
-        // we could (and used to) check for the special case [sp] here but the stack offset
-        // estimator was off, and there is very little harm in overestimating for such a
-        // rare case.
-    }
-
+        // At this point, the amount pushed onto the stack is an estimate and
+        // so we cannot reliably predict if it will be zero or if compression
+        // can occur. So we'll pessimize to not compressing and not using zero
+        // displacement here, potentially resulting in over-allocation of bytes
+        tryCompress = false;
+        dspIsZero   = false;
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-    bool useSmallEncoding = false;
+    }
 
     if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
-        ssize_t compressedDsp;
-
-#if !FEATURE_FIXED_OUT_ARGS
-        if (!emitHasFramePtr)
+        if (tryCompress)
         {
-            // We cannot use compressed displacement because the stack offset estimator
-            // can be off and the compression is only usable in very precise scenarios
-            //
-            // But we can still predict small encoding for VEX encodable instructions
+            ssize_t compressedDsp;
 
-            if (!TakesEvexPrefix(id))
+            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
             {
-#ifdef TARGET_AMD64
-                useSmallEncoding = (SCHAR_MIN <= (int)offs) && ((int)offs <= SCHAR_MAX);
-#else
-                useSmallEncoding = (offs <= size_t(SCHAR_MAX));
-#endif
-            }
-        }
-        else
-#endif // FEATURE_FIXED_OUT_ARGS
-            if (TryEvexCompressDisp8Byte(id, int(offs), &compressedDsp, &useSmallEncoding))
-            {
-                if (!TakesEvexPrefix(id))
-                {
-                    // We mispredicted the adjusted size since we didn't know we'd use the EVEX
-                    // encoding due to compressed displacement. So we need an additional adjustment
-                    size += emitGetEvexPrefixSize(id) - emitGetVexPrefixSize(id);
-                }
                 SetEvexCompressedDisplacement(id);
             }
+        }
+        else if (TakesEvexPrefix(id))
+        {
+            // EVEX requires compressed displacement to fit in a byte
+            dspInByte = false;
+        }
+        else
+        {
+            dspInByte = ((signed char)dsp == (ssize_t)dsp);
+        }
     }
     else
     {
-#ifdef TARGET_AMD64
-        useSmallEncoding = (SCHAR_MIN <= (int)offs) && ((int)offs <= SCHAR_MAX);
-#else
-        useSmallEncoding = (offs <= size_t(SCHAR_MAX));
-#endif
+        dspInByte = ((signed char)dsp == (ssize_t)dsp);
     }
 
-    // If it is ESP based, and the offset is zero, we will not encode the disp part.
-    if (!EBPbased && (offs == 0))
+    if (dspIsZero)
     {
         return size;
     }
+    else if (dspInByte)
+    {
+        return size + sizeof(char);
+    }
     else
     {
-        return size + (useSmallEncoding ? sizeof(char) : sizeof(int));
+        return size + sizeof(int);
     }
 }
 
@@ -5326,24 +5190,24 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     assert(id->idIns() != INS_invalid);
     instruction    ins      = id->idIns();
     emitAttr       attrSize = id->idOpSize();
-    UNATIVE_OFFSET prefix   = emitGetAdjustedSize(id, code);
+    UNATIVE_OFFSET size     = emitInsSizeSVCalcDisp(id, code, var, dsp);
+
+    size += emitGetAdjustedSize(id, code);
 
     // REX prefix
     if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
     {
-        prefix += emitGetRexPrefixSize(id, ins);
+        size += emitGetRexPrefixSize(id, ins);
     }
 
-    return prefix + emitInsSizeSVCalcDisp(id, code, var, dsp);
+    return size;
 }
 
 inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val)
 {
     assert(id->idIns() != INS_invalid);
     instruction    ins       = id->idIns();
-    emitAttr       attrSize  = id->idOpSize();
-    UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(attrSize);
-    UNATIVE_OFFSET prefix    = emitGetAdjustedSize(id, code);
+    UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
 #ifdef TARGET_AMD64
@@ -5372,13 +5236,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
         assert(!IsSSEOrAVXInstruction(ins));
     }
 
-    // 64-bit operand instructions will need a REX.W prefix
-    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
-    {
-        prefix += emitGetRexPrefixSize(id, ins);
-    }
-
-    return prefix + valSize + emitInsSizeSVCalcDisp(id, code, var, dsp);
+    return valSize + emitInsSizeSV(id, code, var, dsp);
 }
 
 /*****************************************************************************/
