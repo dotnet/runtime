@@ -216,6 +216,10 @@ namespace System.Runtime.CompilerServices
         {
             public ThunkTask()
             {
+                // We use the base Task's state object field to store the Continuation while posting the task around.
+                // Ensure that state object isn't published out for others to see.
+                Debug.Assert((m_stateFlags & (int)InternalTaskOptions.PromiseTask) != 0, "Expected state flags to already be configured.");
+                Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for Continuation.");
                 m_action = MoveNext;
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
@@ -279,6 +283,10 @@ namespace System.Runtime.CompilerServices
         {
             public ThunkTask()
             {
+                // We use the base Task's state object field to store the Continuation while posting the task around.
+                // Ensure that state object isn't published out for others to see.
+                Debug.Assert((m_stateFlags & (int)InternalTaskOptions.PromiseTask) != 0, "Expected state flags to already be configured.");
+                Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for Continuation.");
                 m_action = MoveNext;
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
