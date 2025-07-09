@@ -82,8 +82,6 @@ namespace ILCompiler.DependencyAnalysis
                 // to walk the whole class hierarchy for the non matching nodes.
                 if (entry is ConstructedEETypeNode constructedEETypeNode)
                     entryAsEETypeNode = constructedEETypeNode;
-                else if (entry is CanonicalEETypeNode canonicalEETypeNode)
-                    entryAsEETypeNode = canonicalEETypeNode;
                 else
                     continue;
 

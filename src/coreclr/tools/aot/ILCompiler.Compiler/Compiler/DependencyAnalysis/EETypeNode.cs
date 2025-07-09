@@ -84,11 +84,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public EETypeNode(NodeFactory factory, TypeDesc type)
         {
-            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                Debug.Assert(this is CanonicalDefinitionEETypeNode);
-            else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
-
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || !type.IsMdArray); // MDArray doesn't have type loader templates
             Debug.Assert(!type.IsGenericParameter);
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
@@ -823,11 +820,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
-            return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
+            return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
         }
 
         protected virtual FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
+            Debug.Assert(!_type.IsCanonicalSubtype(CanonicalFormKind.Any));
             return factory.SerializedNecessaryRuntimeTypeObject(_type);
         }
 
@@ -1038,11 +1036,15 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
         {
-            return factory.NecessaryTypeSymbol(interfaceType);
+            return factory.NecessaryTypeSymbol(interfaceType.NormalizeInstantiation());
         }
 
         protected virtual void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
+            // Canonical types (type loader templates) do not generate an interface list - we build
+            // one for the loaded type at runtime dynamically from template data.
+            bool isCanonicalType = _type.IsCanonicalSubtype(CanonicalFormKind.Any);
+
             foreach (var itf in _type.RuntimeInterfaces)
             {
                 IEETypeNode interfaceTypeNode = GetInterfaceTypeNode(factory, itf);
@@ -1050,7 +1052,10 @@ namespace ILCompiler.DependencyAnalysis
                 // Only emit interfaces that were not optimized away.
                 if (interfaceTypeNode.Marked)
                 {
-                    objData.EmitPointerReloc(interfaceTypeNode);
+                    if (isCanonicalType)
+                        objData.EmitZeroPointer();
+                    else
+                        objData.EmitPointerReloc(interfaceTypeNode);
                 }
             }
         }

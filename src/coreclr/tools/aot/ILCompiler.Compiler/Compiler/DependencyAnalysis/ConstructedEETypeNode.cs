@@ -53,21 +53,33 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // Track generic virtual methods that will get added to the GVM tables
+                if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
+                {
+                    dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
+                }
+            }
+            else
+            {
+                // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
+                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
 
-            factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+                factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+            }
 
             return dependencyList;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
-            return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
+            return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
         }
 
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
+            Debug.Assert(!_type.IsCanonicalSubtype(CanonicalFormKind.Any));
             return factory.SerializedConstructedRuntimeTypeObject(_type);
         }
 
@@ -79,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
         {
             // The interface type will be visible to reflection and should be considered constructed.
-            return factory.ConstructedTypeSymbol(interfaceType);
+            return factory.ConstructedTypeSymbol(interfaceType.NormalizeInstantiation());
         }
 
         protected override int GCDescSize => GCDescEncoder.GetGCDescSize(_type);

@@ -650,7 +650,7 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    if (node is ConstructedEETypeNode)
                         yield return ((IEETypeNode)node).Type;
                 }
             }
