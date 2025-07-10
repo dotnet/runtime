@@ -53,37 +53,25 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
         [Intrinsic]
-        public static Plane AsPlane(this Vector128<float> value)
-        {
-            return Unsafe.BitCast<Vector128<float>, Plane>(value);
-        }
+        public static Plane AsPlane(this Vector128<float> value) => Unsafe.BitCast<Vector128<float>, Plane>(value);
 
         /// <summary>Reinterprets a <see langword="Vector128&lt;Single&gt;" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
         [Intrinsic]
-        public static Quaternion AsQuaternion(this Vector128<float> value)
-        {
-            return Unsafe.BitCast<Vector128<float>, Quaternion>(value);
-        }
+        public static Quaternion AsQuaternion(this Vector128<float> value) => Unsafe.BitCast<Vector128<float>, Quaternion>(value);
 
         /// <summary>Reinterprets a <see cref="Plane" /> as a new <see langword="Vector128&lt;Single&gt;" />.</summary>
         /// <param name="value">The plane to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector128&lt;Single&gt;" />.</returns>
         [Intrinsic]
-        public static Vector128<float> AsVector128(this Plane value)
-        {
-            return Unsafe.BitCast<Plane, Vector128<float>>(value);
-        }
+        public static Vector128<float> AsVector128(this Plane value) => Unsafe.BitCast<Plane, Vector128<float>>(value);
 
         /// <summary>Reinterprets a <see cref="Quaternion" /> as a new <see langword="Vector128&lt;Single&gt;" />.</summary>
         /// <param name="value">The quaternion to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector128&lt;Single&gt;" />.</returns>
         [Intrinsic]
-        public static Vector128<float> AsVector128(this Quaternion value)
-        {
-            return Unsafe.BitCast<Quaternion, Vector128<float>>(value);
-        }
+        public static Vector128<float> AsVector128(this Quaternion value) => Unsafe.BitCast<Quaternion, Vector128<float>>(value);
 
         /// <summary>Reinterprets a <see langword="Vector2" /> as a new <see cref="Vector128&lt;Single&gt;" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to reinterpret.</param>

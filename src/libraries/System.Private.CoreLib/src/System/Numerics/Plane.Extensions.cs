@@ -11,9 +11,6 @@ namespace System.Numerics
         /// <param name="value">The plane to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector4" />.</returns>
         [Intrinsic]
-        public static Vector4 AsVector4(this Plane value)
-        {
-            return Unsafe.BitCast<Plane, Vector4>(value);
-        }
+        public static Vector4 AsVector4(this Plane value) => Unsafe.BitCast<Plane, Vector4>(value);
     }
 }

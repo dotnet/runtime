@@ -12,18 +12,12 @@ namespace System.Numerics
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
-        public static Plane AsPlane(this Vector4 value)
-        {
-            return Unsafe.BitCast<Vector4, Plane>(value);
-        }
+        public static Plane AsPlane(this Vector4 value) => Unsafe.BitCast<Vector4, Plane>(value);
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
-        public static Quaternion AsQuaternion(this Vector4 value)
-        {
-            return Unsafe.BitCast<Vector4, Quaternion>(value);
-        }
+        public static Quaternion AsQuaternion(this Vector4 value) => Unsafe.BitCast<Vector4, Quaternion>(value);
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector2" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
