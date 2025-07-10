@@ -10919,6 +10919,170 @@ namespace JIT.HardwareIntrinsics.Arm
             return even;
         }
 
+        public static sbyte SubtractHighNarrowingEven(short[] left, short[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (sbyte) ((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return 0;
+        }
+
+        public static short SubtractHighNarrowingEven(int[] left, int[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short) ((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return 0;
+        }
+
+        public static int SubtractHighNarrowingEven(long[] left, long[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (int) ((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return 0;
+        }
+
+        public static byte SubtractHighNarrowingEven(ushort[] left, ushort[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (byte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return 0;
+        }
+
+        public static ushort SubtractHighNarrowingEven(uint[] left, uint[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ushort)((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return 0;
+        }
+
+        public static uint SubtractHighNarrowingEven(ulong[] left, ulong[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (uint)((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return 0;
+        }
+
+        public static sbyte SubtractHighNarrowingOdd(sbyte[] even, short[] left, short[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (sbyte) ((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return even[i];
+        }
+
+        public static short SubtractHighNarrowingOdd(short[] even, int[] left, int[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (short) ((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return even[i];
+        }
+
+        public static int SubtractHighNarrowingOdd(int[] even, long[] left, long[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (int) ((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return even[i];
+        }
+
+        public static byte SubtractHighNarrowingOdd(byte[] even, ushort[] left, ushort[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (byte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return even[i];
+        }
+
+        public static ushort SubtractHighNarrowingOdd(ushort[] even, uint[] left, uint[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (ushort)((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return even[i];
+        }
+
+        public static uint SubtractHighNarrowingOdd(uint[] even, ulong[] left, ulong[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (uint)((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return even[i];
+        }
+
+        public static (T sum, T carryOut) AddWithCarry<T>(T a, T b, T carryIn)
+        where T : unmanaged, IBinaryInteger<T>
+        {
+            T sum = a + b + carryIn;
+            T one = T.One;
+            T zero = T.Zero;
+            T carryOut = (sum < a || (sum == a && carryIn == one)) ? one : zero;
+            return (sum, carryOut);
+        }
+
+        public static T[] SubtractWithBorrowWideningLower<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
+        public static T[] SubtractWithBorrowWideningUpper<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i+1];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
         public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>
         {
             T result = ops[0];
