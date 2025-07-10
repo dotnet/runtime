@@ -35,8 +35,8 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTestsBase
 
     protected override Task<RunResult> RunForBuild(string configuration)
     {
-        CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-            .WithWorkingDirectory(_projectDir!)
+        using RunCommand cmd = new RunCommand(s_buildEnv, _testOutput);
+        CommandResult res = cmd.WithWorkingDirectory(_projectDir!)
             .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {configuration}");
 
         return Task.FromResult(ProcessRunOutput(res));
@@ -61,8 +61,8 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTestsBase
     {
         // WasmAppBuilder does publish to the same folder as build (it overrides the output), 
         // and thus using dotnet run work correctly for publish as well.
-        CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-            .WithWorkingDirectory(_projectDir!)
+        using RunCommand cmd = new RunCommand(s_buildEnv, _testOutput);
+        CommandResult res = cmd.WithWorkingDirectory(_projectDir!)
             .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {configuration}");
 
         return Task.FromResult(ProcessRunOutput(res));

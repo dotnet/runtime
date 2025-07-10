@@ -118,6 +118,11 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
     {
         m_status_code = StatusCode::CoreHostLibMissingFailure;
     }
+    else if (!pal::is_path_fully_qualified(m_fxr_path))
+    {
+        // We should always be loading hostfxr from an absolute path
+        m_status_code = StatusCode::CoreHostLibMissingFailure;
+    }
     else if (pal::load_library(&m_fxr_path, &m_hostfxr_dll))
     {
         m_status_code = StatusCode::Success;

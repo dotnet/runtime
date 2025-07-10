@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+	<PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <!-- Update the version provided by Microsoft.Playwright but drop it in favor of framework copy-->
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" PrivateAssets="All" ExcludeAssets="All" />

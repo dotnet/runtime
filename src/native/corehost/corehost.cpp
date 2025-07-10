@@ -115,7 +115,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     // Use realpath to find the path of the host, resolving any symlinks.
     // hostfxr (for dotnet) and the app dll (for apphost) are found relative to the host.
     pal::string_t host_path;
-    if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
+    if (!pal::get_own_executable_path(&host_path) || !pal::fullpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path.c_str());
         return StatusCode::CoreHostCurHostFindFailure;
@@ -200,6 +200,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     int rc = fxr.status_code();
     if (rc != StatusCode::Success)
     {
+        trace::error(_X("Failed to resolve %s [%s]. Error code: 0x%x"), LIBFXR_NAME, fxr.fxr_path().empty() ? _X("not found") : fxr.fxr_path().c_str(), rc);
         return rc;
     }
 

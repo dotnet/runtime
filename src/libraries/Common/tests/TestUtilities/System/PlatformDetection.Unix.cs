@@ -50,9 +50,12 @@ namespace System
             throw new PlatformNotSupportedException();
 
         private static readonly Version s_openssl3Version = new Version(3, 0, 0);
-        public static bool IsOpenSsl3 => !IsApplePlatform && !IsWindows && !IsAndroid && !IsBrowser ?
-            GetOpenSslVersion() >= s_openssl3Version :
-            false;
+        private static readonly Version s_openssl3_4Version = new Version(3, 4, 0);
+        private static readonly Version s_openssl3_5Version = new Version(3, 5, 0);
+
+        public static bool IsOpenSsl3 => IsOpenSslVersionAtLeast(s_openssl3Version);
+        public static bool IsOpenSsl3_4 => IsOpenSslVersionAtLeast(s_openssl3_4Version);
+        public static bool IsOpenSsl3_5 => IsOpenSslVersionAtLeast(s_openssl3_5Version);
 
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".
@@ -137,6 +140,18 @@ namespace System
             }
 
             return s_opensslVersion;
+        }
+
+        // The "IsOpenSsl" properties answer false on Apple, even if OpenSSL is present for lightup,
+        // as they are answering the question "is OpenSSL the primary crypto provider".
+        private static bool IsOpenSslVersionAtLeast(Version minVersion)
+        {
+            if (IsApplePlatform || IsWindows || IsAndroid || IsBrowser)
+            {
+                return false;
+            }
+
+            return GetOpenSslVersion() >= minVersion;
         }
 
         private static Version ToVersion(string versionString)

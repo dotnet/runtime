@@ -3721,9 +3721,15 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: hijackCtx started as:\n"));
     LogContext(GetHijackCtx());
 
-    // Save the thread's full context.
+    // Save the thread's full context for all platforms except for x86 because we need the 
+    // DT_CONTEXT_EXTENDED_REGISTERS to avoid getting incomplete information and corrupt the thread context
     DT_CONTEXT context;
+#ifdef TARGET_X86    
+    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+#else
     context.ContextFlags = DT_CONTEXT_FULL;
+#endif 
+
     BOOL succ = DbiGetThreadContext(m_handle, &context);
     _ASSERTE(succ);
     // for debugging when GetThreadContext fails
@@ -3733,7 +3739,12 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
         LOG((LF_CORDB, LL_ERROR, "CUT::SFCHFS: DbiGetThreadContext error=0x%x\n", error));
     }
 
+#ifdef TARGET_X86    
+    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+#else
     GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL;
+#endif
+
     CORDbgCopyThreadContext(GetHijackCtx(), &context);
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Hijacking for sync. Original context is:\n", this));
     LogContext(GetHijackCtx());
