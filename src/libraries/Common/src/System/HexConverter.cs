@@ -389,7 +389,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromChar(int c)
         {
-            return CharToHexLookup[Math.Min(c, 0xFF)];
+            return c >= CharToHexLookup.Length ? -1 : CharToHexLookup[c];
         }
 
         /// <summary>Converts an upper hex character to its integer value.</summary>
@@ -397,7 +397,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromUpperChar(int c)
         {
-            return CharToHexLookup[Math.Min(c, 'F' + 1)];
+            return c > 'F' ? -1 : CharToHexLookup[c];
         }
 
         /// <summary>Converts a lower hex character to its integer value.</summary>
