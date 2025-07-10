@@ -712,22 +712,22 @@ the first byte of the encoding specify the number of following bytes as follows:
 
 ## Sparse Array
 
-The NativeArray provide O(1) indexed access to while maintaining compact storage through null element compression (empty blocks share storage) and variable-sized offset encoding (adapts to data size). 
+The NativeArray provides O(1) indexed access while maintaining compact storage through null element compression (empty blocks share storage) and variable-sized offset encoding (adapts to data size).
 
 The array is made up of three parts, the header, block index, and the blocks.
 
 The header is a variable encoded value where:
 - Bits 0-1: Entry index size
   - 0 = uint8 offsets
-  - 1 = uint16 offsets  
+  - 1 = uint16 offsets
   - 2 = uint32 offsets
 - Bits 2-31: Number of elements in the array
 
-The block index immediately follows the header in memory and consists of one offset entry per block (dynamic size encoded in the header), where each entry points to the location of a data block relative to the start of the block index section. The array uses a maximum block size of 16 elements, the block index effectively maps every group of 16 consecutive array indices to their corresponding data blocks. 
+The block index immediately follows the header in memory and consists of one offset entry per block (dynamic size encoded in the header), where each entry points to the location of a data block relative to the start of the block index section. The array uses a maximum block size of 16 elements, the block index effectively maps every group of 16 consecutive array indices to their corresponding data blocks.
 
-The following the block index are the actual data blocks. These are made up of two types of nodes. Tree nodes and Data nodes. 
+The following the block index are the actual data blocks. These are made up of two types of nodes. Tree nodes and Data nodes.
 
-Tree nodes are made up of a variable lenth encoded uint where:
+Tree nodes are made up of a variable length encoded uint where:
 - Bit 0: If set, the node has a lower index child
 - Bit 1: If set, the node has a higher index child
 - Bits 2-31: Shifted relative offset of higher index child
