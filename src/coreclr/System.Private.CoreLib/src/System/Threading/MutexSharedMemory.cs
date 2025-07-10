@@ -188,13 +188,14 @@ namespace System.Threading
     }
 
     [UnsupportedOSPlatform("windows")]
-    internal unsafe class SharedMemoryProcessDataHeader
+    internal sealed unsafe class SharedMemoryProcessDataHeader<TSharedMemoryProcessData>
+        where TSharedMemoryProcessData : class
     {
         internal SharedMemoryId _id;
-        internal ISharedMemoryProcessData? _data;
-        private SafeFileHandle _fileHandle;
-        internal SharedMemorySharedDataHeader* _sharedDataHeader;
-        private nuint _sharedDataTotalByteCount;
+        internal TSharedMemoryProcessData? _processData;
+        private readonly SafeFileHandle _fileHandle;
+        private readonly SharedMemorySharedDataHeader* _sharedDataHeader;
+        private readonly nuint _sharedDataTotalByteCount;
 
         public SharedMemoryProcessDataHeader(SharedMemoryId id, SafeFileHandle fileHandle, SharedMemorySharedDataHeader* sharedDataHeader, nuint sharedDataTotalByteCount)
         {
@@ -202,17 +203,17 @@ namespace System.Threading
             _fileHandle = fileHandle;
             _sharedDataHeader = sharedDataHeader;
             _sharedDataTotalByteCount = sharedDataTotalByteCount;
-            _data = null; // Will be initialized later
+            _processData = null; // Will be initialized later
         }
 
-        public static void* GetDataPointer(SharedMemoryProcessDataHeader processDataHeader)
+        public static void* GetDataPointer(SharedMemoryProcessDataHeader<TSharedMemoryProcessData> processDataHeader)
         {
             return processDataHeader is null
                 ? null
                 : (void*)((byte*)processDataHeader._sharedDataHeader + sizeof(SharedMemorySharedDataHeader));
         }
 
-        internal static SharedMemoryProcessDataHeader? CreateOrOpen(
+        internal static SharedMemoryProcessDataHeader<TSharedMemoryProcessData>? CreateOrOpen(
             string name,
             bool isUserScope,
             SharedMemorySharedDataHeader requiredSharedDataHeader,
@@ -229,7 +230,7 @@ namespace System.Threading
             nuint sharedDataUsedByteCount = (nuint)sizeof(SharedMemorySharedDataHeader) + sharedMemoryDataSize;
             nuint sharedDataTotalByteCount = AlignUp(sharedDataUsedByteCount, SharedMemoryHelpers.GetVirtualPageSize());
 
-            SharedMemoryProcessDataHeader? processDataHeader = SharedMemoryManager.Instance.FindProcessDataHeader(id);
+            SharedMemoryProcessDataHeader<TSharedMemoryProcessData>? processDataHeader = SharedMemoryManager.Instance.FindProcessDataHeader(id);
 
             if (processDataHeader is not null)
             {
@@ -334,7 +335,7 @@ namespace System.Threading
                 creationDeletionLockFileHandle.Dispose();
             }
 
-            processDataHeader = new SharedMemoryProcessDataHeader(
+            processDataHeader = new SharedMemoryProcessDataHeader<TSharedMemoryProcessData>(
                 id,
                 fileHandle,
                 sharedDataHeader,
@@ -375,24 +376,15 @@ namespace System.Threading
     }
 
     [UnsupportedOSPlatform("windows")]
-    internal interface ISharedMemoryProcessData
-    {
-        bool CanClose { get; }
-        bool HasImplicitRef { get; set; }
-        void Close(bool isAbruptShutdown, bool releaseSharedData);
-    }
-
-    [UnsupportedOSPlatform("windows")]
-    internal abstract class NamedMutexProcessDataBase(SharedMemoryProcessDataHeader header) : ISharedMemoryProcessData
+    internal abstract class NamedMutexProcessDataBase(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> header)
     {
         private const byte SyncSystemVersion = 1;
         protected const int PollLoopMaximumSleepMilliseconds = 100;
 
-        private SharedMemoryProcessDataHeader _processDataHeader = header;
+        private SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
         private Thread? _lockOwnerThread;
         private NamedMutexProcessDataBase? _nextInThreadOwnedNamedMutexList;
-        private bool _hasRefFromLockOwnerThread;
 
         protected SharedMemoryId Id => _processDataHeader._id;
 
@@ -476,11 +468,6 @@ namespace System.Threading
             _lockCount = 0;
             _lockOwnerThread = null;
             ReleaseLockCore();
-
-            if (_hasRefFromLockOwnerThread)
-            {
-                _hasRefFromLockOwnerThread = false;
-            }
         }
 
         protected abstract MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds);
@@ -489,45 +476,19 @@ namespace System.Threading
 
         protected abstract void ReleaseLockCore();
 
-        public bool CanClose => _lockOwnerThread == null || _lockOwnerThread == Thread.CurrentThread;
-
-        public bool HasImplicitRef
+        ~NamedMutexProcessDataBase()
         {
-            get => _hasRefFromLockOwnerThread;
-            set => _hasRefFromLockOwnerThread = value;
-        }
-
-        public virtual void Close(bool isAbruptShutdown, bool releaseSharedData)
-        {
-            if (!isAbruptShutdown)
+            if (_lockOwnerThread is not null)
             {
-                Debug.Assert(CanClose);
-                Debug.Assert(!_hasRefFromLockOwnerThread);
-
-                if (_lockOwnerThread == Thread.CurrentThread)
-                {
-                    RemoveOwnedNamedMutex(Thread.CurrentThread, this);
-                    Abandon();
-                }
-                else
-                {
-                    Debug.Assert(_lockOwnerThread == null);
-                }
-
-                if (releaseSharedData)
-                {
-                    ReleaseSharedData();
-                }
+                Abandon();
             }
         }
 
-        protected abstract void ReleaseSharedData();
-
-        private static unsafe SharedMemoryProcessDataHeader? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
+        private static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
-            using var creationDeletionProcessLock = SharedMemoryManager.Instance.AcquireCreationDeletionProcessLock();
+            using Lock.Scope creationDeletionProcessLock = SharedMemoryManager.Instance.AcquireCreationDeletionProcessLock();
 
-            SharedMemoryProcessDataHeader? processDataHeader = SharedMemoryProcessDataHeader.CreateOrOpen(
+            SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? processDataHeader = SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.CreateOrOpen(
                 name,
                 isUserScope,
                 new SharedMemorySharedDataHeader(SharedMemoryType.Mutex, SyncSystemVersion),
@@ -546,23 +507,23 @@ namespace System.Threading
             {
                 if (created)
                 {
-                    InitializeSharedData(SharedMemoryProcessDataHeader.GetDataPointer(processDataHeader));
+                    InitializeSharedData(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader));
                 }
 
-                if (processDataHeader._data is null)
+                if (processDataHeader._processData is null)
                 {
                     if (SharedMemoryManager.UsePThreadMutexes)
                     {
-                        processDataHeader._data = new NamedMutexProcessDataWithPThreads(processDataHeader);
+                        processDataHeader._processData = new NamedMutexProcessDataWithPThreads(processDataHeader);
                     }
                     else
                     {
-                        processDataHeader._data = new NamedMutexProcessDataNoPThreads(processDataHeader, created);
+                        processDataHeader._processData = new NamedMutexProcessDataNoPThreads(processDataHeader, created);
                     }
 
                     if (created && acquireLockIfCreated)
                     {
-                        MutexTryAcquireLockResult acquireResult = ((NamedMutexProcessDataBase)processDataHeader._data).TryAcquireLock(timeoutMilliseconds: 0);
+                        MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(timeoutMilliseconds: 0);
                         Debug.Assert(acquireResult != MutexTryAcquireLockResult.AcquiredLock);
                     }
                 }
@@ -597,14 +558,9 @@ namespace System.Threading
     }
 
     [UnsupportedOSPlatform("windows")]
-    internal unsafe class NamedMutexProcessDataWithPThreads : NamedMutexProcessDataBase
+    internal unsafe class NamedMutexProcessDataWithPThreads(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader) : NamedMutexProcessDataBase(processDataHeader)
     {
-        private NamedMutexSharedDataWithPThread* _sharedData;
-        public NamedMutexProcessDataWithPThreads(SharedMemoryProcessDataHeader processDataHeader) : base(processDataHeader)
-        {
-            // Initialize the shared data header for pthread mutexes.
-            _sharedData = (NamedMutexSharedDataWithPThread*)SharedMemoryProcessDataHeader.GetDataPointer(processDataHeader);
-        }
+        private readonly NamedMutexSharedDataWithPThread* _sharedData = (NamedMutexSharedDataWithPThread*)SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader);
 
         public override bool IsLockOwnedByCurrentThread
         {
@@ -621,23 +577,10 @@ namespace System.Threading
             _sharedData->LockOwnerThreadId = (uint)Thread.CurrentThread.ManagedThreadId;
         }
 
-        private bool IsLockOwnedByAnyThread
-        {
-            get
-            {
-                return _sharedData->LockOwnerProcessId != SharedMemoryHelpers.InvalidProcessId &&
-                       _sharedData->LockOwnerThreadId != SharedMemoryHelpers.InvalidThreadId;
-            }
-        }
-
         protected override bool IsAbandoned
         {
             get => _sharedData->IsAbandoned;
             set => _sharedData->IsAbandoned = value;
-        }
-
-        protected override void ReleaseSharedData()
-        {
         }
 
         protected override MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds)
@@ -696,14 +639,14 @@ namespace System.Threading
     [UnsupportedOSPlatform("windows")]
     internal unsafe class NamedMutexProcessDataNoPThreads : NamedMutexProcessDataBase
     {
-        private Lock _processLockHandle = new();
-        private SafeFileHandle _sharedLockFileHandle;
+        private readonly Lock _processLevelLock = new();
+        private readonly SafeFileHandle _sharedLockFileHandle;
 
-        private NamedMutexSharedDataNoPThread* _sharedData;
+        private readonly NamedMutexSharedDataNoPThread* _sharedData;
 
-        public NamedMutexProcessDataNoPThreads(SharedMemoryProcessDataHeader processDataHeader, bool created) : base(processDataHeader)
+        public NamedMutexProcessDataNoPThreads(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader, bool created) : base(processDataHeader)
         {
-            _sharedData = (NamedMutexSharedDataNoPThread*)SharedMemoryProcessDataHeader.GetDataPointer(processDataHeader);
+            _sharedData = (NamedMutexSharedDataNoPThread*)SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader);
             string lockFileDirectory = Path.Combine(
                 SharedMemoryManager.SharedFilesPath,
                 Id.GetRuntimeTempDirectoryName(),
@@ -758,7 +701,7 @@ namespace System.Threading
             _sharedData->LockOwnerThreadId = 0;
 
             Interop.Sys.FLock(_sharedLockFileHandle, Interop.Sys.LockOperations.LOCK_UN);
-            _processLockHandle.Exit();
+            _processLevelLock.Exit();
         }
 
         protected override bool IsAbandoned
@@ -767,15 +710,8 @@ namespace System.Threading
             set => _sharedData->IsAbandoned = value;
         }
 
-        public override void Close(bool isAbruptShutdown, bool releaseSharedData)
+        ~NamedMutexProcessDataNoPThreads()
         {
-            base.Close(isAbruptShutdown, releaseSharedData);
-
-            if (!releaseSharedData)
-            {
-                return;
-            }
-
             string sessionDirectory = Path.Combine(
                 SharedMemoryManager.SharedFilesPath,
                 Id.GetRuntimeTempDirectoryName(),
@@ -796,12 +732,6 @@ namespace System.Threading
             }
         }
 
-        protected override void ReleaseSharedData()
-        {
-            _sharedLockFileHandle.Dispose();
-            _sharedLockFileHandle = null!;
-        }
-
         protected override unsafe MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds)
         {
             int startTime = 0;
@@ -810,7 +740,9 @@ namespace System.Threading
                 startTime = Environment.TickCount;
             }
 
-            using var lockScope = _processLockHandle.EnterScope();
+            // Acquire the process lock. A file lock can only be acquired once per file descriptor, so to synchronize the threads of
+            // this process, the process lock is used.
+            using Lock.Scope scope = _processLevelLock.EnterScope();
 
             if (_lockCount > 0)
             {
@@ -877,6 +809,11 @@ namespace System.Threading
                     break;
                 }
             }
+
+            // We've now acquired the lock.
+            // We're going to release the scoped process lock we took above,
+            // so recursively acquire it to maintain the lock ownership.
+            _processLevelLock.Enter();
 
             // Detect abandoned lock that isn't marked as abandoned.
             if (IsLockOwnedByAnyThread)
@@ -1332,21 +1269,21 @@ namespace System.Threading
             return fileHandle;
         }
 
-        private Dictionary<SharedMemoryId, SharedMemoryProcessDataHeader> _processDataHeaders = [];
+        private Dictionary<SharedMemoryId, SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>> _processDataHeaders = [];
 
-        public void AddProcessDataHeader(SharedMemoryProcessDataHeader processDataHeader)
+        public void AddProcessDataHeader(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader)
         {
             _processDataHeaders[processDataHeader._id] = processDataHeader;
         }
 
-        public void RemoveProcessDataHeader(SharedMemoryProcessDataHeader processDataHeader)
+        public void RemoveProcessDataHeader(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader)
         {
             _processDataHeaders.Remove(processDataHeader._id);
         }
 
-        public SharedMemoryProcessDataHeader? FindProcessDataHeader(SharedMemoryId id)
+        public SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? FindProcessDataHeader(SharedMemoryId id)
         {
-            _processDataHeaders.TryGetValue(id, out SharedMemoryProcessDataHeader? header);
+            _processDataHeaders.TryGetValue(id, out SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? header);
             return header;
         }
     }
