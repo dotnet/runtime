@@ -116,7 +116,6 @@ internal sealed unsafe partial class SOSDacImpl
     {
         try
         {
-            // TODO 
             uint i = 0;
             TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
             TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
@@ -142,12 +141,12 @@ internal sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            ClrDataAddress[]? valuesLocal = values != null ? new ClrDataAddress[count] : null;
+            ClrDataAddress[] valuesLocal = new ClrDataAddress[count];
             uint neededLocal;
             int hrLocal = _legacyImpl.GetAppDomainList(count, valuesLocal, &neededLocal);
             Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
             Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
-            if (values is not null && valuesLocal is not null && values.Length > 0 && valuesLocal.Length > 0)
+            if (values is not null && values.Length > 0 && valuesLocal.Length > 0)
             {
                 // in theory, these don't need to be in the same order, but for consistency it is
                 // easiest for consumers and verification if the DAC and cDAC return the same order
@@ -157,7 +156,6 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return HResults.S_OK;
     }
-    
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainName(addr, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
