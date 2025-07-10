@@ -40,10 +40,10 @@ namespace System.Security.Cryptography
         public static bool IsSupported => MLKemImplementation.IsSupported;
 
         /// <summary>
-        ///   Gets the algorithm of the current instance.
+        ///   Gets the specific ML-KEM algorithm for this key.
         /// </summary>
         /// <value>
-        ///   A value representing the ML-KEM algorithm.
+        ///   The specific ML-KEM algorithm for this key.
         /// </value>
         public MLKemAlgorithm Algorithm { get; }
 
@@ -183,6 +183,14 @@ namespace System.Security.Cryptography
         /// <param name="sharedSecret">
         ///   The buffer to receive the shared secret.
         /// </param>
+        /// <remarks>
+        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
+        ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
+        ///   deterministic but incorrect result.
+        ///   Detecting incorrect key use is a concern for consumers of the ML-KEM algorithm.
+        ///   For more information, see FIPS 203, Section 6.3.
+        /// </remarks>
         /// <exception cref="CryptographicException">
         ///   An error occurred during decapsulation.
         /// </exception>
@@ -219,6 +227,14 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The shared secret.
         /// </returns>
+        /// <remarks>
+        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
+        ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
+        ///   deterministic but incorrect result.
+        ///   Detecting incorrect key use is a concern for consumers of the ML-KEM algorithm.
+        ///   For more information, see FIPS 203, Section 6.3.
+        /// </remarks>
         /// <exception cref="CryptographicException">
         ///   An error occurred during decapsulation.
         /// </exception>
