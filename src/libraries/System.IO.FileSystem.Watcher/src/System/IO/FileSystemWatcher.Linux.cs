@@ -114,11 +114,17 @@ namespace System.IO
             /// </summary>
             private const int INotifyEventSize = 16;
 
+            // The name buffer in struct inotify_event is 0-256 bytes making the total inotify_event size 16-272 bytes.
+            // The below buffer fits at 60+ events of the largest events.
+            // For a typical file name size of <32 bytes, we can receive 300+ events in a single read.
+            // This buffer size is assumed to be be plenty because the read loop dispatches the work for user event handling to the ThreadPool and then performs a new read.
+            private const int BufferSize = 16384;
+
             // Guards the watchers of the inotify instance and starting the inotify thread.
             private static readonly object s_watchersLock = new();
             private static INotify? s_currentInotify;
             private readonly List<Watcher> _watchers = new();
-            private readonly byte[] _buffer = new byte[16384];
+            private readonly byte[] _buffer = new byte[BufferSize];
             private readonly SafeFileHandle _inotifyHandle;
             private readonly ConcurrentDictionary<int, Watch> _wdToWatch = new ConcurrentDictionary<int, Watch>();
             private readonly ReaderWriterLockSlim _addLock = new(LockRecursionPolicy.NoRecursion);
@@ -1011,6 +1017,9 @@ namespace System.IO
                     IncludeSubdirectories = fsw.IncludeSubdirectories;
                     NotifyFilters = fsw.NotifyFilter;
                     WatchFilters = TranslateFilters(NotifyFilters);
+
+                    // This channel is unbounded which means that if the FileSystemWatcher event handlers can't keep up, the queue size will increase and consume memory.
+                    // We could implement a bound that is based on the FileSystemWatcher.InternalBufferSize property.
                     _eventQueue = Channel.CreateUnbounded<WatcherEvent>(new UnboundedChannelOptions() { AllowSynchronousContinuations = false, SingleReader = true });
                 }
 
