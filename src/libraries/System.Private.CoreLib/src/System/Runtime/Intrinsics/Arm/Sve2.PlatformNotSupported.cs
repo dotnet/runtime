@@ -1105,6 +1105,546 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
 
+        // Multiply-add, addend first
+
+        /// <summary>
+        /// svint16_t svmla_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   MLA Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyAddBySelectedScalar(Vector<short> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmla_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   MLA Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyAddBySelectedScalar(Vector<int> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmla_lane[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_index)
+        ///   MLA Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyAddBySelectedScalar(Vector<long> addend, Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmla_lane[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index)
+        ///   MLA Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<ushort> MultiplyAddBySelectedScalar(Vector<ushort> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmla_lane[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_index)
+        ///   MLA Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyAddBySelectedScalar(Vector<uint> addend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmla_lane[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3, uint64_t imm_index)
+        ///   MLA Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyAddBySelectedScalar(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply-add long (bottom)
+
+        /// <summary>
+        /// svint16_t svmlalb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SMLALB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyWideningEvenAndAdd(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlalb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SMLALB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyWideningEvenAndAdd(Vector<int> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlalb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SMLALB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyWideningEvenAndAdd(Vector<long> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmlalb[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UMLALB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<ushort> MultiplyWideningEvenAndAdd(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlalb[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UMLALB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<uint> MultiplyWideningEvenAndAdd(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlalb[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
+        ///   UMLALB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<ulong> MultiplyWideningEvenAndAdd(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlalb_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SMLALB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalarWideningEvenAndAdd(Vector<int> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlalb_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SMLALB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalarWideningEvenAndAdd(Vector<long> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlalb_lane[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index)
+        ///   UMLALB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalarWideningEvenAndAdd(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlalb_lane[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_index)
+        ///   UMLALB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalarWideningEvenAndAdd(Vector<ulong> addend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply-add long (top)
+
+        /// <summary>
+        /// svint16_t svmlalt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SMLALT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyWideningOddAndAdd(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlalt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SMLALT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyWideningOddAndAdd(Vector<int> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlalt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SMLALT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyWideningOddAndAdd(Vector<long> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmlalt[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UMLALT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<ushort> MultiplyWideningOddAndAdd(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlalt[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UMLALT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<uint> MultiplyWideningOddAndAdd(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlalt[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
+        ///   UMLALT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<ulong> MultiplyWideningOddAndAdd(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlalt_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SMLALT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalarWideningOddAndAdd(Vector<int> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlalt_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SMLALT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalarWideningOddAndAdd(Vector<long> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlalt_lane[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index)
+        ///   UMLALT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalarWideningOddAndAdd(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlalt_lane[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_index)
+        ///   UMLALT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalarWideningOddAndAdd(Vector<ulong> addend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply
+
+        /// <summary>
+        /// svint16_t svmul_lane[_s16](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   MUL Zresult.H, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyBySelectedScalar(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmul_lane[_s32](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   MUL Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalar(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmul_lane[_s64](svint64_t op1, svint64_t op2, uint64_t imm_index)
+        ///   MUL Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalar(Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmul_lane[_u16](svuint16_t op1, svuint16_t op2, uint64_t imm_index)
+        ///   MUL Zresult.H, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<ushort> MultiplyBySelectedScalar(Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmul_lane[_u32](svuint32_t op1, svuint32_t op2, uint64_t imm_index)
+        ///   MUL Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalar(Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmul_lane[_u64](svuint64_t op1, svuint64_t op2, uint64_t imm_index)
+        ///   MUL Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalar(Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply-subtract, minuend first
+
+        /// <summary>
+        /// svint16_t svmls_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   MLS Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplySubtractBySelectedScalar(Vector<short> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmls_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   MLS Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplySubtractBySelectedScalar(Vector<int> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmls_lane[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_index)
+        ///   MLS Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplySubtractBySelectedScalar(Vector<long> minuend, Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmls_lane[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index)
+        ///   MLS Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<ushort> MultiplySubtractBySelectedScalar(Vector<ushort> minuend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmls_lane[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_index)
+        ///   MLS Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplySubtractBySelectedScalar(Vector<uint> minuend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmls_lane[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3, uint64_t imm_index)
+        ///   MLS Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplySubtractBySelectedScalar(Vector<ulong> minuend, Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply-subtract long (bottom)
+
+        /// <summary>
+        /// svint16_t svmlslb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SMLSLB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlslb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SMLSLB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<int> minuend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlslb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SMLSLB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<long> minuend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmlslb[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UMLSLB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<ushort> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<ushort> minuend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlslb[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UMLSLB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<uint> minuend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlslb[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
+        ///   UMLSLB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlslb_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SMLSLB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<int> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlslb_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SMLSLB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<long> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlslb_lane[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index)
+        ///   UMLSLB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<uint> minuend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlslb_lane[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_index)
+        ///   UMLSLB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply-subtract long (top)
+
+        /// <summary>
+        /// svint16_t svmlslt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SMLSLT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyWideningOddAndSubtract(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlslt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SMLSLT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyWideningOddAndSubtract(Vector<int> minuend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlslt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SMLSLT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyWideningOddAndSubtract(Vector<long> minuend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmlslt[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UMLSLT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<ushort> MultiplyWideningOddAndSubtract(Vector<ushort> minuend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlslt[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UMLSLT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<uint> MultiplyWideningOddAndSubtract(Vector<uint> minuend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlslt[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
+        ///   UMLSLT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<ulong> MultiplyWideningOddAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmlslt_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SMLSLT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalarWideningOddAndSubtract(Vector<int> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmlslt_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SMLSLT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalarWideningOddAndSubtract(Vector<long> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmlslt_lane[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index)
+        ///   UMLSLT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalarWideningOddAndSubtract(Vector<uint> minuend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmlslt_lane[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_index)
+        ///   UMLSLT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalarWideningOddAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply long (bottom)
+
+        /// <summary>
+        /// svint16_t svmullb[_s16](svint8_t op1, svint8_t op2)
+        ///   SMULLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> MultiplyWideningEven(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmullb[_s32](svint16_t op1, svint16_t op2)
+        ///   SMULLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> MultiplyWideningEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmullb[_s64](svint32_t op1, svint32_t op2)
+        ///   SMULLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> MultiplyWideningEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmullb[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UMULLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> MultiplyWideningEven(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmullb[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UMULLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> MultiplyWideningEven(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmullb[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UMULLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> MultiplyWideningEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmullb_lane[_s32](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SMULLB Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalarWideningEven(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmullb_lane[_s64](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SMULLB Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalarWideningEven(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmullb_lane[_u32](svuint16_t op1, svuint16_t op2, uint64_t imm_index)
+        ///   UMULLB Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalarWideningEven(Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmullb_lane[_u64](svuint32_t op1, svuint32_t op2, uint64_t imm_index)
+        ///   UMULLB Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalarWideningEven(Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Multiply long (top)
+
+        /// <summary>
+        /// svint16_t svmullt[_s16](svint8_t op1, svint8_t op2)
+        ///   SMULLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> MultiplyWideningOdd(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmullt[_s32](svint16_t op1, svint16_t op2)
+        ///   SMULLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> MultiplyWideningOdd(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmullt[_s64](svint32_t op1, svint32_t op2)
+        ///   SMULLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> MultiplyWideningOdd(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmullt[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UMULLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> MultiplyWideningOdd(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmullt[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UMULLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> MultiplyWideningOdd(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmullt[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UMULLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> MultiplyWideningOdd(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmullt_lane[_s32](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SMULLT Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyBySelectedScalarWideningOdd(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmullt_lane[_s64](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SMULLT Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyBySelectedScalarWideningOdd(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmullt_lane[_u32](svuint16_t op1, svuint16_t op2, uint64_t imm_index)
+        ///   UMULLT Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<uint> MultiplyBySelectedScalarWideningOdd(Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmullt_lane[_u64](svuint32_t op1, svuint32_t op2, uint64_t imm_index)
+        ///   UMULLT Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<ulong> MultiplyBySelectedScalarWideningOdd(Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Polynomial multiply
+
+        /// <summary>
+        /// svuint8_t svpmul[_u8](svuint8_t op1, svuint8_t op2)
+        ///   PMUL Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> PolynomialMultiply(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svpmul[_u8](svuint8_t op1, svuint8_t op2)
+        ///   PMUL Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> PolynomialMultiply(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Polynomial multiply long (bottom)
+
+        /// <summary>
+        /// svuint16_t svpmullb[_u16](svuint8_t op1, svuint8_t op2)
+        ///   PMULLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> PolynomialMultiplyWideningEven(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svpmullb[_u64](svuint32_t op1, svuint32_t op2)
+        ///   PMULLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> PolynomialMultiplyWideningEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Polynomial multiply long (top)
+
+        /// <summary>
+        /// svuint16_t svpmullt[_u16](svuint8_t op1, svuint8_t op2)
+        ///   PMULLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> PolynomialMultiplyWideningOdd(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svpmullt[_u64](svuint32_t op1, svuint32_t op2)
+        ///   PMULLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> PolynomialMultiplyWideningOdd(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+
         // Rounding shift left
 
         /// <summary>

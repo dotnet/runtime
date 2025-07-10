@@ -2142,9 +2142,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AbsoluteDifferenceWideningLowerAndAddOdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static short AbsoluteDifferenceWideningEven(sbyte[] op1, sbyte[] op2, int i) => (short) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static short AbsoluteDifferenceWideningEven(sbyte[] op1, sbyte[] op2, int i) => (short)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static short AbsoluteDifferenceWideningOdd(sbyte[] op1, sbyte[] op2, int i) => (short) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static short AbsoluteDifferenceWideningOdd(sbyte[] op1, sbyte[] op2, int i) => (short)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static short AddAcrossWidening(sbyte[] op1) => Reduce(AddWidening, op1);
 
@@ -2302,9 +2302,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AbsoluteDifferenceWideningLowerAndAddOdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static int AbsoluteDifferenceWideningEven(short[] op1, short[] op2, int i) => (int) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static int AbsoluteDifferenceWideningEven(short[] op1, short[] op2, int i) => (int)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static int AbsoluteDifferenceWideningOdd(short[] op1, short[] op2, int i) => (int) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static int AbsoluteDifferenceWideningOdd(short[] op1, short[] op2, int i) => (int)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static int AddAcrossWidening(short[] op1) => Reduce(AddWidening, op1);
 
@@ -2519,9 +2519,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long AbsoluteDifferenceWideningLowerAndAddOdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static long AbsoluteDifferenceWideningEven(int[] op1, int[] op2, int i) => (long) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static long AbsoluteDifferenceWideningEven(int[] op1, int[] op2, int i) => (long)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static long AbsoluteDifferenceWideningOdd(int[] op1, int[] op2, int i) => (long) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static long AbsoluteDifferenceWideningOdd(int[] op1, int[] op2, int i) => (long)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static long AddAcrossWidening(int[] op1) => Reduce(AddWidening, op1);
 
@@ -2774,7 +2774,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AbsoluteDifferenceWideningLowerAndAddOdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static ushort AbsoluteDifferenceWideningEven(byte[] op1, byte[] op2, int i) =>  AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static ushort AbsoluteDifferenceWideningEven(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
         public static ushort AbsoluteDifferenceWideningOdd(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
@@ -2918,9 +2918,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceWideningLowerAndAddOdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static uint AbsoluteDifferenceWideningEven(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static uint AbsoluteDifferenceWideningEven(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static uint AbsoluteDifferenceWideningOdd(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static uint AbsoluteDifferenceWideningOdd(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static uint AddAcrossWidening(ushort[] op1) => Reduce(AddWidening, op1);
 
@@ -3062,9 +3062,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AbsoluteDifferenceWideningLowerAndAddOdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static ulong AbsoluteDifferenceWideningEven(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static ulong AbsoluteDifferenceWideningEven(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static ulong AbsoluteDifferenceWideningOdd(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static ulong AbsoluteDifferenceWideningOdd(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static ulong AddAcrossWidening(uint[] op1) => Reduce(AddWidening, op1);
 
@@ -7148,6 +7148,22 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        private static ulong PolynomialMult(uint op1, uint op2)
+        {
+            ulong result = default(ulong);
+            ulong extendedOp2 = (ulong)op2;
+
+            for (int i = 0; i < 8 * sizeof(uint); i++)
+            {
+                if ((op1 & ((uint)1 << i)) != 0)
+                {
+                    result = (ulong)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
         private static poly128_t PolynomialMult(ulong op1, ulong op2)
         {
             poly128_t result = default(poly128_t);
@@ -7231,6 +7247,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong PolynomialMultiplyWideningHi64(ulong op1, ulong op2) => PolynomialMult(op1, op2).hi;
 
         public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
+
+        public static ulong PolynomialMultiplyWidening(uint op1, uint op2) => PolynomialMult(op1, op2);
 
         public static sbyte Concat(sbyte[] op1, sbyte[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
@@ -10914,7 +10932,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (int i = 0; i < even.Length; i += 2)
             {
-                even[i+1] = left[i+1] ^ right[i];
+                even[i + 1] = left[i + 1] ^ right[i];
             }
             return even;
         }
@@ -11355,6 +11373,28 @@ namespace JIT.HardwareIntrinsics.Arm
             where U : IBinaryInteger<U>
         {
             return Odd<U>(even, LogicalShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static W MultiplyAddWidening<W, N>(W op1, N op2, N op3)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            dynamic a = op2;
+            dynamic b = op3;
+            W product = (W)((W)a * (W)b);
+            W r = (W)(op1 + product);
+            return r;
+        }
+
+        public static W MultiplySubtractWidening<W, N>(W op1, N op2, N op3)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            dynamic a = op2;
+            dynamic b = op3;
+            W product = (W)((W)a * (W)b);
+            W r = (W)(op1 - product);
+            return r;
         }
     }
 }
