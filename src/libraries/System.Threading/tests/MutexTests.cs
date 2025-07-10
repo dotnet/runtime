@@ -24,11 +24,6 @@ namespace System.Threading.Tests
                  if (PlatformDetection.IsMobile)
                     return false;
 
-                 // Cross-process named mutex support is not implemented on NativeAOT and Mono
-                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/48720")]
-                 if (PlatformDetection.IsMonoRuntime || PlatformDetection.IsNativeAot)
-                     return false;
-
                  return true;
             }
         }
