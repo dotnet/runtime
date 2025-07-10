@@ -3566,16 +3566,14 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
             // of kill sets. We will still make a == b copy assertions during the global phase to allow
             // for any implied assertions that can be retrieved. Because implied assertions look for
             // matching SSA numbers (i.e., if a0 == b1 and b1 == c0 then a0 == c0) they don't need kill sets.
-            if (optLocalAssertionProp)
-            {
-                // Perform copy assertion prop.
-                GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
-                if (newTree != nullptr)
-                {
-                    return newTree;
-                }
-            }
+            assert(optLocalAssertionProp);
 
+            // Perform copy assertion prop.
+            GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+            if (newTree != nullptr)
+            {
+                return newTree;
+            }
             continue;
         }
 
@@ -4866,6 +4864,58 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 }
 
 //------------------------------------------------------------------------
+// optAssertionProp_ArrMetaData: see if we can optimize anything for ArrMetaData
+//   using live assertions.
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - ArrMetaData tree to possibly optimize
+//   stmt        - statement containing the tree
+//
+// Returns:
+//   The modified tree, or nullptr if no assertion prop took place.
+//
+GenTree* Compiler::optAssertionProp_ArrMetaData(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+{
+    assert(GenTree::OperIsArrMetaData(tree->OperGet()));
+
+    GenTree* const addr = tree->GetIndirOrArrMetaDataAddr();
+    ValueNum const vn   = optConservativeNormalVN(tree);
+
+    if (vn == ValueNumStore::NoVN)
+    {
+        return nullptr;
+    }
+
+    assert(!optLocalAssertionProp);
+
+    // if we have an arr.Length with " == CNS" assertion, replace it with that CNS
+    // if the expression has no side-effects.
+    //
+    // NOTE: Currently, we don't remove GTF_EXCEPT from ArrMetaData trees if we can prove
+    // the arrayObj is never null, see https://github.com/dotnet/runtime/pull/93531
+    const bool hasNoSideEffects =
+        addr->OperIs(GT_LCL_VAR) && (((tree->gtFlags & GTF_EXCEPT) == 0) || optAssertionIsNonNull(addr, assertions));
+
+    if (hasNoSideEffects)
+    {
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
+        {
+            AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+            if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == vn))
+            {
+                return optAssertionProp_Update(gtNewIconNodeWithVN(this, curAssertion->op2.u1.iconVal, tree->TypeGet()),
+                                               tree, stmt);
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp_Ind: see if we can prove the indirection can't cause
 //    and exception.
 //
@@ -4887,7 +4937,7 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
     bool updated = optNonNullAssertionProp_Ind(assertions, tree);
     if (tree->OperIs(GT_STOREIND))
     {
-        updated |= optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
+        updated |= optWriteBarrierAssertionProp_StoreInd(tree->AsStoreInd());
     }
 
     if (updated)
@@ -5170,13 +5220,12 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
 //     * Target is definitely on the heap - checked (slower) write barrier is not required
 //
 // Arguments:
-//    assertions - Active assertions
 //    indir      - The STOREIND node
 //
 // Return Value:
 //    Whether the exact type of write barrier was determined and marked on the STOREIND node.
 //
-bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir)
+bool Compiler::optWriteBarrierAssertionProp_StoreInd(GenTreeStoreInd* indir)
 {
     const GenTree* value = indir->AsIndir()->Data();
     const GenTree* addr  = indir->AsIndir()->Addr();
@@ -5551,6 +5600,11 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_STOREIND:
         case GT_NULLCHECK:
             return optAssertionProp_Ind(assertions, tree, stmt);
+
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            return optAssertionProp_ArrMetaData(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
             return optAssertionProp_BndsChk(assertions, tree, stmt);

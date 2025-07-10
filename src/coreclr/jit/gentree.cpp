@@ -7335,6 +7335,9 @@ bool GenTree::OperSupportsOrderingSideEffect() const
     {
         case GT_ARR_ADDR:
         case GT_BOUNDS_CHECK:
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_IND:
         case GT_BLK:
         case GT_STOREIND:
