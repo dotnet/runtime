@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -306,6 +307,32 @@ namespace System.Formats.Tar.Tests
             await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, testFolderName, testCaseName);
             await using TarReader reader = new TarReader(archiveStream);
             await Assert.ThrowsAsync<NotSupportedException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
+        public async Task ReaderIgnoresFieldValueAfterTrailingNullAsync()
+        {
+            // Fields in the tar archives are terminated by a trailing null.
+            // When reading these fields the reader must ignore all bytes past that null.
+
+            // Construct an archive that has a filename with some data after the trailing null.
+            const string FileName = "  filename  ";
+            const string FileNameWithDataPastTrailingNull = $"{FileName}\0nonesense";
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                var entry = new UstarTarEntry(TarEntryType.RegularFile, FileNameWithDataPastTrailingNull);
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+            // Check the writer serialized the complete name passed to the constructor.
+            bool archiveIsExpected = ms.ToArray().IndexOf(Encoding.UTF8.GetBytes(FileNameWithDataPastTrailingNull)) != -1;
+            Assert.True(archiveIsExpected);
+
+            // Verify the reader doesn't return the data past the trailing null.
+            using TarReader reader = new(ms);
+            TarEntry firstEntry = await reader.GetNextEntryAsync();
+            Assert.Equal(FileName, firstEntry.Name);
         }
 
         [Fact]
