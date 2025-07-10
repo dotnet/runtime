@@ -79,6 +79,7 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer(
     }
     CONTRACTL_END;
 
+    _ASSERTE(m_pSharedPatchBypassBuffer == NULL);
     if (m_pSharedPatchBypassBuffer == NULL)
     {
         void *pSharedPatchBypassBufferRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(SharedPatchBypassBuffer));
