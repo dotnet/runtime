@@ -828,6 +828,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
             m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
             m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
             m_ILToNativeMapSize++;
         }
     }

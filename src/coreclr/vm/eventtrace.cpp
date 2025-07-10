@@ -43,6 +43,7 @@
 #endif // FEATURE_NATIVEAOT
 
 #include "eventtracepriv.h"
+#include "debugdebugger.h"
 
 #ifndef HOST_UNIX
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
@@ -3540,14 +3541,6 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JITTEDMETHODILTONATIVEMAP_KEYWORD))
         {
-            // The call to SendMethodILToNativeMapEvent assumes that the debugger's lazy
-            // data has already been initialized.
-
-            // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-            // or profiler is loaded.  So it should always be available.
-            _ASSERTE(g_pDebugInterface != NULL);
-            g_pDebugInterface->InitializeLazyDataIfNecessary();
-
             ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc,
                                                          ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
                                                          pNativeCodeStartAddress,
@@ -3557,9 +3550,6 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
         {
-            _ASSERTE(g_pDebugInterface != NULL);
-            g_pDebugInterface->InitializeLazyDataIfNecessary();
-
             ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
         }
 
@@ -4416,6 +4406,39 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(
     }
 }
 
+TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pNativeCodeStartAddress)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMethodDesc));
+    } CONTRACTL_END;
+
+    // MethodDesc ==> Code Address ==>JitManager
+    TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
+    if(start == 0) {
+        // this method hasn't been jitted
+        return 0;
+    }
+
+#ifdef FEATURE_INTERPRETER
+    RangeSection * pRS = ExecutionManager::FindCodeRange(PINSTRToPCODE(start), ExecutionManager::GetScanFlags());
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (((StubPrecode*)start)->GetType() == PRECODE_INTERPRETER)
+            {
+                start = ((InterpreterPrecode*)start)->GetData()->ByteCodeAddr;
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
+    return start;
+}
+
 /****************************************************************************/
 /* This routine is used to send a method load/unload or rundown event                              */
 /****************************************************************************/
@@ -4500,26 +4523,11 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     ulColdMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::ColdSection; // Method Extent (bits 28, 29, 30, 31)
     ulMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::HotSection;         // Method Extent (bits 28, 29, 30, 31)
 
-    // MethodDesc ==> Code Address ==>JitManager
-    TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
+    TADDR start = MethodAndStartAddressToEECodeInfoPointer(pMethodDesc, pNativeCodeStartAddress);
     if(start == 0) {
         // this method hasn't been jitted
         return;
     }
-
-#ifdef FEATURE_INTERPRETER
-    RangeSection * pRS = ExecutionManager::FindCodeRange(PINSTRToPCODE(start), ExecutionManager::GetScanFlags());
-    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
-    {
-        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
-        {
-            if (((StubPrecode*)start)->GetType() == PRECODE_INTERPRETER)
-            {
-                start = ((InterpreterPrecode*)start)->GetData()->ByteCodeAddr;
-            }
-        }
-    }
-#endif // FEATURE_INTERPRETER
 
     // EECodeInfo is technically initialized by a "PCODE", but it can also be initialized
     // by a TADDR (i.e., w/out thumb bit set on ARM)
@@ -4732,25 +4740,34 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     if (pMethodDesc->HasClassOrMethodInstantiation() && pMethodDesc->IsTypicalMethodDefinition())
         return;
 
-    // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-    // or profiler is loaded.  So it should always be available.
-    _ASSERTE(g_pDebugInterface != NULL);
-
     ULONGLONG ullMethodIdentifier = (ULONGLONG)pMethodDesc;
 
-    USHORT cMap;
-    NewArrayHolder<UINT> rguiILOffset;
-    NewArrayHolder<UINT> rguiNativeOffset;
-
-    HRESULT hr = g_pDebugInterface->GetILToNativeMappingIntoArrays(
-        pMethodDesc,
-        pNativeCodeStartAddress,
-        kMapEntriesMax,
-        &cMap,
-        &rguiILOffset,
-        &rguiNativeOffset);
-    if (FAILED(hr))
+    if (pMethodDesc->IsWrapperStub() || pMethodDesc->IsDynamicMethod())
+    {
         return;
+    }
+
+    TADDR start = MethodAndStartAddressToEECodeInfoPointer(pMethodDesc, pNativeCodeStartAddress);
+    if(start == 0) {
+        // this method hasn't been jitted
+        return;
+    }
+
+    // EECodeInfo is technically initialized by a "PCODE", but it can also be initialized
+    // by a TADDR (i.e., w/out thumb bit set on ARM)
+    EECodeInfo codeInfo(start);
+    TADDR startAddress = codeInfo.GetStartAddress();
+    DebugInfoRequest request;
+    request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+
+    ILToNativeMapArrays context(kMapEntriesMax);
+    codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, &context, ComputeILOffsetArrays);
+
+    uint32_t cMap;
+    uint32_t* rguiILOffset;
+    uint32_t* rguiNativeOffset;
+
+    context.GetArrays(&cMap, &rguiNativeOffset, &rguiILOffset);
 
     // Runtime provider.
     //
@@ -4763,7 +4780,7 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
             nativeCodeId,
             0,          // Extent:  This event is only sent for JITted (not NGENd) methods, and
             //          currently there is only one extent (hot) for JITted methods.
-            cMap,
+            (USHORT)cMap,
             rguiILOffset,
             rguiNativeOffset,
             GetClrInstanceId(),
@@ -4779,9 +4796,9 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     //
     // (for an explanation of the parameters see the FireEtwMethodILToNativeMap call above)
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCStartILToNativeMap) != 0)
-        FireEtwMethodDCStartILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
+        FireEtwMethodDCStartILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, (USHORT)cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCEndILToNativeMap) != 0)
-        FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
+        FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, (USHORT)cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
 }
 
 template<typename T>
@@ -5113,18 +5130,6 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
 
         BOOL fSendRichDebugInfoEvent =
             (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo) != 0;
-
-        if (fSendILToNativeMapEvent || fSendRichDebugInfoEvent)
-        {
-            // The call to SendMethodILToNativeMapEvent assumes that the debugger's lazy
-            // data has already been initialized, to ensure we don't try to do the lazy init
-            // while under the implicit, notrigger CodeHeapIterator lock below.
-
-            // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-            // or profiler is loaded.  So it should always be available.
-            _ASSERTE(g_pDebugInterface != NULL);
-            g_pDebugInterface->InitializeLazyDataIfNecessary();
-        }
 
         // #TableLockHolder:
         //
