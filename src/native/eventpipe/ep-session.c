@@ -9,7 +9,9 @@
 #include "ep-config.h"
 #include "ep-event.h"
 #include "ep-file.h"
+#include "ep-ipc-stream.h"
 #include "ep-session.h"
+#include "ep-stream.h"
 #include "ep-event-payload.h"
 #include "ep-rt.h"
 
