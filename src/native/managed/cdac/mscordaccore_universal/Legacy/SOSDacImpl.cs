@@ -237,10 +237,11 @@ internal sealed unsafe partial class SOSDacImpl
         {
             addr = assembly.ToTargetPointer(_target);
             Contracts.ILoader contract = _target.Contracts.Loader;
+            TargetPointer modulePointer = contract.GetModulePointer(addr);
 
-            if (modules is not null && modules.Length > 0)
+            if (modules is not null && modules.Length > 0 && count > 0 && modulePointer != 0)
             {
-                modules[0] = contract.GetModulePointer(addr).ToClrDataAddress(_target);
+                modules[0] = modulePointer.ToClrDataAddress(_target);
             }
 
             if (pNeeded is not null)
@@ -266,9 +267,9 @@ internal sealed unsafe partial class SOSDacImpl
 
                 // in theory, these don't need to be in the same order, but for consistency it is
                 // easiest for consumers and verification if the DAC and cDAC return the same order
-                for (int i = 0; i < neededLocal; i++)
+                if (modules is not null && modules.Length > 0)
                 {
-                    Debug.Assert(modules![i] == modulesLocal![i], $"cDAC: {modules[i]:x}, DAC: {modulesLocal[i]:x}");
+                    Debug.Assert(modules[0] == modulesLocal[0], $"cDAC: {modules[0]:x}, DAC: {modulesLocal[0]:x}");
                 }
             }
         }
