@@ -837,8 +837,10 @@ static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 
 #ifdef FEATURE_INTERPRETER
-// check that the InterpreterPrecodeData fits into the StubPrecode
-static_assert_no_msg(sizeof(InterpreterPrecodeData) <= sizeof(StubPrecode));
+// we are allocating InterpreterPrecode in the interleaved StubPrecodeHeap
+// (in Precode::AllocateInterpreterPrecode)
+// and so we need it to fit the data into the StubPrecode::CodeSize
+static_assert_no_msg(sizeof(InterpreterPrecodeData) <= StubPrecode::CodeSize);
 #endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
