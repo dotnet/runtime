@@ -36,9 +36,9 @@ void NativeTestThread(IUnknown* pUnknown)
 }
 
 #ifndef _WIN32
-void* NativeTestThreadUnix(IUnknown* pUnknown)
+void* NativeTestThreadUnix(void* pUnknown)
 {
-    NativeTestThread(pUnknown);
+    NativeTestThread((IUnknown*)pUnknown);
     return NULL;
 }
 
