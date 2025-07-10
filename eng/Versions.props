@@ -255,10 +255,10 @@
     <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node
-         Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
+         Note: when the name is updated, make sure to update dependency name in src/mono/mono.proj and in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>10.0.100-preview.7.25351.106</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>10.0.100-preview.7.25358.102</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
@@ -278,7 +278,7 @@
     <!-- sdk version, for testing workloads -->
     <SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskVersion)</SdkVersionForWorkloadTesting>
     <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>10.0.0-alpha.1.25169.1</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
-    <EmsdkPackageVersion>10.0.0-preview.4.25217.3</EmsdkPackageVersion>
+    <EmsdkPackageVersion>10.0.0-preview.7.25358.102</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
