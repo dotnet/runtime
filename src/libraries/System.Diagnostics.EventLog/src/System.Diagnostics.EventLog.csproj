@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>1</ServicingVersion>
+    <ServicingVersion>2</ServicingVersion>
     <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the Windows event log service.
 
 Commonly Used Types:

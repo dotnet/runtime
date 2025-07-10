@@ -2419,7 +2419,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    writer.WriteLine($"base.TransferCapture({capnum}, {uncapnum}, {startingPos}, pos);");
+                    writer.WriteLine($"base.TransferCapture({capnum.ToString(CultureInfo.InvariantCulture)}, {uncapnum}, {startingPos}, pos);");
                 }
 
                 if (isAtomic || !childBacktracks)

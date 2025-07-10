@@ -7604,6 +7604,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					push_simple_type (td, STACK_TYPE_I);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 					break;
+				case CEE_MONO_LDVIRTFTN_DELEGATE:
+					CHECK_STACK (td, 2);
+					td->sp -= 2;
+					td->ip += 1;
+					interp_add_ins (td, MINT_LDVIRTFTN_DELEGATE);
+					interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+					push_simple_type (td, STACK_TYPE_I);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+					break;
+
 				case CEE_MONO_CALLI_EXTRA_ARG: {
 					int saved_local = td->sp [-1].local;
 					/* Same as CEE_CALLI, except that we drop the extra arg required for llvm specific behaviour */

@@ -14,13 +14,6 @@
     <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- we need to keep the version of System.Reflection.Metadata in sync with dotnet/msbuild and dotnet/sdk -->
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" /> 
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="..\Common\IsExternalInit.cs" />

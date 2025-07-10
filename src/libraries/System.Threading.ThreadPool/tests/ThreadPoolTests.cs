@@ -1265,6 +1265,42 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static unsafe void ThreadPoolCompletedWorkItemCountTest()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that we don't count external work items
+            RemoteExecutor.Invoke(() =>
+            {
+                const int WorkItemCount = 4;
+
+                int completedWorkItemCount = 0;
+                using var allWorkItemsCompleted = new AutoResetEvent(false);
+
+                IOCompletionCallback callback =
+                    (errorCode, numBytes, innerNativeOverlapped) =>
+                    {
+                        Overlapped.Free(innerNativeOverlapped);
+                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCount)
+                        {
+                            allWorkItemsCompleted.Set();
+                        }
+                    };
+                for (int i = 0; i < WorkItemCount; i++)
+                {
+                    ThreadPool.UnsafeQueueNativeOverlapped(new Overlapped().Pack(callback, null));
+                }
+
+                allWorkItemsCompleted.CheckedWait();
+
+                // Allow work items to be marked as completed during this time
+                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount >= WorkItemCount);
+                Thread.Sleep(50);
+                Assert.Equal(WorkItemCount, ThreadPool.CompletedWorkItemCount);
+            }).Dispose();
+        }
+
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
 

@@ -4,6 +4,14 @@ To enable the tests marked with [ConditionalFact(nameof(IsLdapConfigurationExist
 
 To ship, we should test on both an Active Directory LDAP server, and at least one other server, as behaviors are a little different. However for local testing, it is easiest to connect to an OpenDJ LDAP server in a docker container (eg., in WSL2).
 
+When testing with later of versions of LDAP, the ldapsearch commands below may need to use
+
+    -H ldap://localhost:<PORT>
+
+instead of
+
+    -h localhost -p <PORT>
+
 OPENDJ SERVER
 =============
 
