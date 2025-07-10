@@ -32,3 +32,9 @@ PALEXPORT __attribute__((noreturn)) void SystemNative_Abort(void);
 
 PALEXPORT uint64_t SystemNative_GetUInt64OSThreadId(void);
 PALEXPORT uint32_t SystemNative_TryGetUInt32OSThreadId(void);
+
+PALEXPORT int32_t SystemNative_PThreadMutex_Init(void* mutex);
+
+PALEXPORT int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds);
+
+PALEXPORT int32_t SystemNative_PThreadMutex_Release(void* mutex);

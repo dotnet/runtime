@@ -286,6 +286,9 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetUInt64OSThreadId)
     DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
     DllImportEntry(SystemNative_Select)
+    DllImportEntry(SystemNative_PThreadMutex_Init)
+    DllImportEntry(SystemNative_PThreadMutex_Acquire)
+    DllImportEntry(SystemNative_PThreadMutex_Release)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

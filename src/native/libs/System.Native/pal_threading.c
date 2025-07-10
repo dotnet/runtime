@@ -297,3 +297,73 @@ uint32_t SystemNative_TryGetUInt32OSThreadId(void)
     uint32_t result = (uint32_t)minipal_get_current_thread_id();
     return result == 0 ? (uint32_t)-1 : result;
 }
+
+int32_t SystemNative_PThreadMutex_Init(void* mutex)
+{
+    pthread_mutexattr_t mutexAttributes;
+    int error = pthread_mutexattr_init(&mutexAttributes);
+    if (error != 0)
+    {
+        return error;
+    }
+
+    error = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+    assert(error == 0);
+
+    error = pthread_mutexattr_setrobust(&mutexAttributes, PTHREAD_MUTEX_ROBUST);
+    assert(error == 0);
+
+    error = pthread_mutexattr_setpshared(&mutexAttributes, PTHREAD_PROCESS_SHARED);
+    assert(error == 0);
+
+    error = pthread_mutex_init((pthread_mutex_t*)mutex, &mutexAttributes);
+    return error;
+}
+
+int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds)
+{
+    assert(mutex != NULL);
+
+    if (timeoutMilliseconds == -1)
+    {
+        return pthread_mutex_lock((pthread_mutex_t*)mutex);
+    }
+    else if (timeoutMilliseconds == 0)
+    {
+        return pthread_mutex_trylock((pthread_mutex_t*)mutex);
+    }
+
+    // Calculate the time at which a timeout should occur, and wait. Older versions of OSX don't support clock_gettime with
+    // CLOCK_MONOTONIC, so we instead compute the relative timeout duration, and use a relative variant of the timed wait.
+    struct timespec timeoutTimeSpec;
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    timeoutTimeSpec.tv_sec = timeoutMilliseconds / 1000;
+    timeoutTimeSpec.tv_nsec = (timeoutMilliseconds % 1000) * 1000 * 1000;
+
+    error = pthread_mutex_reltimedlock_np((pthread_mutex_t*)mutex, &timeoutTimeSpec);
+#else
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK && HAVE_CLOCK_MONOTONIC
+    int error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
+    assert(error == 0);
+#else
+    struct timeval tv;
+
+    error = gettimeofday(&tv, NULL);
+    assert(error == 0);
+
+    timeoutTimeSpec.tv_sec = tv.tv_sec;
+    timeoutTimeSpec.tv_nsec = tv.tv_usec * 1000;
+#endif
+    uint64_t nanoseconds = (uint64_t)timeoutMilliseconds * 1000 * 1000 + (uint64_t)timeoutTimeSpec.tv_nsec;
+    timeoutTimeSpec.tv_sec += nanoseconds / (1000 * 1000 * 1000);
+    timeoutTimeSpec.tv_nsec = nanoseconds % (1000 * 1000 * 1000);
+
+    return pthread_mutex_timedlock((pthread_mutex_t*)mutex, &timeoutTimeSpec);
+#endif
+}
+
+int32_t SystemNative_PThreadMutex_Release(void* mutex)
+{
+    assert(mutex != NULL);
+    return pthread_mutex_unlock((pthread_mutex_t*)mutex);
+}
