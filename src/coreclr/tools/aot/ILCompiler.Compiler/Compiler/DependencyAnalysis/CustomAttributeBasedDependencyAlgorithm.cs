@@ -118,9 +118,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     MethodDesc constructor = module.GetMethod(attribute.Constructor);
 
-                    if (TypeMapManager.LookupTypeMapType(constructor.OwningType) != TypeMapManager.TypeMapAttributeKind.None)
-                        continue;
-
                     if (!mdManager.GeneratesAttributeMetadata(constructor.OwningType))
                         continue;
 

@@ -2105,6 +2105,7 @@ public:
     HRESULT GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap,
                                  COR_DEBUG_IL_TO_NATIVE_MAP map[]);
 
+#ifdef DEBUG
     HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -2112,6 +2113,7 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset);
+#endif // DEBUG
 
     PRD_TYPE GetPatchedOpcode(CORDB_ADDRESS_TYPE *ip);
     BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode);
