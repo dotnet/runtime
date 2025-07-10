@@ -122,7 +122,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             int variablesOffset = (int)(boundsOffset + boundsByteCount);
 
             _boundsBytes = new byte[boundsByteCount];
-            Array.Copy(image, boundsOffset, _boundsBytes, 0, boundsByteCount);
+            int boundsOffsetMutable = boundsOffset;
+            imageReader.ReadSpanAt(ref boundsOffsetMutable, _boundsBytes.AsSpan());
 
             if (boundsByteCount > 0)
             {
