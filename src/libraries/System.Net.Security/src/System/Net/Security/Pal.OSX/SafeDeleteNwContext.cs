@@ -135,6 +135,11 @@ namespace System.Net.Security
                 {
                     // Handle cancellation gracefully
                 }
+                catch (Exception ex)
+                {
+                    // Propagate transport stream exceptions to the handshake
+                    _handshakeCompletionSource.TrySetException(ex);
+                }
             }, cancellationToken);
 
             return await _handshakeCompletionSource.Task.ConfigureAwait(false);
