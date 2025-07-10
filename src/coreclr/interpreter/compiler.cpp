@@ -2255,9 +2255,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         {
             CHECK_STACK(1);
             m_pStackPointer--;
-            int32_t addrVar = m_pStackPointer[0].var;
-            AddIns(INTOP_GETMETHODTABLE);
-            m_pLastNewIns->SetSVar(addrVar);
+            AddIns(INTOP_LDIND_I);
+            m_pLastNewIns->data[0] = 0;
+            m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
             PushStackType(StackTypeI, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;

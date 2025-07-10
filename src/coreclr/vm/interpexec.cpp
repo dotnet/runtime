@@ -1948,7 +1948,8 @@ CALL_INTERP_METHOD:
                     int32_t vtSize = ip[4];
                     void *vtThis = stack + returnOffset;
 
-                    // Interpreter-TODO: Clear the valuetype memory for GC encoding
+                    // clear the valuetype
+                    memset(vtThis, 0, vtSize);
 
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
@@ -2361,15 +2362,6 @@ do {                                                                           \
                     void* result = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     LOCAL_VAR(dreg, void*) = result;
                     ip += 4;
-                    break;
-                }
-
-                case INTOP_GETMETHODTABLE:
-                {
-                    OBJECTREF obj = LOCAL_VAR(ip[2], OBJECTREF);
-                    MethodTable* pMT = obj->GetMethodTable();
-                    LOCAL_VAR(ip[1], MethodTable*) = pMT;
-                    ip += 3;
                     break;
                 }
 
