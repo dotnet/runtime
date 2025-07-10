@@ -73,6 +73,8 @@ namespace System.Net.Security
         private bool _clientCertificateRequested;
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
+        // TODO: Bind every tcs to the message, so we can complete it when the specific message is sent (avoiding wrong completions by post-handshake message etc.).
+        private TaskCompletionSource? _currentWriteCompletionSource;
 
         public SafeDeleteNwContext(SslAuthenticationOptions sslAuthenticationOptions, Stream transportStream) : base(IntPtr.Zero)
         {
@@ -142,6 +144,9 @@ namespace System.Net.Security
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"App sending {buffer.Length} bytes");
 
+            TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _currentWriteCompletionSource = transportWriteCompletion;
+
             TaskCompletionSource<long> tcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
@@ -162,8 +167,13 @@ namespace System.Net.Security
 
             if (status != 0)
             {
-                throw Interop.AppleCrypto.CreateExceptionForOSStatus((int)status);
+                // SendToConnection failed, complete the transport write
+                _currentWriteCompletionSource = null;
+                transportWriteCompletion.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
             }
+
+            // Wait for the transport write to complete
+            await transportWriteCompletion.Task.ConfigureAwait(false);
 
             [UnmanagedCallersOnly]
             static void CompletionCallback(IntPtr context, long status)
@@ -301,9 +311,18 @@ namespace System.Net.Security
                 {
                     if (!_disposed)
                     {
+                        _handshakeCompletionSource.TrySetResult(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
                         Interop.NetworkFramework.Tls.CancelConnection(_connectionHandle);
                         // TODO: Wait for connection cancellation through status update with TCS.
                         _disposed = true;
+                        // Complete any pending writes with disposed exception
+                        TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
+                        if (writeCompletion != null)
+                        {
+                            _currentWriteCompletionSource = null;
+                            writeCompletion.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
+                        }
+
                         _connectionHandle.Dispose();
                         _outputBuffer.Dispose();
                         _peerCertChainHandle?.Dispose();
@@ -315,7 +334,14 @@ namespace System.Net.Security
 
         private static SafeDeleteNwContext? ResolveThisHandle(IntPtr thisHandle)
         {
-            return (SafeDeleteNwContext?)GCHandle.FromIntPtr(thisHandle).Target;
+            try
+            {
+                return (SafeDeleteNwContext?)GCHandle.FromIntPtr(thisHandle).Target;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private void EnsureKeepAlive()
@@ -348,11 +374,22 @@ namespace System.Net.Security
                 {
                     NetEventSource.Error(nwContext, $"WriteOutboundWireData Failed: {e.Message}");
                 }
+
+                // Complete the write operation with the exception
+                TaskCompletionSource? writeCompletion = nwContext._currentWriteCompletionSource;
+                if (writeCompletion != null)
+                {
+                    nwContext._currentWriteCompletionSource = null;
+                    writeCompletion.TrySetException(e);
+                }
+
                 return (int)NwOSStatus.WritErr;
             }
             finally
             {
                 nwContext?.EnsureKeepAlive();
+                nwContext?._currentWriteCompletionSource?.TrySetResult();
+                nwContext?._currentWriteCompletionSource = null;
             }
         }
 
@@ -605,7 +642,13 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connection was cancelled");
             _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(
                 new IOException(SR.net_io_eof)));
-            _thisHandle.Free();
+            // Complete any pending writes with connection closed exception
+            TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
+            if (writeCompletion != null)
+            {
+                _currentWriteCompletionSource = null;
+                writeCompletion.TrySetException(new IOException(SR.net_io_eof));
+            }
         }
 
         private void CertificateAvailable(SafeX509ChainHandle peerCertChainHandle)
