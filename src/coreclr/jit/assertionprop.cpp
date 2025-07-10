@@ -4904,8 +4904,10 @@ GenTree* Compiler::optAssertionProp_ArrMetaData(ASSERT_VALARG_TP assertions, Gen
         while (iter.NextElem(&index))
         {
             AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
-            if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == vn))
+            if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == vn) &&
+                (curAssertion->assertionKind == OAK_EQUAL))
             {
+                assert(!curAssertion->op2.HasIconFlag());
                 return optAssertionProp_Update(gtNewIconNodeWithVN(this, curAssertion->op2.u1.iconVal, tree->TypeGet()),
                                                tree, stmt);
             }
