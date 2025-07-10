@@ -4056,7 +4056,7 @@ namespace Mono.Linker.Steps
         }
 
         //
-        // Tries to mark additional dependencies used in reflection like calls (e.g. typeof (MyClass).GetField ("fname"))
+        // Tries to mark additional dependencies used in reflection like calls (e.g. typeof(MyClass).GetField("fname"))
         //
         protected virtual void MarkReflectionLikeDependencies(MethodIL methodIL, bool requiresReflectionMethodBodyScanner, MessageOrigin origin)
         {

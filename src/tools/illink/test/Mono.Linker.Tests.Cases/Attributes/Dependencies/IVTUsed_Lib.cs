@@ -2,7 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 
 #if IVT
-[assembly: InternalsVisibleTo ("test")]
+[assembly: InternalsVisibleTo("test")]
 #endif
 
 namespace Mono.Linker.Tests.Cases.Attributes.Dependencies

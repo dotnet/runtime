@@ -346,15 +346,15 @@ namespace ILCompiler.Dataflow
                 /// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was
                 /// something like this:
                 /// <code>
-                /// void M&lt;T&gt; () {
-                ///     Action a = () => { Console.WriteLine (typeof (T)); };
+                /// void M&lt;T&gt;() {
+                ///     Action a = () => { Console.WriteLine(typeof(T)); };
                 /// }
                 /// </code>
                 /// The compiler will generate a nested class like this:
                 /// <code>
                 /// class &lt;&gt;c__DisplayClass0&lt;T&gt; {
-                ///     public void &lt;M&gt;b__0 () {
-                ///         Console.WriteLine (typeof (T));
+                ///     public void &lt;M&gt;b__0() {
+                ///         Console.WriteLine(typeof(T));
                 ///     }
                 /// }
                 /// </code>
