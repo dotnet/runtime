@@ -61,6 +61,13 @@ namespace System.Reflection.Runtime.General
             return null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryGetRuntimeTypeInfo(this Type type, [NotNullWhen(true)] out RuntimeTypeInfo? info)
+        {
+            info = null;
+            return type is RuntimeType runtimeType && runtimeType.TryGetRuntimeTypeInfo(out info);
+        }
+
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {
             return Array.AsReadOnly(enumeration.ToArray());
