@@ -38,3 +38,5 @@ PALEXPORT int32_t SystemNative_PThreadMutex_Init(void* mutex);
 PALEXPORT int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds);
 
 PALEXPORT int32_t SystemNative_PThreadMutex_Release(void* mutex);
+
+PALEXPORT int32_t SystemNative_PThreadMutex_Size(void);

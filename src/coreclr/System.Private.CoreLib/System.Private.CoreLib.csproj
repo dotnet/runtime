@@ -290,6 +290,7 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" >
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.PlatformNotSupported.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\SharedMemoryManager.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.CoreCLR.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\MutexSharedMemory.cs" />
