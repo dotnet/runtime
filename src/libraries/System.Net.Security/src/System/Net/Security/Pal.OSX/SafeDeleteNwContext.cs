@@ -139,6 +139,7 @@ namespace System.Net.Security
                 {
                     // Propagate transport stream exceptions to the handshake
                     _handshakeCompletionSource.TrySetException(ex);
+                    _currentWriteCompletionSource?.TrySetException(ex);
                 }
             }, cancellationToken);
 
