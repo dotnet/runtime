@@ -3,23 +3,53 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    internal unsafe struct SharedMemoryId
+    [UnsupportedOSPlatform("windows")]
+    internal readonly unsafe struct SharedMemoryId
     {
-        public string Name { get; set; }
-        public bool IsSessionScope { get; set; }
-        public bool IsUserScope { get; set; }
-        public uint Uid { get; set; }
+        public SharedMemoryId(string name, bool isUserScope)
+        {
+            if (name.StartsWith("Global\\", StringComparison.Ordinal))
+            {
+                IsSessionScope = false;
+                name = name.Substring("Global\\".Length);
+            }
+            else
+            {
+                IsSessionScope = true;
+                if (name.StartsWith("Local\\", StringComparison.Ordinal))
+                {
+                    name = name.Substring("Local\\".Length);
+                }
+            }
+
+            Name = name;
+
+            if (name.ContainsAny(['\\', '/']))
+            {
+                throw new ArgumentException("Name cannot contain path separators after prefixes.", nameof(name));
+            }
+
+            IsUserScope = isUserScope;
+            Uid = IsUserScope ? Interop.Sys.GetEUid() : 0;
+        }
+
+        public string Name { get; }
+        public bool IsSessionScope { get; }
+        public bool IsUserScope { get; }
+        public uint Uid { get; }
 
         internal readonly string GetRuntimeTempDirectoryName()
         {
@@ -79,6 +109,7 @@ namespace System.Threading
         }
     }
 
+    [UnsupportedOSPlatform("windows")]
     [StructLayout(LayoutKind.Sequential)]
     internal ref struct NamedMutexSharedDataNoPThread
     {
@@ -125,6 +156,7 @@ namespace System.Threading
         }
     }
 
+    [UnsupportedOSPlatform("windows")]
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct NamedMutexSharedDataWithPThread
     {
@@ -155,6 +187,7 @@ namespace System.Threading
         public void* LockAddress => Unsafe.AsPointer(ref this);
     }
 
+    [UnsupportedOSPlatform("windows")]
     internal unsafe class SharedMemoryProcessDataHeader
     {
         internal SharedMemoryId _id;
@@ -187,15 +220,11 @@ namespace System.Threading
             bool createIfNotExist,
             bool acquireLockIfCreated,
             out bool created,
-            out IDisposable? creationDeletionLockFileHandle)
+            out AutoReleaseFileLock creationDeletionLockFileHandle)
         {
             created = false;
-            creationDeletionLockFileHandle = null;
-            SharedMemoryId id = new()
-            {
-                Name = name,
-                IsUserScope = isUserScope
-            };
+            creationDeletionLockFileHandle = new AutoReleaseFileLock(new SafeFileHandle());
+            SharedMemoryId id = new(name, isUserScope);
 
             nuint sharedDataUsedByteCount = (nuint)sizeof(SharedMemorySharedDataHeader) + sharedMemoryDataSize;
             nuint sharedDataTotalByteCount = AlignUp(sharedDataUsedByteCount, SharedMemoryHelpers.GetVirtualPageSize());
@@ -208,7 +237,7 @@ namespace System.Threading
                 return processDataHeader;
             }
 
-            creationDeletionLockFileHandle = SharedMemoryManager.Instance.AcquireCreationDeletionLockFileHandle(id);
+            creationDeletionLockFileHandle = SharedMemoryManager.Instance.AcquireCreationDeletionLockForId(id);
 
             string sessionDirectory = Path.Combine(
                 SharedMemoryManager.SharedFilesPath,
@@ -303,7 +332,6 @@ namespace System.Threading
             if (!createdFile)
             {
                 creationDeletionLockFileHandle.Dispose();
-                creationDeletionLockFileHandle = null;
             }
 
             processDataHeader = new SharedMemoryProcessDataHeader(
@@ -346,6 +374,7 @@ namespace System.Threading
         }
     }
 
+    [UnsupportedOSPlatform("windows")]
     internal interface ISharedMemoryProcessData
     {
         bool CanClose { get; }
@@ -353,6 +382,7 @@ namespace System.Threading
         void Close(bool isAbruptShutdown, bool releaseSharedData);
     }
 
+    [UnsupportedOSPlatform("windows")]
     internal abstract class NamedMutexProcessDataBase(SharedMemoryProcessDataHeader header) : ISharedMemoryProcessData
     {
         private const byte SyncSystemVersion = 1;
@@ -393,6 +423,12 @@ namespace System.Threading
             return result;
         }
 
+        private static void AddOwnedNamedMutex(Thread currentThread, NamedMutexProcessDataBase namedMutexProcessDataBase)
+        {
+            namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList = currentThread._ownedSharedNamedMutexes;
+            currentThread._ownedSharedNamedMutexes = namedMutexProcessDataBase;
+        }
+
         public void ReleaseLock()
         {
             if (!IsLockOwnedByCurrentThread)
@@ -409,6 +445,29 @@ namespace System.Threading
             RemoveOwnedNamedMutex(Thread.CurrentThread, this);
             _lockOwnerThread = null;
             ReleaseLockCore();
+        }
+
+        private static void RemoveOwnedNamedMutex(Thread currentThread, NamedMutexProcessDataBase namedMutexProcessDataBase)
+        {
+            if (currentThread._ownedSharedNamedMutexes == namedMutexProcessDataBase)
+            {
+                currentThread._ownedSharedNamedMutexes = namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList;
+            }
+            else
+            {
+                NamedMutexProcessDataBase? previous = currentThread._ownedSharedNamedMutexes;
+                while (previous?._nextInThreadOwnedNamedMutexList != namedMutexProcessDataBase)
+                {
+                    previous = previous?._nextInThreadOwnedNamedMutexList;
+                }
+
+                if (previous is not null)
+                {
+                    previous._nextInThreadOwnedNamedMutexList = namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList;
+                }
+            }
+
+            namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList = null;
         }
 
         public void Abandon()
@@ -466,7 +525,7 @@ namespace System.Threading
 
         private static unsafe SharedMemoryProcessDataHeader? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
-            using var creationDeletionProcessLock = SharedMemoryManager.Instance.AcquireCreationDeletionLock();
+            using var creationDeletionProcessLock = SharedMemoryManager.Instance.AcquireCreationDeletionProcessLock();
 
             SharedMemoryProcessDataHeader? processDataHeader = SharedMemoryProcessDataHeader.CreateOrOpen(
                 name,
@@ -476,39 +535,40 @@ namespace System.Threading
                 createIfNotExist,
                 acquireLockIfCreated,
                 out created,
-                out IDisposable? creationDeletionLockFileHandle);
+                out AutoReleaseFileLock creationDeletionLockFileScope);
 
             if (processDataHeader is null)
             {
                 return null;
             }
 
-            using IDisposable? creationDeletionLockFileHandleScope = created ? creationDeletionLockFileHandle : null;
-
-            if (created)
+            using (creationDeletionLockFileScope)
             {
-                InitializeSharedData(SharedMemoryProcessDataHeader.GetDataPointer(processDataHeader));
+                if (created)
+                {
+                    InitializeSharedData(SharedMemoryProcessDataHeader.GetDataPointer(processDataHeader));
+                }
+
+                if (processDataHeader._data is null)
+                {
+                    if (SharedMemoryManager.UsePThreadMutexes)
+                    {
+                        processDataHeader._data = new NamedMutexProcessDataWithPThreads(processDataHeader);
+                    }
+                    else
+                    {
+                        processDataHeader._data = new NamedMutexProcessDataNoPThreads(processDataHeader, created);
+                    }
+
+                    if (created && acquireLockIfCreated)
+                    {
+                        MutexTryAcquireLockResult acquireResult = ((NamedMutexProcessDataBase)processDataHeader._data).TryAcquireLock(timeoutMilliseconds: 0);
+                        Debug.Assert(acquireResult != MutexTryAcquireLockResult.AcquiredLock);
+                    }
+                }
+
+                return processDataHeader;
             }
-
-            if (processDataHeader._data is null)
-            {
-                if (SharedMemoryManager.UsePThreadMutexes)
-                {
-                    processDataHeader._data = new NamedMutexProcessDataWithPThreads(processDataHeader);
-                }
-                else
-                {
-                    processDataHeader._data = new NamedMutexProcessDataNoPThreads(processDataHeader, created);
-                }
-
-                if (created && acquireLockIfCreated)
-                {
-                    MutexTryAcquireLockResult acquireResult = ((NamedMutexProcessDataBase)processDataHeader._data).TryAcquireLock(timeoutMilliseconds: 0);
-                    Debug.Assert(acquireResult != MutexTryAcquireLockResult.AcquiredLock);
-                }
-            }
-
-            return processDataHeader;
         }
 
         private static unsafe void InitializeSharedData(void* v)
@@ -536,6 +596,7 @@ namespace System.Threading
         }
     }
 
+    [UnsupportedOSPlatform("windows")]
     internal unsafe class NamedMutexProcessDataWithPThreads : NamedMutexProcessDataBase
     {
         private NamedMutexSharedDataWithPThread* _sharedData;
@@ -581,7 +642,17 @@ namespace System.Threading
 
         protected override MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds)
         {
-            MutexTryAcquireLockResult result = Interop.Sys.PThreadMutex_TryAcquireLock(_sharedData->LockAddress, timeoutMilliseconds);
+            Interop.Error lockResult = (Interop.Error)Interop.Sys.PThreadMutex_Acquire(_sharedData->LockAddress, timeoutMilliseconds);
+
+            MutexTryAcquireLockResult result = lockResult switch
+            {
+                Interop.Error.SUCCESS => MutexTryAcquireLockResult.AcquiredLock,
+                Interop.Error.EBUSY => MutexTryAcquireLockResult.TimedOut,
+                Interop.Error.ETIMEDOUT => MutexTryAcquireLockResult.TimedOut,
+                Interop.Error.EOWNERDEAD => MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned,
+                Interop.Error.EAGAIN => throw new OutOfMemoryException(),
+                _ => throw new Win32Exception((int)lockResult)
+            };
 
             if (result == MutexTryAcquireLockResult.TimedOut)
             {
@@ -604,7 +675,7 @@ namespace System.Threading
                 finally
                 {
                     // The lock is released upon acquiring a recursive lock from the thread that already owns the lock
-                    Interop.Sys.PThreadMutex_ReleaseLock(_sharedData->LockAddress);
+                    Interop.Sys.PThreadMutex_Release(_sharedData->LockAddress);
                 }
             }
 
@@ -615,14 +686,14 @@ namespace System.Threading
         {
             Debug.Assert(IsLockOwnedByCurrentThread);
             Debug.Assert(_lockCount == 0);
-            NamedMutexSharedDataWithPThread* sharedData = (NamedMutexSharedDataWithPThread*)SharedMemoryProcessDataHeader.GetDataPointer(_processDataHeader._sharedDataHeader);
-            sharedData->LockOwnerProcessId = 0;
-            sharedData->LockOwnerThreadId = 0;
+            _sharedData->LockOwnerProcessId = 0;
+            _sharedData->LockOwnerThreadId = 0;
 
-            Interop.Sys.PThreadMutex_ReleaseLock(sharedData->LockAddress);
+            Interop.Sys.PThreadMutex_Release(_sharedData->LockAddress);
         }
     }
 
+    [UnsupportedOSPlatform("windows")]
     internal unsafe class NamedMutexProcessDataNoPThreads : NamedMutexProcessDataBase
     {
         private Lock _processLockHandle = new();
@@ -815,6 +886,7 @@ namespace System.Threading
         }
     }
 
+    [UnsupportedOSPlatform("windows")]
     internal static class SharedMemoryHelpers
     {
         public const uint InvalidProcessId = unchecked((uint)-1);
@@ -1009,7 +1081,7 @@ namespace System.Threading
                 throw new IOException($"The directory '{directoryPath}' does not have the expected owner or permissions for system scope: {fileStatus.Uid}, {Convert.ToString(fileStatus.Mode, 8)}.");
             }
 
-            // For non-system directories (such as gSharedFilesPath/SHARED_MEMORY_USER_UNSCOPED_RUNTIME_TEMP_DIRECTORY_NAME),
+            // For non-system directories (such as SharedFilesPath/UserUnscopedRuntimeTempDirectoryName),
             // require the sufficient permissions and try to update them if requested to create the directory, so that
             // shared memory files may be shared according to its scope.
 
@@ -1119,7 +1191,7 @@ namespace System.Threading
 
         public void Dispose()
         {
-            if (!_suppressed)
+            if (!_suppressed && !fd.IsInvalid)
             {
                 Interop.Sys.FLock(fd, Interop.Sys.LockOperations.LOCK_UN);
             }
@@ -1134,6 +1206,7 @@ namespace System.Threading
         AcquiredLockRecursively,
     }
 
+    [UnsupportedOSPlatform("windows")]
     internal sealed class SharedMemoryManager
     {
         [FeatureSwitchDefinition("System.Threading.NamedMutexUsePThreadMutex")]
@@ -1145,7 +1218,41 @@ namespace System.Threading
         public static string SharedFilesPath { get; } = InitalizeSharedFilesPath();
         public static int SessionId { get; } = Interop.Sys.GetSid(Environment.ProcessId);
 
-        private static string InitalizeSharedFilesPath() => throw new NotImplementedException();
+        private static string InitalizeSharedFilesPath()
+        {
+            if (OperatingSystem.IsApplePlatform())
+            {
+                string? applicationGroupId = Environment.GetEnvironmentVariable("DOTNET_SHARED_MEMORY_APPLICATION_GROUP_ID");
+                if (applicationGroupId is not null)
+                {
+                    string sharedFilesPath = Path.Combine(
+                        PersistedFiles.GetHomeDirectoryFromPasswd(),
+                        ApplicationContainerBasePathSuffix,
+                        applicationGroupId
+                    );
+
+                    if (File.Exists(sharedFilesPath))
+                    {
+                        // If the path exists and is a file, throw an exception.
+                        // If it's a directory, or does not exist, callers can correctly handle it.
+                        throw new DirectoryNotFoundException();
+                    }
+
+                    return sharedFilesPath;
+                }
+            }
+
+            if (OperatingSystem.IsAndroid())
+            {
+                return "/data/local/tmp/";
+            }
+            else
+            {
+                return "/tmp/";
+            }
+        }
+
+        private const string ApplicationContainerBasePathSuffix = "/Library/Group Containers/";
 
         internal const string SharedMemoryLockFilesDirectoryName = "lockfiles";
 
@@ -1165,12 +1272,12 @@ namespace System.Threading
         private SafeFileHandle? _creationDeletionLockFileHandle;
         private Dictionary<uint, SafeFileHandle> _uidToFileHandleMap = [];
 
-        public Lock.Scope AcquireCreationDeletionLock()
+        public Lock.Scope AcquireCreationDeletionProcessLock()
         {
             return _creationDeletionProcessLock.EnterScope();
         }
 
-        public IDisposable AcquireCreationDeletionLockFileHandle(SharedMemoryId id)
+        public AutoReleaseFileLock AcquireCreationDeletionLockForId(SharedMemoryId id)
         {
             Debug.Assert(_creationDeletionProcessLock.IsHeldByCurrentThread);
             SafeFileHandle? fd = id.IsUserScope ? GetUserScopeCreationDeletionLockFileHandle(id.Uid) : _creationDeletionLockFileHandle;
@@ -1211,15 +1318,7 @@ namespace System.Threading
 
             bool acquired = SharedMemoryHelpers.TryAcquireFileLock(fd, nonBlocking: true, exclusive: true);
             Debug.Assert(acquired);
-            return new CreationDeletionLockFileScope(fd);
-        }
-
-        private sealed class CreationDeletionLockFileScope(SafeFileHandle fd) : IDisposable
-        {
-            public void Dispose()
-            {
-                Interop.Sys.FLock(fd, Interop.Sys.LockOperations.LOCK_UN);
-            }
+            return new AutoReleaseFileLock(fd);
         }
 
         public void AddUserScopeCreationDeletionLockFileHandle(uint uid, SafeFileHandle fileHandle)
