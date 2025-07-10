@@ -515,6 +515,8 @@ namespace System.Runtime.CompilerServices
                     // TODO: We do not need TaskSchedulerAwaitTaskContinuation here, just need to refactor its Run method...
                     var taskSchedCont = new TaskSchedulerAwaitTaskContinuation(sched, TOps.GetContinuationAction(task), flowExecutionContext: false);
                     taskSchedCont.Run(Task.CompletedTask, canInlineContinuationTask: true);
+
+                    return true;
                 }
 
                 return false;
