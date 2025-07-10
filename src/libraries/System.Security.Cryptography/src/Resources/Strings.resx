@@ -549,6 +549,12 @@
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
   </data>
+  <data name="Cryptography_KeyWrap_DecryptFailed" xml:space="preserve">
+    <value>The ciphertext did not successfully decrypt with the instance key.</value>
+  </data>
+  <data name="Cryptography_KeyWrap_InvalidLength" xml:space="preserve">
+    <value>The ciphertext is not a valid length for the Key Wrap with Padding Unwrap algorithm.</value>
+  </data>
   <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The specified key is not the correct size for the indicated algorithm.</value>
   </data>

@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics.Tensors
 {
     /// <summary>Represents a read-only tensor.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public interface IReadOnlyTensor<TSelf, T> : IReadOnlyTensor, IEnumerable<T>
+    public interface IReadOnlyTensor<TSelf, T> : IReadOnlyTensor
         where TSelf : IReadOnlyTensor<TSelf, T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         /// <summary>Gets an empty tensor.</summary>
         static abstract TSelf Empty { get; }

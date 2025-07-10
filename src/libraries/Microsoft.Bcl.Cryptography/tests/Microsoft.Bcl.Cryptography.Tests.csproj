@@ -118,6 +118,8 @@
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"

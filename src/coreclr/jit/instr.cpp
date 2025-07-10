@@ -116,20 +116,33 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     const emitter* emit      = GetEmitter();
     const char*    vexPrefix = emit->UseVEXEncoding() ? "v" : "";
 
-    auto AddPrefixAndSuffix = [&](const char* prefix, const char* insName, const char* suffix1,
-                                  const char* suffix2) -> const char* {
+    auto AddSuffix = [&](const char* insName, const char* suffix1, const char* suffix2 = "") -> const char* {
         const int       TEMP_BUFFER_LEN = 40;
         static unsigned curBuf          = 0;
         static char     buf[4][TEMP_BUFFER_LEN];
         const char*     retbuf;
 
-        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%s%s%s%s", prefix, insName, suffix1, suffix2);
+        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%s%s%s", insName, suffix1, suffix2);
         retbuf = buf[curBuf];
         curBuf = (curBuf + 1) % 4;
         return retbuf;
     };
 
-    auto GetFltCmpOpName = [&](emitter::instrDesc* id, const char* suffix) -> const char* {
+    auto RemoveVexPrefixIfNeeded = [&](const char* insName) -> const char* {
+        if (emit->UseVEXEncoding())
+        {
+            return insName;
+        }
+
+        if (insName[0] == 'v')
+        {
+            return insName + 1;
+        }
+
+        return insName;
+    };
+
+    auto GetFltCmpOpName = [&](const char* suffix) -> const char* {
         static const char* const fltCmpOpNames[] = {
             "eq",    "lt",     "le",     "unord",    "neq",    "nlt",    "nle",    "ord",
             "eq_uq", "nge",    "ngt",    "false",    "neq_oq", "ge",     "gt",     "true",
@@ -141,10 +154,10 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
         assert(control < ArrLen(fltCmpOpNames));
 
         const char* pseudoName = fltCmpOpNames[control];
-        return AddPrefixAndSuffix(vexPrefix, "cmp", pseudoName, suffix);
+        return RemoveVexPrefixIfNeeded(AddSuffix("vcmp", pseudoName, suffix));
     };
 
-    auto GetIntCmpOpName = [&](emitter::instrDesc* id, const char* suffix) -> const char* {
+    auto GetIntCmpOpName = [&](const char* suffix) -> const char* {
         static const char* const intCmpOpNames[] = {
             "eq", "lt", "le", "neq", "false", "ge", "gt", "true",
         };
@@ -153,237 +166,260 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
         assert(control < ArrLen(intCmpOpNames));
 
         const char* pseudoName = intCmpOpNames[control];
-        return AddPrefixAndSuffix(vexPrefix, "pcmp", pseudoName, suffix);
+        return RemoveVexPrefixIfNeeded(AddSuffix("vpcmp", pseudoName, suffix));
     };
 
-    // Some instructions have different mnemonics depending on the immediate.
-    switch (ins)
+    auto GetEvexOnlyName = [&](const char* pseudoName) -> const char* {
+        if (emit->TakesEvexPrefix(id))
+        {
+            return pseudoName;
+        }
+        return RemoveVexPrefixIfNeeded(insName);
+    };
+
+    if (instHasPseudoName(ins))
     {
-        case INS_cmppd:
-        {
-            return GetFltCmpOpName(id, "pd");
-        }
+        // Some instructions have different mnemonics available
 
-        case INS_cmpps:
+        switch (ins)
         {
-            return GetFltCmpOpName(id, "ps");
-        }
-
-        case INS_cmpsd:
-        {
-            return GetFltCmpOpName(id, "sd");
-        }
-
-        case INS_cmpss:
-        {
-            return GetFltCmpOpName(id, "ss");
-        }
-
-        case INS_pclmulqdq:
-        {
-            uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id)) & 0x11;
-
-            if (control == 0x00)
+            case INS_cdq:
             {
-                insName = "lqlq";
-            }
-            else if (control == 0x01)
-            {
-                insName = "hqlq";
-            }
-            else if (control == 0x10)
-            {
-                insName = "lqhq";
-            }
-            else
-            {
-                insName = "hqhq";
-            }
-
-            return AddPrefixAndSuffix(vexPrefix, "pclmul", insName, "dq");
-        }
-
-        case INS_vpcmpb:
-        {
-            return GetIntCmpOpName(id, "b");
-        }
-
-        case INS_vpcmpd:
-        {
-            return GetIntCmpOpName(id, "d");
-        }
-
-        case INS_vpcmpq:
-        {
-            return GetIntCmpOpName(id, "q");
-        }
-
-        case INS_vpcmpub:
-        {
-            return GetIntCmpOpName(id, "ub");
-        }
-
-        case INS_vpcmpud:
-        {
-            return GetIntCmpOpName(id, "ud");
-        }
-
-        case INS_vpcmpuq:
-        {
-            return GetIntCmpOpName(id, "uq");
-        }
-
-        case INS_vpcmpuw:
-        {
-            return GetIntCmpOpName(id, "uw");
-        }
-
-        case INS_vpcmpw:
-        {
-            return GetIntCmpOpName(id, "w");
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    if (id->idIsApxPpxContextSet())
-    {
-        return AddPrefixAndSuffix("", insName, "p", "");
-    }
-
-    if (emit->IsVexOrEvexEncodableInstruction(ins))
-    {
-        if (!emit->IsBMIInstruction(ins) && !emit->IsKInstruction(ins))
-        {
-            if (emit->TakesEvexPrefix(id))
-            {
-                switch (ins)
+                switch (id->idOpSize())
                 {
-                    case INS_movdqa32:
+                    case EA_8BYTE:
                     {
-                        return "vmovdqa32";
+                        return "cqo";
                     }
 
-                    case INS_movdqu32:
+                    case EA_4BYTE:
                     {
-                        return "vmovdqu32";
+                        return "cdq";
                     }
 
-                    case INS_pandd:
+                    case EA_2BYTE:
                     {
-                        return "vpandd";
-                    }
-
-                    case INS_pandnd:
-                    {
-                        return "vpandnd";
-                    }
-
-                    case INS_pord:
-                    {
-                        return "vpord";
-                    }
-
-                    case INS_pxord:
-                    {
-                        return "vpxord";
-                    }
-
-                    case INS_roundpd:
-                    {
-                        return "vrndscalepd";
-                    }
-
-                    case INS_roundps:
-                    {
-                        return "vrndscaleps";
-                    }
-
-                    case INS_roundsd:
-                    {
-                        return "vrndscalesd";
-                    }
-
-                    case INS_roundss:
-                    {
-                        return "vrndscaless";
-                    }
-
-                    case INS_vbroadcastf32x4:
-                    {
-                        return "vbroadcastf32x4";
-                    }
-
-                    case INS_vextractf32x4:
-                    {
-                        return "vextractf32x4";
-                    }
-
-                    case INS_vinsertf32x4:
-                    {
-                        return "vinsertf32x4";
-                    }
-
-                    case INS_vbroadcasti32x4:
-                    {
-                        return "vbroadcasti32x4";
-                    }
-
-                    case INS_vextracti32x4:
-                    {
-                        return "vextracti32x4";
-                    }
-
-                    case INS_vinserti32x4:
-                    {
-                        return "vinserti32x4";
+                        return "cwd";
                     }
 
                     default:
                     {
-                        break;
+                        unreached();
+                    }
+                }
+                break;
+            }
+
+            case INS_cmppd:
+            case INS_vcmppd:
+            {
+                return GetFltCmpOpName("pd");
+            }
+
+            case INS_cmpps:
+            case INS_vcmpps:
+            {
+                return GetFltCmpOpName("ps");
+            }
+
+            case INS_cmpsd:
+            case INS_vcmpsd:
+            {
+                return GetFltCmpOpName("sd");
+            }
+
+            case INS_cmpss:
+            case INS_vcmpss:
+            {
+                return GetFltCmpOpName("ss");
+            }
+
+            case INS_cwde:
+            {
+                switch (id->idOpSize())
+                {
+                    case EA_8BYTE:
+                    {
+                        return "cdqe";
+                    }
+
+                    case EA_4BYTE:
+                    {
+                        return "cwde";
+                    }
+
+                    case EA_2BYTE:
+                    {
+                        return "cbw";
+                    }
+
+                    default:
+                    {
+                        unreached();
                     }
                 }
             }
 
-            return AddPrefixAndSuffix("v", insName, "", "");
+            case INS_movdqa32:
+            {
+                return GetEvexOnlyName("vmovdqa32");
+            }
+
+            case INS_movdqu32:
+            {
+                return GetEvexOnlyName("vmovdqu32");
+            }
+
+            case INS_pandd:
+            {
+                return GetEvexOnlyName("vpandd");
+            }
+
+            case INS_pandnd:
+            {
+                return GetEvexOnlyName("vpandnd");
+            }
+
+            case INS_pclmulqdq:
+            {
+                switch (static_cast<uint8_t>(emit->emitGetInsSC(id)) & 0x11)
+                {
+                    case 0x00:
+                    {
+                        return RemoveVexPrefixIfNeeded("vpclmullqlqdq");
+                    }
+
+                    case 0x01:
+                    {
+                        return RemoveVexPrefixIfNeeded("vpclmulhqlqdq");
+                    }
+
+                    case 0x10:
+                    {
+                        return RemoveVexPrefixIfNeeded("vpclmullqhqdq");
+                    }
+
+                    default:
+                    {
+                        return RemoveVexPrefixIfNeeded("vpclmulhqhqdq");
+                    }
+                }
+            }
+
+            case INS_pord:
+            {
+                return GetEvexOnlyName("vpord");
+            }
+
+            case INS_pxord:
+            {
+                return GetEvexOnlyName("vpxord");
+            }
+
+            case INS_roundpd:
+            {
+                return GetEvexOnlyName("vrndscalepd");
+            }
+
+            case INS_roundps:
+            {
+                return GetEvexOnlyName("vrndscaleps");
+            }
+
+            case INS_roundsd:
+            {
+                return GetEvexOnlyName("vrndscalesd");
+            }
+
+            case INS_roundss:
+            {
+                return GetEvexOnlyName("vrndscaless");
+            }
+
+            case INS_vbroadcastf32x4:
+            {
+                return GetEvexOnlyName("vbroadcastf32x4");
+            }
+
+            case INS_vbroadcasti32x4:
+            {
+                return GetEvexOnlyName("vbroadcasti32x4");
+            }
+
+            case INS_vextractf32x4:
+            {
+                return GetEvexOnlyName("vextractf32x4");
+            }
+
+            case INS_vextracti32x4:
+            {
+                return GetEvexOnlyName("vextracti32x4");
+            }
+
+            case INS_vinsertf32x4:
+            {
+                return GetEvexOnlyName("vinsertf32x4");
+            }
+
+            case INS_vinserti32x4:
+            {
+                return GetEvexOnlyName("vinserti32x4");
+            }
+
+            case INS_vpcmpb:
+            {
+                return GetIntCmpOpName("b");
+            }
+
+            case INS_vpcmpd:
+            {
+                return GetIntCmpOpName("d");
+            }
+
+            case INS_vpcmpq:
+            {
+                return GetIntCmpOpName("q");
+            }
+
+            case INS_vpcmpub:
+            {
+                return GetIntCmpOpName("ub");
+            }
+
+            case INS_vpcmpud:
+            {
+                return GetIntCmpOpName("ud");
+            }
+
+            case INS_vpcmpuq:
+            {
+                return GetIntCmpOpName("uq");
+            }
+
+            case INS_vpcmpuw:
+            {
+                return GetIntCmpOpName("uw");
+            }
+
+            case INS_vpcmpw:
+            {
+                return GetIntCmpOpName("w");
+            }
+
+            default:
+            {
+                unreached();
+            }
         }
     }
 
-    // Some instructions have different mnemonics depending on the size.
-    switch (ins)
+    if (IsSimdInstruction(ins))
     {
-        case INS_cdq:
-            switch (id->idOpSize())
-            {
-                case EA_8BYTE:
-                    return "cqo";
-                case EA_4BYTE:
-                    return "cdq";
-                case EA_2BYTE:
-                    return "cwd";
-                default:
-                    unreached();
-            }
-
-        case INS_cwde:
-            switch (id->idOpSize())
-            {
-                case EA_8BYTE:
-                    return "cdqe";
-                case EA_4BYTE:
-                    return "cwde";
-                case EA_2BYTE:
-                    return "cbw";
-                default:
-                    unreached();
-            }
-
-        default:
-            break;
+        return RemoveVexPrefixIfNeeded(insName);
+    }
+    else if (id->idIsApxPpxContextSet())
+    {
+        return AddSuffix(insName, "p");
     }
 #endif // TARGET_XARCH
 
@@ -557,6 +593,17 @@ unsigned CodeGenInterface::instKMaskBaseSize(instruction ins)
         default:
             return 0;
     }
+}
+
+/*****************************************************************************
+ *
+ *  Returns true if the given CPU instruction has a pseudo name
+ */
+
+bool CodeGenInterface::instHasPseudoName(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+    return (instInfo[ins] & INS_FLAGS_HasPseudoName) != 0;
 }
 #endif // TARGET_XARCH
 
@@ -1418,7 +1465,7 @@ insOpts CodeGen::AddEmbBroadcastMode(insOpts instOptions)
 {
     assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     unsigned result = static_cast<unsigned>(instOptions);
-    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb_er_rd);
+    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb);
 }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 

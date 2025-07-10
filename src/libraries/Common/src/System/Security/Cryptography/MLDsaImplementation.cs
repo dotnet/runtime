@@ -28,22 +28,25 @@ namespace System.Security.Cryptography
             Debug.Assert(key is not MLDsaImplementation);
 
             MLDsaAlgorithm alg = key.Algorithm;
+            Debug.Assert(alg.SecretKeySizeInBytes > alg.PrivateSeedSizeInBytes);
             byte[] rented = CryptoPool.Rent(alg.SecretKeySizeInBytes);
-            int written = 0;
 
             try
             {
-                written = key.ExportMLDsaPrivateSeed(rented);
-                return ImportSeed(alg, new ReadOnlySpan<byte>(rented, 0, written));
+                Span<byte> seedSpan = rented.AsSpan(0, alg.PrivateSeedSizeInBytes);
+                key.ExportMLDsaPrivateSeed(seedSpan);
+                return ImportSeed(alg, seedSpan);
             }
             catch (CryptographicException)
             {
-                written = key.ExportMLDsaSecretKey(rented);
-                return ImportSecretKey(alg, new ReadOnlySpan<byte>(rented, 0, written));
+                // Rented array may still be larger but we expect exact length
+                Span<byte> skSpan = rented.AsSpan(0, alg.SecretKeySizeInBytes);
+                key.ExportMLDsaSecretKey(skSpan);
+                return ImportSecretKey(alg, skSpan);
             }
             finally
             {
-                CryptoPool.Return(rented, written);
+                CryptoPool.Return(rented);
             }
         }
     }

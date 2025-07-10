@@ -2557,6 +2557,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     //
     unsigned preheaderEHRegion    = EHblkDsc::NO_ENCLOSING_INDEX;
     bool     inSameRegionAsHeader = true;
+    bool     headerIsTryEntry     = bbIsTryBeg(header);
     if (header->hasTryIndex())
     {
         preheaderEHRegion = header->getTryIndex();
@@ -2594,6 +2595,14 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     if (inSameRegionAsHeader)
     {
         fgExtendEHRegionBefore(header);
+
+        // If the header was a try region entry, it no longer is.
+        //
+        if (headerIsTryEntry)
+        {
+            assert(!bbIsTryBeg(header));
+            header->RemoveFlags(BBF_DONT_REMOVE);
+        }
     }
     else
     {

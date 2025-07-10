@@ -20,6 +20,7 @@ class DeadCodeElimination
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
         TestInlinedDeadBranchElimination.Run();
+        TestComplexInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeIs.Run();
@@ -316,6 +317,49 @@ class DeadCodeElimination
             }
 
             ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
+        }
+    }
+
+    class TestComplexInlinedDeadBranchElimination
+    {
+        class Log
+        {
+            public static Log Instance;
+
+            public bool IsEnabled => false;
+        }
+
+        class OperatingSystem
+        {
+            public static bool IsInterix => false;
+        }
+
+        public static bool CombinedCheck() => Log.Instance.IsEnabled || OperatingSystem.IsInterix;
+
+        class NeverReferenced1 { }
+
+        public static void Run()
+        {
+            bool didThrow = false;
+
+            // CombinedCheck is going to throw a NullRef but we still should have been able to deadcode
+            // the Log.Instance.IsEnabled call (this pattern is common in EventSources).
+            try
+            {
+                if (CombinedCheck())
+                {
+                    Activator.CreateInstance(typeof(NeverReferenced1));
+                }
+            }
+            catch (NullReferenceException)
+            {
+                didThrow = true;
+            }
+
+            if (!didThrow)
+                throw new Exception();
+
+            ThrowIfPresent(typeof(TestComplexInlinedDeadBranchElimination), nameof(NeverReferenced1));
         }
     }
 

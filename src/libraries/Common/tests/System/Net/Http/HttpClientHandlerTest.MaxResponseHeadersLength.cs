@@ -90,18 +90,23 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
+                var connection = await server.EstablishGenericConnectionAsync();
                 try
                 {
-                    await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
+                    // Do not use HandleRequestAsync. It sends GO_AWAY before sending the response, making client close the connection right after the stream abort.
+                    // QUIC is based on UDP and packet ordering is not preserved, so the connection close might race with the expected stream error in H/3 case.
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
 #if !WINHTTPHANDLER_TEST
-                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) { }
 #endif
                 finally
                 {
                     semaphore.Release();
+                    await connection.DisposeAsync();
                 }
             });
         }
@@ -148,9 +153,13 @@ namespace System.Net.Http.Functional.Tests
                     headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
                 }
 
+                var connection = await server.EstablishGenericConnectionAsync();
                 try
                 {
-                    await server.HandleRequestAsync(headers: headers);
+                    // Do not use HandleRequestAsync. It sends GO_AWAY before sending the response, making client close the connection right after the stream abort.
+                    // QUIC is based on UDP and packet ordering is not preserved, so the connection close might race with the expected stream error in H/3 case.
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(headers: headers);
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
@@ -160,6 +169,7 @@ namespace System.Net.Http.Functional.Tests
                 finally
                 {
                     semaphore.Release();
+                    await connection.DisposeAsync();
                 }
             });
         }

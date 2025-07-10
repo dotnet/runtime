@@ -50,51 +50,16 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
 // helper function that will tell us if the IL instruction at the addr passed
 // by param consumes an address at the top of the stack. We use it to save
 // us lvAddrTaken
-bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
+bool Compiler::impILConsumesAddr(const BYTE* codeAddr, const BYTE* codeEndp)
 {
-    assert(!compIsForInlining());
-
-    OPCODE opcode;
-
-    opcode = (OPCODE)getU1LittleEndian(codeAddr);
-
+    OPCODE opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
     switch (opcode)
     {
-            // case CEE_LDFLDA: We're taking this one out as if you have a sequence
-            // like
-            //
-            //          ldloca.0
-            //          ldflda whatever
-            //
-            // of a primitivelike struct, you end up after morphing with addr of a local
-            // that's not marked as addrtaken, which is wrong. Also ldflda is usually used
-            // for structs that contain other structs, which isnt a case we handle very
-            // well now for other reasons.
-
         case CEE_LDFLD:
         {
-            // We won't collapse small fields. This is probably not the right place to have this
-            // check, but we're only using the function for this purpose, and is easy to factor
-            // out if we need to do so.
-
-            CORINFO_RESOLVED_TOKEN resolvedToken;
-            impResolveToken(codeAddr + sizeof(int8_t), &resolvedToken, CORINFO_TOKENKIND_Field);
-
-            var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField));
-
-            // Preserve 'small' int types
-            if (!varTypeIsSmall(lclTyp))
-            {
-                lclTyp = genActualType(lclTyp);
-            }
-
-            if (varTypeIsSmall(lclTyp))
-            {
-                return false;
-            }
-
             return true;
         }
+
         default:
             break;
     }
@@ -6012,8 +5977,9 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// impMatchAwaitPattern: check if a method call starts an Await pattern
-//                       that can be optimized for runtime async
+// impMatchTaskAwaitPattern:
+//   Check if a method call starts an a task await pattern that can be
+//   optimized for runtime async
 //
 // Arguments:
 //   codeAddr - IL after call[virt]
@@ -6023,7 +5989,7 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 // Returns:
 //    true if this is an Await that we can optimize
 //
-bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+bool Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
 {
     // If we see the following code pattern in runtime async methods:
     //
@@ -7061,9 +7027,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         return;
                     }
 
-                    op1->ChangeType(TYP_BYREF);
-                    op1->SetOper(GT_LCL_ADDR);
-                    op1->AsLclFld()->SetLclOffs(0);
+                    op1 = gtNewLclAddrNode(op1->AsLclVar()->GetLclNum(), 0, TYP_BYREF);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -9137,7 +9101,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     int configVal = -1; // -1 not configured, 0/1 configured to false/true
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
-                        isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
+                        if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
+                        {
+                            isAwait = true;
+                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                        }
                     }
 
                     if (isAwait)
@@ -9148,7 +9116,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // There is a runtime async variant that is implicitly awaitable, just call that.
                             // if configured, skip {ldc call ConfigureAwait}
                             if (configVal >= 0)
+                            {
                                 codeAddr += 2 + sizeof(mdToken);
+                            }
 
                             // Skip the call to `Await`
                             codeAddr += 1 + sizeof(mdToken);
@@ -9157,7 +9127,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // This can happen in rare cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
-                            // that as a regualr call that is Awaited
+                            // that as a regular call that is Awaited
                             _impResolveToken(CORINFO_TOKENKIND_Method);
                         }
                     }

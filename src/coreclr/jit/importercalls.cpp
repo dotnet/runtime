@@ -699,7 +699,51 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        call->AsCall()->SetIsAsync();
+        AsyncCallInfo asyncInfo;
+
+        JITDUMP("Call is an async ");
+
+        if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
+        {
+            JITDUMP("task await\n");
+
+            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+        }
+        else
+        {
+            JITDUMP("non-task await\n");
+            // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
+            // These are awaits of custom awaitables, and they come with the behavior that the execution context
+            // is captured and restored on suspension/resumption.
+            // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
+            // that the safe INotifyCompletion will take care of flowing ExecutionContext.
+            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
+        }
+
+        // For tailcalls the context does not need saving/restoring: it will be
+        // overwritten by the caller anyway.
+        //
+        // More specifically, if we can show that
+        // Thread.CurrentThread._executionContext is not accessed between the
+        // call and returning then we can omit save/restore of the execution
+        // context. We do not do that optimization yet.
+        if (tailCallFlags != 0)
+        {
+            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::None;
+        }
+
+        call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+        if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
+        {
+            compMustSaveAsyncContexts = true;
+
+            // In this case we will need to save the context after the arguments are evaluated.
+            // Spill the arguments to accomplish that.
+            // (We could do this via splitting in SaveAsyncContexts, but since we need to
+            //  handle inline candidates we won't gain much.)
+            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
+        }
     }
 
     // Now create the argument list.
@@ -899,16 +943,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            if (instParam != nullptr)
-            {
-                call->AsCall()->gtArgs.PushBack(this,
-                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
-            }
-
             if (call->AsCall()->IsAsync())
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+            }
+
+            if (instParam != nullptr)
+            {
+                call->AsCall()->gtArgs.PushBack(this,
+                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
             }
 
             if (varArgsCookie != nullptr)
@@ -1445,32 +1489,53 @@ DONE_CALL:
 
                 // Propagate retExpr as the placeholder for the call.
                 call = retExpr;
+
+                if (origCall->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
+                {
+                    // Async calls that require save/restore of
+                    // ExecutionContext need to be top most so that we can
+                    // insert try-finally around them. We can inline these, so
+                    // we need to ensure that the RET_EXPR is findable when we
+                    // later expand this.
+
+                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("async"));
+                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
+                    // Keep the information about small typedness to avoid
+                    // inserting unnecessary casts around normalization.
+                    if (varTypeIsSmall(origCall->gtReturnType))
+                    {
+                        assert(origCall->NormalizesSmallTypesOnReturn());
+                        varDsc->lvType = origCall->gtReturnType;
+                    }
+
+                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
+                    // impStoreToTemp can change src arg list and return type for call that returns struct.
+                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
+                    call           = gtNewLclvNode(resultLcl, type);
+                }
             }
             else
             {
-                if (isFatPointerCandidate)
+                if (call->IsCall() &&
+                    (isFatPointerCandidate || call->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext()))
                 {
-                    // fatPointer candidates should be in statements of the form call() or var = call().
+                    // these calls should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
-                    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-                    if (!call->OperIs(GT_LCL_VAR)) // can be already converted by impFixupCallStructReturn.
+                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG(isFatPointerCandidate ? "calli" : "async"));
+                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
+                    // Keep the information about small typedness to avoid
+                    // inserting unnecessary casts around normalization.
+                    if (varTypeIsSmall(call->AsCall()->gtReturnType))
                     {
-                        unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
-                        LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
-                        // Keep the information about small typedness to avoid
-                        // inserting unnecessary casts around normalization.
-                        if (call->IsCall() && varTypeIsSmall(call->AsCall()->gtReturnType))
-                        {
-                            assert(call->AsCall()->NormalizesSmallTypesOnReturn());
-                            varDsc->lvType = call->AsCall()->gtReturnType;
-                        }
-
-                        impStoreToTemp(calliSlot, call, CHECK_SPILL_ALL);
-                        // impStoreToTemp can change src arg list and return type for call that returns struct.
-                        var_types type = genActualType(lvaTable[calliSlot].TypeGet());
-                        call           = gtNewLclvNode(calliSlot, type);
+                        assert(call->AsCall()->NormalizesSmallTypesOnReturn());
+                        varDsc->lvType = call->AsCall()->gtReturnType;
                     }
+
+                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
+                    // impStoreToTemp can change src arg list and return type for call that returns struct.
+                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
+                    call           = gtNewLclvNode(resultLcl, type);
                 }
 
                 // For non-candidates we must also spill, since we
@@ -10353,6 +10418,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "get_Default") == 0)
                         {
                             result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+                        }
+                    }
+                    else if (strcmp(className, "IEnumerable`1") == 0)
+                    {
+                        if (strcmp(methodName, "GetEnumerator") == 0)
+                        {
+                            result = NI_System_Collections_Generic_IEnumerable_GetEnumerator;
                         }
                     }
                 }

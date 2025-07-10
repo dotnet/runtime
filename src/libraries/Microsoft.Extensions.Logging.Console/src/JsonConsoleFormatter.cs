@@ -81,14 +81,20 @@ namespace Microsoft.Extensions.Logging.Console
                     if (hasState)
                     {
                         writer.WriteStartObject(nameof(LogEntry<object>.State));
-                        writer.WriteString("Message", stateMessage);
-                        if (stateProperties != null)
+
+                        // In many cases the message and stateMessage will be the same, so we only write the message if it differs from the stateMessage.
+                        // This helps reducing the size of the log entry.
+                        if (!string.Equals(message, stateMessage))
                         {
-                            foreach (KeyValuePair<string, object?> item in stateProperties)
-                            {
-                                WriteItem(writer, item);
-                            }
+                            writer.WriteString("Message", stateMessage);
                         }
+                        if (stateProperties != null)
+                            {
+                                foreach (KeyValuePair<string, object?> item in stateProperties)
+                                {
+                                    WriteItem(writer, item);
+                                }
+                            }
                         writer.WriteEndObject();
                     }
                     WriteScopeInformation(writer, scopeProvider);

@@ -2306,6 +2306,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private void WriteStringToAllListeners(string eventName, string msg)
         {
+#pragma warning disable CA1861
             var eventCallbackArgs = new EventWrittenEventArgs(this, 0)
             {
                 EventName = eventName,
@@ -2313,6 +2314,7 @@ namespace System.Diagnostics.Tracing
                 Payload = new ReadOnlyCollection<object?>(new object[] { msg }),
                 PayloadNames = s_errorPayloadNames ??= new ReadOnlyCollection<string>(new string[] { "message" })
             };
+#pragma warning restore CA1861
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {

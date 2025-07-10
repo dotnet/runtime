@@ -3969,6 +3969,11 @@ mono_interp_profiler_raise_tail_call (InterpFrame *frame, MonoMethod *new_method
 		mono_interp_profiler_raise (frame, mono_profiler_raise_method_ ## name_lower); \
 	}
 
+#define INTERP_PROFILER_RAISE_SAMPLEPOINT() \
+	if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_samplepoint)) { \
+		frame->state.ip = ip; \
+		mono_interp_profiler_raise (frame, mono_profiler_raise_method_samplepoint); \
+	}
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -7696,7 +7701,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_PROF_SAMPLEPOINT) {
 			guint16 flag = ip [1];
 			ip += 2;
-			INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+			INTERP_PROFILER_RAISE_SAMPLEPOINT();
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_PROF_EXIT)
@@ -9231,7 +9236,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_prof_samplepoint (InterpFrame *frame, guint16 *ip)
 {
 	guint16 flag = ip [1];
-	INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+	INTERP_PROFILER_RAISE_SAMPLEPOINT();
 }
 
 EMSCRIPTEN_KEEPALIVE void

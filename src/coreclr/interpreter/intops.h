@@ -26,6 +26,7 @@ typedef enum
     InterpOpGenericHelperFtn,
     InterpOpLdPtr,
     InterpOpHelperFtn,
+    InterpOpHelperFtnNoArgs,
     InterpOpPointerHelperFtn,
     InterpOpPointerInt,
     InterpOpGenericLookupInt,

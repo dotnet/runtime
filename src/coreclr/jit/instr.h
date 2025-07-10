@@ -236,6 +236,9 @@ enum insFlags : uint64_t
     KMask_Base16   = 1ULL << 51,
     KMask_BaseMask = (0x1FULL) << 47,
 
+    // The instruction has a pseudo name that should be used for disasm display
+    INS_FLAGS_HasPseudoName = 1ULL << 52,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
@@ -245,13 +248,17 @@ enum insOpts: unsigned
     INS_OPTS_NONE = 0,
 
     // Two-bits: 0b0000_0011
-    INS_OPTS_EVEX_b_MASK = 0x03,         // mask for EVEX.b related features.
+    INS_OPTS_EVEX_b_MASK = 0x03,    // mask for EVEX.b related features.
 
-    INS_OPTS_EVEX_eb_er_rd = 1,     // Embedded Broadcast or Round down
+    INS_OPTS_EVEX_eb = 1,           // Embedded broadcast
 
-    INS_OPTS_EVEX_er_ru = 2,        // Round up
+    INS_OPTS_EVEX_cd = 2,           // Compressed displacement
 
-    INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
+    INS_OPTS_EVEX_er_rd = 1,        // Embedded round down
+
+    INS_OPTS_EVEX_er_ru = 2,        // Embedded round up
+
+    INS_OPTS_EVEX_er_rz = 3,        // Embedded round towards zero
 
     // Three-bits: 0b0001_1100
     INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features

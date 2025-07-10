@@ -359,8 +359,13 @@ namespace System.Security.Cryptography
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
-            _key.Dispose();
-            _key = null!;
+            if (disposing)
+            {
+                _key.Dispose();
+                _key = null!;
+            }
+
+            base.Dispose(disposing);
         }
 
         private void ExportKey(
