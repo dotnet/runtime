@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -107,18 +108,20 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
             Debug.Assert(flagByte == 0);
         }
 
-        DebugStreamReader reader = new(_target, debugInfo, 12 /*maximum size of 2 32bit ints compressed*/);
+        NativeReader nibbleNativeReader = new(new TargetStream(_target, debugInfo, 12 /*maximum size of 2 32bit ints compressed*/), _target.IsLittleEndian);
+        NibbleReader nibbleReader = new(nibbleNativeReader, 0);
 
-        uint cbBounds = reader.ReadEncodedU32();
-        uint _ /*cbVars*/ = reader.ReadEncodedU32();
+        uint cbBounds = nibbleReader.ReadUInt();
+        uint _ /*cbVars*/ = nibbleReader.ReadUInt();
 
-        TargetPointer addrBounds = debugInfo + reader.NextByteIndex;
+        TargetPointer addrBounds = debugInfo + (uint)nibbleReader.GetNextByteOffset();
 
         if (cbBounds > 0)
         {
-            DebugStreamReader boundsReader = new(_target, addrBounds, cbBounds);
+            NativeReader boundsNativeReader = new(new TargetStream(_target, addrBounds, cbBounds), _target.IsLittleEndian);
+            NibbleReader boundsReader = new(boundsNativeReader, 0);
 
-            uint countEntries = boundsReader.ReadEncodedU32();
+            uint countEntries = boundsReader.ReadUInt();
             Debug.Assert(countEntries > 0, "Expected at least one entry in bounds.");
 
             return DoBounds(boundsReader, countEntries);
@@ -127,18 +130,18 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         return Enumerable.Empty<IOffsetMapping>();
     }
 
-    private static IEnumerable<IOffsetMapping> DoBounds(DebugStreamReader reader, uint count)
+    private static IEnumerable<IOffsetMapping> DoBounds(NibbleReader reader, uint count)
     {
         uint nativeOffset = 0;
         for (uint i = 0; i < count; i++)
         {
             // native offsets are encoded as a delta from the previous offset
-            nativeOffset += reader.ReadEncodedU32();
+            nativeOffset += reader.ReadUInt();
 
             // il offsets are encoded with a bias of ICorDebugInfo::MAX_MAPPING_VALUE
-            uint ilOffset = unchecked(reader.ReadEncodedU32() + IL_OFFSET_BIAS);
+            uint ilOffset = unchecked(reader.ReadUInt() + IL_OFFSET_BIAS);
 
-            SourceTypes_1 sourceType = (SourceTypes_1)reader.ReadEncodedU32();
+            SourceTypes_1 sourceType = (SourceTypes_1)reader.ReadUInt();
 
             // TODO(cdac debugInfo): Handle cookie
 
