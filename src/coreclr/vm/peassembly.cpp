@@ -266,11 +266,7 @@ TADDR PEAssembly::GetIL(RVA il)
     CONTRACT_END;
 
     PEImageLayout *image = NULL;
-#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
-    image = GetFlatLayout();
-#else
     image = GetLoadedLayout();
-#endif
 
 #ifndef DACCESS_COMPILE
     // Verify that the IL blob is valid before giving it out

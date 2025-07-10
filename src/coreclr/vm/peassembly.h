@@ -258,15 +258,6 @@ public:
         return GetPEImage()->GetLoadedLayout();
     };
 
-    PTR_PEImageLayout GetFlatLayout()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        _ASSERTE(HasPEImage());
-        return GetPEImage()->GetFlatLayout();
-    };
-
     BOOL IsLoaded()
     {
         return IsReflectionEmit() || HasLoadedPEImage();
