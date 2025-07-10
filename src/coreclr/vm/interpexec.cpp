@@ -168,10 +168,11 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
 {
     size_t helperDirectOrIndirect = (size_t)dataItem;
-    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-        return *(THelper *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+    if (helperDirectOrIndirect & INTERP_DIRECT_HELPER_TAG)
+        // Clear the direct flag and then raise the thumb bit as needed
+        return (THelper)PINSTRToPCODE((TADDR)(helperDirectOrIndirect & ~INTERP_DIRECT_HELPER_TAG));
     else
-        return (THelper)helperDirectOrIndirect;
+        return *(THelper *)helperDirectOrIndirect;
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
@@ -1841,15 +1842,18 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
+                    int32_t indirectFlag = ip[5];
 
-                    ip += 5;
+                    ip += 6;
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
-                    PCODE callTarget = *(PCODE*)pMethod->pDataItems[targetAddrSlot];
+                    PCODE callTarget = indirectFlag
+                        ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
+                        : (PCODE)pMethod->pDataItems[targetAddrSlot];
 
                     InlinedCallFrame inlinedCallFrame;
                     inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
-                    inlinedCallFrame.m_pCallSiteSP = stack;
-                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pFrame;
+                    inlinedCallFrame.m_pCallSiteSP = pFrame;
+                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
                     inlinedCallFrame.m_pThread = GetThread();
                     inlinedCallFrame.m_Datum = NULL;
                     inlinedCallFrame.Push();

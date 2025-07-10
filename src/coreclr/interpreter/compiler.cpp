@@ -2163,9 +2163,11 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     CORINFO_CONST_LOOKUP ftnLookup;
     m_compHnd->getHelperFtn(ftn, &ftnLookup);
     void* addr = ftnLookup.addr;
-    if (ftnLookup.accessType == IAT_PVALUE)
+    if (ftnLookup.accessType != IAT_PVALUE)
     {
-        addr = (void*)((size_t)addr | INTERP_INDIRECT_HELPER_TAG);
+        // We can't use the 1 bit to mark indirect addresses because it is used for real code on arm32 (the thumb bit)
+        // So instead, we mark direct addresses with a 1 and then on the other end we will clear the 1 and re-set it as needed for thumb
+        addr = (void*)((size_t)addr | INTERP_DIRECT_HELPER_TAG);
     }
 
 #ifdef DEBUG
@@ -3066,8 +3068,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 {
                     CORINFO_CONST_LOOKUP lookup;
                     m_compHnd->getAddressOfPInvokeTarget(callInfo.hMethod, &lookup);
-                    assert(lookup.accessType == IAT_PVALUE);
                     m_pLastNewIns->data[1] = GetDataItemIndex(lookup.addr);
+                    m_pLastNewIns->data[2] = lookup.accessType == IAT_PVALUE;
                 }
             }
             break;
@@ -6306,13 +6308,15 @@ void InterpCompiler::PrintHelperFtn(void* helperDirectOrIndirect)
 {
     void* helperAddr = helperDirectOrIndirect;
 
-    if (((size_t)helperDirectOrIndirect) & INTERP_INDIRECT_HELPER_TAG)
+    if (((size_t)helperDirectOrIndirect) & INTERP_DIRECT_HELPER_TAG)
     {
-        helperAddr = (void*)(((size_t)helperDirectOrIndirect) & ~INTERP_INDIRECT_HELPER_TAG);
-        printf(" (indirect)");
+        helperAddr = (void*)(((size_t)helperDirectOrIndirect) & ~INTERP_DIRECT_HELPER_TAG);
+        printf(" (direct)");
     }
     else
-        printf(" (direct)");
+    {
+        printf(" (indirect)");
+    }
 
     PrintPointer(helperAddr);
 }

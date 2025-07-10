@@ -358,7 +358,7 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLI, "calli", 5, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
-OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 5, 1, 1, InterpOpMethodHandle) // inlined (no marshaling wrapper) pinvokes only
+OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 6, 1, 1, InterpOpMethodHandle) // inlined (no marshaling wrapper) pinvokes only
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_GENERIC, "newobj.generic", 6, 1, 2, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
