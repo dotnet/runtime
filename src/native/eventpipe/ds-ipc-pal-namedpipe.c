@@ -213,7 +213,7 @@ ds_ipc_poll (
 			handles [i] = poll_handles_data [i].ipc->overlap.hEvent;
 			if (handles [i] == INVALID_HANDLE_VALUE) {
 				// Invalid handle, wait will fail. Signal error
-				poll_handles_data [i].events = EP_IPC_POLL_EVENTS_ERR;
+				poll_handles_data [i].events = DS_IPC_POLL_EVENTS_ERR;
 			}
 		} else {
 			// CLIENT
@@ -238,7 +238,7 @@ ds_ipc_poll (
 						handles [i] = poll_handles_data [i].stream->overlap.hEvent;
 						break;
 					case ERROR_PIPE_NOT_CONNECTED:
-						poll_handles_data [i].events = (uint8_t)EP_IPC_POLL_EVENTS_HANGUP;
+						poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_HANGUP;
 						result = -1;
 						ep_raise_error ();
 					default:
@@ -288,7 +288,7 @@ ds_ipc_poll (
 		// check if we abandoned something
 		DWORD abandonedIndex = wait - WAIT_ABANDONED_0;
 		if (abandonedIndex > 0 || abandonedIndex < (poll_handles_data_len - 1)) {
-			poll_handles_data [abandonedIndex].events = (uint8_t)EP_IPC_POLL_EVENTS_HANGUP;
+			poll_handles_data [abandonedIndex].events = (uint8_t)DS_IPC_POLL_EVENTS_HANGUP;
 			result = -1;
 			ep_raise_error ();
 		} else {
@@ -325,20 +325,20 @@ ds_ipc_poll (
 		if (!success) {
 			DWORD error = GetLastError();
 			if (error == ERROR_PIPE_NOT_CONNECTED || error == ERROR_BROKEN_PIPE) {
-				poll_handles_data [index].events = (uint8_t)EP_IPC_POLL_EVENTS_HANGUP;
+				poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_HANGUP;
 			} else {
 				if (callback)
 					callback ("Client connection error", error);
-				poll_handles_data [index].events = (uint8_t)EP_IPC_POLL_EVENTS_ERR;
+				poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_ERR;
 				result = -1;
 				ep_raise_error ();
 			}
 		} else {
-			poll_handles_data [index].events = (uint8_t)EP_IPC_POLL_EVENTS_SIGNALED;
+			poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_SIGNALED;
 		}
 	} else {
 		// SERVER
-		poll_handles_data [index].events = (uint8_t)EP_IPC_POLL_EVENTS_SIGNALED;
+		poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_SIGNALED;
 	}
 
 	result = 1;
@@ -835,13 +835,14 @@ ipc_stream_close_func (void *object)
 }
 
 static
-EventPipeIpcPollEvents
+DiagnosticsIpcPollEvents
 ipc_stream_poll_func (
 	void *object,
 	uint32_t timeout_ms)
 {
-	// Needs to be implemented.
-	return EP_IPC_POLL_EVENTS_UNKNOWN;
+	EP_ASSERT (!"ipc_stream_poll_func needs to be implemented for NamedPipes");
+	// TODO: Implement ipc_stream_poll_func for NamedPipes
+	return DS_IPC_POLL_EVENTS_UNKNOWN;
 }
 
 static IpcStreamVtable ipc_stream_vtable = {

@@ -76,6 +76,10 @@ session_tracepoint_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
+static
+bool
+session_is_stream_connection_closed (IpcStream *stream);
+
 /*
  * EventPipeSession.
  */
@@ -123,15 +127,15 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 				ep_rt_thread_sleep (timeout_ns);
 			}
 		} else if (session->session_type == EP_SESSION_TYPE_USEREVENTS) {
-			// User events session, write all user events tracepoints to the file.
+			// In a user events session we only monitor the stream to stop the session if it closes.
 			while (ep_session_get_streaming_enabled (session)) {
-				EP_ASSERT (session->continuation_stream != NULL);
-				if (ep_ipc_continuation_stream_connection_closed (session->continuation_stream)) {
+				EP_ASSERT (session->stream != NULL);
+				if (session_is_stream_connection_closed (session->stream)) {
 					success = false;
 					break;
 				}
 
-				// Wait until it's time to sample again.
+				// Wait until it's time to poll again.
 				const uint32_t timeout_ns = 100000000; // 100 msec.
 				ep_rt_thread_sleep (timeout_ns);
 			}
@@ -219,6 +223,15 @@ session_disable_streaming_thread (EventPipeSession *session)
 	ep_rt_wait_event_free (rt_thread_shutdown_event);
 }
 
+static
+bool
+session_is_stream_connection_closed (IpcStream *stream)
+{
+	EP_ASSERT (stream != NULL);
+	DiagnosticsIpcPollEvents poll_event = ep_ipc_stream_poll_vcall (stream, DS_IPC_TIMEOUT_INFINITE);
+	return poll_event == DS_IPC_POLL_EVENTS_HANGUP;
+}
+
 /*
  *  session_user_events_tracepoints_init
  *
@@ -300,7 +313,7 @@ ep_session_alloc (
 	instance->synchronous_callback = sync_callback;
 	instance->callback_additional_data = callback_additional_data;
 	instance->user_events_data_fd = -1;
-	instance->continuation_stream = NULL;
+	instance->stream = NULL;
 
 	// Hard coded 10MB for now, we'll probably want to make
 	// this configurable later.
@@ -339,7 +352,7 @@ ep_session_alloc (
 	case EP_SESSION_TYPE_USEREVENTS:
 		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
 		ep_raise_error_if_nok (session_user_events_tracepoints_init (instance, user_events_data_fd));
-		instance->continuation_stream = (IpcContinuationStream *)stream;
+		instance->stream = stream;
 		break;
 
 	default:

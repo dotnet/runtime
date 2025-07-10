@@ -355,26 +355,5 @@ ep_ipc_stream_writer_write (
 	uint32_t bytes_to_write,
 	uint32_t *bytes_written);
 
-/*
- * IpcContinuationStream
- */
-
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
-struct _IpcContinuationStream {
-#else
-struct _IpcContinuationStream_Internal {
-#endif
-	IpcStream ipc_stream;
-};
-
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
-struct _IpcContinuationStream {
-	uint8_t _internal [sizeof (struct _IpcContinuationStream_Internal)];
-};
-#endif
-
-bool
-ep_ipc_continuation_stream_connection_closed (IpcContinuationStream *ipc_continuation_stream);
-
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_STREAM_H__ */

@@ -23,6 +23,14 @@ typedef struct _DiagnosticsIpcStream DiagnosticsIpcStream;
  */
 
 typedef enum {
+	DS_IPC_POLL_EVENTS_NONE = 0x00, // no events
+	DS_IPC_POLL_EVENTS_SIGNALED = 0x01, // ready for use
+	DS_IPC_POLL_EVENTS_HANGUP = 0x02, // connection remotely closed
+	DS_IPC_POLL_EVENTS_ERR = 0x04, // error
+	DS_IPC_POLL_EVENTS_UNKNOWN = 0x80 // unknown state
+} DiagnosticsIpcPollEvents;
+
+typedef enum {
 	DS_IPC_CONNECTION_MODE_CONNECT,
 	DS_IPC_CONNECTION_MODE_LISTEN
 } DiagnosticsIpcConnectionMode;

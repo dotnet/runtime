@@ -538,7 +538,7 @@ ep_ipc_stream_close_vcall (IpcStream *ipc_stream)
 	return vtable->close_func (ipc_stream);
 }
 
-EventPipeIpcPollEvents
+DiagnosticsIpcPollEvents
 ep_ipc_stream_poll_vcall (IpcStream *ipc_stream, uint32_t timeout_ms)
 {
 	EP_ASSERT (ipc_stream != NULL);
@@ -706,21 +706,6 @@ ep_stream_writer_write (
 		buffer,
 		bytes_to_write,
 		bytes_written);
-}
-
-/*
- * IpcContinuationStream.
- */
-
-bool
-ep_ipc_continuation_stream_connection_closed (IpcContinuationStream *ipc_continuation_stream)
-{
-	EP_ASSERT (ipc_continuation_stream != NULL);
-
-	uint32_t bytes_read = 0;
-	EventPipeIpcPollEvents poll_event = ep_ipc_stream_poll_vcall ((IpcStream *)ipc_continuation_stream, EP_IPC_POLL_TIMEOUT_MIN_MS);
-
-	return poll_event == EP_IPC_POLL_EVENTS_HANGUP;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

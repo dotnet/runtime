@@ -55,7 +55,6 @@ typedef struct _FastSerializableObjectVtable FastSerializableObjectVtable;
 typedef struct _FastSerializer FastSerializer;
 typedef struct _FileStream FileStream;
 typedef struct _FileStreamWriter FileStreamWriter;
-typedef struct _IpcContinuationStream IpcContinuationStream;
 typedef struct _IpcStreamWriter IpcStreamWriter;
 typedef struct _StackHashEntry StackHashEntry;
 typedef struct _StackHashKey StackHashKey;

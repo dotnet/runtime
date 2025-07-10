@@ -406,13 +406,13 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 			DN_VECTOR_FOREACH_BEGIN (DiagnosticsIpcPollHandle, ipc_poll_handle, &ipc_poll_handles) {
 				DiagnosticsPort *port = (DiagnosticsPort *)ipc_poll_handle.user_data;
 				switch (ipc_poll_handle.events) {
-				case EP_IPC_POLL_EVENTS_HANGUP:
+				case DS_IPC_POLL_EVENTS_HANGUP:
 					EP_ASSERT (port != NULL);
 					ds_port_reset_vcall (port, callback);
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - HUP :: Poll attempt: %d, connection %d hung up. Connect is reset.", poll_attempts, connection_id);
 					poll_timeout_ms = DS_IPC_POLL_TIMEOUT_MIN_MS;
 					break;
-				case EP_IPC_POLL_EVENTS_SIGNALED:
+				case DS_IPC_POLL_EVENTS_SIGNALED:
 					EP_ASSERT (port != NULL);
 					if (!stream) {  // only use first signaled stream; will get others on subsequent calls
 						stream = ds_port_get_connected_stream_vcall (port, callback);
@@ -422,12 +422,12 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 					}
 					DS_LOG_DEBUG_2 ("ds_ipc_stream_factory_get_next_available_stream - SIG :: Poll attempt: %d, connection %d signalled.", poll_attempts, connection_id);
 					break;
-				case EP_IPC_POLL_EVENTS_ERR:
+				case DS_IPC_POLL_EVENTS_ERR:
 					ds_port_reset_vcall ((DiagnosticsPort *)ipc_poll_handle.user_data, callback);
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - ERR :: Poll attempt: %d, connection %d errored. Connection is reset.", poll_attempts, connection_id);
 					saw_error = true;
 					break;
-				case EP_IPC_POLL_EVENTS_NONE:
+				case DS_IPC_POLL_EVENTS_NONE:
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - NON :: Poll attempt: %d, connection %d had no events.", poll_attempts, connection_id);
 					break;
 				default:
