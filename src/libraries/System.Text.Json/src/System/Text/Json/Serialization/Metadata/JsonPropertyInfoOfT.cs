@@ -46,12 +46,12 @@ namespace System.Text.Json.Serialization.Metadata
             else if (getter is Func<object, T> typedGetter)
             {
                 _typedGet = typedGetter;
-                _untypedGet = getter is Func<object, object?> untypedGet ? untypedGet : obj => typedGetter(obj);
+                _untypedGet = getter is Func<object, object?> untypedGet ? untypedGet : obj => _typedGet(obj);
             }
             else
             {
                 Func<object, object?> untypedGet = (Func<object, object?>)getter;
-                _typedGet = (obj => (T)untypedGet(obj)!);
+                _typedGet = (obj => (T)_untypedGet!(obj)!);
                 _untypedGet = untypedGet;
             }
         }
@@ -69,12 +69,12 @@ namespace System.Text.Json.Serialization.Metadata
             else if (setter is Action<object, T> typedSetter)
             {
                 _typedSet = typedSetter;
-                _untypedSet = setter is Action<object, object?> untypedSet ? untypedSet : (obj, value) => typedSetter(obj, (T)value!);
+                _untypedSet = setter is Action<object, object?> untypedSet ? untypedSet : (obj, value) => _typedSet(obj, (T)value!);
             }
             else
             {
                 Action<object, object?> untypedSet = (Action<object, object?>)setter;
-                _typedSet = ((obj, value) => untypedSet(obj, value));
+                _typedSet = ((obj, value) => _untypedSet!(obj, value));
                 _untypedSet = untypedSet;
             }
         }
@@ -100,12 +100,12 @@ namespace System.Text.Json.Serialization.Metadata
             else if (predicate is Func<object, T?, bool> typedPredicate)
             {
                 _shouldSerializeTyped = typedPredicate;
-                _shouldSerialize = typedPredicate is Func<object, object?, bool> untypedPredicate ? untypedPredicate : (obj, value) => typedPredicate(obj, (T?)value);
+                _shouldSerialize = typedPredicate is Func<object, object?, bool> untypedPredicate ? untypedPredicate : (obj, value) => _shouldSerializeTyped(obj, (T?)value);
             }
             else
             {
                 Func<object, object?, bool> untypedPredicate = (Func<object, object?, bool>)predicate;
-                _shouldSerializeTyped = (obj, value) => untypedPredicate(obj, value);
+                _shouldSerializeTyped = (obj, value) => _shouldSerialize!(obj, value);
                 _shouldSerialize = untypedPredicate;
             }
         }

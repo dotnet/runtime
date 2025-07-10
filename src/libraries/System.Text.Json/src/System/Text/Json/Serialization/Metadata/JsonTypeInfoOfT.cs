@@ -86,13 +86,13 @@ namespace System.Text.Json.Serialization.Metadata
             else if (createObject is Func<T> typedDelegate)
             {
                 typedCreateObject = typedDelegate;
-                untypedCreateObject = createObject is Func<object> untypedDelegate ? untypedDelegate : () => typedDelegate()!;
+                untypedCreateObject = createObject is Func<object> untypedDelegate ? untypedDelegate : () => _typedCreateObject!()!;
             }
             else
             {
                 Debug.Assert(createObject is Func<object>);
                 untypedCreateObject = (Func<object>)createObject;
-                typedCreateObject = () => (T)untypedCreateObject();
+                typedCreateObject = () => (T)_createObject!();
             }
 
             _createObject = untypedCreateObject;
