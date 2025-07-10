@@ -8,7 +8,7 @@ using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 [assembly: KeptAttributeAttribute(typeof(AttributeConstructorDataflow.KeepsPublicPropertiesAttribute))]
-[assembly: ExpectedWarning("IL2026", "--ClassWithKeptPublicProperties--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
+[assembly: ExpectedWarning("IL2026", "--ClassWithKeptPublicProperties--")]
 [assembly: AttributeConstructorDataflow.KeepsPublicProperties(typeof(AttributeConstructorDataflow.ClassWithKeptPublicProperties))]
 
 namespace Mono.Linker.Tests.Cases.DataFlow

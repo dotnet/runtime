@@ -2738,8 +2738,7 @@ StackFrame ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFram
     CopyOSContext(&tempContext, pRD->pCallerContext);
 
     // Now unwind it to get the context of the caller's caller.
-    EECodeInfo codeInfo(dac_cast<PCODE>(GetIP(pRD->pCallerContext)));
-    Thread::VirtualUnwindCallFrame(&tempContext, NULL, &codeInfo);
+    pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
 
     StackFrame sfRetVal = StackFrame((UINT_PTR)(GetSP(&tempContext)));
     _ASSERTE(!sfRetVal.IsNull() && !sfRetVal.IsMaxVal());

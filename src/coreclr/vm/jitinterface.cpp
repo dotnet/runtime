@@ -49,6 +49,7 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+#include "debugdebugger.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -11393,7 +11394,7 @@ void CInterpreterJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
 }
 #endif // FEATURE_INTERPRETER
 
-void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
+void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nativeCodeVersion)
 {
     CONTRACTL {
         THROWS;
@@ -11427,8 +11428,36 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
         if (m_jitManager->IsStoringRichDebugInfo())
             writeFlagByte = TRUE;
 
+
+    const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
+    InstrumentedILOffsetMapping loadTimeMapping;
+#ifdef FEATURE_REJIT
+    ILCodeVersion ilVersion;
+
+    if (!nativeCodeVersion.IsNull())
+    {
+        ilVersion = nativeCodeVersion.GetILCodeVersion();
+    }
+
+    // if there is a rejit IL map for this function, apply that in preference to load-time mapping
+    if (!ilVersion.IsNull() && !ilVersion.IsDefaultVersion())
+    {
+        pILOffsetMapping = ilVersion.GetInstrumentedILMap();
+    }
+    else
+    {
+#endif
+        // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
+        loadTimeMapping =
+            m_pMethodBeingCompiled->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(m_pMethodBeingCompiled->GetMemberDef());
+        if (!loadTimeMapping.IsNull())
+            pILOffsetMapping = &loadTimeMapping;
+#ifdef FEATURE_REJIT
+    }
+#endif
+
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
-            m_pOffsetMapping, m_iOffsetMapping,
+            m_pOffsetMapping, m_iOffsetMapping, pILOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
             patchpointInfo,
             m_inlineTreeNodes, m_numInlineTreeNodes,
@@ -12832,7 +12861,8 @@ void CEECodeGenInfo::getEHinfo(
 static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
                                        CEECodeGenInfo *comp,
                                        BYTE **nativeEntry,
-                                       uint32_t *nativeSizeOfCode)
+                                       uint32_t *nativeSizeOfCode,
+                                       NativeCodeVersion nativeCodeVersion)
 {
     STANDARD_VM_CONTRACT;
 
@@ -12889,7 +12919,7 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
     //
     if (SUCCEEDED(ret) && !comp->JitAgain())
     {
-        comp->CompressDebugInfo((PCODE)*nativeEntry);
+        comp->CompressDebugInfo((PCODE)*nativeEntry, nativeCodeVersion);
         comp->MethodCompileComplete(methodInfo->ftn);
     }
 
@@ -13096,7 +13126,8 @@ static TADDR UnsafeJitFunctionWorker(
         res = invokeCompileMethod(pJitMgr,
                                   pJitInfo,
                                   &nativeEntry,
-                                  &sizeOfCode);
+                                  &sizeOfCode,
+                                  nativeCodeVersion);
 
 #if FEATURE_PERFMAP
         _ASSERTE(pSizeOfCode != NULL);
@@ -13142,6 +13173,9 @@ static TADDR UnsafeJitFunctionWorker(
         if (g_pDebugInterface)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
+#ifdef DEBUG
+            ValidateILOffsets(ftn, NULL, 0, (uint8_t*)nativeEntry, sizeOfCode);
+#endif // DEBUG
         }
 #endif // DEBUGGING_SUPPORTED
     }

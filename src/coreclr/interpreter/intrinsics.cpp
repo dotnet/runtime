@@ -23,7 +23,7 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         if (!strcmp(methodName, "get_IsSupported"))
             return NI_IsSupported_False;
     }
-
+  
     if (!HAS_PREFIX(namespaceName, "System"))
         return NI_Illegal;
 
@@ -35,12 +35,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_PRIMITIVE_ConvertToIntegerNative;
             else if (!strcmp(methodName, "MultiplyAddEstimate"))
                 return NI_System_Math_MultiplyAddEstimate;
-        }
-        else if (!strcmp(className, "Debugger"))
-        {
-            // Interpreter-FIXME: No NI_ enum value for this?
-            if (!strcmp(methodName, "Break"))
-                return NI_Illegal;
         }
         else if (!strcmp(className, "Math") || !strcmp(className, "MathF"))
         {
@@ -89,15 +83,7 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     {
         if (!strcmp(namespaceName, "System.Runtime.CompilerServices"))
         {
-            if (!strcmp(className, "Unsafe"))
-            {
-                // The members of the S.R.CS.Unsafe namespace have IL generated for them elsewhere in the runtime;
-                //  we want to use that generated IL. It should Just Work once we support unsafe accessors.
-                // If the JIT is available our fallback to calling the JITted code will also work.
-                // Interpreter-FIXME: Identify the specific unsafe methods.
-                return NI_SRCS_UNSAFE_START;
-            }
-            else if (!strcmp(className, "StaticsHelpers"))
+            if (!strcmp(className, "StaticsHelpers"))
             {
                 if (!strcmp(methodName, "VolatileReadAsByref"))
                     return NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref;
@@ -106,8 +92,7 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             {
                 if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
-
-                if (!strcmp(methodName, "GetMethodTable"))
+                else if (!strcmp(methodName, "GetMethodTable"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
             }
         }

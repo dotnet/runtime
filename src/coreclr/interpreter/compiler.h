@@ -12,6 +12,7 @@
 #include <new>
 #include "failures.h"
 #include "simdhash.h"
+#include "intrinsics.h"
 
 struct InterpException
 {

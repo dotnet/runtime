@@ -828,6 +828,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
             m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
             m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
             m_ILToNativeMapSize++;
         }
     }
@@ -2218,9 +2219,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             return true;
 
         case NI_Throw_PlatformNotSupportedException:
-            // Interpreter-FIXME: If an INTOP_THROW_PNSE is the first opcode in a try block, catch doesn't catch the exception
-            // For now, insert a safepoint as padding.
-            AddIns(INTOP_SAFEPOINT);
             AddIns(INTOP_THROW_PNSE);
             return true;
 
@@ -2355,12 +2353,17 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
         default:
         {
-            const char* className = NULL;
-            const char* namespaceName = NULL;
-            const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
-            printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
+#ifdef DEBUG
+            if (m_verbose)
+            {
+                const char* className = NULL;
+                const char* namespaceName = NULL;
+                const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+                printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
+            }
+#endif
             if (mustExpand)
-                assert(!"EmitNamedIntrinsicCall not implemented must-expand intrinsic");
+                NO_WAY("EmitNamedIntrinsicCall not implemented must-expand intrinsic");
             return false;
         }
     }
@@ -2771,15 +2774,21 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
-// Interpreter-FIXME: Necessary to work around InterpConfig members only being defined in DEBUG configurations.
-#if DEBUG
-        NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
-        if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+            if (InterpConfig.InterpMode() >= 3)
+            {
+                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                {
+                    m_ip += 5;
+                    return;
+                }
+            }
+        }
+
+        if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
         {
             m_ip += 5;
             return;
-        }
-#endif
         }
 
         if (callInfo.thisTransform != CORINFO_NO_THIS_TRANSFORM)
