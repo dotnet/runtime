@@ -12233,8 +12233,34 @@ void Compiler::gtDispConst(GenTree* tree)
         }
 
         case GT_CNS_STR:
-            printf("<string constant>");
-            break;
+        {
+            GenTreeStrCon* cnsStr = tree->AsStrCon();
+            if (cnsStr->IsStringEmptyField())
+            {
+                // Special case: do not call getStringLiteral for the empty string field
+                printf("\"\"");
+                break;
+            }
+
+            constexpr int maxLiteralLength      = 256;
+            char16_t      str[maxLiteralLength] = {};
+            int len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxLiteralLength);
+            if (len < 0)
+            {
+                printf("<unknown string literal>");
+            }
+            else if (len >= maxLiteralLength)
+            {
+                printf("<long string literal>");
+            }
+            else
+            {
+                // Trim the string to 50 characters for printing
+                printf("\"%.50s%s\"", convertUtf16ToUtf8ForPrinting(reinterpret_cast<WCHAR*>(str)),
+                       len > 50 ? "..." : "");
+            }
+        }
+        break;
 
 #if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
