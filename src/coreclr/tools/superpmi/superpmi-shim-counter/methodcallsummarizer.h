@@ -4,19 +4,20 @@
 #ifndef _MethodCallSummarizer
 #define _MethodCallSummarizer
 
+#include <string>
+#include <map>
+
 class MethodCallSummarizer
 {
 public:
-    MethodCallSummarizer(WCHAR* name);
-    ~MethodCallSummarizer();
+    MethodCallSummarizer(const std::filesystem::path& name);
     void AddCall(const char* name);
     void SaveTextFile();
+    ~MethodCallSummarizer();
 
 private:
-    char**        names;
-    unsigned int* counts;
-    int           numNames;
-    WCHAR*        dataFileName;
+    std::map<std::string, int> namesAndCounts;
+    std::filesystem::path      dataFileName;
 };
 
 #endif
