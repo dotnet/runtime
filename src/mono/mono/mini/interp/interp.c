@@ -2395,8 +2395,17 @@ interp_entry (InterpEntryData *data)
 
 	// The return value is at the bottom of the stack, after the locals space
 	type = rmethod->rtype;
-	if (type->type != MONO_TYPE_VOID)
-		stackval_to_data_sign_ext (type, frame.stack, data->res, FALSE);
+	if (type->type != MONO_TYPE_VOID) {
+		// interp entry is called either from a interp_in wrapper or a gsharedvt_in_sig wrapper
+		// interp_in wrappers always return intptr (they are more aggresively shared) while the
+		// gsharedvt_in_sig wrapper returns the actual type. This check follows the logic in
+		// interp_create_method_pointer_llvmonly and interp_create_method_pointer so we do the
+		// return sign extension only when called from the interp_in wrapper.
+		if (!mono_llvm_only || sig->param_count > MAX_INTERP_ENTRY_ARGS)
+			stackval_to_data_sign_ext (type, frame.stack, data->res, FALSE);
+		else
+			stackval_to_data (type, frame.stack, data->res, FALSE);
+	}
 }
 
 static void
