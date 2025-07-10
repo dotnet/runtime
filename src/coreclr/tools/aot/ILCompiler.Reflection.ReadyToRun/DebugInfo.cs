@@ -102,12 +102,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             _boundsList = new List<DebugInfoBoundsEntry>();
             _variablesList = new List<NativeVarInfo>();
             Machine machine = _readyToRunReader.Machine;
-            byte[] image = _readyToRunReader.Image;
+            NativeReader imageReader = _readyToRunReader.ImageReader;
             _machine = machine;
 
             // Get the id of the runtime function from the NativeArray
             uint lookback = 0;
-            uint debugInfoOffset = NativeReader.DecodeUnsigned(image, (uint)offset, ref lookback);
+            uint debugInfoOffset = imageReader.DecodeUnsigned((uint)offset, ref lookback);
 
             if (lookback != 0)
             {
@@ -115,7 +115,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 debugInfoOffset = (uint)offset - lookback;
             }
 
-            NibbleReader reader = new NibbleReader(image, (int)debugInfoOffset);
+            NibbleReader reader = new NibbleReader(imageReader, (int)debugInfoOffset);
             uint boundsByteCount = reader.ReadUInt();
             uint variablesByteCount = reader.ReadUInt();
             int boundsOffset = reader.GetNextByteOffset();
@@ -126,16 +126,16 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if (boundsByteCount > 0)
             {
-                ParseBounds(image, boundsOffset);
+                ParseBounds(imageReader, boundsOffset);
             }
 
             if (variablesByteCount > 0)
             {
-                ParseNativeVarInfo(image, variablesOffset);
+                ParseNativeVarInfo(imageReader, variablesOffset);
             }
         }
 
-        private void ParseBounds(byte[] image, int offset)
+        private void ParseBounds(NativeReader imageReader, int offset)
         {
             // Bounds info contains (Native Offset, IL Offset, flags)
             // - Sorted by native offset (so use a delta encoding for that).
@@ -144,7 +144,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             // - flags is 3 independent bits.
             if (_runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion >= 16)
             {
-                NibbleReader reader = new NibbleReader(image, offset);
+                NibbleReader reader = new NibbleReader(imageReader, offset);
                 uint boundsEntryCount = reader.ReadUInt();
                 Debug.Assert(boundsEntryCount > 0);
                 uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
@@ -162,7 +162,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 while (curBoundsProcessed < boundsEntryCount)
                 {
-                    bitTemp |= ((uint)image[offsetOfActualBoundsData++]) << (int)bitsCollected;
+                    bitTemp |= ((uint)imageReader[offsetOfActualBoundsData++]) << (int)bitsCollected;
                     bitsCollected += 8;
                     while (bitsCollected >= bitsPerEntry)
                     {
@@ -201,7 +201,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else
             {
-                NibbleReader reader = new NibbleReader(image, offset);
+                NibbleReader reader = new NibbleReader(imageReader, offset);
                 uint boundsEntryCount = reader.ReadUInt();
                 Debug.Assert(boundsEntryCount > 0);
 
@@ -218,14 +218,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private void ParseNativeVarInfo(byte[] image, int offset)
+        private void ParseNativeVarInfo(NativeReader imageReader, int offset)
         {
             // Each Varinfo has a:
             // - native start +End offset. We can use a delta for the end offset.
             // - Il variable number. These are usually small.
             // - VarLoc information. This is a tagged variant.
             // The entries aren't sorted in any particular order.
-            NibbleReader reader = new NibbleReader(image, offset);
+            NibbleReader reader = new NibbleReader(imageReader, offset);
             uint nativeVarCount = reader.ReadUInt();
 
             for (int i = 0; i < nativeVarCount; ++i)
