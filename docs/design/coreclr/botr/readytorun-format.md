@@ -712,7 +712,69 @@ the first byte of the encoding specify the number of following bytes as follows:
 
 ## Sparse Array
 
-**TODO**: Document native format sparse array
+The NativeArray provide O(1) indexed access to while maintaining compact storage through null element compression (empty blocks share storage) and variable-sized offset encoding (adapts to data size). 
+
+The array is made up of three parts, the header, block index, and the blocks.
+
+The header is a variable encoded value where:
+- Bits 0-1: Entry index size
+  - 0 = uint8 offsets
+  - 1 = uint16 offsets  
+  - 2 = uint32 offsets
+- Bits 2-31: Number of elements in the array
+
+The block index immediately follows the header in memory and consists of one offset entry per block (dynamic size encoded in the header), where each entry points to the location of a data block relative to the start of the block index section. The array uses a maximum block size of 16 elements, the block index effectively maps every group of 16 consecutive array indices to their corresponding data blocks. 
+
+The following the block index are the actual data blocks. These are made up of two types of nodes. Tree nodes and Data nodes. 
+
+Tree nodes are made up of a variable lenth encoded uint where:
+- Bit 0: If set, the node has a lower index child
+- Bit 1: If set, the node has a higher index child
+- Bits 2-31: Shifted relative offset of higher index child
+
+Data nodes contain the user defined data.
+
+Since each block has at most 16 elements, they have a depth of `4`.
+
+### Lookup Algorithm Steps
+
+**Step 1: Read the Header**
+- Decode the variable-length encoded header value from the array
+- Extract the entry index size from bits 0-1 (0=uint8, 1=uint16, 2=uint32 offsets)
+- Extract the total number of elements from bits 2-31 by right-shifting the header value by 2 bits
+- Use this information to determine how to interpret the block index entries and validate array bounds
+
+**Step 2: Calculate Block Offset**
+- Determine the block index `blockIndex` containing the target element by dividing the index by the block size (16).
+- Calculate the memory location containing the block offset `pBlockOffset = baseOffset + entrySize * blockIndex` where `baseOffset` is the address immediately following the header and `entrySize` is determined by the low bits of the header.
+- Read the block offset `blockOffset` from the block index table using the calculated `pBlockOffset` and entry size determined by the header.
+- Add the `baseOffset` to convert the relative `blockOffset` to an absolute position.
+
+**Step 3: Initialize Tree Navigation**
+- Using the `blockOffset` calculated above, begin traversal at the root of the block's binary tree structure
+
+**Step 4: Navigate Binary Tree**
+For each level of the tree (iterating through bit positions 8, 4, 2, 1):
+
+**Step 4a: Read Node Descriptor**
+- Decode the current node's control value, which contains navigation flags and child offset information
+- Extract flags indicating the presence of left and right child nodes
+- Extract the relative offset to the right child node (if present)
+
+**Step 4b: Determine Navigation Direction**
+- Test the current bit position against the target index
+- If the bit is set in the target index, attempt to navigate to the right child
+- If the bit is clear in the target index, attempt to navigate to the left child
+
+**Step 4c: Follow Navigation Path**
+- If the desired child exists (indicated by the appropriate flag), update the current position
+- For right child navigation, add the encoded offset to the current position
+- For left child navigation, move to the position immediately following the current node
+- Continue to the next bit level if navigation was successful
+
+**Step 5: Return Element Location**
+- Upon successful traversal, return the final offset position which points to the stored data.
+- If traversal is not successful (child node does not exist), the element can not be found in the array and return a failure status.
 
 ## Hashtable
 
