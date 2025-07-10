@@ -1591,6 +1591,8 @@ namespace System.ComponentModel.Tests
                     Assert.NotNull(collectibleAttributeType);
                     Attribute? collectibleAttribute = collectibleType.GetCustomAttribute(collectibleAttributeType);
                     Assert.NotNull(collectibleAttribute);
+                    Type? collectibleProviderType = assembly.GetType("UnloadableTestTypes.SimpleTypeDescriptionProvider");
+                    Assert.NotNull(collectibleProviderType);
 
                     // Cache the type's cachable entities
                     AttributeCollection attributes = TypeDescriptor.GetAttributes(collectibleType);
@@ -1602,8 +1604,10 @@ namespace System.ComponentModel.Tests
                     PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(collectibleType);
                     Assert.Equal(2, properties.Count);
 
+                    // Test that the provider is the expected collectible one
                     TypeDescriptionProvider provider = TypeDescriptor.GetProvider(collectibleType);
                     Assert.NotNull(provider);
+                    Assert.IsType(collectibleProviderType, provider);
 
                     // Refresh the assembly causing the ReflectTypeDescriptionProvider caches to be purged.
                     TypeDescriptor.Refresh(assembly);
@@ -1613,14 +1617,19 @@ namespace System.ComponentModel.Tests
                     Assert.NotSame(attributes, TypeDescriptor.GetAttributes(collectibleType));
                     Assert.NotSame(events, TypeDescriptor.GetEvents(collectibleType));
                     Assert.NotSame(properties, TypeDescriptor.GetProperties(collectibleType));
+                    Assert.NotSame(provider, TypeDescriptor.GetProvider(collectibleType));
                 },
                 out var weakRef);
 
+            // Force garbage collection to ensure the ALC is unloaded and the types are collected.
             for (int i = 0; weakRef.IsAlive && i < 10; i++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
+
+            // Assert that the weak reference to the ALC is no longer alive,
+            // indicating that the unloaded AssemblyLoadContext has been at least collected.
             Assert.True(!weakRef.IsAlive);
         }
 

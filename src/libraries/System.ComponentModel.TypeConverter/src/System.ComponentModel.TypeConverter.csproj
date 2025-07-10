@@ -15,7 +15,7 @@
     <Compile Include="System\ComponentModel\ByteConverter.cs" />
     <Compile Include="System\ComponentModel\CharConverter.cs" />
     <Compile Include="System\ComponentModel\CollectionConverter.cs" />
-    <Compile Include="System\ComponentModel\ContextAwareConcurrentHashtable.cs" />
+    <Compile Include="System\ComponentModel\CollectibleKeyConcurrentHashtable.cs" />
     <Compile Include="System\ComponentModel\DateOnlyConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />

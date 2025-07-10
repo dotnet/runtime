@@ -15,7 +15,7 @@ namespace System.ComponentModel
     /// Uses ConditionalWeakTable for the collectible keys (if MemberInfo.IsCollectible is true) and
     /// ConcurrentDictionary for non-collectible keys.
     /// </summary>
-    internal sealed class ContextAwareConcurrentHashtable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+    internal sealed class CollectibleKeyConcurrentHashtable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : MemberInfo
         where TValue : class?
     {
@@ -37,12 +37,12 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    _collectibleTable.AddOrUpdate(key, value!);
+                    _collectibleTable.AddOrUpdate(key, value);
                 }
             }
         }
 
-        public bool Contains(TKey key)
+        public bool ContainsKey(TKey key)
         {
             return !key.IsCollectible ? _defaultTable.ContainsKey(key) : _collectibleTable.TryGetValue(key, out _);
         }
@@ -130,6 +130,7 @@ namespace System.ComponentModel
             {
                 _defaultEnumerator.Reset();
                 _collectibleEnumerator.Reset();
+                _enumeratingCollectibleEnumerator = false;
                 Current = default;
             }
         }

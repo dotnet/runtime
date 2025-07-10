@@ -65,12 +65,12 @@ namespace System.ComponentModel
         internal static readonly object s_commonSyncObject = new object();
 
         // A direct mapping from type to provider.
-        private static readonly ContextAwareConcurrentHashtable<Type, TypeDescriptionNode> s_providerTypeTable = new ContextAwareConcurrentHashtable<Type, TypeDescriptionNode>();
+        private static readonly CollectibleKeyConcurrentHashtable<Type, TypeDescriptionNode> s_providerTypeTable = new CollectibleKeyConcurrentHashtable<Type, TypeDescriptionNode>();
 
         // Tracks DefaultTypeDescriptionProviderAttributes.
         // A value of `null` indicates initialization is in progress.
         // A value of s_initializedDefaultProvider indicates the provider is initialized.
-        private static readonly ContextAwareConcurrentHashtable<Type, object?> s_defaultProviderInitialized = new ContextAwareConcurrentHashtable<Type, object?>();
+        private static readonly CollectibleKeyConcurrentHashtable<Type, object?> s_defaultProviderInitialized = new CollectibleKeyConcurrentHashtable<Type, object?>();
 
         private static readonly object s_initializedDefaultProvider = new object();
 
@@ -361,7 +361,7 @@ namespace System.ComponentModel
         {
             bool providerAdded = false;
 
-            if (s_defaultProviderInitialized.Contains(type))
+            if (s_defaultProviderInitialized.ContainsKey(type))
             {
                 // Either another thread finished initializing for this type, or we are recursing on the same thread.
                 return;

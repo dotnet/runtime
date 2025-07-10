@@ -15,7 +15,7 @@ namespace System.ComponentModel
     internal sealed class ContextAwareHashtable
     {
         private readonly Hashtable _defaultTable = new Hashtable();
-        private readonly ConditionalWeakTable<object, object> _collectibleTable = new ConditionalWeakTable<object, object>();
+        private readonly ConditionalWeakTable<object, object?> _collectibleTable = new ConditionalWeakTable<object, object?>();
 
         public object? this[MemberInfo key]
         {
@@ -28,11 +28,11 @@ namespace System.ComponentModel
             {
                 if (!key.IsCollectible)
                 {
-                    _defaultTable[key] = value!;
+                    _defaultTable[key] = value;
                 }
                 else
                 {
-                    _collectibleTable.AddOrUpdate(key, value!);
+                    _collectibleTable.AddOrUpdate(key, value);
                 }
             }
         }

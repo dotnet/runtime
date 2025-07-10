@@ -23,7 +23,7 @@ namespace System.ComponentModel
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // ReflectedTypeData contains all of the type information we have gathered for a given type.
-        private readonly ContextAwareConcurrentHashtable<Type, ReflectedTypeData> _typeData = new ContextAwareConcurrentHashtable<Type, ReflectedTypeData>();
+        private readonly CollectibleKeyConcurrentHashtable<Type, ReflectedTypeData> _typeData = new CollectibleKeyConcurrentHashtable<Type, ReflectedTypeData>();
 
         // This is the signature we look for when creating types that are generic, but
         // want to know what type they are dealing with. Enums are a good example of this;
@@ -981,14 +981,14 @@ namespace System.ComponentModel
         {
             Type componentType = typeof(T);
 
-            if (_typeData.Contains(componentType))
+            if (_typeData.ContainsKey(componentType))
             {
                 return;
             }
 
             lock (TypeDescriptor.s_commonSyncObject)
             {
-                if (_typeData.Contains(componentType))
+                if (_typeData.ContainsKey(componentType))
                 {
                     return;
                 }
