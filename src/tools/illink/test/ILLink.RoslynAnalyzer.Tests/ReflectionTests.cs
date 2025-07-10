@@ -35,7 +35,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task EventHanderTypeGetInvokeMethod()
+        public Task EventHanderTypeUsedViaReflection()
         {
             return RunTest();
         }
