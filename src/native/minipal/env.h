@@ -13,27 +13,6 @@ extern "C"
 {
 #endif // __cplusplus
 
-// Enum representing different types of environment providers.
-typedef enum _EnvironmentProviderType
-{
-    ENV_SYSTEM_ENVIRON_PROVIDER_TYPE,
-    ENV_ANDROID_SYSTEM_PROPERTIES_PROVIDER_TYPE
-} EnvironmentProviderType;
-
-// Structure representing environment providers. Different platforms may support different
-// implementations to load environments from different sources.
-typedef struct _EnvironmentProvider
-{
-    EnvironmentProviderType type;
-    char* (*get_env_func)(const char* name);
-    char* (*get_env_copy_func)(const char* name);
-    void (*free_env_func)(char* value);
-    int (*get_env_s_func)(size_t *required_len, char *buffer, size_t buffer_len, const char *name);
-    char** (*get_environ_func)(void);
-    char** (*get_environ_copy_func)(void);
-    void (*free_environ_func)(char** values);
-} EnvironmentProvider;
-
 /**
  * @brief Loads and cache the environment variable subsystem using process data.
  *

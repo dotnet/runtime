@@ -15,10 +15,6 @@ set(SOURCES
     env.c
 )
 
-if(CLR_CMAKE_HOST_ANDROID)
-    list(APPEND SOURCES env_android.c)
-endif()
-
 # Provide an object library for scenarios where we ship static libraries
 include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
