@@ -3456,8 +3456,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (trace)
 		cfg->prof_flags = (MonoProfilerCallInstrumentationFlags)(
 			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT |
-			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT | 
-			MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT);
+			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT );
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mini_debug_options.mdb_optimizations || MONO_CFG_PROFILE_CALL_CONTEXT (cfg)) {
@@ -3750,7 +3749,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "insert_safepoints");
 	}
 
-	if (MONO_CFG_PROFILE (cfg, SAMPLEPOINT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT)) {
+	if (MONO_CFG_PROFILE (cfg, SAMPLEPOINT)) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_insert_samplepoints, insert_samplepoints (cfg));
 		mono_cfg_dump_ir (cfg, "insert_samplepoints");
 	}

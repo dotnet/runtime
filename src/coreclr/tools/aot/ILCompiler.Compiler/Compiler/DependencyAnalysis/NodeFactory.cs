@@ -1257,17 +1257,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private TypeDesc _systemArrayOfTEnumeratorType;
-        public TypeDesc ArrayOfTEnumeratorType
-        {
-            get
-            {
-                // This type is optional, but it's fine for this cache to be ineffective if that happens.
-                // Those scenarios are rare and typically deal with small compilations.
-                return _systemArrayOfTEnumeratorType ??= _context.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
-            }
-        }
-
         private MethodDesc _instanceMethodRemovedHelper;
         public MethodDesc InstanceMethodRemovedHelper
         {

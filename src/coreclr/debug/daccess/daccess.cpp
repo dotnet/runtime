@@ -7045,6 +7045,14 @@ CLRDataCreateInstance(REFIID iid,
                 // Release the AddRef from the QI.
                 pClrDataAccess->Release();
             }
+
+            if (cdacInterface == nullptr)
+            {
+                // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+                // Release the ClrDataAccess instance we created
+                pClrDataAccess->Release();
+                return E_FAIL;
+            }
         }
     }
 #endif
@@ -7700,11 +7708,18 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
     data.Handle = TO_CDADDR(handle.GetAddr());
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
+    {
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
-    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER)
+    }
+    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER
+        || param->Type == HNDTYPE_CROSSREFERENCE)
+    {
         data.Secondary = TO_CDADDR(HndGetHandleExtraInfo(handle.GetAddr()));
+    }
     else
+    {
         data.Secondary = 0;
+    }
     data.AppDomain = param->AppDomain;
     GetRefCountedHandleInfo((OBJECTREF)*handle, param->Type, &data.RefCount, &data.JupiterRefCount, &data.IsPegged, &data.StrongReference);
     data.StrongReference |= (BOOL)IsAlwaysStrongReference(param->Type);
