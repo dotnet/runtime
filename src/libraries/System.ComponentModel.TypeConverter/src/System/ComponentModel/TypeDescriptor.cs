@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -622,7 +623,7 @@ namespace System.ComponentModel
             if (!type.IsInstanceOfType(primary))
             {
                 // Check our association table for a match.
-                Hashtable assocTable = AssociationTable;
+                WeakHashtable assocTable = AssociationTable;
                 IList? associations = (IList?)assocTable?[primary];
                 if (associations != null)
                 {
@@ -2332,16 +2333,12 @@ namespace System.ComponentModel
                     // ReflectTypeDescritionProvider is only bound to object, but we
                     // need go to through the entire table to try to find custom
                     // providers. If we find one, will clear our cache.
-                    // Manual use of IDictionaryEnumerator instead of foreach to avoid
-                    // DictionaryEntry box allocations.
-                    IDictionaryEnumerator e = s_providerTable.GetEnumerator();
-                    while (e.MoveNext())
+                    foreach (KeyValuePair<object, object?> kvp in s_providerTable)
                     {
-                        DictionaryEntry de = e.Entry;
-                        Type? nodeType = de.Key as Type;
+                        Type? nodeType = kvp.Key as Type;
                         if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
                         {
-                            TypeDescriptionNode? node = (TypeDescriptionNode?)de.Value;
+                            TypeDescriptionNode? node = (TypeDescriptionNode?)kvp.Value;
                             while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
                             {
                                 found = true;
@@ -2416,16 +2413,12 @@ namespace System.ComponentModel
                 // ReflectTypeDescritionProvider is only bound to object, but we
                 // need go to through the entire table to try to find custom
                 // providers. If we find one, will clear our cache.
-                // Manual use of IDictionaryEnumerator instead of foreach to avoid
-                // DictionaryEntry box allocations.
-                IDictionaryEnumerator e = s_providerTable.GetEnumerator();
-                while (e.MoveNext())
+                foreach (KeyValuePair<object, object?> kvp in s_providerTable)
                 {
-                    DictionaryEntry de = e.Entry;
-                    Type? nodeType = de.Key as Type;
+                    Type? nodeType = kvp.Key as Type;
                     if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
                     {
-                        TypeDescriptionNode? node = (TypeDescriptionNode?)de.Value;
+                        TypeDescriptionNode? node = (TypeDescriptionNode?)kvp.Value;
                         while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
                         {
                             found = true;
@@ -2478,15 +2471,12 @@ namespace System.ComponentModel
 
             lock (s_commonSyncObject)
             {
-                // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
-                IDictionaryEnumerator e = s_providerTable.GetEnumerator();
-                while (e.MoveNext())
+                foreach (KeyValuePair<object, object?> kvp in s_providerTable)
                 {
-                    DictionaryEntry de = e.Entry;
-                    Type? nodeType = de.Key as Type;
+                    Type? nodeType = kvp.Key as Type;
                     if (nodeType != null && nodeType.Module.Equals(module) || nodeType == typeof(object))
                     {
-                        TypeDescriptionNode? node = (TypeDescriptionNode?)de.Value;
+                        TypeDescriptionNode? node = (TypeDescriptionNode?)kvp.Value;
                         while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
                         {
                             refreshedTypes ??= new Hashtable();
@@ -2628,7 +2618,7 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(primary);
             ArgumentNullException.ThrowIfNull(secondary);
 
-            Hashtable assocTable = AssociationTable;
+            WeakHashtable assocTable = AssociationTable;
             IList? associations = (IList?)assocTable?[primary];
             if (associations != null)
             {

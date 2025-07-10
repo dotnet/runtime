@@ -7,7 +7,6 @@ using System.ComponentModel;
 namespace UnloadableTestTypes
 {
     [SimpleType]
-    [TypeDescriptionProvider(typeof(SimpleTypeDescriptionProvider))]
     public class SimpleType
     {
         public string P1 { get; set; }
@@ -24,17 +23,10 @@ namespace UnloadableTestTypes
 
     public sealed class SimpleTypeDescriptionProvider : TypeDescriptionProvider
     {
-        public SimpleTypeDescriptionProvider() { }
+        public override bool IsSupportedType(Type type) => type.AssemblyQualifiedName == typeof(SimpleType).AssemblyQualifiedName;
 
-        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
-        {
-            var baseDescriptor = base.GetTypeDescriptor(objectType, instance);
-            return new SimpleTypeDescriptor(baseDescriptor);
-        }
+        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance) => new SimpleTypeDescriptor();
 
-        private sealed class SimpleTypeDescriptor : CustomTypeDescriptor
-        {
-            public SimpleTypeDescriptor(ICustomTypeDescriptor parent) : base(parent) { }
-        }
+        public sealed class SimpleTypeDescriptor : CustomTypeDescriptor { }
     }
 }

@@ -8,9 +8,12 @@ using System.Runtime.CompilerServices;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Hashtable that maps MemberInfo object key to an object and
-    /// uses a WeakReference for the collectible keys (if MemberInfo.IsCollectible is true).
-    /// Uses a Hashtable for non-collectible keys and WeakHashtable for the collectible keys.
+    /// Hashtable that maps a <see cref="MemberInfo"/> object key to an associated value.
+    /// <para>
+    /// For keys where <see cref="MemberInfo.IsCollectible"/> is <c>false</c>, a standard <see cref="Hashtable"/> is used.
+    /// For keys where <see cref="MemberInfo.IsCollectible"/> is <c>true</c>, a <see cref="ConditionalWeakTable{TKey, TValue}"/> is used.
+    /// This ensures that collectible <see cref="MemberInfo"/> instances (such as those from collectible assemblies) do not prevent their assemblies from being unloaded.
+    /// </para>
     /// </summary>
     internal sealed class ContextAwareHashtable
     {

@@ -1567,8 +1567,11 @@ namespace System.ComponentModel.Tests
             var assembly = alc.LoadFromAssemblyPath(fullPath);
             Assert.NotEqual(AssemblyLoadContext.GetLoadContext(assembly), AssemblyLoadContext.Default);
 
-            // Perform action on the assembly from ALC
-            assemblyAction(assembly);
+            using (AssemblyLoadContext.ContextualReflectionScope scope = alc.EnterContextualReflection())
+            {
+                // Perform action on the assembly from ALC inside the reflection scope
+                assemblyAction(assembly);
+            }
 
             // Unload the ALC
             alc.Unload();
@@ -1579,7 +1582,7 @@ namespace System.ComponentModel.Tests
         // loaded in the default ALC, which causes problems for this test.
         [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
         [ActiveIssue("34072", TestRuntimes.Mono)]
-        public static void TypeDescriptor_DoesNotKeepUnloadableTypes()
+        public static void TypeDescriptor_WithDefaultProvider_UnloadsUnloadableTypes()
         {
             ExecuteAndUnload("UnloadableTestTypes.dll",
                 static (assembly) =>
@@ -1591,8 +1594,8 @@ namespace System.ComponentModel.Tests
                     Assert.NotNull(collectibleAttributeType);
                     Attribute? collectibleAttribute = collectibleType.GetCustomAttribute(collectibleAttributeType);
                     Assert.NotNull(collectibleAttribute);
-                    Type? collectibleProviderType = assembly.GetType("UnloadableTestTypes.SimpleTypeDescriptionProvider");
-                    Assert.NotNull(collectibleProviderType);
+                    Type? collectibleTypeDescriptionProviderType = assembly.GetType("UnloadableTestTypes.SimpleTypeDescriptionProvider");
+                    Assert.NotNull(collectibleTypeDescriptionProviderType);
 
                     // Cache the type's cachable entities
                     AttributeCollection attributes = TypeDescriptor.GetAttributes(collectibleType);
@@ -1603,21 +1606,6 @@ namespace System.ComponentModel.Tests
 
                     PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(collectibleType);
                     Assert.Equal(2, properties.Count);
-
-                    // Test that the provider is the expected collectible one
-                    TypeDescriptionProvider provider = TypeDescriptor.GetProvider(collectibleType);
-                    Assert.NotNull(provider);
-                    Assert.IsType(collectibleProviderType, provider);
-
-                    // Refresh the assembly causing the ReflectTypeDescriptionProvider caches to be purged.
-                    TypeDescriptor.Refresh(assembly);
-
-                    // Tests that the new collections are different
-                    // from the old ones, and that the old ones are not kept alive.
-                    Assert.NotSame(attributes, TypeDescriptor.GetAttributes(collectibleType));
-                    Assert.NotSame(events, TypeDescriptor.GetEvents(collectibleType));
-                    Assert.NotSame(properties, TypeDescriptor.GetProperties(collectibleType));
-                    Assert.NotSame(provider, TypeDescriptor.GetProvider(collectibleType));
                 },
                 out var weakRef);
 
@@ -1633,5 +1621,57 @@ namespace System.ComponentModel.Tests
             Assert.True(!weakRef.IsAlive);
         }
 
+        [Fact]
+        // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+        // loaded in the default ALC, which causes problems for this test.
+        [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+        [ActiveIssue("34072", TestRuntimes.Mono)]
+        public static void TypeDescriptor_WithCustomProvider_UnloadsUnloadableTypes()
+        {
+            ExecuteAndUnload("UnloadableTestTypes.dll",
+                static (assembly) =>
+                {
+                    // Ensure the type loaded in the intended non-Default ALC
+                    Type? collectibleType = assembly.GetType("UnloadableTestTypes.SimpleType");
+                    Assert.NotNull(collectibleType);
+                    Type? collectibleAttributeType = assembly.GetType("UnloadableTestTypes.SimpleTypeAttribute");
+                    Assert.NotNull(collectibleAttributeType);
+                    Attribute? collectibleAttribute = collectibleType.GetCustomAttribute(collectibleAttributeType);
+                    Assert.NotNull(collectibleAttribute);
+                    Type? collectibleTypeDescriptionProviderType = assembly.GetType("UnloadableTestTypes.SimpleTypeDescriptionProvider");
+                    Assert.NotNull(collectibleTypeDescriptionProviderType);
+
+                    // Add provider to ensure it is registered and stored in the TypeDescriptor cache
+                    TypeDescriptionProvider collectibleProvider = (TypeDescriptionProvider)Activator.CreateInstance(collectibleTypeDescriptionProviderType);
+                    TypeDescriptor.AddProvider(collectibleProvider, collectibleType);
+
+                    // Test that the provider is the expected collectible one
+                    AttributeCollection attributes = TypeDescriptor.GetAttributes(collectibleType);
+                    Assert.Empty(attributes);
+
+                    EventDescriptorCollection events = TypeDescriptor.GetEvents(collectibleType);
+                    Assert.Empty(events);
+
+                    PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(collectibleType);
+                    Assert.Empty(properties);
+
+                    TypeDescriptionProvider provider = TypeDescriptor.GetProvider(collectibleType);
+                    Assert.NotNull(provider);
+                    Assert.True(provider.IsSupportedType(collectibleType));
+                    Assert.False(provider.IsSupportedType(typeof(int)));
+                },
+                out var weakRef);
+
+            // Force garbage collection to ensure the ALC is unloaded and the types are collected.
+            for (int i = 0; weakRef.IsAlive && i < 10; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            // Assert that the weak reference to the ALC is no longer alive,
+            // indicating that the unloaded AssemblyLoadContext has been at least collected.
+            Assert.True(!weakRef.IsAlive);
+        }
     }
 }
