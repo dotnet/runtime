@@ -1120,6 +1120,17 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     return true;
 }
 
+void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(dac_cast<PCODE>(GetIP(pContext)));
+    Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
+}
+
 /*****************************************************************************/
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2457,6 +2468,20 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     pRD->IsCallerSPValid = FALSE;
 
     return true;
+}
+
+void InterpreterCodeManager::UnwindStackFrame(T_CONTEXT *pContext)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pContext != NULL);
+    VirtualUnwindInterpreterCallFrame(GetSP(pContext), pContext);
 }
 
 void InterpreterCodeManager::EnsureCallerContextIsValid(PREGDISPLAY  pRD, EECodeInfo * pCodeInfo /*= NULL*/, unsigned flags /*= 0*/)

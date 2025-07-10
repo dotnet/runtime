@@ -695,27 +695,40 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
 
-    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
-    // On other Unixes, there is no such guarantee, so we need to always restore the argument registers
-#ifndef TARGET_APPLE
-    ldp x0, x1, [sp, #__PWTB_ArgumentRegisters + 8]
-    ldp x2, x3, [sp, #__PWTB_ArgumentRegisters + 0x18]
-    ldp x4, x5, [sp, #__PWTB_ArgumentRegisters + 0x28]
-    ldp x6, x7, [sp, #__PWTB_ArgumentRegisters + 0x38]
-    ldp q0, q1, [sp, #__PWTB_FloatArgumentRegisters]
-    ldp q2, q3, [sp, #__PWTB_FloatArgumentRegisters + 0x20]
-    ldp q4, q5, [sp, #__PWTB_FloatArgumentRegisters + 0x40]
-    ldp q6, q7, [sp, #__PWTB_FloatArgumentRegisters + 0x60]
-#else // !TARGET_APPLE
-    // Restore the thrashed x0
+    ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
+    cbnz x11, LOCAL_LABEL(HaveInterpThreadContext)
+
+#ifdef TARGET_APPLE
+    // There Thread::GetInterpThreadContext can destroy all argument registers, so we 
+    // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
+    // Restore x0 thrashed by the INLINE_GETTHREAD
     mov x0, x21
-#endif // !TARGET_APPLE
+    SAVE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+#endif
+
+    mov x0, x20
+    bl C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
+    mov x11, x0
+
+#ifndef TARGET_APPLE
+LOCAL_LABEL(HaveInterpThreadContext):
+#endif
+
+    RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+
+#ifdef TARGET_APPLE
+LOCAL_LABEL(HaveInterpThreadContext):
+    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
+    // So we restore just the x0
+    mov x0, x21
+#endif // TARGET_APPLE
 
     ldr x9, [x19] // InterpMethod*
     ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
-    ldr x9, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
-    ldr x9, [x9, #OFFSETOF__InterpThreadContext__pStackPointer]
+    ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
     // x19 contains IR bytecode address
     // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
     ldr x11, [x10], #8

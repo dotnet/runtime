@@ -20707,12 +20707,12 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
         return false;
     }
 
-    if (comp->opts.MinOpts())
+    if (!comp->opts.Tier0OptimizationEnabled())
     {
         return false;
     }
 
-    if (comp->canUseEmbeddedMasking())
+    if (!comp->canUseEmbeddedMasking())
     {
         return false;
     }
@@ -20871,7 +20871,7 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
     unsigned maskSize = maskBaseSize * (genTypeSize(simdType) / 16);
     assert(maskSize != 0);
 
-    return maskSize != tgtMaskSize;
+    return maskSize == tgtMaskSize;
 }
 #endif // TARGET_XARCH
 
