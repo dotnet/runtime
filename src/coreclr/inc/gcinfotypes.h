@@ -603,8 +603,8 @@ struct AMD64GcInfoEncoding {
     static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
     static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
     static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
-    static const int REGISTER_ENCBASE = 5;
-    static const int REGISTER_DELTA_ENCBASE = 5;
+    static const int REGISTER_ENCBASE = 3;
+    static const int REGISTER_DELTA_ENCBASE = 2;
     static const int STACK_SLOT_ENCBASE = 6;
     static const int STACK_SLOT_DELTA_ENCBASE = 4;
     static const int NUM_SAFE_POINTS_ENCBASE = 2;
