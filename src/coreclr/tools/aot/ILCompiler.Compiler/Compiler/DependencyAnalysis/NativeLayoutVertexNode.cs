@@ -650,27 +650,6 @@ namespace ILCompiler.DependencyAnalysis
             IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(_method, IsUnboxingStub);
             return methodEntryPointNode;
         }
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            DependencyList dependencies = (DependencyList)base.GetStaticDependencies(context);
-
-            foreach (var arg in _method.Instantiation)
-            {
-                foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(arg))
-                {
-                    dependencies.Add(new DependencyListEntry(dependency, "Dependencies to make a generic method template viable Method Instantiation"));
-                }
-            }
-
-
-            foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(_method.OwningType))
-            {
-                dependencies.Add(new DependencyListEntry(dependency, "Dependencies to make a generic method template viable OwningType"));
-            }
-
-            return dependencies;
-        }
     }
 
     public sealed class NativeLayoutDictionarySignatureNode : NativeLayoutSavedVertexNode
@@ -788,19 +767,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(_method.OwningType))
-            {
-                yield return new DependencyListEntry(dependency, "method OwningType itself must be template loadable");
-            }
-
-            foreach (var type in _method.Instantiation)
-            {
-                foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(type))
-                {
-                    yield return new DependencyListEntry(dependency, "method's instantiation arguments must be template loadable");
-                }
-            }
-
             foreach (GenericParameterDesc genericParam in _method.GetTypicalMethodDefinition().Instantiation)
             {
                 foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
@@ -1103,6 +1069,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public NativeLayoutTypeSignatureBasedGenericDictionarySlotNode(NodeFactory factory, TypeDesc type)
         {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype);
             _signature = factory.NativeLayout.TypeSignatureVertex(type);
             _type = type;
         }
@@ -1239,6 +1206,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public NativeLayoutInterfaceDispatchGenericDictionarySlotNode(NodeFactory factory, MethodDesc method)
         {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             _signature = factory.NativeLayout.TypeSignatureVertex(method.OwningType);
             _method = method;
         }
@@ -1250,16 +1218,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             yield return new DependencyListEntry(_signature, "TypeSignature");
 
-            MethodDesc method = _method;
-            if (method.IsRuntimeDeterminedExactMethod)
-                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (!factory.VTable(method.OwningType).HasKnownVirtualMethodUse)
+            if (!factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse)
             {
-                yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
+                yield return new DependencyListEntry(factory.VirtualMethodUse(canonMethod), "Slot number");
             }
 
-            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(method.OwningType))
+            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
                 yield return new DependencyListEntry(dependency, "template construction dependency");
             }
