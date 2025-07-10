@@ -3180,7 +3180,7 @@ public:
     BOOL IsPopulated()
     {
         LIMITED_METHOD_CONTRACT;
-        return (ndirect.m_wFlags & kNDirectPopulated) != 0;
+        return (VolatileLoad(&ndirect.m_wFlags) & kNDirectPopulated) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
