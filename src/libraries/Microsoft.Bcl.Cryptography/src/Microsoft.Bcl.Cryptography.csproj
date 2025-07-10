@@ -341,8 +341,6 @@
              Link="Common\System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
              Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
-             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
@@ -379,6 +377,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptFinalizeKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" /> 
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
@@ -393,10 +393,18 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsa.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaAlgorithm.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaMessageEncoder.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLDsaMessageEncoder.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
+             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.cs"
              Link="Common\System\Security\Cryptography\MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.Windows.cs"
@@ -444,12 +452,8 @@
              Link="Common\System\Security\Cryptography\CngHelpers.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
              Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ManagedCompositeMLDsaComposer.cs"
-             Link="Common\System\Security\Cryptography\ManagedCompositeMLDsaComposer.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.cs"
              Link="Common\System\Security\Cryptography\MLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.Windows.cs"
@@ -460,8 +464,6 @@
              Link="Common\System\Security\Cryptography\MLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemCng.Windows.cs"
              Link="Common\System\Security\Cryptography\MLKemCng.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs"
              Link="Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"
@@ -480,17 +482,6 @@
     <Compile Include="System\Security\Cryptography\CngHelpers.cs" />
     <Compile Include="System\Security\Cryptography\CngExtensions.cs" />
     <Compile Include="System\Security\Cryptography\CngIdentifierExtensions.cs" />
-  </ItemGroup>
-
-  <!-- TODO RSA PSS requires RSACng which netstandard does not have. So we have the following options:
-       1) ifdef netstandard and throw during import of RSA PSS keys.
-       2) don't support managed composer at all for netstandard.
-       3) don't support composite MLDsa at all for netstandard.
-       Option (3) was chosen for ease, but (1) would be better if we want to support actually running the netstandard code.
-   -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
