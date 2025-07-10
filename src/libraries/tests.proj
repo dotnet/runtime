@@ -351,6 +351,10 @@
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Device/LibraryMode/iOS.Device.LibraryMode.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisablediOSTests)' != 'true'">
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
   </ItemGroup>
 
@@ -616,6 +620,10 @@
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\*.Test.csproj"/>
   </ItemGroup>
 
+  <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj"/>
+  </ItemGroup>
+
   <!--
       There is a decent number of hidden tests that fail with TestReadyToRun, and
       it's proven to be a neverending task to flush all of them at once. So, we will
@@ -698,7 +706,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator' and '$(RuntimeFlavor)' == 'Mono'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
