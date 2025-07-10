@@ -102,6 +102,25 @@ namespace System.Text.Json.Serialization.Metadata
         private protected abstract void SetCreateObject(Delegate? createObject);
         private protected Func<object>? _createObject;
 
+        private protected void AfterCreateObject()
+        {
+            // Clear any data related to the previously specified ctor
+            ConstructorAttributeProviderFactory = null;
+            ConstructorAttributeProvider = null;
+
+            if (CreateObjectWithArgs is not null)
+            {
+                _parameterInfoValuesIndex = null;
+                CreateObjectWithArgs = null;
+                ParameterCount = 0;
+
+                foreach (JsonPropertyInfo propertyInfo in PropertyList)
+                {
+                    propertyInfo.AssociatedParameter = null;
+                }
+            }
+        }
+
         internal Func<object>? CreateObjectForExtensionDataProperty { get; set; }
 
         /// <summary>
