@@ -570,12 +570,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/multidimmarray/rank1array/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109309</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109309</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/**">
             <Issue>https://github.com/dotnet/runtime/issues/109310</Issue>
         </ExcludeList>
