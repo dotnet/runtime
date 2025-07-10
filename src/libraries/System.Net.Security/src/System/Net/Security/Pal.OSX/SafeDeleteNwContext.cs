@@ -197,7 +197,7 @@ namespace System.Net.Security
 
         internal ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (_appReceiveBuffer.ActiveLength > 0)
+            if (_appReceiveBuffer.ActiveLength > 0 || _appReceiveBufferTcs.IsCompleted)
             {
                 // fast path, data available
                 int length = Math.Min(_appReceiveBuffer.ActiveLength, buffer.Length);
@@ -217,6 +217,7 @@ namespace System.Net.Security
                 if (_appReceiveBuffer.ActiveLength == 0)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "ReadAsync returning 0 bytes, end of stream reached");
+                    _appReceiveBufferTcs.TrySetResult(final: true);
                     return 0; // EOF
                 }
 
@@ -232,10 +233,8 @@ namespace System.Net.Security
 
         internal ValueTask FillAppDataBufferAsync(CancellationToken cancellationToken)
         {
-            if (!_appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, cancellationToken))
-            {
-                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"))));
-            }
+            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, cancellationToken);
+            Debug.Assert(success, "Concurrent FillAppDataBufferAsync detected");
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
             unsafe
