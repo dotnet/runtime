@@ -36,7 +36,7 @@ void NativeTestThread(IUnknown* pUnknown)
 }
 
 #ifndef _WIN32
-void* NativeTestThread(IUnknown* pUnknown)
+void* NativeTestThreadUnix(IUnknown* pUnknown)
 {
     NativeTestThread(pUnknown);
     return NULL;
@@ -64,7 +64,7 @@ extern "C" DLL_EXPORT void TestFromNativeThread(IUnknown* pUnknown)
     AbortIfFail(st);
 
     pthread_t t;
-    st = pthread_create(&t, &attr, NativeTestThread, (void*)pUnknown);
+    st = pthread_create(&t, &attr, NativeTestThreadUnix, (void*)pUnknown);
     AbortIfFail(st);
 
     st = pthread_join(t, NULL);
