@@ -12753,15 +12753,10 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
             fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
 
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
-                printf(" to " FMT_BB, block->GetTarget()->bbNum);
-                printf("\n");
-            }
-#endif
+            JITDUMP("\nConditional folded at " FMT_BB "\n", block->bbNum);
+            JITDUMP(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+            JITDUMP(" to " FMT_BB, block->GetTarget()->bbNum);
+            JITDUMP("\n");
         }
     }
     else if (block->KindIs(BBJ_SWITCH))
