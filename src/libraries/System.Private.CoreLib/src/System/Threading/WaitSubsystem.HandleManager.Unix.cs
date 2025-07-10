@@ -10,9 +10,35 @@ namespace System.Threading
 {
     internal static partial class WaitSubsystem
     {
-        private interface IWaitableObject
+        public interface IWaitableObject
         {
             void OnDeleteHandle();
+            int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder);
+            void Signal(int count, ref LockHolder lockHolder);
+        }
+
+        public static int Wait(this IWaitableObject waitable, ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
+        {
+            Debug.Assert(waitInfo != null);
+            Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
+
+            Debug.Assert(timeoutMilliseconds >= -1);
+
+            var lockHolder = new LockHolder(s_lock);
+            try
+            {
+                if (interruptible && waitInfo.CheckAndResetPendingInterrupt)
+                {
+                    lockHolder.Dispose();
+                    throw new ThreadInterruptedException();
+                }
+
+                return waitable.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
+            }
+            finally
+            {
+                lockHolder.Dispose();
+            }
         }
 
         private static class HandleManager
@@ -29,8 +55,7 @@ namespace System.Threading
                 return handle;
             }
 
-            public static TWaitableObject FromHandle<TWaitableObject>(IntPtr handle)
-                where TWaitableObject : IWaitableObject
+            public static IWaitableObject FromHandle(IntPtr handle)
             {
                 if (handle == IntPtr.Zero || handle == new IntPtr(-1))
                 {
@@ -39,7 +64,7 @@ namespace System.Threading
 
                 // We don't know if any other handles are invalid, and this may crash or otherwise do bad things, that is by
                 // design, IntPtr is unsafe by nature.
-                return (TWaitableObject)GCHandle.FromIntPtr(handle).Target!;
+                return (IWaitableObject)GCHandle.FromIntPtr(handle).Target!;
             }
 
             /// <summary>
@@ -54,7 +79,7 @@ namespace System.Threading
 
                 // We don't know if any other handles are invalid, and this may crash or otherwise do bad things, that is by
                 // design, IntPtr is unsafe by nature.
-                FromHandle<IWaitableObject>(handle).OnDeleteHandle();
+                FromHandle(handle).OnDeleteHandle();
                 GCHandle.FromIntPtr(handle).Free();
             }
         }

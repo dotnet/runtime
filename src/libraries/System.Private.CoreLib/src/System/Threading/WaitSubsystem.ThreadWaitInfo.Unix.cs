@@ -86,6 +86,13 @@ namespace System.Threading
             /// </summary>
             private WaitableObject? _lockedMutexesHead;
 
+            /// <summary>
+            /// Linked list of named mutexes that are locked by the thread and need to be abandoned before the thread exits.
+            /// The linked list has only a head and no tail, which means acquired mutexes are prepended and
+            /// mutexes are abandoned in reverse order.
+            /// </summary>
+            private NamedMutexProcessDataBase? _lockedNamedMutexesHead;
+
             public ThreadWaitInfo(Thread thread)
             {
                 Debug.Assert(thread != null);
@@ -553,6 +560,20 @@ namespace System.Threading
                 }
             }
 
+            public NamedMutexProcessDataBase? LockedNamedMutexesHead
+            {
+                get
+                {
+                    s_lock.VerifyIsLocked();
+                    return _lockedNamedMutexesHead;
+                }
+                set
+                {
+                    s_lock.VerifyIsLocked();
+                    _lockedNamedMutexesHead = value;
+                }
+            }
+
             public void OnThreadExiting()
             {
                 // Abandon locked mutexes. Acquired mutexes are prepended to the linked list, so the mutexes are abandoned in
@@ -570,6 +591,18 @@ namespace System.Threading
 
                         waitableObject.AbandonMutex();
                         Debug.Assert(LockedMutexesHead != waitableObject);
+                    }
+
+                    while (true)
+                    {
+                        NamedMutexProcessDataBase? namedMutex = LockedNamedMutexesHead;
+                        if (namedMutex == null)
+                        {
+                            break;
+                        }
+
+                        namedMutex.Abandon();
+                        Debug.Assert(LockedNamedMutexesHead != namedMutex);
                     }
                 }
                 finally

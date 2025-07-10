@@ -67,8 +67,6 @@ namespace System.Threading
         internal SynchronizationContext? _synchronizationContext;
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
-
-        internal NamedMutexProcessDataBase? _ownedSharedNamedMutexes; // shared named mutexes owned by this thread
 #endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background

@@ -368,6 +368,12 @@ int32_t SystemNative_PThreadMutex_Release(void* mutex)
     return pthread_mutex_unlock((pthread_mutex_t*)mutex);
 }
 
+int32_t SystemNative_PThreadMutex_Destroy(void* mutex)
+{
+    assert(mutex != NULL);
+    return pthread_mutex_destroy((pthread_mutex_t*)mutex);
+}
+
 int32_t SystemNative_PThreadMutex_Size(void)
 {
     return (int32_t)sizeof(pthread_mutex_t);
