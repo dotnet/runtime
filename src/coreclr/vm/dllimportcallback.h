@@ -208,6 +208,8 @@ public:
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
 #endif
+
+        FlushCacheForDynamicMappedStub(m_pUMEntryThunk, sizeof(UMEntryThunk));
     }
 
     void Terminate();

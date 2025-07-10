@@ -828,6 +828,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
             m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
             m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
             m_ILToNativeMapSize++;
         }
     }
@@ -2180,6 +2181,44 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     return GetDataItemIndex(addr);
 }
 
+bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
+{
+    bool mustExpand = (method == m_methodHnd);
+    if (!mustExpand && (ni == NI_Illegal))
+        return false;
+
+    switch (ni)
+    {
+        case NI_IsSupported_False:
+        case NI_IsSupported_True:
+            AddIns(INTOP_LDC_I4);
+            m_pLastNewIns->data[0] = ni == NI_IsSupported_True;
+            PushStackType(StackTypeI4, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+
+        case NI_Throw_PlatformNotSupportedException:
+            AddIns(INTOP_THROW_PNSE);
+            return true;
+
+        default:
+        {
+#ifdef DEBUG
+            if (m_verbose)
+            {
+                const char* className = NULL;
+                const char* namespaceName = NULL;
+                const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+                printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
+            }
+#endif
+            if (mustExpand)
+                NO_WAY("EmitNamedIntrinsicCall not implemented must-expand intrinsic");
+            return false;
+        }
+    }
+}
+
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     const char *className = NULL;
@@ -2384,7 +2423,7 @@ void InterpCompiler::EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT
         AddIns(INTOP_CALL_HELPER_V_AGS);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_UNBOX_NULLABLE);
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
-        
+
         m_pLastNewIns->SetSVars2(handleData.genericVar, arg2);
         m_pLastNewIns->SetDVar(resultVar);
     }
@@ -2484,7 +2523,7 @@ int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &e
     PushStackType(StackTypeI, NULL);
     int resultVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
-    
+
     GenericHandleData handleData = GenericHandleToGenericHandleData(embedInfo);
 
     if (handleData.argType == HelperArgType::GenericResolution)
@@ -2584,6 +2623,19 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+        if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
+        {
+            if (InterpConfig.InterpMode() >= 3)
+            {
+                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                {
+                    m_ip += 5;
+                    return;
+                }
+            }
+        }
+
         if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
         {
             m_ip += 5;
@@ -2675,7 +2727,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             PushInterpType(ctorType, resolvedCallToken.hClass);
 
             CORINFO_GENERICHANDLE_RESULT newObjGenericHandleEmbedInfo;
-            m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo); 
+            m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo);
             newObjData = GenericHandleToGenericHandleData(newObjGenericHandleEmbedInfo);
         }
         newObjDVar = m_pStackPointer[-2].var;
@@ -2823,9 +2875,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
             {
                 CORINFO_GENERICHANDLE_RESULT newObjGenericHandleEmbedInfo;
-                m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo); 
+                m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo);
                 newObjData = GenericHandleToGenericHandleData(newObjGenericHandleEmbedInfo);
-                
+
                 if (newObjData.argType == HelperArgType::GenericResolution)
                 {
                     AddIns(INTOP_NEWMDARR_GENERIC);
@@ -2888,7 +2940,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             break;
 
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
-            if (callInfo.sig.sigInst.methInstCount != 0)
+            if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getClassAttribs(resolvedCallToken.hClass) & CORINFO_FLG_SHAREDINST))
             {
                 assert(extraParamArgLocation == INT_MAX);
                 // We should not have a type argument for the ldvirtftn path since we don't know
@@ -4131,6 +4183,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8);
                     break;
                 case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I4);
                     break;
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
@@ -4171,9 +4224,10 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I4);
                     break;
                 case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I8);
                     break;
                 default:
                     assert(0);
@@ -4237,17 +4291,218 @@ retry_emit:
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
-                    // FIXME: Is this the right conv opcode?
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_I4);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_I4);
 #endif
                     break;
                 case StackTypeI8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_I8);
 #else
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_I8);
+#endif
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I1_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U1_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I2_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U2_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I4_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U4_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_U8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I8_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_U8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U8_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
+                    break;
+                case StackTypeI8:
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_U4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_U4);
+#endif
+                    break;
+                case StackTypeI8:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_U8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_U8);
+#endif
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U_UN:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                case StackTypeR8:
+                    assert(!"Floating point unsigned conversions");
+                    break;
+                case StackTypeI4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U8_U4);
+#else
+#endif
+                    break;
+                case StackTypeI8:
+#ifdef TARGET_64BIT
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_U8);
 #endif
                     break;
                 default:
@@ -5175,17 +5430,17 @@ DO_LDFTN:
                     {
                         // Unbox.any of a reference type is just a cast
                         CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, true /* throwing */);
-                        
+
                         CORINFO_GENERICHANDLE_RESULT embedInfo;
                         InterpEmbedGenericResult result;
                         m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
-                        
+
                         EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
                     }
                     else
                     {
                         CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                        
+
                         if (helpFunc == CORINFO_HELP_UNBOX)
                         {
                             EmitPushUnboxAny(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
@@ -5228,7 +5483,7 @@ DO_LDFTN:
                     AddIns(INTOP_NEWARR_GENERIC);
                     m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(helpFunc);
                     m_pLastNewIns->data[1] = handleData.dataItemIndex;
-                    
+
                     m_pLastNewIns->SetSVars2(handleData.genericVar, newArrLenVar);
                     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }

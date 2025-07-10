@@ -415,7 +415,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns pointer to the multi-dimensional array bounds.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref int GetMultiDimensionalArrayBounds(Array array)
+        internal static ref int GetMultiDimensionalArrayBounds(this Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details
@@ -423,7 +423,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int GetMultiDimensionalArrayRank(Array array)
+        internal static unsafe int GetMultiDimensionalArrayRank(this Array array)
         {
             int rank = GetMethodTable(array)->MultiDimensionalArrayRank;
             GC.KeepAlive(array); // Keep MethodTable alive
@@ -821,6 +821,16 @@ namespace System.Runtime.CompilerServices
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
+
+        public bool IsSzArray
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(IsArray);
+                return BaseSize == (uint)(3 * sizeof(IntPtr));
+            }
+        }
 
         public bool IsMultiDimensionalArray
         {

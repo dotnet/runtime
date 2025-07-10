@@ -4516,7 +4516,7 @@ protected:
     };
 
     bool impIsPrimitive(CorInfoType type);
-    bool impILConsumesAddr(const BYTE* codeAddr);
+    bool impILConsumesAddr(const BYTE* codeAddr, const BYTE* codeEndp);
 
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
@@ -6696,15 +6696,6 @@ private:
     GenTree* fgMorphHWIntrinsicOptional(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-#ifdef TARGET_ARM64
-    bool canMorphVectorOperandToMask(GenTree* node);
-    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
-    GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
-    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
-#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
@@ -9613,6 +9604,13 @@ private:
         return false;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
+    CORINFO_InstructionSet lookupInstructionSet(const char* className);
+    CORINFO_InstructionSet lookupIsa(const char* className,
+                                     const char* innerEnclosingClassName,
+                                     const char* outerEnclosingClassName);
+#endif // FEATURE_HW_INTRINSICS
+
 #ifdef DEBUG
     // Answer the question: Is a particular ISA supported?
     // Use this api when asking the question so that future
@@ -9915,8 +9913,9 @@ public:
             compSupportsISA = isas;
         }
 
-        unsigned compFlags; // method attributes
-        unsigned instrCount = 0;
+        unsigned compFlags;          // method attributes
+        unsigned instrCount     = 0; // number of IL opcodes
+        unsigned callInstrCount = 0; // number of IL opcodes (calls only).
         unsigned lvRefCount;
 
         codeOptimize compCodeOpt; // what type of code optimizations

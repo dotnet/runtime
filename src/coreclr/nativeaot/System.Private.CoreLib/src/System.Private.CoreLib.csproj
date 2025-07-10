@@ -113,7 +113,6 @@
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
-    <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
@@ -200,6 +199,7 @@
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />

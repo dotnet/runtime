@@ -3,6 +3,7 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 
 public interface ITest
@@ -605,6 +606,51 @@ public class InterpreterTest
         }
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention13(int a, int b, int c, int d, int e, int f, int g, int h, TestStruct4ii s)
+    {
+        Console.WriteLine("TestCallingConvention13: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}, g = {6}, h = {7}, s = ({8}, {9}, {10}, {11})", a, b, c, d, e, f, g, h, s.a, s.b, s.c, s.d);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention13Rev(int a, int b, int c, int d, int e, int f, int g, int h, TestStruct4ii s)
+    {
+        Console.Write("TestCallingConvention13Rev: a = ");
+        Console.Write(a);
+        Console.Write(", b = ");
+        Console.Write(b);
+        Console.Write(", c = ");
+        Console.Write(c);
+        Console.Write(", d = ");
+        Console.Write(d);
+        Console.Write(", e = ");
+        Console.Write(e);
+        Console.Write(", f = ");
+        Console.Write(f);
+        Console.Write(", g = ");
+        Console.Write(g);
+        Console.Write(", h = ");
+        Console.Write(h);
+        Console.Write(", s = (");
+        Console.Write(s.a);
+        Console.Write(", ");
+        Console.Write(s.b);
+        Console.Write(", ");
+        Console.Write(s.c);
+        Console.Write(", ");
+        Console.Write(s.d);
+        Console.WriteLine(")");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention13JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestCallingConvention13Rev(1, 2, 3, 4, 5, 6, 7, 8, new TestStruct4ii { a = 9, b = 10, c = 11, d = 12 });
+        }
+    }
+
     // This method is invoked before we start interpretting anything, so the methods invoked in it will be jitted.
     // This is necessary for the calling convention tests that test calls from the interpreter to the JITted code
     // to actually test things.
@@ -655,6 +701,7 @@ public class InterpreterTest
         Console.WriteLine(s11.c);
 
         TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
+        TestCallingConvention13(1, 2, 3, 4, 5, 6, 7, 8, new TestStruct4ii { a = 9, b = 10, c = 11, d = 12 });
 
         TestCallingConvention0JitToInterpreter(true);
         TestCallingConvention1JitToInterpreter(true);
@@ -669,6 +716,7 @@ public class InterpreterTest
         TestCallingConvention10JitToInterpreter(true);
         TestCallingConvention11JitToInterpreter(true);
         TestCallingConvention12JitToInterpreter(true);
+        TestCallingConvention13JitToInterpreter(true);
     }
 
     static int Main(string[] args)
@@ -698,6 +746,7 @@ public class InterpreterTest
         TestCallingConvention10JitToInterpreter(false);
         TestCallingConvention11JitToInterpreter(false);
         TestCallingConvention12JitToInterpreter(false);
+        TestCallingConvention13JitToInterpreter(false);
 
         TestCallingConvention0(1, 2.0f, 3, 4.0, 5, 6.0);
 
@@ -779,6 +828,7 @@ public class InterpreterTest
         Console.WriteLine(s11.c);
 
         TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
+        TestCallingConvention13(1, 2, 3, 4, 5, 6, 7, 8, new TestStruct4ii { a = 9, b = 10, c = 11, d = 12 });
 
         // Console.WriteLine("Run interp tests");
         Console.WriteLine("Sum");
@@ -814,9 +864,15 @@ public class InterpreterTest
         // Unchecked to ensure that the divide-by-zero here doesn't throw since we're using it to generate a NaN
         unchecked
         {
+            Console.WriteLine("TestConvOvf");
             if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
                 Environment.FailFast(null);
 
+            Console.WriteLine("TestConvOvfUn");
+            if (!TestConvOvfUn(1, 2, 3, uint.MaxValue, ulong.MaxValue))
+                Environment.FailFast(null);
+
+            Console.WriteLine("TestConvBoundaries");
             if (!TestConvBoundaries(
                 32767.999999999996, 32768.00000000001,
                 2147483647.9999998, 2147483648.0000005
@@ -877,6 +933,10 @@ public class InterpreterTest
         if (!TestDelegate())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestIntrinsics");
+        if (!TestIntrinsics())
+            Environment.FailFast(null);
+
         Console.WriteLine("TestCalli");
         if (!TestCalli())
             Environment.FailFast(null);
@@ -898,6 +958,17 @@ public class InterpreterTest
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
+    }
+
+    public static bool TestIntrinsics()
+    {
+        Console.WriteLine("Vector128.IsHardwareAccelerated=");
+        Console.WriteLine(Vector128.IsHardwareAccelerated);
+        Console.WriteLine("X86Base.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.X86.X86Base.IsSupported);
+        Console.WriteLine("ArmBase.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.Arm.ArmBase.IsSupported);
+        return true;
     }
 
     public static void TestExceptionHandling()
@@ -1567,6 +1638,43 @@ public class InterpreterTest
         return true;
     }
 
+    public static bool TestConvOvfUn(ushort u2, uint u4, ulong u8, uint hugeUint, ulong hugeUlong)
+    {
+        checked
+        {
+            byte a = (byte)u2,
+                b = (byte)u4,
+                c = (byte)u8;
+
+            if (a != u2)
+                return false;
+            if (b != u4)
+                return false;
+            if (c != u8)
+                return false;
+
+            try
+            {
+                a = (byte)hugeUint;
+                return false;
+            }
+            catch (OverflowException)
+            {
+            }
+
+            try
+            {
+                b = (byte)hugeUlong;
+                return false;
+            }
+            catch (OverflowException)
+            {
+            }
+        }
+
+        return true;
+    }
+
     public static bool TestConvBoundaries(double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt)
     {
         // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
@@ -1577,8 +1685,11 @@ public class InterpreterTest
             int c = (int)inRangeInt,
                 d = (int)outOfRangeInt;
 
-            if (a != b)
+            // See https://github.com/dotnet/runtime/issues/116823 - they should *not* currently match if target size is smaller than int32
+            // if (a != b)
+            if (a == b)
                 return false;
+
             if (c != d)
                 return false;
         }
@@ -1889,13 +2000,18 @@ public class InterpreterTest
         return typeof(T);
     }
 
-    class GenericClass<T>
+    class GenericClass<T> : IGeneric<T>
     {
         public Type GetTypeOfTInstance()
         {
             return typeof(T);
         }
         public static Type GetTypeOfTStatic()
+        {
+            return typeof(T);
+        }
+
+        Type IGeneric<T>.Method()
         {
             return typeof(T);
         }
@@ -2216,6 +2332,11 @@ public class InterpreterTest
         return true;
     }
 
+    interface IGeneric<T>
+    {
+        Type Method();
+    }
+
     public static bool TestGenerics_CallsFrom<T>()
     {
         if (LoadType<T>() != typeof(T))
@@ -2225,6 +2346,9 @@ public class InterpreterTest
             return false;
 
         if (GenericClass<T>.GetTypeOfTStatic() != typeof(T))
+            return false;
+
+        if (((IGeneric<T>)new GenericClass<T>()).Method() != typeof(T))
             return false;
 
         return true;

@@ -289,6 +289,8 @@ void UMEntryThunkData::Terminate()
     // TheUMEntryPrestub includes diagnostic for collected delegates
     m_pUMEntryThunk->SetTargetUnconditional(TheUMThunkPreStub());
 
+    FlushCacheForDynamicMappedStub(m_pUMEntryThunk, sizeof(UMEntryThunk));
+
     OBJECTHANDLE pObjectHandle = m_pObjectHandle;
 
     // Set m_pObjectHandle indicate the collected state

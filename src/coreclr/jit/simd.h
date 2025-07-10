@@ -1598,9 +1598,8 @@ void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
     uint64_t mask  = 0;
 
-    TBase significantBit = 1;
 #if defined(TARGET_XARCH)
-    significantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
+    TBase MostSignificantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
 #endif
 
     for (uint32_t i = 0; i < count; i++)
@@ -1608,25 +1607,23 @@ void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        if ((input0 & significantBit) != 0)
-        {
 #if defined(TARGET_XARCH)
-            // For xarch we have count sequential bits to write
-            // depending on if the corresponding the input element
-            // has its most significant bit set
-
+        // For xarch we have count sequential bits to write depending on if the
+        // corresponding the input element has its most significant bit set
+        if ((input0 & MostSignificantBit) != 0)
+        {
             mask |= static_cast<uint64_t>(1) << i;
-#elif defined(TARGET_ARM64)
-            // For Arm64 we have count total bits to write, but
-            // they are sizeof(TBase) bits apart. We set
-            // depending on if the corresponding input element
-            // has its least significant bit set
-
-            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
-#else
-            unreached();
-#endif
         }
+#elif defined(TARGET_ARM64)
+        // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits
+        // apart. We set depending on if the corresponding input element is non zero
+        if (input0 != 0)
+        {
+            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+        }
+#else
+        unreached();
+#endif
     }
 
     memcpy(&result->u8[0], &mask, sizeof(uint64_t));

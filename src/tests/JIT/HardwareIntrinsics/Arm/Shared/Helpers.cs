@@ -6108,6 +6108,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte AddPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static sbyte AddPairwiseSve(sbyte[] op1, sbyte[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (sbyte)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (sbyte)(op2[i - 1] + op2[i]);
+            }
+        }
+
         public static sbyte Max(sbyte op1, sbyte op2) => Math.Max(op1, op2);
 
         public static sbyte MaxPairwise(sbyte[] op1, int i) => Pairwise(Max, op1, i);
@@ -6158,6 +6170,17 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte AddPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static byte AddPairwiseSve(byte[] op1, byte[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (byte)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (byte)(op2[i - 1] + op2[i]);
+            }
+        }
         public static byte Max(byte op1, byte op2) => Math.Max(op1, op2);
 
         public static byte MaxPairwise(byte[] op1, int i) => Pairwise(Max, op1, i);
@@ -6207,6 +6230,20 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short AddPairwise(short[] op1, int i) => Pairwise(Add, op1, i);
 
         public static short AddPairwise(short[] op1, short[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static short AddPairwiseSve(short[] op1, short[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (short)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static short AddPairwiseWidening(short[] op1, sbyte[] op2, int i) => (short)(op1[i] + (short)op2[i * 2] + (short)op2[i * 2 + 1]);
 
         public static short Max(short op1, short op2) => Math.Max(op1, op2);
 
@@ -6258,6 +6295,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AddPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static ushort AddPairwiseSve(ushort[] op1, ushort[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ushort)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (ushort)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static ushort AddPairwiseWidening(ushort[] op1, byte[] op2, int i) => (ushort)(op1[i] + (ushort)op2[i * 2] + (ushort)op2[i * 2 + 1]);
+
         public static ushort Max(ushort op1, ushort op2) => Math.Max(op1, op2);
 
         public static ushort MaxPairwise(ushort[] op1, int i) => Pairwise(Max, op1, i);
@@ -6307,6 +6358,20 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int AddPairwise(int[] op1, int i) => Pairwise(Add, op1, i);
 
         public static int AddPairwise(int[] op1, int[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static int AddPairwiseSve(int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+            return (int)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+            return (int)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static int AddPairwiseWidening(int[] op1, short[] op2, int i) => op1[i] + (int)op2[i * 2] + (int)op2[i * 2 + 1];
 
         public static int Max(int op1, int op2) => Math.Max(op1, op2);
 
@@ -6358,6 +6423,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AddPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static uint AddPairwiseSve(uint[] op1, uint[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (uint)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (uint)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static uint AddPairwiseWidening(uint[] op1, ushort[] op2, int i) => op1[i] + (uint)op2[i * 2] + (uint)op2[i * 2 + 1];
+
         public static uint Max(uint op1, uint op2) => Math.Max(op1, op2);
 
         public static uint MaxPairwise(uint[] op1, int i) => Pairwise(Max, op1, i);
@@ -6407,6 +6486,20 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AddPairwise(long[] op1, int i) => Pairwise(Add, op1, i);
 
         public static long AddPairwise(long[] op1, long[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static long AddPairwiseSve(long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (long)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (long)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static long AddPairwiseWidening(long[] op1, int[] op2, int i) => op1[i] + (int)op2[i * 2] + (int)op2[i * 2 + 1];
 
         public static long Max(long op1, long op2) => Math.Max(op1, op2);
 
@@ -6458,6 +6551,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AddPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static ulong AddPairwiseSve(ulong[] op1, ulong[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ulong)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (ulong)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static ulong AddPairwiseWidening(ulong[] op1, uint[] op2, int i) => op1[i] + (ulong)op2[i * 2] + (ulong)op2[i * 2 + 1];
+
         public static ulong Max(ulong op1, ulong op2) => Math.Max(op1, op2);
 
         public static ulong MaxPairwise(ulong[] op1, int i) => Pairwise(Max, op1, i);
@@ -6507,6 +6614,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float AddPairwise(float[] op1, int i) => Pairwise(Add, op1, i);
 
         public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static float AddPairwiseSve(float[] op1, float[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (float)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (float)(op2[i - 1] + op2[i]);
+            }
+        }
 
         public static float[] AddRotateComplex(float[] op1, float[] op2, byte rot)
         {
@@ -6579,6 +6698,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
 
         public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static double AddPairwiseSve(double[] op1, double[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (double)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (double)(op2[i - 1] + op2[i]);
+            }
+        }
 
         public static double[] AddRotateComplex(double[] op1, double[] op2, byte rot)
         {
