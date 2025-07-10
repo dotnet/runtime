@@ -25,12 +25,12 @@ typedef enum _EnvironmentProviderType
 typedef struct _EnvironmentProvider
 {
     EnvironmentProviderType type;
-    char* (*getenv_unsafe_func)(const char* name);
-    char* (*getenv_func)(const char* name);
+    char* (*get_env_func)(const char* name);
+    char* (*get_env_copy_func)(const char* name);
     void (*free_env_func)(char* value);
-    int (*getenv_s_func)(size_t *required_len, char *buffer, size_t buffer_len, const char *name);
-    char** (*get_environ_unsafe_func)(void);
+    int (*get_env_s_func)(size_t *required_len, char *buffer, size_t buffer_len, const char *name);
     char** (*get_environ_func)(void);
+    char** (*get_environ_copy_func)(void);
     void (*free_environ_func)(char** values);
 } EnvironmentProvider;
 
@@ -38,7 +38,7 @@ typedef struct _EnvironmentProvider
  * @brief Loads and cache the environment variable subsystem using process data.
  *
  * Loads and cache environment variables from the system and prepares internal data structures.
- * If environment variables have already been used through minipal_env_get, minipal_env_get_s,
+ * If environment variables have already been used through minipal_env_get, minipal_env_get_copy, minipal_env_get_s,
  * minipal_env_set or minipal_env_put existing cached values will be merged into loaded environment.
  *
  * Function exists to explicitly load and cache environment.
@@ -68,7 +68,7 @@ void minipal_env_unload_environ(void);
  * @remarks
  * - Access internal environment variable array wihout doing allocs or taking locks.
  */
-char** minipal_env_get_environ_unsafe(void);
+char** minipal_env_get_environ(void);
 
 /**
  * @brief Get a pointer to the environment variable array.
@@ -81,18 +81,18 @@ char** minipal_env_get_environ_unsafe(void);
  *   will created and returned on each call. To avoid recreating environment on each call,
  *   explicit load environment using minipal_env_load_environ before calling this function.
  */
-char** minipal_env_get_environ(void);
+char** minipal_env_get_environ_copy(void);
 
 /**
- * @brief Frees an environment variable array previously returned by minipal_env_get_environ.
+ * @brief Frees an environment variable array previously returned by minipal_env_get_environ_copy.
  *
  * This function releases all memory associated with the environment array returned by
- * minipal_env_get_environ. The pointer passed must not be used after this call.
+ * minipal_env_get_environ_copy. The pointer passed must not be used after this call.
  *
  * @param data Pointer to the environment variable array to free. May be NULL.
  *
  * @remarks
- * - Only use this function to free arrays returned by minipal_env_get_environ.
+ * - Only use this function to free arrays returned by minipal_env_get_environ_copy.
  * - Passing NULL is safe and has no effect.
  */
 void minipal_env_free_environ(char** data);
@@ -107,18 +107,6 @@ void minipal_env_free_environ(char** data);
 bool minipal_env_exists(const char* name);
 
 /**
- * @brief Get a copy of the value of an environment variable.
- *
- * @param name The name of the environment variable to get.
- *
- * @return Newly allocated string containing the value. Returns NULL if not found or on error.
- *
- * @remarks
- * - Caller is responsible freeing the returned string.
- */
-char* minipal_env_get(const char* name);
-
-/**
  * @brief Get the value of an environment variable.
  *
  * @param name The name of the environment variable to get.
@@ -130,7 +118,19 @@ char* minipal_env_get(const char* name);
  * @return String containing the value, ownership is still held by the environment and should NOT
  * be freed by caller. Returns NULL if not found or on error.
  */
-char* minipal_env_get_unsafe(const char* name);
+char* minipal_env_get(const char* name);
+
+/**
+ * @brief Get a copy of the value of an environment variable.
+ *
+ * @param name The name of the environment variable to get.
+ *
+ * @return Newly allocated string containing the value. Returns NULL if not found or on error.
+ *
+ * @remarks
+ * - Caller is responsible freeing the returned string.
+ */
+char* minipal_env_get_copy(const char* name);
 
 /**
  * @brief Get the value of an environment variable into a user allocated buffer.

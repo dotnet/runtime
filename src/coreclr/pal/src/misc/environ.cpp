@@ -913,7 +913,7 @@ EnvironInitialize(void)
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     minipal_mutex_enter(&gcsEnvironment);
 
-    char** sourceEnviron = minipal_env_get_environ();
+    char** sourceEnviron = minipal_env_get_environ_copy();
     _ASSERT(sourceEnviron != NULL);
 
     int variableCount = 0;

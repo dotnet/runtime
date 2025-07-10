@@ -41,30 +41,30 @@ static minipal_mutex* g_env_lock;
 static bool g_env_loaded;
 
 // Global environment, only accessed when holding lock,
-// except when accessed from minipal_env_get_environ_unsafe.
+// except when accessed from minipal_env_get_environ.
 static EnvironmentVariables g_env;
 
 // Empty environ for platforms without env support.
 char* g_empty_environ[] = { NULL };
 
 //Forward declarations.
-static char* get_system_env_unsafe(const char* name);
 static char* get_system_env(const char* name);
+static char* get_system_env_copy(const char* name);
 static void free_system_env(char* value);
 static int get_system_env_s(size_t *required_len, char *buffer, size_t buffer_len, const char *name);
-static char** get_system_environ_unsafe(void);
+static char** get_system_environ(void);
 static bool put_env(EnvironmentVariables* env, char* env_s);
 
 // System environ provider.
 EnvironmentProvider g_env_system_environ_provider =
 {
     ENV_SYSTEM_ENVIRON_PROVIDER_TYPE,
-    get_system_env_unsafe,
     get_system_env,
+    get_system_env_copy,
     free_system_env,
     get_system_env_s,
-    get_system_environ_unsafe,
-    get_system_environ_unsafe,
+    get_system_environ,
+    NULL,
     NULL,
 };
 
@@ -95,7 +95,7 @@ static EnvironmentProvider* g_env_providers[] =
  * @remarks
  * - Returned system environment variable is not thread-safe.
  */
-static char* get_system_env_unsafe(const char* name)
+static char* get_system_env(const char* name)
 {
 #if HAVE_GETENV
     return getenv(name);
@@ -114,9 +114,9 @@ static char* get_system_env_unsafe(const char* name)
  * @remarks
  * - Caller is responsible freeing the returned string.
  */
-static char* get_system_env(const char* name)
+static char* get_system_env_copy(const char* name)
 {
-    const char* result = get_system_env_unsafe(name);
+    const char* result = get_system_env(name);
     if (result == NULL)
     {
         return NULL;
@@ -173,7 +173,7 @@ static int get_system_env_s(size_t *required_len, char *buffer, size_t buffer_le
         return EINVAL;
     }
 
-    char *value = get_system_env_unsafe(name);
+    char *value = get_system_env(name);
 
     size_t value_len = value ? strlen(value) : 0;
 
@@ -207,7 +207,7 @@ static int get_system_env_s(size_t *required_len, char *buffer, size_t buffer_le
  * @remarks
  * - Returned system environment variables array is not thread-safe.
  */
-static char** get_system_environ_unsafe(void)
+static char** get_system_environ(void)
 {
     char** sys_env;
 
@@ -436,20 +436,26 @@ static EnvironmentVariables init_env(void)
     int variable_count = 0;
 
     char** env_provider_data[g_env_providers_count] = { 0 };
+    bool env_provider_data_copy[g_env_providers_count] = { false };
 
     for (int i = 0; i < g_env_providers_count; ++i)
     {
         if (g_env_providers[i]->get_environ_func != NULL)
         {
             env_provider_data[i] = g_env_providers[i]->get_environ_func();
-            if (env_provider_data[i] != NULL)
+        }
+        else if (g_env_providers[i]->get_environ_copy_func != NULL)
+        {
+            env_provider_data[i] = g_env_providers[i]->get_environ_copy_func();
+            env_provider_data_copy[i] = true;
+        }
+        if (env_provider_data[i] != NULL)
+        {
+            int data_index = 0;
+            while (env_provider_data[i][data_index] != NULL)
             {
-                int data_index = 0;
-                while (env_provider_data[i][data_index] != NULL)
-                {
-                    data_index++;
-                    variable_count++;
-                }
+                data_index++;
+                variable_count++;
             }
         }
     }
@@ -467,15 +473,27 @@ static EnvironmentVariables init_env(void)
                 int data_index = 0;
                 while (env_provider_data[i][data_index] != NULL)
                 {
+                    char* env_s = NULL;
+                    if (env_provider_data_copy[i])
+                    {
+                        // Transfer ownership
+                        env_s = env_provider_data[i][data_index];
+                        env_provider_data[i][data_index] = NULL;
+                    }
+                    else
+                    {
+                        env_s = minipal_strdup(env_provider_data[i][data_index]);
+                    }
+
                     if (i == 0)
                     {
-                        env.data[env.size] = minipal_strdup(env_provider_data[i][data_index]);
+                        env.data[env.size] = env_s;
                         data_index++;
                         env.size++;
                     }
                     else
                     {
-                        put_env(&env, minipal_strdup(env_provider_data[i][data_index]));
+                        put_env(&env, env_s);
                         data_index++;
                     }
 
@@ -488,8 +506,9 @@ static EnvironmentVariables init_env(void)
 
     for (int i = 0; i < g_env_providers_count; ++i)
     {
-        if (g_env_providers[i]->free_environ_func != NULL && env_provider_data[i] != NULL)
+        if (env_provider_data[i] != NULL && env_provider_data_copy[i])
         {
+            assert(g_env_providers[i]->free_environ_func != NULL);
             g_env_providers[i]->free_environ_func(env_provider_data[i]);
         }
     }
@@ -639,24 +658,24 @@ static const char* cache_env_string(EnvironmentVariables* env, const char* name)
     for (int i = g_env_providers_count; i > 0; --i)
     {
         EnvironmentProvider* provider = g_env_providers[i - 1];
-        if (provider->getenv_s_func != NULL)
+        if (provider->get_env_s_func != NULL)
         {
             size_t value_len;
-            if (provider->getenv_s_func(&value_len, NULL, 0, name) == 0 && value_len != 0)
+            if (provider->get_env_s_func(&value_len, NULL, 0, name) == 0 && value_len != 0)
             {
                 size_t env_s_len = name_len + value_len + 1; // +1 for '=', getenv_s_func returns value_len including null terminator.
                 env_s = (char*)malloc(env_s_len);
                 if (env_s != NULL)
                 {
                     snprintf(env_s, env_s_len, "%s=", name);
-                    provider->getenv_s_func(&value_len, env_s + name_len + 1, value_len, name);
+                    provider->get_env_s_func(&value_len, env_s + name_len + 1, value_len, name);
                     break;
                 }
             }
         }
-        else if (provider->getenv_func != NULL)
+        else if (provider->get_env_copy_func != NULL)
         {
-            char* value = provider->getenv_func(name);
+            char* value = provider->get_env_copy_func(name);
             if (value != NULL)
             {
                 size_t env_s_len = name_len + strlen(value) + 2; // +2 for '=' and null terminator.
@@ -809,10 +828,10 @@ static const char* get_env(EnvironmentVariables* env, const char* name)
 static bool get_env_s_nocache(size_t* len, char* value, size_t valuesz, const char* name)
 {
     assert(!use_cached_env());
-    assert(g_env_providers[0]->getenv_s_func != NULL);
+    assert(g_env_providers[0]->get_env_s_func != NULL);
 
     size_t required_len = 0;
-    g_env_providers[0]->getenv_s_func(&required_len, value, valuesz, name);
+    g_env_providers[0]->get_env_s_func(&required_len, value, valuesz, name);
     if (len != NULL)
     {
         *len = required_len;
@@ -1173,7 +1192,7 @@ void minipal_env_unload_environ(void)
 /**
 * @see env.h
 */
-char** minipal_env_get_environ_unsafe(void)
+char** minipal_env_get_environ(void)
 {
     char** result = NULL;
 
@@ -1181,8 +1200,8 @@ char** minipal_env_get_environ_unsafe(void)
 
     if (!use_cached_env())
     {
-        assert(g_env_providers[0]->get_environ_unsafe_func != NULL);
-        result = g_env_providers[0]->get_environ_unsafe_func();
+        assert(g_env_providers[0]->get_environ_func != NULL);
+        result = g_env_providers[0]->get_environ_func();
     }
     else
     {
@@ -1195,7 +1214,7 @@ char** minipal_env_get_environ_unsafe(void)
 /**
 * @see env.h
 */
-char** minipal_env_get_environ(void)
+char** minipal_env_get_environ_copy(void)
 {
     char** result = NULL;
 
@@ -1270,13 +1289,44 @@ bool minipal_env_exists(const char* name)
 
     if (!use_cached_env())
     {
-        assert(g_env_providers[0]->getenv_unsafe_func != NULL);
-        return g_env_providers[0]->getenv_unsafe_func(name) != NULL;
+        assert(g_env_providers[0]->get_env_func != NULL);
+        return g_env_providers[0]->get_env_func(name) != NULL;
     }
 
     if (lock_env())
     {
         result = get_env(&g_env, name) != NULL;
+        unlock_env();
+    }
+
+    return result;
+}
+
+/**
+* @see env.h
+*/
+char* minipal_env_get_copy(const char* name)
+{
+    if (name == NULL)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    char* result = NULL;
+
+    errno = 0;
+
+    if (!use_cached_env())
+    {
+        assert(g_env_providers[0]->get_env_copy_func != NULL);
+        return g_env_providers[0]->get_env_copy_func(name);
+    }
+
+    if (lock_env())
+    {
+        const char* value = get_env(&g_env, name);
+        result = value ? minipal_strdup(value) : NULL;
         unlock_env();
     }
 
@@ -1294,45 +1344,14 @@ char* minipal_env_get(const char* name)
         return NULL;
     }
 
-    char* result = NULL;
-
-    errno = 0;
-
-    if (!use_cached_env())
-    {
-        assert(g_env_providers[0]->getenv_func != NULL);
-        return g_env_providers[0]->getenv_func(name);
-    }
-
-    if (lock_env())
-    {
-        const char* value = get_env(&g_env, name);
-        result = value ? minipal_strdup(value) : NULL;
-        unlock_env();
-    }
-
-    return result;
-}
-
-/**
-* @see env.h
-*/
-char* minipal_env_get_unsafe(const char* name)
-{
-    if (name == NULL)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
     const char* result = NULL;
 
     errno = 0;
 
     if (!use_cached_env())
     {
-        assert(g_env_providers[0]->getenv_unsafe_func != NULL);
-        return g_env_providers[0]->getenv_unsafe_func(name);
+        assert(g_env_providers[0]->get_env_func != NULL);
+        return g_env_providers[0]->get_env_func(name);
     }
 
     if (lock_env())

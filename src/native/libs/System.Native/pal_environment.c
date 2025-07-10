@@ -7,12 +7,12 @@
 
 char* SystemNative_GetEnv(const char* variable)
 {
-    return minipal_env_get_unsafe(variable);
+    return minipal_env_get(variable);
 }
 
 char** SystemNative_GetEnviron(void)
 {
-    return minipal_env_get_environ_unsafe();
+    return minipal_env_get_environ();
 }
 
 void SystemNative_FreeEnviron(char** environ)
