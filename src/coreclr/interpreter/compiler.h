@@ -8,7 +8,6 @@
 #include "intops.h"
 #include "datastructs.h"
 #include "enum_class_flags.h"
-#include "intrinsics.h"
 #include <new>
 #include "failures.h"
 #include "simdhash.h"
