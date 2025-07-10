@@ -2468,7 +2468,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
              LOG((LF_CLASSLOADER, LL_ALWAYS, "<Exception Thrown>\n"));
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 //*******************************************************************************
@@ -2585,7 +2585,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
              LOG((LF_ALWAYS, LL_ALWAYS, "<Exception Thrown>\n"));
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 } // MethodTable::DebugDumpFieldLayout
 
 //*******************************************************************************
@@ -2674,7 +2674,7 @@ MethodTable::DebugDumpGCDesc(
             LOG((LF_ALWAYS, LL_ALWAYS, "<Exception Thrown>\n"));
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 } // MethodTable::DebugDumpGCDesc
 
 #endif // _DEBUG

@@ -2058,8 +2058,8 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                     const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
                     if (isDominant)
                     {
-                        printf("[dom(" FMT_WT ")]", jumpSwt->bbsDominantFraction);
-                        printedBlockWidth += 10;
+                        printf("[dom]");
+                        printedBlockWidth += 5;
                     }
                 }
 
@@ -2764,7 +2764,14 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            assert(blockPred->TargetIs(block));
+            if (!blockPred->TargetIs(block))
+            {
+                JITDUMP(FMT_BB " -> " FMT_BB " from pred links does not match " FMT_BB " -> " FMT_BB
+                               " from succ links\n",
+                        blockPred->bbNum, block->bbNum, blockPred->bbNum,
+                        blockPred->GetTarget() == nullptr ? 0 : blockPred->GetTarget()->bbNum);
+                assert(!"Invalid block preds");
+            }
             assert(blockPred->GetTargetEdge()->getLikelihood() == 1.0);
             return true;
 
@@ -2873,9 +2880,9 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 //------------------------------------------------------------------------------
 // fgDebugCheckBBNumIncreasing: Check that the block list bbNum are in increasing order in the bbNext
 // traversal. Given a block B1 and its bbNext successor B2, this means `B1->bbNum < B2->bbNum`, but not
-// that `B1->bbNum + 1 == B2->bbNum` (which is true after renumbering). This can be used as a precondition
-// to a phase that expects this ordering to compare block numbers (say, to look for backwards branches)
-// and doesn't want to call fgRenumberBlocks(), to avoid that potential expense.
+// that `B1->bbNum + 1 == B2->bbNum`.
+// This can be used as a precondition to a phase that expects this ordering to compare block numbers
+// (say, to look for backwards branches).
 //
 void Compiler::fgDebugCheckBBNumIncreasing()
 {
@@ -3104,6 +3111,11 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (block->HasTarget())
         {
             assert(block->HasInitializedTarget());
+        }
+
+        if (block->KindIs(BBJ_COND))
+        {
+            assert(block->GetTrueEdge()->isHeuristicBased() == block->GetFalseEdge()->isHeuristicBased());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated

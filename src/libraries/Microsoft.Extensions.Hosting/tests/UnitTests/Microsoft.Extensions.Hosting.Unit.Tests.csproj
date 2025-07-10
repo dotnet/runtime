@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
     <Content Include="testroot\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="appSettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

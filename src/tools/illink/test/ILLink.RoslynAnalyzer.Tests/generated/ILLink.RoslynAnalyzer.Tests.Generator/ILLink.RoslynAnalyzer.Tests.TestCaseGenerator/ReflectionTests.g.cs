@@ -50,6 +50,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task TypeMap ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task UnderlyingSystemType ()
 		{
 			return RunTest (allowMissingWarnings: true);

@@ -233,7 +233,6 @@
 #include "specstrings.h"
 #include "clrtypes.h"
 #include "check.h"
-#include "debugreturn.h"
 #include "staticcontract.h"
 
 #ifdef ENABLE_CONTRACTS_DATA
@@ -297,14 +296,8 @@ struct TakenLockInfo
 
 enum DbgStateLockType
 {
-    // EE locks (used to sync EE structures).  These do not include
-    // CRST_HOST_BREAKABLE Crsts, and are thus not held while managed
-    // code runs
+    // EE locks (used to sync EE structures).
     kDbgStateLockType_EE,
-
-    // CRST_HOST_BREAKABLE Crsts.  These can be held while arbitrary
-    // managed code runs.
-    kDbgStateLockType_HostBreakableCrst,
 
     // User locks (e.g., Monitor.Enter, ReaderWriterLock class)
     kDbgStateLockType_User,
@@ -1483,7 +1476,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 // to return and we need to ensure that we don't allow a return where one should not happen
 //
 #define RETURN                                                                              \
-    while (DEBUG_ASSURE_SAFE_TO_RETURN, TRUE)                                               \
+    while (TRUE)                                                                            \
         RETURN_BODY                                                                         \
 
 #define RETURN_VOID                                                                         \
@@ -1963,10 +1956,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
 #define EE_LOCK_RELEASED(pvLock)                \
     LOCK_RELEASED_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN(pvLock)       \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_HostBreakableCrst, 1, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED(pvLock)    \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_HostBreakableCrst, 1, pvLock)
 #define USER_LOCK_TAKEN(pvLock)                 \
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_User, 1, pvLock)
 #define USER_LOCK_RELEASED(pvLock)              \
@@ -1978,8 +1967,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)
 #define EE_LOCK_TAKEN(pvLock)
 #define EE_LOCK_RELEASED(pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN(pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED(pvLock)
 #define USER_LOCK_TAKEN(pvLock)
 #define USER_LOCK_RELEASED(pvLock)
 

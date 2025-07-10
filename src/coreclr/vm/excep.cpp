@@ -469,7 +469,7 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
 
         *ppThrowable = orReplacement;
 
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 // Before presenting an exception object to a handler (filter or catch, not finally or fault), it
@@ -612,7 +612,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
             *pInitException = pInnerException ? *pInnerException : NULL;
             *pThrowable = GET_THROWABLE();
         }
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 
     CONSISTENCY_CHECK(*pInitException != NULL || !pInnerException);
 
@@ -3151,7 +3151,7 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
@@ -3359,7 +3359,7 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
     EX_CATCH // if we fail to intercept just continue as is
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 
     return retval;
@@ -3844,7 +3844,7 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fSuccess;
 }
@@ -4819,7 +4819,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 #endif
     }
@@ -4919,12 +4919,12 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     }
 
 #ifdef _DEBUG
-    DWORD unbreakableLockCount = 0;
+    DWORD LockCount = 0;
     // Do not care about lock check for unhandled exception.
-    while (pThread->HasUnbreakableLock())
+    while (pThread->HasLock())
     {
-        pThread->DecUnbreakableLockCount();
-        unbreakableLockCount ++;
+        pThread->DecLockCount();
+        LockCount ++;
     }
     BOOL fOwnsSpinLock = pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock);
     if (fOwnsSpinLock)
@@ -4993,14 +4993,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
                 PrintToStdErrW(buf);
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         EX_CATCH
         {   // If we got here, we can't even print the localized error message.  Print non-localized.
             LOG((LF_EH, LL_INFO10, "Exception occurred while logging processing uncaught exception\n"));
             PrintToStdErrA("\n   Error: Can't print exception string because Exception.ToString() failed.\n");
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
 #if defined(_DEBUG)
@@ -5015,10 +5015,10 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
-    while (unbreakableLockCount)
+    while (LockCount)
     {
-        pThread->IncUnbreakableLockCount();
-        unbreakableLockCount --;
+        pThread->IncLockCount();
+        LockCount --;
     }
     if (fOwnsSpinLock)
     {
@@ -5087,12 +5087,12 @@ void NotifyAppDomainsOfUnhandledException(
     }
 
 #ifdef _DEBUG
-    DWORD unbreakableLockCount = 0;
+    DWORD LockCount = 0;
     // Do not care about lock check for unhandled exception.
-    while (pThread->HasUnbreakableLock())
+    while (pThread->HasLock())
     {
-        pThread->DecUnbreakableLockCount();
-        unbreakableLockCount ++;
+        pThread->DecLockCount();
+        LockCount ++;
     }
     BOOL fOwnsSpinLock = pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock);
     if (fOwnsSpinLock)
@@ -5152,10 +5152,10 @@ void NotifyAppDomainsOfUnhandledException(
 
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
-    while (unbreakableLockCount)
+    while (LockCount)
     {
-        pThread->IncUnbreakableLockCount();
-        unbreakableLockCount --;
+        pThread->IncLockCount();
+        LockCount --;
     }
     if (fOwnsSpinLock)
     {
@@ -5615,7 +5615,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
             // exception.
             result = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     return result;
@@ -7360,6 +7360,12 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
+#ifdef FEATURE_INTERPRETER
+            if ((pEntryFrame != FRAME_TOP) && (pEntryFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            {
+                ((InterpreterFrame*)pEntryFrame)->SetIsFaulting(true);
+            }
+#endif // FEATURE_INTERPRETER
             DispatchManagedException(orThrowable);
         }
     }
@@ -7752,7 +7758,7 @@ bool DebugIsEECxxExceptionPointer(void* pv)
     {
         // Swallow any exception out of the exception constructors above and simply return false.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return retVal;
 }
@@ -8071,7 +8077,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
                     // OOM can bring us here
                     fSetupWatsonBuckets = FALSE;
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
 
                 if (!fSetupWatsonBuckets)
                 {
@@ -9146,7 +9152,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
                     {
                         fCopiedBuckets = FALSE;
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
 
                     if (fCopiedBuckets)
                     {
@@ -9313,7 +9319,7 @@ phase1:
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             LOG((LF_EH, LL_INFO100, "SetupInitialThrowBucketDetails - Copied watson bucket details from the innermost exception\n"));
         }
@@ -9804,7 +9810,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
                         // the native watson helper functions failing under OOM
                         fCopied = FALSE;
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
                 }
             }
             else
@@ -9827,7 +9833,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
                         // Dont do anything if we fail to copy the buckets - this is no different than
                         // the native watson helper functions failing under OOM
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
                 }
                 else if (ipForWatsonBuckets != NULL)
                 {
@@ -10250,8 +10256,9 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
         // Set event args to be NULL incase of any error (e.g. OOM)
         *pOutEventArgs = NULL;
         LOG((LF_EH, LL_INFO100, "ExceptionNotifications::GetEventArgsForNotification: Setting event args to NULL due to an exception.\n"));
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 // This SEH filter will be invoked when an exception escapes out of the exception notification
@@ -11207,11 +11214,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
                                                           TypeHandle thCastTo)
 {
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
      Module *pModuleTypeFrom = thCastFrom.GetModule();
      Module *pModuleTypeTo = thCastTo.GetModule();
@@ -11267,11 +11270,7 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
 
 VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCastTo)
 {
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Use an InlineSString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
     // TypeHandle::GetName from having to allocate a new block of memory. This
@@ -11309,6 +11308,7 @@ VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
         ComObject::ThrowInvalidCastException(pObj, thCastTo.GetMethodTable());
     }
 #endif
+    GCX_PREEMP();
     COMPlusThrowInvalidCastException(thCastFrom, thCastTo);
 }
 

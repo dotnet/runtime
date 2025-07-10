@@ -1534,9 +1534,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LNG2DBL:
             case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
-            case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
-            case CORINFO_HELP_DBL2UINT:
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:

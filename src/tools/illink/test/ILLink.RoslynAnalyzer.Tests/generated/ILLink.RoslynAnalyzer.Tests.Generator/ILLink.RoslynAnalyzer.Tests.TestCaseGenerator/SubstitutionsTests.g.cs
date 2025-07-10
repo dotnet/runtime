@@ -8,12 +8,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 
 		[Fact]
-		public Task EmbeddedFieldSubstitutionsInReferencedAssembly ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task EmbeddedMethodSubstitutionsInReferencedAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -45,18 +39,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task FeatureGuardSubstitutionsDisabled ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task InitField ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task InitFieldExistingCctor ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

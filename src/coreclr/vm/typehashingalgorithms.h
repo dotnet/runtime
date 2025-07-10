@@ -259,6 +259,15 @@ class xxHash
     uint32_t _length = 0;
 
 public:
+    void AddPointer(void* ptr)
+    {
+#ifdef HOST_64BIT
+        Add((uint32_t)(UINT_PTR)ptr);
+        Add((uint32_t)(((UINT64)ptr) >> 32));
+#else
+        Add((uint32_t)(UINT_PTR)ptr);
+#endif
+    }
     void Add(uint32_t val)
     {
         // The original xxHash works as follows:

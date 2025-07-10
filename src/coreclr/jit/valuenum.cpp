@@ -9145,6 +9145,30 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 {
                     // (y & x) | (z & ~x)
 
+#if defined(TARGET_ARM64)
+                    if (ni == NI_Sve_ConditionalSelect)
+                    {
+                        assert(TypeOfVN(arg0VN) == TYP_MASK);
+                        assert(type == TYP_SIMD16);
+
+                        ValueNum maskVNSimd = EvaluateSimdCvtMaskToVector(this, type, baseType, arg0VN);
+                        simd16_t maskVal    = ::GetConstantSimd16(this, baseType, maskVNSimd);
+
+                        simd16_t arg1 = ::GetConstantSimd16(this, baseType, arg1VN);
+                        simd16_t arg2 = ::GetConstantSimd16(this, baseType, arg2VN);
+
+                        simd16_t result = {};
+                        EvaluateBinarySimd<simd16_t>(GT_AND, false, baseType, &result, arg1, maskVal);
+                        ValueNum trueVN = VNForSimd16Con(result);
+
+                        result = {};
+                        EvaluateBinarySimd<simd16_t>(GT_AND_NOT, false, baseType, &result, arg2, maskVal);
+                        ValueNum falseVN = VNForSimd16Con(result);
+
+                        return EvaluateBinarySimd(this, GT_OR, false, type, baseType, trueVN, falseVN);
+                    }
+#endif // TARGET_ARM64
+
                     ValueNum trueVN  = EvaluateBinarySimd(this, GT_AND, false, type, baseType, arg1VN, arg0VN);
                     ValueNum falseVN = EvaluateBinarySimd(this, GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
 
@@ -9707,59 +9731,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_Max:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximumMagnitudeNumber(arg0Val, arg1Val);
-                    break;
-                }
-
+#ifdef TARGET_RISCV64
                 case NI_System_Math_MaxNumber:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
                     res            = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_Min:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimumMagnitudeNumber(arg0Val, arg1Val);
                     break;
                 }
 
@@ -9770,6 +9747,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res            = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
+#endif // TARGET_RISCV64
 
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
@@ -9795,59 +9773,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_Max:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MaxMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximumMagnitudeNumber(arg0Val, arg1Val);
-                    break;
-                }
-
+#ifdef TARGET_RISCV64
                 case NI_System_Math_MaxNumber:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
                     res           = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_Min:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimum(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitude:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimumMagnitude(arg0Val, arg1Val);
-                    break;
-                }
-
-                case NI_System_Math_MinMagnitudeNumber:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimumMagnitudeNumber(arg0Val, arg1Val);
                     break;
                 }
 
@@ -9858,6 +9789,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res           = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
+#endif // TARGET_RISCV64
 
                 case NI_System_Math_Pow:
                 {
@@ -9924,41 +9856,25 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_Atan2;
                 break;
 
+#ifdef TARGET_RISCV64
             case NI_System_Math_Max:
                 vnf = VNF_Max;
-                break;
-
-            case NI_System_Math_MaxMagnitude:
-                vnf = VNF_MaxMagnitude;
-                break;
-
-            case NI_System_Math_MaxMagnitudeNumber:
-                vnf = VNF_MaxMagnitudeNumber;
                 break;
 
             case NI_System_Math_MaxNumber:
                 vnf = VNF_MaxNumber;
                 break;
 
+            case NI_System_Math_MaxUnsigned:
+                vnf = VNF_Max_UN;
+                break;
+
             case NI_System_Math_Min:
                 vnf = VNF_Min;
                 break;
 
-            case NI_System_Math_MinMagnitude:
-                vnf = VNF_MinMagnitude;
-                break;
-
-            case NI_System_Math_MinMagnitudeNumber:
-                vnf = VNF_MinMagnitudeNumber;
-                break;
-
             case NI_System_Math_MinNumber:
                 vnf = VNF_MinNumber;
-                break;
-
-#ifdef TARGET_RISCV64
-            case NI_System_Math_MaxUnsigned:
-                vnf = VNF_Max_UN;
                 break;
 
             case NI_System_Math_MinUnsigned:
@@ -13939,11 +13855,6 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             srcIsUnsigned = true;
             break;
 
-        case CORINFO_HELP_DBL2INT:
-            castToType   = TYP_INT;
-            castFromType = TYP_DOUBLE;
-            break;
-
         case CORINFO_HELP_DBL2INT_OVF:
             castToType       = TYP_INT;
             castFromType     = TYP_DOUBLE;
@@ -13959,11 +13870,6 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             castToType       = TYP_LONG;
             castFromType     = TYP_DOUBLE;
             hasOverflowCheck = true;
-            break;
-
-        case CORINFO_HELP_DBL2UINT:
-            castToType   = TYP_UINT;
-            castFromType = TYP_DOUBLE;
             break;
 
         case CORINFO_HELP_DBL2UINT_OVF:
@@ -14284,11 +14190,9 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         case CORINFO_HELP_LNG2DBL:
         case CORINFO_HELP_ULNG2FLT:
         case CORINFO_HELP_ULNG2DBL:
-        case CORINFO_HELP_DBL2INT:
         case CORINFO_HELP_DBL2INT_OVF:
         case CORINFO_HELP_DBL2LNG:
         case CORINFO_HELP_DBL2LNG_OVF:
-        case CORINFO_HELP_DBL2UINT:
         case CORINFO_HELP_DBL2UINT_OVF:
         case CORINFO_HELP_DBL2ULNG:
         case CORINFO_HELP_DBL2ULNG_OVF:
@@ -15311,8 +15215,25 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 
     *offset = 0;
     VNFuncApp app;
-    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    while (GetVNFunc(*vn, &app) && ((app.m_func == VNF_ADD) || (app.m_func == VNF_Cast)))
     {
+        if (app.m_func == VNF_Cast)
+        {
+            // Ignore GC -> I_IMPL casts during peeling
+            if (TypeOfVN(*vn) == TYP_I_IMPL)
+            {
+                var_types castToType;
+                bool      srcIsUnsigned;
+                GetCastOperFromVN(app.m_args[1], &castToType, &srcIsUnsigned);
+                if (varTypeIsI(castToType) && varTypeIsI(TypeOfVN(app.m_args[0])))
+                {
+                    *vn = app.m_args[0];
+                    continue;
+                }
+            }
+            break;
+        }
+
         // We don't treat handles and null as constant offset.
 
         if (IsVNConstantNonHandle(app.m_args[0]) && (app.m_args[0] != VNForNull()))

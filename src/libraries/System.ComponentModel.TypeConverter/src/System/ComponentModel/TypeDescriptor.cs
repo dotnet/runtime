@@ -3067,6 +3067,7 @@ namespace System.ComponentModel
 
                 [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
                 [return: UnsafeAccessorType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms")]
+                [MethodImpl(MethodImplOptions.NoInlining)]
                 static extern object CreateComNativeDescriptor();
             }
 

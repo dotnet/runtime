@@ -2562,6 +2562,8 @@ namespace System.Net.Http.Tests
         [InlineData("invalid\r")]
         [InlineData("\r\n")]
         [InlineData("invalid\r\n")]
+        [InlineData("\0")]
+        [InlineData("invalid\0")]
         public void TryGetValues_InvalidValuesContainingNewLines_ShouldNotRemoveInvalidValueAndShouldReturnRequestedValue(string value)
         {
             const string Name = "custom";

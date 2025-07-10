@@ -728,7 +728,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
+            return factory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

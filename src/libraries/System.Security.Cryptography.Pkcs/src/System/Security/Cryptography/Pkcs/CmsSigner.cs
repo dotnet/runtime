@@ -34,13 +34,6 @@ namespace System.Security.Cryptography.Pkcs
             set => _privateKey = value;
         }
 
-#if NET || NETSTANDARD2_1
-        public
-#else
-        private
-#endif
-        bool HasPrivateKey => _privateKey is not null;
-
         public X509Certificate2Collection Certificates { get; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }

@@ -143,6 +143,7 @@ int RangeCheck::GetArrLength(ValueNum vn)
 bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 {
 #ifdef DEBUG
+    assert(range.IsValid());
     if (m_pCompiler->verbose)
     {
         printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler), 0);
@@ -354,6 +355,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             Range arrLenRange = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
             if (arrLenRange.LowerLimit().IsConstant())
             {
+                assert(arrLenRange.IsValid());
+
                 // Lower known limit of ArrLen:
                 const int lenLowerLimit = arrLenRange.LowerLimit().GetConstant();
 
@@ -393,6 +396,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         JITDUMP("Failed to get range\n");
         return;
     }
+
+    assert(range.IsValid());
 
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
@@ -638,6 +643,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange)
 {
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, pRange, false);
+    assert(pRange->IsValid());
     return !pRange->LowerLimit().IsUnknown() || !pRange->UpperLimit().IsUnknown();
 }
 
@@ -1003,13 +1009,29 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             unreached();
         };
 
+        if (!assertedRange.IsValid())
+        {
+            JITDUMP("assertedRange is invalid: [%s] - bail out\n", assertedRange.ToString(comp));
+            return;
+        }
+
         JITDUMP("Tightening pRange: [%s] with assertedRange: [%s] into ", pRange->ToString(comp),
                 assertedRange.ToString(comp));
 
-        pRange->lLimit = tightenLimit(assertedRange.lLimit, pRange->lLimit, preferredBoundVN, true);
-        pRange->uLimit = tightenLimit(assertedRange.uLimit, pRange->uLimit, preferredBoundVN, false);
+        Range copy  = *pRange;
+        copy.lLimit = tightenLimit(assertedRange.lLimit, copy.lLimit, preferredBoundVN, true);
+        copy.uLimit = tightenLimit(assertedRange.uLimit, copy.uLimit, preferredBoundVN, false);
 
-        JITDUMP("[%s]\n", pRange->ToString(comp));
+        JITDUMP("[%s]\n", copy.ToString(comp));
+        if (copy.IsValid())
+        {
+            *pRange = copy;
+        }
+        else
+        {
+            JITDUMP("invalid range after tightening\n");
+            return;
+        }
     }
 }
 
@@ -1200,6 +1222,9 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         op2Range = *op2RangeCached;
     }
 
+    assert(op1Range.IsValid());
+    assert(op2Range.IsValid());
+
     Range r = Range(Limit::keUnknown);
     if (binop->OperIs(GT_ADD))
     {
@@ -1226,6 +1251,13 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         r = RangeOps::ShiftRight(op1Range, op2Range);
         JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
                 r.ToString(m_pCompiler));
+    }
+
+    // Some binops may produce invalid ranges, e.g. <0, 1> * <-1, -1> = <0, -1>
+    if (!r.IsValid())
+    {
+        JITDUMP("BinOp range is invalid: %s\n", r.ToString(m_pCompiler));
+        return Range(Limit::keUnknown);
     }
     return r;
 }
@@ -1715,6 +1747,7 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
     ClearSearchPath();
 
     Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
+    assert(range.IsValid());
     if (range.UpperLimit().IsUnknown() && range.LowerLimit().IsUnknown())
     {
         JITDUMP("Range is completely unknown.\n");

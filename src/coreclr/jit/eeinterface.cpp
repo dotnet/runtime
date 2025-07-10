@@ -248,9 +248,11 @@ void AppendCorInfoTypeWithModModifiers(StringPrinter* printer, CorInfoTypeWithMo
 //
 // Arguments:
 //    printer                    - the printer
-//    clsHnd                     - Handle for the owning class, or NO_CLASS_HANDLE to not print the class.
+//    clsHnd                     - Handle for the owning class.
 //    sig                        - The signature of the method.
-//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when clsHnd is passed.
+//    includeAssembly            - Whether to print the assembly name.
+//    includeClass               - Whether to print the class name.
+//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when includeClass is passed.
 //    includeMethodInstantiation - Whether to print the method instantiation. Requires the signature to be passed.
 //    includeSignature           - Whether to print the signature.
 //    includeReturnType          - Whether to include the return type at the end.
@@ -261,6 +263,8 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
                              CORINFO_SIG_INFO*     sig,
+                             bool                  includeAssembly,
+                             bool                  includeClass,
                              bool                  includeClassInstantiation,
                              bool                  includeMethodInstantiation,
                              bool                  includeSignature,
@@ -275,7 +279,14 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
         return;
     }
 
-    if (clsHnd != NO_CLASS_HANDLE)
+    if (includeAssembly)
+    {
+        const char* pAssemblyName = info.compCompHnd->getClassAssemblyName(clsHnd);
+        printer->Append(pAssemblyName);
+        printer->Append('!');
+    }
+
+    if (includeClass)
     {
         eePrintType(printer, clsHnd, includeClassInstantiation);
         printer->Append(':');
@@ -432,6 +443,8 @@ const char* Compiler::eeGetMethodFullName(
         CORINFO_SIG_INFO sig;
         eeGetMethodSig(hnd, &sig);
         eePrintMethod(&p, clsHnd, hnd, &sig,
+                                      /* includeAssembly */ false,
+                                      /* includeClass */ true,
                                       /* includeClassInstantiation */ true,
                                       /* includeMethodInstantiation */ true,
                                       /* includeSignature */ true, includeReturnType, includeThisSpecifier);
@@ -448,6 +461,8 @@ const char* Compiler::eeGetMethodFullName(
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, clsHnd, hnd,
                       /* sig */ nullptr,
+                      /* includeAssembly */ false,
+                      /* includeClass */ true,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,
@@ -464,8 +479,10 @@ const char* Compiler::eeGetMethodFullName(
     p.Truncate(0);
 
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
-        eePrintMethod(&p, nullptr, hnd,
+        eePrintMethod(&p, NO_CLASS_HANDLE, hnd,
                       /* sig */ nullptr,
+                      /* includeAssembly */ false,
+                      /* includeClass */ false,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,
@@ -504,6 +521,8 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffe
     bool          success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, NO_CLASS_HANDLE, methHnd,
                                /* sig */ nullptr,
+                               /* includeAssembly */ false,
+                               /* includeClass */ false,
                                /* includeClassInstantiation */ false,
                                /* includeMethodInstantiation */ false,
                                /* includeSignature */ false,

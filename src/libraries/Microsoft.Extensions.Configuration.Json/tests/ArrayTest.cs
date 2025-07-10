@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
 
             var jsonConfigSource = new JsonConfigurationProvider(new JsonConfigurationSource());
             jsonConfigSource.Load(TestStreamHelpers.StringToStream(json));
-            
+
             Assert.Equal("1.2.3.4", jsonConfigSource.Get("ip:0"));
             Assert.Equal("7.8.9.10", jsonConfigSource.Get("ip:1"));
             Assert.Equal("11.12.13.14", jsonConfigSource.Get("ip:2"));
@@ -58,11 +58,11 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         {
             var json = @"{
                 ""ip"": [
-                    [ 
+                    [
                         ""1.2.3.4"",
                         ""5.6.7.8""
                     ],
-                    [ 
+                    [
                         ""9.10.11.12"",
                         ""13.14.15.16""
                     ]
@@ -235,11 +235,11 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         {
             var json = @"{
                 ""ip"": [
-                    [ 
+                    [
                         ""1.2.3.4"",
                         ""5.6.7.8"",
                     ],
-                    [ 
+                    [
                         ""9.10.11.12"",
                         ""13.14.15.16"",
                     ],
@@ -280,7 +280,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             Assert.Equal(1, config.GetChildren().Count());
             Assert.Equal(2, ipSectionChildren.Count());
             Assert.Equal("array", ipSectionChildren[0].Key);
-            Assert.Null(ipSectionChildren[0].Value);
+            Assert.Equal(string.Empty, ipSectionChildren[0].Value);
             Assert.Equal("object", ipSectionChildren[1].Key);
             Assert.Null(ipSectionChildren[1].Value);
             Assert.Equal(0, ipSectionChildren[0].GetChildren().Count());

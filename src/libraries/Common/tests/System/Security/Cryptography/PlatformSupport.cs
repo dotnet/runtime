@@ -160,5 +160,19 @@ namespace Test.Cryptography
         /// This value is not suitable to check if RSA-PSS is supported in cert chains - see CertificateRequestChainTests.PlatformSupportsPss.
         /// </summary>
         internal static bool IsRsaPssSupported => s_isRsaPssSupported ??= CheckIfRsaPssSupported();
+
+        internal static bool IsPqcMLKemX509Supported
+        {
+            get
+            {
+#if NETFRAMEWORK
+                return false;
+#else
+#pragma warning disable SYSLIB5006 // PQC is experimental
+                return MLKem.IsSupported && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#pragma warning restore SYSLIB5006
+#endif
+            }
+        }
     }
 }

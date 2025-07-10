@@ -3,10 +3,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies
 {
-	[NotATestCase]
-	public class ReferenceImplementationLibrary
-	{
-	}
+    [NotATestCase]
+    public class ReferenceImplementationLibrary
+    {
+    }
 
 #if INCLUDE_REFERENCE_IMPL
 	public interface ImplementationLibraryInterface

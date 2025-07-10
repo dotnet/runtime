@@ -241,10 +241,10 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 //     testResult = Fail;
                 // }
 
-                // if (IsBitIncorrect(ecx, 6, typeof(Avx512Vbmi2), Avx512Vbmi2.IsSupported, "AVX512v3", ref isHierarchyDisabled))
-                // {
-                //     testResult = Fail;
-                // }
+                if (IsBitIncorrect(ecx, 6, typeof(Avx512Vbmi2), Avx512Vbmi2.IsSupported, "AVX512v3", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
                 // if (IsBitIncorrect(ecx, 11, typeof(AvxVnni.V512), AvxVnni.V512.IsSupported, "AVX512v3", ref isHierarchyDisabled))
                 // {

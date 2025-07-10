@@ -84,7 +84,7 @@ namespace System.Diagnostics.Tests
             using (EventLog eventLog = new EventLog("Application"))
             {
                 Assert.False(string.IsNullOrEmpty(eventLog.LogDisplayName));
-                if (CultureInfo.CurrentCulture.Name.Split('-')[0] == "en" )
+                if (CultureInfo.CurrentCulture.Name.Split('-')[0] == "en")
                     Assert.Equal("Application", eventLog.LogDisplayName);
             }
         }
@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tests
                 eventLog.Log = "Application";
 
                 Assert.False(string.IsNullOrEmpty(eventLog.LogDisplayName));
-                if (CultureInfo.CurrentCulture.Name.Split('-')[0] == "en" )
+                if (CultureInfo.CurrentCulture.Name.Split('-')[0] == "en")
                     Assert.Equal("Application", eventLog.LogDisplayName);
             }
         }
@@ -374,6 +374,20 @@ namespace System.Diagnostics.Tests
         {
             EventLog[] eventlogs = EventLog.GetEventLogs();
             Assert.Contains("Security", eventlogs.Select(t => t.Log), StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool IsNetCoreAndNotElevatedAndSupportsEventLogs => PlatformDetection.IsNetCore && Helpers.NotElevatedAndSupportsEventLogs;
+
+        [ConditionalFact(nameof(IsNetCoreAndNotElevatedAndSupportsEventLogs))]
+        public void CheckTheExceptionMessageContent()
+        {
+            using (EventLog myLog = new EventLog("Application", ".", "InvalidNotExistingSource"))
+            {
+                var exception = Record.Exception(() => myLog.WriteEntry("Test Entry"));
+                Assert.True(exception is System.Security.SecurityException, $"Expected to get a SecurityException, but got {(exception is null ? "null" : exception.GetType())} instead.");
+                Assert.Contains("InvalidNotExistingSource", exception.Message, StringComparison.Ordinal);
+                Assert.Contains(" .", exception.Message, StringComparison.Ordinal); // machine name check
+            }
         }
     }
 }

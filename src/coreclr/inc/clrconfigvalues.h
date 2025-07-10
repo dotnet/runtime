@@ -110,17 +110,6 @@
 // * W("Security_LegacyHMACMode") <---------------------- (No EXTERNAL prefix)
 
 ///
-/// Jit Pitching
-///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchEnabled, W("JitPitchEnabled"), (DWORD)0, "Set it to 1 to enable Jit Pitching")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMemThreshold, W("JitPitchMemThreshold"), (DWORD)0, "Do Jit Pitching when code heap usage is larger than this (in bytes)")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMethodSizeThreshold, W("JitPitchMethodSizeThreshold"), (DWORD)0, "Do Jit Pitching for methods whose native code size larger than this (in bytes)")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchTimeInterval, W("JitPitchTimeInterval"), (DWORD)0, "Time interval between Jit Pitchings in ms")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchPrintStat, W("JitPitchPrintStat"), (DWORD)0, "Print statistics about Jit Pitching")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMinVal, W("JitPitchMinVal"), (DWORD)0, "Do Jit Pitching if the value of the inner counter greater than this value (for debugging purpose only)")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMaxVal, W("JitPitchMaxVal"), (DWORD)0xffffffff, "Do Jit Pitching the value of the inner counter less then this value (for debuggin purpose only)")
-
-///
 /// Assembly Loader
 ///
 CONFIG_DWORD_INFO(INTERNAL_GetAssemblyIfLoadedIgnoreRidMap, W("GetAssemblyIfLoadedIgnoreRidMap"), 0, "Used to force loader to ignore assemblies cached in the rid-map")
@@ -245,6 +234,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_NativeToILOffsetCacheSize, W("NativeToILOffsetCacheSize"), 1024, "")
 CONFIG_DWORD_INFO(INTERNAL_LogStackOverflowExit, W("LogStackOverflowExit"), 0, "Temporary flag to log stack overflow exit process")
 
 ///
@@ -694,6 +684,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,                    W("EnableAES"), 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VP2INTERSECT,     W("EnableAVX512VP2INTERSECT"),  1, "Allows AVX512VP2INTERSECT and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXIFMA,                W("EnableAVXIFMA"),             1, "Allows AVXIFMA and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,                W("EnableAVXVNNI"),             1, "Allows AVXVNNI and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNIINT,             W("EnableAVXVNNIINT"),          1, "Allows VEX versions (AVXVNNI8 & AVXVNNIINT16) hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableGFNI,                   W("EnableGFNI"),                1, "Allows GFNI and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSHA,                    W("EnableSHA"),                 1, "Allows SHA and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableVAES,                   W("EnableVAES"),                1, "Allows VAES, VPCLMULQDQ, and dependent hardware intrinsics to be disabled")

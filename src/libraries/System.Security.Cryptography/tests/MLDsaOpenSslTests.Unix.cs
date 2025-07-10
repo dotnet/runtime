@@ -94,11 +94,11 @@ namespace System.Security.Cryptography.Tests
             {
                 byte[] data = [ 1, 1, 2, 3, 5, 8 ];
                 byte[] context = [ 13, 21 ];
-                byte[] oneSignature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+                byte[] oneSignature;
 
                 using (one)
                 {
-                    Assert.Equal(oneSignature.Length, one.SignData(data, oneSignature, context));
+                    oneSignature = one.SignData(data, context);
                     VerifyInstanceIsUsable(one);
                     VerifyInstanceIsUsable(two);
                 }
@@ -116,11 +116,11 @@ namespace System.Security.Cryptography.Tests
 
         private static void VerifyInstanceIsUsable(MLDsaOpenSsl mldsa)
         {
-            byte[] seed = new byte[mldsa.Algorithm.PrivateSeedSizeInBytes];
-            Assert.Equal(mldsa.Algorithm.PrivateSeedSizeInBytes, mldsa.ExportMLDsaPrivateSeed(seed)); // does not throw
+            byte[] seed = mldsa.ExportMLDsaPrivateSeed();
+            Assert.Equal(mldsa.Algorithm.PrivateSeedSizeInBytes, seed.Length);
 
-            byte[] secretKey = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
-            Assert.Equal(mldsa.Algorithm.SecretKeySizeInBytes, mldsa.ExportMLDsaSecretKey(secretKey)); // does not throw
+            byte[] secretKey = mldsa.ExportMLDsaSecretKey();
+            Assert.Equal(mldsa.Algorithm.SecretKeySizeInBytes, secretKey.Length);
 
             // usable
             byte[] data = [ 1, 2, 3 ];

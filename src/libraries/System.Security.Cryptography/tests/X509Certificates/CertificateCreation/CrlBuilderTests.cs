@@ -6,7 +6,6 @@ using System.Formats.Asn1;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -30,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             yield return new object[] { CertKind.ECDsa };
 
-            if (MLDsaTestHelpers.CertificatesAreSupported)
+            if (MLDsa.IsSupported)
             {
                 yield return new object[] { CertKind.MLDsa };
             }
@@ -46,7 +45,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         public static IEnumerable<object[]> NoHashAlgorithmCertKinds()
         {
-            if (MLDsaTestHelpers.CertificatesAreSupported)
+            if (MLDsa.IsSupported)
             {
                 yield return new object[] { CertKind.MLDsa };
             }

@@ -908,9 +908,9 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
     { FIRST_NI_AVX512v2, LAST_NI_AVX512v2 },                    // AVX512v2
-    { NI_Illegal, NI_Illegal },                                 //      AVX512v3
+    { FIRST_NI_AVX512v3, LAST_NI_AVX512v3 },                    // AVX512v3
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1
-    { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      //      AVX10v2
+    { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      // AVX10v2
     { NI_Illegal, NI_Illegal },                                 //      APX
     { FIRST_NI_AES, LAST_NI_AES },                              // AES
     { FIRST_NI_AES_V256, LAST_NI_AES_V256 },                    // AES_V256
@@ -930,6 +930,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
     { NI_Illegal, NI_Illegal },                                 //      VectorT256
     { NI_Illegal, NI_Illegal },                                 //      VectorT512
+    { FIRST_NI_AVXVNNIINT, LAST_NI_AVXVNNIINT },                // AVXVNNIINT
+    { FIRST_NI_AVXVNNIINT_V512, LAST_NI_AVXVNNIINT_V512 },      // AVXVNNIINT_V512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
     { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
@@ -1180,7 +1182,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    CORINFO_InstructionSet isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
+    CORINFO_InstructionSet isa = comp->lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
@@ -1344,7 +1346,15 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             return ni;
         }
-        return binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
+
+        ni = binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
+
+        if (ni != NI_Illegal)
+        {
+            return ni;
+        }
+
+        return binarySearchId(InstructionSet_AVX512v3, sig, methodName, isLimitedVector256Isa);
     }
     else if (isa == InstructionSet_AVX10v1_X64)
     {
@@ -2454,6 +2464,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
                                       simdSize, mustExpand);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+        if (retNode != nullptr)
+        {
+            // The special import may have switched the type of the node.
+            nodeRetType = retNode->gtType;
+        }
+#endif
     }
 
     if (setMethodHandle && (retNode != nullptr))
@@ -2526,18 +2544,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (retType != nodeRetType)
+    if (nodeRetType == TYP_MASK)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-        assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
-        assert(nodeRetType == TYP_MASK);
-
-        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
-
-        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
-        unsigned    simdSize        = op->GetSimdSize();
-
-        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
