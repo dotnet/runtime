@@ -263,10 +263,9 @@ namespace System.Net
                     ch = ToUShort(name[current]);
                     int digitValue = HexConverter.FromChar(ch);
 
-                    // Unsigned overflow indicates an invalid character or a terminator
                     if ((uint)digitValue >= (uint)numberBase)
                     {
-                        break;
+                        break; // Invalid/terminator
                     }
                     currentValue = (currentValue * numberBase) + digitValue;
 
