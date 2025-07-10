@@ -26,6 +26,17 @@ extern "C"
 #endif // __cplusplus
 
 /*++
+Variables :
+
+    palEnvironment: a global variable equivalent to environ on systems on
+                    which that exists, and a pointer to an array of environment
+                    strings on systems without environ.
+    gcsEnvironment: critical section to synchronize access to palEnvironment
+--*/
+extern char **palEnvironment;
+extern minipal_mutex gcsEnvironment;
+
+/*++
 
 Function:
   EnvironInitialize
@@ -36,31 +47,11 @@ BOOL EnvironInitialize();
 
 /*++
 Function:
-  EnvironGetUnsafe
-
-Get the current environment. This is similar accessing
-global environ variable and is not thread safe. This function
-should only be called from code that guarantees environment won't
-change while using returned pointer.
---*/
-char **EnvironGetUnsafe();
-
-/*++
-Function:
-  EnvironCheckenv
-
-Check if environment variable with the given name exists in environment.
---*/
-BOOL EnvironCheckenv(const char *name);
-
-/*++
-Function:
   EnvironGetenv
 
 Get the value of environment variable with the given name.
-Caller should free the returned string if it is not NULL.
 --*/
-char *EnvironGetenv(const char *name);
+char *EnvironGetenv(const char *name, BOOL copyValue = TRUE);
 
 /*++
 Function:

@@ -927,7 +927,7 @@ CorUnix::InternalCreateProcess(
         }
         else
         {
-            execve(lpFileNamePS, lppArgv, EnvironGetUnsafe());
+            execve(lpFileNamePS, lppArgv, palEnvironment);
         }
 
         /* if we get here, it means the execve function call failed so just exit */
@@ -2257,7 +2257,7 @@ PROCCreateCrashDump(
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv.data(), EnvironGetUnsafe()) == -1)
+            if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 exit(-1);

@@ -45,9 +45,7 @@ static bool g_env_loaded;
 static EnvironmentVariables g_env;
 
 // Empty environ for platforms without env support.
-#if !defined(HAVE__NSGETENVIRON) && !defined(HAVE__ENVIRON) && !defined(HAVE_ENVIRON)
 char* g_empty_environ[] = { NULL };
-#endif
 
 //Forward declarations.
 static char* get_system_env_unsafe(const char* name);
@@ -220,9 +218,13 @@ static char** get_system_environ_unsafe(void)
 #elif HAVE_ENVIRON
     extern char **environ;
     sys_env = environ;
-#else
-    sys_env = g_empty_environ;
 #endif
+
+    if (sys_env == NULL)
+    {
+        // If no system environment is available, return an empty array.
+        sys_env = g_empty_environ;
+    }
 
     return sys_env;
 }
