@@ -809,7 +809,7 @@ static IntConstSelectOper MatchIntConstSelectValues(int64_t trueVal, int64_t fal
     if (trueVal == falseVal << 1)
         return {GT_LSH, TYP_LONG, 0};
 
-    if (trueVal == int64_t((int32_t(falseVal)) << 1))
+    if (trueVal == int64_t(int32_t(falseVal) << 1))
         return {GT_LSH, TYP_INT, 0};
 
     if (trueVal == falseVal >> 1)
