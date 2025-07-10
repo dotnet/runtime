@@ -16,6 +16,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PThreadMutex_Release", SetLastError = true)]
         internal static partial int PThreadMutex_Release(void* mutex);
 
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PThreadMutex_Destroy", SetLastError = true)]
+        internal static partial int PThreadMutex_Destroy(void* mutex);
+
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PThreadMutex_Size")]
         [SuppressGCTransition]
         internal static partial int PThreadMutex_Size();

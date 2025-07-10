@@ -17,7 +17,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    [UnsupportedOSPlatform("windows")]
     internal readonly unsafe struct SharedMemoryId
     {
         private const string UserUnscopedRuntimeTempDirectoryName = ".dotnet";
@@ -119,9 +118,13 @@ namespace System.IO
         }
     }
 
-    [UnsupportedOSPlatform("windows")]
+    internal interface ISharedMemoryProcessData
+    {
+        void Close(bool releaseSharedData);
+    }
+
     internal sealed unsafe class SharedMemoryProcessDataHeader<TSharedMemoryProcessData>
-        where TSharedMemoryProcessData : class
+        where TSharedMemoryProcessData : class, ISharedMemoryProcessData
     {
         internal SharedMemoryId _id;
         internal TSharedMemoryProcessData? _processData;
@@ -305,9 +308,55 @@ namespace System.IO
                 }
             }
         }
+
+        internal void Close()
+        {
+            SharedMemoryManager<TSharedMemoryProcessData>.Instance.RemoveProcessDataHeader(this);
+
+            using AutoReleaseFileLock autoReleaseFileLock = SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(_id);
+
+            bool releaseSharedData = false;
+
+            try
+            {
+                Interop.Sys.FLock(_fileHandle, Interop.Sys.LockOperations.LOCK_UN);
+                if (SharedMemoryHelpers.TryAcquireFileLock(_fileHandle, nonBlocking: true, exclusive: true))
+                {
+                    // There's no one else using this mutex.
+                    // We can delete our shared data.
+                    releaseSharedData = true;
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore the error, just don't release shared data.
+            }
+
+            _processData?.Close(releaseSharedData);
+            _processData = null;
+            Interop.Sys.MUnmap((nint)_sharedDataHeader, _sharedDataTotalByteCount);
+            _fileHandle.Dispose();
+
+            if (releaseSharedData)
+            {
+                string sessionDirectoryPath = Path.Combine(
+                    SharedMemoryHelpers.SharedFilesPath,
+                    _id.GetRuntimeTempDirectoryName(),
+                    SharedMemoryManager<TSharedMemoryProcessData>.SharedMemorySharedMemoryDirectoryName,
+                    _id.GetSessionDirectoryName()
+                );
+
+                string sharedMemoryFilePath = Path.Combine(sessionDirectoryPath, _id.Name);
+
+                // Directly call the underlying functions here as this is best-effort.
+                // If we fail to delete, we don't want an exception.
+                Interop.Sys.Unlink(sharedMemoryFilePath);
+
+                Interop.Sys.RmDir(sessionDirectoryPath);
+            }
+        }
     }
 
-    [UnsupportedOSPlatform("windows")]
     internal static class SharedMemoryHelpers
     {
         public const uint InvalidProcessId = unchecked((uint)-1);
@@ -445,7 +494,9 @@ namespace System.IO
 
                 if (isGlobalLockAcquired)
                 {
+#pragma warning disable CA1416 // Validate platform compatibility. This file is only included on Unix platforms.
                     Directory.CreateDirectory(directoryPath, permissionsMask);
+#pragma warning restore CA1416 // Validate platform compatibility
 
                     try
                     {
@@ -656,17 +707,16 @@ namespace System.IO
         }
     }
 
-    [UnsupportedOSPlatform("windows")]
     internal sealed class SharedMemoryManager<TSharedMemoryProcessData>
-        where TSharedMemoryProcessData : class
+        where TSharedMemoryProcessData : class, ISharedMemoryProcessData
     {
         internal static SharedMemoryManager<TSharedMemoryProcessData> Instance { get; } = new SharedMemoryManager<TSharedMemoryProcessData>();
 
         internal const string SharedMemorySharedMemoryDirectoryName = "shm";
 
-        private Lock _creationDeletionProcessLock = new Lock();
+        private readonly Lock _creationDeletionProcessLock = new Lock();
         private SafeFileHandle? _creationDeletionLockFileHandle;
-        private Dictionary<uint, SafeFileHandle> _uidToFileHandleMap = [];
+        private readonly Dictionary<uint, SafeFileHandle> _uidToFileHandleMap = [];
 
         public Lock.Scope AcquireCreationDeletionProcessLock()
         {

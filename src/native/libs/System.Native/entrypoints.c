@@ -289,6 +289,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_PThreadMutex_Init)
     DllImportEntry(SystemNative_PThreadMutex_Acquire)
     DllImportEntry(SystemNative_PThreadMutex_Release)
+    DllImportEntry(SystemNative_PThreadMutex_Destroy)
     DllImportEntry(SystemNative_PThreadMutex_Size)
     DllImportEntry(SystemNative_GetPageSize)
 };

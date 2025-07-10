@@ -301,30 +301,6 @@ namespace System.Threading
                 }
             }
 
-            public int Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
-            {
-                Debug.Assert(waitInfo != null);
-                Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
-
-                Debug.Assert(timeoutMilliseconds >= -1);
-
-                var lockHolder = new LockHolder(s_lock);
-                try
-                {
-                    if (interruptible && waitInfo.CheckAndResetPendingInterrupt)
-                    {
-                        lockHolder.Dispose();
-                        throw new ThreadInterruptedException();
-                    }
-
-                    return Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
-                }
-                finally
-                {
-                    lockHolder.Dispose();
-                }
-            }
-
             /// <summary>
             /// This function does not check for a pending thread interrupt. Callers are expected to do that soon after
             /// acquiring <see cref="s_lock"/>.
