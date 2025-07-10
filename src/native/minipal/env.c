@@ -1103,38 +1103,6 @@ static bool unset_env(EnvironmentVariables* env, const char* name)
 }
 
 /**
- * @brief Iterates over all environment variables, calling a callback for each.
- *
- * @param env       Pointer to the EnvironmentVariables structure.
- * @param callback  Function to call for each variable.
- * @param cookie    User data to pass to the callback.
- *
- * @return true if all variables were iterated, false if iteration was stopped or on error.
- *
- * @remarks
- * - Function assumes exclusive access to env.
- */
-static bool foreach_env(EnvironmentVariables* env, bool (*callback)(const char* env_s, void* cookie), void* cookie)
-{
-    assert(env != NULL && callback != NULL);
-
-    if (env->data == NULL)
-    {
-        return true;
-    }
-
-    for (int i = 0; env->data[i] != NULL; ++i)
-    {
-        if (!callback(env->data[i], cookie))
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/**
  * @brief Loads and cache the environment variable subsystem using process data.
  *
  * @return true on success, false on failure.
@@ -1492,44 +1460,6 @@ bool minipal_env_unset(const char* name)
         if (load_environ())
         {
             result = unset_env(&g_env, name);
-        }
-
-        unlock_env();
-    }
-
-    return result;
-}
-
-/**
-* @see env.h
-*/
-bool minipal_env_foreach(bool (*callback)(const char* env_s, void* cookie), void* cookie)
-{
-    if (callback == NULL)
-    {
-        errno = EINVAL;
-        return false;
-    }
-
-    bool result = false;
-
-    errno = 0;
-
-    if (!use_cached_env())
-    {
-        EnvironmentVariables env = { 0 };
-
-        assert(g_env_providers[0]->get_environ_unsafe_func != NULL);
-        env.data = g_env_providers[0]->get_environ_unsafe_func();
-
-        return foreach_env(&env, callback, cookie);
-    }
-
-    if (lock_env())
-    {
-        if (load_environ())
-        {
-            result = foreach_env(&g_env, callback, cookie);
         }
 
         unlock_env();

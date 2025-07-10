@@ -191,23 +191,6 @@ bool minipal_env_put(const char* env_s);
  */
 bool minipal_env_unset(const char* name);
 
-/**
- * @brief Iterate over all environment variables.
- *
- * @param callback  Function to call for each variable. Receives the environment variable string
-                    on format "NAME=VALUE" and a user cookie. If the callback returns false, iteration stops.
- * @param cookie    User data passed to the callback.
- *
- * @return true if all variables were iterated, false if iteration was stopped or on error.
- *
- * @remarks
- * - If environment has NOT been explicitly loaded and cache must be used, function will automatically load
- *   environment to reduce amount of potential allocations per call.
- * -  If caller would like to avoid loading environment when cache must be used, use minipal_env_get_environ and
- *   iterate over returned environment copy.
- */
-bool minipal_env_foreach(bool (*callback)(const char* env_s, void* cookie), void* cookie);
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
