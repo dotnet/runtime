@@ -35,6 +35,7 @@ namespace System.Threading
         protected SharedMemoryId Id => _processDataHeader._id;
 
         public abstract bool IsLockOwnedByCurrentThread { get; }
+        public bool IsLockOwnedByAnyThreadInThisProcess => _lockOwnerThread is not null;
 
         protected abstract void SetLockOwnerToCurrentThread();
 
@@ -130,7 +131,7 @@ namespace System.Threading
             }
         }
 
-        private static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
+        internal static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
             using Lock.Scope creationDeletionProcessLock = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
 
@@ -553,5 +554,62 @@ namespace System.Threading
         AcquiredLockButMutexWasAbandoned,
         TimedOut,
         AcquiredLockRecursively,
+    }
+
+    internal static partial class WaitSubsystem
+    {
+        [UnsupportedOSPlatform("windows")]
+        private sealed class NamedMutex(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader) : IWaitableObject
+        {
+            private int _referenceCount = 1;
+
+            public void IncrementRefCount()
+            {
+                Debug.Assert(_referenceCount > 0, "Ref count should not be negative.");
+                _referenceCount++;
+            }
+
+            public int Acquire(int timeoutMilliseconds)
+            {
+                MutexTryAcquireLockResult result = processDataHeader._processData!.TryAcquireLock(timeoutMilliseconds);
+                return result switch
+                {
+                    MutexTryAcquireLockResult.AcquiredLock => WaitHandle.WaitSuccess,
+                    MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned => WaitHandle.WaitAbandoned,
+                    MutexTryAcquireLockResult.TimedOut => WaitHandle.WaitTimeout,
+                    _ => throw new InvalidOperationException("Unexpected result from TryAcquireLock")
+                };
+            }
+
+            public void Release()
+            {
+                processDataHeader._processData!.ReleaseLock();
+            }
+
+            public void OnDeleteHandle()
+            {
+                s_lock.Acquire();
+                try
+                {
+                    // Multiple handles may refer to the same named object.  Make sure the object
+                    // is only abandoned once the last handle to it is deleted.  Also, remove the
+                    // object from the named objects dictionary at this point.
+                    _referenceCount--;
+                    if (_referenceCount > 0)
+                    {
+                        return;
+                    }
+
+                    if (processDataHeader._processData!.IsLockOwnedByAnyThreadInThisProcess)
+                    {
+                        processDataHeader._processData.Abandon();
+                    }
+                }
+                finally
+                {
+                    s_lock.Release();
+                }
+            }
+        }
     }
 }
