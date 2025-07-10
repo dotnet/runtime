@@ -19,6 +19,11 @@ extern "C" void Store_Stack_2B();
 extern "C" void Store_Stack_4B();
 #endif // TARGET_APPLE && TARGET_ARM64
 
+#ifndef UNIX_AMD64_ABI
+extern "C" void Load_Stack_Ref();
+extern "C" void Store_Stack_Ref();
+#endif // !UNIX_AMD64_ABI
+
 #ifdef TARGET_AMD64
 
 #ifdef TARGET_WINDOWS
@@ -1029,6 +1034,14 @@ PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
     return m_interpreterToNative ? GPRegsRefRoutines[r] : GPRegsRefStoreRoutines[r];
 }
 
+PCODE CallStubGenerator::GetStackRefRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetStackRefRoutine\n");
+#endif
+    return m_interpreterToNative ? (PCODE)Load_Stack_Ref : (PCODE)Store_Stack_Ref;
+}
+
 #endif // UNIX_AMD64_ABI
 
 PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
@@ -1413,6 +1426,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
             // The return buffer on Windows AMD64 is passed in the first argument register, so the
             // "this" argument is be passed in the second argument register.
             m_r1 = 1;
+            m_r2 = 1;
         }
         else
 #endif // TARGET_WINDOWS && TARGET_AMD64
@@ -1628,7 +1642,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8))
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
         {
             // Extend an existing range, but only if the argument is at least pointer size large.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
@@ -1677,10 +1691,20 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     // we always process single argument passed by reference using single routine.
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
-        _ASSERTE(argLocDesc.m_cGenReg == 1);
-        pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
-        pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
-        m_r1 = NoRange;
+        if (argLocDesc.m_cGenReg == 1)
+        {
+            pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
+            pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
+            m_r1 = NoRange;
+        }
+        else
+        {
+            _ASSERTE(argLocDesc.m_byteStackIndex != -1);
+            pRoutines[m_routineIndex++] = GetStackRefRoutine();
+            pRoutines[m_routineIndex++] = ((int64_t)pArgIt->GetArgSize() << 32) | argLocDesc.m_byteStackIndex;
+            m_totalStackSize += argLocDesc.m_byteStackSize;
+            m_s1 = NoRange;
+        }
     }
 #endif // UNIX_AMD64_ABI
 }

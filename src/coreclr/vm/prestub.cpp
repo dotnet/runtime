@@ -1438,15 +1438,15 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     }
 
 #ifdef TARGET_X86
+    if (msig.HasAsyncContinuation())
+    {
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
+
     if (msig.HasGenericContextArg())
     {
         // The hidden context parameter
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
     }
 #endif // TARGET_X86
 }
@@ -1469,6 +1469,9 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     MetaSig msig(pTargetMD);
 
     _ASSERTE(msig.HasThis());
+
+    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
+    _ASSERTE(!msig.HasAsyncContinuation());
 
     ILStubLinker sl(pTargetMD->GetModule(),
                     pTargetMD->GetSignature(),
@@ -1585,6 +1588,9 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
+    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
+    _ASSERTE(!msig.HasAsyncContinuation());
+
     // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
@@ -1607,12 +1613,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     // Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
-
-    // Push the async continuation
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
 
 #if !defined(TARGET_X86)
     // Push the rest of the arguments for not x86
@@ -3300,7 +3300,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
             if (pHelper != (PCODE)NULL)
             {
-                *(TADDR *)pCell = pHelper;
+                VolatileStore((TADDR *)pCell, pHelper);
             }
 
 #ifdef _DEBUG

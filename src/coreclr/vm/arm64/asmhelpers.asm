@@ -523,7 +523,7 @@ COMToCLRDispatchHelper_RegSetup
         ;
         ; X0 = throwable
         ; X1 = PC to invoke
-        ; X2 = address of X19 register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; X2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
@@ -545,12 +545,12 @@ COMToCLRDispatchHelper_RegSetup
         mov fp, sp
         str fp, [x3]
 
-        ldp x19, x20, [x2, #0]
-        ldp x21, x22, [x2, #16]
-        ldp x23, x24, [x2, #32]
-        ldp x25, x26, [x2, #48]
-        ldp x27, x28, [x2, #64]
-        ldr fp, [x2, #80] ; offset of fp in CONTEXT relative to X19
+        ldp x19, x20, [x2, #OFFSETOF__CONTEXT__X19]
+        ldp x21, x22, [x2, #(OFFSETOF__CONTEXT__X19 + 16)]
+        ldp x23, x24, [x2, #(OFFSETOF__CONTEXT__X19 + 32)]
+        ldp x25, x26, [x2, #(OFFSETOF__CONTEXT__X19 + 48)]
+        ldp x27, x28, [x2, #(OFFSETOF__CONTEXT__X19 + 64)]
+        ldr fp, [x2, #OFFSETOF__CONTEXT__Fp]
 
         ; Invoke the funclet
         blr x1
@@ -1247,13 +1247,23 @@ StoreCopyLoop
         bne StoreCopyLoop
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
-    LEAF_END Load_Stack
+    LEAF_END Store_Stack
     
-    MACRO 
-        Store_Ref $argReg
+    LEAF_ENTRY Load_Stack_Ref
+        ldr w11, [x10], #4 ; SP offset
+        ldr w12, [x10], #4 ; size of the value type
+        add x11, sp, x11
+        str x9, [x11]
+        add x9, x9, x12
+        ; Align x9 to the stack slot size
+        add x9, x9, 7
+        and x9, x9, 0xfffffffffffffff8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_Stack_Ref
 
-    LEAF_ENTRY Store_Ref_$argReg
-        ldr x11, [x10], #8 ; size of the value type
+    MACRO
+        Copy_Ref $argReg
         cmp x11, #16
         blt CopyBy8$argReg
 RefCopyLoop16$argReg
@@ -1282,6 +1292,24 @@ RefCopyDone$argReg
         ; Align x9 to the stack slot size
         add x9, x9, 7
         and x9, x9, 0xfffffffffffffff8
+    MEND
+
+    LEAF_ENTRY Store_Stack_Ref
+        ldr w12, [x10], #4 ; SP offset
+        ldr w11, [x10], #4 ; size of the value type
+        add x12, sp, x12
+        ldr x12, [x12, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+        Copy_Ref x12
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_Stack_Ref
+
+    MACRO
+        Store_Ref $argReg
+
+    LEAF_ENTRY Store_Ref_$argReg
+        ldr x11, [x10], #8 ; size of the value type
+        Copy_Ref $argReg
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
     LEAF_END Store_Ref_$argReg

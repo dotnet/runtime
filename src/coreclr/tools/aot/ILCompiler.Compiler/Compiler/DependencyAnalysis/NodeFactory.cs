@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = new AddressTakenExternSymbolNode("RhpInitialDynamicInterfaceDispatch");
+            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode("RhpInitialDynamicInterfaceDispatch");
 
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
@@ -263,13 +263,17 @@ namespace ILCompiler.DependencyAnalysis
                 return new FieldRvaDataNode(key);
             });
 
-            _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
+            _externFunctionSymbols = new NodeCache<string, ExternFunctionSymbolNode>((string name) =>
             {
-                return new ExternSymbolNode(name);
+                return new ExternFunctionSymbolNode(name);
             });
-            _externIndirectSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
+            _externIndirectFunctionSymbols = new NodeCache<string, ExternFunctionSymbolNode>((string name) =>
             {
-                return new ExternSymbolNode(name, isIndirection: true);
+                return new ExternFunctionSymbolNode(name, isIndirection: true);
+            });
+            _externDataSymbols = new NodeCache<string, ExternDataSymbolNode>((string name) =>
+            {
+                return new ExternDataSymbolNode(name);
             });
 
             _pInvokeModuleFixups = new NodeCache<PInvokeModuleData, PInvokeModuleFixupNode>((PInvokeModuleData moduleData) =>
@@ -793,7 +797,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return ExternSymbol(NameMangler.NodeMangler.ThreadStaticsIndex(type));
+                return ExternDataSymbol(NameMangler.NodeMangler.ThreadStaticsIndex(type));
             }
         }
 
@@ -903,24 +907,31 @@ namespace ILCompiler.DependencyAnalysis
             return _genericVariances.GetOrAdd(details);
         }
 
-        private NodeCache<string, ExternSymbolNode> _externSymbols;
+        private NodeCache<string, ExternFunctionSymbolNode> _externFunctionSymbols;
 
-        public ISortableSymbolNode ExternSymbol(string name)
+        public ISortableSymbolNode ExternFunctionSymbol(string name)
         {
-            return _externSymbols.GetOrAdd(name);
+            return _externFunctionSymbols.GetOrAdd(name);
+        }
+
+        private NodeCache<string, ExternFunctionSymbolNode> _externIndirectFunctionSymbols;
+
+        public ISortableSymbolNode ExternIndirectFunctionSymbol(string name)
+        {
+            return _externIndirectFunctionSymbols.GetOrAdd(name);
+        }
+
+        private NodeCache<string, ExternDataSymbolNode> _externDataSymbols;
+
+        public ISortableSymbolNode ExternDataSymbol(string name)
+        {
+            return _externDataSymbols.GetOrAdd(name);
         }
 
         public ISortableSymbolNode ExternVariable(string name)
         {
             string mangledName = NameMangler.NodeMangler.ExternVariable(name);
-            return _externSymbols.GetOrAdd(mangledName);
-        }
-
-        private NodeCache<string, ExternSymbolNode> _externIndirectSymbols;
-
-        public ISortableSymbolNode ExternIndirectSymbol(string name)
-        {
-            return _externIndirectSymbols.GetOrAdd(name);
+            return _externDataSymbols.GetOrAdd(mangledName);
         }
 
         private NodeCache<PInvokeModuleData, PInvokeModuleFixupNode> _pInvokeModuleFixups;
@@ -1254,17 +1265,6 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System", "Array`1");
-            }
-        }
-
-        private TypeDesc _systemArrayOfTEnumeratorType;
-        public TypeDesc ArrayOfTEnumeratorType
-        {
-            get
-            {
-                // This type is optional, but it's fine for this cache to be ineffective if that happens.
-                // Those scenarios are rare and typically deal with small compilations.
-                return _systemArrayOfTEnumeratorType ??= _context.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
             }
         }
 
