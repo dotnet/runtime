@@ -46,8 +46,8 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             ApplicationLifetime.StopApplication();
 
-            // we could wait for a signal here, like Dispose as is done in non-netcoreapp case, but those inevitably could have user
-            // code that runs after them in the user's Main.   Instead we just block this thread completely and let the main routine exit.
+            // We could wait for a signal here, like Dispose as is done in non-netcoreapp case, but those inevitably could have user
+            // code that runs after them in the user's Main. Instead we just block this thread completely and let the main routine exit.
             Thread.Sleep(HostOptions.ShutdownTimeout);
         }
 
