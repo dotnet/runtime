@@ -18,6 +18,7 @@ using Microsoft.Win32.SafeHandles;
 using SafeNwHandle = Interop.SafeNwHandle;
 using NetworkFrameworkStatusUpdates = Interop.NetworkFramework.StatusUpdates;
 using NwOSStatus = Interop.AppleCrypto.OSStatus;
+using ResettableValueTaskSource = System.Net.Quic.ResettableValueTaskSource;
 
 namespace System.Net.Security
 {
@@ -63,6 +64,7 @@ namespace System.Net.Security
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
         private ArrayBuffer _appReceiveBuffer = new(InitialBufferSize);
+        private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource();
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
         // Buffers
@@ -193,71 +195,75 @@ namespace System.Net.Security
             }
         }
 
-        internal async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        internal ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (_appReceiveBuffer.ActiveLength == 0)
+            if (_appReceiveBuffer.ActiveLength > 0)
+            {
+                // fast path, data available
+                int length = Math.Min(_appReceiveBuffer.ActiveLength, buffer.Length);
+                _appReceiveBuffer.ActiveSpan.Slice(0, length).CopyTo(buffer.Span);
+                _appReceiveBuffer.Discard(length);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Read {length} bytes");
+                return ValueTask.FromResult(length);
+            }
+
+            return ReadAsyncInternal(buffer, cancellationToken);
+
+            async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Internal buffer empty, refilling.");
-                int read = await FillAppDataBufferAsync(_appReceiveBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
+                await FillAppDataBufferAsync(cancellationToken).ConfigureAwait(false);
 
-                if (read == 0)
+                if (_appReceiveBuffer.ActiveLength == 0)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "ReadAsync returning 0 bytes, end of stream reached");
                     return 0; // EOF
                 }
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReadAsync filled buffer with {read} bytes");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReadAsync filled buffer with {_appReceiveBuffer.ActiveLength} bytes");
 
-                _appReceiveBuffer.Commit(read);
+                int length = Math.Min(_appReceiveBuffer.ActiveLength, buffer.Length);
+                _appReceiveBuffer.ActiveSpan.Slice(0, length).CopyTo(buffer.Span);
+                _appReceiveBuffer.Discard(length);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Read {length} bytes");
+                return length;
             }
-
-            // If we have data in the buffer, copy it directly
-            int length = Math.Min(_appReceiveBuffer.ActiveLength, buffer.Length);
-            _appReceiveBuffer.ActiveSpan.Slice(0, length).CopyTo(buffer.Span);
-            _appReceiveBuffer.Discard(length);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Read {length} bytes");
-            return length;
         }
 
-        internal async Task<int> FillAppDataBufferAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        internal ValueTask FillAppDataBufferAsync(CancellationToken cancellationToken)
         {
-            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
+            if (!_appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, cancellationToken))
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Cancellation requested for {nameof(FillAppDataBufferAsync)}");
-                ((TaskCompletionSource<int>)state!).TrySetCanceled(token);
-            }, tcs);
-
-            Tuple<TaskCompletionSource<int>, Memory<byte>> state = new(tcs, buffer);
-            GCHandle handle = GCHandle.Alloc(state, GCHandleType.Normal);
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"))));
+            }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
             unsafe
             {
-                Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
             }
 
-            return await tcs.Task.ConfigureAwait(false);
+            return valueTask;
 
             [UnmanagedCallersOnly]
-            static unsafe void CompletionCallback(IntPtr context, long status, byte* buffer, int length)
+            static unsafe void CompletionCallback(IntPtr context, long status, byte* data, int length)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing ConnectionRead, status: {status}, len: {length}", nameof(FillAppDataBufferAsync));
                 GCHandle handle = GCHandle.FromIntPtr(context);
-                (TaskCompletionSource<int> tcs, Memory<byte> state) = (Tuple<TaskCompletionSource<int>, Memory<byte>>)handle.Target!;
+                SafeDeleteNwContext thisContext = (SafeDeleteNwContext)handle.Target!;
+                ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
 
                 if (status != 0)
                 {
-                    tcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status)));
+                    thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status)));
                 }
                 else
                 {
-                    new Span<byte>(buffer, length).CopyTo(state.Span);
-                    tcs.TrySetResult(length);
+                    buffer.EnsureAvailableSpace(length);
+                    new Span<byte>(data, length).CopyTo(buffer.AvailableSpan);
+                    buffer.Commit(length);
+                    thisContext._appReceiveBufferTcs.TrySetResult();
                 }
-
-                handle.Free();
             }
         }
 

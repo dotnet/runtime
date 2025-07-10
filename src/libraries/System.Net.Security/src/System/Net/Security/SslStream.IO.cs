@@ -867,9 +867,8 @@ namespace System.Net.Security
 #if TARGET_APPLE
                 if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
                 {
-                    Task<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
-                    await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
-                    return await task.ConfigureAwait(false);
+                    ValueTask<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
+                    return await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
                 }
 #endif // TARGET_APPLE
 

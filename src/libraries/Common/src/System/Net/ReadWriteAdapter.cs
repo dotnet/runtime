@@ -15,6 +15,7 @@ namespace System.Net
         static abstract Task FlushAsync(Stream stream, CancellationToken cancellationToken);
         static abstract Task WaitAsync(TaskCompletionSource<bool> waiter);
         static abstract Task WaitAsync(Task task);
+        static abstract ValueTask<T> WaitAsync<T>(ValueTask<T> task);
     }
 
     internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter
@@ -32,6 +33,7 @@ namespace System.Net
 
         public static Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
         public static Task WaitAsync(Task task) => task;
+        public static ValueTask<T> WaitAsync<T>(ValueTask<T> task) => task;
     }
 
     internal readonly struct SyncReadWriteAdapter : IReadWriteAdapter
@@ -64,6 +66,11 @@ namespace System.Net
         {
             task.GetAwaiter().GetResult();
             return Task.CompletedTask;
+        }
+
+        public static ValueTask<T> WaitAsync<T>(ValueTask<T> task)
+        {
+            return ValueTask.FromResult(task.AsTask().GetAwaiter().GetResult());
         }
     }
 }

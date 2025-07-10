@@ -453,6 +453,8 @@
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteNwContext.cs" />
+    <!-- TODO: move to shared code -->
+    <Compile Include="../../System.Net.Quic/src/System/Net/Quic/Internal/ResettableValueTaskSource.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.OSX.cs" />

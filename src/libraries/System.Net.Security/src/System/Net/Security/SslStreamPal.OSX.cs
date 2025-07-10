@@ -468,7 +468,7 @@ namespace System.Net.Security
             return nwContext.WriteAsync(buffer, cancellationToken);
         }
 
-        internal static Task<int> AsyncReadAsync(SafeDeleteContext securityContext, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal static ValueTask<int> AsyncReadAsync(SafeDeleteContext securityContext, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(securityContext is SafeDeleteNwContext, "SafeDeleteNwContext expected for async read");
             SafeDeleteNwContext nwContext = (SafeDeleteNwContext)securityContext;
