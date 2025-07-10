@@ -53,6 +53,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task AttributePrimaryConstructorDataflow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task AttributePropertyDataflow()
         {
             return RunTest(nameof(AttributePropertyDataflow));
