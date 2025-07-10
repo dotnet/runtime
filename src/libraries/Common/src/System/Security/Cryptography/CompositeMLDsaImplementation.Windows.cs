@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class CompositeMLDsaImplementation : CompositeMLDsa
     {
-        public CompositeMLDsaImplementation(CompositeMLDsaAlgorithm algorithm)
+        private CompositeMLDsaImplementation(CompositeMLDsaAlgorithm algorithm)
             : base(algorithm)
         {
             throw new PlatformNotSupportedException();

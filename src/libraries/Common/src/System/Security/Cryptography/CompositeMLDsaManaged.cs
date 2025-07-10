@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
@@ -170,12 +171,21 @@ namespace System.Security.Cryptography
             //          mldsaSig = ML-DSA.Sign( mldsaSK, M', ctx=Domain )
             //          tradSig = Trad.Sign( tradSK, M' )
 
+            //  Note that in step 4 above, both component signature processes are
+            //  invoked, and no indication is given about which one failed.This
+            //  SHOULD be done in a timing-invariant way to prevent side-channel
+            //  attackers from learning which component algorithm failed.
+
+            Span<byte> randomizer = destination.Slice(0, CompositeMLDsaAlgorithm.RandomizerSizeInBytes);
+            Span<byte> mldsaSig = destination.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
+            Span<byte> tradSig = destination.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
+
             bool mldsaSigned = false;
             bool tradSigned = false;
 
             try
             {
-                _mldsa.SignData(M_prime, destination.Slice(r.Length, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes), s_algorithmMetadata[Algorithm].DomainSeparator);
+                _mldsa.SignData(M_prime, mldsaSig, s_algorithmMetadata[Algorithm].DomainSeparator);
                 mldsaSigned = true;
             }
             catch (CryptographicException)
@@ -187,7 +197,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                tradResult = _componentAlgorithm.TrySignData(M_prime, destination.Slice(r.Length + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes), out tradBytesWritten);
+                tradResult = _componentAlgorithm.TrySignData(M_prime, tradSig, out tradBytesWritten);
                 tradSigned = true;
             }
             catch (CryptographicException)
@@ -217,8 +227,8 @@ namespace System.Security.Cryptography
             //          s = SerializeSignatureValue(r, mldsaSig, tradSig)
             //          return s
 
-            r.CopyTo(destination);
-            bytesWritten = r.Length + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes + tradBytesWritten;
+            r.CopyTo(randomizer);
+            bytesWritten = randomizer.Length + mldsaSig.Length + tradBytesWritten;
             return true;
         }
 
@@ -265,7 +275,9 @@ namespace System.Security.Cryptography
             //      if all succeeded, then
             //          output "Valid signature"
 
-            return _mldsa.VerifyData(M_prime, mldsaSig, s_algorithmMetadata[Algorithm].DomainSeparator) && _componentAlgorithm.VerifyData(M_prime, tradSig);
+            // We don't short circuit here because we want to avoid revealing which component signature failed.
+            // This is not required in the spec, but it is a good practice to avoid timing attacks.
+            return _mldsa.VerifyData(M_prime, mldsaSig, s_algorithmMetadata[Algorithm].DomainSeparator) & _componentAlgorithm.VerifyData(M_prime, tradSig);
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
@@ -630,18 +642,18 @@ namespace System.Security.Cryptography
             internal HashAlgorithmName HashAlgorithmName { get; } = hashAlgorithmName;
         }
 
-        internal sealed class RsaAlgorithm(int keySizeInBits, HashAlgorithmName hashAlgorithmName, RSASignaturePadding padding)
+        private sealed class RsaAlgorithm(int keySizeInBits, HashAlgorithmName hashAlgorithmName, RSASignaturePadding padding)
         {
             internal int KeySizeInBits { get; } = keySizeInBits;
             internal HashAlgorithmName HashAlgorithmName { get; } = hashAlgorithmName;
             internal RSASignaturePadding Padding { get; } = padding;
         }
 
-        internal sealed class ECDsaAlgorithm
+        private sealed class ECDsaAlgorithm
         {
         }
 
-        internal sealed class EdDsaAlgorithm
+        private sealed class EdDsaAlgorithm
         {
         }
     }
