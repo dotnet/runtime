@@ -45,9 +45,8 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "browser" (
         if "%EMSDK_PATH%" == "" (
-                echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
-                exit /B 1
-            )
+            echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
+            exit /B 1
         )
 
         set CMakeToolPrefix=emcmake
