@@ -4,6 +4,8 @@
 include AsmMacros.inc
 include asmconstants.inc
 
+Thread_GetInterpThreadContext  TEXTEQU <?GetInterpThreadContext@Thread@@QEAAPEAUInterpThreadContext@@XZ>
+
 extern NDirectImportWorker:proc
 extern ThePreStub:proc
 extern  ProfileEnter:proc
@@ -13,6 +15,7 @@ extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
+extern Thread_GetInterpThreadContext:proc
 endif
 
 extern g_pPollGC:QWORD
@@ -565,12 +568,21 @@ NESTED_ENTRY InterpreterStub, _TEXT
 
         INLINE_GETTHREAD r10; thrashes rax and r11
 
+        mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
+        test            rax, rax
+        jnz             HaveInterpThreadContext
+
+        mov             rcx, r10
+        call            Thread_GetInterpThreadContext
+        RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+
+HaveInterpThreadContext:
+        mov             r10, qword ptr [rax + OFFSETOF__InterpThreadContext__pStackPointer]
         ; Load the InterpMethod pointer from the IR bytecode
         mov             rax, qword ptr [rbx]
         mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
         lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
-        mov             r10, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
-        mov             r10, qword ptr [r10 + OFFSETOF__InterpThreadContext__pStackPointer]
         lea             rax, [rsp + __PWTB_TransitionBlock]
         ; Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
         call            qword ptr [r11]
