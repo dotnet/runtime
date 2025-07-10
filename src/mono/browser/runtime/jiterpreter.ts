@@ -299,7 +299,7 @@ function getTraceImports () {
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
 
-    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
+    if (runtimeHelpers.emscriptenBuildOptions.enableEventPipe || runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
         traceImports.push(importDef("prof_enter", getRawCwrap("mono_jiterp_prof_enter")));
         traceImports.push(importDef("prof_samplepoint", getRawCwrap("mono_jiterp_prof_samplepoint")));
         traceImports.push(importDef("prof_leave", getRawCwrap("mono_jiterp_prof_leave")));
@@ -1084,7 +1084,7 @@ export function mono_interp_tier_prepare_jiterpreter (
 export function mono_wasm_free_method_data (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
-    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
+    if (runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
         mono_wasm_profiler_free_method(method);
     }
 

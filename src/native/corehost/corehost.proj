@@ -10,10 +10,10 @@
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
     <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
-    <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRID).$(Configuration)\</IntermediateOutputRootPath>
+    <IntermediateOutputRootPath>$(ArtifactsObjDir)$(TargetRid).$(Configuration)\</IntermediateOutputRootPath>
     <!-- Global location for version files -->
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows)) or '$(TargetsAndroid)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows)) or '$(TargetsMobile)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
   </PropertyGroup>
 
   <Target Name="CopySingleFileHost" AfterTargets="Build">
@@ -80,28 +80,28 @@
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs Condition="'$(EnableNativeSanitizers)' != ''">$(BuildArgs) -fsanitize=$(EnableNativeSanitizers)</BuildArgs>
       <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
-      <BuildArgs>$(BuildArgs) -outputrid $(OutputRID)</BuildArgs>
+      <BuildArgs>$(BuildArgs) -targetrid $(TargetRid)</BuildArgs>
     </PropertyGroup>
 
     <!--
-      Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
-      warning in the macOS build when dsymutil tries to strip symbols.
+      Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
+      upgrading compiler warnings to errors in release branches.
     -->
     <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs)" Importance="High"/>
     <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <!-- 
-    This is a workaround when cross-compiling on Windows for Android. 
+    This is a workaround when cross-compiling on Windows for non-windows (Mobile for now) targets.
 
     https://github.com/dotnet/arcade/issues/15496
   -->
-  <Target Name="_BeforeAndroidNativeVersionFile" BeforeTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+  <Target Name="_BeforeCrossTargetNativeVersionFile" BeforeTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsMobile)' == 'true'">
     <PropertyGroup>
       <NativeVersionFile>$(ArtifactsObjDir)_version.h</NativeVersionFile>
     </PropertyGroup>
   </Target>
-  <Target Name="_AfterAndroidNativeVersionFile" AfterTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+  <Target Name="_AfterCrossTargetNativeVersionFile" AfterTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsMobile)' == 'true'">
     <PropertyGroup>
       <NativeVersionFile>$(ArtifactsObjDir)_version.c</NativeVersionFile>
     </PropertyGroup>
@@ -147,7 +147,7 @@
     <PropertyGroup>
       <BuildScript>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'build.cmd'))</BuildScript>
 
-      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) outputrid $(OutputRID)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) targetrid $(TargetRid)</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
@@ -160,8 +160,8 @@
 
     <!--
       Run script that invokes Cmake to create VS files, and then calls msbuild to compile them. Use
-      IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
-      warning in the native build.
+      IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
+      upgrading compiler warnings to errors in release branches.
     -->
     <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs)" Importance="High"/>
     <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>

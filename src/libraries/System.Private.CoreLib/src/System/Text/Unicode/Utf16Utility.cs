@@ -3,8 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
-#if SYSTEM_PRIVATE_CORELIB
+#if NET
 using System.Runtime.Intrinsics;
 #endif
 

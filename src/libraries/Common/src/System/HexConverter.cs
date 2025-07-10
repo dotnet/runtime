@@ -8,6 +8,7 @@ using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.Unicode;
@@ -104,8 +105,8 @@ namespace System
             Vector128<byte> lowNibbles = Vector128.UnpackLow(shiftedSrc, src);
             Vector128<byte> highNibbles = Vector128.UnpackHigh(shiftedSrc, src);
 
-            return (Vector128.ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
-                Vector128.ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
+            return (Vector128.ShuffleNative(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
+                Vector128.ShuffleNative(hexMap, highNibbles & Vector128.Create((byte)0xF)));
         }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
@@ -178,7 +179,7 @@ namespace System
             }
         }
 
-        public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
+        public static string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
 #if NETFRAMEWORK || NETSTANDARD2_0
             Span<char> result = bytes.Length > 16 ?
@@ -192,10 +193,24 @@ namespace System
                 pos += 2;
             }
             return result.ToString();
+#elif NET9_0_OR_GREATER
+            SpanCasingPair args = new() { Bytes = bytes, Casing = casing };
+            return string.Create(bytes.Length * 2, args, static (chars, args) =>
+                EncodeToUtf16(args.Bytes, chars, args.Casing));
 #else
-            return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
-                EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
+            // .NET 8.0 path (doesn't support 'allow ref struct' feature)
+            unsafe
+            {
+                return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
+                    EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
+            }
 #endif
+        }
+
+        private ref struct SpanCasingPair
+        {
+            public ReadOnlySpan<byte> Bytes { get; set; }
+            public Casing Casing { get; set; }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -229,7 +244,7 @@ namespace System
         public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
 #if SYSTEM_PRIVATE_CORELIB
-            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
+            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 chars.Length >= Vector128<ushort>.Count * 2)
             {
                 return TryDecodeFromUtf16_Vector128(chars, bytes, out charsProcessed);
@@ -241,9 +256,10 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
-            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
             Debug.Assert(chars.Length <= bytes.Length * 2);
             Debug.Assert(chars.Length % 2 == 0);
             Debug.Assert(chars.Length >= Vector128<ushort>.Count * 2);
@@ -299,6 +315,12 @@ namespace System
                     Vector128<short> odd = AdvSimd.Arm64.TransposeOdd(nibbles, Vector128<byte>.Zero).AsInt16();
                     even = AdvSimd.ShiftLeftLogical(even, 4).AsInt16();
                     output = AdvSimd.AddSaturate(even, odd).AsByte();
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    Vector128<byte> shiftedNibbles = PackedSimd.ShiftLeft(nibbles, 4);
+                    Vector128<byte> zipped = PackedSimd.BitwiseSelect(nibbles, shiftedNibbles, Vector128.Create((ushort)0xFF00).AsByte());
+                    output = PackedSimd.AddPairwiseWidening(zipped).AsByte();
                 }
                 else
                 {

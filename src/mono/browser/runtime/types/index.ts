@@ -6,11 +6,11 @@ import type { EmscriptenModule, NativePointer } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the blazor.boot.json will be downloaded and applied by default.
+     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./blazor.boot.json is a default config file location.
+     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -119,14 +119,6 @@ export type MonoConfig = {
     debugLevel?: number,
 
     /**
-     * Gets a value that determines whether to enable caching of the 'resources' inside a CacheStorage instance within the browser.
-     */
-    cacheBootResources?: boolean,
-    /**
-     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
-     */
-    cachedResourcesPurgeDelay?: number,
-    /**
      * Configures use of the `integrity` directive for fetching assets
      */
     disableIntegrityCheck?: boolean,
@@ -143,6 +135,16 @@ export type MonoConfig = {
      */
     environmentVariables?: {
         [i: string]: string;
+    },
+    /**
+     * Subset of runtimeconfig.json
+     */
+    runtimeConfig?: {
+        runtimeOptions?: {
+            configProperties?: {
+                [i: string]: string | number | boolean;
+            }
+        }
     },
     /**
      * initial number of workers to add to the emscripten pthread pool
@@ -172,10 +174,7 @@ export type MonoConfig = {
      */
     applicationCulture?: string,
 
-    /**
-     * definition of assets to load along with the runtime.
-     */
-    resources?: ResourceGroups;
+    resources?: Assets,
 
     /**
      * appsettings files to load to VFS
@@ -201,31 +200,95 @@ export type MonoConfig = {
 
 export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
-export interface ResourceGroups {
+export interface Assets {
     hash?: string;
-    fingerprinting?: { [name: string]: string },
-    coreAssembly?: ResourceList; // nullable only temporarily
-    assembly?: ResourceList; // nullable only temporarily
-    lazyAssembly?: ResourceList; // nullable only temporarily
-    corePdb?: ResourceList;
-    pdb?: ResourceList;
+    coreAssembly?: AssemblyAsset[]; // nullable only temporarily
+    assembly?: AssemblyAsset[]; // nullable only temporarily
+    lazyAssembly?: AssemblyAsset[]; // nullable only temporarily
+    corePdb?: PdbAsset[];
+    pdb?: PdbAsset[];
 
-    jsModuleWorker?: ResourceList;
-    jsModuleDiagnostics?: ResourceList;
-    jsModuleNative: ResourceList;
-    jsModuleRuntime: ResourceList;
-    wasmSymbols?: ResourceList;
-    wasmNative: ResourceList;
-    icu?: ResourceList;
+    jsModuleWorker?: JsAsset[];
+    jsModuleDiagnostics?: JsAsset[];
+    jsModuleNative: JsAsset[];
+    jsModuleRuntime: JsAsset[];
 
-    satelliteResources?: { [cultureName: string]: ResourceList };
+    wasmSymbols?: SymbolsAsset[];
+    wasmNative: WasmAsset[];
+    icu?: IcuAsset[];
 
-    modulesAfterConfigLoaded?: ResourceList,
-    modulesAfterRuntimeReady?: ResourceList
+    satelliteResources?: { [cultureName: string]: AssemblyAsset[] };
+
+    modulesAfterConfigLoaded?: JsAsset[],
+    modulesAfterRuntimeReady?: JsAsset[]
 
     extensions?: ResourceExtensions
-    coreVfs?: { [virtualPath: string]: ResourceList };
-    vfs?: { [virtualPath: string]: ResourceList };
+    coreVfs?: VfsAsset[];
+    vfs?: VfsAsset[];
+}
+
+export type Asset = {
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * If true, the runtime startup would not fail if the asset download was not successful.
+     */
+    isOptional?: boolean
+    /**
+     * If provided, runtime doesn't have to fetch the data.
+     * Runtime would set the buffer to null after instantiation to free the memory.
+     */
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>,
+    /**
+     * It's metadata + fetch-like Promise<Response>
+     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
+     */
+    pendingDownload?: LoadingResource
+}
+
+export type WasmAsset = Asset & {
+    name: string;
+    hash?: string | null | "";
+}
+
+export type AssemblyAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
+}
+
+export type PdbAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
+}
+
+export type JsAsset = Asset & {
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>,
+
+    name?: string; // actually URL
+}
+
+export type SymbolsAsset = Asset & {
+    name: string; // actually URL
+}
+
+export type VfsAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
+}
+
+export type IcuAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
+    hash?: string | null | "";
 }
 
 /**
@@ -256,7 +319,7 @@ export interface LoadingResource {
     response: Promise<Response>;
 }
 
-// Types of assets that can be in the _framework/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
+// Types of assets that can be in the _framework/dotnet.boot.js file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export interface AssetEntry {
     /**
      * the name of the asset, including extension.
@@ -335,7 +398,7 @@ export type SingleAssetBehaviors =
      */
     | "js-module-native"
     /**
-     * Typically blazor.boot.json
+     * Typically dotnet.boot.js
      */
     | "manifest"
     /**
@@ -403,7 +466,7 @@ export type DotnetModuleConfig = {
     exports?: string[];
 } & Partial<EmscriptenModule>
 
-export type APIType = {
+export type RunAPIType = {
     /**
      * Runs the Main() method of the application.
      * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
@@ -453,6 +516,9 @@ export type APIType = {
      * You can register the scripts using MonoConfig.resources.modulesAfterConfigLoaded and MonoConfig.resources.modulesAfterRuntimeReady.
      */
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
+}
+
+export type MemoryAPIType = {
     /**
      * Writes to the WASM linear memory
      */
@@ -594,6 +660,47 @@ export type APIType = {
      */
     localHeapViewF64: () => Float64Array;
 }
+
+export type DiagnosticsAPIType = {
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     */
+    collectCpuSamples: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
+     */
+    collectMetrics: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file.
+     * It could be opened in PerfView as is.
+     * It could be converted for Visual Studio using `dotnet-gcdump convert`.
+     */
+    collectGcDump: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
+     */
+    connectDSRouter (url: string): void;
+}
+
+export type DiagnosticCommandProviderV2 = {
+    keywords: [ number, number ],
+    logLevel: number,
+    provider_name: string,
+    arguments: string|null
+}
+
+export type DiagnosticCommandOptions = {
+    durationSeconds?:number,
+    intervalSeconds?:number,
+    skipDownload?:boolean,
+    circularBufferMB?:number,
+    extraProviders?:DiagnosticCommandProviderV2[],
+}
+
+export type APIType = RunAPIType & MemoryAPIType & DiagnosticsAPIType;
 
 export type RuntimeAPI = {
     INTERNAL: any,

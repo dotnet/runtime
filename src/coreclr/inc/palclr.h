@@ -8,11 +8,10 @@
 
 // ===========================================================================
 
-
-#if defined(HOST_WINDOWS)
-
 #ifndef __PALCLR_H__
 #define __PALCLR_H__
+
+#if defined(HOST_WINDOWS)
 
 // This macro is used to standardize the wide character string literals between UNIX and Windows.
 // Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
@@ -47,8 +46,6 @@
 #define NOINLINE __attribute__((noinline))
 #endif // !_MSC_VER
 #endif // !NOINLINE
-
-#define ANALYZER_NORETURN
 
 #ifdef _MSC_VER
 #define EMPTY_BASES_DECL __declspec(empty_bases)
@@ -320,17 +317,14 @@
     {                                                                           \
         bool __exHandled; __exHandled = false;                                  \
         DWORD __exCode; __exCode = 0;                                           \
-        SCAN_EHMARKER();                                                        \
         __try                                                                   \
-        {                                                                       \
-            SCAN_EHMARKER_TRY();
+        {
 
 #define PAL_EXCEPT_NAKED(Disposition)                                           \
         }                                                                       \
         __except(__exCode = GetExceptionCode(), Disposition)                    \
         {                                                                       \
             __exHandled = true;                                                 \
-            SCAN_EHMARKER_CATCH();                                              \
             PAL_SEH_RESTORE_GUARD_PAGE
 
 #define PAL_EXCEPT_FILTER_NAKED(pfnFilter, param)                               \
@@ -339,7 +333,6 @@
                  pfnFilter(GetExceptionInformation(), param))                   \
         {                                                                       \
             __exHandled = true;                                                 \
-            SCAN_EHMARKER_CATCH();                                              \
             PAL_SEH_RESTORE_GUARD_PAGE
 
 #define PAL_FINALLY_NAKED                                                       \
@@ -349,7 +342,6 @@
 
 #define PAL_ENDTRY_NAKED                                                        \
         }                                                                       \
-        PAL_ENDTRY_NAKED_DBG                                                    \
     }                                                                           \
 
 
@@ -478,8 +470,8 @@
 
 #define PAL_CPP_TRY try
 #define PAL_CPP_ENDTRY
-#define PAL_CPP_THROW(type, obj) do { SCAN_THROW_MARKER; throw obj; } while (false)
-#define PAL_CPP_RETHROW do { SCAN_THROW_MARKER; throw; } while (false)
+#define PAL_CPP_THROW(type, obj) do { throw obj; } while (false)
+#define PAL_CPP_RETHROW do { throw; } while (false)
 #define PAL_CPP_CATCH_DERIVED(type, obj) catch (type * obj)
 #define PAL_CPP_CATCH_NON_DERIVED(type, obj) catch (type obj)
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) catch (type)
@@ -530,13 +522,10 @@
         }                                                                       \
     }
 
-#define PAL_ENDTRY_NAKED_DBG
-
 #else
-#define PAL_TRY_HANDLER_DBG_BEGIN                   ANNOTATION_TRY_BEGIN;
-#define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)  ANNOTATION_TRY_BEGIN;
-#define PAL_TRY_HANDLER_DBG_END                     ANNOTATION_TRY_END;
-#define PAL_ENDTRY_NAKED_DBG
+#define PAL_TRY_HANDLER_DBG_BEGIN
+#define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)
+#define PAL_TRY_HANDLER_DBG_END
 #endif // defined(ENABLE_CONTRACTS_IMPL)
 
 
@@ -604,9 +593,9 @@
 
 #define __clr_reserved __reserved
 
-#endif // __PALCLR_H__
-
-#include "palclr_win.h"
+// Native system libray handle.
+// In Windows, NATIVE_LIBRARY_HANDLE is the same as HMODULE.
+typedef HMODULE NATIVE_LIBRARY_HANDLE;
 
 #ifndef IMAGE_FILE_MACHINE_LOONGARCH64
 #define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64.
@@ -617,3 +606,5 @@
 #endif
 
 #endif // defined(HOST_WINDOWS)
+
+#endif // __PALCLR_H__

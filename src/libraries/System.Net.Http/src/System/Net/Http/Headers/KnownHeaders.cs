@@ -3,7 +3,8 @@
 
 using System.Net.Http.HPack;
 using System.Net.Http.QPack;
-using System.Runtime.InteropServices;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -114,42 +115,6 @@ namespace System.Net.Http.Headers
         private static AltSvcHeaderParser? GetAltSvcHeaderParser() => AltSvcHeaderParser.Parser;
 #endif
 
-        // Helper interface for making GetCandidate generic over strings, utf8, etc
-        private interface IHeaderNameAccessor
-        {
-            int Length { get; }
-            char this[int index] { get; }
-        }
-
-        private readonly struct StringAccessor : IHeaderNameAccessor
-        {
-            private readonly string _string;
-
-            public StringAccessor(string s)
-            {
-                _string = s;
-            }
-
-            public int Length => _string.Length;
-            public char this[int index] => _string[index];
-        }
-
-        // Can't use Span here as it's unsupported.
-        private readonly unsafe struct BytePtrAccessor : IHeaderNameAccessor
-        {
-            private readonly byte* _p;
-            private readonly int _length;
-
-            public BytePtrAccessor(byte* p, int length)
-            {
-                _p = p;
-                _length = length;
-            }
-
-            public int Length => _length;
-            public char this[int index] => (char)_p[index];
-        }
-
         /// <summary>
         /// Find possible known header match via lookup on length and a distinguishing char for that length.
         /// </summary>
@@ -157,20 +122,22 @@ namespace System.Net.Http.Headers
         /// Matching is case-insensitive. Because of this, we do not preserve the case of the original header,
         /// whether from the wire or from the user explicitly setting a known header using a header name string.
         /// </remarks>
-        private static KnownHeader? GetCandidate<T>(T key)
-            where T : struct, IHeaderNameAccessor     // Enforce struct for performance
+        private static KnownHeader? GetCandidate<T>(ReadOnlySpan<T> key)
+            where T : struct, INumberBase<T>
         {
             // Lookup is performed by first switching on the header name's length, and then switching
             // on the most unique position in that length's string.
 
-            int length = key.Length;
-            switch (length)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static int GetLower(T value) => int.CreateTruncating(value) | 0x20;
+
+            switch (key.Length)
             {
                 case 2:
                     return TE; // TE
 
                 case 3:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'a': return Age; // [A]ge
                         case 'p': return P3P; // [P]3P
@@ -180,7 +147,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 4:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'd': return Date; // [D]ate
                         case 'e': return ETag; // [E]Tag
@@ -192,7 +159,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 5:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'a': return Allow; // [A]llow
                         case 'r': return Range; // [R]ange
@@ -200,7 +167,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 6:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'a': return Accept; // [A]ccept
                         case 'c': return Cookie; // [C]ookie
@@ -212,14 +179,14 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 7:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case ':': return PseudoStatus; // [:]status
                         case 'a': return AltSvc;  // [A]lt-Svc
                         case 'c': return Cookie2; // [C]ookie2
                         case 'e': return Expires; // [E]xpires
                         case 'r':
-                            switch (key[3] | 0x20)
+                            switch (GetLower(key[3]))
                             {
                                 case 'e': return Referer; // [R]ef[e]rer
                                 case 'r': return Refresh; // [R]ef[r]esh
@@ -233,7 +200,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 8:
-                    switch (key[3] | 0x20)
+                    switch (GetLower(key[3]))
                     {
                         case '-': return AltUsed;  // Alt[-]Used
                         case 'a': return Location; // Loc[a]tion
@@ -246,7 +213,7 @@ namespace System.Net.Http.Headers
                     return ExpectCT; // Expect-CT
 
                 case 10:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'c': return Connection; // [C]onnection
                         case 'k': return KeepAlive;  // [K]eep-Alive
@@ -256,7 +223,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 11:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'c': return ContentMD5; // [C]ontent-MD5
                         case 'g': return GrpcStatus; // [g]rpc-status
@@ -266,7 +233,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 12:
-                    switch (key[5] | 0x20)
+                    switch (GetLower(key[5]))
                     {
                         case 'd': return XMSEdgeRef;  // X-MSE[d]ge-Ref
                         case 'e': return XPoweredBy;  // X-Pow[e]red-By
@@ -279,12 +246,12 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 13:
-                    switch (key[12] | 0x20)
+                    switch (GetLower(key[12]))
                     {
                         case 'd': return LastModified;  // Last-Modifie[d]
                         case 'e': return ContentRange;  // Content-Rang[e]
                         case 'g':
-                            switch (key[0] | 0x20)
+                            switch (GetLower(key[0]))
                             {
                                 case 's': return ServerTiming;  // [S]erver-Timin[g]
                                 case 'g': return GrpcEncoding;  // [g]rpc-encodin[g]
@@ -299,7 +266,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 14:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'a': return AcceptCharset; // [A]ccept-Charset
                         case 'c': return ContentLength; // [C]ontent-Length
@@ -307,7 +274,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 15:
-                    switch (key[7] | 0x20)
+                    switch (GetLower(key[7]))
                     {
                         case '-': return XFrameOptions;  // X-Frame[-]Options
                         case 'e': return AcceptEncoding; // Accept-[E]ncoding
@@ -319,11 +286,11 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 16:
-                    switch (key[11] | 0x20)
+                    switch (GetLower(key[11]))
                     {
                         case 'a': return ContentLocation; // Content-Loc[a]tion
                         case 'c':
-                            switch (key[0] | 0x20)
+                            switch (GetLower(key[0]))
                             {
                                 case 'p': return ProxyConnection; // [P]roxy-Conne[c]tion
                                 case 'x': return XXssProtection;  // [X]-XSS-Prote[c]tion
@@ -337,7 +304,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 17:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'i': return IfModifiedSince;  // [I]f-Modified-Since
                         case 's': return SecWebSocketKey;  // [S]ec-WebSocket-Key
@@ -346,7 +313,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 18:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'p': return ProxyAuthenticate; // [P]roxy-Authenticate
                         case 'x': return XContentDuration;  // [X]-Content-Duration
@@ -354,7 +321,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 19:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'c': return ContentDisposition; // [C]ontent-Disposition
                         case 'i': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
@@ -369,7 +336,7 @@ namespace System.Net.Http.Headers
                     return SecWebSocketVersion; // Sec-WebSocket-Version
 
                 case 22:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 'a': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
                         case 's': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
@@ -384,7 +351,7 @@ namespace System.Net.Http.Headers
                     return SecWebSocketExtensions; // Sec-WebSocket-Extensions
 
                 case 25:
-                    switch (key[0] | 0x20)
+                    switch (GetLower(key[0]))
                     {
                         case 's': return StrictTransportSecurity; // [S]trict-Transport-Security
                         case 'u': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
@@ -395,7 +362,7 @@ namespace System.Net.Http.Headers
                     return AccessControlAllowOrigin; // Access-Control-Allow-Origin
 
                 case 28:
-                    switch (key[21] | 0x20)
+                    switch (GetLower(key[21]))
                     {
                         case 'h': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
                         case 'm': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods
@@ -412,9 +379,9 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static KnownHeader? TryGetKnownHeader(string name)
+        public static KnownHeader? TryGetKnownHeader(string name)
         {
-            KnownHeader? candidate = GetCandidate(new StringAccessor(name));
+            KnownHeader? candidate = GetCandidate<char>(name);
             if (candidate != null && StringComparer.OrdinalIgnoreCase.Equals(name, candidate.Name))
             {
                 return candidate;
@@ -423,15 +390,12 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static unsafe KnownHeader? TryGetKnownHeader(ReadOnlySpan<byte> name)
+        public static KnownHeader? TryGetKnownHeader(ReadOnlySpan<byte> name)
         {
-            fixed (byte* p = &MemoryMarshal.GetReference(name))
+            KnownHeader? candidate = GetCandidate(name);
+            if (candidate != null && Ascii.EqualsIgnoreCase(name, candidate.Name))
             {
-                KnownHeader? candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
-                if (candidate != null && Ascii.EqualsIgnoreCase(name, candidate.Name))
-                {
-                    return candidate;
-                }
+                return candidate;
             }
 
             return null;

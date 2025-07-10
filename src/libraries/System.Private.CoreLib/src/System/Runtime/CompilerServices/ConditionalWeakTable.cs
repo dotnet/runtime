@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
@@ -538,6 +539,7 @@ namespace System.Runtime.CompilerServices
         // When the dictionary grows the _entries table, it scours it for expired keys and does not
         // add those to the new container.
         //--------------------------------------------------------------------------------------------
+        [StructLayout(LayoutKind.Auto)]
         private struct Entry
         {
             public DependentHandle depHnd;      // Holds key and value using a weak reference for the key and a strong reference

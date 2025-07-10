@@ -112,9 +112,10 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0055`__ | The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead. |
 |  __`SYSLIB0056`__ |  LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm. |
 |  __`SYSLIB0057`__ | Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates. |
-|  __`SYSLIB0058`__ | KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead. |
+|  __`SYSLIB0058`__ | KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead. |
 |  __`SYSLIB0059`__ | SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead. |
 |  __`SYSLIB0060`__ | The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead. |
+|  __`SYSLIB0061`__ | The Queryable MinBy and MaxBy taking an IComparer\<TSource\> are obsolete. Use the new ones that take an IComparer\<TKey\>. |
 
 ## Analyzer Warnings
 
@@ -185,7 +186,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1059`__ | Marshaller type does not support allocating constructor |
 |  __`SYSLIB1060`__ | Specified marshaller type is invalid |
 |  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
-|  __`SYSLIB1062`__ | Project must be updated with '<AllowUnsafeBlocks>true</AllowUnsafeBlocks>' |
+|  __`SYSLIB1062`__ | Project must be updated with '\<AllowUnsafeBlocks\>true\</AllowUnsafeBlocks\>' |
 |  __`SYSLIB1063`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1064`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1065`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
@@ -309,9 +310,9 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 
 | Diagnostic ID     | Introduced | Removed | Description |
 | :---------------- | ---------: | ------: | :---------- |
-|  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental |
+|  __`SYSLIB5001`__ |     .NET 9 | .NET 10 | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental |
 |  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental |
 |  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental |
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
-|  __`SYSLIB5005`__ |     .NET 9 |     TBD | `System.Formats.Nrbf` is experimental |
+|  __`SYSLIB5005`__ |     .NET 9 | .NET 10 | `System.Formats.Nrbf` is experimental |
 |  __`SYSLIB5006`__ |    .NET 10 |     TBD | Types for Post-Quantum Cryptography (PQC) are experimental. |

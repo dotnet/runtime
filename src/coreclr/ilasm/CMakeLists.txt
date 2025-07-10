@@ -87,7 +87,6 @@ set(ILASM_LINK_LIBRARIES
   mdcompiler_ppdb
   mdruntime_ppdb
   mdruntimerw_ppdb
-  mdstaticapi_ppdb
   ${END_LIBRARY_GROUP} # End group of libraries that have circular references
   ceefgen
   corguids

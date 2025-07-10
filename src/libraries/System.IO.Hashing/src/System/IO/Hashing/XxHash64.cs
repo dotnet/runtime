@@ -161,10 +161,7 @@ namespace System.IO.Hashing
         /// </exception>
         public static byte[] Hash(byte[] source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return Hash(new ReadOnlySpan<byte>(source));
         }
@@ -180,10 +177,7 @@ namespace System.IO.Hashing
         /// </exception>
         public static byte[] Hash(byte[] source, long seed)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }

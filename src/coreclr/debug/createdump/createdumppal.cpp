@@ -21,7 +21,6 @@ typedef void (*PFN_PAL_TerminateEx)(int);
 
 typedef BOOL (*PFN_PAL_VirtualUnwindOutOfProc)(
     CONTEXT *context,
-    KNONVOLATILE_CONTEXT_POINTERS *contextPointers,
     PULONG64 functionStart,
     SIZE_T baseAddress,
     UnwindReadMemoryCallback readMemoryCallback);
@@ -96,52 +95,6 @@ UninitializePAL(
     }
 }
 
-#define tccSecondsToNanoSeconds 1000000000      // 10^9
-
-BOOL
-PALAPI
-QueryPerformanceCounter(
-    OUT LARGE_INTEGER* lpPerformanceCount)
-{
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    lpPerformanceCount->QuadPart = (LONGLONG)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-    if (result != 0)
-    {
-        return TRUE;
-    }
-    else
-    {
-        lpPerformanceCount->QuadPart = ((LONGLONG)(ts.tv_sec) * (LONGLONG)(tccSecondsToNanoSeconds)) + (LONGLONG)(ts.tv_nsec);
-    }
-#else
-    #error "The createdump requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
-#endif
-    return TRUE;
-}
-
-BOOL
-PALAPI
-QueryPerformanceFrequency(
-    OUT LARGE_INTEGER* lpFrequency)
-{
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    lpFrequency->QuadPart = (LONGLONG)(tccSecondsToNanoSeconds);
-#elif HAVE_CLOCK_MONOTONIC
-    // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
-    // means that we need to either always scale the result by the actual resolution (to
-    // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
-    // the latter since it allows the highest throughput and should minimize error propagated
-    // to the user.
-    lpFrequency->QuadPart = (LONGLONG)(tccSecondsToNanoSeconds);
-#else
-    #error "The createdump requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
-#endif
-    return TRUE;
-}
-
 #define TEMP_DIRECTORY_PATH "/tmp/"
 
 DWORD
@@ -174,7 +127,6 @@ BOOL
 PALAPI
 PAL_VirtualUnwindOutOfProc(
     CONTEXT *context,
-    KNONVOLATILE_CONTEXT_POINTERS *contextPointers,
     PULONG64 functionStart,
     SIZE_T baseAddress,
     UnwindReadMemoryCallback readMemoryCallback)
@@ -183,7 +135,7 @@ PAL_VirtualUnwindOutOfProc(
     {
         return FALSE;
     }
-    return g_PAL_VirtualUnwindOutOfProc(context, contextPointers, functionStart, baseAddress, readMemoryCallback);
+    return g_PAL_VirtualUnwindOutOfProc(context, functionStart, baseAddress, readMemoryCallback);
 }
 
 BOOL

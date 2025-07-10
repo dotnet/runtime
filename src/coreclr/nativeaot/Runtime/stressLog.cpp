@@ -13,15 +13,14 @@
 #endif // DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "daccess.h"
 #include "stressLog.h"
 #include "holder.h"
 #include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -30,6 +29,7 @@
 #include "threadstore.inl"
 #include "thread.inl"
 #include "volatile.h"
+#include "minipal/time.h"
 
 #ifdef STRESS_LOG
 
@@ -64,7 +64,7 @@ uint64_t getTimeStamp()
 #else // HOST_X86
 uint64_t getTimeStamp()
 {
-    return PalQueryPerformanceCounter();
+    return (uint64_t)minipal_hires_ticks();
 }
 
 #endif // HOST_X86 else
@@ -75,7 +75,7 @@ uint64_t getTimeStamp()
 */
 uint64_t getTickFrequency()
 {
-    return PalQueryPerformanceFrequency();
+    return (uint64_t)minipal_hires_tick_frequency();
 }
 
 #endif // DACCESS_COMPILE

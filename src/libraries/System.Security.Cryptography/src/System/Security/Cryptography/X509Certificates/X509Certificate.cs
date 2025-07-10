@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile byte[]? _lazyKeyAlgorithmParameters;
         private volatile byte[]? _lazyPublicKey;
         private volatile byte[]? _lazyRawData;
+        private volatile bool _lazyKeyAlgorithmParametersCreated;
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
@@ -38,6 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyRawData = null;
             _lazyNotBefore = DateTime.MinValue;
             _lazyNotAfter = DateTime.MinValue;
+            _lazyKeyAlgorithmParametersCreated = false;
 
             ICertificatePalCore? pal = Pal;
             if (pal != null)
@@ -520,20 +522,25 @@ namespace System.Security.Cryptography.X509Certificates
             return _lazyKeyAlgorithm ??= Pal.KeyAlgorithm;
         }
 
-        public virtual byte[] GetKeyAlgorithmParameters()
+        public virtual byte[]? GetKeyAlgorithmParameters()
         {
             ThrowIfInvalid();
 
-            byte[] keyAlgorithmParameters = _lazyKeyAlgorithmParameters ??= Pal.KeyAlgorithmParameters;
-            return keyAlgorithmParameters.CloneByteArray();
+            if (!_lazyKeyAlgorithmParametersCreated)
+            {
+                _lazyKeyAlgorithmParameters = Pal.KeyAlgorithmParameters;
+                _lazyKeyAlgorithmParametersCreated = true;
+            }
+
+            return _lazyKeyAlgorithmParameters.CloneByteArray();
         }
 
-        public virtual string GetKeyAlgorithmParametersString()
+        public virtual string? GetKeyAlgorithmParametersString()
         {
             ThrowIfInvalid();
 
-            byte[] keyAlgorithmParameters = GetKeyAlgorithmParameters();
-            return keyAlgorithmParameters.ToHexStringUpper();
+            byte[]? keyAlgorithmParameters = GetKeyAlgorithmParameters();
+            return keyAlgorithmParameters?.ToHexStringUpper();
         }
 
         public virtual byte[] GetPublicKey()

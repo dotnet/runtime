@@ -3,12 +3,11 @@
 
 using System;
 using System.IO;
-using System.Text;
-using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.TestUtils;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace HostActivation.Tests
 {
     public class DotnetArgValidation : IClassFixture<DotnetArgValidation.SharedTestState>
     {
@@ -26,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
@@ -38,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
@@ -53,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
         }
@@ -64,9 +63,44 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("--fx-version")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"Failed to parse supported options or their values:");
+        }
+
+        [Fact]
+        public void File_ExistsNoDirectorySeparator_RoutesToSDK()
+        {
+            // Create a file named "build" in the current directory to simulate a file that happens to match the name of a command
+            string buildFile = Path.Combine(sharedTestState.BaseDirectory.Location, "build");
+            File.WriteAllText(buildFile, string.Empty);
+
+            // Test that "dotnet build" still routes to SDK, not to the file
+            TestContext.BuiltDotNet.Exec("build")
+                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining("The command could not be loaded, possibly because:") // This is a generic error for when we can't tell what exactly the user intended to do
+                .And.HaveStdErrContaining("Resolving SDKs");
+        }
+
+        [Fact]
+        public void RelativePathToNonManagedFile_ShowsSpecificError()
+        {
+            // Test relative path with directory separator
+            Directory.CreateDirectory(Path.Combine(sharedTestState.BaseDirectory.Location, "subdir"));
+            string testFile = Path.Combine(sharedTestState.BaseDirectory.Location, "subdir", "test.json");
+            File.WriteAllText(testFile, "{}");
+
+            string relativePath = Path.GetRelativePath(sharedTestState.BaseDirectory.Location, testFile);
+            TestContext.BuiltDotNet.Exec(relativePath)
+                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"The application '{relativePath}' is not a managed .dll.");
         }
 
         [Fact]
@@ -77,56 +111,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .WorkingDirectory(sharedTestState.BaseDirectory.Location)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application '{fileName}' does not exist")
                 .And.FindAnySdk(false);
-        }
-
-        [Fact]
-        public void DotNetInfo_NoSDK()
-        {
-            TestContext.BuiltDotNet.Exec("--info")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutMatching($@"Architecture:\s*{TestContext.BuildArchitecture}")
-                .And.HaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
-        }
-
-        [Fact]
-        public void DotNetInfo_Utf8Path()
-        {
-            string installLocation = Encoding.UTF8.GetString("utf8-龯蝌灋齅ㄥ䶱"u8);
-            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, TestContext.BuiltDotNet.BinPath, installLocation)
-                .Build();
-
-            var result = dotnet.Exec("--info")
-                .DotNetRoot(Path.Combine(sharedTestState.BaseDirectory.Location, installLocation))
-                .CaptureStdErr()
-                .CaptureStdOut(Encoding.UTF8)
-                .Execute();
-
-            result.Should().Pass()
-                .And.HaveStdOutMatching($@"DOTNET_ROOT.*{installLocation}");
-        }
-
-        [Fact]
-        public void DotNetInfo_WithSDK()
-        {
-            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, TestContext.BuiltDotNet.BinPath, "withSdk")
-                .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("1.0.0")
-                .AddMockSDK("1.0.0", "1.0.0")
-                .Build();
-
-            dotnet.Exec("--info")
-                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
-                .And.NotHaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
         }
 
         // Return a non-existent path that contains a mix of / and \

@@ -28,7 +28,7 @@ namespace System.Formats.Tar
             : base(TarEntryType.GlobalExtendedAttributes, nameof(PaxGlobalExtendedAttributesTarEntry), TarEntryFormat.Pax, isGea: true) // Name == name of type for lack of a better temporary name until the entry is written
         {
             ArgumentNullException.ThrowIfNull(globalExtendedAttributes);
-            _header.InitializeExtendedAttributesWithExisting(globalExtendedAttributes);
+            _header.AddExtendedAttributes(globalExtendedAttributes);
         }
 
         /// <summary>

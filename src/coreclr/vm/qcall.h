@@ -20,12 +20,6 @@
 // GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls.
 // QCalls are not prone to GC holes and GC starvation bugs that are common with FCalls.
 //
-// QCalls perform better compared to FCalls w/ HelperMethodFrame. The QCall overhead is about 1.4x less compared to
-// FCall w/ HelperMethodFrame overhead on x86. The performance is about the same on x64. However, the implementation
-// of P/Invoke marshaling on x64 is not tuned for performance yet. The QCalls should become significantly faster compared
-// to FCalls w/ HelperMethodFrame on x64 as we do performance tuning of P/Invoke marshaling on x64.
-//
-//
 // The preferred type of QCall arguments is primitive types that efficiently handled by the P/Invoke marshaler (INT32, LPCWSTR, BOOL).
 // (Notice that BOOL is the correct boolean flavor for QCall arguments. FC_BOOL_ARG is the correct boolean flavor for FCall arguments.)
 //

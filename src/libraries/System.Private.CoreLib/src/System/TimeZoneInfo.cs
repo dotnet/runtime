@@ -977,7 +977,7 @@ namespace System
         // "TimeZoneInfo"           := TimeZoneInfo Data;[AdjustmentRule Data 1];...;[AdjustmentRule Data N]
         //
         // "TimeZoneInfo Data"      := <_id>;<_baseUtcOffset>;<_displayName>;
-        //                          <_standardDisplayName>;<_daylightDispayName>;
+        //                          <_standardDisplayName>;<_daylightDisplayName>;
         //
         // "AdjustmentRule Data" := <DateStart>;<DateEnd>;<DaylightDelta>;
         //                          [TransitionTime Data DST Start]

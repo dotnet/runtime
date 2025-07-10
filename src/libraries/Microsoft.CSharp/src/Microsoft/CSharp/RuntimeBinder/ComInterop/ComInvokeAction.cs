@@ -14,6 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// <summary>
     /// Invokes the object. If it falls back, just produce an error.
     /// </summary>
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     [RequiresUnreferencedCode(Binder.TrimmerWarning)]
     internal sealed class ComInvokeAction : InvokeBinder
     {
@@ -46,6 +47,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// Splats the arguments to another nested dynamic site, which does the
     /// real invocation of the IDynamicMetaObjectProvider.
     /// </summary>
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     [RequiresUnreferencedCode(Binder.TrimmerWarning)]
     internal sealed class SplatInvokeBinder : CallSiteBinder
     {

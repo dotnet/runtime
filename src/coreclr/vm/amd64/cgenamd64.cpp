@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // Various helper routines for generating AMD64 assembly code.
-//
 
 // Precompiled Header
 
@@ -24,6 +23,10 @@
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs)
 {
@@ -135,94 +138,15 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     SyncRegDisplayToCurrentContext(pRD);
 
+#ifdef FEATURE_INTERPRETER
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
+        SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
+    }
+#endif // FEATURE_INTERPRETER
+
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
-}
-
-void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(m_MachState._pRetAddr == PTR_TADDR(&m_MachState.m_Rip));
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    if (updateFloats)
-    {
-        UpdateFloatingPointRegisters(pRD);
-        _ASSERTE(pRD->pCurrentContext->Rip == m_MachState.m_Rip);
-    }
-#endif // DACCESS_COMPILE
-
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-    //
-    // Copy the saved state from the frame to the current context.
-    //
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.m_Rip, m_MachState.m_Rsp));
-
-#if defined(DACCESS_COMPILE)
-    // For DAC, we may get here when the HMF is still uninitialized.
-    // So we may need to unwind here.
-    if (!m_MachState.isValid())
-    {
-        // This allocation throws on OOM.
-        MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
-
-        EnsureInit(pUnwoundState);
-
-        pRD->pCurrentContext->Rip = pRD->ControlPC = pUnwoundState->m_Rip;
-        pRD->pCurrentContext->Rsp = pRD->SP        = pUnwoundState->m_Rsp;
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pUnwoundState->m_Capture.regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pRD->pCurrentContext->regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-        ClearRegDisplayArgumentAndScratchRegisters(pRD);
-
-        return;
-    }
-#endif // DACCESS_COMPILE
-
-    pRD->pCurrentContext->Rip = pRD->ControlPC = m_MachState.m_Rip;
-    pRD->pCurrentContext->Rsp = pRD->SP = m_MachState.m_Rsp;
-
-#ifdef TARGET_UNIX
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (m_MachState.m_Ptrs.p##regname != NULL) ? \
-        *m_MachState.m_Ptrs.p##regname : m_MachState.m_Unwound.regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#else // TARGET_UNIX
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *m_MachState.m_Ptrs.p##regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#endif // TARGET_UNIX
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = (DWORD64 *)(TADDR *)m_MachState.m_Ptrs.p##regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    //
-    // Clear all knowledge of scratch registers.  We're skipping to any
-    // arbitrary point on the stack, and frames aren't required to preserve or
-    // keep track of these anyways.
-    //
-
-    ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -335,7 +259,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->Rsi = NULL;
     pRD->pCurrentContextPointers->Rdi = NULL;
 #endif
-    pRD->pCurrentContextPointers->Rcx = NULL;
 #ifdef UNIX_AMD64_ABI
     pRD->pCurrentContextPointers->Rdx = (PULONG64)&m_Args->Rdx;
 #else // UNIX_AMD64_ABI
@@ -347,18 +270,9 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->R11 = NULL;
 
     pRD->pCurrentContextPointers->Rax = (PULONG64)&m_Args->Rax;
+    pRD->pCurrentContextPointers->Rcx = (PULONG64)&m_Args->Rcx;
 
     SyncRegDisplayToCurrentContext(pRD);
-
-/*
-    // This only describes the top-most frame
-    pRD->pContext = NULL;
-
-
-    pRD->PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Rip);
-    //pRD->pPC  = PTR_SLOT(pRD->PCTAddr);
-    pRD->SP   = (ULONG64)(pRD->PCTAddr + sizeof(TADDR));
-*/
 }
 #endif // FEATURE_HIJACK
 
@@ -690,10 +604,11 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 //
 // Allocation of dynamic helpers
 //
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -701,6 +616,14 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
@@ -1053,6 +976,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         END_DYNAMIC_HELPER_EMIT();
     }
 }
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #endif // FEATURE_READYTORUN
 

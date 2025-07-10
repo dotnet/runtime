@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Options
         public NamedConfigureFromConfigurationOptions(string? name, IConfiguration config, Action<BinderOptions>? configureBinder)
             : base(name, options => config.Bind(options, configureBinder))
         {
-            ThrowHelper.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(config);
         }
     }
 }

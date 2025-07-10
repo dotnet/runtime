@@ -33,6 +33,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp.c
     pal_evp_cipher.c
     pal_evp_kdf.c
+    pal_evp_kem.c
     pal_evp_mac.c
     pal_evp_pkey.c
     pal_evp_pkey_dsa.c
@@ -40,6 +41,8 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_pkey_ecdsa.c
     pal_evp_pkey_eckey.c
     pal_evp_pkey_rsa.c
+    pal_evp_pkey_ml_dsa.c
+    pal_evp_pkey_slh_dsa.c
     pal_hmac.c
     pal_ocsp.c
     pal_pkcs7.c
@@ -137,6 +140,11 @@ if (GEN_SHARED_LIB)
         ${NATIVE_LIBS_EXTRA}
     )
 endif()
+
+message(STATUS "OPENSSL_INCLUDE_DIR:    ${OPENSSL_INCLUDE_DIR}")
+message(STATUS "OPENSSL_CRYPTO_LIBRARY: ${OPENSSL_CRYPTO_LIBRARY}")
+message(STATUS "OPENSSL_SSL_LIBRARY:    ${OPENSSL_SSL_LIBRARY}")
+message(STATUS "OPENSSL_VERSION:        ${OPENSSL_VERSION}")
 
 include(configure.cmake)
 

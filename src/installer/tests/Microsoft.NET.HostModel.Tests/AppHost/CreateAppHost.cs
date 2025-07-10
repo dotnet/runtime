@@ -20,6 +20,7 @@ using Xunit;
 using System.Buffers.Binary;
 using System.IO.MemoryMappedFiles;
 using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
+using System.ComponentModel;
 
 namespace Microsoft.NET.HostModel.AppHost.Tests
 {
@@ -282,28 +283,46 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 // Validate that there is a signature present in the apphost Mach file
                 SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
-
-                // Verify with codesign as well
-                Assert.True(Codesign.IsAvailable);
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
-                {
-                    Arguments = $"-d \"{destinationFilePath}\"",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
-                    p.WaitForExit();
-                    // Successfully signed the apphost.
-                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
-                }
             }
+        }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData("dir with spaces")]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void SigningExistingAppHostCreatesNewInode(string subdir)
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string testDirectory = Path.Combine(artifact.Location, subdir);
+                Directory.CreateDirectory(testDirectory);
+                string sourceAppHostMock = Binaries.AppHost.FilePath;
+                string destinationFilePath = Path.Combine(testDirectory, Binaries.AppHost.FileName);
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+                var firstInode = Inode.GetInode(destinationFilePath);
+
+                // Validate that there is a signature present in the apphost Mach file
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
+
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+                var secondInode = Inode.GetInode(destinationFilePath);
+
+                // Ensure the MacOS signature cache is cleared
+                Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
+
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
+            }
         }
 
         [Theory]
@@ -327,29 +346,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 // Validate that there is a signature present in the apphost Mach file
                 SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
-
-                // Verify with codesign as well
-                if (!Codesign.IsAvailable)
-                {
-                    return;
-                }
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
-                {
-                    Arguments = $"-d \"{destinationFilePath}\"",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
-                    p.WaitForExit();
-                    // Successfully signed the apphost.
-                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
-                }
             }
         }
 

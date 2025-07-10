@@ -1990,7 +1990,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
     {
         fOk = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return fOk;
 }
 
@@ -3237,7 +3237,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
         context = GetManagedStoppedCtx(thread);
     }
     CONSISTENCY_CHECK_MSGF(context != NULL, ("Can't apply ss flag to thread 0x%p b/c it's not in a safe place.\n", thread));
-    PREFIX_ASSUME(context != NULL);
+    _ASSERTE(context != NULL);
 
 
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
@@ -3620,7 +3620,7 @@ VOID DebuggerController::PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID*
     {
         // not much we can do here
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 //
@@ -4268,7 +4268,7 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_EVERYTHING, "DispatchNativeException was called\n"));
-    LOG((LF_CORDB, LL_INFO10000, "Native exception at 0x%p, code=0x%8x, context=0x%p, er=0x%p\n",
+    LOG((LF_CORDB, LL_INFO10000, "Native exception at %p, code=0x%8x, context=%p, er=%p\n",
          pException->ExceptionAddress, dwCode, pContext, pException));
 
 
@@ -5144,7 +5144,6 @@ DebuggerStepper::DebuggerStepper(Thread *thread,
     m_rgfMappingStop(rgfMappingStop),
     m_range(NULL),
     m_rangeCount(0),
-    m_realRangeCount(0),
     m_fp(LEAF_MOST_FRAME),
 #if defined(FEATURE_EH_FUNCLETS)
     m_fpParentMethod(LEAF_MOST_FRAME),
@@ -5926,7 +5925,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 #ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
-        info->m_activeFrame.registers.PCTAddr));
+        GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
@@ -6049,7 +6048,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP()) &&
                         ((CORDB_ADDRESS)(SIZE_T)walker.GetNextIP() != ji->m_addrOfCode);
 #endif
-                    // If we are stepping into a tail call that uses the StoreTailCallArgs 
+                    // If we are stepping into a tail call that uses the StoreTailCallArgs
                     // we need to enable the method enter, otherwise it will behave like a resume
                     if (in && IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::StoreTailCallArgs))
                     {
@@ -6613,8 +6612,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 m_reason = STEP_EXIT;
                 break;
             }
-            else if (info->m_activeFrame.frame->GetFrameType() == Frame::TYPE_SECURITY &&
-                     info->m_activeFrame.frame->GetInterception() == Frame::INTERCEPTION_NONE)
+            else if (info->m_activeFrame.frame->GetInterception() == Frame::INTERCEPTION_NONE)
             {
                 // If we're stepping out of something that was protected by (declarative) security,
                 // the security subsystem may leave a frame on the stack to cache it's computation.
@@ -6978,7 +6976,6 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
 
 
     m_rangeCount = rangeCount;
-    m_realRangeCount = rangeCount;
 
     return true;
 }
@@ -7052,7 +7049,6 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         DeleteInteropSafe(m_range);
         m_range = NULL;
         m_rangeCount = 0;
-        m_realRangeCount = 0;
     }
 
     if (rangeCount > 0)
@@ -7077,11 +7073,10 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
             }
 
             memcpy(m_range, ranges, sizeof(COR_DEBUG_STEP_RANGE) * rangeCount);
-            m_realRangeCount  = m_rangeCount = rangeCount;
+            m_rangeCount = rangeCount;
         }
         _ASSERTE(m_range != NULL);
         _ASSERTE(m_rangeCount > 0);
-        _ASSERTE(m_realRangeCount > 0);
     }
     else
     {
@@ -7588,9 +7583,9 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
         // Sometimes we can get here with a callstack that is coming from an APC
         // this will disable the single stepping and incorrectly resume an app that the user
         // is stepping through.
-#ifdef FEATURE_THREAD_ACTIVATION        
+#ifdef FEATURE_THREAD_ACTIVATION
         if ((thread->m_State & Thread::TS_DebugWillSync) == 0)
-#endif   
+#endif // FEATURE_THREAD_ACTIVATION
         {
             DisableSingleStep();
         }
@@ -8694,23 +8689,19 @@ void DebuggerUserBreakpoint::HandleDebugBreak(Thread * pThread)
     }
 }
 
-
 DebuggerUserBreakpoint::DebuggerUserBreakpoint(Thread *thread)
   : DebuggerStepper(thread, (CorDebugUnmappedStop) (STOP_ALL & ~STOP_UNMANAGED), INTERCEPT_ALL,  NULL)
 {
     // Setup a step out from the current frame (which we know is
     // unmanaged, actually...)
 
-
-    // This happens to be safe, but it's a very special case (so we have a special case ticket)
-    // This is called while we're live (so no filter context) and from the fcall,
-    // and we pushed a HelperMethodFrame to protect us. We also happen to know that we have
-    // done anything illegal or dangerous since then.
+    // Initiate a step-out from Debug.Break() if the current frame allows it.
+    // This is now safe because the entry point uses QCall or dynamic transition,
+    // so no special frame setup is required.
 
     StackTraceTicket ticket(this);
     StepOut(LEAF_MOST_FRAME, ticket);
 }
-
 
 // Is this frame interesting?
 // Use this to skip all code in the namespace "Debugger.Diagnostics"
@@ -9204,7 +9195,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
     }
 
     // On WIN64, by the time we get here the DebuggerExState is gone already.
-    // ExceptionTrackers are cleaned up before we resume execution for a handled exception.
+    // ExInfos are cleaned up before we resume execution for a handled exception.
 #if !defined(FEATURE_EH_FUNCLETS)
     thread->GetExceptionState()->GetDebuggerState()->SetDebuggerInterceptContext(NULL);
 #endif // !FEATURE_EH_FUNCLETS

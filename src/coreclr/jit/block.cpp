@@ -497,13 +497,11 @@ void BasicBlock::dspFlags() const
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
-        {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
         {BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY, "xentry"},
         {BBF_GC_SAFE_POINT, "gcsafe"},
-        {BBF_FUNCLET_BEG, "flet"},
         {BBF_HAS_IDX_LEN, "idxlen"},
         {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
         {BBF_HAS_NEWOBJ, "newobj"},
@@ -528,6 +526,7 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
+        {BBF_ASYNC_RESUMPTION, "resume"},
     };
 
     bool first = true;
@@ -756,7 +755,7 @@ void BasicBlock::dspKind() const
                 const bool isDominant = bbSwtTargets->bbsHasDominantCase && (i == bbSwtTargets->bbsDominantCase);
                 if (isDominant)
                 {
-                    printf("[dom(" FMT_WT ")]", bbSwtTargets->bbsDominantFraction);
+                    printf("[dom]");
                 }
             }
 
@@ -1045,7 +1044,7 @@ bool BasicBlock::isEmpty() const
     {
         for (GenTree* node : LIR::AsRange(this))
         {
-            if (node->OperGet() != GT_IL_OFFSET)
+            if (!node->OperIs(GT_IL_OFFSET))
             {
                 return false;
             }
@@ -1416,7 +1415,7 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
     {
         GenTree* lastNode = this->lastNode();
         assert(lastNode != nullptr);
-        return lastNode->OperGet() == GT_JMP;
+        return lastNode->OperIs(GT_JMP);
     }
 
     return false;
@@ -1482,7 +1481,7 @@ bool BasicBlock::endsWithTailCall(Compiler*     comp,
         if (result)
         {
             GenTree* lastNode = this->lastNode();
-            if (lastNode->OperGet() == GT_CALL)
+            if (lastNode->OperIs(GT_CALL))
             {
                 GenTreeCall* call = lastNode->AsCall();
                 if (tailCallsConvertibleToLoopOnly)
@@ -1742,12 +1741,7 @@ bool BasicBlock::isBBCallFinallyPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    bool returnVal = (bbCatchTyp != BBCT_NONE);
-    if (!returnVal)
-    {
-        assert(!HasFlag(BBF_FUNCLET_BEG));
-    }
-    return returnVal;
+    return (bbCatchTyp != BBCT_NONE);
 }
 
 //------------------------------------------------------------------------
@@ -1777,7 +1771,6 @@ BBswtDesc::BBswtDesc(const BBswtDesc* other)
     : bbsDstTab(nullptr)
     , bbsCount(other->bbsCount)
     , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {
@@ -1794,7 +1787,6 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
     : bbsDstTab(nullptr)
     , bbsCount(other->bbsCount)
     , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {

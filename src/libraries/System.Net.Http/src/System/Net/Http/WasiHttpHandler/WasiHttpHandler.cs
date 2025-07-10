@@ -43,7 +43,9 @@ namespace System.Net.Http
                 outgoingRequest.SetPathWithQuery(request.RequestUri.PathAndQuery);
 
 #pragma warning disable CS4014 // intentionaly not awaited
+#pragma warning disable CA2025
                 SendContent(request.Content, outgoingRequest, cancellationToken);
+#pragma warning restore CA2025
 #pragma warning restore CS4014
 
                 future = OutgoingHandlerInterop.Handle(outgoingRequest, null);

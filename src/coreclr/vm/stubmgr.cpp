@@ -137,7 +137,7 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
     {
         pValue = "(OOM while printing TD)";
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
     return pValue;
 }
@@ -180,7 +180,7 @@ void TraceDestination::InitForUnjittedMethod(MethodDesc * pDesc)
             EX_CATCH
             {
                 // In case of an error, we'll just stick w/ the original method desc.
-            } EX_END_CATCH(SwallowAllExceptions)
+            } EX_END_CATCH
 #else
             // @todo - DAC needs this too, but the method is currently not DACized.
             // However, we don't throw here b/c the error may not be fatal.
@@ -488,7 +488,7 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
 #ifdef DACCESS_COMPILE
     PAL_ENDTRY
 #else
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
 
     return param.fIsStub;
@@ -790,7 +790,7 @@ void StubManager::DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget)
         {
             DbgFinishLog();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     DbgWriteLog("Beginning Step-in. IP after Call instruction is at 0x%p, call target is at 0x%p\n",
@@ -873,7 +873,7 @@ void StubManager::DbgWriteLog(const CHAR *format, ...)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (fEntered) chk.LeaveAssert();
 #endif
@@ -920,7 +920,7 @@ void StubManager::DbgGetLog(SString * pStringOut)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
 }
 
@@ -1015,6 +1015,9 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
             case PRECODE_STUB:
             case PRECODE_NDIRECT_IMPORT:
             case PRECODE_UMENTRY_THUNK:
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+            case PRECODE_THISPTR_RETBUF:
+#endif // HAS_THISPTR_RETBUF_PRECODE
                 return TRUE;
             default:
                 return FALSE;
@@ -1057,7 +1060,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
             pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
         }
 
-        PREFIX_ASSUME(pPrecode != NULL);
+        _ASSERTE(pPrecode != NULL);
 
         switch (pPrecode->GetType())
         {
@@ -1115,7 +1118,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
         pMD = pPrecode->GetMethodDesc();
     }
 
-    PREFIX_ASSUME(pMD != NULL);
+    _ASSERTE(pMD != NULL);
 
     // If the method is not IL, then we patch the prestub because no one will ever change the call here at the
     // MethodDesc. If, however, this is an IL method, then we are at risk to have another thread backpatch the call
@@ -1501,7 +1504,6 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     switch (GetStubKind(stubStartAddress))
     {
-    case STUB_CODE_BLOCK_PRECODE:
     case STUB_CODE_BLOCK_JUMPSTUB:
     case STUB_CODE_BLOCK_STUBLINK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
@@ -1533,9 +1535,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     switch (GetStubKind(stubStartAddress))
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return PrecodeStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
-
     case STUB_CODE_BLOCK_JUMPSTUB:
         return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 
@@ -1572,9 +1571,6 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     switch (GetStubKind(addr))
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return W("MethodDescPrestub");
-
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
 
@@ -1743,8 +1739,8 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     {
         if (pStubMD->IsStatic())
         {
-            // This is reverse P/Invoke stub, the argument is UMEntryThunk
-            UMEntryThunk *pEntryThunk = (UMEntryThunk *)arg;
+            // This is reverse P/Invoke stub, the argument is UMEntryThunkData
+            UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
             target = pEntryThunk->GetManagedTarget();
             LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case 0x%p\n", target));
         }

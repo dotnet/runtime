@@ -210,6 +210,10 @@ ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event);
 
 static
 void
+ep_rt_sample_profiler_session_enabled (void);
+
+static
+void
 ep_rt_sample_profiler_disabled (void);
 
 static

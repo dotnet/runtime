@@ -263,6 +263,7 @@ parameters to the algorithm used by the certificate public key
 Return values:
 0: Invalid X509 pointer
 1: Data was copied
+2: No data exists.
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
 int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
@@ -292,9 +293,9 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
 
     if (!parameter)
     {
-        // If pBuf is NULL we're asking for the length, so return 0 (which is negative-zero)
-        // If pBuf is non-NULL we're asking to fill the data, in which case we return 1.
-        return pBuf != NULL;
+        // Callers should not attempt to get the value if it was originally reported there is missing data.
+        assert(pBuf == NULL);
+        return 2;
     }
 
     int len = i2d_ASN1_TYPE(parameter, NULL);
@@ -1285,6 +1286,31 @@ void CryptoNative_RegisterLegacyAlgorithms(void)
         ERR_clear_error();
     }
 #endif
+}
+
+int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm)
+{
+    int32_t ret = 0;
+
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+    if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
+        !API_EXISTS(EVP_PKEY_verify_message_init))
+    {
+        return 0;
+    }
+
+    EVP_SIGNATURE* sigAlg = NULL;
+
+    sigAlg = EVP_SIGNATURE_fetch(NULL, algorithm, NULL);
+    if (sigAlg)
+    {
+        ret = 1;
+        EVP_SIGNATURE_free(sigAlg);
+    }
+#endif
+
+    (void)algorithm;
+    return ret;
 }
 
 #ifdef NEED_OPENSSL_1_0

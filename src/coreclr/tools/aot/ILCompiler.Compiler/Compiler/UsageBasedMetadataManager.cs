@@ -56,6 +56,7 @@ namespace ILCompiler
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
         private readonly List<FieldDesc> _fieldsWithRuntimeMapping = new List<FieldDesc>();
         private readonly List<ReflectableCustomAttribute> _customAttributesWithMetadata = new List<ReflectableCustomAttribute>();
+        private readonly List<ReflectableParameter> _parametersWithMetadata = new List<ReflectableParameter>();
 
         internal IReadOnlyDictionary<string, bool> FeatureSwitches { get; }
 
@@ -147,6 +148,12 @@ namespace ILCompiler
                 _customAttributesWithMetadata.Add(customAttributeMetadataNode.CustomAttribute);
             }
 
+            var parameterMetadataNode = obj as MethodParameterMetadataNode;
+            if (parameterMetadataNode != null)
+            {
+                _parametersWithMetadata.Add(parameterMetadataNode.Parameter);
+            }
+
             var reflectedFieldNode = obj as ReflectedFieldNode;
             if (reflectedFieldNode != null)
             {
@@ -221,17 +228,34 @@ namespace ILCompiler
             out byte[] metadataBlob,
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
+            out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
+            out Dictionary<FieldDesc, int> fieldMetadataMappings,
             out List<StackTraceMapping> stackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
-                factory, out metadataBlob, out typeMappings, out methodMappings, out fieldMappings, out stackTraceMapping);
+                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping);
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             dependencies ??= new DependencyList();
             dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "Reflectable method");
+        }
+
+        public override void GetNativeLayoutMetadataDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            if (CanGenerateMetadata(method))
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.LimitedMethodMetadata(method.GetTypicalMethodDefinition()), "Method referenced from native layout");
+            }
+            else
+            {
+                // We can end up here with reflection disabled or multifile compilation.
+                // If we ever productize either, we'll need to do something different.
+                // Scenarios that currently need this won't work in these modes.
+            }
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
@@ -288,29 +312,6 @@ namespace ILCompiler
             }
 
             MetadataType mdType = type as MetadataType;
-
-            // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have
-            // method bodies for all properties. It's common to have anonymous types used with reflection
-            // and it's hard to specify them in RD.XML.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic) != 0)
-            {
-                if (mdType != null &&
-                    mdType.HasInstantiation &&
-                    !mdType.IsGenericDefinition &&
-                    mdType.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") &&
-                    mdType.Name.Contains("AnonymousType"))
-                {
-                    foreach (MethodDesc method in type.GetMethods())
-                    {
-                        if (!method.Signature.IsStatic && method.IsSpecialName)
-                        {
-                            dependencies ??= new DependencyList();
-                            dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
-                        }
-                    }
-                }
-            }
-
             ModuleDesc module = mdType?.Module;
             if (module != null && !_rootEntireAssembliesExaminedModules.Contains(module))
             {
@@ -918,7 +919,7 @@ namespace ILCompiler
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy, FlowAnnotations,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _options);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, _options);
         }
 
         private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)
@@ -1018,7 +1019,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MethodDesc methodDef)
             {
-                return _factory.MethodMetadata(methodDef).Marked;
+                return _factory.MethodMetadata(methodDef).Marked || _factory.LimitedMethodMetadata(methodDef).Marked;
             }
 
             public bool GeneratesMetadata(MetadataType typeDef)
@@ -1029,6 +1030,11 @@ namespace ILCompiler
             public bool GeneratesMetadata(EcmaModule module, CustomAttributeHandle caHandle)
             {
                 return _factory.CustomAttributeMetadata(new ReflectableCustomAttribute(module, caHandle)).Marked;
+            }
+
+            public bool GeneratesMetadata(EcmaModule module, ParameterHandle paramHandle)
+            {
+                return _factory.MethodParameterMetadata(new ReflectableParameter(module, paramHandle)).Marked;
             }
 
             public bool GeneratesMetadata(EcmaModule module, ExportedTypeHandle exportedTypeHandle)
@@ -1216,27 +1222,18 @@ namespace ILCompiler
         CompleteTypesOnly = 1,
 
         /// <summary>
-        /// Specifies that heuristic that makes anonymous types work should be applied.
-        /// </summary>
-        /// <remarks>
-        /// Generates method bodies for properties on anonymous types even if they're not
-        /// statically used.
-        /// </remarks>
-        AnonymousTypeHeuristic = 2,
-
-        /// <summary>
         /// Scan IL for common reflection patterns to find additional compilation roots.
         /// </summary>
-        ReflectionILScanning = 4,
+        ReflectionILScanning = 2,
 
         /// <summary>
         /// Consider all native artifacts (native method bodies, etc) visible from reflection.
         /// </summary>
-        CreateReflectableArtifacts = 8,
+        CreateReflectableArtifacts = 4,
 
         /// <summary>
         /// Fully root used assemblies that are not marked IsTrimmable in metadata.
         /// </summary>
-        RootDefaultAssemblies = 16,
+        RootDefaultAssemblies = 8,
     }
 }

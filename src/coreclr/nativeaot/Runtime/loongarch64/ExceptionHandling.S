@@ -18,14 +18,15 @@
         ori  $a3, $sp, 0
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
+        // Total stack: 0xC0 (0x68+0x58)
         .if \exceptionType == HARDWARE_EXCEPTION
-            addi.d  $sp, $sp, -0x50
-            .cfi_adjust_cfa_offset  0x50
+            addi.d  $sp, $sp, -0x58
+            .cfi_adjust_cfa_offset  0x58
             st.d  $a3, $sp, 0      // a3 is the SP and a1 is the IP of the fault site
             st.d  $a1, $sp, 8
         .else
-            PROLOG_STACK_ALLOC  0x50
-            .cfi_adjust_cfa_offset  0x50
+            PROLOG_STACK_ALLOC  0x58
+            .cfi_adjust_cfa_offset  0x58
             st.d  $a3, $sp, 0      // a3 is the SP and ra is the IP of the fault site
             st.d  $ra, $sp, 8
         .endif
@@ -37,6 +38,8 @@
         fst.d  $f29, $sp, 0x38
         fst.d  $f30, $sp, 0x40
         fst.d  $f31, $sp, 0x48
+        // Slot at $sp+0x50 is alignment padding
+
         PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x68
         st.d  $zero, $sp, 0x10 // locations reserved for return value, not used for exception handling
         st.d  $zero, $sp, 0x18
@@ -61,7 +64,7 @@
         // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         // of method. However, this method needs to be able to change fp before calling funclet.
         // This is required to access locals in funclet.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED  22, 1, 0x58
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED  22, 1, 0x60
         PROLOG_SAVE_REG_PAIR  23, 24, 0x10
         PROLOG_SAVE_REG_PAIR  25, 26, 0x20
         PROLOG_SAVE_REG_PAIR  27, 28, 0x30
@@ -92,7 +95,7 @@
         EPILOG_RESTORE_REG_PAIR  27, 28, 0x30
         EPILOG_RESTORE_REG_PAIR  29, 30, 0x40
         EPILOG_RESTORE_REG       31,     0x50
-        EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x58
+        EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x60
    .endm
 
 
@@ -160,7 +163,7 @@
         ld.d  $t3, \regdisplayReg, OFFSETOF__REGDISPLAY__pFP
         st.d  $fp, $t3, 0
         //
-        // store vfp preserved regs
+        // store fp preserved regs
         //
         addi.d  $t3, \regdisplayReg, OFFSETOF__REGDISPLAY__F
         fst.d  $f24, $t3, 0x00
@@ -288,7 +291,7 @@
         // where the tail-calling thread had saved RA, which may not match where we have saved RA.
 
         ld.d  $a1, $a2, OFFSETOF__Thread__m_pvHijackedReturnAddress
-        beq  $a1, $zero, LOCAL_LABEL(NotHijacked)
+        beqz  $a1, LOCAL_LABEL(NotHijacked)
 
         ld.d  $a3, $a2, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation
 
@@ -504,7 +507,7 @@ LOCAL_LABEL(NotHijacked):
 
 LOCAL_LABEL(PopExInfoLoop):
         ld.d  $a3, $a3, OFFSETOF__ExInfo__m_pPrevExInfo         // a3 <- next ExInfo
-        beq  $a3, $zero, LOCAL_LABEL(DonePopping)               // if (pExInfo == null) { we're done }
+        beqz  $a3, LOCAL_LABEL(DonePopping)                     // if (pExInfo == null) { we're done }
         blt  $a3, $a2, LOCAL_LABEL(PopExInfoLoop)               // if (pExInfo < resume SP} { keep going }
 
 LOCAL_LABEL(DonePopping):
@@ -513,15 +516,15 @@ LOCAL_LABEL(DonePopping):
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
 
         bstrpick.d  $t7, $a3, TrapThreadsFlags_AbortInProgress_Bit, TrapThreadsFlags_AbortInProgress_Bit
-        beq  $t7, $zero, LOCAL_LABEL(NoAbort)
+        beqz  $t7, LOCAL_LABEL(NoAbort)
 
         ld.d  $a3, $sp, rsp_offset_is_not_handling_thread_abort
-        bne  $a3, $zero, LOCAL_LABEL(NoAbort)
+        bnez  $a3, LOCAL_LABEL(NoAbort)
 
         // It was the ThreadAbortException, so rethrow it
         // reset SP
         ori  $a1, $a0, 0                                        // a1 <- continuation address as exception PC
-        addi.w  $a0, $zero, STATUS_REDHAWK_THREAD_ABORT
+        addi.w  $a0, $zero, STATUS_NATIVEAOT_THREAD_ABORT
         ori  $sp, $a2, 0
         b  C_FUNC(RhpThrowHwEx)
 
@@ -773,7 +776,7 @@ LOCAL_LABEL(NoAbort):
 
 LOCAL_LABEL(Propagate_PopExInfoLoop):
         ld.d  $a3, $a3, OFFSETOF__ExInfo__m_pPrevExInfo     // a3 <- next ExInfo
-        beq  $a3, $zero, LOCAL_LABEL(Propagate_DonePopping) // if (pExInfo == null) { we're done }
+        beqz  $a3, LOCAL_LABEL(Propagate_DonePopping)       // if (pExInfo == null) { we're done }
         blt  $a3, $a2, LOCAL_LABEL(Propagate_PopExInfoLoop) // if (pExInfo < resume SP} { keep going }
 
 LOCAL_LABEL(Propagate_DonePopping):

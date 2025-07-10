@@ -32,53 +32,34 @@ FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 }
 FCIMPLEND
 
-FCIMPL1_D(int32_t, RhpDbl2Int, double val)
-{
-#if defined(HOST_X86) || defined(HOST_AMD64)
-    const double int32_min = -2147483648.0;
-    const double int32_max_plus_1 = 2147483648.0;
-    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
-#else
-    return (int32_t)val;
-#endif
-}
-FCIMPLEND
-
-FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
-{
-#if defined(HOST_X86) || defined(HOST_AMD64)
-    const double uint_max = 4294967295.0;
-    return (val > 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
-#else
-    return (uint32_t)val;
-#endif
-}
-FCIMPLEND
-
 #ifndef HOST_64BIT
-EXTERN_C int64_t QCALLTYPE RhpLDiv(int64_t i, int64_t j)
+FCIMPL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
+FCIMPLEND
 
-EXTERN_C uint64_t QCALLTYPE RhpULDiv(uint64_t i, uint64_t j)
+FCIMPL2_LL(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
+FCIMPLEND
 
-EXTERN_C int64_t QCALLTYPE RhpLMod(int64_t i, int64_t j)
+FCIMPL2_LL(int64_t, ModInt64Internal, int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
+FCIMPLEND
 
-EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
+FCIMPL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
+FCIMPLEND
 
 FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
 {
@@ -92,33 +73,51 @@ FCIMPL1_L(double, RhpULng2Dbl, uint64_t val)
 }
 FCIMPLEND
 
+FCIMPL1_L(float, RhpLng2Flt, int64_t val)
+{
+    return (float)val;
+}
+FCIMPLEND
+
+FCIMPL1_L(float, RhpULng2Flt, uint64_t val)
+{
+    return (float)val;
+}
+FCIMPLEND
+
+#endif
+
+#ifndef HOST_64BIT
+FCIMPL2(int32_t, DivInt32Internal, int32_t i, int32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+FCIMPLEND
+
+FCIMPL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+FCIMPLEND
+
+FCIMPL2(int32_t, ModInt32Internal, int32_t i, int32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+FCIMPLEND
+
+FCIMPL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+FCIMPLEND
 #endif
 
 #ifdef HOST_ARM
-EXTERN_C int32_t F_CALL_CONV RhpIDiv(int32_t i, int32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i / j;
-}
-
-EXTERN_C uint32_t F_CALL_CONV RhpUDiv(uint32_t i, uint32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i / j;
-}
-
-EXTERN_C int32_t F_CALL_CONV RhpIMod(int32_t i, int32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i % j;
-}
-
-EXTERN_C uint32_t F_CALL_CONV RhpUMod(uint32_t i, uint32_t j)
-{
-    ASSERT(j && "Divide by zero!");
-    return i % j;
-}
-
 EXTERN_C int64_t F_CALL_CONV RhpLMul(int64_t i, int64_t j)
 {
     return i * j;

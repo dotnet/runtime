@@ -242,6 +242,13 @@ public:
         return FALSE;
     }
 
+    BOOL HasAsyncContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // async calls are also not supported for reflection invoke
+        return FALSE;
+    }
+
     BOOL IsVarArg()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1154,10 +1161,8 @@ extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, 
 
     if (pField != NULL && pField->IsRVA())
     {
-        Module* pModule = pField->GetModule();
-        *address = pModule->GetRvaField(pField->GetOffset());
+        *address = pField->GetStaticAddressHandle(NULL);
         *size = pField->LoadSize();
-
         ret = TRUE;
     }
 
@@ -1492,7 +1497,7 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     }
 
     MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     // Don't allow creating instances of delegates
     if (pMT->IsDelegate())
@@ -1591,7 +1596,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(typeHandle, false /* fGetUninitializedObject */);
 
     MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     // COM allocation can involve the __ComObject base type (with attached CLSID) or a

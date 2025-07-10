@@ -39,10 +39,10 @@ namespace Microsoft.Extensions.Hosting.Internal
                     IHostLifetime hostLifetime,
                     IOptions<HostOptions> options)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(applicationLifetime);
-            ThrowHelper.ThrowIfNull(logger);
-            ThrowHelper.ThrowIfNull(hostLifetime);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(applicationLifetime);
+            ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(hostLifetime);
 
             Services = services;
             _applicationLifetime = (applicationLifetime as ApplicationLifetime)!;
@@ -337,6 +337,10 @@ namespace Microsoft.Extensions.Hosting.Internal
                         if (task.Exception is not null)
                         {
                             exceptions.AddRange(task.Exception.InnerExceptions); // Log exception from async method.
+                        }
+                        else if (task.IsCanceled)
+                        {
+                            exceptions.Add(new TaskCanceledException(task));
                         }
                     }
                     else

@@ -5,6 +5,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-rt.h>
 #include <eventpipe/ep.h>
+#include <eventpipe/ep-sample-profiler.h>
 
 #include <eglib/gmodule.h>
 #include <mono/metadata/profiler.h>
@@ -1091,6 +1092,7 @@ walk_managed_stack_for_thread (
 		stack_walk_data->top_frame = false;
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_IL_STATE:
 	case FRAME_TYPE_INTERP:
 		if (frame->ji) {
 			stack_walk_data->async_frame |= frame->ji->async;
@@ -1184,31 +1186,27 @@ ep_rt_mono_walk_managed_stack_for_thread (
 	stack_walk_data.safe_point_frame = false;
 	stack_walk_data.runtime_invoke_frame = false;
 
-	bool restore_async_context = FALSE;
-	bool prevent_profiler_event_recursion = FALSE;
+	bool prevent_profiler_event_recursion = false;
+	MonoUnwindOptions unwind_options = MONO_UNWIND_NONE;
 	EventPipeMonoThreadData *thread_data = ep_rt_mono_thread_data_get_or_create ();
 	if (thread_data) {
 		prevent_profiler_event_recursion = thread_data->prevent_profiler_event_recursion;
-		if (prevent_profiler_event_recursion && !mono_thread_info_is_async_context ()) {
+		if (prevent_profiler_event_recursion) {
 			// Running stackwalk in async context mode is currently the only way to prevent
 			// unwinder to NOT load additional classes during stackwalk, making it signal unsafe and
 			// potential triggering uncontrolled recursion in profiler class loading event.
-			mono_thread_info_set_is_async_context (TRUE);
-			restore_async_context = TRUE;
+			unwind_options = MONO_UNWIND_SIGNAL_SAFE;
 		}
-		thread_data->prevent_profiler_event_recursion = TRUE;
+		thread_data->prevent_profiler_event_recursion = true;
 	}
 
 	if (thread == ep_rt_thread_get_handle () && mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
-		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (walk_managed_stack_for_thread_callback, NULL, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (walk_managed_stack_for_thread_callback, NULL, unwind_options, &stack_walk_data);
 	else if (mono_get_eh_callbacks ()->mono_walk_stack_with_state)
-		mono_get_eh_callbacks ()->mono_walk_stack_with_state (walk_managed_stack_for_thread_callback, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+		mono_get_eh_callbacks ()->mono_walk_stack_with_state (walk_managed_stack_for_thread_callback, mono_thread_info_get_suspend_state (thread), unwind_options, &stack_walk_data);
 
-	if (thread_data) {
-		if (restore_async_context)
-			mono_thread_info_set_is_async_context (FALSE);
+	if (thread_data)
 		thread_data->prevent_profiler_event_recursion = prevent_profiler_event_recursion;
-	}
 
 	return true;
 }
@@ -1236,10 +1234,10 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 
 	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 
-	bool restore_async_context = FALSE;
+	bool restore_async_context = false;
 	if (!mono_thread_info_is_async_context ()) {
 		mono_thread_info_set_is_async_context (TRUE);
-		restore_async_context = TRUE;
+		restore_async_context = true;
 	}
 
 	// Record all info needed in sample events while runtime is suspended, must be async safe.
@@ -1329,6 +1327,11 @@ ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 }
 
 void
+ep_rt_mono_sample_profiler_session_enabled (void)
+{
+}
+
+void
 ep_rt_mono_sample_profiler_disabled (void)
 {
 }
@@ -1344,15 +1347,16 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 }
 
 static void
-method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+sample_current_thread_stack_trace ()
 {
+	MonoContext ctx;
 	MonoThreadInfo *thread_info = mono_thread_info_current ();
 	SampleProfileStackWalkData stack_walk_data;
 	SampleProfileStackWalkData *data= &stack_walk_data;
-	THREAD_INFO_TYPE adapter = { { 0 } };
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, sample_current_thread_stack_trace);
 
 	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
-	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx->context);
+	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx);
 	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
 	data->stack_walk_data.stack_contents = &data->stack_contents;
 	data->stack_walk_data.top_frame = true;
@@ -1361,7 +1365,8 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	data->stack_walk_data.runtime_invoke_frame = false;
 	ep_stack_contents_reset (&data->stack_contents);
 
-	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx->context, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+	// because this is single threaded, MONO_UNWIND_NONE is safe to use
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx, MONO_UNWIND_NONE, &stack_walk_data);
 	if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
 		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
@@ -1374,51 +1379,171 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 			for (uint32_t frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
 				mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 		}
-		mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 		uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
-		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, current_sampling_thread, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 	}
 }
 
-static MonoProfilerCallInstrumentationFlags
-method_filter (MonoProfiler *prof, MonoMethod *method)
+static void
+ep_write_empty_profile_event ()
 {
-	// TODO add more instrumentation, something like MINT_SDB_SEQ_POINT
-	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER;
+	MonoContext ctx;
+	MonoThreadInfo *thread_info = mono_thread_info_current ();
+	SampleProfileStackWalkData stack_walk_data;
+	SampleProfileStackWalkData *data= &stack_walk_data;
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ep_write_empty_profile_event);
+
+	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
+	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx);
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
+	data->stack_walk_data.stack_contents = &data->stack_contents;
+	data->stack_walk_data.top_frame = true;
+	data->stack_walk_data.async_frame = false;
+	data->stack_walk_data.safe_point_frame = false;
+	data->stack_walk_data.runtime_invoke_frame = false;
+	ep_stack_contents_reset (&data->stack_contents);
+
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+
+	uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, current_sampling_thread, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 }
 
+static double desired_sample_interval_ms;
+
+static double last_sample_time;
+static int prev_skips_per_period;
+static int skips_per_period;
+static int sample_skip_counter;
+
+#ifdef HOST_BROWSER
+double mono_wasm_profiler_now ();
+static double profiler_now ()
+{
+	return mono_wasm_profiler_now ();
+}
+#else
+static double profiler_now ()
+{
+	EP_UNREACHABLE ("Not implemented");
+}
+#endif
+
+static void update_sample_frequency ()
+{
+	// timer resolution in non-isolated contexts: 100 microseconds (decimal number)
+	double now = profiler_now ();
+	double ms_since_last_sample = now - last_sample_time;
+
+	if (desired_sample_interval_ms > 0 && last_sample_time != 0) {
+		// recalculate ideal number of skips per period
+		double skips_per_ms = ((double)sample_skip_counter) / ms_since_last_sample;
+		double newskips_per_period = (skips_per_ms * ((double)desired_sample_interval_ms));
+		skips_per_period = (int)((newskips_per_period + ((double)sample_skip_counter) + ((double)prev_skips_per_period)) / 3.0);
+		prev_skips_per_period = sample_skip_counter;
+	} else {
+		skips_per_period = 0;
+	}
+	last_sample_time = now;
+	sample_skip_counter = 0;
+}
+
+static void
+method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	sample_skip_counter++;
+	if (G_LIKELY(sample_skip_counter < skips_per_period))
+		return;
+	update_sample_frequency ();
+	sample_current_thread_stack_trace ();
+}
+
+static void
+method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	sample_skip_counter++;
+	if (G_LIKELY(sample_skip_counter < skips_per_period))
+		return;
+	update_sample_frequency ();
+	sample_current_thread_stack_trace ();
+}
+
+static void
+method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
+{
+	sample_skip_counter++;
+	if (G_LIKELY(sample_skip_counter < skips_per_period))
+		return;
+	update_sample_frequency ();
+	sample_current_thread_stack_trace ();
+}
+
+#ifdef HOST_BROWSER
+MonoProfilerHandle mono_profiler_init_browser_eventpipe (void);
+void mono_profiler_fini_browser_eventpipe (void);
+#endif
 
 void
 ep_rt_mono_sampling_provider_component_init (void)
 {
+#ifdef HOST_BROWSER
 	// in single-threaded mode, we install instrumentation callbacks on the mono profiler, instead of stop-the-world
-	_ep_rt_mono_sampling_profiler_provider = mono_profiler_create (NULL);
 	// this has negative performance impact even when the EP client is not connected!
 	// but it has to be enabled before managed code starts running, because the instrumentation needs to be in place
-	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, method_filter);
+	_ep_rt_mono_sampling_profiler_provider = mono_profiler_init_browser_eventpipe ();
+#endif
 }
 
 void
 ep_rt_mono_sampling_provider_component_fini (void)
 {
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
-	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+#ifdef HOST_BROWSER
+	mono_profiler_fini_browser_eventpipe ();
+#endif
 }
 
 void
 ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
+	desired_sample_interval_ms = ((double)ep_sample_profiler_get_sampling_rate ()) / 1000000.0;
+	EP_ASSERT (desired_sample_interval_ms >= 0.0);
+	EP_ASSERT (desired_sample_interval_ms < 1000.0);
+
 	current_sampling_event = sampling_event;
 	current_sampling_thread = ep_rt_thread_get_handle ();
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+
+	last_sample_time = 0;
+	prev_skips_per_period = 1;
+	skips_per_period = 1;
+	sample_skip_counter = 1;
+
+	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, method_samplepoint);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
+	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, method_exc_leave);
+}
+
+void
+ep_rt_mono_sample_profiler_session_enabled (void)
+{
+#ifdef HOST_BROWSER
+	// in order to satisfy dotnet-gcdump, which is requesting one sample event, before the asking for GC dump
+	// see https://github.com/dotnet/diagnostics/blob/d2f05caf4a97d8dc2a75d910d5d0c1170e2ed640/src/Tools/dotnet-gcdump/DotNetHeapDump/EventPipeDotNetHeapDumper.cs#L135-L145
+	// in browser, managed code is not running unless there is user interaction, so we need to fire an empty event
+	ep_write_empty_profile_event ();
+#endif
 }
 
 void
 ep_rt_mono_sample_profiler_disabled (void)
 {
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+	mono_profiler_set_method_samplepoint_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	mono_profiler_set_method_exception_leave_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	current_sampling_event = NULL;
+	current_sampling_thread = NULL;
 }
 
 #endif // PERFTRACING_DISABLE_THREADS
@@ -2504,7 +2629,7 @@ write_event_exception_thrown (MonoObject *obj)
 			exception_message = g_strdup ("");
 
 		if (mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
-			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
+			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_NONE, (void *)&ip);
 
 		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_class (obj)), MONO_TYPE_NAME_FORMAT_IL);
 
@@ -3024,13 +3149,13 @@ class_loading_callback (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
-	bool prevent_profiler_event_recursion = FALSE;
+	bool prevent_profiler_event_recursion = false;
 	EventPipeMonoThreadData *thread_data = ep_rt_mono_thread_data_get_or_create ();
 	if (thread_data) {
 		// Prevent additional class loading to happen recursively as part of fire TypeLoadStart event.
 		// Additional class loading can happen as part of capturing callstack for TypeLoadStart event.
 		prevent_profiler_event_recursion = thread_data->prevent_profiler_event_recursion;
-		thread_data->prevent_profiler_event_recursion = TRUE;
+		thread_data->prevent_profiler_event_recursion = true;
 	}
 
 	write_event_type_load_start (m_class_get_byval_arg (klass));

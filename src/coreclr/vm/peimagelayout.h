@@ -72,6 +72,16 @@ private:
     Volatile<LONG> m_refCount;
 public:
     PEImage* m_pOwner;
+
+    friend struct cdac_data<PEImageLayout>;
+};
+
+template<>
+struct cdac_data<PEImageLayout>
+{
+    static constexpr size_t Base = offsetof(PEImageLayout, m_base);
+    static constexpr size_t Size = offsetof(PEImageLayout, m_size);
+    static constexpr size_t Flags = offsetof(PEImageLayout, m_flags);
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;

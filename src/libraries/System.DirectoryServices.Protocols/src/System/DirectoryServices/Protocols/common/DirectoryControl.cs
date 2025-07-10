@@ -845,10 +845,7 @@ namespace System.DirectoryServices.Protocols
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 for (int i = 0; i < value.Length; i++)
                 {

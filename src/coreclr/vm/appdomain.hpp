@@ -50,17 +50,6 @@ class RCWCache;
 class RCWRefCache;
 #endif // FEATURE_COMWRAPPERS
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4200) // Disable zero-sized array warning
-#endif
-
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-
 // The pinned heap handle bucket class is used to contain handles allocated
 // from an array contained in the pinned heap.
 class PinnedHeapHandleBucket
@@ -260,7 +249,6 @@ public:
     DEBUG_NOINLINE static void HolderEnter(PEFileListLock *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
         pThis->Enter();
     }
@@ -268,7 +256,6 @@ public:
     DEBUG_NOINLINE static void HolderLeave(PEFileListLock *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
         pThis->Leave();
     }
@@ -795,6 +782,12 @@ public: // Handles
         return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
     }
 
+    OBJECTHANDLE CreateCrossReferenceHandle(OBJECTREF object, void* userContext)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateCrossReferenceHandle(m_handleStore, object, userContext);
+    }
+
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
     {
@@ -975,6 +968,8 @@ protected:
         {
             return m_array.Iterate();
         }
+
+        friend struct cdac_data<AppDomain>;
     };  // class DomainAssemblyList
 
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
@@ -1140,14 +1135,6 @@ public:
     BOOL ContainsAssembly(Assembly * assem);
 
     //****************************************************************************************
-    //
-    // Reference count. When an appdomain is first created the reference is bump
-    // to one when it is added to the list of domains (see SystemDomain). An explicit
-    // Removal from the list is necessary before it will be deleted.
-    ULONG AddRef(void);
-    ULONG Release(void) DAC_EMPTY_RET(0);
-
-    //****************************************************************************************
     LPCWSTR GetFriendlyName();
     LPCWSTR GetFriendlyNameForDebugger();
     void SetFriendlyName(LPCWSTR pwzFriendlyName);
@@ -1164,9 +1151,8 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    static BOOL OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating = TRUE);
-
-#endif
+    static void OnUnhandledException(OBJECTREF *pThrowable);
+#endif // !DACCESS_COMPILE
 
     // True iff a debugger is attached to the process (same as CORDebuggerAttached)
     BOOL IsDebuggerAttached (void);
@@ -1242,20 +1228,6 @@ public:
 
     // Only call this routine when you can guarantee there are no loads in progress.
     void ClearBinderContext();
-
-    void SetIgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= IGNORE_UNHANDLED_EXCEPTIONS;
-    }
-
-    BOOL IgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
-    }
 
     static void ExceptionUnwind(Frame *pFrame);
 
@@ -1351,7 +1323,6 @@ public:
     PTR_LoaderHeap GetHighFrequencyHeap();
 
 private:
-    size_t EstimateSize();
     EEClassFactoryInfoHashTable* SetupClassFactHash();
 #ifdef FEATURE_COMINTEROP
     DispIDCache* SetupRefDispIDCache();
@@ -1377,8 +1348,6 @@ private:
     friend class Assembly;
 
 private:
-    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);
-
     enum Stage {
         STAGE_CREATING,
         STAGE_READYFORMANAGEDCODE,
@@ -1433,9 +1402,6 @@ public:
         return GetLoaderAllocator()->GetGCRefPoint();
     }
 
-    void AddMemoryPressure();
-    void RemoveMemoryPressure();
-
     PTR_Assembly GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1461,13 +1427,6 @@ public:
 private:
     PTR_CWSTR       m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
-
-    // General purpose flags.
-    DWORD           m_dwFlags;
-
-    // When an application domain is created the ref count is artificially incremented
-    // by one. For it to hit zero an explicit close must have happened.
-    LONG        m_cRef;                    // Ref count.
 
     // Map of loaded composite native images indexed by base load addresses
     CrstExplicitInit m_nativeImageLoadCrst;
@@ -1583,14 +1542,7 @@ public:
 
 public:
 
-    enum {
-        CONTEXT_INITIALIZED =               0x0001,
-        // unused =                         0x0400,
-        IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
-    };
-
     AssemblySpecBindingCache  m_AssemblyCache;
-    size_t                    m_MemoryPressure;
 
     ArrayList m_NativeDllSearchDirectories;
     bool m_ForceTrivialWaitOperations;
@@ -1667,10 +1619,16 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
+
+    friend struct cdac_data<AppDomain>;
 };  // class AppDomain
 
-// Just a ref holder
-typedef ReleaseHolder<AppDomain> AppDomainRefHolder;
+template<>
+struct cdac_data<AppDomain>
+{
+    static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
+    static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
+};
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
 
@@ -1892,36 +1850,6 @@ public:
         return m_BaseLibrary;
     }
 
-#ifndef DACCESS_COMPILE
-    BOOL IsBaseLibrary(SString &path)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // See if it is the installation path to CoreLib
-        if (path.EqualsCaseInsensitive(m_BaseLibrary))
-            return TRUE;
-
-        // Or, it might be the location of CoreLib
-        if (System()->SystemAssembly() != NULL
-            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetPEAssembly()->GetPath()))
-            return TRUE;
-
-        return FALSE;
-    }
-
-    BOOL IsBaseLibrarySatellite(SString &path)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // See if it is the installation path to corelib.resources
-        SString s(SString::Ascii,g_psBaseLibrarySatelliteAssemblyName);
-        if (path.EqualsCaseInsensitive(s))
-            return TRUE;
-
-        return FALSE;
-    }
-#endif // DACCESS_COMPILE
-
     // Return the system directory
     LPCWSTR SystemDirectory()
     {
@@ -1961,9 +1889,6 @@ private:
     InlineSString<100>  m_BaseLibrary;
 
     InlineSString<100>  m_SystemDirectory;
-
-    // <TODO>@TODO: CTS, we can keep the com modules in a single assembly or in different assemblies.
-    // We are currently using different assemblies but this is potentitially to slow...</TODO>
 
     // Global domain that every one uses
     SPTR_DECL(SystemDomain, m_pSystemDomain);
@@ -2005,7 +1930,16 @@ public:
                                    bool enumThis);
 #endif
 
+    friend struct ::cdac_data<SystemDomain>;
 };  // class SystemDomain
+
+#ifndef DACCESS_COMPILE
+template<>
+struct cdac_data<SystemDomain>
+{
+    static constexpr PTR_SystemDomain* SystemDomain = &SystemDomain::m_pSystemDomain;
+};
+#endif // DACCESS_COMPILE
 
 #include "comreflectioncache.inl"
 

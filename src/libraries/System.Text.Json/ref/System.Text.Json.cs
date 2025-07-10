@@ -38,6 +38,7 @@ namespace System.Text.Json
     public partial struct JsonDocumentOptions
     {
         private int _dummyPrimitive;
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { readonly get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
@@ -79,6 +80,9 @@ namespace System.Text.Json
         public uint GetUInt32() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
+        public static System.Text.Json.JsonElement Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json)] System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonDocumentOptions options = default) { throw null; }
+        public static System.Text.Json.JsonElement Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json)] System.ReadOnlySpan<char> json, System.Text.Json.JsonDocumentOptions options = default) { throw null; }
+        public static System.Text.Json.JsonElement Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json)] string json, System.Text.Json.JsonDocumentOptions options = default) { throw null; }
         public static System.Text.Json.JsonElement ParseValue(ref System.Text.Json.Utf8JsonReader reader) { throw null; }
         public override string ToString() { throw null; }
         public bool TryGetByte(out byte value) { throw null; }
@@ -387,12 +391,14 @@ namespace System.Text.Json
     {
         General = 0,
         Web = 1,
+        Strict = 2,
     }
     public sealed partial class JsonSerializerOptions
     {
         public JsonSerializerOptions() { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults defaults) { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
@@ -419,6 +425,7 @@ namespace System.Text.Json
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
         public bool RespectNullableAnnotations { get { throw null; } set { } }
         public bool RespectRequiredConstructorParameters { get { throw null; } set { } }
+        public static System.Text.Json.JsonSerializerOptions Strict { [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications."), System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")] get { throw null; } }
         public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver> TypeInfoResolverChain { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
@@ -843,6 +850,8 @@ namespace System.Text.Json.Nodes
         System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?> System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.this[int index] { get { throw null; } set { } }
         public void Add(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?> property) { }
         public void Add(string propertyName, System.Text.Json.Nodes.JsonNode? value) { }
+        public bool TryAdd(string propertyName, JsonNode? value) { throw null; }
+        public bool TryAdd(string propertyName, JsonNode? value, out int index) { throw null; }
         public void Clear() { }
         public bool ContainsKey(string propertyName) { throw null; }
         public static System.Text.Json.Nodes.JsonObject? Create(System.Text.Json.JsonElement element, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
@@ -863,6 +872,7 @@ namespace System.Text.Json.Nodes
         void System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetPropertyValue(string propertyName, out System.Text.Json.Nodes.JsonNode? jsonNode) { throw null; }
+        public bool TryGetPropertyValue(string propertyName, out System.Text.Json.Nodes.JsonNode? jsonNode, out int index) { throw null; }
         public override void WriteTo(System.Text.Json.Utf8JsonWriter writer, System.Text.Json.JsonSerializerOptions? options = null) { }
     }
     public abstract partial class JsonValue : System.Text.Json.Nodes.JsonNode
@@ -1139,6 +1149,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonSourceGenerationOptionsAttribute() { }
         public JsonSourceGenerationOptionsAttribute(System.Text.Json.JsonSerializerDefaults defaults) { }
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Type[]? Converters { get { throw null; } set { } }

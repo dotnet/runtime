@@ -27,12 +27,14 @@ public sealed class PayloadOptions
     /// <remarks>
     /// <para>
     /// Example:
-    /// TypeName: "Namespace.TypeName`1[[Namespace.GenericArgName"
-    /// LibraryName: "AssemblyName]]"
-    /// Is combined into "Namespace.TypeName`1[[Namespace.GenericArgName, AssemblyName]]"
+    /// </para>
+    /// <para>TypeName: <c>"Namespace.TypeName`1[[Namespace.GenericArgName"</c></para>
+    /// <para>LibraryName: <c>"AssemblyName]]"</c></para>
+    /// <para>
+    /// Is combined into <c>"Namespace.TypeName`1[[Namespace.GenericArgName, AssemblyName]]"</c>
     /// </para>
     /// <para>
-    /// Setting this to <see langword="true" /> can render <see cref="NrbfDecoder"/> susceptible to Denial of Service
+    /// Setting this property to <see langword="true" /> can render <see cref="NrbfDecoder"/> susceptible to denial of service
     /// attacks when parsing or handling malicious input.
     /// </para>
     /// </remarks>

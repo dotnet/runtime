@@ -29,9 +29,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define DLLEXPORT
 #endif // !DLLEXPORT
 
-#if defined(HOST_ANDROID)
-#include <android/log.h>
-#endif
+#include "minipal/log.h"
 
 /*****************************************************************************/
 
@@ -150,16 +148,19 @@ FILE* jitstdout()
 // Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
 int jitprintf(const char* fmt, ...)
 {
+    int     status;
     va_list vl;
     va_start(vl, fmt);
-#if defined(HOST_ANDROID)
-    int status = jitstdout() == procstdout()
-                     ? __android_log_vprint(ANDROID_LOG_VERBOSE, MAIN_CLR_MODULE_NAME_A, fmt, vl)
-                     : vfprintf(jitstdout(), fmt, vl);
-#else
-    int status = vfprintf(jitstdout(), fmt, vl);
-#endif
+    if (jitstdout() == procstdout())
+    {
+        status = minipal_log_vprint_verbose(fmt, vl);
+    }
+    else
+    {
+        status = vfprintf(jitstdout(), fmt, vl);
+    }
     va_end(vl);
+
     return status;
 }
 

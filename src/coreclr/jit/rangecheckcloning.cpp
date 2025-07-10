@@ -280,7 +280,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
 
     // Wire up the edges
     //
-    comp->fgRedirectTargetEdge(prevBb, lowerBndBb);
+    comp->fgRedirectEdge(prevBb->TargetEdgeRef(), lowerBndBb);
     FlowEdge* fallbackToNextBb       = comp->fgAddRefPred(lastBb, fallbackBb);
     FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
     FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);
@@ -345,7 +345,12 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
         // it happens when we emit BBJ_COND(0 >= 0) fake block (for simplicity)
         comp->gtUpdateStmtSideEffects(lowerBndBb->lastStmt());
     }
-    comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
+    if (upperBndBb->lastStmt() != nullptr)
+    {
+        // In rare cases, upperBndBb can also be folded into an empty block
+        // by fgMorphBlockStmt
+        comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
+    }
 
     // All blocks must be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, lowerBndBb));
@@ -395,7 +400,8 @@ public:
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        if ((*use)->OperIs(GT_BOUNDS_CHECK))
+        // For now, we only handle SCK_RNGCHK_FAIL
+        if ((*use)->OperIs(GT_BOUNDS_CHECK) && ((*use)->AsBoundsChk()->gtThrowKind == SCK_RNGCHK_FAIL))
         {
             m_boundsChks->Push(BoundCheckLocation(m_stmt, use, m_stmtIdx));
         }

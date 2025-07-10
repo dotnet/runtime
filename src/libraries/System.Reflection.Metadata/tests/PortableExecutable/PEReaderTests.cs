@@ -820,10 +820,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Throws<ObjectDisposedException>(() => reader.ReadDebugDirectory());
             Assert.Throws<ObjectDisposedException>(() => reader.ReadCodeViewDebugDirectoryData(ddCodeView));
             Assert.Throws<ObjectDisposedException>(() => reader.ReadEmbeddedPortablePdbDebugDirectoryData(ddEmbedded));
-
-            MetadataReaderProvider __;
-            string ___;
-            Assert.Throws<ObjectDisposedException>(() => reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out __, out ___));
+            Assert.Throws<ObjectDisposedException>(() => reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out _, out _));
 
             // ok to use providers after PEReader disposed:
             var pdbReader = pdbProvider.GetMetadataReader();
@@ -867,16 +864,6 @@ namespace System.Reflection.PortableExecutable.Tests
                     var peReader = new PEReader(new UnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata);
                     peReader.Dispose();
                 }
-            }
-        }
-
-        [Fact]
-        public void HasMetadataShouldReturnFalseWhenPrefetchingMetadataOfImageWithoutMetadata()
-        {
-            using (var fileStream = new MemoryStream(Misc.KeyPair))
-            using (var peReader = new PEReader(fileStream, PEStreamOptions.PrefetchMetadata | PEStreamOptions.LeaveOpen))
-            {
-                Assert.False(peReader.HasMetadata);
             }
         }
     }

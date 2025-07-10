@@ -131,14 +131,6 @@ namespace System.Reflection.Emit
                 MethodBuilderImpl method = _methodDefinitions[i];
                 MethodAttributes methodAttrs = method.Attributes;
 
-                // Any of these flags in the implementation flags is set, we will not check the IL method body
-                if (((method.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
-                    ((methodAttrs & MethodAttributes.PinvokeImpl) != 0))
-                {
-                    continue;
-                }
-
-                ILGeneratorImpl? body = method.ILGeneratorImpl;
                 if ((methodAttrs & MethodAttributes.Abstract) != 0)
                 {
                     // Check if an abstract method declared on a non-abstract class
@@ -148,14 +140,11 @@ namespace System.Reflection.Emit
                     }
 
                     // If this is an abstract method or an interface should not have body.
+                    ILGeneratorImpl? body = method.ILGeneratorImpl;
                     if (body != null && body.ILOffset > 0)
                     {
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, method.Name));
                     }
-                }
-                else if ((body == null || body.ILOffset == 0) && !method._canBeRuntimeImpl)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, method.Name));
                 }
             }
         }
@@ -939,7 +928,6 @@ namespace System.Reflection.Emit
             return fields.ToArray();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
@@ -967,7 +955,10 @@ namespace System.Reflection.Emit
                 }
             }
 
+// Analyzer is not able to propagate `.Interfaces` on `this`.
+#pragma warning disable IL2063
             return match;
+#pragma warning restore IL2063
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]

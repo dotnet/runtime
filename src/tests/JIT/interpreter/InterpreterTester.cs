@@ -16,15 +16,11 @@ public class InterpreterTester
     [Fact]
     public static void RunTests()
     {
-        string corerun = TestLibrary.Utilities.IsWindows ? "corerun.exe" : "corerun";
-        string libInterp = TestLibrary.Utilities.IsWindows ? "clrinterpreter.dll" : (TestLibrary.Utilities.IsMacOSX ? "libclrinterpreter.dylib" : "libclrinterpreter.so");
         string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
         string interpreterApp = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Interpreter.dll");
 
-        var startInfo = new ProcessStartInfo(Path.Combine(coreRoot, corerun), interpreterApp);
-        startInfo.EnvironmentVariables["DOTNET_AltJitName"] = libInterp;
-        startInfo.EnvironmentVariables["DOTNET_AltJitPath"] = Path.Combine(coreRoot, libInterp);
-        startInfo.EnvironmentVariables["DOTNET_AltJit"] = "RunInterpreterTests";
+        var startInfo = new ProcessStartInfo(Path.Combine(coreRoot, "corerun"), interpreterApp);
+        startInfo.EnvironmentVariables["DOTNET_Interpreter"] = "RunInterpreterTests";
 
         using (Process p = Process.Start(startInfo))
         {
