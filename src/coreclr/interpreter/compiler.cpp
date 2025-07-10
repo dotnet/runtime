@@ -2202,7 +2202,7 @@ static int32_t GetLdindForType(InterpType interpType)
     return -1;
 }
 
-bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
+bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig, bool *emitMemBarrier)
 {
     bool mustExpand = (method == m_methodHnd);
     if (!mustExpand && (ni == NI_Illegal))
@@ -2256,9 +2256,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             CHECK_STACK(1);
             m_pStackPointer--;
             int32_t addrVar = m_pStackPointer[0].var;
-            AddIns(INTOP_METHODTABLE);
+            AddIns(INTOP_GETMETHODTABLE);
             m_pLastNewIns->SetSVar(addrVar);
-            PushStackType(StackTypeO, NULL);
+            PushStackType(StackTypeI, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
         }
@@ -2278,8 +2278,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
                     opcode = INTOP_COMPARE_EXCHANGE_I8;
                     break;
                 case InterpTypeO:
-                    opcode = INTOP_COMPARE_EXCHANGE_O;
-                    break;
+                    *emitMemBarrier = true;
+                    return false;
                 default:
                     return false;
             }
@@ -2336,6 +2336,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
             m_pStackPointer--;
             int32_t arrayVar = m_pStackPointer[0].var;
+
+            AddIns(INTOP_NULLCHECK);
+            m_pLastNewIns->SetSVar(arrayVar);
 
             AddIns(INTOP_ADD_P_IMM);
             m_pLastNewIns->SetSVar(arrayVar);
@@ -2747,6 +2750,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int callIFunctionPointerVar = -1;
     void* calliCookie = NULL;
 
+    bool emitMemBarrier = false;
+
     if (isCalli)
     {
         // Suppress uninitialized use warning.
@@ -2777,7 +2782,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             if (InterpConfig.InterpMode() >= 3)
             {
                 NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
-                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig, &emitMemBarrier))
                 {
                     m_ip += 5;
                     return;
@@ -3135,6 +3140,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
     m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+    if (emitMemBarrier)
+    {
+        AddIns(INTOP_MEMBAR);
+    }
 
     m_ip += 5;
 }

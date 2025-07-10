@@ -506,6 +506,10 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], void*) = *(void**)pMethod->pDataItems[ip[2]];
                     ip += 3;
                     break;
+                case INTOP_NULLCHECK:
+                    NULL_CHECK(LOCAL_VAR(ip[1], void*));
+                    ip += 2;
+                    break;
                 case INTOP_RET:
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
@@ -2360,7 +2364,7 @@ do {                                                                           \
                     break;
                 }
 
-                case INTOP_METHODTABLE:
+                case INTOP_GETMETHODTABLE:
                 {
                     OBJECTREF obj = LOCAL_VAR(ip[2], OBJECTREF);
                     MethodTable* pMT = obj->GetMethodTable();
@@ -2389,12 +2393,6 @@ do                                                                      \
                 case INTOP_COMPARE_EXCHANGE_I8:
                 {
                     COMPARE_EXCHANGE(int64_t);
-                    break;
-                }
-
-                case INTOP_COMPARE_EXCHANGE_O:
-                {
-                    COMPARE_EXCHANGE(OBJECTREF);
                     break;
                 }
 

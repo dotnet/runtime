@@ -106,11 +106,6 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     try
     {
-        const char *className = NULL;
-        const char *namespaceName = NULL;
-        const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, &className, &namespaceName, NULL, 0);
-        printf("%s:%s\n", className, methodName);
-
         InterpCompiler compiler(compHnd, methodInfo);
         InterpMethod *pMethod = compiler.CompileMethod();
         int32_t IRCodeSize = 0;
