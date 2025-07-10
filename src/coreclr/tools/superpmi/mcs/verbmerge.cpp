@@ -286,12 +286,15 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
     DIR* pDir = opendir(dirUtf8.c_str());
     if (pDir != nullptr)
     {
-        errno = 0;
-        dirent *pEntry = readdir(pDir);
-        while (pEntry != nullptr)
+        while (true)
         {
-            struct stat sb;
+            dirent *pEntry;
             int dirEntryType;
+
+            errno = 0;
+            pEntry = readdir(pDir);
+            if (pEntry == nullptr)
+                break;
 
 #if HAVE_DIRENT_D_TYPE
             dirEntryType = pEntry->d_type;
@@ -305,6 +308,7 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
 
             if (dirEntryType == DT_UNKNOWN)
             {
+                struct stat sb;
 
                 if (fstatat(dirfd(pDir), pEntry->d_name, &sb, 0) == -1)
                     continue;
@@ -338,9 +342,6 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
                 first = new findDataList(&findData, first);
                 ++elemCount;
             }
-
-            errno = 0;
-            pEntry = readdir(pDir);
         }
 
         if (errno != 0)
