@@ -113,7 +113,51 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainList(count, values, pNeeded) : HResults.E_NOTIMPL;
+    {
+        try
+        {
+            // TODO 
+            uint i = 0;
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+
+            if (appDomain != TargetPointer.Null && i < count)
+            {
+                if (values is not null && values.Length > 0)
+                {
+                    values[0] = appDomain.ToClrDataAddress(_target);
+                }
+                i = 1;
+            }
+
+            if (pNeeded is not null)
+            {
+                *pNeeded = i;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress[]? valuesLocal = values != null ? new ClrDataAddress[count] : null;
+            uint neededLocal;
+            int hrLocal = _legacyImpl.GetAppDomainList(count, valuesLocal, &neededLocal);
+            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
+            Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+            if (values is not null && valuesLocal is not null && values.Length > 0 && valuesLocal.Length > 0)
+            {
+                // in theory, these don't need to be in the same order, but for consistency it is
+                // easiest for consumers and verification if the DAC and cDAC return the same order
+                Debug.Assert(values[0] == valuesLocal[0], $"cDAC: {values[0]:x}, DAC: {valuesLocal[0]:x}");
+            }
+        }
+#endif
+        return HResults.S_OK;
+    }
+    
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainName(addr, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
