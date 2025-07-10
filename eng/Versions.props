@@ -278,7 +278,7 @@
     <!-- sdk version, for testing workloads -->
     <SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskVersion)</SdkVersionForWorkloadTesting>
     <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>10.0.0-alpha.1.25169.1</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
-    <EmsdkPackageVersion>10.0.0-preview.4.25217.3</EmsdkPackageVersion>
+    <EmsdkPackageVersion>10.0.0-preview.7.25359.101</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
