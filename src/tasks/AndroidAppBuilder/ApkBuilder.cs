@@ -379,6 +379,11 @@ public partial class ApkBuilder
             defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
         }
 
+        if (!StripDebugSymbols)
+        {
+            defines.AppendLine("set(CMAKE_BUILD_TYPE Debug)");
+        }
+
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);

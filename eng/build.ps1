@@ -19,6 +19,7 @@ Param(
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [ValidateSet("Debug","Release","Checked")][string][Alias('hc')]$hostConfiguration,
   [switch]$usemonoruntime = $false,
+  [switch]$keepnativesymbols = $false,
   [switch]$ninja,
   [switch]$msbuild,
   [string]$cmakeargs,
@@ -90,6 +91,7 @@ function Get-Help() {
   Write-Host "  -msbuild                  Use MSBuild to drive the native build. This is a no-op for Mono."
   Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
   Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
+  Write-Host "  -keepnativesymbols        Keeps native symbols/debuginfo in generated binaries."
   Write-Host "                            Sanitizers can be specified with a comma-separated list."
   Write-Host ""
 
@@ -330,6 +332,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "configuration"          {}
     "arch"                   {}
     "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
+    "keepnativesymbols"      { $arguments += " /p:KeepNativeSymbols=$($PSBoundParameters[$argument])"}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }

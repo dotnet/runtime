@@ -49,6 +49,7 @@ if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [usepthreads] ( set __usePThreads=1&&shift&goto Arg_Loop)
 
+if /i [%1] == [-keepnativesymbols] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=1"&&shift&goto Arg_Loop)
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [-cmakeargs] ( set __ExtraCmakeParams=%__ExtraCmakeParams% %2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [-os] ( set __TargetOS=%2%&&shift&&shift&goto Arg_Loop)
