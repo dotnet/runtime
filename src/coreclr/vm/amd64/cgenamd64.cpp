@@ -188,8 +188,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->pCurrentContextPointers->R14 = &m_ctx.R14;
     pRD->pCurrentContextPointers->R15 = &m_ctx.R15;
 
-    // TBD APX: Do we need to update the EGPR context?
-
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
@@ -246,7 +244,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
-// TBD APX: How to check for APX registers here?
 void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL {

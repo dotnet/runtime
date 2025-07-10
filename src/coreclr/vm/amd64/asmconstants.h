@@ -419,13 +419,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm15
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__VectorRegister
                     == offsetof(CONTEXT, VectorRegister[0]));
 
-// TBD APX: is this needed for unix?
-// #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
-// #define               OFFSETOF__CONTEXT__R16 (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + 2*16 + 8*16 + 16*16 + 96 + 128*26 + 8*8 + 8*8*7 + 8*16*16 + 8*8*8 + 8*32*16 + 8*64*16)
-// ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__R16
-//                     == offsetof(CONTEXT, R16));
-// #endif // UNIX_AMD64_ABI && !HOST_WINDOWS
-
 #define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT + 16)
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));
