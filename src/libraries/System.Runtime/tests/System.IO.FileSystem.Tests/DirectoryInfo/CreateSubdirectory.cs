@@ -235,6 +235,34 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => di.CreateSubdirectory(Path.Combine("..", randomName + "abc", GetTestFileName())));
         }
 
+        [Fact]
+        public void CreateSubdirectoryFromRootDirectory()
+        {
+            string rootPath = Path.GetPathRoot(TestDirectory);
+            if (rootPath != null)
+            {
+                DirectoryInfo rootDir = new DirectoryInfo(rootPath);
+                string subDirName = GetTestFileName();
+                
+                // This should work but currently fails for root directories
+                DirectoryInfo result = rootDir.CreateSubdirectory(subDirName);
+                
+                Assert.NotNull(result);
+                Assert.Equal(Path.Combine(rootPath, subDirName), result.FullName);
+                Assert.True(result.Exists);
+                
+                // Clean up the created directory
+                try
+                {
+                    result.Delete();
+                }
+                catch
+                {
+                    // Ignore cleanup errors for system directories
+                }
+            }
+        }
+
         #endregion
     }
 }
