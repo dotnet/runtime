@@ -83,7 +83,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                         lock (thisRef)
                         {
                             thisRef._cancelledToken = cancellationToken;
-                            thisRef.TryComplete(null, final: false);
                         }
                         thisRef._cancellationAction?.Invoke(target);
                     }, (this, keepAlive));

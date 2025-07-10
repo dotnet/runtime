@@ -63,8 +63,10 @@ namespace System.Net.Security
         private readonly SslAuthenticationOptions _sslAuthenticationOptions;
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
+        private ResettableValueTaskSource _transportReadTcs = new ResettableValueTaskSource();
         private ArrayBuffer _appReceiveBuffer = new(InitialBufferSize);
         private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource();
+        private Task? _pendingAppReceiveBufferFillTask;
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
         // Buffers
@@ -127,6 +129,8 @@ namespace System.Net.Security
                         else
                         {
                             // EOF reached, signal completion
+                            _transportReadTcs.TrySetResult(final: true);
+
                             // TODO: can this race with actual handshake completion?
                             Interop.NetworkFramework.Tls.CancelConnection(_connectionHandle);
                             break;
@@ -197,7 +201,7 @@ namespace System.Net.Security
 
         internal ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (_appReceiveBuffer.ActiveLength > 0 || _appReceiveBufferTcs.IsCompleted)
+            if (_pendingAppReceiveBufferFillTask == null && _appReceiveBuffer.ActiveLength > 0)
             {
                 // fast path, data available
                 int length = Math.Min(_appReceiveBuffer.ActiveLength, buffer.Length);
@@ -212,7 +216,13 @@ namespace System.Net.Security
             async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Internal buffer empty, refilling.");
-                await FillAppDataBufferAsync(cancellationToken).ConfigureAwait(false);
+
+                // Previous read may have been canceled, leaving a pending read
+                // in the underlying native layer. In such cases, we await the
+                // pending read. Otherwise, we issue a new one.
+                _pendingAppReceiveBufferFillTask ??= FillAppDataBufferAsync();
+                await _pendingAppReceiveBufferFillTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+                _pendingAppReceiveBufferFillTask = null;
 
                 if (_appReceiveBuffer.ActiveLength == 0)
                 {
@@ -231,9 +241,9 @@ namespace System.Net.Security
             }
         }
 
-        internal ValueTask FillAppDataBufferAsync(CancellationToken cancellationToken)
+        internal Task FillAppDataBufferAsync()
         {
-            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, cancellationToken);
+            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, CancellationToken.None);
             Debug.Assert(success, "Concurrent FillAppDataBufferAsync detected");
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
@@ -242,7 +252,7 @@ namespace System.Net.Security
                 Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
             }
 
-            return valueTask;
+            return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
 
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, long status, byte* data, int length)
@@ -531,16 +541,18 @@ namespace System.Net.Security
 
             if (_framerHandle != null && buf.Length > 0)
             {
-                TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
+                // the data needs to be pinned until the callback fires
                 using MemoryHandle memoryHandle = buf.Pin();
+
+                bool success = _transportReadTcs.TryGetValueTask(out ValueTask valueTask, null, CancellationToken.None);
+                Debug.Assert(success, "Concurrent WriteInboundWireDataAsync detected");
 
                 unsafe
                 {
-                    Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+                    Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
                 }
 
-                await tcs.Task.ConfigureAwait(false);
+                await valueTask.ConfigureAwait(false);
             }
 
             [UnmanagedCallersOnly]
@@ -549,10 +561,8 @@ namespace System.Net.Security
                 Debug.Assert(status == 0, $"CompletionCallback called with status {status}");
 
                 GCHandle handle = GCHandle.FromIntPtr(context);
-                TaskCompletionSource tcs = (TaskCompletionSource)handle.Target!;
-
-                tcs.SetResult(); // Signal completion
-                handle.Free();
+                SafeDeleteNwContext thisContext = (SafeDeleteNwContext)handle.Target!;
+                thisContext._transportReadTcs.TrySetResult();
             }
         }
 
