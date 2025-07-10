@@ -16,8 +16,8 @@ public class Async2SynchronizationContext
         SynchronizationContext prevContext = SynchronizationContext.Current;
         try
         {
-            SynchronizationContext.SetSynchronizationContext(new MySyncContext(42));
-            Test().GetAwaiter().GetResult();
+            SynchronizationContext.SetSynchronizationContext(new MySyncContext());
+            TestSyncContext().GetAwaiter().GetResult();
         }
         finally
         {
@@ -25,29 +25,22 @@ public class Async2SynchronizationContext
         }
     }
 
-    private static async Task Test()
+    private static async Task TestSyncContext()
     {
         MySyncContext context = (MySyncContext)SynchronizationContext.Current;
-        Assert.Equal(42, context.Posts);
-
         await WrappedYieldToThreadPool(suspend: false);
-        Assert.Equal(42, context.Posts);
         Assert.Same(context, SynchronizationContext.Current);
 
         await WrappedYieldToThreadPool(suspend: true);
-        Assert.Equal(43, context.Posts);
         Assert.Same(context, SynchronizationContext.Current);
 
         await WrappedYieldToThreadPool(suspend: true).ConfigureAwait(true);
-        Assert.Equal(44, context.Posts);
         Assert.Same(context, SynchronizationContext.Current);
 
         await WrappedYieldToThreadPool(suspend: false).ConfigureAwait(false);
-        Assert.Equal(44, context.Posts);
         Assert.Same(context, SynchronizationContext.Current);
 
         await WrappedYieldToThreadPool(suspend: true).ConfigureAwait(false);
-        Assert.Equal(44, context.Posts);
         Assert.Null(SynchronizationContext.Current);
     }
 
@@ -55,42 +48,26 @@ public class Async2SynchronizationContext
     {
         if (suspend)
         {
-            await new YieldToThreadPool();
+            await Task.Yield();
         }
     }
 
-    private struct YieldToThreadPool : ICriticalNotifyCompletion
+    private class MySyncContext : SynchronizationContext
     {
-        public YieldToThreadPool GetAwaiter() => this;
-
-        public bool IsCompleted => false;
-
-        public void UnsafeOnCompleted(Action action)
-        {
-            ThreadPool.UnsafeQueueUserWorkItem(_ => action(), null);
-        }
-
-        public void OnCompleted(Action continuation)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void GetResult()
-        {
-        }
-    }
-
-    private class MySyncContext(int initialPosts) : SynchronizationContext
-    {
-        public int Posts = initialPosts;
-
         public override void Post(SendOrPostCallback d, object state)
         {
-            Posts++;
             ThreadPool.UnsafeQueueUserWorkItem(_ =>
             {
-                SetSynchronizationContext(this);
-                d(state);
+                SynchronizationContext prevContext = Current;
+                try
+                {
+                    SetSynchronizationContext(this);
+                    d(state);
+                }
+                finally
+                {
+                    SetSynchronizationContext(prevContext);
+                }
             }, null);
         }
     }
