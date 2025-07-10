@@ -2309,6 +2309,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter8BitNarrowing:
             case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
+            case NI_Sve_ScatterWithByteOffsets:
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
@@ -2742,6 +2743,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Always use the lane size D. It's a bitwise operation so this is fine for all integer vector types.
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
+
+            case NI_Sve2_SubtractWideningEven:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublb : INS_sve_ssublb;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve2_SubtractWideningOdd:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublt : INS_sve_ssublt;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
 
             default:
                 unreached();

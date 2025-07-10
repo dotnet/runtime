@@ -14,10 +14,15 @@ namespace System.Security.Cryptography
     ///   Represents an ML-DSA key.
     /// </summary>
     /// <remarks>
-    ///   Developers are encouraged to program against the <see cref="MLDsa"/> base class,
-    ///   rather than any specific derived class.
-    ///   The derived classes are intended for interop with the underlying system
-    ///   cryptographic libraries.
+    ///   <para>
+    ///     This algorithm is specified by FIPS-204.
+    ///   </para>
+    ///   <para>
+    ///     Developers are encouraged to program against the <see cref="MLDsa"/> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class MLDsa : IDisposable
@@ -39,6 +44,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Gets the specific ML-DSA algorithm for this key.
         /// </summary>
+        /// <value>
+        ///   The specific ML-DSA algorithm for this key.
+        /// </value>
         public MLDsaAlgorithm Algorithm { get; }
         private bool _disposed;
 
@@ -48,6 +56,9 @@ namespace System.Security.Cryptography
         /// <param name="algorithm">
         ///   The specific ML-DSA algorithm for this key.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
+        /// </exception>
         protected MLDsa(MLDsaAlgorithm algorithm)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
@@ -79,7 +90,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Sign the specified data, writing the signature into the provided buffer.
+        ///   Signs the specified data, writing the signature into the provided buffer.
         /// </summary>
         /// <param name="data">
         ///   The data to sign.
