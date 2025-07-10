@@ -3394,6 +3394,12 @@ interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_arg
 			td->last_ins->data [0] = GINT_TO_UINT16 (sp_params [i].offset + prev_offset);
 			td->last_ins->data [1] = offset_amount;
 			td->last_ins->data [2] = GINT_TO_UINT16 (get_stack_size (td, sp_params + i, num_args - i));
+
+			// The stack move applies to all arguments starting at this one. Because we push
+			// simd valuetypes in aligned fashion on the execution stack, the offset between two
+			// simd values will be a multiple of simd alignment. This means that if this arg is
+			// correctly aligned, all following args will be aligned as well.
+			return;
 		}
 	}
 }

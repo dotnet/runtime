@@ -28,15 +28,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Library.TypeInfoCalls.TestGetConstructors(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetMethods(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetFields(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetProperties(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetEvents(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetNestedTypes(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetField(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetProperty(typeof(string).GetTypeInfo());
-			Library.TypeInfoCalls.TestGetEvent(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetConstructors(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetMethods(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetFields(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetProperties(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetEvents(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetNestedTypes(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetField(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetProperty(typeof(string).GetTypeInfo());
+            Library.TypeInfoCalls.TestGetEvent(typeof(string).GetTypeInfo());
 #endif
         }
     }
