@@ -17,6 +17,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" />
-    <ProjectReference Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NativeReader.cs" Link="Common\NativeReader.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NibbleReader.cs" Link="Common\NibbleReader.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NativeArray.cs" Link="Common\NativeArray.cs" />
   </ItemGroup>
 </Project>

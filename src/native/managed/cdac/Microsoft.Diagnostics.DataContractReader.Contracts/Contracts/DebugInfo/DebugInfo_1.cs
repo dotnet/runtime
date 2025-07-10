@@ -143,8 +143,6 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
 
             SourceTypes_1 sourceType = (SourceTypes_1)reader.ReadUInt();
 
-            // TODO(cdac debugInfo): Handle cookie
-
             yield return new OffsetMapping_1
             {
                 NativeOffset = nativeOffset,
