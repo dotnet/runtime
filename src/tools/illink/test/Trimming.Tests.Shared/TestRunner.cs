@@ -70,7 +70,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             var inputCompiler = _factory.CreateCompiler(sandbox, metadataProvider);
             var expectationsCompiler = _factory.CreateCompiler(sandbox, metadataProvider);
-            var sourceFiles = sandbox.SourceFiles.Select(s => s.ToString()).ToArray();
+            var testSourceFiles = sandbox.SourceFiles.Select(s => s.ToString());
+            var commonSourceFiles = metadataProvider.GetCommonSourceFiles();
+            var sourceFiles = testSourceFiles.Concat(commonSourceFiles.Select(s => s.ToString())).ToArray();
 
             var assemblyName = metadataProvider.GetAssemblyName();
 

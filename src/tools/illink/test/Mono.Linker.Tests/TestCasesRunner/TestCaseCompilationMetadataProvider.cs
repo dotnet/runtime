@@ -151,6 +151,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
             throw new InvalidOperationException($"Could not determine ref pack path. Computed path {candidatePath} doesn't exist.");
         }
 
+        public IEnumerable<NPath> GetCommonSourceFiles()
+        {
+            yield return _testCase.RootCasesDirectory.Parent
+                .Combine("Mono.Linker.Tests.Cases.Expectations")
+                .Combine("Support")
+                .Combine("DynamicallyAccessedMembersAttribute.cs");
+        }
+
         public virtual IEnumerable<string> GetCommonReferencedAssemblies(NPath workingDirectory)
         {
             yield return workingDirectory.Combine("Mono.Linker.Tests.Cases.Expectations.dll").ToString();

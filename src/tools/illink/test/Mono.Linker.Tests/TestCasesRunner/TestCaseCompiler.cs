@@ -179,15 +179,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return _sandbox.AfterReferenceResourceDirectoryFor(info.OutputName).Files().ToArray();
         }
 
-        private static NPath[] CollectSourceFilesFrom(NPath directory)
+        private NPath[] CollectSourceFilesFrom(NPath directory)
         {
-            var sourceFiles = directory.Files("*.cs").ToArray();
-            if (sourceFiles.Length > 0)
-                return sourceFiles;
+            var sourceFiles = directory.Files("*.cs");
+            if (sourceFiles.Any())
+                return sourceFiles.Concat(_metadataProvider.GetCommonSourceFiles()).ToArray();
 
-            sourceFiles = directory.Files("*.il").ToArray();
-            if (sourceFiles.Length > 0)
-                return sourceFiles;
+            sourceFiles = directory.Files("*.il");
+            if (sourceFiles.Any())
+                return sourceFiles.ToArray();
 
             throw new FileNotFoundException($"Didn't find any sources files in {directory}");
         }
@@ -298,7 +298,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var syntaxTrees = options.SourceFiles.Select(p =>
                 CSharpSyntaxTree.ParseText(
                     text: p.ReadAllText(),
-                    options: parseOptions
+                    options: parseOptions,
+                    path: p.ToString()
                 )
             );
 
