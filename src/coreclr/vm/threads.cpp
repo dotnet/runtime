@@ -6140,17 +6140,8 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
 #endif // _DEBUG
 #endif // HOST_64BIT
 
-        int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages);
-        if (ThreadGuardPages != 0)
-        {
-            uGuardSize += (ThreadGuardPages * GetOsPageSize());
-        }
-#if defined(HOST_64BIT)
-        else
-        {
-            uGuardSize += (EXTRA_PAGES * GetOsPageSize());
-        }
-#endif // HOST_64BIT
+        int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages, EXTRA_PAGES);
+        uGuardSize += (ThreadGuardPages * GetOsPageSize());
 
         LOG((LF_EH, LL_INFO10000, "STACKOVERFLOW: setting thread stack guarantee to 0x%x\n", uGuardSize));
 
