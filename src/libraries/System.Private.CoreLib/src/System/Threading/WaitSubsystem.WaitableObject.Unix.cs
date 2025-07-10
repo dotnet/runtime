@@ -13,7 +13,7 @@ namespace System.Threading
         ///
         /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
         /// </summary>
-        public sealed class WaitableObject
+        public sealed class WaitableObject : IWaitableObject
         {
             /// <summary>
             /// Dictionary to look up named waitable objects.  This implementation only supports in-process

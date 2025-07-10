@@ -10,9 +10,14 @@ namespace System.Threading
 {
     internal static partial class WaitSubsystem
     {
+        private interface IWaitableObject
+        {
+            void OnDeleteHandle();
+        }
+
         private static class HandleManager
         {
-            public static IntPtr NewHandle(WaitableObject waitableObject)
+            public static IntPtr NewHandle(IWaitableObject waitableObject)
             {
                 Debug.Assert(waitableObject != null);
 
@@ -24,7 +29,8 @@ namespace System.Threading
                 return handle;
             }
 
-            public static WaitableObject FromHandle(IntPtr handle)
+            public static TWaitableObject FromHandle<TWaitableObject>(IntPtr handle)
+                where TWaitableObject : IWaitableObject
             {
                 if (handle == IntPtr.Zero || handle == new IntPtr(-1))
                 {
@@ -33,7 +39,7 @@ namespace System.Threading
 
                 // We don't know if any other handles are invalid, and this may crash or otherwise do bad things, that is by
                 // design, IntPtr is unsafe by nature.
-                return (WaitableObject)GCHandle.FromIntPtr(handle).Target!;
+                return (TWaitableObject)GCHandle.FromIntPtr(handle).Target!;
             }
 
             /// <summary>
@@ -48,7 +54,7 @@ namespace System.Threading
 
                 // We don't know if any other handles are invalid, and this may crash or otherwise do bad things, that is by
                 // design, IntPtr is unsafe by nature.
-                FromHandle(handle).OnDeleteHandle();
+                FromHandle<IWaitableObject>(handle).OnDeleteHandle();
                 GCHandle.FromIntPtr(handle).Free();
             }
         }

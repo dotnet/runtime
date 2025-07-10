@@ -241,7 +241,7 @@ namespace System.Threading
 
         public static void SetEvent(IntPtr handle)
         {
-            SetEvent(HandleManager.FromHandle(handle));
+            SetEvent(HandleManager.FromHandle<WaitableObject>(handle));
         }
 
         public static void SetEvent(WaitableObject waitableObject)
@@ -261,7 +261,7 @@ namespace System.Threading
 
         public static void ResetEvent(IntPtr handle)
         {
-            ResetEvent(HandleManager.FromHandle(handle));
+            ResetEvent(HandleManager.FromHandle<WaitableObject>(handle));
         }
 
         public static void ResetEvent(WaitableObject waitableObject)
@@ -282,7 +282,7 @@ namespace System.Threading
         public static int ReleaseSemaphore(IntPtr handle, int count)
         {
             Debug.Assert(count > 0);
-            return ReleaseSemaphore(HandleManager.FromHandle(handle), count);
+            return ReleaseSemaphore(HandleManager.FromHandle<WaitableObject>(handle), count);
         }
 
         public static int ReleaseSemaphore(WaitableObject waitableObject, int count)

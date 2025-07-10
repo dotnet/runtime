@@ -30,8 +30,6 @@ namespace System.Threading
         internal ExecutionContext? _executionContext; // this call context follows the logical thread
         internal SynchronizationContext? _synchronizationContext; // maintained separately from ExecutionContext
 
-        internal NamedMutexProcessDataBase? _ownedSharedNamedMutexes; // shared named mutexes owned by this thread
-
         private string? _name;
         private StartHelper? _startHelper;
 
