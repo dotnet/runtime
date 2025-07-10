@@ -70,6 +70,35 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, index);
         }
 
+        public override TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte)
+        {
+            // ReadyToRun does not contain PatchpointInfo
+            hasFlagByte = false;
+
+            // ReadyToRunJitManager::GetDebugInfo
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+                return TargetPointer.Null;
+
+            index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
+            index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
+
+            Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfo);
+
+            NativeReader reader = new NativeReader(Target, imageBase);
+            NativeArray debugInfoArray = new NativeArray(reader, debugInfoData.VirtualAddress);
+
+            if (!debugInfoArray.TryGetAt(index, out uint offset))
+                // If the index is not found in the debug info array, return null
+                return TargetPointer.Null;
+
+            uint debugInfoOffset = reader.DecodeUnsigned(offset, out uint lookBack);
+            if (lookBack != 0)
+                debugInfoOffset = offset - lookBack;
+
+            return imageBase + debugInfoOffset;
+        }
+
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
         {
             gcInfo = TargetPointer.Null;
