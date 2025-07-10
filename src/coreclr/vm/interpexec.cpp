@@ -7,6 +7,7 @@
 #include "gcenv.h"
 #include "interpexec.h"
 #include "callstubgenerator.h"
+#include "frames.h"
 
 // for numeric_limits
 #include <limits>
@@ -1845,11 +1846,22 @@ MAIN_LOOP:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
                     PCODE callTarget = *(PCODE*)pMethod->pDataItems[targetAddrSlot];
 
+                    InlinedCallFrame inlinedCallFrame;
+                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
+                    inlinedCallFrame.m_pCallSiteSP = stack;
+                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pFrame;
+                    inlinedCallFrame.m_pThread = GetThread();
+                    inlinedCallFrame.m_Datum = NULL;
+                    inlinedCallFrame.Push();
+
                     {
                         // Interpreter-FIXME: Create InlinedCallFrame.
                         GCX_PREEMP();
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
+
+                    inlinedCallFrame.Pop();
+
                     break;
                 }
 
