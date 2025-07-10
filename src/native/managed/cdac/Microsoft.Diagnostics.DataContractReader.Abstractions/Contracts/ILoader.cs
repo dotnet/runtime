@@ -75,9 +75,9 @@ public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
-    ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
-
-    TargetPointer GetModulePointer(TargetPointer assemblyPointer) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandleFromModulePtr(TargetPointer modulePointer) => throw new NotImplementedException();
+    TargetPointer GetModuleAddress(ModuleHandle handle) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer) => throw new NotImplementedException();
 
     IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
