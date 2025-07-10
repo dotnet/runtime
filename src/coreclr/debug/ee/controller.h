@@ -552,7 +552,17 @@ public:
 
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // gets a pointer to the shared buffer
-    SharedPatchBypassBuffer* GetOrCreateSharedPatchBypassBuffer();
+    SharedPatchBypassBuffer* CreateSharedPatchBypassBuffer();
+    SharedPatchBypassBuffer* GetSharedPatchBypassBuffer()
+    {
+        SharedPatchBypassBuffer *pRet = m_pSharedPatchBypassBuffer;
+        if (pRet != NULL)
+        {
+            // AddRef the buffer so that it doesn't go away while we're using it.
+            pRet->AddRef();
+        }
+        return pRet;
+    }
 
     // entry point for general initialization when the controller is being created
     void Initialize()

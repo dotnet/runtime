@@ -70,7 +70,7 @@ bool DebuggerControllerPatch::IsSafeForStackTrace()
 #ifndef FEATURE_EMULATE_SINGLESTEP
 // returns a pointer to the shared buffer.  each call will AddRef() the object
 // before returning it so callers only need to Release() when they're finished with it.
-SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBuffer()
+SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer()
 {
     CONTRACTL
     {
@@ -4518,39 +4518,53 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     // Create the shared instruction block. this will also create the shared RIP-relative buffer
     //
 
-    m_pSharedPatchBypassBuffer = patch->GetOrCreateSharedPatchBypassBuffer();
+    m_pSharedPatchBypassBuffer = patch->GetSharedPatchBypassBuffer();
+    SharedPatchBypassBuffer *pSharedPatchBypassBufferRW = NULL;
+    BYTE* patchBypassRW = NULL;
+
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    ExecutableWriterHolder<SharedPatchBypassBuffer> sharedPatchBypassBufferWriterHolder((SharedPatchBypassBuffer*)m_pSharedPatchBypassBuffer, sizeof(SharedPatchBypassBuffer));
-    SharedPatchBypassBuffer *pSharedPatchBypassBufferRW = sharedPatchBypassBufferWriterHolder.GetRW();
+    ExecutableWriterHolder<SharedPatchBypassBuffer> sharedPatchBypassBufferWriterHolder;
+#endif
+
+    if (m_pSharedPatchBypassBuffer == NULL)
+    {
+        // If we don't have a shared patch buffer, create one
+        m_pSharedPatchBypassBuffer = patch->CreateSharedPatchBypassBuffer();
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        SharedPatchBypassBufferWriterHolder.AssignExecutableWriterHolder((SharedPatchBypassBuffer*)m_pSharedPatchBypassBuffer, sizeof(SharedPatchBypassBuffer));
+        pSharedPatchBypassBufferRW = sharedPatchBypassBufferWriterHolder.GetRW();
 #else // HOST_OSX && HOST_ARM64
-    SharedPatchBypassBuffer *pSharedPatchBypassBufferRW = m_pSharedPatchBypassBuffer;
+        pSharedPatchBypassBufferRW = m_pSharedPatchBypassBuffer;
 #endif // HOST_OSX && HOST_ARM64
 
+        // we do not write to the shared patch buffer if we are not creating it
+        patchBypassRW = pSharedPatchBypassBufferRW->PatchBypass;
+    }
+
     BYTE* patchBypassRX = m_pSharedPatchBypassBuffer->PatchBypass;
-    BYTE* patchBypassRW = pSharedPatchBypassBufferRW->PatchBypass;
     LOG((LF_CORDB, LL_INFO10000, "DPS::DPS: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", patch->opcode, patch->address, m_pSharedPatchBypassBuffer));
 
-    // Copy the instruction block over to the patch skip
-    // WARNING: there used to be an issue here because CopyInstructionBlock copied the breakpoint from the
-    // jitted code stream into the patch buffer. Further below CORDbgSetInstruction would correct the
-    // first instruction. This buffer is shared by all threads so if another thread executed the buffer
-    // between this thread's execution of CopyInstructionBlock and CORDbgSetInstruction the wrong
-    // code would be executed. The bug has been fixed by changing CopyInstructionBlock to only copy
-    // the code bytes after the breakpoint.
-    //   You might be tempted to stop copying the code at all, however that wouldn't work well with rejit.
-    // If we skip a breakpoint that is sitting at the beginning of a method, then the profiler rejits that
-    // method causing a jump-stamp to be placed, then we skip the breakpoint again, we need to make sure
-    // the 2nd skip executes the new jump-stamp code and not the original method prologue code. Copying
-    // the code every time ensures that we have the most up-to-date version of the code in the buffer.
-    _ASSERTE( patch->IsBound() );
-    CopyInstructionBlock(patchBypassRW, (const BYTE *)patch->address);
+    if (patchBypassRW != NULL)
+    {
+        // Copy the instruction block over to the patch skip
+        // WARNING: there used to be an issue here because CopyInstructionBlock copied the breakpoint from the
+        // jitted code stream into the patch buffer. Further below CORDbgSetInstruction would correct the
+        // first instruction. This buffer is shared by all threads so if another thread executed the buffer
+        // between this thread's execution of CopyInstructionBlock and CORDbgSetInstruction the wrong
+        // code would be executed. The bug has been fixed by changing CopyInstructionBlock to only copy
+        // the code bytes after the breakpoint.
+        _ASSERTE( patch->IsBound() );
+        CopyInstructionBlock(patchBypassRW, (const BYTE *)patch->address);
 
-    // Technically, we could create a patch skipper for an inactive patch, but we rely on the opcode being
-    // set here.
-    _ASSERTE( patch->IsActivated() );
-    CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypassRW, patch->opcode);
+        // Technically, we could create a patch skipper for an inactive patch, but we rely on the opcode being
+        // set here.
+        _ASSERTE( patch->IsActivated() );
+        CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypassRW, patch->opcode);
 
-    LOG((LF_CORDB, LL_EVERYTHING, "SetInstruction was called\n"));
+        LOG((LF_CORDB, LL_EVERYTHING, "SetInstruction was called\n"));
+    }
+    
+
     //
     // Look at instruction to get some attributes
     //
@@ -4565,12 +4579,12 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 #endif
 
 #if defined(TARGET_AMD64)
-
     // The code below handles RIP-relative addressing on AMD64. The original implementation made the assumption that
     // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
     // has since been expanded to handle RIP-relative writes as well.
-    if (m_instrAttrib.m_dwOffsetToDisp != 0 && !IsInPlaceSingleStep())
+    if (patchBypassRW != NULL && m_instrAttrib.m_dwOffsetToDisp != 0 && !IsInPlaceSingleStep())
     {
+        _ASSERTE(pSharedPatchBypassBufferRW != NULL);
         _ASSERTE(m_instrAttrib.m_cbInstr != 0);
 
         //
