@@ -316,6 +316,60 @@ namespace System.Diagnostics.Tests
             Assert.Equal(entryCount, decodedBaggage.Count());
         }
 
+        // Trace ID format is defined in W3C Trace Context specification:
+        // HEXDIGLC = DIGIT / "a" / "b" / "c" / "d" / "e" / "f"; lowercase hex character
+        // value           = version "-" version-format
+        // version = 2HEXDIGLC; this document assumes version 00. Version ff is forbidden
+        // version - format = trace - id "-" parent - id "-" trace - flags
+        // trace - id = 32HEXDIGLC; 16 bytes array identifier. All zeroes forbidden
+        // parent-id        = 16HEXDIGLC  ; 8 bytes array identifier. All zeroes forbidden
+        // trace-flags      = 2HEXDIGLC   ; 8 bit flags.
+        //         .         .         .         .         .         .
+        // Example 00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01
+        public static IEnumerable<object[]> W3CTraceParentData()
+        {
+            // TraceId, valid data?
+
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", true }; // Perfect trace parent
+            yield return new object[] { "0f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", true }; // version is 0f, which is valid
+            yield return new object[] { "f0-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", true }; // version is f0, which is valid
+            yield return new object[] { "ff-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // version is ff, which is invalid
+            yield return new object[] { "f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // version is one digit 'f', which is invalid
+            yield return new object[] { "0g-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // version is 0g, which is invalid
+            yield return new object[] { "0F-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // version is 0F, which is invalid, 'F' should be lower case
+            yield return new object[] { "00-af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // trace-id length is wrong
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e-01", false }; // parent id length is wrong
+            yield return new object[] { "00-00000000000000000000000000000000-b9c7c989f97918e1-01", false }; // all zeros trace-id is invalid
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-0000000000000000-01", false }; // all zeros parent id is valid
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319C-b9c7c989f97918e1-01", false }; // trace-id has upper case 'C', which is invalid
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-B9c7c989f97918e1-01", false }; // parent-id has upper case 'B', which is invalid
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-0", false }; // trace flags length is wrong
+            yield return new object[] { "00-0af7651916cd43dd8448ek211c80319c-b9c7c989f97918e1-01", false }; // trace-id has wrong character 'k', which is invalid
+            yield return new object[] { "00-0af7651916cd43dd8448ee211c80319c-b9c7c989f97918z1-01", false }; // parent-id has wrong character 'z', which is invalid
+            yield return new object[] { "00_0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // invalid separator, should be '-'
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c_b9c7c989f97918e1-01", false }; // invalid separator, should be '-'
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1_01", false }; // invalid separator, should be '-'
+        }
+
+        [Theory]
+        [MemberData(nameof(W3CTraceParentData))]
+        public void ValidateTraceIdAndStateExtraction(string traceParent, bool isValid)
+        {
+            s_w3cPropagator.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                fieldValues = null;
+                fieldValue = null;
+
+                if (fieldName == PropagatorTests.TraceParent)
+                {
+                    fieldValue = traceParent;
+                    return;
+                }
+            }, out string? traceId, out _);
+
+            Assert.Equal(isValid, traceId is not null);
+        }
+
         private static string? EncodeBaggage(IEnumerable<KeyValuePair<string, string>> baggageEntries)
         {
             Activity? current = Activity.Current;

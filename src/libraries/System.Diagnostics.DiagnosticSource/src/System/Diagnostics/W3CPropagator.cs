@@ -606,7 +606,7 @@ namespace System.Diagnostics
                 return true;
             }
 
-            if (traceParent[0] == 'f' || traceParent[1] == 'f' || IsInvalidTraceParentCharacter(traceParent[0]) || IsInvalidTraceParentCharacter(traceParent[1]))
+            if ((traceParent[0] == 'f' && traceParent[1] == 'f') || IsInvalidTraceParentCharacter(traceParent[0]) || IsInvalidTraceParentCharacter(traceParent[1]))
             {
                 return true;
             }
