@@ -51,9 +51,20 @@ namespace Microsoft.Extensions.Configuration
             for (int i = providers.Count - 1; i >= 0; i--)
             {
                 IConfigurationProvider provider = providers[i];
-                if (provider.TryGet(key, out value))
+
+                try
                 {
-                    return true;
+                    if (provider.TryGet(key, out value))
+                    {
+                        return true;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Skip disposed providers to avoid exceptions during access.
+                    // This is especially relevant for cases like ConfigurationManager,
+                    // which implements IConfigurationRoot and may mutate the providers
+                    // collection and dispose replaced providers.
                 }
             }
 
