@@ -485,7 +485,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 break;
 
             case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
+                for (BasicBlock* const bTarget : block->SwitchSuccs())
                 {
                     JITDUMP("  " FMT_BB " : switch target\n", bTarget->bbNum);
                     bTarget->SetFlags(BBF_HAS_LABEL);
@@ -5564,17 +5564,16 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperIs(GT_JMPTABLE));
 
-    emitter*       emit       = GetEmitter();
-    const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    FlowEdge**     jumpTable  = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    const unsigned jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
+    emitter*         emit       = GetEmitter();
+    const unsigned   jumpCount  = compiler->compCurBB->GetSwitchTargets()->GetCaseCount();
+    FlowEdge** const jumpTable  = compiler->compCurBB->GetSwitchTargets()->GetCases();
+    const unsigned   jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
 
     JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
-        BasicBlock* target = (*jumpTable)->getDestinationBlock();
-        jumpTable++;
+        BasicBlock* target = jumpTable[i]->getDestinationBlock();
         noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
