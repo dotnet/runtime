@@ -1817,8 +1817,6 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
-                // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
                 while ((uint)_index < (uint)_hashSet._count)
                 {
                     ref Entry entry = ref _hashSet._entries![_index++];
@@ -1829,7 +1827,7 @@ namespace System.Collections.Generic
                     }
                 }
 
-                _index = _hashSet._count + 1;
+                _index = -1;
                 _current = default!;
                 return false;
             }
@@ -1842,7 +1840,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _hashSet._count + 1))
+                    if (_index <= 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }

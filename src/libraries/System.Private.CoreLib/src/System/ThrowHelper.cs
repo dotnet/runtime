@@ -758,7 +758,7 @@ namespace System
         private static InvalidOperationException GetInvalidOperationException_EnumCurrent(int index)
         {
             return new InvalidOperationException(
-                index < 0 ?
+                index == -1 ?
                 SR.InvalidOperation_EnumNotStarted :
                 SR.InvalidOperation_EnumEnded);
         }

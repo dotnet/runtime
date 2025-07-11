@@ -2553,16 +2553,12 @@ namespace System.Collections
             private readonly int _version;
             private object? _currentElement;
             private readonly bool _isArrayList;
-            // this object is used to indicate enumeration has not started or has terminated
-            private static readonly object s_dummyObject = new object();
 
             internal ArrayListEnumeratorSimple(ArrayList list)
             {
                 _list = list;
-                _index = -1;
                 _version = list._version;
                 _isArrayList = (list.GetType() == typeof(ArrayList));
-                _currentElement = s_dummyObject;
             }
 
             public object Clone() => MemberwiseClone();
@@ -2571,57 +2567,41 @@ namespace System.Collections
             {
                 if (_version != _list._version)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
                 if (_isArrayList)
                 {  // avoid calling virtual methods if we are operating on ArrayList to improve performance
-                    if (_index < _list._size - 1)
+                    if ((uint)_index < (uint)_list._size)
                     {
-                        _currentElement = _list._items[++_index];
+                        _currentElement = _list._items[_index++];
                         return true;
-                    }
-                    else
-                    {
-                        _currentElement = s_dummyObject;
-                        _index = _list._size;
-                        return false;
                     }
                 }
                 else
                 {
-                    if (_index < _list.Count - 1)
+                    if ((uint)_index < (uint)_list.Count)
                     {
-                        _currentElement = _list[++_index];
+                        _currentElement = _list[_index++];
                         return true;
                     }
-                    else
-                    {
-                        _index = _list.Count;
-                        _currentElement = s_dummyObject;
-                        return false;
-                    }
                 }
+
+                _index = -1;
+                _currentElement = null;
+                return false;
             }
 
             public object? Current
             {
                 get
                 {
-                    object? temp = _currentElement;
-                    if (s_dummyObject == temp)
-                    { // check if enumeration has not started or has terminated
-                        if (_index == -1)
-                        {
-                            throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                        }
+                    if (_index <= 0)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_EnumCurrent(_index - 1);
                     }
 
-                    return temp;
+                    return _currentElement;
                 }
             }
 
@@ -2629,11 +2609,11 @@ namespace System.Collections
             {
                 if (_version != _list._version)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                _currentElement = s_dummyObject;
-                _index = -1;
+                _currentElement = null;
+                _index = 0;
             }
         }
 
