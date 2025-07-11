@@ -50,14 +50,6 @@ internal readonly struct Loader_1 : ILoader
 
         return new ModuleHandle(modulePointer);
     }
-
-    TargetPointer ILoader.GetModuleAddress(ModuleHandle handle)
-    {
-        if (handle.Address == TargetPointer.Null)
-            throw new ArgumentNullException(nameof(handle));
-
-        return handle.Address;
-    }
     ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer)
     {
         if (assemblyPointer == TargetPointer.Null)
@@ -68,6 +60,13 @@ internal readonly struct Loader_1 : ILoader
             throw new InvalidOperationException("Assembly does not have a module associated with it.");
 
         return new ModuleHandle(assembly.Module);
+    }
+    TargetPointer ILoader.GetModuleAddress(ModuleHandle handle)
+    {
+        if (handle.Address == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(handle));
+
+        return handle.Address;
     }
 
     IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
