@@ -3131,7 +3131,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
     const int offset = id->idAddr()->iiaGetJitDataOffset();
     assert(offset >= 0);
-    assert(offset < emitDataSize());
+    assert((UNATIVE_OFFSET)offset < emitDataSize());
 
     *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
