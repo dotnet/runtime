@@ -2829,6 +2829,10 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
             typeArgIndex   = 0;
             break;
 
+        case CORINFO_HELP_READYTORUN_NEWARR_1:
+            lengthArgIndex = 0;
+            break;
+
         default:
             return false;
     }
@@ -2864,10 +2868,19 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array method table pointer.
     //
-    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
+    GenTree* mt = nullptr;
+    if (typeArgIndex == -1)
+    {
+        CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
+        assert(arrayClsHnd != NO_CLASS_HANDLE);
+        mt = gtNewIconEmbClsHndNode(arrayClsHnd);
+    }
+    else
+    {
+        mt = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
+    }
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
-
     fgInsertStmtBefore(block, stmt, mtStmt);
 
     // Initialize the array length.

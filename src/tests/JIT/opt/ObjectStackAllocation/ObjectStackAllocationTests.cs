@@ -422,7 +422,11 @@ namespace ObjectStackAllocation
             return c.i;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        // Array tests below will fail under R2R as the int[] handles cannot be embedded and
+        // our policy is not to sacrifce an R2R compilation for the sake of stack allocation.
+        // Bypass for now by adding AggressiveOptimization attribute.
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int AllocateArrayWithNonGCElements()
         {
             int[] array = new int[42];
@@ -431,7 +435,7 @@ namespace ObjectStackAllocation
             return array[24] + array.Length;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int AllocateArrayWithGCElements()
         {
             string[] array = new string[42];
@@ -440,7 +444,7 @@ namespace ObjectStackAllocation
             return array[24].Length * 21 + array.Length;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int AllocateArrayT<T>()
         {
             T[] array = new T[42];
@@ -454,7 +458,7 @@ namespace ObjectStackAllocation
             return array.Length + 42;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray1()
         {
             Span<int> span = new int[100];
@@ -465,6 +469,7 @@ namespace ObjectStackAllocation
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int SpanCaptureArray2() => SpanCaptureArray2Helper(null);
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray2Helper(int[]? x)
         {
             Span<int> span = x ?? new int[100];
@@ -472,7 +477,7 @@ namespace ObjectStackAllocation
             return span[10] + span[42];
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray3()
         {
             Span<int> span = new int[128];
@@ -481,7 +486,7 @@ namespace ObjectStackAllocation
             return x[10] + span[42];
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArrayT<T>()
         {
             Span<T> span = new T[37];
@@ -623,7 +628,7 @@ namespace ObjectStackAllocation
             return 1;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int StructReferredObjects()
         {
             int[] a1 = new int[10];

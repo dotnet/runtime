@@ -129,7 +129,8 @@ class ObjectAllocator final : public Phase
         OAT_NONE,
         OAT_NEWOBJ,
         OAT_NEWOBJ_HEAP,
-        OAT_NEWARR
+        OAT_NEWARR,
+        OAT_NEWARR_R2R
     };
 
     struct AllocationCandidate

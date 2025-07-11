@@ -452,6 +452,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_InsideThrowBlock = value;
                 break;
 
+            case InlineObservation::CALLEE_MAY_RETURN_SMALL_ARRAY:
+                m_MayReturnSmallArray = true;
+                break;
+
             default:
                 // Ignore the remainder for now
                 break;
@@ -762,6 +766,13 @@ double DefaultPolicy::DetermineMultiplier()
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
+
+    if (m_MayReturnSmallArray)
+    {
+        multiplier += 4.0;
+        JITDUMP("\nInline candidate may return small known-size array.  Multiplier increased to %g.", multiplier);
+    }
+
     // For prejit roots we do not see the call sites. To be suitably optimistic
     // assume that call sites may pass constants.
     else if (m_IsPrejitRoot && ((m_ArgFeedsConstantTest > 0) || (m_ArgFeedsTest > 0)))
