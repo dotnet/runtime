@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -631,14 +632,17 @@ namespace System.Formats.Tar
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
         private void ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
         {
-            buffer = TarHelpers.TrimNullTerminated(buffer);
-
             while (TryGetNextExtendedAttribute(ref buffer, out string? key, out string? value))
             {
                 if (!ExtendedAttributes.TryAdd(key, value))
                 {
                     throw new InvalidDataException(SR.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
+            }
+
+            if (buffer.Length > 0)
+            {
+                throw new InvalidDataException(SR.Format(SR.ExtHeaderInvalidRecords));
             }
         }
 
@@ -725,15 +729,21 @@ namespace System.Formats.Tar
             }
             ReadOnlySpan<byte> line = buffer.Slice(0, newlinePos);
 
-            // Update buffer to point to the next line for the next call
-            buffer = buffer.Slice(newlinePos + 1);
-
-            // Find the end of the length and remove everything up through it.
+            // Find the end of the length
             int spacePos = line.IndexOf((byte)' ');
             if (spacePos < 0)
             {
                 return false;
             }
+
+            // Check the length matches the line length
+            ReadOnlySpan<byte> length = buffer.Slice(0, spacePos);
+            if (!int.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture, out int lengthValue) || lengthValue != (line.Length + 1))
+            {
+                return false;
+            }
+
+            // Remove the length
             line = line.Slice(spacePos + 1);
 
             // Find the equal separator.
@@ -749,6 +759,9 @@ namespace System.Formats.Tar
             // Return the parsed key and value.
             key = Encoding.UTF8.GetString(keySlice);
             value = Encoding.UTF8.GetString(valueSlice);
+
+            // Update buffer to point to the next line for the next call
+            buffer = buffer.Slice(newlinePos + 1);
             return true;
         }
     }

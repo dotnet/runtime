@@ -270,7 +270,8 @@ namespace System.Formats.Tar.Tests
         [InlineData("gnu-multi-hdrs")] // Multiple consecutive GNU metadata entries
         [InlineData("neg-size")] // Garbage chars
         [InlineData("invalid-go17")] // Many octal fields are all zero chars
-        // [InlineData("issue11169")] // Checksum with null in the middle, https://github.com/dotnet/runtime/issues/117455
+        [InlineData("issue11169")] // Extended header uses spaces instead of newlines to separate records
+        [InlineData("pax-bad-hdr-file")] // Extended header record is not terminated by newline
         [InlineData("issue10968")] // Garbage chars
         public void Throw_ArchivesWithRandomChars(string testCaseName)
         {
