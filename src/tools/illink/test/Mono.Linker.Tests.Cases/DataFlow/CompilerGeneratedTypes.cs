@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     [SkipKeptItemsValidation]
     [Define("INCLUDE_UNEXPECTED_LOWERING_WARNINGS")] // https://github.com/dotnet/roslyn/issues/79333
     [Define("DEBUG")]
+    [SetupLinkerArgument("--disable-generated-code-heuristics")]
     public class CompilerGeneratedTypes
     {
         public static void Main()

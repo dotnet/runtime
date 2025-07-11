@@ -524,7 +524,7 @@ namespace Mono.Linker.Dataflow
 
             // Avoid the heuristics for .NET10+, where DynamicallyAccessedMembers flows to generated code
             // because it is annotated with CompilerLoweringPreserveAttribute.
-            if (generatedType.Module.Assembly.GetTargetFrameworkVersion() >= new Version(10, 0))
+            if (_context.DisableGeneratedCodeHeuristics && generatedType.Module.Assembly.GetTargetFrameworkVersion() >= new Version(10, 0))
             {
                 return null;
             }
