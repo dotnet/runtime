@@ -340,7 +340,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { "00-af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // trace-id length is wrong
             yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e-01", false }; // parent id length is wrong
             yield return new object[] { "00-00000000000000000000000000000000-b9c7c989f97918e1-01", false }; // all zeros trace-id is invalid
-            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-0000000000000000-01", false }; // all zeros parent id is valid
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-0000000000000000-01", false }; // all zeros parent id is invalid
             yield return new object[] { "00-0af7651916cd43dd8448eb211c80319C-b9c7c989f97918e1-01", false }; // trace-id has upper case 'C', which is invalid
             yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-B9c7c989f97918e1-01", false }; // parent-id has upper case 'B', which is invalid
             yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-0", false }; // trace flags length is wrong
