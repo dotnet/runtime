@@ -23,6 +23,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mh_log.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -37,14 +38,6 @@
 #include "runtime.h"
 
 #include "gc-common.h"
-#ifndef MH_LOG
-#define MH_LOG(msg, ...) { \
-  printf("MH_NATIVE_LOG: %s : %s | %d :: ", __func__, __FILE__, __LINE__); \
-  printf((msg), ##__VA_ARGS__); \
-  printf("\n"); \
-  fflush(stdout); \
-}
-#endif
 
 void bindings_initialize_internals ();
 

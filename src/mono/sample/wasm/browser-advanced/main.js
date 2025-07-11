@@ -51,7 +51,7 @@ try {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
-                config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
+                config.environmentVariables["MONO_LOG_LEVEL"] = "trace";
                 config.browserProfilerOptions = {
                     sampleIntervalMs: 5.15,
                     callSpec: "N:Sample" // needs to match AOT profile
@@ -93,7 +93,22 @@ try {
 
     const config = getConfig();
     const exports = await getAssemblyExports(config.mainAssemblyName);
+    //const MyStringTest = exports.Sample.Test.SimpleTestFunctionString();
+    //console.debug(`MyTest: ${MyStringTest}`);
+    //const MyTest = exports.Sample.Test.SimpleTestFunctionInt();
+    //console.debug(`MyTest: ${MyTest}`);
+    //const IntSize = exports.Sample.Test.SimpleTestFunctionIntSize();
+    //console.debug(`IntSize: ${IntSize}`);
+    //console.debug("Accessing console:");
+    const consoleTest = exports.Sample.Test.SimpleTestConsole();
+    //console.debug(`consoleTest: ${consoleTest}`);
+    //console.debug("Printing empty string from C#:"); 
+    //exports.Sample.Test.SimpleTestFunctionPrintEmptyString();
+    //console.debug("Printing non-empty string from C#:"); 
+    //exports.Sample.Test.SimpleTestFunctionPrintString();
+    //console.debug("Calling TestMeaning:");
     const meaning = exports.Sample.Test.TestMeaning();
+    console.debug(`meaning: ${meaning}`);
     if (typeof Module.GL !== "object") {
         exit(-10, "Can't find GL");
     }

@@ -20,6 +20,9 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/appdomain.h"
 #include "mono/metadata/abi-details.h"
+
+#include <mono/metadata/mh_log.h>
+
 #ifdef MONO_CLASS_DEF_PRIVATE
 /* Rationale: we want the functions in this file to work even when everything
  * is broken.  They may be called from a debugger session, for example.  If
@@ -889,7 +892,7 @@ char *
 mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret, MonoTypeNameFormat format)
 {
 	char *res;
-	char wrapper [64];
+	char wrapper [128];
 	char *klass_desc;
 	char *inst_desc = NULL;
 	ERROR_DECL (error);

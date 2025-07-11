@@ -584,7 +584,8 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_WEBCIL=1"/>      
-      <_MonoCMakeArgs Include="-DDISABLE_JITERPRETER=1"/>      
+      <_MonoCMakeArgs Include="-DDISABLE_JITERPRETER=1"/>
+      <_MonoCMakeArgs Include="-DMEMORY64=1" Condition="'$(WasmEnableMemory64)' == 'true'"  />
       <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread"/>
       <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
 	    <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64=1" />

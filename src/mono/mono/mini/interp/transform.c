@@ -428,12 +428,6 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 		td->vars = (InterpVar*) g_realloc (td->vars, td->vars_capacity * sizeof (InterpVar));
 	}
 	int mt = mono_mint_type (type);
-	
-	/*MH_LOG("Got mono_mint_type %d for type %s\n", mt, mono_type_get_name (type));
-	MH_LOG_INDENT();
-	log_mint_type (mt);
-	MH_LOG_UNINDENT();*/
-
 	InterpVar *local = &td->vars [td->vars_size];
 	// FIXME: We don't need to do this memset unless we realloc'd, since we malloc0 vars initially
 	memset (local, 0, sizeof (InterpVar));
@@ -488,7 +482,7 @@ interp_create_stack_var (TransformData *td, StackInfo *sp, int type_size)
 	int local = interp_create_var_explicit (td, get_type_from_stack (sp->type, sp->klass), type_size);
 
 	td->vars [local].execution_stack = TRUE;
-	sp->var = local;
+	sp->var = local;	
 }
 
 static void
@@ -5409,7 +5403,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		int local;
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
-		MH_LOG_INDENT();
 		for (int i = signature->param_count - 1; i >= 0; i--) {
 			MonoType *type = get_type_from_stack (td->sp [-1].type, td->sp [-1].klass);
 
@@ -5419,7 +5412,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);
 		}
-		MH_LOG_UNINDENT();
+
 		if (signature->hasthis) {
 			/*
 			 * If this is value type, it is passed by address and not by value.
