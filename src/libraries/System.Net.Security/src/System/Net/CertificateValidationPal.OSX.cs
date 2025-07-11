@@ -147,7 +147,7 @@ namespace System.Net
         {
             return securityContext switch
             {
-                SafeDeleteNwContext => Array.Empty<string>(),
+                SafeDeleteNwContext nwContext => nwContext.AcceptableIssuers,
                 SafeDeleteSslContext sslContext => GetRequestCertificateAuthorities(sslContext),
                 _ => throw new ArgumentException("Invalid context type", nameof(securityContext))
             };

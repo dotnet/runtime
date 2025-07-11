@@ -15,7 +15,8 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
+        internal readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
+        internal new Stream InnerStream => base.InnerStream;
         private NestedState _nestedAuth;
         private bool _isRenego;
 
@@ -298,18 +299,11 @@ namespace System.Net.Security
 #if TARGET_APPLE
                 if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
                 {
-                    // For Network Framework, we need to select client certificate before handshake
-                    if (_sslAuthenticationOptions.IsClient)
-                    {
-                        X509Certificate2? selectedCert = SelectClientCertificate();
-                        if (selectedCert != null && _sslAuthenticationOptions.CertificateContext == null)
-                        {
-                            // Build certificate context if not already provided
-                            _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
-                        }
-                    }
+                    Debug.Assert(_sslAuthenticationOptions.IsClient);
+                    byte[]? dummy = null;
+                    AcquireClientCredentials(ref dummy, true);
 
-                    Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, _sslAuthenticationOptions, InnerStream, cancellationToken);
+                    Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, this, cancellationToken);
                     await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
                     if (await handshakeTask.ConfigureAwait(false) is Exception ex)
                     {

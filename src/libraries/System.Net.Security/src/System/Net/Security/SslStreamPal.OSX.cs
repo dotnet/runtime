@@ -290,8 +290,20 @@ namespace System.Net.Security
             SafeDeleteContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            Debug.Assert(context is null or SafeDeleteSslContext, "SafeDeleteSslContext expected");
-            SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
+            if (context == null)
+            {
+                return false;
+            }
+
+            if (context is SafeDeleteNwContext)
+            {
+                // we are being called form network framework, we will retrieve
+                // the selected certificate from higher frame in the callstack
+                // and return it as return value of the callback
+                return true;
+            }
+
+            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)context);
 
             if (sslAuthenticationOptions.CertificateContext != null)
             {
@@ -434,24 +446,22 @@ namespace System.Net.Security
                     (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13)));
         }
 
-        private static SafeDeleteNwContext CreateAsyncSecurityContext(
-            SslAuthenticationOptions sslAuthenticationOptions,
-            Stream transportStream)
+        private static SafeDeleteNwContext CreateAsyncSecurityContext(SslStream stream)
         {
-            Debug.Assert(ShouldUseAsyncSecurityContext(sslAuthenticationOptions),
+            Debug.Assert(ShouldUseAsyncSecurityContext(stream._sslAuthenticationOptions),
                 "ShouldUseAsyncSecurityContext should be true when creating an async security context.");
 
             if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(null, $"Using Network Framework (SafeDeleteNwContext) for TLS connection - Protocols: {sslAuthenticationOptions.EnabledSslProtocols}");
-            return new SafeDeleteNwContext(sslAuthenticationOptions, transportStream);
+                NetEventSource.Info(null, $"Using Network Framework (SafeDeleteNwContext) for TLS connection - Protocols: {stream._sslAuthenticationOptions.EnabledSslProtocols}");
+            return new SafeDeleteNwContext(stream);
         }
 
-        internal static Task<Exception?> AsyncHandshakeAsync(ref SafeDeleteContext? context, SslAuthenticationOptions sslAuthenticationOptions, Stream transportStream, CancellationToken cancellationToken)
+        internal static Task<Exception?> AsyncHandshakeAsync(ref SafeDeleteContext? context, SslStream stream, CancellationToken cancellationToken)
         {
             Debug.Assert(context == null);
             try
             {
-                SafeDeleteNwContext nwContext = CreateAsyncSecurityContext(sslAuthenticationOptions, transportStream);
+                SafeDeleteNwContext nwContext = CreateAsyncSecurityContext(stream);
                 context = nwContext;
                 return nwContext.HandshakeAsync(cancellationToken);
             }

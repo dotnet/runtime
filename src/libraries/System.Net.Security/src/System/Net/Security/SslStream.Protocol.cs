@@ -574,7 +574,7 @@ namespace System.Net.Security
 
         --*/
 
-        private bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
+        internal bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
         {
             // Acquire possible Client Certificate information and set it on the handle.
             bool cachedCred = false;                   // this is a return result from this method.

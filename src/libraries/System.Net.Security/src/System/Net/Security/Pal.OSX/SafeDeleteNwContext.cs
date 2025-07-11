@@ -36,72 +36,67 @@ namespace System.Net.Security
             "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK");
         private static readonly Lazy<bool> s_isNetworkFrameworkAvailable = new Lazy<bool>(CheckNetworkFrameworkAvailability);
 
-        // Network Framework handles
-        private readonly SafeNwHandle _connectionHandle;
+        private const int InitialReceiveBufferSize = 2 * 1024;
+
+        // backreference to the SslStream instance
+        private readonly SslStream _sslStream;
+        private Stream TransportStream => _sslStream.InnerStream;
+        private SslAuthenticationOptions SslAuthenticationOptions => _sslStream._sslAuthenticationOptions;
+
+        // Underlying nw_connection_t handle
+        internal readonly SafeNwHandle ConnectionHandle;
+        // nw_framer_t handle for tunneling messages
         private SafeNwHandle? _framerHandle;
+
+        // Temporary storage for data that are available only during callback
+        private string[] _acceptableIssuers = Array.Empty<string>();
+        internal string[] AcceptableIssuers => _acceptableIssuers;
+
+        // peer certificate chain (obtained from callback once available)
         private SafeX509ChainHandle? _peerCertChainHandle;
         internal SafeX509ChainHandle? PeerX509ChainHandle => _peerCertChainHandle;
-        internal SafeNwHandle ConnectionHandle => _connectionHandle;
 
-        // Keep-Alive Handles
+        // Provides backreference from native code
         private readonly GCHandle _thisHandle;
 
         // Lock object
         private readonly object _lockObject = new();
 
-        // Handshake state machine
-        private enum HandshakeState
-        {
-            NotStarted,
-            InProgress,
-            WaitingForPeer,
-            Completed,
-            Failed
-        }
-
-        private readonly Stream _transportStream;
-        private readonly SslAuthenticationOptions _sslAuthenticationOptions;
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
         private ResettableValueTaskSource _transportReadTcs = new ResettableValueTaskSource();
-        private ArrayBuffer _appReceiveBuffer = new(InitialBufferSize);
+        private ArrayBuffer _appReceiveBuffer = new(InitialReceiveBufferSize);
         private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource();
         private Task? _pendingAppReceiveBufferFillTask;
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
-        // Buffers
-        private const int InitialBufferSize = 2 * 1024;
-        private ArrayBuffer _outputBuffer = new(InitialBufferSize);
-
         private bool _disposed;
-        private bool _clientCertificateRequested;
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
         // TODO: Bind every tcs to the message, so we can complete it when the specific message is sent (avoiding wrong completions by post-handshake message etc.).
         private TaskCompletionSource? _currentWriteCompletionSource;
 
-        public SafeDeleteNwContext(SslAuthenticationOptions sslAuthenticationOptions, Stream transportStream) : base(IntPtr.Zero)
+        public SafeDeleteNwContext(SslStream stream) : base(IntPtr.Zero)
         {
-            _connectionHandle = Interop.NetworkFramework.Tls.CreateContext(sslAuthenticationOptions.IsServer);
-            _transportStream = transportStream;
-            _sslAuthenticationOptions = sslAuthenticationOptions;
-            if (_connectionHandle.IsInvalid)
+            _sslStream = stream;
+            ConnectionHandle = Interop.NetworkFramework.Tls.CreateContext(SslAuthenticationOptions.IsServer);
+            if (ConnectionHandle.IsInvalid)
             {
                 throw new Exception("Failed to create Network Framework connection"); // TODO: Make this string resource
             }
 
-            ValidateSslAuthenticationOptions(sslAuthenticationOptions);
+            ValidateSslAuthenticationOptions(SslAuthenticationOptions);
             _thisHandle = GCHandle.Alloc(this, GCHandleType.Normal);
-            SetTlsOptions(sslAuthenticationOptions);
+            SetTlsOptions(SslAuthenticationOptions);
         }
 
         public static bool IsNetworkFrameworkAvailable => IsSwitchEnabled && s_isNetworkFrameworkAvailable.Value;
 
-        internal bool ClientCertificateRequested => _clientCertificateRequested;
+        internal bool ClientCertificateRequested => _challengeCallbackCompleted == 1 && _selectedClientCertificate != IntPtr.Zero;
 
         internal async Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
-            Interop.NetworkFramework.Tls.StartTlsHandshake(_connectionHandle, GCHandle.ToIntPtr(_thisHandle));
+            Interop.NetworkFramework.Tls.StartTlsHandshake(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle));
 
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
             {
@@ -119,7 +114,7 @@ namespace System.Net.Security
                     while (!_shutdownCts.IsCancellationRequested)
                     {
                         // Read data from the transport stream
-                        int bytesRead = await _transportStream.ReadAsync(readBuffer, _shutdownCts.Token).ConfigureAwait(false);
+                        int bytesRead = await TransportStream.ReadAsync(readBuffer, _shutdownCts.Token).ConfigureAwait(false);
 
                         if (bytesRead > 0)
                         {
@@ -132,7 +127,7 @@ namespace System.Net.Security
                             _transportReadTcs.TrySetResult(final: true);
 
                             // TODO: can this race with actual handshake completion?
-                            Interop.NetworkFramework.Tls.CancelConnection(_connectionHandle);
+                            Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
                             break;
                         }
                     }
@@ -172,7 +167,7 @@ namespace System.Net.Security
             using MemoryHandle memoryHandle = buffer.Pin();
             unsafe
             {
-                Interop.NetworkFramework.Tls.SendToConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.SendToConnection(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
             }
 
             long status = await tcs.Task.ConfigureAwait(false);
@@ -249,7 +244,7 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
             unsafe
             {
-                Interop.NetworkFramework.Tls.ReadFromConnection(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.ReadFromConnection(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
             }
 
             return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
@@ -312,14 +307,13 @@ namespace System.Net.Security
 
         private void SetTlsOptions(SslAuthenticationOptions options)
         {
-            Interop.NetworkFramework.Tls.SetTlsOptions(_connectionHandle, GCHandle.ToIntPtr(_thisHandle), options);
+            Interop.NetworkFramework.Tls.SetTlsOptions(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), options);
         }
 
         protected override bool ReleaseHandle()
         {
             if (_thisHandle.IsAllocated)
             {
-                _thisHandle.Free();
             }
             return true;
         }
@@ -333,7 +327,7 @@ namespace System.Net.Security
                     if (!_disposed)
                     {
                         _handshakeCompletionSource.TrySetResult(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
-                        Interop.NetworkFramework.Tls.CancelConnection(_connectionHandle);
+                        Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
                         // TODO: Wait for connection cancellation through status update with TCS.
                         _disposed = true;
                         // Complete any pending writes with disposed exception
@@ -344,8 +338,7 @@ namespace System.Net.Security
                             writeCompletion.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
                         }
 
-                        _connectionHandle.Dispose();
-                        _outputBuffer.Dispose();
+                        ConnectionHandle.Dispose();
                         _peerCertChainHandle?.Dispose();
                     }
                 }
@@ -365,11 +358,6 @@ namespace System.Net.Security
             }
         }
 
-        private void EnsureKeepAlive()
-        {
-            GC.KeepAlive(this);
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe int WriteOutboundWireData(IntPtr thisHandle, byte* data, void** dataLength)
         {
@@ -381,7 +369,6 @@ namespace System.Net.Security
 
             try
             {
-                nwContext.EnsureKeepAlive();
                 ulong length = (ulong)*dataLength;
                 Debug.Assert(length <= int.MaxValue);
 
@@ -408,7 +395,6 @@ namespace System.Net.Security
             }
             finally
             {
-                nwContext?.EnsureKeepAlive();
                 nwContext?._currentWriteCompletionSource?.TrySetResult();
                 nwContext?._currentWriteCompletionSource = null;
             }
@@ -423,106 +409,23 @@ namespace System.Net.Security
                 return IntPtr.Zero;
             }
 
-            try
-            {
-                nwContext.EnsureKeepAlive();
-
-                // Check if we've already processed the challenge callback
-                if (Interlocked.CompareExchange(ref nwContext._challengeCallbackCompleted, 1, 0) != 0)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Info(nwContext, $"ChallengeCallback already processed, returning cached result: {nwContext._selectedClientCertificate}");
-                    }
-                    return nwContext._selectedClientCertificate;
-                }
-
-                nwContext._clientCertificateRequested = true;
-
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(nwContext, $"ChallengeCallback invoked, acceptableIssuersHandle: {acceptableIssuersHandle}, remoteCertificateHandle: {remoteCertificateHandle}");
-                }
-
-                if (nwContext._sslAuthenticationOptions.CertificateContext != null)
-                {
-                    X509Certificate2 cert = nwContext._sslAuthenticationOptions.CertificateContext.TargetCertificate;
-                    if (cert.HasPrivateKey)
-                    {
-                        nwContext._selectedClientCertificate = cert.Handle;
-                        return nwContext._selectedClientCertificate;
-                    }
-                }
-
-                if (nwContext._sslAuthenticationOptions.CertSelectionDelegate != null)
-                {
-                    X509Certificate2? selectedCert = null;
-                    X509Certificate2? remoteCertificate = null;
-                    try
-                    {
-                        // Get the local certificates collection
-                        X509CertificateCollection localCertificates = nwContext._sslAuthenticationOptions.ClientCertificates ?? new X509CertificateCollection();
-
-                        // Extract acceptable issuers from the CFArrayRef
-                        string[] acceptableIssuers = ExtractAcceptableIssuers(acceptableIssuersHandle);
-
-                        if (remoteCertificateHandle != IntPtr.Zero)
-                        {
-                            remoteCertificate = new X509Certificate2(remoteCertificateHandle);
-                        }
-
-                        X509Certificate? selected = nwContext._sslAuthenticationOptions.CertSelectionDelegate(
-                            nwContext._sslAuthenticationOptions, // TODO: Should we pass SslStream instance here?
-                            nwContext._sslAuthenticationOptions.TargetHost,
-                            localCertificates,
-                            remoteCertificate,
-                            acceptableIssuers);
-
-                        if (selected is X509Certificate2 cert2)
-                        {
-                            selectedCert = cert2;
-                        }
-                        else if (selected != null)
-                        {
-                            selectedCert = new X509Certificate2(selected);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            NetEventSource.Error(nwContext, $"LocalCertificateSelectionCallback failed: {ex.Message}");
-                        }
-                    }
-                    finally
-                    {
-                        remoteCertificate?.Dispose();
-                    }
-
-                    if (selectedCert != null && selectedCert.HasPrivateKey)
-                    {
-                        nwContext._selectedClientCertificate = selectedCert.Handle;
-                        return nwContext._selectedClientCertificate;
-                    }
-                }
-
-                // No certificate selected
-                nwContext._selectedClientCertificate = IntPtr.Zero;
-                return nwContext._selectedClientCertificate;
-            }
-            catch (Exception e)
+            // the callback may end up being called multiple times for some reason.
+            // check if we've already processed the challenge callback
+            if (Interlocked.CompareExchange(ref nwContext._challengeCallbackCompleted, 1, 0) != 0)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(nwContext, $"ChallengeCallback Failed: {e.Message}");
+                    NetEventSource.Info(nwContext, $"ChallengeCallback already processed, returning cached result: {nwContext._selectedClientCertificate}");
                 }
-                nwContext._selectedClientCertificate = IntPtr.Zero;
                 return nwContext._selectedClientCertificate;
             }
-            finally
-            {
-                nwContext?.EnsureKeepAlive();
-            }
+
+            nwContext._acceptableIssuers = ExtractAcceptableIssuers(acceptableIssuersHandle);
+            Debug.Assert(nwContext._peerCertChainHandle != null, "Peer certificate chain handle should be set before challenge callback");
+
+            byte[]? dummy = null;
+            nwContext._sslStream.AcquireClientCredentials(ref dummy, true);
+            return nwContext._selectedClientCertificate = nwContext.SslAuthenticationOptions.CertificateContext?.TargetCertificate.Handle ?? IntPtr.Zero;
         }
 
         private void WriteOutboundWireData(ReadOnlySpan<byte> data)
@@ -531,7 +434,7 @@ namespace System.Net.Security
 
             lock (_lockObject)
             {
-                _transportStream.Write(data);
+                TransportStream.Write(data);
             }
         }
 
@@ -549,7 +452,7 @@ namespace System.Net.Security
 
                 unsafe
                 {
-                    Interop.NetworkFramework.Tls.ProcessInputData(_connectionHandle, _framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
+                    Interop.NetworkFramework.Tls.ProcessInputData(ConnectionHandle, _framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
                 }
 
                 await valueTask.ConfigureAwait(false);
@@ -566,7 +469,7 @@ namespace System.Net.Security
             }
         }
 
-        public override bool IsInvalid => _connectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
+        public override bool IsInvalid => ConnectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
 
         [UnmanagedCallersOnly]
         private static unsafe void StatusUpdateCallback(IntPtr thisHandle, NetworkFrameworkStatusUpdates statusUpdate, IntPtr data, IntPtr data2)
@@ -587,7 +490,6 @@ namespace System.Net.Security
 
             try
             {
-                nwContext?.EnsureKeepAlive();
                 switch (statusUpdate)
                 {
                     case NetworkFrameworkStatusUpdates.FramerStart:
@@ -606,7 +508,6 @@ namespace System.Net.Security
                         nwContext?.ConnectionClosed();
                         break;
                     case NetworkFrameworkStatusUpdates.CertificateAvailable:
-                        //handle.SetHandle(data);
                         global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeX509ChainHandle>.ManagedToUnmanagedOut marshaller = new();
                         marshaller.FromUnmanaged(data);
                         nwContext?.CertificateAvailable(marshaller.ToManaged());
@@ -628,10 +529,6 @@ namespace System.Net.Security
                 {
                     NetEventSource.Error(nwContext, $"StatusUpdateCallback failed: {ex}");
                 }
-            }
-            finally
-            {
-                nwContext?.EnsureKeepAlive();
             }
         }
         private void FramerStartCallback(SafeNwHandle framerHandle)
@@ -670,6 +567,8 @@ namespace System.Net.Security
                 _currentWriteCompletionSource = null;
                 writeCompletion.TrySetException(new IOException(SR.net_io_eof));
             }
+
+            _thisHandle.Free();
         }
 
         private void CertificateAvailable(SafeX509ChainHandle peerCertChainHandle)
