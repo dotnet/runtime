@@ -21,6 +21,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public bool StripSubstitutions;
         public bool StripLinkAttributes;
         public bool DumpDependencies;
+        public bool GenerateTargetFrameworkAttribute;
 
         public List<KeyValuePair<string, string[]>> AdditionalArguments = new List<KeyValuePair<string, string[]>>();
 
