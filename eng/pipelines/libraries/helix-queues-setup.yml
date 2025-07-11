@@ -78,7 +78,7 @@ jobs:
     
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - osx.14.arm64.open
+      - osx.15.arm64.open
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
