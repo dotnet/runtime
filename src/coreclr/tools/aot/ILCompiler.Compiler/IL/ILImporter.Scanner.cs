@@ -846,7 +846,10 @@ namespace Internal.IL
             {
                 TypeDesc isinstCheckType = (TypeDesc)_canonMethodIL.GetObject(_isInstCheckPatternAnalyzer.Token);
                 if (ConstructedEETypeNode.CreationAllowed(isinstCheckType)
-                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                    // Below makes sure we don't need to worry about variance
+                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any)
+                    // However, we still need to worry about variant-by-size casting with arrays
+                    && !_factory.TypeSystemContext.IsArrayVariantCastable(isinstCheckType))
                 {
                     condition = _factory.MaximallyConstructableType(isinstCheckType);
                 }
@@ -886,7 +889,7 @@ namespace Internal.IL
 
             if (type.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "Unbox");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, type), "Unbox");
             }
             else
             {
@@ -963,7 +966,8 @@ namespace Internal.IL
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
                 {
-                    reference = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type);
+                    reference = GetGenericLookupHelper(
+                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : ReadyToRunHelperId.TypeHandle, type);
                 }
                 else
                 {
@@ -1257,7 +1261,7 @@ namespace Internal.IL
             if (elementType.IsGCPointer && !_isReadOnly)
             {
                 if (elementType.IsRuntimeDeterminedSubtype)
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType), "ldelema");
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, elementType), "ldelema");
                 else
                     _dependencies.Add(_factory.NecessaryTypeSymbol(elementType), "ldelema");
 

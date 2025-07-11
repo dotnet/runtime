@@ -943,16 +943,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            if (instParam != nullptr)
-            {
-                call->AsCall()->gtArgs.PushBack(this,
-                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
-            }
-
             if (call->AsCall()->IsAsync())
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+            }
+
+            if (instParam != nullptr)
+            {
+                call->AsCall()->gtArgs.PushBack(this,
+                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
             }
 
             if (varArgsCookie != nullptr)
@@ -10418,6 +10418,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "get_Default") == 0)
                         {
                             result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+                        }
+                    }
+                    else if (strcmp(className, "IEnumerable`1") == 0)
+                    {
+                        if (strcmp(methodName, "GetEnumerator") == 0)
+                        {
+                            result = NI_System_Collections_Generic_IEnumerable_GetEnumerator;
                         }
                     }
                 }

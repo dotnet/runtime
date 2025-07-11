@@ -7436,6 +7436,12 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
+#ifdef FEATURE_INTERPRETER
+            if ((pEntryFrame != FRAME_TOP) && (pEntryFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            {
+                ((InterpreterFrame*)pEntryFrame)->SetIsFaulting(true);
+            }
+#endif // FEATURE_INTERPRETER
             DispatchManagedException(orThrowable);
         }
     }

@@ -2033,8 +2033,10 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
     STANDARD_VM_CONTRACT;
 
     size_t size = sizeof(StubPrecode);
-    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocAlignedMem(size, 1));
+    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocStub());
     pPrecode->Init(pPrecode, DynamicHelperArg, pAllocator, PRECODE_DYNAMIC_HELPERS, DynamicHelper);
+
+    FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);

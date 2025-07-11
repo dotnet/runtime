@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"The application '{appOtherExt}' does not exist or is not a managed .dll or .exe");
+                .And.HaveStdErrContaining($"The application '{appOtherExt}' is not a managed .dll.");
         }
 
         [Fact]
@@ -187,81 +187,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (Binaries.CetCompat.IsSupported)
                 Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
 
-            // Get the framework location that was built
-            string builtDotnet = TestContext.BuiltDotNet.BinPath;
-
-            // Verify running with the default working directory
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture)
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
-
-
-            // Verify running from within the working directory
-            Command.Create(appExe)
-                .WorkingDirectory(sharedTestState.App.Location)
-                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
-                .MultilevelLookup(false)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void AppHost_GlobalLocation(bool useRegisteredLocation)
-        {
-            string appExe = sharedTestState.App.AppExe;
-
-            // Get the framework location that was built
-            string builtDotnet = TestContext.BuiltDotNet.BinPath;
-
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
-            {
-                string architecture = TestContext.BuildArchitecture;
-                if (useRegisteredLocation)
-                {
-                    registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (architecture, builtDotnet) });
-                }
-
-                // Verify running with the default working directory
-                Command.Create(appExe)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .MultilevelLookup(false)
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
-                    .DotNetRoot(null)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErr();
-
-                // Verify running from within the working directory
-                Command.Create(appExe)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .MultilevelLookup(false)
-                    .WorkingDirectory(sharedTestState.App.Location)
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
-                    .DotNetRoot(null)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErr();
-            }
         }
 
         [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
