@@ -502,12 +502,7 @@ namespace ILCompiler
                         _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
                     }
 
-                    TypeDesc type = node switch
-                    {
-                        ConstructedEETypeNode eetypeNode => eetypeNode.Type,
-                        CanonicalEETypeNode canoneetypeNode => canoneetypeNode.Type,
-                        _ => null,
-                    };
+                    TypeDesc type = (node as ConstructedEETypeNode)?.Type;
 
                     if (type != null)
                     {
