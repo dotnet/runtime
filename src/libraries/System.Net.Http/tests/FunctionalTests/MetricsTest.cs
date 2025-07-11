@@ -1211,7 +1211,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
-        public Task UseIPAddressInUri_Proxy_RecordsUriHostAsServerAddress()
+        public Task UseIPAddressInTargetUri_UseProxy_RecordsUriHostAsServerAddress()
         {
             const string IpString = "1.2.3.4";
 

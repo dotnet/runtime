@@ -45,8 +45,6 @@ namespace System.Net.Http
                 }
                 _propagatorFields = fieldDescriptors.ToArray();
             }
-
-            _proxy = proxy;
         }
 
         private static bool IsEnabled()

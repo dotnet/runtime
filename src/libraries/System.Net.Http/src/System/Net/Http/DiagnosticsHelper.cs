@@ -46,7 +46,7 @@ namespace System.Net.Http
                 return HttpUtilities.ParseHostNameFromHeader(hostHeader);
             }
 
-            return request.RequestUri.Host;
+            return request.RequestUri.IdnHost;
         }
 
         public static bool TryGetErrorType(HttpResponseMessage? response, Exception? exception, out string? errorType)

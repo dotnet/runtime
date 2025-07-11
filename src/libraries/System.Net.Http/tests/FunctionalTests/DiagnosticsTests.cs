@@ -1673,7 +1673,6 @@ namespace System.Net.Http.Functional.Tests
             if (UseVersion == HttpVersion30 && !useTls) return;
 
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
-            //await RunTest(UseVersion.ToString(), TestAsync.ToString(), useTls.ToString());
             static async Task RunTest(string useVersion, string testAsync, string useTlsString)
             {
                 bool useTls = bool.Parse(useTlsString);
@@ -1702,16 +1701,11 @@ namespace System.Net.Http.Functional.Tests
 
                         await client.SendAsync(bool.Parse(testAsync), request);
 
-                        Activity requestActivity = requestRecorder.VerifyActivityRecordedOnce();
-                        ActivityAssert.HasTag(requestActivity, "server.address", hostName);
+                        Activity req = requestRecorder.VerifyActivityRecordedOnce();
+                        ActivityAssert.HasTag(req, "server.address", hostName);
 
-                        Activity connectionActivity = connectionSetupRecorder.VerifyActivityRecordedOnce();
-                        //Assert.Equal($"HTTP connection_setup {hostName}:{uri.Port}", conn.DisplayName);
-                        //ActivityAssert.HasTag(conn, "network.peer.address",
-                        //    (string a) => a == IPAddress.Loopback.ToString() ||
-                        //    a == IPAddress.Loopback.MapToIPv6().ToString() ||
-                        //    a == IPAddress.IPv6Loopback.ToString());
-                        //ActivityAssert.HasTag(conn, "server.address", hostName);
+                        Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
+                        ActivityAssert.HasTag(conn, "server.address", hostName);
                     },
                     async server =>
                     {
@@ -1724,7 +1718,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task UseIPAddressInUri_UseProxy_RecordsUriHostAsServerAddress()
+        public async Task UseIPAddressInTargetUri_UseProxy_RecordsUriHostAsServerAddress()
         {
             if (UseVersion != HttpVersion.Version11)
             {
@@ -1732,7 +1726,6 @@ namespace System.Net.Http.Functional.Tests
             }
 
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
-            //await RunTest(UseVersion.ToString(), TestAsync.ToString(), useTls.ToString());
             static async Task RunTest(string useVersion, string testAsync)
             {
                 const string IpString = "1.2.3.4";
@@ -1763,13 +1756,7 @@ namespace System.Net.Http.Functional.Tests
                         Activity req = requestRecorder.VerifyActivityRecordedOnce();
                         Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
                         ActivityAssert.HasTag(req, "server.address", IpString);
-
-                        //Assert.Equal($"HTTP connection_setup {hostName}:{uri.Port}", conn.DisplayName);
-                        //ActivityAssert.HasTag(conn, "network.peer.address",
-                        //    (string a) => a == IPAddress.Loopback.ToString() ||
-                        //    a == IPAddress.Loopback.MapToIPv6().ToString() ||
-                        //    a == IPAddress.IPv6Loopback.ToString());
-                        //ActivityAssert.HasTag(conn, "server.address", hostName);
+                        ActivityAssert.HasTag(conn, "server.address", IpString);
                     },
                     async server =>
                     {
