@@ -799,12 +799,12 @@ static IntConstSelectOper MatchIntConstSelectValues(int64_t trueVal, int64_t fal
     {
         unsigned bitIndex = BitOperations::Log2((uint64_t)trueVal);
         assert(bitIndex > 0);
-        if (trueVal == (int64_t(1) << bitIndex))
+        if (isPow2((uint64_t)trueVal) && trueVal == (int64_t(1) << bitIndex))
             return {GT_LSH, TYP_LONG, bitIndex};
 
         bitIndex = BitOperations::Log2((uint32_t)trueVal);
         assert(bitIndex > 0);
-        if (trueVal == int64_t(int32_t(int32_t(1) << bitIndex)))
+        if (isPow2((uint32_t)trueVal) && trueVal == int64_t(int32_t(int32_t(1) << bitIndex)))
             return {GT_LSH, TYP_INT, bitIndex};
     }
 
