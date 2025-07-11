@@ -182,7 +182,7 @@ mono_droid_execute_assembly (const char* executable_path, void* coreclr_handle, 
     return rv;
 }
 
-#define PROPERTY_COUNT 4
+#define PROPERTY_COUNT 3
 
 static int
 mono_droid_runtime_init (const char* executable)
@@ -210,7 +210,6 @@ mono_droid_runtime_init (const char* executable)
     appctx_keys[0] = "RUNTIME_IDENTIFIER";
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
     appctx_keys[2] = "HOST_RUNTIME_CONTRACT";
-    appctx_keys[3] = "System.Globalization.Invariant";
 
     const char* appctx_values[PROPERTY_COUNT];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
@@ -219,14 +218,6 @@ mono_droid_runtime_init (const char* executable)
     char contract_str[19]; // 0x + 16 hex digits + '\0'
     snprintf(contract_str, 19, "0x%zx", (size_t)(&g_host_contract));
     appctx_values[2] = contract_str;
-
-    const char* invariant_env = getenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-    const char* invariant_value = "false"; // Default to false
-    if (invariant_env != NULL && (strcmp(invariant_env, "1") == 0 || strcmp(invariant_env, "true") == 0))
-    {
-        invariant_value = "true";
-    }
-    appctx_values[3] = invariant_value;
 
     LOG_INFO ("Calling coreclr_initialize");
     int rv = coreclr_initialize (
