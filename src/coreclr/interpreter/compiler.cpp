@@ -2202,7 +2202,7 @@ static int32_t GetLdindForType(InterpType interpType)
     return -1;
 }
 
-bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig, bool *emitMemBarrier)
+bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     bool mustExpand = (method == m_methodHnd);
     if (!mustExpand && (ni == NI_Illegal))
@@ -2277,9 +2277,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
                 case InterpTypeI8:
                     opcode = INTOP_COMPARE_EXCHANGE_I8;
                     break;
-                case InterpTypeO:
-                    *emitMemBarrier = true;
-                    return false;
                 default:
                     return false;
             }
@@ -2750,8 +2747,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int callIFunctionPointerVar = -1;
     void* calliCookie = NULL;
 
-    bool emitMemBarrier = false;
-
     if (isCalli)
     {
         // Suppress uninitialized use warning.
@@ -2782,7 +2777,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             if (InterpConfig.InterpMode() >= 3)
             {
                 NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
-                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig, &emitMemBarrier))
+                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
                 {
                     m_ip += 5;
                     return;
@@ -3140,11 +3135,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
     m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
-
-    if (emitMemBarrier)
-    {
-        AddIns(INTOP_MEMBAR);
-    }
 
     m_ip += 5;
 }

@@ -23,7 +23,7 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         if (!strcmp(methodName, "get_IsSupported"))
             return NI_IsSupported_False;
     }
-  
+
     if (!HAS_PREFIX(namespaceName, "System"))
         return NI_Illegal;
 
@@ -62,15 +62,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         return NI_Illegal;
     }
     else if (HAS_PREFIX(namespaceName, "System.Runtime.Intrinsics"))
-    {
-        // Architecture-specific intrinsics.
-        if (!strcmp(methodName, "get_IsSupported"))
-            return NI_IsSupported_False;
-
-        // Every intrinsic except IsSupported is PNSE in interpreted-only mode.
-        return NI_Throw_PlatformNotSupportedException;
-    }
-    else if (HAS_PREFIX(namespaceName, "JIT.HardwareIntrinsics"))
     {
         // Architecture-specific intrinsics.
         if (!strcmp(methodName, "get_IsSupported"))
