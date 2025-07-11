@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,21 +23,20 @@ namespace System.Text.Json.Serialization.Metadata
             return result;
         }
 
-        internal async ValueTask<T?> DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
+        internal async ValueTask<T?> DeserializeAsync<TReadBufferState>(TReadBufferState bufferState, CancellationToken cancellationToken)
+            where TReadBufferState : struct, IReadBufferState<TReadBufferState>
         {
             Debug.Assert(IsConfigured);
             JsonSerializerOptions options = Options;
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-            // Note: The ReadBufferState ctor rents pooled buffers.
-            ReadBufferState bufferState = new(options.DefaultBufferSize);
 
             try
             {
                 while (true)
                 {
-                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                    bufferState = await bufferState.ReadAsync(cancellationToken).ConfigureAwait(false);
                     bool success = ContinueDeserialize(
                         ref bufferState,
                         ref jsonReaderState,
@@ -55,6 +55,19 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        internal ValueTask<T?> DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
+        {
+            // Note: The ReadBufferState ctor rents pooled buffers.
+            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, Options.DefaultBufferSize);
+            return DeserializeAsync(bufferState, cancellationToken);
+        }
+
+        internal ValueTask<T?> DeserializeAsync(PipeReader utf8Json, CancellationToken cancellationToken)
+        {
+            PipeReadBufferState bufferState = new PipeReadBufferState(utf8Json);
+            return DeserializeAsync(bufferState, cancellationToken);
+        }
+
         internal T? Deserialize(Stream utf8Json)
         {
             Debug.Assert(IsConfigured);
@@ -63,13 +76,13 @@ namespace System.Text.Json.Serialization.Metadata
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
             // Note: The ReadBufferState ctor rents pooled buffers.
-            ReadBufferState bufferState = new(options.DefaultBufferSize);
+            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, options.DefaultBufferSize);
 
             try
             {
                 while (true)
                 {
-                    bufferState.ReadFromStream(utf8Json);
+                    bufferState.Read();
                     bool success = ContinueDeserialize(
                         ref bufferState,
                         ref jsonReaderState,
@@ -101,29 +114,58 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken)
         {
-            T? result = await DeserializeAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+            // Note: The ReadBufferState ctor rents pooled buffers.
+            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, Options.DefaultBufferSize);
+            T? result = await DeserializeAsync(bufferState, cancellationToken).ConfigureAwait(false);
+            return result;
+        }
+
+        internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(PipeReader utf8Json, CancellationToken cancellationToken)
+        {
+            T? result = await DeserializeAsync(new PipeReadBufferState(utf8Json), cancellationToken).ConfigureAwait(false);
             return result;
         }
 
         internal sealed override object? DeserializeAsObject(Stream utf8Json)
             => Deserialize(utf8Json);
 
-        internal bool ContinueDeserialize(
-            ref ReadBufferState bufferState,
+        internal bool ContinueDeserialize<TReadBufferState>(
+            ref TReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,
             ref ReadStack readStack,
             out T? value)
+            where TReadBufferState : struct, IReadBufferState<TReadBufferState>
         {
-            var reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
-            bool success = EffectiveConverter.ReadCore(ref reader, out value, Options, ref readStack);
+            Utf8JsonReader reader;
+            if (bufferState.Bytes.IsSingleSegment)
+            {
+                reader = new Utf8JsonReader(
+#if NET
+                    bufferState.Bytes.FirstSpan,
+#else
+                    bufferState.Bytes.First.Span,
+#endif
+                    bufferState.IsFinalBlock, jsonReaderState);
+            }
+            else
+            {
+                reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
+            }
+            try
+            {
+                bool success = EffectiveConverter.ReadCore(ref reader, out value, Options, ref readStack);
 
-            Debug.Assert(reader.BytesConsumed <= bufferState.Bytes.Length);
-            Debug.Assert(!bufferState.IsFinalBlock || reader.AllowMultipleValues || reader.BytesConsumed == bufferState.Bytes.Length,
-                "The reader should have thrown if we have remaining bytes.");
+                Debug.Assert(reader.BytesConsumed <= bufferState.Bytes.Length);
+                Debug.Assert(!bufferState.IsFinalBlock || reader.AllowMultipleValues || reader.BytesConsumed == bufferState.Bytes.Length,
+                    "The reader should have thrown if we have remaining bytes.");
 
-            bufferState.AdvanceBuffer((int)reader.BytesConsumed);
-            jsonReaderState = reader.CurrentState;
-            return success;
+                jsonReaderState = reader.CurrentState;
+                return success;
+            }
+            finally
+            {
+                bufferState.Advance(reader.BytesConsumed);
+            }
         }
     }
 }
