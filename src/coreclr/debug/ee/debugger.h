@@ -2607,6 +2607,7 @@ public:
 #ifndef DACCESS_COMPILE
     void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count);
     void ExternalMethodFixupNextStep(PCODE address);
+    void GenericPInvokeCalliNextStep(PCODE address);
 #endif
 
 #ifdef DACCESS_COMPILE

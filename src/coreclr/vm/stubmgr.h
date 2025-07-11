@@ -63,6 +63,7 @@ enum TraceType
     TRACE_MGR_PUSH,                  // Don't know where stub goes, stop at address then call TraceManager() below to find out
     TRACE_MULTICAST_DELEGATE_HELPER, // Stub goes to a multicast delegate helper
     TRACE_EXTERNAL_METHOD_FIXUP,     // Stub goes to an external method fixup helper
+    TRACE_GENERIC_PINVOKE_CALLI,     // Stub goes to a generic PInvoke Calli helper
 
     TRACE_OTHER                      // We are going somewhere you can't step into (eg. ee helper function)
 };
@@ -160,6 +161,13 @@ public:
     void InitForExternalMethodFixup()
     {
         this->type = TRACE_EXTERNAL_METHOD_FIXUP;
+        this->address = (PCODE)NULL;
+        this->stubManager = NULL;
+    }
+
+    void InitForGenericPInvokeCalli()
+    {
+        this->type = TRACE_GENERIC_PINVOKE_CALLI;
         this->address = (PCODE)NULL;
         this->stubManager = NULL;
     }
