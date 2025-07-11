@@ -182,7 +182,7 @@ mono_droid_execute_assembly (const char* executable_path, void* coreclr_handle, 
     return rv;
 }
 
-#define PROPERTY_COUNT 3
+#define PROPERTY_COUNT 4
 
 static int
 mono_droid_runtime_init (const char* executable)
