@@ -434,7 +434,6 @@ namespace System.Runtime.CompilerServices
                     CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
-                // TODO: This may need volatile write
                 TOps.SetContinuationState(task, headContinuation);
 
                 try
@@ -482,8 +481,6 @@ namespace System.Runtime.CompilerServices
                         }
                     }
 
-                    // Move to thread pool. TODO: Avoid allocation here, but currently we cannot queue `task` directly
-                    // due to assert in ThreadPoolWorkQueue.Enqueue.
                     TOps.SetContinuationState(task, continuation);
                     ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal: true);
                     return true;
@@ -501,7 +498,6 @@ namespace System.Runtime.CompilerServices
                         return false;
                     }
 
-                    // TODO: May need a volatile write here.
                     TOps.SetContinuationState(task, continuation);
 
                     try
