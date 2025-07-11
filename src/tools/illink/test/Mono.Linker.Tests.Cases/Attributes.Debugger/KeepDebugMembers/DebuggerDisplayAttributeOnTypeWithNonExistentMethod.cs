@@ -19,10 +19,10 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
         class Bar
         {
 #if !FLAG
-			public int Method ()
-			{
-				return 1;
-			}
+            public int Method()
+            {
+                return 1;
+            }
 #endif
         }
     }

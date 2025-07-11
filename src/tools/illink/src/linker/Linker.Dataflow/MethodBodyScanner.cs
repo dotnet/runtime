@@ -276,9 +276,9 @@ namespace Mono.Linker.Dataflow
                 var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition>();
                 // https://github.com/dotnet/linker/issues/2845
                 // Disabled asserts due to a bug
-                // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
+                // Debug.Assert(interproceduralState.Count == 1 + calleeMethods.Count());
                 // foreach (var method in calleeMethods)
-                //  Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
+                //  Debug.Assert(interproceduralState.Any(kvp => kvp.Key.Method == method));
             }
             else
             {
