@@ -413,6 +413,12 @@ namespace System.Net.Security
         public static SecurityStatusPal ApplyShutdownToken(
             SafeDeleteContext securityContext)
         {
+            if (securityContext is SafeDeleteNwContext nwContext)
+            {
+                nwContext.Shutdown();
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+
             Debug.Assert(securityContext is SafeDeleteSslContext, "SafeDeleteSslContext expected");
             SafeDeleteSslContext context = (SafeDeleteSslContext)securityContext;
             SafeSslHandle sslHandle = context.SslContext;

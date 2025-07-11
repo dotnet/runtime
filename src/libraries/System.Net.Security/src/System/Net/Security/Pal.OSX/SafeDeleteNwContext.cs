@@ -59,15 +59,13 @@ namespace System.Net.Security
         // Provides backreference from native code
         private readonly GCHandle _thisHandle;
 
-        // Lock object
-        private readonly object _lockObject = new();
-
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
         private ResettableValueTaskSource _transportReadTcs = new ResettableValueTaskSource();
         private ArrayBuffer _appReceiveBuffer = new(InitialReceiveBufferSize);
         private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource();
         private Task? _pendingAppReceiveBufferFillTask;
+        private readonly TaskCompletionSource _connectionClosedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
         private bool _disposed;
@@ -252,9 +250,10 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, long status, byte* data, int length)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing ConnectionRead, status: {status}, len: {length}", nameof(FillAppDataBufferAsync));
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 SafeDeleteNwContext thisContext = (SafeDeleteNwContext)handle.Target!;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {status}, len: {length}", nameof(FillAppDataBufferAsync));
+
                 ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
 
                 if (status != 0)
@@ -269,6 +268,13 @@ namespace System.Net.Security
                     thisContext._appReceiveBufferTcs.TrySetResult();
                 }
             }
+        }
+
+        internal void Shutdown()
+        {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Shutting down Network Framework context");
+
+            Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
         }
 
         private static bool CheckNetworkFrameworkAvailability()
@@ -310,62 +316,51 @@ namespace System.Net.Security
             Interop.NetworkFramework.Tls.SetTlsOptions(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), options);
         }
 
-        protected override bool ReleaseHandle()
-        {
-            if (_thisHandle.IsAllocated)
-            {
-            }
-            return true;
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
             {
-                lock (_lockObject)
+                if (!_disposed)
                 {
-                    if (!_disposed)
-                    {
-                        _handshakeCompletionSource.TrySetResult(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
-                        Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
-                        // TODO: Wait for connection cancellation through status update with TCS.
-                        _disposed = true;
-                        // Complete any pending writes with disposed exception
-                        TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
-                        if (writeCompletion != null)
-                        {
-                            _currentWriteCompletionSource = null;
-                            writeCompletion.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
-                        }
+                    _disposed = true;
 
-                        ConnectionHandle.Dispose();
-                        _peerCertChainHandle?.Dispose();
+                    _shutdownCts.Cancel();
+                    if (_pendingAppReceiveBufferFillTask is Task t)
+                    {
+                        t.Wait();
                     }
+
+                    _handshakeCompletionSource.TrySetResult(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
+                    Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
+
+                    // wait for callback signalling connection has been truly closed.
+                    _connectionClosedTcs.Task.GetAwaiter().GetResult();
+
+                    // TODO: Wait for connection cancellation through status update with TCS.
+                    // Complete any pending writes with disposed exception
+                    TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
+                    if (writeCompletion != null)
+                    {
+                        _currentWriteCompletionSource = null;
+                        writeCompletion.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
+                    }
+
+                    ConnectionHandle.Dispose();
+                    _peerCertChainHandle?.Dispose();
                 }
             }
             base.Dispose(disposing);
         }
 
-        private static SafeDeleteNwContext? ResolveThisHandle(IntPtr thisHandle)
+        private static SafeDeleteNwContext ResolveThisHandle(IntPtr thisHandle)
         {
-            try
-            {
-                return (SafeDeleteNwContext?)GCHandle.FromIntPtr(thisHandle).Target;
-            }
-            catch
-            {
-                return null;
-            }
+            return (SafeDeleteNwContext)GCHandle.FromIntPtr(thisHandle).Target!;
         }
 
         [UnmanagedCallersOnly]
         private static unsafe int WriteOutboundWireData(IntPtr thisHandle, byte* data, void** dataLength)
         {
-            SafeDeleteNwContext? nwContext = ResolveThisHandle(thisHandle);
-            if (nwContext == null || nwContext._disposed)
-            {
-                return (int)NwOSStatus.WritErr;
-            }
+            SafeDeleteNwContext nwContext = ResolveThisHandle(thisHandle);
 
             try
             {
@@ -403,11 +398,7 @@ namespace System.Net.Security
         [UnmanagedCallersOnly]
         private static IntPtr ChallengeCallback(IntPtr thisHandle, IntPtr acceptableIssuersHandle, IntPtr remoteCertificateHandle)
         {
-            SafeDeleteNwContext? nwContext = ResolveThisHandle(thisHandle);
-            if (nwContext == null || nwContext._disposed)
-            {
-                return IntPtr.Zero;
-            }
+            SafeDeleteNwContext nwContext = ResolveThisHandle(thisHandle);
 
             // the callback may end up being called multiple times for some reason.
             // check if we've already processed the challenge callback
@@ -432,10 +423,7 @@ namespace System.Net.Security
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Sending {data.Length} bytes");
 
-            lock (_lockObject)
-            {
-                TransportStream.Write(data);
-            }
+            TransportStream.Write(data);
         }
 
         private async Task WriteInboundWireDataAsync(ReadOnlyMemory<byte> buf)
@@ -479,11 +467,6 @@ namespace System.Net.Security
             if (thisHandle != IntPtr.Zero)
             {
                 nwContext = ResolveThisHandle(thisHandle);
-                if (nwContext == null)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, "Failed to resolve context handle");
-                    return;
-                }
             }
 
             if (NetEventSource.Log.IsEnabled() && statusUpdate != NetworkFrameworkStatusUpdates.DebugLog) NetEventSource.Info(nwContext, $"Received status update: {statusUpdate}");
@@ -558,6 +541,7 @@ namespace System.Net.Security
         private void ConnectionClosed()
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Connection was cancelled");
+            _connectionClosedTcs.TrySetResult();
             _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(
                 new IOException(SR.net_io_eof)));
             // Complete any pending writes with connection closed exception
