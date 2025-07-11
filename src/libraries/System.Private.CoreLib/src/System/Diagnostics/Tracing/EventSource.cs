@@ -1442,7 +1442,10 @@ namespace System.Diagnostics.Tracing
                     if (ex is EventSourceException)
                         throw;
                     else
-                        ThrowEventSourceException(m_eventData[eventId].Name, ex);
+                    {
+                        ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+                        ThrowEventSourceException(metadata.Name, ex);
+                    }
                 }
             }
         }
@@ -2072,7 +2075,10 @@ namespace System.Diagnostics.Tracing
                     if (ex is EventSourceException)
                         throw;
                     else
-                        ThrowEventSourceException(m_eventData[eventId].Name, ex);
+                    {
+                        ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+                        ThrowEventSourceException(metadata.Name, ex);
+                    }
                 }
             }
         }
