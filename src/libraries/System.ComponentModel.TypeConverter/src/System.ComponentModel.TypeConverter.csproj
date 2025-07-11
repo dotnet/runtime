@@ -45,7 +45,7 @@
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
     <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
     <Compile Include="System\ComponentModel\VersionConverter.cs" />
-    <Compile Include="System\ComponentModel\ContextAwareHashtable.cs" />
+    <Compile Include="System\ComponentModel\CollectibleKeyHashtable.cs" />
     <Compile Include="System\Timers\ElapsedEventArgs.cs" />
     <Compile Include="System\Timers\ElapsedEventHandler.cs" />
     <Compile Include="System\Timers\Timer.cs">

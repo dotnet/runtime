@@ -48,10 +48,10 @@ namespace System.ComponentModel
         // on Control, Component and object are also automatically filled
         // in. The keys to the property and event caches are types.
         // The keys to the attribute cache are either MemberInfos or types.
-        private static ContextAwareHashtable? s_propertyCache;
-        private static ContextAwareHashtable? s_eventCache;
-        private static ContextAwareHashtable? s_attributeCache;
-        private static ContextAwareHashtable? s_extendedPropertyCache;
+        private static CollectibleKeyHashtable? s_propertyCache;
+        private static CollectibleKeyHashtable? s_eventCache;
+        private static CollectibleKeyHashtable? s_attributeCache;
+        private static CollectibleKeyHashtable? s_extendedPropertyCache;
 
         // These are keys we stuff into our object cache. We use this
         // cache data to store extender provider info for an object.
@@ -192,13 +192,13 @@ namespace System.ComponentModel
             Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
         private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
 
-        private static ContextAwareHashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new ContextAwareHashtable());
+        private static CollectibleKeyHashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new CollectibleKeyHashtable());
 
-        private static ContextAwareHashtable EventCache => LazyInitializer.EnsureInitialized(ref s_eventCache, () => new ContextAwareHashtable());
+        private static CollectibleKeyHashtable EventCache => LazyInitializer.EnsureInitialized(ref s_eventCache, () => new CollectibleKeyHashtable());
 
-        private static ContextAwareHashtable AttributeCache => LazyInitializer.EnsureInitialized(ref s_attributeCache, () => new ContextAwareHashtable());
+        private static CollectibleKeyHashtable AttributeCache => LazyInitializer.EnsureInitialized(ref s_attributeCache, () => new CollectibleKeyHashtable());
 
-        private static ContextAwareHashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new ContextAwareHashtable());
+        private static CollectibleKeyHashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new CollectibleKeyHashtable());
 
         /// <summary>Clear the global caches this maintains on top of reflection.</summary>
         internal static void ClearReflectionCaches()
@@ -1095,7 +1095,7 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(Type type)
         {
-            ContextAwareHashtable attributeCache = AttributeCache;
+            CollectibleKeyHashtable attributeCache = AttributeCache;
             Attribute[]? attrs = (Attribute[]?)attributeCache[type];
             if (attrs != null)
             {
@@ -1123,7 +1123,7 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(MemberInfo member)
         {
-            ContextAwareHashtable attributeCache = AttributeCache;
+            CollectibleKeyHashtable attributeCache = AttributeCache;
             Attribute[]? attrs = (Attribute[]?)attributeCache[member];
             if (attrs != null)
             {
@@ -1151,7 +1151,7 @@ namespace System.ComponentModel
         /// </summary>
         private static EventDescriptor[] ReflectGetEvents(Type type)
         {
-            ContextAwareHashtable eventCache = EventCache;
+            CollectibleKeyHashtable eventCache = EventCache;
             EventDescriptor[]? events = (EventDescriptor[]?)eventCache[type];
             if (events != null)
             {
@@ -1251,7 +1251,7 @@ namespace System.ComponentModel
             // property store.
             //
             Type providerType = provider.GetType();
-            ContextAwareHashtable extendedPropertyCache = ExtendedPropertyCache;
+            CollectibleKeyHashtable extendedPropertyCache = ExtendedPropertyCache;
             ReflectPropertyDescriptor[]? extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
             if (extendedProperties == null)
             {
@@ -1336,7 +1336,7 @@ namespace System.ComponentModel
 
         private static PropertyDescriptor[] ReflectGetPropertiesImpl(Type type)
         {
-            ContextAwareHashtable propertyCache = PropertyCache;
+            CollectibleKeyHashtable propertyCache = PropertyCache;
             PropertyDescriptor[]? properties = (PropertyDescriptor[]?)propertyCache[type];
             if (properties != null)
             {

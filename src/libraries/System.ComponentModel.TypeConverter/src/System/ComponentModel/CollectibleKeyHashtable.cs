@@ -15,7 +15,7 @@ namespace System.ComponentModel
     /// This ensures that collectible <see cref="MemberInfo"/> instances (such as those from collectible assemblies) do not prevent their assemblies from being unloaded.
     /// </para>
     /// </summary>
-    internal sealed class ContextAwareHashtable
+    internal sealed class CollectibleKeyHashtable
     {
         private readonly Hashtable _defaultTable = new Hashtable();
         private readonly ConditionalWeakTable<object, object?> _collectibleTable = new ConditionalWeakTable<object, object?>();
