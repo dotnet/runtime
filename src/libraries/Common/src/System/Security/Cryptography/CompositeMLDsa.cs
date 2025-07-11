@@ -89,8 +89,15 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   <see langword="true"/> if the algorithm is supported; otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool IsAlgorithmSupported(CompositeMLDsaAlgorithm algorithm) =>
-            CompositeMLDsaImplementation.IsAlgorithmSupportedImpl(algorithm);
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> is <see langword="null"/>.
+        /// </exception>
+        public static bool IsAlgorithmSupported(CompositeMLDsaAlgorithm algorithm)
+        {
+            ArgumentNullException.ThrowIfNull(algorithm);
+
+            return CompositeMLDsaImplementation.IsAlgorithmSupportedImpl(algorithm);
+        }
 
         /// <summary>
         ///   Signs the specified data.
@@ -136,7 +143,20 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            // TODO If we know exact size of signature, then we can allocate instead of renting and copying.
+            if (Algorithm.MinSignatureSizeInBytes == Algorithm.MaxSignatureSizeInBytes)
+            {
+                byte[] signature = new byte[Algorithm.MaxSignatureSizeInBytes];
+
+                if (!TrySignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), signature, out int written) ||
+                    written != Algorithm.MaxSignatureSizeInBytes)
+                {
+                    Debug.Fail($"Signature exceeds {nameof(Algorithm.MaxSignatureSizeInBytes)} ({Algorithm.MaxSignatureSizeInBytes}).");
+                    throw new CryptographicException();
+                }
+
+                return signature;
+            }
+
             byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
 
             try
@@ -204,7 +224,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (destination.Length < CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            if (destination.Length < Algorithm.MinSignatureSizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
@@ -316,7 +336,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (signature.Length < CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            if (signature.Length < Algorithm.MinSignatureSizeInBytes)
             {
                 return false;
             }
@@ -868,6 +888,17 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc cref="ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static CompositeMLDsa ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportCompositeMLDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
+        }
+
         /// <summary>
         ///   Imports a Composite ML-DSA public key.
         /// </summary>
@@ -904,6 +935,18 @@ namespace System.Security.Cryptography
 
             return CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, source);
         }
+
+        /// <inheritdoc cref="ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static CompositeMLDsa ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportCompositeMLDsaPrivateKey(algorithm, new ReadOnlySpan<byte>(source));
+        }
+
         /// <summary>
         ///   Imports a Composite ML-DSA private key.
         /// </summary>
@@ -1492,7 +1535,11 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO short-circuit based on known required length lower bounds
+            if (destination.Length < Algorithm.MLDsaAlgorithm.PublicKeySizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
             return TryExportCompositeMLDsaPublicKeyCore(destination, out bytesWritten);
         }
@@ -1546,7 +1593,11 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO short-circuit based on known required length lower bounds
+            if (destination.Length < Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
             return TryExportCompositeMLDsaPrivateKeyCore(destination, out bytesWritten);
         }

@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -36,10 +38,60 @@ namespace System.Security.Cryptography.Tests
 
         internal static partial CompositeMLDsaTestVector[] AllIetfVectors { get; }
 
+        public static IEnumerable<object[]> AllIetfVectorsTestData =>
+            AllIetfVectors.Select(v => new object[] { v });
+
         internal static CompositeMLDsaTestVector[] SupportedAlgorithmIetfVectors =>
             field ??= AllIetfVectors.Where(v => CompositeMLDsa.IsAlgorithmSupported(v.Algorithm)).ToArray();
 
         public static IEnumerable<object[]>SupportedAlgorithmIetfVectorsTestData =>
             SupportedAlgorithmIetfVectors.Select(v => new object[] { v });
+
+        internal static CompositeMLDsaAlgorithm[] AllAlgorithms => field ??=
+        [
+            CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss,
+            CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pkcs15,
+            CompositeMLDsaAlgorithm.MLDsa44WithEd25519,
+            CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256,
+            CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss,
+            CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pkcs15,
+            CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss,
+            CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pkcs15,
+            CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256,
+            CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384,
+            CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1,
+            CompositeMLDsaAlgorithm.MLDsa65WithEd25519,
+            CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384,
+            CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1,
+            CompositeMLDsaAlgorithm.MLDsa87WithEd448,
+            CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss,
+            CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss,
+            CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521,
+        ];
+
+        public static IEnumerable<object[]> AllAlgorithmsTestData =>
+            AllAlgorithms.Select(v => new object[] { v });
+
+        internal static MLDsaKeyInfo GetMLDsaIetfTestVector(CompositeMLDsaAlgorithm algorithm)
+        {
+            MLDsaAlgorithm mldsaAlgorithm = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm];
+
+            if (mldsaAlgorithm == MLDsaAlgorithm.MLDsa44)
+            {
+                return MLDsaTestsData.IetfMLDsa44;
+            }
+            else if (mldsaAlgorithm == MLDsaAlgorithm.MLDsa65)
+            {
+                return MLDsaTestsData.IetfMLDsa65;
+            }
+            else if (mldsaAlgorithm == MLDsaAlgorithm.MLDsa87)
+            {
+                return MLDsaTestsData.IetfMLDsa87;
+            }
+            else
+            {
+                throw new XunitException($"Algorithm '{algorithm.Name}' doesn't have ML-DSA component.");
+            }
+        }
     }
 }

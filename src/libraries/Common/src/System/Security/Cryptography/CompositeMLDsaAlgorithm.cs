@@ -32,6 +32,8 @@ namespace System.Security.Cryptography
         /// </value>
         public int MaxSignatureSizeInBytes { get; }
 
+        internal int MinSignatureSizeInBytes { get; }
+
         internal MLDsaAlgorithm MLDsaAlgorithm { get; }
 
         internal string Oid { get; }
@@ -40,13 +42,15 @@ namespace System.Security.Cryptography
             string name,
             MLDsaAlgorithm mlDsaAlgorithm,
             int maxTraditionalSignatureSize,
-            string oid)
+            string oid,
+            int minTraditionalSignatureSize = 0)
         {
             Name = name;
             MLDsaAlgorithm = mlDsaAlgorithm;
             Oid = oid;
 
             MaxSignatureSizeInBytes = RandomizerSizeInBytes + MLDsaAlgorithm.SignatureSizeInBytes + maxTraditionalSignatureSize;
+            MinSignatureSizeInBytes = RandomizerSizeInBytes + MLDsaAlgorithm.SignatureSizeInBytes + minTraditionalSignatureSize;
         }
 
         /// <summary>
@@ -58,8 +62,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pss { get; } =
             new("MLDSA44-RSA2048-PSS-SHA256",
                 MLDsaAlgorithm.MLDsa44,
-                2048 / 8,
-                Oids.MLDsa44WithRSA2048PssPreHashSha256);
+                maxTraditionalSignatureSize: 2048 / 8,
+                Oids.MLDsa44WithRSA2048PssPreHashSha256,
+                minTraditionalSignatureSize: 2048 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-44 and 2048-bit RSASSA-PKCS1-v1_5 with SHA256 algorithm.
@@ -70,8 +75,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pkcs15 { get; } =
             new("MLDSA44-RSA2048-PKCS15-SHA256",
                 MLDsaAlgorithm.MLDsa44,
-                2048 / 8,
-                Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256);
+                maxTraditionalSignatureSize: 2048 / 8,
+                Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256,
+                minTraditionalSignatureSize: 2048 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-44 and Ed25519 algorithm.
@@ -82,8 +88,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa44WithEd25519 { get; } =
             new("MLDSA44-Ed25519-SHA512",
                 MLDsaAlgorithm.MLDsa44,
-                64,
-                Oids.MLDsa44WithEd25519PreHashSha512);
+                maxTraditionalSignatureSize: 64,
+                Oids.MLDsa44WithEd25519PreHashSha512,
+                minTraditionalSignatureSize: 64);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-44 and ECDSA P-256 with SHA256 algorithm.
@@ -94,7 +101,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa44WithECDsaP256 { get; } =
             new("MLDSA44-ECDSA-P256-SHA256",
                 MLDsaAlgorithm.MLDsa44,
-                AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256),
+                maxTraditionalSignatureSize: AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256),
                 Oids.MLDsa44WithECDsaP256PreHashSha256);
 
         /// <summary>
@@ -106,8 +113,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pss { get; } =
             new("MLDSA65-RSA3072-PSS-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                3072 / 8,
-                Oids.MLDsa65WithRSA3072PssPreHashSha512);
+                maxTraditionalSignatureSize: 3072 / 8,
+                Oids.MLDsa65WithRSA3072PssPreHashSha512,
+                minTraditionalSignatureSize: 3072 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-65 and 3072-bit RSASSA-PKCS1-v1_5 with SHA512 algorithm.
@@ -118,8 +126,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pkcs15 { get; } =
             new("MLDSA65-RSA3072-PKCS15-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                3072 / 8,
-                Oids.MLDsa65WithRSA3072Pkcs15PreHashSha512);
+                maxTraditionalSignatureSize: 3072 / 8,
+                Oids.MLDsa65WithRSA3072Pkcs15PreHashSha512,
+                minTraditionalSignatureSize: 3072 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-65 and 4096-bit RSASSA-PSS with SHA512 algorithm.
@@ -130,8 +139,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pss { get; } =
             new("MLDSA65-RSA4096-PSS-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                4096 / 8,
-                Oids.MLDsa65WithRSA4096PssPreHashSha512);
+                maxTraditionalSignatureSize: 4096 / 8,
+                Oids.MLDsa65WithRSA4096PssPreHashSha512,
+                minTraditionalSignatureSize: 4096 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-65 and 4096-bit RSASSA-PKCS1-v1_5 with SHA512 algorithm.
@@ -142,8 +152,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pkcs15 { get; } =
             new("MLDSA65-RSA4096-PKCS15-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                4096 / 8,
-                Oids.MLDsa65WithRSA4096Pkcs15PreHashSha512);
+                maxTraditionalSignatureSize: 4096 / 8,
+                Oids.MLDsa65WithRSA4096Pkcs15PreHashSha512,
+                minTraditionalSignatureSize: 4096 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-65 and ECDSA P-256 with SHA512 algorithm.
@@ -154,7 +165,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithECDsaP256 { get; } =
             new("MLDSA65-ECDSA-P256-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256),
+                maxTraditionalSignatureSize: AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256),
                 Oids.MLDsa65WithECDsaP256PreHashSha512);
 
         /// <summary>
@@ -166,7 +177,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithECDsaP384 { get; } =
             new("MLDSA65-ECDSA-P384-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384),
+                maxTraditionalSignatureSize: AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384),
                 Oids.MLDsa65WithECDsaP384PreHashSha512);
 
         /// <summary>
@@ -178,7 +189,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithECDsaBrainpoolP256r1 { get; } =
             new("MLDSA65-ECDSA-brainpoolP256r1-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256),
+                maxTraditionalSignatureSize: AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256),
                 Oids.MLDsa65WithECDsaBrainpoolP256r1PreHashSha512);
 
         /// <summary>
@@ -190,8 +201,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa65WithEd25519 { get; } =
             new("MLDSA65-Ed25519-SHA512",
                 MLDsaAlgorithm.MLDsa65,
-                64,
-                Oids.MLDsa65WithEd25519PreHashSha512);
+                maxTraditionalSignatureSize: 64,
+                Oids.MLDsa65WithEd25519PreHashSha512,
+                minTraditionalSignatureSize: 64);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-87 and ECDSA P-384 with SHA512 algorithm.
@@ -202,7 +214,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithECDsaP384 { get; } =
             new("MLDSA87-ECDSA-P384-SHA512",
                 MLDsaAlgorithm.MLDsa87,
-                AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384),
+                maxTraditionalSignatureSize: AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384),
                 Oids.MLDsa87WithECDsaP384PreHashSha512);
 
         /// <summary>
@@ -214,7 +226,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithECDsaBrainpoolP384r1 { get; } =
             new("MLDSA87-ECDSA-brainpoolP384r1-SHA512",
                 MLDsaAlgorithm.MLDsa87,
-                AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384),
+                maxTraditionalSignatureSize: AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384),
                 Oids.MLDsa87WithECDsaBrainpoolP384r1PreHashSha512);
 
         /// <summary>
@@ -226,8 +238,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithEd448 { get; } =
             new("MLDSA87-Ed448-SHAKE256",
                 MLDsaAlgorithm.MLDsa87,
-                114,
-                Oids.MLDsa87WithEd448PreHashShake256_512);
+                maxTraditionalSignatureSize: 114,
+                Oids.MLDsa87WithEd448PreHashShake256_512,
+                minTraditionalSignatureSize: 114);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-87 and 3072-bit RSASSA-PSS with SHA512 algorithm.
@@ -238,8 +251,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithRSA3072Pss { get; } =
             new("MLDSA87-RSA3072-PSS-SHA512",
                 MLDsaAlgorithm.MLDsa87,
-                3072 / 8,
-                Oids.MLDsa87WithRSA3072PssPreHashSha512);
+                maxTraditionalSignatureSize: 3072 / 8,
+                Oids.MLDsa87WithRSA3072PssPreHashSha512,
+                minTraditionalSignatureSize: 3072 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-87 and 4096-bit RSASSA-PSS with SHA512 algorithm.
@@ -250,8 +264,9 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithRSA4096Pss { get; } =
             new("MLDSA87-RSA4096-PSS-SHA512",
                 MLDsaAlgorithm.MLDsa87,
-                4096 / 8,
-                Oids.MLDsa87WithRSA4096PssPreHashSha512);
+                maxTraditionalSignatureSize: 4096 / 8,
+                Oids.MLDsa87WithRSA4096PssPreHashSha512,
+                minTraditionalSignatureSize: 4096 / 8);
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-87 and ECDSA P-521 with SHA512 algorithm.
@@ -262,7 +277,7 @@ namespace System.Security.Cryptography
         public static CompositeMLDsaAlgorithm MLDsa87WithECDsaP521 { get; } =
             new("MLDSA87-ECDSA-P521-SHA512",
                 MLDsaAlgorithm.MLDsa87,
-                AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(521),
+                maxTraditionalSignatureSize: AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(521),
                 Oids.MLDsa87WithECDsaP521PreHashSha512);
 
         /// <summary>

@@ -581,7 +581,9 @@ namespace System.Security.Cryptography
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa GenerateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPrivateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPrivateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPublicKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPublicKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }

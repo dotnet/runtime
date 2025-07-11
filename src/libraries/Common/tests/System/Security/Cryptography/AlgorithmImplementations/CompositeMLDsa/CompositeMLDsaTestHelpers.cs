@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using Test.Cryptography;
+using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -108,6 +110,36 @@ namespace System.Security.Cryptography.Tests
             { CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521,             MLDsaAlgorithm.MLDsa87 },
         };
 
+        internal static void AssertImportPublicKey(Action<Func<CompositeMLDsa>> action, CompositeMLDsaAlgorithm algorithm, byte[] publicKey)
+        {
+            action(() => CompositeMLDsa.ImportCompositeMLDsaPublicKey(algorithm, publicKey));
+
+            if (publicKey?.Length == 0)
+            {
+                action(() => CompositeMLDsa.ImportCompositeMLDsaPublicKey(algorithm, Array.Empty<byte>().AsSpan()));
+                action(() => CompositeMLDsa.ImportCompositeMLDsaPublicKey(algorithm, ReadOnlySpan<byte>.Empty));
+            }
+            else
+            {
+                action(() => CompositeMLDsa.ImportCompositeMLDsaPublicKey(algorithm, publicKey.AsSpan()));
+            }
+        }
+
+        internal static void AssertImportPrivateKey(Action<Func<CompositeMLDsa>> action, CompositeMLDsaAlgorithm algorithm, byte[] privateKey)
+        {
+            action(() => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(algorithm, privateKey));
+
+            if (privateKey?.Length == 0)
+            {
+                action(() => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(algorithm, Array.Empty<byte>().AsSpan()));
+                action(() => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(algorithm, ReadOnlySpan<byte>.Empty));
+            }
+            else
+            {
+                action(() => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(algorithm, privateKey.AsSpan()));
+            }
+        }
+
         internal static void ExecuteComponentAction(CompositeMLDsaAlgorithm algo, Action rsaFunc, Action ecdsaFunc, Action eddsaFunc)
         {
             ExecuteComponentFunc(
@@ -119,23 +151,53 @@ namespace System.Security.Cryptography.Tests
 
         internal static T ExecuteComponentFunc<T>(CompositeMLDsaAlgorithm algo, Func<T> rsaFunc, Func<T> ecdsaFunc, Func<T> eddsaFunc)
         {
-            // TODO hardcode the algorithms instead of Contains
-            if (algo.Name.Contains("RSA"))
+            if (algo == CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pkcs15 ||
+                algo == CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss ||
+                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pkcs15 ||
+                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss ||
+                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pkcs15 ||
+                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss ||
+                algo == CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss ||
+                algo == CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss)
             {
                 return rsaFunc();
             }
-            else if (algo.Name.Contains("ECDSA"))
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521)
             {
                 return ecdsaFunc();
             }
-            else if (algo.Name.Contains("Ed"))
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa87WithEd448 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa44WithEd25519 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa65WithEd25519)
             {
                 return eddsaFunc();
             }
             else
             {
-                throw new NotSupportedException($"Unsupported algorithm: {algo}");
+                throw new XunitException($"Unsupported algorithm: {algo}");
             }
+        }
+
+        internal static void VerifyDisposed(CompositeMLDsa dsa)
+        {
+            // A signature-sized buffer can be reused for keys as well
+            byte[] tempBuffer = new byte[dsa.Algorithm.MaxSignatureSizeInBytes];
+
+            Assert.Throws<ObjectDisposedException>(() => dsa.TrySignData([], [], out _));
+            Assert.Throws<ObjectDisposedException>(() => dsa.SignData([]));
+            Assert.Throws<ObjectDisposedException>(() => dsa.VerifyData(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty));
+            Assert.Throws<ObjectDisposedException>(() => dsa.VerifyData(Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<byte>()));
+
+            Assert.Throws<ObjectDisposedException>(() => dsa.TryExportCompositeMLDsaPrivateKey([], out _));
+            Assert.Throws<ObjectDisposedException>(() => dsa.ExportCompositeMLDsaPrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => dsa.TryExportCompositeMLDsaPublicKey([], out _));
+            Assert.Throws<ObjectDisposedException>(() => dsa.ExportCompositeMLDsaPublicKey());
         }
     }
 }

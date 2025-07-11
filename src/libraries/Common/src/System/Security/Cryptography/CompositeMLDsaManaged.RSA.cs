@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
@@ -122,7 +120,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
 #else
-                    ConvertRSAPrivateKeyToParameters(algorithm, source, (in RSAParameters parameters) =>
+                    ConvertRSAPrivateKeyToParameters(algorithm, source, (in parameters) =>
                     {
                         rsa.ImportParameters(parameters);
                     });
@@ -156,7 +154,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
 #else
-                    ConvertRSAPublicKeyToParameters(algorithm, source, (in RSAParameters parameters) =>
+                    ConvertRSAPublicKeyToParameters(algorithm, source, (in parameters) =>
                     {
                         rsa.ImportParameters(parameters);
                     });
@@ -231,27 +229,29 @@ namespace System.Security.Cryptography
                 ConvertRSAKeyToParametersCallback callback)
             {
                 int modulusLength = algorithm.KeySizeInBits / 8;
+                RSAParameters parameters = default;
 
-                AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
-                AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
-
-                byte[] modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
-                if (modulus.Length != modulusLength)
+                try
                 {
-                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+                    AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
+                    AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
+
+                    parameters.Modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                    if (parameters.Modulus.Length != modulusLength)
+                    {
+                        throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+                    }
+
+                    parameters.Exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                    sequenceReader.ThrowIfNotEmpty();
+                    reader.ThrowIfNotEmpty();
                 }
-
-                byte[] exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
-                sequenceReader.ThrowIfNotEmpty();
-                reader.ThrowIfNotEmpty();
-
-                RSAParameters parameters = new()
+                catch (AsnContentException e)
                 {
-                    Modulus = modulus,
-                    Exponent = exponent,
-                };
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
 
                 callback(in parameters);
             }
@@ -264,38 +264,8 @@ namespace System.Security.Cryptography
                 int modulusLength = algorithm.KeySizeInBits / 8;
                 int halfModulusLength = modulusLength / 2;
 
-                AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
-                AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
-
-                if (!sequenceReader.TryReadInt32(out int version))
-                {
-                    sequenceReader.ThrowIfNotEmpty();
-                }
-
-                const int MaxSupportedVersion = 0;
-
-                if (version > MaxSupportedVersion)
-                {
-                    throw new CryptographicException(
-                        SR.Format(
-                            SR.Cryptography_RSAPrivateKey_VersionTooNew,
-                            version,
-                            MaxSupportedVersion));
-                }
-
-                byte[] modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
-                if (modulus.Length != modulusLength)
-                {
-                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
-                }
-
-                byte[] exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
                 RSAParameters parameters = new()
                 {
-                    Modulus = modulus,
-                    Exponent = exponent,
                     D = new byte[modulusLength],
                     P = new byte[halfModulusLength],
                     Q = new byte[halfModulusLength],
@@ -311,15 +281,50 @@ namespace System.Security.Cryptography
                 using (PinAndClear.Track(parameters.DQ))
                 using (PinAndClear.Track(parameters.InverseQ))
                 {
-                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.D);
-                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.P);
-                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.Q);
-                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DP);
-                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DQ);
-                    sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.InverseQ);
+                    try
+                    {
+                        AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
+                        AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
 
-                    sequenceReader.ThrowIfNotEmpty();
-                    reader.ThrowIfNotEmpty();
+                        if (!sequenceReader.TryReadInt32(out int version))
+                        {
+                            sequenceReader.ThrowIfNotEmpty();
+                        }
+
+                        const int MaxSupportedVersion = 0;
+
+                        if (version > MaxSupportedVersion)
+                        {
+                            throw new CryptographicException(
+                                SR.Format(
+                                    SR.Cryptography_RSAPrivateKey_VersionTooNew,
+                                    version,
+                                    MaxSupportedVersion));
+                        }
+
+                        parameters.Modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                        if (parameters.Modulus.Length != modulusLength)
+                        {
+                            throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+                        }
+
+                        parameters.Exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.D);
+                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.P);
+                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.Q);
+                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DP);
+                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DQ);
+                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.InverseQ);
+
+                        sequenceReader.ThrowIfNotEmpty();
+                        reader.ThrowIfNotEmpty();
+                    }
+                    catch (AsnContentException e)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                    }
 
                     callback(in parameters);
                 }
