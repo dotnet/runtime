@@ -124,12 +124,12 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashOid));
         }
 
-
+#if !BUILDING_PKCS
         /// <summary>
         /// Validates if the hash length matches the expected output size for the given hash algorithm OID.
         /// When the OID is not one of the common hash algorithms, it only validates the format of the OID.
         /// </summary>
-        internal static void ValidateHashAlgorithm(ReadOnlySpan<byte> hash, ReadOnlySpan<char> hashAlgorithmOid)
+        internal static void ValidateHashLength(ReadOnlySpan<byte> hash, ReadOnlySpan<char> hashAlgorithmOid)
         {
             int? outputSize = TryGetHashOidToByteLength(hashAlgorithmOid);
 
@@ -157,6 +157,7 @@ namespace Internal.Cryptography
                 }
             }
         }
+#endif
 
         internal static bool HashAlgorithmRequired(string? keyAlgorithm)
         {

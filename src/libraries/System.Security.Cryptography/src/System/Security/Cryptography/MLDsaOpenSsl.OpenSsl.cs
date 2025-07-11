@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc />
         protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
-            Helpers.MLDsaSlhDsaPreHash(
+            Helpers.MLDsaPreHash(
                 hash,
                 context,
                 hashAlgorithmOid,
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc />
         protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
-            Helpers.MLDsaSlhDsaPreHash(
+            Helpers.MLDsaPreHash(
                 hash,
                 context,
                 hashAlgorithmOid,

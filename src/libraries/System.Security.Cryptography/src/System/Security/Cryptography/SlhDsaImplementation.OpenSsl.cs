@@ -67,7 +67,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.SlhDsaVerifyPure(_key, data, context, signature);
 
         protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
-            Helpers.MLDsaSlhDsaPreHash(
+            Helpers.SlhDsaPreHash(
                 hash,
                 context,
                 hashAlgorithmOid,
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
                 });
 
         protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
-            Helpers.MLDsaSlhDsaPreHash(
+            Helpers.SlhDsaPreHash(
                 hash,
                 context,
                 hashAlgorithmOid,

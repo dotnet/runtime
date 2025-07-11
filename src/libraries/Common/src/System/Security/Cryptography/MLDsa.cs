@@ -314,7 +314,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            Helpers.ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             SignPreHashCore(hash, context, hashAlgorithmOid, destination);
@@ -402,7 +402,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            Helpers.ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             if (signature.Length != Algorithm.SignatureSizeInBytes)
