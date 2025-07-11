@@ -122,7 +122,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             static void Parameter(
                 Type unannotated,
                 [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
             {
                 typeof(Nullable<>).MakeGenericType(unannotated).GetMethods();
                 typeof(Nullable<>).MakeGenericType(annotated).GetMethods();

@@ -20707,7 +20707,7 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
         return false;
     }
 
-    if (comp->opts.MinOpts())
+    if (!comp->opts.Tier0OptimizationEnabled())
     {
         return false;
     }
