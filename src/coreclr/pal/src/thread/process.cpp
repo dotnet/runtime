@@ -73,6 +73,10 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #endif
 #endif
 
+#ifdef HAVE_KQUEUE
+#include <sys/event.h>
+#endif
+
 #ifdef __APPLE__
 #include <pwd.h>
 #include <sys/sysctl.h>
@@ -93,6 +97,9 @@ extern "C"
         }                                                                   \
     } while (false)
 
+// On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
+// Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
+#define ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -1401,21 +1408,455 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
 static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
-/*++
-    PAL_NotifyRuntimeStarted
+#ifdef ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
+static const char* RuntimeStartupPipeName = "st";
+static const char* RuntimeContinuePipeName= "co";
 
-    Signals the debugger waiting for runtime startup notification to continue and
-    waits until the debugger signals us to continue.
+typedef enum
+{
+    PipeHandshakeState_Disabled = 0,
+    PipeHandshakeState_Suceeded = 1,
+    PipeHandshakeState_Failed = 2,
+} PipeHandshakeState;
 
-Parameters:
-    None
+typedef enum
+{
+    PipeHandshakeCommand_Unknown = 0,
+    PipeHandshakeCommand_Startup = 1,
+    PipeHandshakeCommand_Continue = 2,
+} PipeHandshakeCommand;
 
-Return value:
-    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
---*/
+static
+void
+CloseFd(int fd)
+{
+    if (fd != -1)
+    {
+        while(close(fd) < 0 && errno == EINTR);
+    }
+}
+
+static
+ssize_t
+ReadIOFunc(int fd, void *buf, size_t count)
+{
+    return read(fd, buf, count);
+}
+
+static
+ssize_t
+WriteIOFunc(int fd, void *buf, size_t count)
+{
+    return write(fd, buf, count);
+}
+
+static
+int
+OpenNonBlockingPipe(int kq, const char* name, int mode)
+{
+    int fd = -1;
+    int retries = 0;
+    int flags = mode | O_NONBLOCK;
+
+#if defined(FD_CLOEXEC)
+    flags |= O_CLOEXEC;
+#endif
+
+    while(fd == -1 && retries < 10)
+    {
+        if (access(name, F_OK) == -1)
+        {
+            TRACE("access(%s) failed: %d (%s)\n", name, errno, strerror(errno));
+            return -1;
+        }
+
+        fd = open(name, flags);
+        if (fd == -1)
+        {
+            if (mode == O_WRONLY && errno == ENXIO)
+            {
+                PAL_nanosleep(500 * 1000 * 1000);
+                retries++;
+                continue;
+            }
+            else if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (fd == -1)
+    {
+        TRACE("open failed: errno is %d (%s)\n", errno, strerror(errno));
+        return -1;
+    }
+
+#if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
+    struct kevent change;
+    EV_SET(&change, fd, (mode & O_ACCMODE) == O_RDONLY ? EVFILT_READ : EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, NULL);
+    if (kevent(kq, &change, 1, NULL, 0, NULL) == -1)
+    {
+        TRACE("kevent failed: errno is %d (%s)\n", errno, strerror(errno));
+        CloseFd(fd);
+        return -1;
+    }
+#endif // HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
+    
+    return fd;
+}
+
+#if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
+static
+int
+DoNonBlockingPipeIO(int kq, int fd, void *buf, size_t count, int timeout, ssize_t (*io_func)(int fd, void *buf, size_t count), short filter)
+{
+    int result = -1;
+    struct timespec timeout_spec;
+    struct timespec *timeout_ptr = NULL;
+    if (timeout > 0)
+    {
+        timeout_spec.tv_sec = timeout / 1000;
+        timeout_spec.tv_nsec = (timeout % 1000) * 1000000L;
+        timeout_ptr = &timeout_spec;
+    }
+
+    struct kevent change;
+    EV_SET(&change, fd, filter, EV_ENABLE, 0, 0, NULL);
+    if (kevent(kq, &change, 1, NULL, 0, NULL) == -1)
+    {
+        return -1;
+    }
+
+    while (1)
+    {    
+        struct kevent event;
+        int nev = kevent(kq, NULL, 0, &event, 1, timeout_ptr);   
+        if (nev == -1 && errno == EINTR)
+        {
+            continue;
+        } 
+        else if (nev == 0)
+        {
+            // Check for timeout or EOF.
+            int n = io_func(fd, buf, count);
+            if (n > 0)
+            {
+                result = n;
+                break;
+            }
+            else if (n == 0)
+            {
+                // EOF - pipe closed
+                result = -2;
+                break;
+            }
+            else if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                // Timeout.
+                result = 0;
+                break;
+            }
+            else
+            {
+                break;
+            }
+        }
+        else if (nev > 0)
+        {
+            if (event.filter == filter && event.ident == fd)
+            {
+                if (event.flags & EV_EOF)
+                {
+                    result = -2;
+                    break;
+                }
+                
+                int n = io_func(fd, buf, count);
+                if (n > 0)
+                {
+                    result = n;
+                    break;
+                }
+                else if (n == 0)
+                {
+                    // EOF - pipe closed
+                    result = -2;
+                    break;
+                }
+                else if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    EV_SET(&change, fd, filter, EV_DISABLE, 0, 0, NULL);
+    kevent(kq, &change, 1, NULL, 0, NULL);
+
+    return result;
+}
+
+static
+int
+ReadNonBlockingPipe(int kq, int fd, void *buf, size_t count, int timeout)
+{
+    return DoNonBlockingPipeIO(kq, fd, buf, count, timeout, ReadIOFunc, EVFILT_READ);
+}
+
+static
+int
+WriteNonBlockingPipe(int kq, int fd, const void *buf, size_t count, int timeout)
+{
+    return DoNonBlockingPipeIO(kq, fd, (void *)buf, count, timeout, WriteIOFunc, EVFILT_WRITE);
+}
+#else
+static
+int
+DoNonBlockingPipeIO(int fd, void *buf, size_t count, int timeout, ssize_t (*io_func)(int fd, void *buf, size_t count), short filter)
+{
+    struct pollfd pfd;
+    pfd.fd = fd;
+    pfd.events = filter;
+
+    while (1)
+    {
+        int poll_ret = poll(&pfd, 1, timeout);
+        if (poll_ret > 0)
+        {
+            if (pfd.revents & filter)
+            {
+                int n = io_func(fd, buf, count);
+                if (n > 0)
+                {
+                    return n;
+                }
+                else if (n == 0)
+                {
+                    // EOF - pipe closed
+                    return -2;
+                }
+                else if (errno == EAGAIN || errno == EWOULDBLOCK)
+                {
+                    continue;
+                }
+                else if (errno == EINTR)
+                {
+                    continue;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+            else if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+            {
+                return -1;
+            }
+        }
+        else if (poll_ret == 0)
+        {
+            // Check for timeout or EOF.
+            int n = io_func(fd, buf, count);
+            if (n > 0)
+            {
+                return n;
+            }
+            else if (n == 0)
+            {
+                // EOF - pipe closed
+                return -2;
+            }
+            else if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                // Timeout.
+                return 0;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        else if (errno == EINTR)
+        {
+            continue;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    return -1;
+}
+
+static
+int
+ReadNonBlockingPipe(int kq, int fd, void *buf, size_t count, int timeout)
+{
+    return DoNonBlockingPipeIO(fd, buf, count, timeout, ReadIOFunc, POLLIN);
+}
+
+static
+int
+WriteNonBlockingPipe(int kq, int fd, const void *buf, size_t count, int timeout)
+{
+    return DoNonBlockingPipeIO(fd, (void *)buf, count, timeout, WriteIOFunc, POLLOUT);
+}
+#endif // HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
+
+static
+PipeHandshakeState
+NotifyRuntimeStartedUsingPipes()
+{
+    PipeHandshakeState result = PipeHandshakeState_Failed;
+    char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    int kq = -1;
+    int startupPipeFd = -1;
+    int continuePipeFd = -1;
+    size_t offset = 0;
+
+    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
+
+    PAL_GetTransportPipeName(continuePipeName, gPID, applicationGroupId, RuntimeContinuePipeName);
+    if (access(continuePipeName, F_OK) == -1)
+    {
+        TRACE("access(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+        return PipeHandshakeState_Disabled;
+    }
+
+    PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
+    if (access(startupPipeName, F_OK) == -1)
+    {
+        TRACE("access(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+        return PipeHandshakeState_Disabled;
+    }
+
+#if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
+    kq = kqueue();
+    if (kq == -1)
+    {
+        TRACE("kqueue() failed: %d (%s)\n", errno, strerror(errno));
+        goto exit;
+    }
+#endif // HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
+
+    continuePipeFd = OpenNonBlockingPipe(kq, continuePipeName, O_RDONLY);
+    if (continuePipeFd == -1)
+    {
+        TRACE("open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+        goto exit;
+    }
+
+    startupPipeFd = OpenNonBlockingPipe(kq, startupPipeName, O_WRONLY);
+    if (startupPipeFd == -1)
+    {
+        TRACE("open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+        goto exit;
+    }
+
+    {
+        // Notify the debugger that the runtime has started.
+        unsigned char command = (unsigned char)PipeHandshakeCommand_Startup;
+        unsigned char *buffer = &command;
+        int bytesToWrite = sizeof(command);
+        int bytesWritten = 0;
+
+        do
+        {
+            bytesWritten = WriteNonBlockingPipe(kq, startupPipeFd, buffer + offset, bytesToWrite - offset, 1000);
+            if (bytesWritten > 0)
+            {
+                offset += bytesWritten;
+            }
+        }
+        while (bytesWritten > 0 && offset < bytesToWrite);
+
+        if (offset != bytesToWrite)
+        {
+            TRACE("write(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            goto exit;
+        }
+    }
+
+    // Wait for the debugger to signal runtime to continue.
+    {
+        unsigned char command = (unsigned char)PipeHandshakeCommand_Unknown;
+        unsigned char *buffer = &command;
+        int bytesToRead = sizeof(command);
+        int bytesRead = 0;
+
+        offset = 0;
+        do
+        {
+            bytesRead = ReadNonBlockingPipe(kq, continuePipeFd, buffer + offset, bytesToRead - offset, 1000);
+            if (bytesRead > 0)
+            {
+                offset += bytesRead;
+            }
+            else if (bytesRead == 0)
+            {
+                // Timeout.
+                continue;
+            }
+            else
+            {
+                 // Error or EOF
+                break;
+            }
+        }
+        while (offset < bytesToRead);
+
+        if (offset == bytesToRead && command == (unsigned char)PipeHandshakeCommand_Continue)
+        {
+            TRACE("received continue command\n");
+        }
+        else
+        {
+            TRACE("received invalid command");
+            goto exit;
+        }
+    }
+
+    result = PipeHandshakeState_Suceeded;
+
+exit:
+    if (startupPipeFd != -1)
+    {
+        CloseFd(startupPipeFd);
+    }
+
+    if (continuePipeFd != -1)
+    {
+        CloseFd(continuePipeFd);
+    }
+
+    if (kq != -1)
+    {
+        CloseFd(kq);
+    }
+
+    return result;
+}
+#endif // ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
+
+static
 BOOL
-PALAPI
-PAL_NotifyRuntimeStarted()
+NotifyRuntimeStartedUsingSemaphores()
 {
     char startupSemName[CLR_SEM_MAX_NAMELEN];
     char continueSemName[CLR_SEM_MAX_NAMELEN];
@@ -1485,6 +1926,45 @@ exit:
         sem_close(continueSem);
     }
     return launched;
+}
+
+/*++
+    PAL_NotifyRuntimeStarted
+
+    Signals the debugger waiting for runtime startup notification to continue and
+    waits until the debugger signals us to continue.
+
+Parameters:
+    None
+
+Return value:
+    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
+--*/
+BOOL
+PALAPI
+PAL_NotifyRuntimeStarted()
+{
+#ifdef ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
+    // Test pipe as runtime event transport.
+    PipeHandshakeState result = NotifyRuntimeStartedUsingPipes();
+    switch (result)
+    {
+    case PipeHandshakeState_Disabled:
+        // Pipe handshake disabled, try semaphores.
+        return NotifyRuntimeStartedUsingSemaphores();
+    case PipeHandshakeState_Failed:
+        // Pipe handshake failed.
+        return FALSE;
+    case PipeHandshakeState_Suceeded:
+        // Pipe handshake succeeded.
+        return TRUE;
+    default:
+        // Unexpected result.
+        return FALSE;
+    }
+#else
+    return NotifyRuntimeStartedUsingSemaphores();
+#endif // ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
 }
 
 LPCSTR
