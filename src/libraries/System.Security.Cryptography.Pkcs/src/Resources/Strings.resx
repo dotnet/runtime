@@ -178,9 +178,6 @@
   <data name="Cryptography_Cms_WrongKeyUsage" xml:space="preserve">
     <value>The certificate is not valid for the requested usage.</value>
   </data>
-  <data name="Cryptography_HashLengthMismatch" xml:space="preserve">
-    <value>The specified hash is not a valid size for this hash algorithm.</value>
-  </data>
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
   </data>
