@@ -76,19 +76,7 @@ internal static partial class Interop
 
             if (error.ErrorMessage != IntPtr.Zero)
             {
-                // For POSIX errors, the message is a regular C string from strerror()
-                // For other errors, it's a CFString
-                if (domain == NetworkFrameworkErrorDomain.POSIX)
-                {
-                    message = Marshal.PtrToStringUTF8(error.ErrorMessage);
-                }
-                else
-                {
-                    using (var cfString = new SafeCFStringHandle(error.ErrorMessage, ownsHandle: false))
-                    {
-                        message = CoreFoundation.CFStringToString(cfString);
-                    }
-                }
+                message = Marshal.PtrToStringUTF8(error.ErrorMessage);
             }
 
             return new NetworkFrameworkException(error.ErrorCode, domain, message);

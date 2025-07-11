@@ -25,7 +25,8 @@ static dispatch_queue_t _inputQueue;
     } while (0)
 
 // Helper function to extract error information from nw_error_t
-static void ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFrameworkError* outError)
+// Returns CFStringRef that needs to be released after use, or NULL if no CFString was created
+static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFrameworkError* outError)
 {
     if (error == NULL || outError == NULL)
     {
@@ -35,7 +36,7 @@ static void ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFrameworkE
             outError->errorDomain = 0;
             outError->errorMessage = NULL;
         }
-        return;
+        return NULL;
     }
     
     outError->errorCode = nw_error_get_error_code(error);
@@ -45,10 +46,11 @@ static void ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFrameworkE
     if (domain == nw_error_domain_posix)
     {
         outError->errorMessage = strerror(outError->errorCode);
-        return;
+        return NULL;
     }
     
     // Get error message from CoreFoundation error if available
+    CFStringRef descriptionToRelease = NULL;
     CFErrorRef cfError = nw_error_copy_cf_error(error);
     if (cfError != NULL)
     {
@@ -61,7 +63,11 @@ static void ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFrameworkE
                 // If direct pointer access fails, we'll leave it as NULL
                 CFRelease(description);
             }
-            // Note: We're keeping the CFString alive during the callback
+            else
+            {
+                // We got a direct pointer, so we need to keep the CFString alive
+                descriptionToRelease = description;
+            }
         }
         CFRelease(cfError);
     }
@@ -69,6 +75,8 @@ static void ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFrameworkE
     {
         outError->errorMessage = NULL;
     }
+    
+    return descriptionToRelease;
 }
 
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
@@ -220,7 +228,7 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
     nw_retain(connection); // hold a reference until canceled
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
         PAL_NetworkFrameworkError errorInfo;
-        ExtractNetworkFrameworkError(error, &errorInfo);
+        CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
         LOG(state, "Connection state changed: %d, errorCode: %d", (int)status, errorInfo.errorCode);
         switch (status)
         {
@@ -251,6 +259,12 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
             }
             break;
         }
+        
+        // Release CFString if we created one
+        if (cfStringToRelease != NULL)
+        {
+            CFRelease(cfStringToRelease);
+        }
     });
 
     nw_connection_set_queue(connection, _tlsQueue);
@@ -274,8 +288,14 @@ PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, 
 
     nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t error) {
         PAL_NetworkFrameworkError errorInfo;
-        ExtractNetworkFrameworkError(error, &errorInfo);
-        completionCallback(context, &errorInfo);
+        CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
+        completionCallback(context, error != NULL ? &errorInfo : NULL);
+        
+        // Release CFString if we created one
+        if (cfStringToRelease != NULL)
+        {
+            CFRelease(cfStringToRelease);
+        }
     });
 }
 
@@ -284,11 +304,17 @@ PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection
 {
     nw_connection_receive(connection, 0, length, ^(dispatch_data_t content, nw_content_context_t ctx, bool is_complete, nw_error_t error) {
         PAL_NetworkFrameworkError errorInfo;
-        ExtractNetworkFrameworkError(error, &errorInfo);
 
         if (error != NULL)
         {
+            CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
             readCompletionCallback(context, &errorInfo, NULL, 0);
+            
+            // Release CFString if we created one
+            if (cfStringToRelease != NULL)
+            {
+                CFRelease(cfStringToRelease);
+            }
             return;
         }
 
