@@ -266,6 +266,11 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
+            // This will not correctly answer questions for canonical forms because the answer would
+            // be about whether a type loader template for the type exists.
+            // We need to make a small exception for canonical definitions because of RuntimeAugments.GetCanonType
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+
             bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
                 && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
             if (canPotentiallyConstruct)
@@ -391,12 +396,6 @@ namespace ILCompiler
                     }
                     lookupKind = ReadyToRunHelperId.NecessaryTypeHandle;
                 }
-            }
-
-            // We don't have separate entries for necessary type handles to avoid possible duplication
-            if (lookupKind == ReadyToRunHelperId.NecessaryTypeHandle)
-            {
-                lookupKind = ReadyToRunHelperId.TypeHandle;
             }
 
             DictionaryLayoutNode dictionaryLayout;
@@ -650,7 +649,7 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    if (node is ConstructedEETypeNode)
                         yield return ((IEETypeNode)node).Type;
                 }
             }
