@@ -326,6 +326,11 @@ namespace System.Diagnostics.Tests
         // trace-flags      = 2HEXDIGLC   ; 8 bit flags.
         //         .         .         .         .         .         .
         // Example 00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01
+        // If a higher version is detected, the implementation SHOULD try to parse it by trying the following:
+        //      o If the size of the header is shorter than 55 characters, the vendor should not parse the header and should restart the trace.
+        //      o Parse trace-id (from the first dash through the next 32 characters). Vendors MUST check that the 32 characters are hex, and that they are followed by a dash (-).
+        //      o Parse parent-id (from the second dash at the 35th position through the next 16 characters). Vendors MUST check that the 16 characters are hex and followed by a dash.
+        //      o Parse the sampled bit of flags (2 characters from the third dash). Vendors MUST check that the 2 characters are either the end of the string or a dash.
         public static IEnumerable<object[]> W3CTraceParentData()
         {
             // TraceId, valid data?
@@ -349,6 +354,11 @@ namespace System.Diagnostics.Tests
             yield return new object[] { "00_0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01", false }; // invalid separator, should be '-'
             yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c_b9c7c989f97918e1-01", false }; // invalid separator, should be '-'
             yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1_01", false }; // invalid separator, should be '-'
+            yield return new object[] { "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-011", false }; // invalid trace parent length
+            yield return new object[] { "01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-011", false }; // version higher than 00 but it supposes to have '-' after the sampling flags
+
+            // version higher than 00, can have '-' after the sampling flags and more data. Vendors MUST NOT parse or assume anything about unknown fields for this version
+            yield return new object[] { "01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01-00", true };
         }
 
         [Theory]
