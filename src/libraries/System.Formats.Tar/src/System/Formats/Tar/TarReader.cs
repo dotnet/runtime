@@ -221,12 +221,7 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                long remaining = dataStream.Remaining;
-                dataStream.SetReachedEnd();
-                if (remaining > 0)
-                {
-                    TarHelpers.AdvanceStream(_archiveStream, remaining);
-                }
+                dataStream.AdvanceToEnd();
 
                 TarHelpers.SkipBlockAlignmentPadding(_archiveStream, _previouslyReadEntry._header._size);
             }
@@ -259,12 +254,7 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                long remaining = dataStream.Remaining;
-                dataStream.SetReachedEnd();
-                if (remaining > 0)
-                {
-                    await TarHelpers.AdvanceStreamAsync(_archiveStream, remaining, cancellationToken).ConfigureAwait(false);
-                }
+                await dataStream.AdvanceToEndAsync(cancellationToken).ConfigureAwait(false);
 
                 await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
             }

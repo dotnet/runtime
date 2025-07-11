@@ -64,14 +64,26 @@ namespace System.Formats.Tar
 
         public override bool CanWrite => false;
 
-        internal long Remaining => _endInSuperStream - _positionInSuperStream;
+        private long Remaining => _endInSuperStream - _positionInSuperStream;
 
         private int LimitByRemaining(int bufferSize) => (int)Math.Min(Remaining, bufferSize);
 
-        internal void SetReachedEnd()
+        internal ValueTask AdvanceToEndAsync(CancellationToken cancellationToken)
         {
-            _positionInSuperStream = _endInSuperStream;
             _hasReachedEnd = true;
+
+            long remaining = Remaining;
+            _positionInSuperStream = _endInSuperStream;
+            return TarHelpers.AdvanceStreamAsync(_superStream, remaining, cancellationToken);
+        }
+
+        internal void AdvanceToEnd()
+        {
+            _hasReachedEnd = true;
+
+            long remaining = Remaining;
+            _positionInSuperStream = _endInSuperStream;
+            TarHelpers.AdvanceStream(_superStream, remaining);
         }
 
         protected void ThrowIfDisposed()
