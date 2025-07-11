@@ -22,7 +22,7 @@ internal static partial class Interop
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwInit")]
             [return: MarshalAs(UnmanagedType.I4)]
             internal static unsafe partial bool Init(
-                delegate* unmanaged<IntPtr, StatusUpdates, IntPtr, IntPtr, void> statusCallback,
+                delegate* unmanaged<IntPtr, StatusUpdates, IntPtr, IntPtr, NetworkFrameworkError*, void> statusCallback,
                 delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback,
                 delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr> challengeCallback);
 
@@ -155,15 +155,15 @@ internal static partial class Interop
 
             // takes encrypted input from underlying stream and feed it to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
-            internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, long, void> completionCallback);
+            internal static unsafe partial int ProcessInputData(SafeNwHandle connection, SafeNwHandle framer, byte* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
 
             // sends plaintext data to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSendToConnection")]
-            internal static unsafe partial void SendToConnection(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, long, void> completionCallback);
+            internal static unsafe partial void SendToConnection(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
 
             // read plaintext data from the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
-            internal static unsafe partial void ReadFromConnection(SafeNwHandle connection, IntPtr state, int length, IntPtr context, delegate* unmanaged<IntPtr, long, byte*, int, void> readCompletionCallback);
+            internal static unsafe partial void ReadFromConnection(SafeNwHandle connection, IntPtr state, int length, IntPtr context, delegate* unmanaged<IntPtr, NetworkFrameworkError*, byte*, int, void> readCompletionCallback);
 
             // starts connection cleanup
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]

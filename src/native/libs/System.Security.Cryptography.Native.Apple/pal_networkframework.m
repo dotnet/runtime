@@ -21,8 +21,55 @@ static dispatch_queue_t _inputQueue;
     do { \
         char buff[256]; \
         snprintf(buff, sizeof(buff), __VA_ARGS__); \
-        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(buff)); \
+        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(buff), NULL); \
     } while (0)
+
+// Helper function to extract error information from nw_error_t
+static void ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFrameworkError* outError)
+{
+    if (error == NULL || outError == NULL)
+    {
+        if (outError != NULL)
+        {
+            outError->errorCode = 0;
+            outError->errorDomain = 0;
+            outError->errorMessage = NULL;
+        }
+        return;
+    }
+    
+    outError->errorCode = nw_error_get_error_code(error);
+    nw_error_domain_t domain = nw_error_get_error_domain(error);
+    outError->errorDomain = (int32_t)domain;
+
+    if (domain == nw_error_domain_posix)
+    {
+        outError->errorMessage = strerror(outError->errorCode);
+        return;
+    }
+    
+    // Get error message from CoreFoundation error if available
+    CFErrorRef cfError = nw_error_copy_cf_error(error);
+    if (cfError != NULL)
+    {
+        CFStringRef description = CFErrorCopyDescription(cfError);
+        if (description != NULL)
+        {
+            outError->errorMessage = CFStringGetCStringPtr(description, kCFStringEncodingUTF8);
+            if (outError->errorMessage == NULL)
+            {
+                // If direct pointer access fails, we'll leave it as NULL
+                CFRelease(description);
+            }
+            // Note: We're keeping the CFString alive during the callback
+        }
+        CFRelease(cfError);
+    }
+    else
+    {
+        outError->errorMessage = NULL;
+    }
+}
 
 PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
 {
@@ -95,7 +142,7 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) 
         if (num != NULL)
         {
             [num getValue:&state];
-            (_statusFunc)(state, PAL_NwStatusUpdates_FramerStop, 0, 0);
+            (_statusFunc)(state, PAL_NwStatusUpdates_FramerStop, 0, 0, NULL);
         }
 
         nw_release(framer_options);
@@ -122,7 +169,7 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
     [num getValue:&state];
 
     // Notify SafeHandle with framer instance so we can submit to it directly.
-    (_statusFunc)(state, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0);
+    (_statusFunc)(state, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0, NULL);
 
     nw_framer_set_output_handler(framer, framer_output_handler);
 
@@ -154,7 +201,7 @@ PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connectio
     nw_framer_async(framer, ^(void) 
     {
         nw_framer_deliver_input(framer, buffer, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
-        completionCallback(context, 0);
+        completionCallback(context, NULL);
         nw_release(message);
     });
 
@@ -172,34 +219,35 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
 
     nw_retain(connection); // hold a reference until canceled
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
-        int errorCode  = error ? nw_error_get_error_code(error) : 0;
-        LOG(state, "Connection state changed: %d, errorCode: %d", (int)status, errorCode);
+        PAL_NetworkFrameworkError errorInfo;
+        ExtractNetworkFrameworkError(error, &errorInfo);
+        LOG(state, "Connection state changed: %d, errorCode: %d", (int)status, errorInfo.errorCode);
         switch (status)
         {
             case nw_connection_state_preparing:
             case nw_connection_state_waiting:
             case nw_connection_state_failed:
             {
-                if (errorCode != 0 || status == nw_connection_state_failed)
+                if (errorInfo.errorCode != 0 || status == nw_connection_state_failed)
                 {
-                    (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionFailed, (size_t)errorCode, 0);
+                    (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionFailed, 0, 0, &errorInfo);
                 }
             }
             break;
             case nw_connection_state_ready:
             {
-                (_statusFunc)(state, PAL_NwStatusUpdates_HandshakeFinished, 0, 0);
+                (_statusFunc)(state, PAL_NwStatusUpdates_HandshakeFinished, 0, 0, NULL);
             }
             break;
             case nw_connection_state_cancelled:
             {
-                (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0);
+                (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0, NULL);
                 nw_release(connection); // release the reference we held
             }
             break;
             case nw_connection_state_invalid:
             {
-                (_statusFunc)(state, PAL_NwStatusUpdates_UnknownError, 0, 0);
+                (_statusFunc)(state, PAL_NwStatusUpdates_UnknownError, 0, 0, NULL);
             }
             break;
         }
@@ -218,14 +266,16 @@ PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection)
 }
 
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
-PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length, void* context, CompletionCallback completionCallback)
+PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state, uint8_t* buffer, int length, void* context, CompletionCallback completionCallback)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
     (void)state;
 
-    nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t  error) {
-        completionCallback(context, error ? nw_error_get_error_code(error) : 0);
+    nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t error) {
+        PAL_NetworkFrameworkError errorInfo;
+        ExtractNetworkFrameworkError(error, &errorInfo);
+        completionCallback(context, &errorInfo);
     });
 }
 
@@ -233,12 +283,12 @@ PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, 
 PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t state, uint32_t length, void* context, ReadCompletionCallback readCompletionCallback)
 {
     nw_connection_receive(connection, 0, length, ^(dispatch_data_t content, nw_content_context_t ctx, bool is_complete, nw_error_t error) {
-        int errorCode = error ? nw_error_get_error_code(error) : 0;
+        PAL_NetworkFrameworkError errorInfo;
+        ExtractNetworkFrameworkError(error, &errorInfo);
 
         if (error != NULL)
         {
-            errorCode  = nw_error_get_error_code(error);
-            readCompletionCallback(context, errorCode, NULL, 0);
+            readCompletionCallback(context, &errorInfo, NULL, 0);
             return;
         }
 
@@ -247,14 +297,14 @@ PALEXPORT void AppleCryptoNative_NwReadFromConnection(nw_connection_t connection
             const void *buffer;
             size_t bufferLength;
             dispatch_data_t tmp = dispatch_data_create_map(content, &buffer, &bufferLength);
-            readCompletionCallback(context, 0, (const uint8_t*)buffer, bufferLength);
+            readCompletionCallback(context, NULL, (const uint8_t*)buffer, bufferLength);
             dispatch_release(tmp);
             return;
          }
 
          if (is_complete || content == NULL)
          {
-            readCompletionCallback(context, 0, NULL, 0);
+            readCompletionCallback(context, NULL, NULL, 0);
             return;
          }
 
@@ -415,7 +465,7 @@ PALEXPORT void AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, siz
 
         SecTrustRef chain = sec_trust_copy_ref(trust_ref);
 
-        _statusFunc(state, PAL_NwStatusUpdates_CertificateAvailable, (size_t)chain, 0);
+        _statusFunc(state, PAL_NwStatusUpdates_CertificateAvailable, (size_t)chain, 0, NULL);
 
         (void)metadata;
         (void)trust_ref;

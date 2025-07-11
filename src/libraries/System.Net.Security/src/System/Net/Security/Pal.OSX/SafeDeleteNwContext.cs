@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using SafeNwHandle = Interop.SafeNwHandle;
+using SafeCFStringHandle = Microsoft.Win32.SafeHandles.SafeCFStringHandle;
 using NetworkFrameworkStatusUpdates = Interop.NetworkFramework.StatusUpdates;
 using NwOSStatus = Interop.AppleCrypto.OSStatus;
 using ResettableValueTaskSource = System.Net.Quic.ResettableValueTaskSource;
@@ -152,12 +153,12 @@ namespace System.Net.Security
             TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _currentWriteCompletionSource = transportWriteCompletion;
 
-            TaskCompletionSource<long> tcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Cancellation requested for WriteAsync");
-                ((TaskCompletionSource<long>)state!).TrySetCanceled(token);
+                ((TaskCompletionSource)state!).TrySetCanceled(token);
             }, tcs);
 
             GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
@@ -167,27 +168,33 @@ namespace System.Net.Security
             {
                 Interop.NetworkFramework.Tls.SendToConnection(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
             }
-
-            long status = await tcs.Task.ConfigureAwait(false);
-
-            if (status != 0)
+            try
             {
-                // SendToConnection failed, complete the transport write
+                await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
                 _currentWriteCompletionSource = null;
-                transportWriteCompletion.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
+                transportWriteCompletion.TrySetException(ex);
             }
 
             // Wait for the transport write to complete
             await transportWriteCompletion.Task.ConfigureAwait(false);
 
             [UnmanagedCallersOnly]
-            static void CompletionCallback(IntPtr context, long status)
+            static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", nameof(WriteAsync));
                 GCHandle handle = GCHandle.FromIntPtr(context);
-                TaskCompletionSource<long> tcs = (TaskCompletionSource<long>)handle.Target!;
-
-                tcs.TrySetResult(status);
+                TaskCompletionSource tcs = (TaskCompletionSource)handle.Target!;
+                if (error != null)
+                {
+                    tcs.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
+                }
+                else
+                {
+                    tcs.TrySetResult();
+                }
                 handle.Free();
             }
         }
@@ -248,17 +255,17 @@ namespace System.Net.Security
             return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
 
             [UnmanagedCallersOnly]
-            static unsafe void CompletionCallback(IntPtr context, long status, byte* data, int length)
+            static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error, byte* data, int length)
             {
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 SafeDeleteNwContext thisContext = (SafeDeleteNwContext)handle.Target!;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {status}, len: {length}", nameof(FillAppDataBufferAsync));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {(error != null ? error->ErrorCode : 0)}, len: {length}", nameof(FillAppDataBufferAsync));
 
                 ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
 
-                if (status != 0)
+                if (error != null && error->ErrorCode != 0)
                 {
-                    thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.AppleCrypto.CreateExceptionForOSStatus((int)status)));
+                    thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
                 }
                 else
                 {
@@ -447,9 +454,9 @@ namespace System.Net.Security
             }
 
             [UnmanagedCallersOnly]
-            static void CompletionCallback(IntPtr context, long status)
+            static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
             {
-                Debug.Assert(status == 0, $"CompletionCallback called with status {status}");
+                Debug.Assert(error == null || error->ErrorCode == 0, $"CompletionCallback called with error {(error != null ? error->ErrorCode : 0)}");
 
                 GCHandle handle = GCHandle.FromIntPtr(context);
                 SafeDeleteNwContext thisContext = (SafeDeleteNwContext)handle.Target!;
@@ -460,7 +467,7 @@ namespace System.Net.Security
         public override bool IsInvalid => ConnectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
 
         [UnmanagedCallersOnly]
-        private static unsafe void StatusUpdateCallback(IntPtr thisHandle, NetworkFrameworkStatusUpdates statusUpdate, IntPtr data, IntPtr data2)
+        private static unsafe void StatusUpdateCallback(IntPtr thisHandle, NetworkFrameworkStatusUpdates statusUpdate, IntPtr data, IntPtr data2, Interop.NetworkFramework.NetworkFrameworkError* error)
         {
             SafeDeleteNwContext? nwContext = null;
 
@@ -485,7 +492,10 @@ namespace System.Net.Security
                         nwContext?.HandshakeFinished();
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionFailed:
-                        nwContext?.ConnectionFailed(data.ToInt32());
+                        if (error != null)
+                        {
+                            nwContext?.ConnectionFailed(in *error);
+                        }
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionCancelled:
                         nwContext?.ConnectionClosed();
@@ -531,10 +541,10 @@ namespace System.Net.Security
             _handshakeCompletionSource.TrySetResult(null);
         }
 
-        private void ConnectionFailed(int errorCode)
+        private void ConnectionFailed(in Interop.NetworkFramework.NetworkFrameworkError error)
         {
-            Exception ex = Interop.AppleCrypto.CreateExceptionForOSStatus(errorCode);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"TLS handshake failed with error code: {errorCode} ({ex.Message})");
+            Exception ex = Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in error);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"TLS handshake failed with error: {ex.Message}");
             _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
         }
 

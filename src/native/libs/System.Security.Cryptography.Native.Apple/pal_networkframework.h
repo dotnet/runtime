@@ -33,11 +33,19 @@ typedef enum
     PAL_NwStatusUpdates_DebugLog = 200,
 } PAL_NwStatusUpdates;
 
+// Error information structure
+typedef struct
+{
+    int32_t errorCode;
+    int32_t errorDomain;
+    const char* errorMessage;
+} PAL_NetworkFrameworkError;
+
 // Callback type definitions that match the implementation usage
-typedef void (*StatusUpdateCallback)(size_t context, PAL_NwStatusUpdates status, size_t data1, size_t data2);
+typedef void (*StatusUpdateCallback)(size_t context, PAL_NwStatusUpdates status, size_t data1, size_t data2, PAL_NetworkFrameworkError* error);
 typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, void** length);
-typedef void (*CompletionCallback)(void* context, int64_t status);
-typedef void (*ReadCompletionCallback)(void* context, int64_t status, const uint8_t* buffer, size_t length);
+typedef void (*CompletionCallback)(void* context, PAL_NetworkFrameworkError* error);
+typedef void (*ReadCompletionCallback)(void* context, PAL_NetworkFrameworkError* error, const uint8_t* buffer, size_t length);
 typedef void* (*ChallengeCallback)(size_t context, CFArrayRef acceptableIssuers, SecCertificateRef remoteCertificate);
 
 // Only TLS-specific Network Framework functions are exported
