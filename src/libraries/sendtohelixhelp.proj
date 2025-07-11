@@ -221,7 +221,7 @@
       <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' != 'true'">$(HelixCommand) dotnet dev-certs https &amp;&amp; </HelixCommand>
 
       <!-- on windows `dotnet dev-certs https -trust` shows a dialog, so instead install the certificate with powershell -->
-      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommand) powershell -command &quot;dotnet dev-certs https --export-path devcerts.pfx --password PLACEHOLDER %3B $pw = ConvertTo-SecureString PLACEHOLDER -AsPlainText -Force %3B Import-PfxCertificate -FilePath devcerts.pfx -Password $pw -CertStoreLocation Cert:\CurrentUser\Root &quot; &amp;&amp; </HelixCommand>
+      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommand) powershell -command &quot;dotnet dev-certs https --export-path devcerts.pfx --password PLACEHOLDER %3B $pw = ConvertTo-SecureString PLACEHOLDER -AsPlainText -Force %3B Import-PfxCertificate -FilePath devcerts.pfx -Password $pw -CertStoreLocation Cert:\LocalMachine\Root &quot; &amp;&amp; </HelixCommand>
 
       <!--
         For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
