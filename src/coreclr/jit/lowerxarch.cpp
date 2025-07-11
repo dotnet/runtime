@@ -1387,7 +1387,6 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
 {
     assert(node->GetOperandCount() == 3);
 
-    bool isAvx512 = false;
     bool negated  = false;
     bool subtract = false;
     bool isScalar = false;
@@ -1397,23 +1396,27 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
     switch (intrinsic)
     {
         case NI_AVX2_MultiplyAdd:
+        case NI_AVX512_FusedMultiplyAdd:
         {
             break;
         }
 
         case NI_AVX2_MultiplyAddScalar:
+        case NI_AVX512_FusedMultiplyAddScalar:
         {
             isScalar = true;
             break;
         }
 
         case NI_AVX2_MultiplyAddNegated:
+        case NI_AVX512_FusedMultiplyAddNegated:
         {
             negated = true;
             break;
         }
 
         case NI_AVX2_MultiplyAddNegatedScalar:
+        case NI_AVX512_FusedMultiplyAddNegatedScalar:
         {
             negated  = true;
             isScalar = true;
@@ -1421,12 +1424,14 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
         }
 
         case NI_AVX2_MultiplySubtract:
+        case NI_AVX512_FusedMultiplySubtract:
         {
             subtract = true;
             break;
         }
 
         case NI_AVX2_MultiplySubtractScalar:
+        case NI_AVX512_FusedMultiplySubtractScalar:
         {
             subtract = true;
             isScalar = true;
@@ -1434,6 +1439,7 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
         }
 
         case NI_AVX2_MultiplySubtractNegated:
+        case NI_AVX512_FusedMultiplySubtractNegated:
         {
             subtract = true;
             negated  = true;
@@ -1441,67 +1447,8 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
         }
 
         case NI_AVX2_MultiplySubtractNegatedScalar:
-        {
-            subtract = true;
-            negated  = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAdd:
-        {
-            isAvx512 = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAddScalar:
-        {
-            isAvx512 = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAddNegated:
-        {
-            isAvx512 = true;
-            negated  = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAddNegatedScalar:
-        {
-            isAvx512 = true;
-            negated  = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplySubtract:
-        {
-            isAvx512 = true;
-            subtract = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplySubtractScalar:
-        {
-            isAvx512 = true;
-            subtract = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplySubtractNegated:
-        {
-            isAvx512 = true;
-            subtract = true;
-            negated  = true;
-            break;
-        }
-
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         {
-            isAvx512 = true;
             subtract = true;
             negated  = true;
             isScalar = true;
@@ -1543,10 +1490,7 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
                     argOp->ClearContained();
                     ContainCheckHWIntrinsic(arg->AsHWIntrinsic());
 
-                    // We want to toggle the tracking and then check it again,
-                    // which is the simplest way to handle cases like -CreateScalarUnsafe(-x)
                     negatedArgs[i - 1] ^= true;
-                    i -= 1;
                 }
 
                 break;
@@ -1562,11 +1506,18 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                GenTree* argOp = hwArg->Op(1);
+                GenTree* argOp = hwArg->Op(2);
 
-                // xor is bitwise and the actual xor node might not be floating-point
-                // so we check if its negative zero using the FMA base type since that's
-                // what the end negation will end up using
+                if (!argOp->isContained())
+                {
+                    // A constant should have already been contained
+                    break;
+                }
+
+                // xor is bitwise and the actual xor node might be a different base type
+                // from the FMA node, so we check if its negative zero using the FMA base
+                // type since that's what the end negation would end up using
+
                 if (argOp->IsVectorNegativeZero(node->GetSimdBaseType()))
                 {
                     BlockRange().Remove(hwArg);
@@ -1576,11 +1527,9 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
                     argOp->ClearContained();
                     node->Op(i) = argOp;
 
-                    // We want to toggle the tracking and then check it again,
-                    // which is the simplest way to handle cases like -CreateScalarUnsafe(-x)
                     negatedArgs[i - 1] ^= true;
-                    i -= 1;
                 }
+
                 break;
             }
         }
@@ -1590,7 +1539,7 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
     negated ^= negatedArgs[1];
     subtract ^= negatedArgs[2];
 
-    if (isAvx512)
+    if (intrinsic >= FIRST_NI_AVX512)
     {
         if (negated)
         {
@@ -3041,118 +2990,135 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                     if (maskNode->OperIsHWIntrinsic())
                     {
-                        maskIntrinsicId = maskNode->AsHWIntrinsic()->GetHWIntrinsicId();
+                        GenTreeHWIntrinsic* mskIntrin = maskNode->AsHWIntrinsic();
+
+                        bool       mskIsScalar = false;
+                        genTreeOps mskOper =
+                            mskIntrin->GetOperForHWIntrinsicId(&mskIsScalar, /* getEffectiveOp */ true);
+
+                        if (GenTree::OperIsCompare(mskOper))
+                        {
+                            var_types mskSimdBaseType = mskIntrin->GetSimdBaseType();
+                            unsigned  mskSimdSize     = mskIntrin->GetSimdSize();
+
+                            GenTree* cmpOp1 = mskIntrin->Op(1);
+                            GenTree* cmpOp2 = mskIntrin->Op(2);
+
+                            maskIntrinsicId =
+                                GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(comp, mskOper, TYP_MASK, cmpOp1, cmpOp2,
+                                                                             mskSimdBaseType, mskSimdSize, mskIsScalar,
+                                                                             /* reverseCond */ true);
+                        }
+                        else
+                        {
+                            // We have some other comparison intrinsics that don't map to the simple forms
+                            NamedIntrinsic mskIntrinsic = mskIntrin->GetHWIntrinsicId();
+
+                            switch (mskIntrinsic)
+                            {
+                                case NI_AVX_Compare:
+                                case NI_AVX_CompareScalar:
+                                case NI_AVX512_CompareMask:
+                                {
+                                    assert(mskIntrin->GetOperandCount() == 3);
+
+                                    GenTree* cmpOp3 = mskIntrin->Op(3);
+
+                                    if (!cmpOp3->IsCnsIntOrI())
+                                    {
+                                        break;
+                                    }
+
+                                    FloatComparisonMode mode =
+                                        static_cast<FloatComparisonMode>(cmpOp3->AsIntConCommon()->IntegralValue());
+
+                                    FloatComparisonMode newMode = mode;
+
+                                    switch (mode)
+                                    {
+                                        case FloatComparisonMode::UnorderedEqualNonSignaling:
+                                        case FloatComparisonMode::UnorderedEqualSignaling:
+                                        {
+                                            newMode = FloatComparisonMode::OrderedNotEqualNonSignaling;
+                                            break;
+                                        }
+
+                                        case FloatComparisonMode::OrderedFalseNonSignaling:
+                                        case FloatComparisonMode::OrderedFalseSignaling:
+                                        {
+                                            newMode = FloatComparisonMode::UnorderedTrueNonSignaling;
+                                            break;
+                                        }
+
+                                        case FloatComparisonMode::OrderedNotEqualNonSignaling:
+                                        case FloatComparisonMode::OrderedNotEqualSignaling:
+                                        {
+                                            newMode = FloatComparisonMode::UnorderedEqualNonSignaling;
+                                            break;
+                                        }
+
+                                        case FloatComparisonMode::UnorderedTrueNonSignaling:
+                                        case FloatComparisonMode::UnorderedTrueSignaling:
+                                        {
+                                            newMode = FloatComparisonMode::OrderedFalseNonSignaling;
+                                            break;
+                                        }
+
+                                        default:
+                                        {
+                                            // Other modes should either have been normalized or
+                                            // will be out of range values and can't be handled
+                                            break;
+                                        }
+                                    }
+
+                                    if (newMode != mode)
+                                    {
+                                        cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(mode));
+                                        maskIntrinsicId = mskIntrinsic;
+                                    }
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    break;
+                                }
+                            }
+                        }
                     }
 
-                    switch (maskIntrinsicId)
+                    if (maskIntrinsicId == NI_Illegal)
                     {
-                        case NI_AVX512_CompareEqualMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareNotEqualMask;
-                            break;
-                        }
+                        // We don't have a well known intrinsic, so we need to inverse the mask keeping the upper
+                        // n-bits clear. If we have 1 element, then the upper 7-bits need to be cleared. If we have
+                        // 2, then the upper 6-bits, and if we have 4, then the upper 4-bits.
+                        //
+                        // There isn't necessarily a trivial way to do this outside not, shift-left by n,
+                        // shift-right by n. This preserves count bits, while clearing the upper n-bits
 
-                        case NI_AVX512_CompareGreaterThanMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareNotGreaterThanMask;
-                            break;
-                        }
+                        GenTree* cnsNode;
 
-                        case NI_AVX512_CompareGreaterThanOrEqualMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareNotGreaterThanOrEqualMask;
-                            break;
-                        }
+                        maskNode = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, NI_AVX512_NotMask,
+                                                                  maskBaseJitType, simdSize);
+                        BlockRange().InsertBefore(node, maskNode);
 
-                        case NI_AVX512_CompareLessThanMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareNotLessThanMask;
-                            break;
-                        }
+                        cnsNode = comp->gtNewIconNode(8 - count);
+                        BlockRange().InsertAfter(maskNode, cnsNode);
 
-                        case NI_AVX512_CompareLessThanOrEqualMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareNotLessThanOrEqualMask;
-                            break;
-                        }
+                        maskNode = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftLeftMask,
+                                                                  maskBaseJitType, simdSize);
+                        BlockRange().InsertAfter(cnsNode, maskNode);
+                        LowerNode(maskNode);
 
-                        case NI_AVX512_CompareNotEqualMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareEqualMask;
-                            break;
-                        }
+                        cnsNode = comp->gtNewIconNode(8 - count);
+                        BlockRange().InsertAfter(maskNode, cnsNode);
 
-                        case NI_AVX512_CompareNotGreaterThanMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareGreaterThanMask;
-                            break;
-                        }
+                        maskNode = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftRightMask,
+                                                                  maskBaseJitType, simdSize);
+                        BlockRange().InsertAfter(cnsNode, maskNode);
 
-                        case NI_AVX512_CompareNotGreaterThanOrEqualMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareGreaterThanOrEqualMask;
-                            break;
-                        }
-
-                        case NI_AVX512_CompareNotLessThanMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareLessThanMask;
-                            break;
-                        }
-
-                        case NI_AVX512_CompareNotLessThanOrEqualMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareLessThanOrEqualMask;
-                            break;
-                        }
-
-                        case NI_AVX512_CompareOrderedMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareUnorderedMask;
-                            break;
-                        }
-
-                        case NI_AVX512_CompareUnorderedMask:
-                        {
-                            maskIntrinsicId = NI_AVX512_CompareOrderedMask;
-                            break;
-                        }
-
-                        default:
-                        {
-                            // We don't have a well known intrinsic, so we need to inverse the mask keeping the upper
-                            // n-bits clear. If we have 1 element, then the upper 7-bits need to be cleared. If we have
-                            // 2, then the upper 6-bits, and if we have 4, then the upper 4-bits.
-                            //
-                            // There isn't necessarily a trivial way to do this outside not, shift-left by n,
-                            // shift-right by n. This preserves count bits, while clearing the upper n-bits
-
-                            GenTree* cnsNode;
-
-                            maskNode = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, NI_AVX512_NotMask,
-                                                                      maskBaseJitType, simdSize);
-                            BlockRange().InsertBefore(node, maskNode);
-
-                            cnsNode = comp->gtNewIconNode(8 - count);
-                            BlockRange().InsertAfter(maskNode, cnsNode);
-
-                            maskNode =
-                                comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftLeftMask,
-                                                               maskBaseJitType, simdSize);
-                            BlockRange().InsertAfter(cnsNode, maskNode);
-                            LowerNode(maskNode);
-
-                            cnsNode = comp->gtNewIconNode(8 - count);
-                            BlockRange().InsertAfter(maskNode, cnsNode);
-
-                            maskNode =
-                                comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftRightMask,
-                                                               maskBaseJitType, simdSize);
-                            BlockRange().InsertAfter(cnsNode, maskNode);
-
-                            maskIntrinsicId = NI_AVX512_ShiftRightMask;
-                            break;
-                        }
+                        maskIntrinsicId = NI_AVX512_ShiftRightMask;
                     }
 
                     maskNode->AsHWIntrinsic()->ChangeHWIntrinsicId(maskIntrinsicId);
@@ -7807,7 +7773,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     }
 
     // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
-    if (comp->opts.OptimizationEnabled())
+    if (comp->opts.Tier0OptimizationEnabled())
     {
         if (src->OperIs(GT_BSWAP, GT_BSWAP16) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
@@ -8404,7 +8370,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
                 srcIsContainable = !varTypeIsSmall(srcType) && ((srcType != TYP_ULONG) || comp->canUseEvexEncoding());
             }
         }
-        else if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(castOp) && varTypeIsIntegral(castToType))
+        else if (comp->opts.Tier0OptimizationEnabled() && varTypeIsIntegral(castOp) && varTypeIsIntegral(castToType))
         {
             // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
             if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
@@ -9928,7 +9894,28 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (containedOperand != nullptr)
                     {
-                        if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
+                        bool isEmbeddedBroadcastCompatible =
+                            containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp);
+
+                        bool       isScalarArg = false;
+                        genTreeOps oper        = node->GetOperForHWIntrinsicId(&isScalarArg);
+
+                        // We want to skip trying to make this an embedded broadcast in certain scenarios
+                        // because it will prevent other transforms that will be better for codegen.
+
+                        LIR::Use use;
+
+                        if ((oper == GT_XOR) && isEmbeddedBroadcastCompatible && BlockRange().TryGetUse(node, &use) &&
+                            use.User()->OperIsVectorFusedMultiplyOp())
+                        {
+                            // xor is bitwise and the actual xor node might be a different base type
+                            // from the FMA node, so we check if its negative zero using the FMA base
+                            // type since that's what the end negation would end up using
+                            var_types fmaSimdBaseType     = use.User()->AsHWIntrinsic()->GetSimdBaseType();
+                            isEmbeddedBroadcastCompatible = !containedOperand->IsVectorNegativeZero(fmaSimdBaseType);
+                        }
+
+                        if (isEmbeddedBroadcastCompatible)
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                         }
@@ -10527,222 +10514,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     MakeSrcContained(node, op1);
                                 }
 
-                                if (op2->isEmbeddedMaskingCompatibleHWIntrinsic())
+                                if (IsInvariantInRange(op2, node))
                                 {
-                                    bool isEmbeddedMask = !comp->opts.MinOpts() && comp->canUseEmbeddedMasking();
+                                    unsigned    tgtMaskSize        = simdSize / genTypeSize(simdBaseType);
+                                    CorInfoType tgtSimdBaseJitType = CORINFO_TYPE_UNDEF;
 
-                                    if (op2->isRMWHWIntrinsic(comp))
+                                    if (op2->isEmbeddedMaskingCompatible(comp, tgtMaskSize, tgtSimdBaseJitType))
                                     {
-                                        // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
-                                        isEmbeddedMask = false;
-                                    }
-
-                                    GenTreeHWIntrinsic* op2Intrinsic   = op2->AsHWIntrinsic();
-                                    NamedIntrinsic      op2IntrinsicId = NI_Illegal;
-                                    HWIntrinsicCategory category       = HW_Category_Special;
-
-                                    if (isEmbeddedMask)
-                                    {
-                                        // TODO-AVX512-CQ: Codegen is currently limited to only handling embedded
-                                        // masking for table driven intrinsics. This can be relaxed once that is fixed.
-
-                                        op2IntrinsicId = op2Intrinsic->GetHWIntrinsicId();
-                                        category       = HWIntrinsicInfo::lookupCategory(op2IntrinsicId);
-                                        isEmbeddedMask =
-                                            HWIntrinsicInfo::genIsTableDrivenHWIntrinsic(op2IntrinsicId, category);
-
-                                        size_t numArgs = node->GetOperandCount();
-
-                                        if (numArgs == 1)
+                                        if (tgtSimdBaseJitType != CORINFO_TYPE_UNDEF)
                                         {
-                                            if (op2Intrinsic->OperIsMemoryLoad())
-                                            {
-                                                isEmbeddedMask = false;
-                                            }
-                                        }
-                                        else if (numArgs == 2)
-                                        {
-                                            if (category == HW_Category_MemoryStore)
-                                            {
-                                                isEmbeddedMask = false;
-                                            }
-                                        }
-                                    }
-
-                                    if (isEmbeddedMask)
-                                    {
-                                        var_types op2SimdBaseType = op2Intrinsic->GetSimdBaseType();
-
-                                        instruction ins =
-                                            HWIntrinsicInfo::lookupIns(op2IntrinsicId, op2SimdBaseType, comp);
-
-                                        unsigned expectedMaskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
-
-                                        // It's safe to use the return and base type of the BlendVariableMask node
-                                        // since anything which lowered to it will have validated compatibility itself
-                                        unsigned actualMaskSize =
-                                            genTypeSize(node->TypeGet()) / genTypeSize(simdBaseType);
-                                        unsigned actualMaskBaseSize =
-                                            actualMaskSize / (genTypeSize(node->TypeGet()) / 16);
-
-                                        CorInfoType op2AdjustedSimdBaseJitType = CORINFO_TYPE_UNDEF;
-
-                                        if (actualMaskBaseSize != expectedMaskBaseSize)
-                                        {
-                                            // Some intrinsics are effectively bitwise operations and so we
-                                            // can freely update them to match the size of the actual mask
-
-                                            bool supportsMaskBaseSize4Or8 = false;
-
-                                            switch (ins)
-                                            {
-                                                case INS_andpd:
-                                                case INS_andps:
-                                                case INS_andnpd:
-                                                case INS_andnps:
-                                                case INS_orpd:
-                                                case INS_orps:
-                                                case INS_pandd:
-                                                case INS_pandnd:
-                                                case INS_pord:
-                                                case INS_pxord:
-                                                case INS_vpandq:
-                                                case INS_vpandnq:
-                                                case INS_vporq:
-                                                case INS_vpxorq:
-                                                case INS_vshuff32x4:
-                                                case INS_vshuff64x2:
-                                                case INS_vshufi32x4:
-                                                case INS_vshufi64x2:
-                                                case INS_xorpd:
-                                                case INS_xorps:
-                                                {
-                                                    // These intrinsics support embedded broadcast and have masking
-                                                    // support for 4 or 8
-                                                    assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
-
-                                                    if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins,
-                                                                                                   op2Intrinsic->Op(2)))
-                                                    {
-                                                        // We cannot change the base type if we've already contained a
-                                                        // broadcast
-                                                        supportsMaskBaseSize4Or8 = true;
-                                                    }
-                                                    break;
-                                                }
-
-                                                case INS_vpternlogd:
-                                                case INS_vpternlogq:
-                                                {
-                                                    // These intrinsics support embedded broadcast and have masking
-                                                    // support for 4 or 8
-                                                    assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
-
-                                                    if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins,
-                                                                                                   op2Intrinsic->Op(3)))
-                                                    {
-                                                        // We cannot change the base type if we've already contained a
-                                                        // broadcast
-                                                        supportsMaskBaseSize4Or8 = true;
-                                                    }
-                                                    break;
-                                                }
-
-                                                case INS_vbroadcastf32x4:
-                                                case INS_vbroadcastf32x8:
-                                                case INS_vbroadcastf64x2:
-                                                case INS_vbroadcastf64x4:
-                                                case INS_vbroadcasti32x4:
-                                                case INS_vbroadcasti32x8:
-                                                case INS_vbroadcasti64x2:
-                                                case INS_vbroadcasti64x4:
-                                                case INS_vextractf32x4:
-                                                case INS_vextractf32x8:
-                                                case INS_vextractf64x2:
-                                                case INS_vextractf64x4:
-                                                case INS_vextracti32x4:
-                                                case INS_vextracti32x8:
-                                                case INS_vextracti64x2:
-                                                case INS_vextracti64x4:
-                                                case INS_vinsertf32x4:
-                                                case INS_vinsertf32x8:
-                                                case INS_vinsertf64x2:
-                                                case INS_vinsertf64x4:
-                                                case INS_vinserti32x4:
-                                                case INS_vinserti32x8:
-                                                case INS_vinserti64x2:
-                                                case INS_vinserti64x4:
-                                                {
-                                                    // These intrinsics don't support embedded broadcast and have
-                                                    // masking support for 4 or 8
-                                                    assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
-                                                    supportsMaskBaseSize4Or8 = true;
-                                                    break;
-                                                }
-
-                                                default:
-                                                {
-                                                    break;
-                                                }
-                                            }
-
-                                            if (supportsMaskBaseSize4Or8)
-                                            {
-                                                if (actualMaskBaseSize == 8)
-                                                {
-                                                    if (varTypeIsFloating(op2SimdBaseType))
-                                                    {
-                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_DOUBLE;
-                                                    }
-                                                    else if (varTypeIsSigned(op2SimdBaseType))
-                                                    {
-                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_LONG;
-                                                    }
-                                                    else
-                                                    {
-                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_ULONG;
-                                                    }
-                                                }
-                                                else if (actualMaskBaseSize == 4)
-                                                {
-                                                    if (varTypeIsFloating(op2SimdBaseType))
-                                                    {
-                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_FLOAT;
-                                                    }
-                                                    else if (varTypeIsSigned(op2SimdBaseType))
-                                                    {
-                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_INT;
-                                                    }
-                                                    else
-                                                    {
-                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_UINT;
-                                                    }
-                                                }
-                                            }
+                                            op2->AsHWIntrinsic()->SetSimdBaseJitType(tgtSimdBaseJitType);
                                         }
 
-                                        if (op2AdjustedSimdBaseJitType != CORINFO_TYPE_UNDEF)
-                                        {
-                                            ins = HWIntrinsicInfo::lookupIns(op2IntrinsicId, op2SimdBaseType, comp);
-                                            expectedMaskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
-                                        }
-
-                                        unsigned expectedMaskSize =
-                                            expectedMaskBaseSize * (genTypeSize(op2->TypeGet()) / 16);
-                                        assert(expectedMaskSize != 0);
-
-                                        if (actualMaskSize != expectedMaskSize)
-                                        {
-                                            isEmbeddedMask = false;
-                                        }
-                                        else if (op2AdjustedSimdBaseJitType != CORINFO_TYPE_UNDEF)
-                                        {
-                                            op2Intrinsic->SetSimdBaseJitType(op2AdjustedSimdBaseJitType);
-                                        }
-                                    }
-
-                                    if (isEmbeddedMask && IsInvariantInRange(op2, node))
-                                    {
                                         MakeSrcContained(node, op2);
                                         op2->MakeEmbMaskOp();
                                         break;
@@ -10762,13 +10545,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     // and avoid instantiating the vector constant.
                                     MakeSrcContained(node, op1);
                                 }
-                                break;
-                            }
-
-                            case NI_AVXVNNI_MultiplyWideningAndAdd:
-                            case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
-                            {
-                                TryMakeSrcContainedOrRegOptional(node, op3);
                                 break;
                             }
 
@@ -10827,17 +10603,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            case NI_X86Base_DivRem:
-                            case NI_X86Base_X64_DivRem:
-                            {
-                                // DIV only allows divisor (op3) in memory
-                                TryMakeSrcContainedOrRegOptional(node, op3);
-                                break;
-                            }
-
                             default:
                             {
-                                unreached();
+                                assert((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
+                                       (intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512));
+                                TryMakeSrcContainedOrRegOptional(node, op3);
                                 break;
                             }
                         }

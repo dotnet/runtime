@@ -11,6 +11,67 @@
 #endif
 #include "ep-getter-setter.h"
 
+#if HAVE_LINUX_USER_EVENTS_H
+#include <linux/user_events.h> // DIAG_IOCSREG
+#else // HAVE_LINUX_USER_EVENTS_H
+/*
+ * Describes an event registration and stores the results of the registration.
+ * This structure is passed to the DIAG_IOCSREG ioctl, callers at a minimum
+ * must set the size and name_args before invocation.
+ */
+struct user_reg {
+
+	/* Input: Size of the user_reg structure being used */
+	uint32_t size;
+
+	/* Input: Bit in enable address to use */
+	uint8_t enable_bit;
+
+	/* Input: Enable size in bytes at address */
+	uint8_t enable_size;
+
+	/* Input: Flags to use, if any */
+	uint16_t flags;
+
+	/* Input: Address to update when enabled */
+	uint64_t enable_addr;
+
+	/* Input: Pointer to string with event name, description and flags */
+	uint64_t name_args;
+
+	/* Output: Index of the event to use when writing data */
+	uint32_t write_index;
+};
+
+/*
+ * Describes an event unregister, callers must set the size, address and bit.
+ * This structure is passed to the DIAG_IOCSUNREG ioctl to disable bit updates.
+ */
+struct user_unreg {
+	/* Input: Size of the user_unreg structure being used */
+	uint32_t size;
+
+	/* Input: Bit to unregister */
+	uint8_t disable_bit;
+
+	/* Input: Reserved, set to 0 */
+	uint8_t _reserved;
+
+	/* Input: Reserved, set to 0 */
+	uint16_t _reserved2;
+
+	/* Input: Address to unregister */
+	uint64_t disable_addr;
+};
+
+/* Request to register a user_event */
+#define DIAG_IOCSREG 0xC0082A00
+
+/* Requests to unregister a user_event */
+#define DIAG_IOCSUNREG 0x40082A02
+
+#endif // HAVE_LINUX_USER_EVENTS_H
+
 /*
  * EventPipeSessionProviderTracepoint.
  */

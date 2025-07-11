@@ -64,12 +64,12 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (disposing)
             {
                 _key.Dispose();
             }
+
+            base.Dispose(disposing);
         }
 
         internal SafeEvpPKeyHandle DuplicateHandle() =>  _key.DuplicateHandle();

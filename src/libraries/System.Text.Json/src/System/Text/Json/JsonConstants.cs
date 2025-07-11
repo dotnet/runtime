@@ -43,6 +43,7 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> NaNValue => "NaN"u8;
         public static ReadOnlySpan<byte> PositiveInfinityValue => "Infinity"u8;
         public static ReadOnlySpan<byte> NegativeInfinityValue => "-Infinity"u8;
+        public const int MaximumFloatingPointConstantLength = 9;
 
         // Used to search for the end of a number
         public static ReadOnlySpan<byte> Delimiters => ",}] \n\r\t/"u8;
