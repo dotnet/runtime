@@ -108,6 +108,11 @@ public class AndroidAppBuilderTask : Task
 
     public bool ForceInterpreter { get; set; }
 
+    /// <summary>
+    /// Indicates whether we want to use invariant globalization mode.
+    /// </summary>
+    public bool InvariantGlobalization { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
