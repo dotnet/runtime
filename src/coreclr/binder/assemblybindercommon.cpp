@@ -1232,7 +1232,7 @@ Retry:
                     hr = GET_EXCEPTION()->GetHR();
                     goto Exit;
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
 
 
                 mvidMismatch = incomingMVID != boundMVID;

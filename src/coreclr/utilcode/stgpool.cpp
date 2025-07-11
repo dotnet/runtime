@@ -505,7 +505,7 @@ StgPool::PersistToStream(
     {
         hr = E_FAIL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 } // StgPool::PersistToStream

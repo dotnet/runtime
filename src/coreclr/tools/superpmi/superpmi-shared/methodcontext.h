@@ -336,9 +336,9 @@ public:
                                             CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
 
-    void recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, void* result);
-    void dmpGetHelperFtn(DWORD key, DLDL value);
-    void* repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection);
+    void recGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP pNativeEntrypoint,CORINFO_METHOD_HANDLE methodHandle);
+    void dmpGetHelperFtn(DWORD key, Agnostic_GetHelperFtn value);
+    void repGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint,CORINFO_METHOD_HANDLE *pMethodHandle);
     bool fndGetHelperFtn(void* functionAddress, CorInfoHelpFunc* pResult);
 
     void recGetJustMyCodeHandle(CORINFO_METHOD_HANDLE         method,
@@ -762,6 +762,10 @@ public:
     void dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value);
     LPVOID repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
 
+    LPVOID repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
+    void recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result);
+    void dmpGetCookieForInterpreterCalliSig(const GetCookieForInterpreterCalliSigValue& key, DLDL value);
+
     void recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result);
     void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
     bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
@@ -1052,7 +1056,7 @@ enum mcPackets
     Packet_GetFunctionEntryPoint = 60,
     Packet_GetFunctionFixedEntryPoint = 61,
     Packet_GetGSCookie = 62,
-    Packet_GetHelperFtn = 63,
+    //Packet_GetHelperFtn = 63,
     //Packet_GetInlinedCallFrameVptr = 65,
     Packet_GetArrayIntrinsicID = 66,
     //Packet_GetJitTimeLogFilename = 67,
@@ -1218,6 +1222,8 @@ enum mcPackets
     Packet_NotifyInstructionSetUsage = 229,
     Packet_GetAsyncInfo = 230,
     Packet_GetAsyncResumptionStub = 231,
+    Packet_GetCookieForInterpreterCalliSig = 232,
+    Packet_GetHelperFtn = 233,
 };
 
 void SetDebugDumpVariables();

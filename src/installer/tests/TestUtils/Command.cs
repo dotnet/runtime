@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         private StringWriter _stdOutCapture;
         private StringWriter _stdErrCapture;
 
+        private bool _disableDumps = false;
         private bool _running = false;
 
         public Process Process { get; }
@@ -133,6 +134,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return false;
         }
 
+        public Command DisableDumps()
+        {
+            _disableDumps = true;
+            RemoveEnvironmentVariable("COMPlus_DbgEnableMiniDump");
+            RemoveEnvironmentVariable("DOTNET_DbgEnableMiniDump");
+            return this;
+        }
+
         public Command Environment(IDictionary<string, string> env)
         {
             if (env == null)
@@ -153,15 +162,26 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public CommandResult Execute()
-        {
-            return Execute(false);
-        }
-
-        public Command Start()
+        public Command Start([CallerMemberName] string caller = "")
         {
             ThrowIfRunning();
             _running = true;
+
+            if (_disableDumps && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
+            {
+                // Replace double quoted arguments with single quotes.
+                // We only want to replace non-escaped quotes - that is, ones not preceded by a backslash
+                // or preceded by an even number of backslashes.
+                string args = System.Text.RegularExpressions.Regex.Replace(
+                    Process.StartInfo.Arguments,
+                    @"((?:^|[^\\])(?:\\\\)*)""",
+                    m => m.Value.Substring(0, m.Value.Length - 1) + "'"
+                );
+
+                // Explicitly set the core file size to 0 before launching the process in the same shell
+                Process.StartInfo.Arguments = $"-c \"ulimit -c 0 && exec {Process.StartInfo.FileName} {args}\"";
+                Process.StartInfo.FileName = "/bin/sh";
+            }
 
             if (Process.StartInfo.RedirectStandardOutput)
             {
@@ -181,7 +201,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             Process.EnableRaisingEvents = true;
 
-            ReportExecBegin();
+            ReportExec(caller);
 
             // Retry if we hit ETXTBSY due to Linux race
             // https://github.com/dotnet/runtime/issues/58964
@@ -214,12 +234,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// <summary>
         /// Wait for the command to exit and dispose of the underlying process.
         /// </summary>
-        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
         /// <param name="timeoutMilliseconds">Time in milliseconds to wait for the command to exit</param>
         /// <returns>Result of the command</returns>
-        public CommandResult WaitForExit(bool expectedToFail, int timeoutMilliseconds = Timeout.Infinite)
+        public CommandResult WaitForExit(int timeoutMilliseconds = Timeout.Infinite, [CallerMemberName] string caller = "")
         {
-            ReportExecWaitOnExit();
+            ReportWaitOnExit(caller);
 
             int exitCode;
             if (!Process.WaitForExit(timeoutMilliseconds))
@@ -231,7 +250,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 exitCode = Process.ExitCode;
             }
 
-            ReportExecEnd(exitCode, expectedToFail);
+            ReportExit(exitCode, caller);
             int pid = Process.Id;
             Process.Dispose();
 
@@ -246,19 +265,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// <summary>
         /// Execute the command and wait for it to exit.
         /// </summary>
-        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
         /// <returns>Result of the command</returns>
-        public CommandResult Execute(bool expectedToFail)
+        public CommandResult Execute([CallerMemberName] string caller = "")
         {
-            // Clear out any enabling of dump creation if failure is expected
-            if (expectedToFail)
-            {
-                EnvironmentVariable("COMPlus_DbgEnableMiniDump", null);
-                EnvironmentVariable("DOTNET_DbgEnableMiniDump", null);
-            }
-
-            Start();
-            return WaitForExit(expectedToFail);
+            Start(caller);
+            return WaitForExit(caller: caller);
         }
 
         public Command WorkingDirectory(string projectDirectory)
@@ -303,18 +314,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        private string FormatProcessInfo(ProcessStartInfo info, bool includeWorkingDirectory)
+        private string FormatProcessInfo(ProcessStartInfo info)
         {
-            string prefix = includeWorkingDirectory ?
-                $"{info.WorkingDirectory}> {info.FileName}" :
-                info.FileName;
-
             if (string.IsNullOrWhiteSpace(info.Arguments))
             {
-                return prefix;
+                return info.FileName;
             }
 
-            return prefix + " " + info.Arguments;
+            return $"{info.FileName} {info.Arguments}";
         }
 
         private static DateTime _initialTime = DateTime.Now;
@@ -325,24 +332,33 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return (DateTime.Now - _initialTime).ToString(TimeSpanFormat);
         }
 
-        private void ReportExecBegin()
+        private void ReportExec(string testName)
         {
-            string message = FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: false);
-            Console.WriteLine($"[EXEC >] [....] [{GetFormattedTime()}] {message}");
+            Console.WriteLine(
+                $"""
+                [EXEC] [{GetFormattedTime()}] [{testName}]
+                       {FormatProcessInfo(Process.StartInfo)}
+                """);
+
         }
 
-        private void ReportExecWaitOnExit()
+        private void ReportWaitOnExit(string testName)
         {
-            string message = $"Waiting for process {Process.Id} to exit...";
-            Console.WriteLine($"[EXEC -] [....] [{GetFormattedTime()}] {message}");
+            Console.WriteLine(
+                $"""
+                [WAIT] [{GetFormattedTime()}] [{testName}]
+                       PID: {Process.Id} - {FormatProcessInfo(Process.StartInfo)}
+                """);
+
         }
 
-        private void ReportExecEnd(int exitCode, bool fExpectedToFail)
+        private void ReportExit(int exitCode, string testName)
         {
-            bool success = fExpectedToFail ? exitCode != 0 : exitCode == 0;
-            var status = success ? " OK " : "FAIL";
-            var message = $"{FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: !success)} exited with {exitCode}. Expected: {(fExpectedToFail ? "non-zero" : "0")}";
-            Console.WriteLine($"[EXEC <] [{status}] [{GetFormattedTime()}] {message}");
+            Console.WriteLine(
+                $"""
+                [EXIT] [{GetFormattedTime()}] [{testName}]
+                       PID: {Process.Id} - Exit code: 0x{exitCode:x} - {FormatProcessInfo(Process.StartInfo)}
+                """);
         }
 
         private void ThrowIfRunning([CallerMemberName] string memberName = null)

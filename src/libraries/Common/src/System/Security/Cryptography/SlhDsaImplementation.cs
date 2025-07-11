@@ -27,6 +27,7 @@ namespace System.Security.Cryptography
 
             Span<byte> secretKey = (stackalloc byte[128])[..key.Algorithm.SecretKeySizeInBytes];
             key.ExportSlhDsaSecretKey(secretKey);
+
             try
             {
                 return ImportSecretKey(key.Algorithm, secretKey);

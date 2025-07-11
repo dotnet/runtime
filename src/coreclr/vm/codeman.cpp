@@ -211,7 +211,7 @@ void UnwindInfoTable::Register()
             iRangeStart, iRangeEnd);
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /*****************************************************************************/
@@ -505,7 +505,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         STRESS_LOG1(LF_JIT, LL_ERROR, "Exception happened when doing unwind Info rundown. EIP of last AV = %p\n", g_LastAccessViolationEIP);
         _ASSERTE(!"Exception thrown while publishing 'catchup' ETW unwind information");
         s_publishingActive = false;     // Try to minimize damage.
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 #endif // defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
@@ -1306,6 +1306,7 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v2);
+        CPUCompileFlags.Set(InstructionSet_AVXVNNIINT_V512);
     }
 
 #if defined(TARGET_AMD64)
@@ -1353,6 +1354,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Sha) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSHA))
     {
         CPUCompileFlags.Set(InstructionSet_SHA);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnniInt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNIINT))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVXVNNIINT);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_WaitPkg) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWAITPKG))
@@ -1802,7 +1808,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         {
             LogJITInitializationError("LoadAndInitializeJIT: LoadAndInitializeJIT: caught an exception trying to initialize %s", utf8JitName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
     else
     {
@@ -1827,7 +1833,7 @@ static ICorJitCompiler* InitializeStaticJIT()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return newJitCompiler;
 }
@@ -2661,7 +2667,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
         pHp = NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (pHp == NULL)
     {
@@ -2864,13 +2870,6 @@ void EECodeGenManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     TCodeHeader * pCodeHdrRW = NULL;
 
     CodeHeapRequestInfo requestInfo(pMD);
-#if defined(FEATURE_JIT_PITCHING)
-    if (pMD && pMD->IsPitchable() && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMethodSizeThreshold) < blockSize)
-    {
-        requestInfo.SetDynamicDomain();
-    }
-#endif
-
     SIZE_T realHeaderSize;
 #ifdef FEATURE_INTERPRETER
     if (std::is_same<TCodeHeader, InterpreterCodeHeader>::value)
@@ -3889,7 +3888,9 @@ static TCodeHeader * GetCodeHeaderFromDebugInfoRequest(const DebugInfoRequest & 
 //-----------------------------------------------------------------------------
 BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
         PTR_BYTE pDebugInfo,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -3918,7 +3919,9 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
 
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
-        fpNew, pNewData, // allocators
+        fpNew,
+        pNewData, // allocators
+        boundsType,
         pDebugInfo,      // input
         pcMap, ppMap,    // output
         pcVars, ppVars,  // output
@@ -3930,7 +3933,9 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
 
 BOOL EEJitManager::GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -3947,8 +3952,65 @@ BOOL EEJitManager::GetBoundariesAndVars(
 
     PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
-    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
+    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, boundsType, pcMap, ppMap, pcVars, ppVars);
 }
+
+size_t EEJitManager::WalkILOffsets(
+    const DebugInfoRequest & request,
+    BoundsType boundsType,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    CodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<CodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return WalkILOffsetsWorker(pDebugInfo, boundsType, pContext, pfnWalkILOffsets);
+}
+
+size_t EECodeGenManager::WalkILOffsetsWorker(PTR_BYTE pDebugInfo,
+        BoundsType boundsType,
+        void* pContext,
+        size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    // No header created, which means no jit information is available.
+    if (pDebugInfo == NULL)
+        return 0;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
+    if (m_storeRichDebugInfo)
+    {
+        hasFlagByte = TRUE;
+    }
+
+    // Uncompress. This allocates memory and may throw.
+    return CompressDebugInfo::WalkILOffsets(
+        pDebugInfo,      // input
+        boundsType,
+        hasFlagByte,
+        pContext,
+        pfnWalkILOffsets
+    );
+}
+
 
 BOOL EECodeGenManager::GetRichDebugInfoWorker(
     PTR_BYTE pDebugInfo,
@@ -4007,7 +4069,9 @@ BOOL EEJitManager::GetRichDebugInfo(
 #ifdef FEATURE_INTERPRETER
 BOOL InterpreterJitManager::GetBoundariesAndVars(
     const DebugInfoRequest & request,
-    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    IN FP_IDS_NEW fpNew,
+    IN void * pNewData,
+    BoundsType boundsType,
     OUT ULONG32 * pcMap,
     OUT ICorDebugInfo::OffsetMapping **ppMap,
     OUT ULONG32 * pcVars,
@@ -4034,8 +4098,35 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
         return TRUE;
     }
 
-    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
+    return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, boundsType, pcMap, ppMap, pcVars, ppVars);
 }
+
+size_t InterpreterJitManager::WalkILOffsets(
+    const DebugInfoRequest & request,
+    BoundsType boundsType,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    InterpreterCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<InterpreterCodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    // Interpreter-TODO: This is a temporary workaround until the interpreter produces the debug info
+    if (pDebugInfo == NULL)
+    {
+        return 0;
+    }
+
+    return WalkILOffsetsWorker(pDebugInfo, boundsType, pContext, pfnWalkILOffsets);
+}
+
 
 BOOL InterpreterJitManager::GetRichDebugInfo(
     const DebugInfoRequest& request,
@@ -6262,7 +6353,9 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
 //-----------------------------------------------------------------------------
 BOOL ReadyToRunJitManager::GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
@@ -6287,13 +6380,46 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
 
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
-        fpNew, pNewData, // allocators
+        fpNew,
+        pNewData, // allocators
+        boundsType,
         pDebugInfo,      // input
         pcMap, ppMap,    // output
         pcVars, ppVars,  // output
         FALSE);          // no patchpoint info
 
     return TRUE;
+}
+
+size_t ReadyToRunJitManager::WalkILOffsets(
+    const DebugInfoRequest & request,
+    BoundsType boundsType,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{   
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(request.GetStartAddress());
+    if (!codeInfo.IsValid())
+        return FALSE;
+
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+
+    PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    // Uncompress. This allocates memory and may throw.
+    return CompressDebugInfo::WalkILOffsets(
+        pDebugInfo,      // input
+        boundsType,
+        FALSE, // no patchpoint info
+        pContext, pfnWalkILOffsets);
 }
 
 BOOL ReadyToRunJitManager::GetRichDebugInfo(

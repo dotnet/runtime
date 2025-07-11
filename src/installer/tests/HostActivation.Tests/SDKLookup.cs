@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -1199,15 +1200,13 @@ namespace HostActivation.Tests
         private string ExpectedResolvedSdkOutput(string expectedVersion, string rootPath = null)
             => $"Using .NET SDK dll=[{Path.Combine(rootPath == null ? ExecutableDotNet.BinPath : rootPath, "sdk", expectedVersion, "dotnet.dll")}]";
 
-        private CommandResult RunTest() => RunTest("help");
-
-        private CommandResult RunTest(string command)
+        private CommandResult RunTest(string command = "help", [CallerMemberName] string caller = "")
         {
             return ExecutableDotNet.Exec(command)
                 .WorkingDirectory(SharedState.CurrentWorkingDir)
                 .EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
-                .Execute();
+                .Execute(caller);
         }
 
         public sealed class SharedTestState : IDisposable

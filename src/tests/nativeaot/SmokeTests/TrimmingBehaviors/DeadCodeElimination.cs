@@ -20,6 +20,7 @@ class DeadCodeElimination
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
         TestInlinedDeadBranchElimination.Run();
+        TestComplexInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeIs.Run();
@@ -33,6 +34,7 @@ class DeadCodeElimination
         TestGetMethodOptimization.Run();
         TestTypeOfCodegenBranchElimination.Run();
         TestInvisibleGenericsTrimming.Run();
+        TestTypeHandlesInGenericDictionaries.Run();
 
         return 100;
     }
@@ -316,6 +318,49 @@ class DeadCodeElimination
             }
 
             ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
+        }
+    }
+
+    class TestComplexInlinedDeadBranchElimination
+    {
+        class Log
+        {
+            public static Log Instance;
+
+            public bool IsEnabled => false;
+        }
+
+        class OperatingSystem
+        {
+            public static bool IsInterix => false;
+        }
+
+        public static bool CombinedCheck() => Log.Instance.IsEnabled || OperatingSystem.IsInterix;
+
+        class NeverReferenced1 { }
+
+        public static void Run()
+        {
+            bool didThrow = false;
+
+            // CombinedCheck is going to throw a NullRef but we still should have been able to deadcode
+            // the Log.Instance.IsEnabled call (this pattern is common in EventSources).
+            try
+            {
+                if (CombinedCheck())
+                {
+                    Activator.CreateInstance(typeof(NeverReferenced1));
+                }
+            }
+            catch (NullReferenceException)
+            {
+                didThrow = true;
+            }
+
+            if (!didThrow)
+                throw new Exception();
+
+            ThrowIfPresent(typeof(TestComplexInlinedDeadBranchElimination), nameof(NeverReferenced1));
         }
     }
 
@@ -1083,6 +1128,36 @@ class DeadCodeElimination
 
             IsPresentType(new PresentType<object>());
             ThrowIfNotPresent(typeof(TestInvisibleGenericsTrimming), "PresentType`1");
+        }
+    }
+
+    class TestTypeHandlesInGenericDictionaries
+    {
+        class InvisibleType1;
+        class InvisibleType2;
+        class VisibleType1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void GenericMethod<T, U, V>(object o, string expectedNameOfV)
+        {
+            if (o is T)
+                Console.WriteLine("Yes");
+
+            if (o.GetType() == typeof(U))
+                Console.WriteLine("Yes");
+
+            if (typeof(V).Name != expectedNameOfV)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            GenericMethod<InvisibleType1, InvisibleType2, VisibleType1>(new object(), nameof(VisibleType1));
+
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType1));
+#if !DEBUG
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType2));
+#endif
         }
     }
 

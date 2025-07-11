@@ -2,30 +2,69 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.Tests
 {
-    public record MLDsaKeyInfo(
-            MLDsaAlgorithm Algorithm,
-            string PublicKeyHex,
-            string PrivateSeedHex,
-            string SecretKeyHex,
-            string Pkcs8PrivateKey_Seed_Base64,
-            string Pkcs8PrivateKey_Expanded_Base64,
-            string Pkcs8PrivateKey_Both_Base64,
-            string Pkcs8PublicKeyBase64,
-            string Pkcs8EncryptedPrivateKey_Seed_Base64,
-            string Pkcs8EncryptedPrivateKey_Expanded_Base64,
-            string Pkcs8EncryptedPrivateKey_Both_Base64,
-            string CertificateBase64,
-            string Pfx_Seed_Base64,
-            string Pfx_Expanded_Base64,
-            string Pfx_Both_Base64,
-            string EncryptionPassword,
-            PbeParameters EncryptionParameters)
+    public class MLDsaKeyInfo
     {
+        public MLDsaKeyInfo(
+            MLDsaAlgorithm algorithm,
+            string publicKeyHex,
+            string privateSeedHex,
+            string secretKeyHex,
+            string pkcs8PrivateKey_Seed_Base64,
+            string pkcs8PrivateKey_Expanded_Base64,
+            string pkcs8PrivateKey_Both_Base64,
+            string pkcs8PublicKeyBase64,
+            string pkcs8EncryptedPrivateKey_Seed_Base64,
+            string pkcs8EncryptedPrivateKey_Expanded_Base64,
+            string pkcs8EncryptedPrivateKey_Both_Base64,
+            string certificateBase64,
+            string pfx_Seed_Base64,
+            string pfx_Expanded_Base64,
+            string pfx_Both_Base64,
+            string encryptionPassword,
+            PbeParameters encryptionParameters)
+        {
+            Algorithm = algorithm;
+            PublicKeyHex = publicKeyHex;
+            PrivateSeedHex = privateSeedHex;
+            SecretKeyHex = secretKeyHex;
+            Pkcs8PrivateKey_Seed_Base64 = pkcs8PrivateKey_Seed_Base64;
+            Pkcs8PrivateKey_Expanded_Base64 = pkcs8PrivateKey_Expanded_Base64;
+            Pkcs8PrivateKey_Both_Base64 = pkcs8PrivateKey_Both_Base64;
+            Pkcs8PublicKeyBase64 = pkcs8PublicKeyBase64;
+            Pkcs8EncryptedPrivateKey_Seed_Base64 = pkcs8EncryptedPrivateKey_Seed_Base64;
+            Pkcs8EncryptedPrivateKey_Expanded_Base64 = pkcs8EncryptedPrivateKey_Expanded_Base64;
+            Pkcs8EncryptedPrivateKey_Both_Base64 = pkcs8EncryptedPrivateKey_Both_Base64;
+            CertificateBase64 = certificateBase64;
+            Pfx_Seed_Base64 = pfx_Seed_Base64;
+            Pfx_Expanded_Base64 = pfx_Expanded_Base64;
+            Pfx_Both_Base64 = pfx_Both_Base64;
+            EncryptionPassword = encryptionPassword;
+            EncryptionParameters = encryptionParameters;
+        }
+
+        public MLDsaAlgorithm Algorithm { get; }
+        public string PublicKeyHex { get; }
+        public string PrivateSeedHex { get; }
+        public string SecretKeyHex { get; }
+        public string Pkcs8PrivateKey_Seed_Base64 { get; }
+        public string Pkcs8PrivateKey_Expanded_Base64 { get; }
+        public string Pkcs8PrivateKey_Both_Base64 { get; }
+        public string Pkcs8PublicKeyBase64 { get; }
+        public string Pkcs8EncryptedPrivateKey_Seed_Base64 { get; }
+        public string Pkcs8EncryptedPrivateKey_Expanded_Base64 { get; }
+        public string Pkcs8EncryptedPrivateKey_Both_Base64 { get; }
+        public string CertificateBase64 { get; }
+        public string Pfx_Seed_Base64 { get; }
+        public string Pfx_Expanded_Base64 { get; }
+        public string Pfx_Both_Base64 { get; }
+        public string EncryptionPassword { get; }
+        public PbeParameters EncryptionParameters { get; }
         public byte[] PublicKey => PublicKeyHex.HexToByteArray();
         public byte[] PrivateSeed => PrivateSeedHex.HexToByteArray();
         public byte[] SecretKey => SecretKeyHex.HexToByteArray();
@@ -38,6 +77,7 @@ namespace System.Security.Cryptography.Tests
         public byte[] Pkcs8EncryptedPrivateKey_Both => Convert.FromBase64String(Pkcs8EncryptedPrivateKey_Both_Base64);
         public byte[] EncryptionPasswordBytes => Encoding.UTF8.GetBytes(EncryptionPassword); // Assuming UTF-8 encoding
         public byte[] Certificate => Convert.FromBase64String(CertificateBase64);
+#if !EXCLUDE_PEM_ENCODING_FROM_TEST_DATA
         public string EncryptedPem_Seed => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Seed);
         public string EncryptedPem_Expanded => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Expanded);
         public string EncryptedPem_Both => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Both);
@@ -46,6 +86,7 @@ namespace System.Security.Cryptography.Tests
         public string PrivateKeyPem_Both => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey_Both);
         public string PublicKeyPem => PemEncoding.WriteString("PUBLIC KEY", Pkcs8PublicKey);
         public string CertificatePem => PemEncoding.WriteString("CERTIFICATE", Certificate);
+#endif
         public byte[] Pfx_Seed => Convert.FromBase64String(Pfx_Seed_Base64);
         public byte[] Pfx_Expanded => Convert.FromBase64String(Pfx_Expanded_Base64);
         public byte[] Pfx_Both => Convert.FromBase64String(Pfx_Both_Base64);
@@ -56,16 +97,28 @@ namespace System.Security.Cryptography.Tests
 
     public class MLDsaNistTestCase
     {
-        public int NistTestCaseId { get; init; }
-        public MLDsaAlgorithm Algorithm { get; init; }
-        public bool ShouldPass { get; init; }
+        public MLDsaNistTestCase(int nistTestCaseId, MLDsaAlgorithm algorithm, bool shouldPass, string publicKeyHex, string secretKeyHex, string messageHex, string contextHex, string signatureHex)
+        {
+            NistTestCaseId = nistTestCaseId;
+            Algorithm = algorithm;
+            ShouldPass = shouldPass;
+            PublicKeyHex = publicKeyHex;
+            SecretKeyHex = secretKeyHex;
+            MessageHex = messageHex;
+            ContextHex = contextHex;
+            SignatureHex = signatureHex;
+        }
 
-        public string PublicKeyHex { get; init; }
-        public string SecretKeyHex { get; init; }
+        public int NistTestCaseId { get; private set; }
+        public MLDsaAlgorithm Algorithm { get; private set; }
+        public bool ShouldPass { get; private set; }
 
-        public string MessageHex { get; init; }
-        public string ContextHex { get; init; }
-        public string SignatureHex { get; init; }
+        public string PublicKeyHex { get; private set; }
+        public string SecretKeyHex { get; private set; }
+
+        public string MessageHex { get; private set; }
+        public string ContextHex { get; private set; }
+        public string SignatureHex { get; private set; }
 
         public byte[] PublicKey => PublicKeyHex.HexToByteArray();
         public byte[] SecretKey => SecretKeyHex.HexToByteArray();
@@ -105,15 +158,19 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        public static MLDsaNistTestCase GetPassingNistTestCase(MLDsaAlgorithm algorithm)
+            => s_nistTestCases
+                .Where(tc => tc.Algorithm == algorithm && tc.ShouldPass)
+                .Single();
+
         // one failing and one passing test case for each algorithm, each failing for different reason
         private static MLDsaNistTestCase[] s_nistTestCases =
             [
-                new MLDsaNistTestCase()
-                {
-                    NistTestCaseId = 1,
-                    Algorithm = MLDsaAlgorithm.MLDsa44,
-                    ShouldPass = false, // modified signature - hint
-                    PublicKeyHex =
+                new MLDsaNistTestCase(
+                    nistTestCaseId: 1,
+                    algorithm: MLDsaAlgorithm.MLDsa44,
+                    shouldPass: false, // modified signature - hint
+                    publicKeyHex:
                         "8752B50D81824C9B31E1788C76342AADB31EB7F684AAEA2D73A49381117495241141F1AA945BE051" +
                         "C40305C83E5AAC3C41F2024CDC3CBDEE7EB530221A917B5707F74A857A79E4D1D70E87D396883DF1" +
                         "FD86901460EF24812CF581ACB4FBF0D3A6DB90C5D6F18820CD1CE5576DD069B801AEF7A117193452" +
@@ -147,7 +204,7 @@ namespace System.Security.Cryptography.Tests
                         "9FEADD16B260A8D6455902AA3AC2E342C17FBE62702C7D3D28A3EEEE72E7D9871F2F79D8A9FCAADC" +
                         "C6265E78DD29C316DB40357F7A8C743C2C70B0DBF1BDF5E35A2706B9637583D32CFE8A811C96051A" +
                         "D42D29459D8D9EC86987E8C3128B122B688EA2A88CA092DC1B8A76F9F60FB174",
-                    SecretKeyHex =
+                    secretKeyHex:
                         "8752B50D81824C9B31E1788C76342AADB31EB7F684AAEA2D73A49381117495242720FEBEE2E2C6F4" +
                         "24BC6B8863053906B0308314127ED799F77F15761A042BB99AC20792D9C1B022FDC328263FA684BB" +
                         "471374B14CC723A9E503CA55600F79F7557EA245144C8EAC4DE6BBFF86FEC7F4B559384932F7218F" +
@@ -212,7 +269,7 @@ namespace System.Security.Cryptography.Tests
                         "CB36021864AE092B47ADA6C4FAC6A0E12B1C5988FFFA25A0B395F6A81ADC83A9888B084ACC36E95A" +
                         "4DF2C6955936AEBDFA35E63F1849654BED3C34BA2D72317825525C48A983A77EFF3CF2A360513616" +
                         "A5E61382EE8B83F6332BF12284509FA8D0041C15B2D04211D472DA5A6B21CC0F8D67B801E3164D99",
-                    MessageHex =
+                    messageHex:
                         "2EF3088AE03CCA22B534C6C1B238524B8FB522CF6BD1DB1EAF01562AB041FD909FED4E7D44530B51" +
                         "D77780EDF362D7561465D82B49A2C77D714DDEEC8EA2993622BA238A8E66B167E16B72334E4C6C8D" +
                         "EDE5CC4A781F4AC377DDE3F6BBECBD4AAACF395FF0C53BE0AF504A93663F5A544399D94BEC44055C" +
@@ -355,7 +412,7 @@ namespace System.Security.Cryptography.Tests
                         "1948693521E0E5D4ADF3A922057F6E83DA37DDE21F99C6D062AE891F96751F666CD8DAF73E307F0E" +
                         "F70FBC57269C271EA431E9F6CE2BBFF33FA866A0EEDDE4694BCFBE2C9D12B4C32DAC0EDF8C0678C8" +
                         "4E78FC7ADF6B362A05770AF3F4ADBB05EE495D9F647596A0ACC8610555C46B49",
-                    ContextHex =
+                    contextHex:
                         "07C19E2E546B796BDC57FE83D9F031A9C47E1AC7A48E2C80796B7BF750A16B982AA0EF7F8637871B" +
                         "873E766FFC4B40A8CF14B60AB10065F7412465DB8701A953C7FBCE199900BE7A88CCC709856DA5DE" +
                         "4603F8F9F53394F9BA887F44B10FE74F47FCDDA22A87ABC70EAB3D46F9207FC06917EB6F50F04FA4" +
@@ -363,7 +420,7 @@ namespace System.Security.Cryptography.Tests
                         "F01478EC7B4D077BEFC069626251B04F195B63D8C616DA8AAEA5523689E5F2DCAB4D9688810BB630" +
                         "1FD8EEAF85BF1754413A05ACFABC46869CFAF7327E2753DD6FEE2279A6F28A1E075E950D9C7785A5" +
                         "D8D05DDDC262CBCEC63C7A0C2ABE8F",
-                    SignatureHex =
+                    signatureHex:
                         "C1F1CF5F0A70C6E940CD7B05352F832F2EF6E135D377B42A0CE82BB964F40310E20F2A2DA4A254C6" +
                         "C08D904C0D8686A3B8583B66343C4E086A6ABB166D55881BC344E7DC5974113BB06EDD593050E709" +
                         "8ED23CA696345B86FA40B3F0757A0B159B20FD8D311FD30384ED9A0EB8A66CE76B0028F076369715" +
@@ -424,14 +481,12 @@ namespace System.Security.Cryptography.Tests
                         "DFDD58BC4E068C69AF8F3AF754F585AF416CFBDA67E6058D6C7B11C994B2107F97110BAB07E09A0B" +
                         "20C4E5E73D20B96F70D38F1FA4E31107104A5E5F8A8FA1A2A5A7D0D1D3D8EB03233E4B596162647B" +
                         "878C8F929EA9ABAFB2BBC9E0E1E6000A2D5167707682B6D9DEE501262B365153555B688DADC60000" +
-                        "000000000000000000000000000000000F26323F",
-                },
-                new MLDsaNistTestCase()
-                {
-                    NistTestCaseId = 7,
-                    Algorithm = MLDsaAlgorithm.MLDsa44,
-                    ShouldPass = true,
-                    PublicKeyHex =
+                        "000000000000000000000000000000000F26323F"),
+                new MLDsaNistTestCase(
+                    nistTestCaseId: 7,
+                    algorithm: MLDsaAlgorithm.MLDsa44,
+                    shouldPass: true,
+                    publicKeyHex:
                         "8DDF48136E57F2EF242382612DDAADFE417FFC335337C07DB85FBE2BDB977E6019A10B0F643638C9" +
                         "47B14E6B42D6A30EB9C6B33C2E349C1875B0E5C4F3016FEB3569A81F0385920038B7F6E740830B62" +
                         "220FF81976EF3FEC9808D6A90A727E9616E51F6A92F70FC7FB569EA27C4CA198EA10B00000DADEC7" +
@@ -465,7 +520,7 @@ namespace System.Security.Cryptography.Tests
                         "22A7BD85A18377ED5DAE99A86AB1EB3720AA35AD4CB857A6C5C074F1CE6B4BCCF289CB9C19DBB406" +
                         "8B7FABA0D61233FB9ABFC8F0ECF570704BB9F4CFA4ADB0E86F13D9603B1F79F073C0E56C78FBBF00" +
                         "F50AE33B13CBC7739AE46BF71BB3CC0DA0AA1224319B64E6C9F1E4E4C4F4B0EB",
-                    SecretKeyHex =
+                    secretKeyHex:
                         "8DDF48136E57F2EF242382612DDAADFE417FFC335337C07DB85FBE2BDB977E6091B9880181CA468C" +
                         "27551AE45B3B8BA6653FCE717E1227D582EB38CA3E3242E295B6EE1DD99033A2BE3A2AF7EDCA050D" +
                         "143E2E1C9FF80F6FEBCF0952A69CD9FBE6EF0B2E8FF2A2F08DACAD7647403D0009813EE4907F4087" +
@@ -530,7 +585,7 @@ namespace System.Security.Cryptography.Tests
                         "BE3D2EA564A99ACA5A35216F9F24B5A050E923841664378C342532DA953828FD9CB512A7984633BB" +
                         "800D40FFAF13A8ED0153F0B9E51C0ADBBFD3B365A90F6E2A0F093E48E35BF56F6858A49D02F721DE" +
                         "7926D2C19B37D965C0A637F3A6B1FC8B5CDBFDEA86370A51ECB45FC969611F6B1CD9DB74568EBE6F",
-                    MessageHex =
+                    messageHex:
                         "11DBE386C9D30750CDEF285535A5C2808FFF8F73F402F78FCF73759D061A2E5BBB9530683DB28A07" +
                         "7F7BEC30485F03EE803C508352DE444144213954DA87CBB91F71B5389442BCE082E15138443BB008" +
                         "C75025D1D34ECC70CEC4ABFA920CE8D1B4306CF968CA3FA50E24D11F4E1205EF1BCB60C3587FE98B" +
@@ -719,12 +774,12 @@ namespace System.Security.Cryptography.Tests
                         "3C79FA6F4BA8177D319EA5A354B7E60022AFA09A5ADC27ABE6BE9D808EDC43F2796F80C4A7CF2A88" +
                         "3AAD9CDCA8A226BF4C4AF193D9A1F6BC3EA23E7531522ACE7A4D457B76334B1442793B5198654D25" +
                         "33CED3B9AABE40BEEBF6F7F3E46C0276FE3542F6C75A8D1F039C52195FE1B2359523",
-                    ContextHex =
+                    contextHex:
                         "7ED22840C607F95D48271A8A8A0BBB4451736A4035B4E247BBB7196EC1542D069D9CF7941C390A42" +
                         "136F133E6064D81942C6E236EE09D575664479D1490DCD5C657BEE6324FD0A33A9584A0A2A498B35" +
                         "89637B8EB193818BFF1C91266DB39B5D7A3E87EC99617CBE5593C97095D592F86BE784E46A479BED" +
                         "6788C4A1BB5FC773C8E0DFBC41F71C0D48",
-                    SignatureHex =
+                    signatureHex:
                         "C738F5C87F6824F734070E2B94595DE1E2D03073083C94BDD6B91904D8149045CEF1035C6EF453F7" +
                         "AA03C416998C8C0AF810E983F57A90E1E73930E8EDF99C765A3FE04A407B6039424B986AB7625C24" +
                         "6C0C610D5D561AD69505791453948B5C7EA28F06CF60929683C91F53BDE37575A0D3BF3DE514112B" +
@@ -785,14 +840,12 @@ namespace System.Security.Cryptography.Tests
                         "5A196C47382D34159A97FA2E8EBF0801A757EDF36E74279AFD95CF7524BC8CA6206B4508CE8A2F8B" +
                         "E68E987B2A1BA6227ABD1FF3E3A870B80621223F45788E909DB7BDDEE7EAFA1A202E373A50699FA7" +
                         "BDBFCDE7EBF3081A2127294142474C4E5B7D8390B8C1D4D5DDDE1D292D4748777C888CA1ADB4D0E3" +
-                        "EF0000000000000000000000000000000F1E3241",
-                },
-                new MLDsaNistTestCase()
-                {
-                    NistTestCaseId = 31,
-                    Algorithm = MLDsaAlgorithm.MLDsa65,
-                    ShouldPass = false, // modified signature - z
-                    PublicKeyHex =
+                        "EF0000000000000000000000000000000F1E3241"),
+                new MLDsaNistTestCase(
+                    nistTestCaseId: 31,
+                    algorithm: MLDsaAlgorithm.MLDsa65,
+                    shouldPass: false, // modified signature - z
+                    publicKeyHex:
                         "C7C058345F5CE645AB72D4E474A7B8F3ACB3C2420652FCD99DAAAC476D1BC4D375CB1E646F07A8DA" +
                         "A540E632BADDC1F00F9D32BB7F2521173E342F459BEAE07B9E3FB4B4E4B41DD90B9507D1C23BC3BA" +
                         "CD47EB5B55F6487CF347E585E54A902F2D11D2F7F958392F7B398E054C077696F070BD8109C322AD" +
@@ -842,7 +895,7 @@ namespace System.Security.Cryptography.Tests
                         "4FBAA8172726CA6FEF6BF95576080F1863EE056035FC281FD3245878409339B772F0370AEE605637" +
                         "69CAAF421326FC94C31B9AB864579ED3B5E36B2F640D01A05DC02F8A0B655233BD24C32DEBBA35C7" +
                         "CB260E49A95DD09F828E4346EC6599F0E3930EC48A9387D15287FCEC14F6668F",
-                    SecretKeyHex =
+                    secretKeyHex:
                         "C7C058345F5CE645AB72D4E474A7B8F3ACB3C2420652FCD99DAAAC476D1BC4D3621E0F25F2FB11A0" +
                         "24276B1F2F6C22DE4F7FF9BB978589DA147E789DA223FED2E247931E1C7BDFD0EC8A9253E38B373D" +
                         "468AAA89652AAF18425D5F32A8CFD4E57E6DC07A33EFB490346F065A7D6E06491E74A4CFD11A7C36" +
@@ -944,7 +997,7 @@ namespace System.Security.Cryptography.Tests
                         "302039B7FC56F7C7D40DD2143841D2948F50F5FFF8F5476B11A3E1C70290F3DBB460E5EF946B8D0F" +
                         "EE38FF5B8DF5EB1A079C052B5EE58D73DAAFA4B6028FF6C8D2F4F4ED1BA0C1292D8F9DF8E618FC05" +
                         "EE5FC3BA2BBE6D0F83D52A1AF67F881CF86D1FD58B28CA70E2AEA9AD0224D0A5",
-                    MessageHex =
+                    messageHex:
                         "77498C6B2940F5BE4BA022B2838C6CAEF873886B30A35B1CBDBE8A028C5968594FB9C2544F800167" +
                         "35D9E86043FD66FD961FC103037BA43A9DDCEB2AA82B98340166AFE98902CDB9778BE7D4DEF9F8A9" +
                         "E9322D248D6AC0FFA34C571D3978F21DAEC75A3CA64F2FC4434F6DC37A4787F5FA25A39B4846FB5B" +
@@ -1019,11 +1072,11 @@ namespace System.Security.Cryptography.Tests
                         "E0E7860151379F04337A8EA46557706321F40EBB0D334FE07DFA490D51F87C5609E47D44D9246B66" +
                         "CDA2E27FE80F7450BE7175822138865D2B5F26BC9D6CA616F977B4D9A72FD4977630F493917A40A3" +
                         "B7E77AF80E75CEBDBE2473ADBBE196C13673F929B32B37",
-                    ContextHex =
+                    contextHex:
                         "06BA690639235EC2C3F48E322B35CBC8E1C0676E07ADACA747E35E354A3AC7613F8213873E061983" +
                         "D8A3942EC132C0B094D9D02D41F47E1A42A70D52A6366557235064ECE560A1B2EDA96386C7EE4F54" +
                         "36056CB092EBB1A36EF9E7E0B8072C3B295B1D1086F7B5008A6218F298ED",
-                    SignatureHex =
+                    signatureHex:
                         "8DD97D68CC7DEF0686CD42F8470DF0B13D55DF7929151E78E8F977CF020310558DE64F53B46F154C" +
                         "A72C8DD3C87931735C5624AFA866C50B4AC1581263078FF8B34DD6150AFF72BB776EF367896ECA62" +
                         "1D39C54958B56E6D3A08C1CA6861E2F65DE19A95EFAB3B062E6FBCE2EF2F157B1309A4043BAAB4BE" +
@@ -1106,14 +1159,12 @@ namespace System.Security.Cryptography.Tests
                         "A04A6AD4E043E779C008EC848F7E943841631532F9BE895BCF749649CB2E5052E8AAF1A41FFB4726" +
                         "C970F581D96E41E0B3C49270090895DA36F949DFCCDAB68C4E78ADD88658131505F82B19F5A4CCC6" +
                         "45897606912C7F760E101B7BB7DAE9505F8CADC7D9E3EEF7425F8A94A3BABE0A9698A3B1DCE4E826" +
-                        "27A8D7D95269B9000000000000000000000000000000000710171F2427",
-                },
-                new MLDsaNistTestCase()
-                {
-                    NistTestCaseId = 33,
-                    Algorithm = MLDsaAlgorithm.MLDsa65,
-                    ShouldPass = true,
-                    PublicKeyHex =
+                        "27A8D7D95269B9000000000000000000000000000000000710171F2427"),
+                new MLDsaNistTestCase(
+                    nistTestCaseId: 33,
+                    algorithm: MLDsaAlgorithm.MLDsa65,
+                    shouldPass: true,
+                    publicKeyHex:
                         "98AC2EC3D9585F925CE8CA80B7ADA54A856EDC8AA2895B67777B2854C7D26C1EBDD72D38ECBDDC06" +
                         "6177A5DC0BA0F902C9BCDF1ECB478A2D49FD303BCB41EBDE48BDFA6797AE885AD998A2423A2A0DEE" +
                         "C1BCCB5CFFC72CAAC5F629777AF4639341E4872030A641A54EB3A3C5F0C5E20C474B69D569BD7C60" +
@@ -1163,7 +1214,7 @@ namespace System.Security.Cryptography.Tests
                         "9B0EA07B25FCDD8CAF0038F08701F744E70446D145B6CFE10B4B545696E1C2BD01E80E27D03DB552" +
                         "48CDC58746B4F3FA3D378EC36F81B75BE936CAEF4B77B8A2E1B3C1E72215678D3713C8B28D2D046B" +
                         "9AE52656475E783BFD8461DE0C227B21DCF8F3F92D34C5F9890E7E46E15DCAB0",
-                    SecretKeyHex =
+                    secretKeyHex:
                         "98AC2EC3D9585F925CE8CA80B7ADA54A856EDC8AA2895B67777B2854C7D26C1EB54D189B178D1F56" +
                         "083FB5304F984549B61F267AAD1A89517A877B822FADC981779D974D228F90179AD901A5FA757FC6" +
                         "266A0854480223F9643433112938867650A4075F29001C78085A0D4E863BCAC5E8594640204F4EB3" +
@@ -1265,7 +1316,7 @@ namespace System.Security.Cryptography.Tests
                         "CD300FD33E932091F337299BBD83CEEEAE0BAA6F39E2C695BE3BD307DA347C13F968F78AAD992175" +
                         "42AEF933B4E7AE2109E3281B693CFD483068A4876A9356DFB486F2DA96499908444DFA6152F7125A" +
                         "90CDC933DB431F1C6B6FD9B6A82FE9F4633D17DAC7B4F042781BB49C18316588",
-                    MessageHex =
+                    messageHex:
                         "7269EF1EDAE0B914F58A8B35CDD9EA8071BD2E71161407C7F708CE0F59BA84603B7CAB2C915259D3" +
                         "525EAFED561CEC8A9884E501425FC61E95807134B40B72A478E152BA63830557BF71D0DD329D4869" +
                         "3C831BCB5EFD428D360FAF96AA1945233BE18B9F85290DB34F44FE85EDFD2D44171B4DF92EAD8503" +
@@ -1386,14 +1437,14 @@ namespace System.Security.Cryptography.Tests
                         "06575CEE301D367167DFD2F0CC5F955BF724352D2645C6D86DEFD06E79FDFF532AB81D3F33C0432B" +
                         "21795B890E558756324C4ACC6EEA04249790AF744857EAC369E04553B6C8A842F0A4172A695D691D" +
                         "6418C664C06833700CD408DC0234CF39A4C5E7",
-                    ContextHex =
+                    contextHex:
                         "F33A2EC332F041C37FA2740E52172C543533A823130632842B2B321CE7BBC2B1A0CE97A587D523F0" +
                         "21426AFE873BD50D217B62B1783F448BE0B69956E06305E9A1FC4A28254ECF98E521625891133AC5" +
                         "811380EDA564ADEAF7BCF4576E0911849AFC12C1015621A2680716252A3C47D40D085FF2E7A0E5B3" +
                         "BD4C7F46F037A0FB468D94D9E847CDE006678D8A186B367602E58F0E0558112FD5FA09CE372709F6" +
                         "922E9161B24ABA9C16644BF9D0BBAEC71AB66DFA2E3229D7EE4724A2E4E34551615E46C633512D70" +
                         "E0BD412E300076FA9CEEB27C786B54D9F4C4B2E0BA9A5A57937BF947B54A",
-                    SignatureHex =
+                    signatureHex:
                         "DEEAABE4CE4595E6F56E26E9FF0937CC67EEE70DEE6AF5D8BCFF29ABB1909011148563065620A5B5" +
                         "FB3FFF944B386C4C7A03F6331170EC429AAEC14AEA56611907E1BE06327A5BAB22B70F77E37435B8" +
                         "0DD0B3245A45F234A58683F3DDAEEA518CBA54F17BCEA9225C50044200EB69F9212BF80A6A3DC3B5" +
@@ -1476,14 +1527,12 @@ namespace System.Security.Cryptography.Tests
                         "4A3A0EB60BD64DA3D6FB14FA147923EA27875D1E3FFF3635C568DFFCB10456BEA0FF995F2244BE87" +
                         "5B9F4352468C805521E97E18AD9E5E6800EDDFEAB8E5C75FD9021F3B27610E57812968537020E54B" +
                         "8BE89674D94C9FDB1F2A2B2C4A768A9E1C3F578DE53D6D9EC4C5CDDCE7FE083D4C719EC4C6556DB2" +
-                        "F900000000000000000000000000000000000000000000080D15161D21",
-                },
-                new MLDsaNistTestCase()
-                {
-                    NistTestCaseId = 61,
-                    Algorithm = MLDsaAlgorithm.MLDsa87,
-                    ShouldPass = false, // modified signature - commitment
-                    PublicKeyHex =
+                        "F900000000000000000000000000000000000000000000080D15161D21"),
+                new MLDsaNistTestCase(
+                    nistTestCaseId: 61,
+                    algorithm: MLDsaAlgorithm.MLDsa87,
+                    shouldPass: false, // modified signature - commitment
+                    publicKeyHex:
                         "D82C7D3799B1E6420BA36CC8F96F0A5D1A5C28975B5F762A9A519A3336949389DD5EAF0898E9F306" +
                         "BD67B8E07A231A214DEF99B297A9411D887FF3AED5CE36ECA92075285DF73628B483E247D4C74AB2" +
                         "D90D0314E7D66B3BD0BE63DF9CAA7144B1324DC57E1DD56D6E6F8D5E339575AF1E3485839479F33E" +
@@ -1549,7 +1598,7 @@ namespace System.Security.Cryptography.Tests
                         "DF1D93EA3E95D2BDE52AAC6D229DAD90D3467B63B7BD8FA3F49FE41A63FBCF1C865775310AA0CAC8" +
                         "92ED992646251AF8D24835841B0B09B987C20F70A1F8F33B04D0567C7EBD6988770A3FAAED563E59" +
                         "CDDD2A243DD9D8671A25581C0D388F9E2B213C0AFF45E93F2687C5D6274E9778",
-                    SecretKeyHex =
+                    secretKeyHex:
                         "D82C7D3799B1E6420BA36CC8F96F0A5D1A5C28975B5F762A9A519A3336949389D51162A830E7932A" +
                         "BB1A85BDBDECCB50D386909A3DF29E2CF5091394ECAEE74A339763F73759E92D066ED0FDF8F88D82" +
                         "EA3B8716F74DD59554A740316ABEE068DB82B924BE9B618472F881BF9EE26C7875C39DFA09C517D5" +
@@ -1673,7 +1722,7 @@ namespace System.Security.Cryptography.Tests
                         "7A28E040786902A8A7F977DC0E1332EF9AA9AC9E4DB5298B23A01B92A4515C66D5E748384A9FFE2A" +
                         "44432FE8604DCD549C56C2A8544B616B0B5F27D23B8D15DEE1ABF21FD2138DB5375DAC0A2BF80ECA" +
                         "AE71E57F48C623826C9DDCCBF67B6677",
-                    MessageHex =
+                    messageHex:
                         "276150B8DC5DB1E1C85E55E91E5E50E67F0B5C6C3D751B7151F4E42ED18740D74F6D81A79E5D46E9" +
                         "262EA5D16B582516E6A5EAD06F23A6A909EE152246D8106E2FC0424474368C69DBCB90E41E245F67" +
                         "172A06E1F5709791B1F6DE2AC721B4B712C4F5CAC03C41ED86E04006B5589FE718DD44FB8F223225" +
@@ -1686,14 +1735,14 @@ namespace System.Security.Cryptography.Tests
                         "934C2D0FF790D6087551437FFF3FF5700FC003B1C870F2E336F03A83C7869DACC3C06187B3ABCD70" +
                         "7D003F9FDCAF17F1CFFD9242714085F4D4E1BAC4015309B4F01F2F1631C46EA20375F24D65C7C4F1" +
                         "B53BD7D13A8DCBF3D7",
-                    ContextHex =
+                    contextHex:
                         "981F763A87C3AD05D8DB18749A371B0ECF106CEDFA75272DBBD4320919CD91BEA9593D3CB2A4CDF1" +
                         "065DCD534E1DA3E699AE038535B429D55B29DF54B4B463A52F67923E1EB4BDD395A1A2244A83569B" +
                         "28E7BD7C72C1253C985BF070776292A98118D7A5B8CCCD562B75465AF1C1314C9957B7465DE4BD06" +
                         "0C4B0BEB0BE849DCFC93E57CCFEFF2E02D1B612FC73288A346FB58C03F8E3C6694A795ABACFB718C" +
                         "A50E8D79647748F217F6D5994B51ADA1F6B8E67C74EEEA890C49F318E10AD703B5AC8175D47E5B2D" +
                         "78CDAF2A1848B087BF77B583FE2639278361F8C0A5C1BFC721EDE2FBD96D",
-                    SignatureHex =
+                    signatureHex:
                         "CDDF7959F444FAA733492C71AC826370D45CDE804CF9FC22CF35C77324006434E0ECE03A42ABCA55" +
                         "17618C703F2A3B88493F428561232D9E0CFB99C08AD5C086B5C395BEFD9C8C3799F8CA6226627E2A" +
                         "92BD96B45B7FE6EC2A107B04E6CD3ECF520BABD5C96A5F51D2B194A75AA3085B831B1B2E5FEA5F93" +
@@ -1809,14 +1858,12 @@ namespace System.Security.Cryptography.Tests
                         "ABFF0A19FC32056E1D7E635C6F3A23DEE6ADF18B5FD31E86B38EF604D058DF4AE3F81B681476C10E" +
                         "87147AAE6ACD4D1AF13AA0076132A088813F95569C890A8E2B525D8E8FB4D7D6E7E80D1A2062DDE5" +
                         "236377FC3D7173B9CAF8031990ACEAF3162D46517BCDD3DBF3F7F8010B1D8B989ACDE4E9EB000000" +
-                        "00000000000000000000000000000000000000070A10141A202B35",
-                },
-                new MLDsaNistTestCase()
-                {
-                    NistTestCaseId = 65,
-                    Algorithm = MLDsaAlgorithm.MLDsa87,
-                    ShouldPass = true,
-                    PublicKeyHex =
+                        "00000000000000000000000000000000000000070A10141A202B35"),
+                new MLDsaNistTestCase(
+                    nistTestCaseId: 65,
+                    algorithm: MLDsaAlgorithm.MLDsa87,
+                    shouldPass: true,
+                    publicKeyHex:
                         "EAF0686CF7EA3FD1C864B91466101F727709D27C141725F0A0338019BF7A5D821719E3911BFEBAC0" +
                         "0E65077E2C25D79707516BC2744A6FFA903305F8BE1193C78F5E7DF7D5BF239FAEBAEB0005B732CC" +
                         "C0A5B61AF06DFE8E5B5FFF1B9DE15CC40DC74A627B33D61245F1F7963D6569B73760370DD81DB0DE" +
@@ -1882,7 +1929,7 @@ namespace System.Security.Cryptography.Tests
                         "63E58327EEB2E2D94824EE9FAB022DDCE392C880E522BFB6D50025199B61C2D5A2D3D2F3E8998E0A" +
                         "023B926691656BBA13658E7711FC8445E2C4FC091F7928FE45CE13CB148AE87E6598463F4B0B3A12" +
                         "0F48E761E30272643708C99594A5F02CB63A8AEB4CA5420C1B94E58BF7C0BEE6",
-                    SecretKeyHex =
+                    secretKeyHex:
                         "EAF0686CF7EA3FD1C864B91466101F727709D27C141725F0A0338019BF7A5D820D8E801FF36C9951" +
                         "48F727F8C38617D26B0F7F945052AEFDC46C4038AD4283C2DD894E4F624333AC07C724A52BCC2201" +
                         "55C8665690D2EDD2FC511060560BB09595E7A3BFECCF6F5B462C622E844E7FD6A9AE28FEEF3EC542" +
@@ -2006,7 +2053,7 @@ namespace System.Security.Cryptography.Tests
                         "3906E13FC9A10F99771C5D8335CCB2FDC28C5341FBBD7AB1247E5FC808519A2F26938337ADC041D0" +
                         "C43F36A3A515BFDFDB17314F052282BBD54B9EED793E6C7D4EE1B761149343658B3B80105F68FCD0" +
                         "0DA8A07E9741E1131C38B60F2F733AB7",
-                    MessageHex =
+                    messageHex:
                         "107B220CC660FC7710D2F103B72B8905F4A8E69EDA5F67A9513D26D3A4CE70BADCDDC71F10ACE038" +
                         "619673B47E87C4C99041659F6EFB35D89A33B9A6985E0E8387708B7CF51946594755990F3701DC0A" +
                         "E4BF32B352F72B6759BD395706288DFBA6ABB65B92A989C2F4B7969A628E95D38BBFCF2659B52F3D" +
@@ -2088,7 +2135,7 @@ namespace System.Security.Cryptography.Tests
                         "B270CDEB5467AD9041C663F2D8966E1FACF5D4731AB102E39E4DD5BBFF8A5B9590FEC440B688B88E" +
                         "962A38EF63BE4B31ED5B17448DEF4B77B184730DF544BB7AB6C7B124C75C7AC33961626628B36712" +
                         "5BCBFF",
-                    ContextHex =
+                    contextHex:
                         "B3421B04B5FCC8D668E5059FF18F3C16FA8228AEB7E2251D8FEAF7E0EF1A9BFCBC045243052BE48F" +
                         "7855AB75B764320729C595E3A342B6058621309A8B412C135ABD04239765DB8F65CCF16DE8AB3FBF" +
                         "8483211B2EF6B9C027E9A9E1BB4A5B6AC39321F624B68B4BE1C4D95D02DDEF2F02EBE4E7ABEFA77B" +
@@ -2096,7 +2143,7 @@ namespace System.Security.Cryptography.Tests
                         "9A4CCAEBE0FB8AA0FB6E6D09FE1278ECF7FA19C9A8EE8BF4E02CD265E2A7D7D8D609E8EA59E0FD26" +
                         "2346FE15793E3B3D611B76F7CFEFF5823624CCDE21ADE7FA84E6473950DA076EF2E9B89E71C218AC" +
                         "0AF412C9A15BBF1E4339C5614FEF",
-                    SignatureHex =
+                    signatureHex:
                         "C883516ADEE991A12AB7E5FC58FC426438BAAA45FCC13B5E222380B85A5C0B0FB8DC8AAC10E4CFC9" +
                         "21BC7CD18E18A379A539E8CF3FE48F352C43F6AA22C320989F16A7D41B582BDF35531A18CD0345A3" +
                         "12DCF86B076E7213247AFCBDDD4942381B97D981502E4DE5668E1E3EF86FA65B3E20E88212AA657B" +
@@ -2212,8 +2259,7 @@ namespace System.Security.Cryptography.Tests
                         "8B3B463F6E95AF0B669C3790B433F4406FF0AAFCCCA93761F23941FF5306E860BC536A7E9F875AAE" +
                         "979869B8DE55AB696F6A51F05DAAEECD18C3C22B9E398412025864828389E2F4FF0E195D62ACD32F" +
                         "5090EE1A8E9F0243565A758AD3F46AA0B3CBEEF25584A1AE0017222F393D4E4F53B3000000000000" +
-                        "00000000000000000000000000000000000000090F13161E242832",
-                },
+                        "00000000000000000000000000000000000000090F13161E242832")
             ];
 
         internal static byte[] IetfMLDsa_Pfx_Pbes1 => field ??= Convert.FromBase64String(

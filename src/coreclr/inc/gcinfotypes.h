@@ -5,11 +5,6 @@
 #ifndef __GCINFOTYPES_H__
 #define __GCINFOTYPES_H__
 
-// HACK: debugreturn.h breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #ifndef FEATURE_NATIVEAOT
 #include "gcinfo.h"
 #endif

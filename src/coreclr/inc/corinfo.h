@@ -791,7 +791,7 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    CORINFO_FLG_INTERPRETER         = 0x00000002, // The method was compiled by the interpreter
+    // unused                       = 0x00000002, // The method was compiled by the interpreter
     // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
@@ -1733,6 +1733,10 @@ struct CORINFO_ASYNC_INFO
     // Whether or not the continuation needs to be allocated through the
     // helper that also takes a method handle
     bool continuationsNeedMethodHandle;
+    // Method handle for AsyncHelpers.CaptureExecutionContext
+    CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.RestoreExecutionContext
+    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
 };
 
 // Flags passed from JIT to runtime.
@@ -3100,10 +3104,11 @@ public:
             void                  **ppIndirection = NULL
             ) = 0;
 
-    // return the native entry point to an EE helper (see CorInfoHelpFunc)
-    virtual void* getHelperFtn (
+    // return the native entry point and/or managed method of an EE helper (see CorInfoHelpFunc)
+    virtual void getHelperFtn (
             CorInfoHelpFunc         ftnNum,
-            void                  **ppIndirection = NULL
+            CORINFO_CONST_LOOKUP *  pNativeEntrypoint,
+            CORINFO_METHOD_HANDLE * pMethodHandle = NULL /* OUT */
             ) = 0;
 
     // return a callable address of the function (native code). This function
@@ -3189,8 +3194,7 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature that would needs to be passed
-    // to CORINFO_HELP_PINVOKE_CALLI
+    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
     virtual void* GetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig,
             void**              ppIndirection = NULL
@@ -3201,6 +3205,10 @@ public:
     virtual bool canGetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig
             ) = 0;
+
+    // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
+    virtual void* GetCookieForInterpreterCalliSig(
+            CORINFO_SIG_INFO*   szMetaSig) = 0;
 
     // Gets a handle that is checked to see if the current method is
     // included in "JustMyCode"

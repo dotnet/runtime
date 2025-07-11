@@ -389,6 +389,8 @@ namespace System
             Debug.Assert(delegateEEType != null);
             Debug.Assert(delegateEEType->IsCanonical);
 
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
+
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 
             IntPtr objArrayThunk = del.GetThunk(Delegate.ObjectArrayThunk);
@@ -411,6 +413,8 @@ namespace System
         //
         internal static unsafe Delegate CreateDelegate(MethodTable* delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
+
             Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
             // What? No constructor call? That's right, and it's not an oversight. All "construction" work happens in

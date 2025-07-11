@@ -285,13 +285,6 @@ uint64_t qpf;
 double qpf_ms;
 double qpf_us;
 
-uint64_t GetHighPrecisionTimeStamp()
-{
-    int64_t ts = GCToOSInterface::QueryPerformanceCounter();
-
-    return (uint64_t)((double)ts * qpf_us);
-}
-
 uint64_t RawGetHighPrecisionTimeStamp()
 {
     return (uint64_t)GCToOSInterface::QueryPerformanceCounter();
@@ -670,7 +663,8 @@ enum gc_join_stage
     // No longer in use but do not remove, see comments for this enum.
     gc_join_disable_software_write_watch = 38,
     gc_join_merge_temp_fl = 39,
-    gc_join_max = 40
+    gc_join_bridge_processing = 40,
+    gc_join_max = 41
 };
 
 enum gc_join_flavor
@@ -2864,6 +2858,11 @@ no_gc_region_info gc_heap::current_no_gc_region_info;
 FinalizerWorkItem* gc_heap::finalizer_work;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
+
+#ifdef FEATURE_JAVAMARSHAL
+uint8_t**   gc_heap::global_bridge_list;
+size_t      gc_heap::num_global_bridge_objs;
+#endif //FEATURE_JAVAMARSHAL
 
 #ifdef BACKGROUND_GC
 uint64_t gc_heap::total_uoh_a_last_bgc = 0;
@@ -30449,6 +30448,41 @@ void gc_heap::mark_phase (int condemned_gen_number)
     mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
+#ifdef FEATURE_JAVAMARSHAL
+
+#ifdef MULTIPLE_HEAPS
+    dprintf(3, ("Joining for short weak handle scan"));
+    gc_t_join.join(this, gc_join_bridge_processing);
+    if (gc_t_join.joined())
+    {
+#endif //MULTIPLE_HEAPS
+        global_bridge_list = GCScan::GcProcessBridgeObjects (condemned_gen_number, max_generation, &sc, &num_global_bridge_objs);
+
+#ifdef MULTIPLE_HEAPS
+        dprintf (3, ("Starting all gc thread after bridge processing"));
+        gc_t_join.restart();
+    }
+#endif //MULTIPLE_HEAPS
+
+    {
+        int thread = heap_number;
+        // Each thread will receive an equal chunk of bridge objects, with the last thread
+        // handling a few more objects from the remainder.
+        size_t count_per_heap = num_global_bridge_objs / n_heaps;
+        size_t start_index = thread * count_per_heap;
+        size_t end_index = (thread == n_heaps - 1) ? num_global_bridge_objs : (thread + 1) * count_per_heap;
+
+        for (size_t obj_idx = start_index; obj_idx < end_index; obj_idx++)
+        {
+            mark_object_simple (&global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
+        }
+
+        drain_mark_queue();
+        // using GC_ROOT_DH_HANDLES temporarily. add a new value for GC_ROOT_BRIDGE
+        fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
+    }
+#endif //FEATURE_JAVAMARSHAL
+
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
     gc_t_join.join(this, gc_join_null_dead_short_weak);
@@ -39179,6 +39213,41 @@ void gc_heap::background_mark_phase ()
 
     dprintf (2, ("after NR 1st Hov count: %zu", bgc_overflow_count));
     bgc_overflow_count = 0;
+
+#ifdef FEATURE_JAVAMARSHAL
+
+    // FIXME Any reason this code should be different for BGC ? Otherwise extract it to some common method ?
+
+#ifdef MULTIPLE_HEAPS
+    dprintf(3, ("Joining for short weak handle scan"));
+    gc_t_join.join(this, gc_join_bridge_processing);
+    if (gc_t_join.joined())
+    {
+#endif //MULTIPLE_HEAPS
+        global_bridge_list = GCScan::GcProcessBridgeObjects (max_generation, max_generation, &sc, &num_global_bridge_objs);
+
+#ifdef MULTIPLE_HEAPS
+        dprintf (3, ("Starting all gc thread after bridge processing"));
+        gc_t_join.restart();
+    }
+#endif //MULTIPLE_HEAPS
+
+    {
+        int thread = heap_number;
+        // Each thread will receive an equal chunk of bridge objects, with the last thread
+        // handling a few more objects from the remainder.
+        size_t count_per_heap = num_global_bridge_objs / n_heaps;
+        size_t start_index = thread * count_per_heap;
+        size_t end_index = (thread == n_heaps - 1) ? num_global_bridge_objs : (thread + 1) * count_per_heap;
+
+        for (size_t obj_idx = start_index; obj_idx < end_index; obj_idx++)
+        {
+            background_mark_simple (global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
+        }
+
+        drain_mark_queue();
+    }
+#endif //FEATURE_JAVAMARSHAL
 
 #ifdef MULTIPLE_HEAPS
     bgc_t_join.join(this, gc_join_null_dead_short_weak);
@@ -49710,6 +49779,11 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
+    return IsPromoted(object, true);
+}
+
+bool GCHeap::IsPromoted(Object* object, bool bVerifyNextHeader)
+{
     uint8_t* o = (uint8_t*)object;
 
     bool is_marked;
@@ -49746,10 +49820,11 @@ bool GCHeap::IsPromoted(Object* object)
 #endif //USE_REGIONS
     }
 
+// Walking refs when objects are marked seems unexpected
 #ifdef _DEBUG
     if (o)
     {
-        ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
+        ((CObjectHeader*)o)->Validate(TRUE, bVerifyNextHeader, is_marked);
 
         // Frozen objects aren't expected to be "not promoted" here
         assert(is_marked || !IsInFrozenSegment(object));
@@ -53225,6 +53300,15 @@ void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
         true;
 #endif //MULTIPLE_HEAPS
 #endif //FEATURE_EVENT_TRACE
+}
+
+void GCHeap::NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles)
+{
+#ifdef FEATURE_JAVAMARSHAL
+    Ref_NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+#else
+    assert(false);
+#endif
 }
 
 #if defined(WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
