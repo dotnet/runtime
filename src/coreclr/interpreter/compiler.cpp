@@ -2163,12 +2163,14 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     CORINFO_CONST_LOOKUP ftnLookup;
     m_compHnd->getHelperFtn(ftn, &ftnLookup);
     void* addr = ftnLookup.addr;
-    if (ftnLookup.accessType != IAT_PVALUE)
+    if (ftnLookup.accessType == IAT_VALUE)
     {
         // We can't use the 1 bit to mark indirect addresses because it is used for real code on arm32 (the thumb bit)
         // So instead, we mark direct addresses with a 1 and then on the other end we will clear the 1 and re-set it as needed for thumb
         addr = (void*)((size_t)addr | INTERP_DIRECT_HELPER_TAG);
     }
+    else if (ftnLookup.accessType == IAT_PPVALUE)
+        NO_WAY("IAT_PPVALUE helpers not implemented in interpreter");
 
 #ifdef DEBUG
     if (!PointerInNameMap(addr))
@@ -3070,6 +3072,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     m_compHnd->getAddressOfPInvokeTarget(callInfo.hMethod, &lookup);
                     m_pLastNewIns->data[1] = GetDataItemIndex(lookup.addr);
                     m_pLastNewIns->data[2] = lookup.accessType == IAT_PVALUE;
+                    if (lookup.accessType == IAT_PPVALUE)
+                        NO_WAY("IAT_PPVALUE pinvokes not implemented in interpreter");
                 }
             }
             break;
