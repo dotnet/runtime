@@ -889,7 +889,7 @@ namespace Internal.IL
 
             if (type.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "Unbox");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, type), "Unbox");
             }
             else
             {
@@ -966,7 +966,8 @@ namespace Internal.IL
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
                 {
-                    reference = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type);
+                    reference = GetGenericLookupHelper(
+                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : ReadyToRunHelperId.TypeHandle, type);
                 }
                 else
                 {
@@ -1260,7 +1261,7 @@ namespace Internal.IL
             if (elementType.IsGCPointer && !_isReadOnly)
             {
                 if (elementType.IsRuntimeDeterminedSubtype)
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType), "ldelema");
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, elementType), "ldelema");
                 else
                     _dependencies.Add(_factory.NecessaryTypeSymbol(elementType), "ldelema");
 
