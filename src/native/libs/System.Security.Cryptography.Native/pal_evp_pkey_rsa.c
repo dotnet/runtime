@@ -206,6 +206,15 @@ done:
 
 static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
 {
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+    {
+        return false;
+    }
+
     if (padding == RsaPaddingPkcs1)
     {
         if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
@@ -222,14 +231,6 @@ static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const 
         {
             return false;
         }
-    }
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
-#pragma clang diagnostic pop
-    {
-        return false;
     }
 
     return true;

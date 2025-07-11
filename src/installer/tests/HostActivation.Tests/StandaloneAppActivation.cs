@@ -255,6 +255,29 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void DevicePath()
+        {
+            string appExe = $@"\\?\{sharedTestState.StandaloneAppFixture_Published.TestProject.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+
+            appExe = $@"\\.\{sharedTestState.StandaloneAppFixture_Published.TestProject.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void Running_AppHost_with_GUI_No_Console()
         {

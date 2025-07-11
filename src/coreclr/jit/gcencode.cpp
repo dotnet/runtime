@@ -49,8 +49,21 @@ ReturnKind GCInfo::getReturnKind()
         case 1:
             return VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0));
         case 2:
-            return GetStructReturnKind(VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0)),
-                                       VarTypeToReturnKind(retTypeDesc.GetReturnRegType(1)));
+        {
+            var_types first = retTypeDesc.GetReturnRegType(0);
+            var_types second = retTypeDesc.GetReturnRegType(1);
+#ifdef UNIX_AMD64_ABI
+            if (varTypeUsesFloatReg(first))
+            {
+                // first does not consume an int register in this case so an obj/ref
+                // in the second ReturnKind would actually be found in the first int reg.
+                first = second;
+                second = TYP_UNDEF;
+            }
+#endif // UNIX_AMD64_ABI
+            return GetStructReturnKind(VarTypeToReturnKind(first),
+                                       VarTypeToReturnKind(second));
+        }
         default:
 #ifdef DEBUG
             for (unsigned i = 0; i < regCount; i++)
