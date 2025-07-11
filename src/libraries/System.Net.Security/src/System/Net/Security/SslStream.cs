@@ -96,6 +96,7 @@ namespace System.Net.Security
             public Span<byte> EncryptedSpanSliced(int length) => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding, length);
 
             public ReadOnlySpan<byte> EncryptedReadOnlySpan => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding);
+            public ReadOnlyMemory<byte> EncryptedReadOnlyMemory => _buffer.ActiveMemory.Slice(_decryptedLength + _decryptedPadding);
 
             public int EncryptedLength => _buffer.ActiveLength - _decryptedPadding - _decryptedLength;
 
@@ -218,6 +219,10 @@ namespace System.Net.Security
 
 #if TARGET_ANDROID
             _sslAuthenticationOptions.SslStreamProxy = new SslStream.JavaProxy(sslStream: this);
+#endif
+
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+            _sslAuthenticationOptions.SslStream = this;
 #endif
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);

@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Security.Authentication;
@@ -50,7 +51,7 @@ namespace System.Net.Security
 
 
         private SafeFreeCredentials? _credentialsHandle;
-        private SafeDeleteSslContext? _securityContext;
+        internal SafeDeleteSslContext? _securityContext;
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -65,8 +66,8 @@ namespace System.Net.Security
         private int _trailerSize = 16;
         private int _maxDataSize = 16354;
 
-        private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
-        private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
+        internal static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+        internal static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
 
         //
         // Protocol properties
@@ -1039,18 +1040,23 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        {
+            X509Chain? chain = null;
+            X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
+
+            return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out sslPolicyErrors, out chainStatus);
+        }
+
+        internal bool VerifyRemoteCertificate(X509Certificate2? certificate, X509Chain? chain, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = X509ChainStatusFlags.NoError;
 
-            // We don't catch exceptions in this method, so it's safe for "accepted" be initialized with true.
             bool success = false;
-            X509Chain? chain = null;
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
                 if (_remoteCertificate != null &&
                     certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
@@ -1113,6 +1119,7 @@ namespace System.Net.Security
 
                 _remoteCertificate = certificate;
 
+                RemoteCertificateValidationCallback? remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
                 if (remoteCertValidationCallback != null)
                 {
                     success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
@@ -1124,7 +1131,7 @@ namespace System.Net.Security
                         sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                     }
 
-                    success = (sslPolicyErrors == SslPolicyErrors.None);
+                    success = sslPolicyErrors == SslPolicyErrors.None;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
@@ -1135,7 +1142,14 @@ namespace System.Net.Security
 
                 if (!success)
                 {
-                    CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
+#pragma warning disable CS0162 // unreachable code on some platforms
+                    // avoid reentrant call to GenerateToken if validation was called from a callback
+                    if (!SslStreamPal.CertValidationInCallback)
+                    {
+                        CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
+                    }
+#pragma warning restore CS0162 // unreachable code on some platforms
+
                     if (chain != null)
                     {
                         foreach (X509ChainStatus status in chain.ChainStatus)
@@ -1229,7 +1243,7 @@ namespace System.Net.Security
             return GenerateToken(default, out _);
         }
 
-        private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
+        internal static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
         {
             foreach (X509ChainStatus chainStatus in chain.ChainStatus)
             {

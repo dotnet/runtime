@@ -130,10 +130,20 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios'">
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.OSX.cs" />
+    <!-- reuse Unix SafeDeleteSslContext since it has no platform specific code -->
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteSslContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Android.cs" />
+    <!-- reuse Unix SafeDeleteSslContext since it has no platform specific code -->
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteSslContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">

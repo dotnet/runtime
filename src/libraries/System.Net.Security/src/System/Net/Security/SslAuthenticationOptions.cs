@@ -221,5 +221,9 @@ namespace System.Net.Security
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }
 #endif
+
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+        internal SslStream? SslStream { get; set; }
+#endif
     }
 }
