@@ -304,23 +304,28 @@ namespace System.Net.Http
         // Picks the value of the 'server.address' tag following rules specified in
         // https://github.com/open-telemetry/semantic-conventions/blob/728e5d1/docs/http/http-spans.md#http-client-span
         // When there is no proxy, we need to prioritize the contents of the Host header.
-        private static string GetTelemetryServerAddress(HttpRequestMessage request, HttpConnectionKey key)
+        private static string? GetTelemetryServerAddress(HttpRequestMessage request, HttpConnectionKey key)
         {
-            Uri? uri = request.RequestUri;
-            Debug.Assert(uri is not null);
-
-            if (key.ProxyUri is not null)
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled || GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
             {
-                return uri.IdnHost;
+                Uri? uri = request.RequestUri;
+                Debug.Assert(uri is not null);
+
+                if (key.ProxyUri is not null)
+                {
+                    return uri.IdnHost;
+                }
+
+                if (key.SslHostName is not null)
+                {
+                    return key.SslHostName;
+                }
+
+                string? hostHeader = request.Headers.Host;
+                return hostHeader is null ? uri.IdnHost : HttpUtilities.ParseHostNameFromHeader(hostHeader);
             }
 
-            if (key.SslHostName is not null)
-            {
-                return key.SslHostName;
-            }
-
-            string? hostHeader = request.Headers.Host;
-            return hostHeader is null ? uri.IdnHost : HttpUtilities.ParseHostNameFromHeader(hostHeader);
+            return null;
         }
 
         public ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool async, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)

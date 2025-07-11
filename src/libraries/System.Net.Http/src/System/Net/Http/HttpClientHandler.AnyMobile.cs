@@ -43,7 +43,7 @@ namespace System.Net.Http
 
                         // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
                         // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
-                        // Since HttpClientHandler.Proxy is unsupported on many platforms, don't bother passing it.
+                        // Since HttpClientHandler.Proxy is unsupported on most platforms, don't bother passing it to telemetry handlers.
                         if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                         {
                             handler = new MetricsHandler(handler, _nativeMeterFactory, proxy: null, out _);

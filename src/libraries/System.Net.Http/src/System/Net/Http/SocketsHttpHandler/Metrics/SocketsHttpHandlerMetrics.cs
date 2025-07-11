@@ -46,6 +46,8 @@ namespace System.Net.Http.Metrics
                 });
 
                 tags.Add("url.scheme", pool.IsSecure ? "https" : "http");
+
+                Debug.Assert(pool.TelemetryServerAddress is not null, "TelemetryServerAddress should not be null when System.Diagnostics.Metrics.Meter.IsSupported is true.");
                 tags.Add("server.address", pool.TelemetryServerAddress);
 
                 if (!pool.IsDefaultPort)

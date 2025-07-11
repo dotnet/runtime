@@ -35,7 +35,7 @@ namespace System.Net.Http
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
         private readonly Uri? _proxyUri;
-        private readonly string _telemetryServerAddress;
+        private readonly string? _telemetryServerAddress;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
         private readonly HttpAuthority _originAuthority;
@@ -74,7 +74,7 @@ namespace System.Net.Http
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
         /// <param name="telemetryServerAddress">The value of the 'server.address' tag to be emitted by Metrics and Distributed Tracing.</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string telemetryServerAddress)
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string? telemetryServerAddress)
         {
             _poolManager = poolManager;
             _kind = kind;
@@ -282,7 +282,7 @@ namespace System.Net.Http
             return sslOptions;
         }
 
-        public string TelemetryServerAddress => _telemetryServerAddress;
+        public string? TelemetryServerAddress => _telemetryServerAddress;
         public HttpAuthority OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
