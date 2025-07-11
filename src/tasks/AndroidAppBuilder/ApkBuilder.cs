@@ -424,7 +424,6 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
-        // Set invariant globalization environment variable if enabled
         if (InvariantGlobalization)
         {
             envVariables += $"\t\tsetEnv(\"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT\", \"true\");\n";
