@@ -259,7 +259,6 @@ namespace System.Net.Http
             }
 
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
-            _telemetryServerAddress = telemetryServerAddress;
         }
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
