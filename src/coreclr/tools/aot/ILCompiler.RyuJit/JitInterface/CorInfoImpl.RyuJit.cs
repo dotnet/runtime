@@ -1875,6 +1875,10 @@ namespace Internal.JitInterface
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, HandleToObject(callerHandle), ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                     break;
+                case "ForCastingOf":
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.NecessaryTypeHandle, HandleToObject(callerHandle), ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
+                    break;
                 case "DefaultConstructorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, HandleToObject(callerHandle), ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;

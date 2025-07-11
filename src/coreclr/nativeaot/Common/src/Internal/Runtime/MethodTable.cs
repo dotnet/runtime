@@ -161,6 +161,9 @@ namespace Internal.Runtime
         [Intrinsic]
         internal static extern MethodTable* Of<T>();
 
+        [Intrinsic]
+        internal static extern MethodTable* ForCastingOf<T>();
+
         // upper ushort is used for Flags
         // lower ushort is used for
         // - component size for strings and arrays,

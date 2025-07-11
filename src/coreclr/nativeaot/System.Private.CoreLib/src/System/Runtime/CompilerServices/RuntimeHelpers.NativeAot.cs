@@ -312,7 +312,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentException(SR.Argument_NoUninitializedStrings);
             }
 
-            if (RuntimeImports.AreTypesAssignable(mt, MethodTable.Of<Delegate>()))
+            if (RuntimeImports.AreTypesAssignable(mt, MethodTable.ForCastingOf<Delegate>()))
             {
                 throw new MemberAccessException();
             }

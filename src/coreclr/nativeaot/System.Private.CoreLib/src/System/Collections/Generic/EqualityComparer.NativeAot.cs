@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Internal.IntrinsicSupport;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
@@ -14,7 +15,7 @@ namespace System.Collections.Generic
     public abstract partial class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
         [Intrinsic]
-        private static EqualityComparer<T> Create()
+        private static unsafe EqualityComparer<T> Create()
         {
             // The compiler will overwrite the Create method with optimized
             // instantiation-specific implementation.
@@ -27,7 +28,7 @@ namespace System.Collections.Generic
                 return Unsafe.As<EqualityComparer<T>>(new StringEqualityComparer());
             }
 
-            return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle));
+            return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(new RuntimeTypeHandle(MethodTable.ForCastingOf<T>())));
         }
 
         public static EqualityComparer<T> Default { [Intrinsic] get; } = Create();

@@ -424,6 +424,19 @@ namespace Internal.IL
                     return;
                 }
 
+                if (IsEETypePtrForCastingOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.NecessaryTypeSymbol(method.Instantiation[0]), reason);
+                    }
+                    return;
+                }
+
                 if (opcode != ILOpcode.ldftn)
                 {
                     if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
@@ -1478,6 +1491,20 @@ namespace Internal.IL
         private static bool IsEETypePtrOf(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name == "Of" && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime";
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsEETypePtrForCastingOf(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "ForCastingOf" && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
