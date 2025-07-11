@@ -398,12 +398,12 @@ namespace Internal.JitInterface
     public enum CORINFO_CALLINFO_FLAGS
     {
         CORINFO_CALLINFO_NONE = 0x0000,
-        CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
-        CORINFO_CALLINFO_CALLVIRT = 0x0002,   // Is it a virtual call?
+        CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001, // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
+        CORINFO_CALLINFO_CALLVIRT = 0x0002, // Is it a virtual call?
         // UNUSED = 0x0004,
-        // UNUSED = 0x0008,
-        CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
-        CORINFO_CALLINFO_LDFTN = 0x0020,   // Resolving target of LDFTN
+        CORINFO_CALLINFO_DISALLOW_STUB = 0x0008, // Do not use a stub for this call, even if it is a virtual call.
+        CORINFO_CALLINFO_SECURITYCHECKS = 0x0010, // Perform security checks.
+        CORINFO_CALLINFO_LDFTN = 0x0020, // Resolving target of LDFTN
         // UNUSED = 0x0040,
     }
 

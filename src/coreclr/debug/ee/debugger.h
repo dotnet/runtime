@@ -157,7 +157,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
@@ -182,8 +181,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
         {
             return;
@@ -279,7 +276,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternal(false, true);
@@ -287,7 +283,6 @@ public:
 
     DEBUG_NOINLINE GCHolderEEInterface(bool bConditional)
     {
-        SCAN_SCOPE_BEGIN;
         if (bConditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -298,8 +293,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         this->LeaveInternal();
     };
 };
@@ -2112,6 +2105,7 @@ public:
     HRESULT GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap,
                                  COR_DEBUG_IL_TO_NATIVE_MAP map[]);
 
+#ifdef DEBUG
     HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -2119,6 +2113,7 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset);
+#endif // DEBUG
 
     PRD_TYPE GetPatchedOpcode(CORDB_ADDRESS_TYPE *ip);
     BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode);
@@ -2769,21 +2764,10 @@ private:
         // AppDomain, Thread, are already initialized
     }
 
-    void InitIPCEvent(DebuggerIPCEvent *ipce,
-                      DebuggerIPCEventType type,
-                      Thread *pThread,
-                      AppDomain* pAppDomain)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        InitIPCEvent(ipce, type, pThread, VMPTR_AppDomain::MakePtr(pAppDomain));
-    }
-
     // Let this function to figure out the unique Id that we will use for Thread.
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type,
-                      Thread *pThread,
-                      VMPTR_AppDomain vmAppDomain)
+                      Thread *pThread)
     {
         CONTRACTL
         {
@@ -2797,7 +2781,7 @@ private:
         ipce->hr = S_OK;
         ipce->processId = m_processId;
         ipce->threadId = pThread ? pThread->GetOSThreadId() : 0;
-        ipce->vmAppDomain = vmAppDomain;
+        ipce->vmAppDomain = VMPTR_AppDomain::MakePtr(AppDomain::GetCurrentDomain());
         ipce->vmThread.SetRawPtr(pThread);
     }
 
@@ -2811,16 +2795,9 @@ private:
                  (type == DB_IPCE_TEST_RWLOCK));
 
         Thread *pThread = g_pEEInterface->GetThread();
-        AppDomain *pAppDomain = NULL;
-        if (pThread)
-        {
-            pAppDomain = AppDomain::GetCurrentDomain();
-        }
-
         InitIPCEvent(ipce,
                      type,
-                     pThread,
-                     VMPTR_AppDomain::MakePtr(pAppDomain));
+                     pThread);
     }
 #endif // DACCESS_COMPILE
 
@@ -3061,9 +3038,6 @@ public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
     void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
     BOOL IsOutOfProcessSetContextEnabled();
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext);
-#endif // FEATURE_SPECIAL_USER_MODE_APC        
 };
 
 
@@ -3159,7 +3133,7 @@ public:
         DebuggerHeap* pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
         _ASSERTE(pHeap != NULL); // should already exist
 
-        PREFIX_ASSUME( iCurSize >= 0 );
+        _ASSERTE( iCurSize >= 0 );
         S_UINT32 iNewSize = S_UINT32( iCurSize ) + S_UINT32( GrowSize(iCurSize) );
         if( iNewSize.IsOverflow() )
         {
@@ -3842,7 +3816,7 @@ HANDLE OpenWin32EventOrThrow(
 #define SENDIPCEVENT_RAW_END SENDIPCEVENT_RAW_END_EX
 
 // Suspend-aware SENDIPCEVENT macros:
-// Check whether __thread has been suspended by the debugger via SetDebugState().
+// Check whether thread has been suspended by the debugger via SetDebugState().
 // If this thread has been suspended, it shouldn't send any event to the RS because the
 // debugger may not be expecting it.  Instead, just leave the lock and retry.
 // When we leave, we'll enter coop mode first and get suspended if a suspension is in progress.

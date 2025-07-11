@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENX86.CPP -
-//
 // Various helper routines for generating x86 assembly code.
-//
-//
 
 // Precompiled Header
 
@@ -208,181 +206,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     RETURN;
 }
-
-void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(m_MachState.isValid());               // EnsureInit has been called
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.GetRetAddr(), m_MachState.esp()));
-
-#ifdef FEATURE_EH_FUNCLETS
-
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-#ifdef DACCESS_COMPILE
-    // For DAC, we may get here when the HMF is still uninitialized.
-    // So we may need to unwind here.
-    if (!m_MachState.isValid())
-    {
-        // This allocation throws on OOM.
-        MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
-
-        EnsureInit(pUnwoundState);
-
-        SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(pUnwoundState->pRetAddr()));
-        pRD->pCurrentContext->Esp = pRD->SP        = pUnwoundState->esp();
-
-        // Do not use pUnwoundState->p##regname() here because it returns NULL in this case
-        pRD->pCurrentContext->Edi = pUnwoundState->_edi;
-        pRD->pCurrentContext->Esi = pUnwoundState->_esi;
-        pRD->pCurrentContext->Ebx = pUnwoundState->_ebx;
-        pRD->pCurrentContext->Ebp = pUnwoundState->_ebp;
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = (DWORD*) pUnwoundState->p##regname();
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-        ClearRegDisplayArgumentAndScratchRegisters(pRD);
-
-        return;
-    }
-#endif // DACCESS_COMPILE
-
-    SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_MachState.pRetAddr()));
-    pRD->pCurrentContext->Esp = pRD->SP = (DWORD) m_MachState.esp();
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *((DWORD*) m_MachState.p##regname());
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = (DWORD*) m_MachState.p##regname();
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    //
-    // Clear all knowledge of scratch registers.  We're skipping to any
-    // arbitrary point on the stack, and frames aren't required to preserve or
-    // keep track of these anyways.
-    //
-
-    ClearRegDisplayArgumentAndScratchRegisters(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-#ifdef DACCESS_COMPILE
-
-    //
-    // In the dac case we may have gotten here
-    // without the frame being initialized, so
-    // try and initialize on the fly.
-    //
-
-    if (!m_MachState.isValid())
-    {
-        MachState unwindState;
-
-        EnsureInit(&unwindState);
-        SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(unwindState.pRetAddr()));
-        pRD->SP = unwindState._esp;
-
-        // Get some special host instance memory
-        // so we have a place to point to.
-        // This host memory has no target address
-        // and so won't be looked up or used for
-        // anything else.
-        MachState* thisState = (MachState*)
-            DacAllocHostOnlyInstance(sizeof(*thisState), true);
-
-        thisState->_edi = unwindState._edi;
-        pRD->pEdi = (DWORD *)&thisState->_edi;
-        thisState->_esi = unwindState._esi;
-        pRD->pEsi = (DWORD *)&thisState->_esi;
-        thisState->_ebx = unwindState._ebx;
-        pRD->pEbx = (DWORD *)&thisState->_ebx;
-        thisState->_ebp = unwindState._ebp;
-        pRD->pEbp = (DWORD *)&thisState->_ebp;
-
-        // EnsureInit always sets m_RegArgs to zero
-        // in the real code.  I'm not sure exactly
-        // what should happen in the on-the-fly case,
-        // but go with what would happen from an EnsureInit.
-
-        RETURN;
-    }
-
-#endif // #ifdef DACCESS_COMPILE
-
-    // DACCESS: The MachState pointers are kept as PTR_TADDR so
-    // the host pointers here refer to the appropriate size and
-    // these casts are not a problem.
-    pRD->pEdi = (DWORD*) m_MachState.pEdi();
-    pRD->pEsi = (DWORD*) m_MachState.pEsi();
-    pRD->pEbx = (DWORD*) m_MachState.pEbx();
-    pRD->pEbp = (DWORD*) m_MachState.pEbp();
-
-    SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_MachState.pRetAddr()));
-    pRD->SP  = (DWORD) m_MachState.esp();
-
-#endif // FEATURE_EH_FUNCLETS
-
-    RETURN;
-}
-
-#ifdef _DEBUG_IMPL
-// Confirm that if the machine state was not initialized, then
-// any unspilled callee saved registers did not change
-EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* frame, void* esiVal, void* ediVal, void* ebxVal, void* ebpVal)
-    {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        DEBUG_ONLY;
-    }
-    CONTRACTL_END;
-
-    MachState* state = frame->MachineState();
-
-    // if we've already executed this check once for this helper method frame then
-    // we don't do the check again because it is very expensive.
-    if (frame->HaveDoneConfirmStateCheck())
-    {
-        return state;
-    }
-
-    // probe to avoid a kazillion violations in the code that follows.
-    BEGIN_DEBUG_ONLY_CODE;
-    if (!state->isValid())
-    {
-        frame->EnsureInit(NULL);
-        _ASSERTE(state->_pEsi != &state->_esi || state->_esi  == (TADDR)esiVal);
-        _ASSERTE(state->_pEdi != &state->_edi || state->_edi  == (TADDR)ediVal);
-        _ASSERTE(state->_pEbx != &state->_ebx || state->_ebx  == (TADDR)ebxVal);
-        _ASSERTE(state->_pEbp != &state->_ebp || state->_ebp  == (TADDR)ebpVal);
-    }
-    END_DEBUG_ONLY_CODE;
-
-    // set that we have executed this check once for this helper method frame.
-    frame->SetHaveDoneConfirmStateCheck();
-
-    return state;
-}
-#endif
 
 void ExternalMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -813,13 +636,11 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 }
 #endif // !UNIX_X86_ABI
 
-#ifdef FEATURE_READYTORUN
 void DynamicHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     WRAPPER_NO_CONTRACT;
     UpdateRegDisplayHelper(pRD, 0);
 }
-#endif // FEATURE_READYTORUN
 
 //------------------------------------------------------------------------
 // This is declared as returning WORD instead of PRD_TYPE because of

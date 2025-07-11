@@ -63,8 +63,6 @@ int mono_regression_test_step (int verbose_level, char *image, char *method_name
 
 static MonoDomain *root_domain;
 
-#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
-
 extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
 
 static void
@@ -184,7 +182,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 static int runtime_initialized = 0;
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (int debug_level)
+mono_wasm_load_runtime (int debug_level, int propertyCount, const char **propertyKeys, const char **propertyValues)
 {
 	runtime_initialized = 1;
 	const char *interp_opts = "";
@@ -193,34 +191,7 @@ mono_wasm_load_runtime (int debug_level)
 	mono_wasm_link_icu_shim ();
 #endif
 
-	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
-	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
-	const char *appctx_keys[2];
-	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
-	appctx_keys [1] = "RUNTIME_IDENTIFIER";
-
-	const char *appctx_values[2];
-	appctx_values [0] = "/";
-	appctx_values [1] = "browser-wasm";
-
-	char *file_name = RUNTIMECONFIG_BIN_FILE;
-	int str_len = strlen (file_name) + 1; // +1 is for the "/"
-	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
-	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
-	struct stat buffer;
-
-	assert (num_char > 0 && num_char == str_len);
-
-	if (stat (file_path, &buffer) == 0) {
-		MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-		arg->kind = 0;
-		arg->runtimeconfig.name.path = file_path;
-		monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
-	} else {
-		free (file_path);
-	}
-
-	monovm_initialize (2, appctx_keys, appctx_values);
+	monovm_initialize (propertyCount, propertyKeys, propertyValues);
 
 #ifndef INVARIANT_TIMEZONE
 	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
@@ -237,7 +208,17 @@ int initialize_runtime()
 {
     if (runtime_initialized == 1)
 		return 0;
-	mono_wasm_load_runtime (0);
+
+	const char *appctx_keys[2];
+	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
+	appctx_keys [1] = "RUNTIME_IDENTIFIER";
+
+	const char *appctx_values[2];
+	appctx_values [0] = "/";
+	appctx_values [1] = "browser-wasm";
+
+	// this does not support loading runtimeConfig.json part of boot.config.json
+	mono_wasm_load_runtime (0, 2, appctx_keys, appctx_values);
 
 	return 0;
 }
@@ -540,9 +521,12 @@ EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
 	MONO_ENTER_GC_UNSAFE;
 	const char *method_name = mono_method_get_name (method);
 	// starts with .ctor or .cctor
-	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
+	if (!method_name) {
+		res = strdup ("<unknown>");
+	} else if (method_name && mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (method_name) < 7) {
 		res = (char *) malloc (128);
 		snprintf (res, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), method_name);
+		res[127] = '\0';
 	} else {
 		res = strdup (method_name);
 	}

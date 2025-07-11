@@ -32,6 +32,7 @@ public enum DataType
     ModuleLookupMap,
     AppDomain,
     Assembly,
+    LoaderAllocator,
     PEAssembly,
     PEImage,
     PEImageLayout,
@@ -87,6 +88,7 @@ public enum DataType
     ProfControlBlock,
     ILCodeVersionNode,
     ReadyToRunInfo,
+    ReadyToRunHeader,
     ImageDataDirectory,
     RuntimeFunction,
     HashMap,
@@ -96,8 +98,12 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+    ArrayListBase,
+    ArrayListBlock,
+
     TransitionBlock,
     DebuggerEval,
+    ArgumentRegisters,
     CalleeSavedRegisters,
     HijackArgs,
 
@@ -109,4 +115,5 @@ public enum DataType
     ResumableFrame,
     FaultingExceptionFrame,
     HijackFrame,
+    TailCallFrame,
 }

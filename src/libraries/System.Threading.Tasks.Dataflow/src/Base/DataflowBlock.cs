@@ -1925,12 +1925,14 @@ namespace System.Threading.Tasks.Dataflow
             // Set up the branches.
             TaskScheduler scheduler = dataflowBlockOptions.TaskScheduler;
             var branchTasks = new Task<int>[hasThirdSource ? 3 : 2];
+#pragma warning disable CA2025
             branchTasks[0] = CreateChooseBranch(boxedCompleted, cts, scheduler, 0, source1, action1);
             branchTasks[1] = CreateChooseBranch(boxedCompleted, cts, scheduler, 1, source2, action2);
             if (hasThirdSource)
             {
                 branchTasks[2] = CreateChooseBranch(boxedCompleted, cts, scheduler, 2, source3!, action3!);
             }
+#pragma warning restore
 
             // Asynchronously wait for all branches to complete, then complete
             // a task to be returned to the caller.

@@ -197,9 +197,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_InvalidAxis()
+        public static void ThrowArgument_InvalidDimension()
         {
-            throw new ArgumentException(SR.ThrowArgument_InvalidAxis);
+            throw new ArgumentException(SR.ThrowArgument_InvalidDimension);
         }
 
         [DoesNotReturn]

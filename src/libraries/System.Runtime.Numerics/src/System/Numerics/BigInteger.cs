@@ -1445,33 +1445,60 @@ namespace System.Numerics
                     break;
             }
 
-            int curByte = isBigEndian ? length - 1 : 0;
+            int curByte = isBigEndian ? length : 0;
             int increment = isBigEndian ? -1 : 1;
 
             if (bits != null)
             {
-                for (int i = 0; i < bits.Length - 1; i++)
+                if (BitConverter.IsLittleEndian && sign > 0)
                 {
-                    uint dword = bits[i];
+                    ReadOnlySpan<byte> srcBytes = MemoryMarshal.AsBytes(bits.AsSpan(..^1));
 
-                    if (sign == -1)
+                    if (isBigEndian)
                     {
-                        dword = ~dword;
-                        if (i <= nonZeroDwordIndex)
+                        curByte = length - srcBytes.Length;
+                        Span<byte> destBytes = destination.Slice(curByte, srcBytes.Length);
+                        srcBytes.CopyTo(destBytes);
+                        destBytes.Reverse();
+                    }
+                    else
+                    {
+                        srcBytes.CopyTo(destination);
+                        curByte = srcBytes.Length;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < bits.Length - 1; i++)
+                    {
+                        uint dword = bits[i];
+
+                        if (sign == -1)
                         {
-                            dword = unchecked(dword + 1U);
+                            dword = ~dword;
+                            if (i <= nonZeroDwordIndex)
+                            {
+                                dword = unchecked(dword + 1U);
+                            }
+                        }
+
+                        if (isBigEndian)
+                        {
+                            curByte -= 4;
+                            BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(curByte), dword);
+                        }
+                        else
+                        {
+                            BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(curByte), dword);
+                            curByte += 4;
                         }
                     }
-
-                    destination[curByte] = unchecked((byte)dword);
-                    curByte += increment;
-                    destination[curByte] = unchecked((byte)(dword >> 8));
-                    curByte += increment;
-                    destination[curByte] = unchecked((byte)(dword >> 16));
-                    curByte += increment;
-                    destination[curByte] = unchecked((byte)(dword >> 24));
-                    curByte += increment;
                 }
+            }
+
+            if (isBigEndian)
+            {
+                curByte--;
             }
 
             Debug.Assert(msbIndex >= 0 && msbIndex <= 3);

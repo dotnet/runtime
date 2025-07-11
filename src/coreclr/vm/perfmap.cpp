@@ -282,7 +282,7 @@ void PerfMap::WriteLine(SString& line)
         }
 
     }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    EX_CATCH{} EX_END_CATCH
 }
 
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
@@ -335,7 +335,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
             PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
         }
     }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    EX_CATCH{} EX_END_CATCH
 
 }
 
@@ -389,7 +389,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
             PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr);
         }
     }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    EX_CATCH{} EX_END_CATCH
 }
 
 // Log a set of stub to the map.
@@ -446,7 +446,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
         }
     }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    EX_CATCH{} EX_END_CATCH
 }
 
 void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, unsigned int nSigSize)

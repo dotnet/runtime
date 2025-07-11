@@ -145,11 +145,12 @@ public:
     INT64 GetSize() const;
     BOOL IsCompressed(INT64* uncompressedSize = NULL) const;
 
+#ifndef DACCESS_COMPILE
     HANDLE GetFileHandle();
     HRESULT TryOpenFile(bool takeLock = false);
+#endif
 
     void GetMVID(GUID *pMvid);
-    BOOL HasV1Metadata();
     IMDInternalImport* GetMDImport();
     BOOL MDImportLoaded();
 

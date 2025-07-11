@@ -1153,7 +1153,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
 
     // Retrieve the PEAssembly from the assembly.
     PEAssembly* pPEAssembly = pAssembly->GetPEAssembly();
-    PREFIX_ASSUME(pPEAssembly!=NULL);
+    _ASSERTE(pPEAssembly!=NULL);
 
     LPCSTR pszVersion = NULL;
     IfFailThrow(pPEAssembly->GetMDImport()->GetVersionString(&pszVersion));

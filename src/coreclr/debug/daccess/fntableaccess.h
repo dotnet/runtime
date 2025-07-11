@@ -30,13 +30,13 @@ struct FakeHeapList
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
     DWORD_PTR           pLoaderAllocator;
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     DWORD_PTR           CLRPersonalityRoutine;
 #endif
 
     DWORD_PTR GetModuleBase()
     {
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
         return CLRPersonalityRoutine;
 #else
         return mapBase;
@@ -94,8 +94,6 @@ class CheckDuplicatedStructLayouts
 
 #else // CHECK_DUPLICATED_STRUCT_LAYOUTS
 
-BOOL WINAPI             DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID pReserved);
-//NTSTATUS                OutOfProcessFindHeader(HANDLE hProcess, DWORD_PTR pMapIn, DWORD_PTR addr, DWORD_PTR &codeHead);
 extern "C" NTSTATUS     OutOfProcessFunctionTableCallback(IN HANDLE hProcess, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PT_RUNTIME_FUNCTION* ppFunctions);
 
 

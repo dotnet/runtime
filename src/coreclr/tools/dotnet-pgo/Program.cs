@@ -163,7 +163,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private static int Main(string[] args) =>
             new CommandLineConfiguration(new PgoRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(PgoRootCommand.GetExtendedHelp))
+                .UseExtendedHelp(PgoRootCommand.PrintExtendedHelp))
             {
                 ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
                 EnableDefaultExceptionHandler = false,

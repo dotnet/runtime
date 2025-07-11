@@ -15,7 +15,7 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(CrossBuild)' != 'true' or ('$(StageOneBuild)' != 'true' and '$(StageTwoBuild)' != 'true')">
+  <PropertyGroup Condition="'$(CrossBuild)' != 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
   </PropertyGroup>

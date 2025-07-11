@@ -856,6 +856,7 @@ MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
 #if defined(TARGET_WASM)
 MINI_OP(OP_WASM_SIMD_BITMASK, "wasm_bitmask", IREG, XREG, NONE)
+MINI_OP3(OP_WASM_BITSELECT, "wasm_bitselect", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", XREG, XREG, XREG, XREG)
 MINI_OP(OP_WASM_SIMD_SUM, "wasm_sum", XREG, XREG, NONE)
 MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", XREG, XREG, XREG)
@@ -1860,16 +1861,8 @@ MINI_OP(OP_SIMD_LOAD_SCALAR_I8, "simd_load_scalar_i8", XREG, IREG, NONE)
 MINI_OP(OP_SIMD_LOAD_SCALAR_R8, "simd_load_scalar_r8", XREG, IREG, NONE)
 MINI_OP(OP_SIMD_STORE, "simd_store", NONE, XREG, XREG)
 
-#if defined(TARGET_WASM)
-MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
-#endif
-
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
-
-#endif // TARGET_ARM64 || TARGET_AMD64
-
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+MINI_OP(OP_ONES_COMPLEMENT,  "ones_complement", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_UI,        "convert_fp_to_ui", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_SI,        "convert_fp_to_si", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_UI_SCALAR, "convert_fp_to_ui_scalar", XREG, XREG, NONE)

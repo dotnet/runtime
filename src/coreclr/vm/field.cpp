@@ -313,7 +313,7 @@ void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
     CONTRACTL_END
 
       // We know that it isn't going to be null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(o != NULL);
+    _ASSERTE(o != NULL);
 
     // Check whether we are getting a field value on a proxy. If so, then ask
     // remoting services to extract the value from the instance.
@@ -735,14 +735,14 @@ Instantiation FieldDesc::GetExactClassInstantiation(TypeHandle possibleObjType)
     WRAPPER_NO_CONTRACT;
 
     // We know that it isn't going to be null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(GetApproxEnclosingMethodTable()!=NULL);
+    _ASSERTE(GetApproxEnclosingMethodTable()!=NULL);
     if (possibleObjType.IsNull())
     {
         return GetApproxEnclosingMethodTable()->GetInstantiation();
     }
     else
     {
-        PREFIX_ASSUME(GetApproxEnclosingMethodTable()!=NULL);
+        _ASSERTE(GetApproxEnclosingMethodTable()!=NULL);
         return possibleObjType.GetInstantiationOfParentClass(GetApproxEnclosingMethodTable());
     }
 }

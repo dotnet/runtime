@@ -3580,7 +3580,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     }
     // Note: we need to catch all exceptions here because they all get reported as the result of
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     protectValueClassFrame.Pop();
 
@@ -3775,7 +3775,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
     }
     // Note: we need to catch all exceptioins here because they all get reported as the result of
     // the funceval.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     GCPROTECT_END();
 }

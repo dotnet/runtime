@@ -996,14 +996,14 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(SupportsRemoteExecutorAndAlpn))]
         [InlineData(false)]
         [InlineData(true)]
-        public void EventSource_Proxy_LogsIPAddress(bool useSsl)
+        public async Task EventSource_Proxy_LogsIPAddress(bool useSsl)
         {
             if (UseVersion.Major == 3)
             {
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
+            await RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
             {
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
@@ -1038,7 +1038,7 @@ namespace System.Net.Http.Functional.Tests
                         ip.Equals(IPAddress.Loopback) ||
                         ip.Equals(IPAddress.IPv6Loopback));
                 }
-            }, UseVersion.ToString(), useSsl.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString()).DisposeAsync();
         }
 
         protected static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)

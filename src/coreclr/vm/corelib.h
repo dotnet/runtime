@@ -384,7 +384,7 @@ DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
 DEFINE_METHOD(TYPED_REFERENCE, GETREFANY,        GetRefAny,                   NoSig)
 
 DEFINE_CLASS(TYPE_NAME_RESOLVER,    Reflection,             TypeNameResolver)
-DEFINE_METHOD(TYPE_NAME_RESOLVER,   GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType)
+DEFINE_METHOD(TYPE_NAME_RESOLVER,   GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_CharPtr_RuntimeAssembly_Bool_Bool_IntPtr_RetRuntimeType)
 
 DEFINE_CLASS_U(Reflection,          RtFieldInfo,            NoClass)
 DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
@@ -452,13 +452,35 @@ END_ILLINK_FEATURE_SWITCH()
 
 #ifdef FEATURE_COMWRAPPERS
 DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
-DEFINE_CLASS(CREATECOMINTERFACEFLAGS,     Interop,          CreateComInterfaceFlags)
 DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
-DEFINE_CLASS(COMWRAPPERSSCENARIO,         Interop,          ComWrappersScenario)
-DEFINE_METHOD(COMWRAPPERS,                COMPUTE_VTABLES,  CallComputeVtables,         SM_Scenario_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid)
-DEFINE_METHOD(COMWRAPPERS,                CREATE_OBJECT,    CallCreateObject,           SM_Scenario_ComWrappers_IntPtr_CreateFlags_RetObj)
-DEFINE_METHOD(COMWRAPPERS,                RELEASE_OBJECTS,  CallReleaseObjects,         SM_ComWrappers_IEnumerable_RetVoid)
-DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_Obj_RefGuid_RefIntPtr_RetInt)
+DEFINE_CLASS(MANAGED_OBJECT_WRAPPER_HOLDER,Interop,         ComWrappers+ManagedObjectWrapperHolder)
+DEFINE_CLASS(NATIVE_OBJECT_WRAPPER,       Interop,         ComWrappers+NativeObjectWrapper)
+DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt)
+DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance, SM_Obj_RetIntPtr)
+DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance, SM_IntPtr_CreateObjectFlags_RetObj)
+DEFINE_FIELD(COMWRAPPERS, NAITVE_OBJECT_WRAPPER_TABLE, s_nativeObjectWrapperTable)
+DEFINE_FIELD(COMWRAPPERS, ALL_MANAGED_OBJECT_WRAPPER_TABLE, s_allManagedObjectWrapperTable)
+
+DEFINE_CLASS_U(Interop, ComWrappers+ManagedObjectWrapperHolder, ManagedObjectWrapperHolderObject)
+DEFINE_FIELD_U(_wrappedObject, ManagedObjectWrapperHolderObject, _wrappedObject)
+DEFINE_FIELD_U(_wrapper, ManagedObjectWrapperHolderObject, _wrapper)
+DEFINE_CLASS_U(Interop, ComWrappers+NativeObjectWrapper, NativeObjectWrapperObject)
+DEFINE_FIELD_U(_comWrappers, NativeObjectWrapperObject, _comWrappers)
+DEFINE_FIELD_U(_externalComObject, NativeObjectWrapperObject, _externalComObject)
+DEFINE_FIELD_U(_inner, NativeObjectWrapperObject, _inner)
+DEFINE_FIELD_U(_aggregatedManagedObjectWrapper, NativeObjectWrapperObject, _aggregatedManagedObjectWrapper)
+DEFINE_FIELD_U(_uniqueInstance, NativeObjectWrapperObject, _uniqueInstance)
+DEFINE_FIELD_U(_proxyHandle, NativeObjectWrapperObject, _proxyHandle)
+DEFINE_FIELD_U(_proxyHandleTrackingResurrection, NativeObjectWrapperObject, _proxyHandleTrackingResurrection)
+DEFINE_CLASS_U(Interop, ComWrappers+ReferenceTrackerNativeObjectWrapper, ReferenceTrackerNativeObjectWrapperObject)
+DEFINE_FIELD_U(_trackerObject, ReferenceTrackerNativeObjectWrapperObject, _trackerObject)
+DEFINE_FIELD_U(_contextToken, ReferenceTrackerNativeObjectWrapperObject, _contextToken)
+DEFINE_FIELD_U(_trackerObjectDisconnected, ReferenceTrackerNativeObjectWrapperObject, _trackerObjectDisconnected)
+DEFINE_CLASS_U(Interop, GCHandleSet+Entry, GCHandleSetEntryObject)
+DEFINE_FIELD_U(_next, GCHandleSetEntryObject, _next)
+DEFINE_FIELD_U(_value, GCHandleSetEntryObject, _value)
+DEFINE_CLASS_U(Interop, GCHandleSet, NoClass)
+DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 #endif //FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL
@@ -704,6 +726,8 @@ DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskR
 DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_Continuation_RetValueTask)
 DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_Continuation_RetValueTaskOfT)
 DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_EXECUTION_CONTEXT, RestoreExecutionContext, NoSig)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -779,6 +803,20 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_BYTE,  CompareExchange, SM_
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_USHRT, CompareExchange, SM_RefUShrt_UShrt_UShrt_RetUShrt)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_INT,   CompareExchange, SM_RefInt_Int_Int_RetInt)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_LONG,  CompareExchange, SM_RefLong_Long_Long_RetLong)
+
+DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2,   NoClass)
+DEFINE_FIELD_U(_lock,               ConditionalWeakTableObject, _lock)
+DEFINE_FIELD_U(_container,          ConditionalWeakTableObject, _container)
+
+DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2+Container, NoClass)
+DEFINE_FIELD_U(_parent,             ConditionalWeakTableContainerObject, _parent)
+DEFINE_FIELD_U(_buckets,            ConditionalWeakTableContainerObject, _buckets)
+DEFINE_FIELD_U(_entries,            ConditionalWeakTableContainerObject, _entries)
+
+DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2+Entry, ConditionalWeakTableContainerObject::Entry)
+DEFINE_FIELD_U(depHnd,              ConditionalWeakTableContainerObject::Entry, depHnd)
+DEFINE_FIELD_U(HashCode,            ConditionalWeakTableContainerObject::Entry, HashCode)
+DEFINE_FIELD_U(Next,                ConditionalWeakTableContainerObject::Entry, Next)
 
 DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
 DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
@@ -1172,6 +1210,10 @@ DEFINE_CLASS(IREADONLYDICTIONARYGENERIC,CollectionsGeneric, IReadOnlyDictionary`
 DEFINE_CLASS(IDICTIONARYGENERIC,    CollectionsGeneric,     IDictionary`2)
 DEFINE_CLASS(KEYVALUEPAIRGENERIC,   CollectionsGeneric,     KeyValuePair`2)
 
+DEFINE_CLASS(LISTGENERIC,          CollectionsGeneric,      List`1)
+DEFINE_FIELD(LISTGENERIC,          ITEMS,                   _items)
+DEFINE_FIELD(LISTGENERIC,          SIZE,                    _size)
+
 DEFINE_CLASS(ICOMPARABLEGENERIC,    System,                 IComparable`1)
 DEFINE_METHOD(ICOMPARABLEGENERIC,   COMPARE_TO,             CompareTo,                  NoSig)
 
@@ -1249,10 +1291,12 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTANY,       ChkCastAny,                  SM_Ptr
 DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, BOX,              Box,                         NoSig)
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       NoSig)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
 DEFINE_METHOD(CASTHELPERS, ARRAYTYPECHECK,   ArrayTypeCheck,              SM_Obj_Array_RetVoid)
+DEFINE_METHOD(CASTHELPERS, BOX_NULLABLE,     Box_Nullable,                NoSig)
 DEFINE_METHOD(CASTHELPERS, UNBOX_NULLABLE,   Unbox_Nullable,              NoSig)
 DEFINE_METHOD(CASTHELPERS, UNBOX_TYPETEST,   Unbox_TypeTest,              NoSig)
 
@@ -1286,6 +1330,9 @@ DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_NONGC_THREADSTATIC, GetDynamicNonGCThr
 DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_GC_THREADSTATIC, GetDynamicGCThreadStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_OPTIMIZED_NONGC_THREADSTATIC, GetOptimizedNonGCThreadStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_OPTIMIZED_GC_THREADSTATIC, GetOptimizedGCThreadStaticBase, NoSig)
+
+DEFINE_METHOD(STATICSHELPERS, STATICFIELDADDRESS_DYNAMIC, StaticFieldAddress_Dynamic, NoSig)
+DEFINE_METHOD(STATICSHELPERS, STATICFIELDADDRESSUNBOX_DYNAMIC, StaticFieldAddressUnbox_Dynamic, NoSig)
 
 DEFINE_CLASS_U(CompilerServices, GenericsHelpers+GenericHandleArgs, GenericHandleArgs)
 DEFINE_FIELD_U(signature, GenericHandleArgs, signature)

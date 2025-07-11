@@ -96,9 +96,8 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
 
-    // If the current thread owns spinlock or unbreakable lock, it cannot call managed code.
-    _ASSERTE(!curThread->HasUnbreakableLock() &&
-             (curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
+    // If the current thread owns spinlock it cannot call managed code.
+    _ASSERTE((curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
 #ifdef TARGET_ARM
     _ASSERTE(IsThumbCode(pCallDescrData->pTarget));
@@ -582,7 +581,7 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     MethodTable *pMT = ref->GetMethodTable();
 
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     if (!pMT->HasDefaultConstructor())
     {

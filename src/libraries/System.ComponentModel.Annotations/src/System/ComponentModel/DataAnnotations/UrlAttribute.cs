@@ -19,7 +19,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             switch (value)
             {
-                case Uri valueAsUri:
+                case Uri valueAsUri when valueAsUri.IsAbsoluteUri:
                 {
                     return valueAsUri.Scheme == Uri.UriSchemeHttp
                         || valueAsUri.Scheme == Uri.UriSchemeHttps

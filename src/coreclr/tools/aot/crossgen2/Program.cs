@@ -914,7 +914,7 @@ namespace ILCompiler
         private static int Main(string[] args) =>
             new CommandLineConfiguration(new Crossgen2RootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
+                .UseExtendedHelp(Crossgen2RootCommand.PrintExtendedHelp))
             {
                 ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
                 EnableDefaultExceptionHandler = false,

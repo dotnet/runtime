@@ -1208,8 +1208,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
                                                                            &m_stubPrecodeRangeList,
                                                                            false /* fUnlocked */,
-                                                                           StubPrecode::GenerateCodePage,
-                                                                           StubPrecode::CodeSize);
+                                                                           &s_stubPrecodeHeapConfig);
 
 #if defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
     if (IsCollectible())
@@ -1219,14 +1218,12 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) InterleavedLoaderHeap(
                                                                                &m_dynamicHelpersRangeList,
                                                                                false /* fUnlocked */,
-                                                                               StubPrecode::GenerateCodePage,
-                                                                               StubPrecode::CodeSize);
+                                                                               &s_stubPrecodeHeapConfig);
 #endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
 
     m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) InterleavedLoaderHeap(&m_fixupPrecodeRangeList,
                                                                        false /* fUnlocked */,
-                                                                       FixupPrecode::GenerateCodePage,
-                                                                       FixupPrecode::CodeSize);
+                                                                       &s_fixupStubPrecodeHeapConfig);
 
     // Initialize the EE marshaling data to NULL.
     m_pMarshalingData = NULL;

@@ -31,6 +31,8 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRe
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
+VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
+VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
@@ -63,6 +65,27 @@ enum class InlinedCallFrameMarker
 #endif // HOST_64BIT
     Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
 };
+
+#ifdef FEATURE_INTERPRETER
+class ResumeAfterCatchException
+{
+    TADDR m_resumeSP;
+    TADDR m_resumeIP;
+public:
+    ResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
+        : m_resumeSP(resumeSP),
+          m_resumeIP(resumeIP)
+    {}
+
+    void GetResumeContext(TADDR * pResumeSP, TADDR * pResumeIP) const
+    {
+        *pResumeSP = m_resumeSP;
+        *pResumeIP = m_resumeIP;
+    }
+};
+#endif // FEATURE_INTERPRETER
+
+void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
 
 #endif // FEATURE_EH_FUNCLETS
 

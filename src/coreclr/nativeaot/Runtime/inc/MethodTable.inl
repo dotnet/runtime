@@ -29,6 +29,13 @@ inline TypeManagerHandle* MethodTable::GetTypeManagerPtr()
         return *(TypeManagerHandle**)((uint8_t*)this + cbOffset);
     }
 }
+
+inline MethodTable* MethodTable::GetDynamicTemplateType()
+{
+    uint32_t cbOffset = GetFieldOffset(ETF_DynamicTemplateType);
+    return *(MethodTable**)((uint8_t*)this + cbOffset);
+}
+
 #endif // !defined(DACCESS_COMPILE)
 
 // Calculate the offset of a field of the MethodTable that has a variable offset.
@@ -50,6 +57,71 @@ __forceinline uint32_t MethodTable::GetFieldOffset(EETypeField eField)
     // Followed by the type manager indirection cell.
     if (eField == ETF_TypeManagerIndirection)
     {
+        return cbOffset;
+    }
+    cbOffset += relativeOrFullPointerOffset;
+
+    // Followed by writable data.
+    if (eField == ETF_WritableData)
+    {
+        return cbOffset;
+    }
+    cbOffset += relativeOrFullPointerOffset;
+
+    // Followed by pointer to the dispatch map
+    if (eField == ETF_DispatchMap)
+    {
+        ASSERT(HasDispatchMap());
+        return cbOffset;
+    }
+    if (HasDispatchMap())
+        cbOffset += relativeOrFullPointerOffset;
+
+    // Followed by the pointer to the finalizer method.
+    if (eField == ETF_Finalizer)
+    {
+        ASSERT(HasFinalizer());
+        return cbOffset;
+    }
+    if (HasFinalizer())
+        cbOffset += relativeOrFullPointerOffset;
+
+    // Followed by the pointer to the sealed virtual slots
+    if (eField == ETF_SealedVirtualSlots)
+    {
+        ASSERT(HasSealedVTableEntries());
+        return cbOffset;
+    }
+    if (HasSealedVTableEntries())
+        cbOffset += relativeOrFullPointerOffset;
+
+    if (eField == ETF_GenericDefinition)
+    {
+        ASSERT(IsGeneric());
+        return cbOffset;
+    }
+    if (IsGeneric())
+        cbOffset += relativeOrFullPointerOffset;
+
+    if (eField == ETF_GenericComposition)
+    {
+        ASSERT(IsGeneric() || (IsGenericTypeDefinition() && HasGenericVariance()));
+        return cbOffset;
+    }
+    if (IsGeneric() || (IsGenericTypeDefinition() && HasGenericVariance()))
+        cbOffset += relativeOrFullPointerOffset;
+
+    if (eField == ETF_FunctionPointerParameters)
+    {
+        ASSERT(IsFunctionPointer());
+        return cbOffset;
+    }
+    if (IsFunctionPointer())
+        cbOffset += GetNumFunctionPointerParameters() * relativeOrFullPointerOffset;
+
+    if (eField == ETF_DynamicTemplateType)
+    {
+        ASSERT(IsDynamicType());
         return cbOffset;
     }
     ASSERT(!"NYI");

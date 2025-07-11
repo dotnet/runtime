@@ -906,9 +906,13 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 
 			guint32 field_iter = 1;
 			guint32 field_instance_offset = field_offset;
+			int field_size = 0;
 			// If struct has InlineArray attribute, iterate `length` times to set a bitmap
-			if (m_class_is_inlinearray (p))
+			if (m_class_is_inlinearray (p)) {
+				int align;
 				field_iter = mono_class_get_inlinearray_value (p);
+				field_size = mono_type_size (field->type, &align);
+			}
 
 			if (field_iter > 500)
 				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
@@ -973,7 +977,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					break;
 				}
 
-				field_instance_offset += field_offset;
+				field_instance_offset += field_size;
 				field_iter--;
 			}
 		}
@@ -1588,7 +1592,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 						vt_slot ++;
 					continue;
 				}
-				if (mono_method_get_imt_slot (method) != slot_num) {
+				if (m_method_is_virtual (method) && mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
 				}

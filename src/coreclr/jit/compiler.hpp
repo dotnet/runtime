@@ -291,7 +291,7 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
 
 #define HISTOGRAM_MAX_SIZE_COUNT 64
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 class Dumpable
 {
@@ -388,7 +388,7 @@ public:
     static void DumpAll();
 };
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
@@ -1513,6 +1513,13 @@ inline GenTree* Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
 
 //-----------------------------------------------------------------------------
 
+inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+{
+    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+}
+
+//-----------------------------------------------------------------------------
+
 inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 {
     void *embedMethHnd, *pEmbedMethHnd;
@@ -1594,6 +1601,60 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
         result->gtArgs.PushFront(this, NewCallArg::Primitive(arg1));
         result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
+
+    return result;
+}
+
+/*****************************************************************************/
+
+//------------------------------------------------------------------------------
+// gtNewHelperCallNode : Helper to create a call helper node.
+//
+//
+// Arguments:
+//    helper  - Call helper
+//    type    - Type of the node
+//    thisPtr - 'this' argument
+//    methHnd - Runtime method handle argument
+//    clsHnd  - Class handle argument
+//
+// Return Value:
+//    New CT_HELPER node
+//
+inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
+    unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd)
+{
+    GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
+
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    {
+        result->gtFlags |= GTF_EXCEPT;
+
+        if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
+        {
+            setCallDoesNotReturn(result);
+        }
+    }
+#if DEBUG
+    // Helper calls are never candidates.
+
+    result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
+    assert(methHnd != nullptr);
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(methHnd).WellKnown(WellKnownArg::RuntimeMethodHandle));
+    result->gtFlags |= methHnd->gtFlags & GTF_ALL_EFFECT;
+
+    if (clsHnd != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(clsHnd));
+        result->gtFlags |= clsHnd->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    assert(thisPtr != nullptr);
+
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
+    result->gtFlags |= thisPtr->gtFlags & GTF_ALL_EFFECT;
 
     return result;
 }
@@ -1809,7 +1870,7 @@ inline GenTree* Compiler::gtNewNothingNode()
 
 inline bool GenTree::IsNothingNode() const
 {
-    return (gtOper == GT_NOP && gtType == TYP_VOID);
+    return OperIs(GT_NOP) && TypeIs(TYP_VOID);
 }
 
 /*****************************************************************************
@@ -1945,7 +2006,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
 #if defined(HOST_64BIT) && !defined(TARGET_64BIT)
-    if (gtOper == GT_CNS_LNG && oper == GT_CNS_INT)
+    if (OperIs(GT_CNS_LNG) && oper == GT_CNS_INT)
     {
         // When casting from LONG to INT, we need to force cast of the value,
         // if the host architecture represents INT and LONG with the same data size.
@@ -2202,6 +2263,74 @@ inline bool GenTree::gtOverflow() const
 inline bool GenTree::gtOverflowEx() const
 {
     return OperMayOverflow() && gtOverflow();
+}
+
+//------------------------------------------------------------------------
+// gtFindNodeInTree:
+//   Check if a tree contains a node matching the specified predicate. Descend
+//   only into subtrees with the specified flags set on them (can be GTF_EMPTY
+//   to descend into all nodes).
+//
+// Type parameters:
+//   RequiredFlagsToDescendIntoNode - Flags that must be set on the node to
+//                                    descend into it (GTF_EMPTY to descend into all nodes)
+//   Predicate - Type of the predicate (GenTree* -> bool)
+//
+// Parameters:
+//   tree - The tree
+//   pred - Predicate that the call must match
+//
+// Returns:
+//   Node matching the predicate, or nullptr if no such node was found.
+//
+template <GenTreeFlags RequiredFlagsToDescendIntoNode, typename Predicate>
+GenTree* Compiler::gtFindNodeInTree(GenTree* tree, Predicate pred)
+{
+    struct FindNodeVisitor : GenTreeVisitor<FindNodeVisitor>
+    {
+    private:
+        Predicate& m_pred;
+
+    public:
+        GenTree* Result = nullptr;
+
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        FindNodeVisitor(Compiler* comp, Predicate& pred)
+            : GenTreeVisitor<FindNodeVisitor>(comp)
+            , m_pred(pred)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (m_pred(node))
+            {
+                Result = node;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    if ((tree->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+    {
+        return nullptr;
+    }
+
+    FindNodeVisitor findNode(this, pred);
+    findNode.WalkTree(&tree, nullptr);
+    return findNode.Result;
 }
 
 /*
@@ -3228,7 +3357,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     //
     GenTree* const call = block->lastNode();
 
-    if ((call == nullptr) || (call->gtOper != GT_CALL))
+    if ((call == nullptr) || !call->OperIs(GT_CALL))
     {
         return false;
     }
@@ -3737,7 +3866,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline void Compiler::optAssertionReset(AssertionIndex limit)
 {
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     while (optAssertionCount > limit)
     {
@@ -3793,7 +3922,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 {
     assert(index > 0);
     assert(index <= optAssertionCount);
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     AssertionDsc* curAssertion = optGetAssertion(index);
 
@@ -4055,7 +4184,7 @@ inline bool Compiler::impIsThis(GenTree* obj)
     }
     else
     {
-        return ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR) &&
+        return ((obj != nullptr) && obj->OperIs(GT_LCL_VAR) &&
                 lvaIsOriginalThisArg(obj->AsLclVarCommon()->GetLclNum()));
     }
 }
@@ -4374,8 +4503,15 @@ inline bool Compiler::PreciseRefCountsRequired()
     return opts.OptimizationEnabled();
 }
 
+#define RETURN_IF_ABORT(expr)                                                                                          \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (expr == VisitResult::Abort)                                                                                \
+            return VisitResult::Abort;                                                                                 \
+    } while (0)
+
 template <typename TVisitor>
-void GenTree::VisitOperands(TVisitor visitor)
+GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 {
     switch (OperGet())
     {
@@ -4419,7 +4555,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
-            return;
+            return VisitResult::Continue;
 
         // Unary operators with an optional operand
         case GT_FIELD_ADDR:
@@ -4427,7 +4563,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETFILT:
             if (this->AsUnOp()->gtOp1 == nullptr)
             {
-                return;
+                return VisitResult::Continue;
             }
             FALLTHROUGH;
 
@@ -4459,80 +4595,54 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
-            visitor(this->AsUnOp()->gtOp1);
-            return;
+            return visitor(this->AsUnOp()->gtOp1);
 
 // Variadic nodes
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             for (GenTree* operand : this->AsMultiOp()->Operands())
             {
-                if (visitor(operand) == VisitResult::Abort)
-                {
-                    break;
-                }
+                RETURN_IF_ABORT(visitor(operand));
             }
-            return;
+            return VisitResult::Continue;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
         // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
-                {
-                    break;
-                }
+                RETURN_IF_ABORT(visitor(use.GetNode()));
             }
-            return;
+            return VisitResult::Continue;
 
         case GT_FIELD_LIST:
             for (GenTreeFieldList::Use& field : AsFieldList()->Uses())
             {
-                if (visitor(field.GetNode()) == VisitResult::Abort)
-                {
-                    break;
-                }
+                RETURN_IF_ABORT(visitor(field.GetNode()));
             }
-            return;
+            return VisitResult::Continue;
 
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (visitor(cmpXchg->Addr()) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(cmpXchg->Data()) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(cmpXchg->Comparand());
-            return;
+            RETURN_IF_ABORT(visitor(cmpXchg->Addr()));
+            RETURN_IF_ABORT(visitor(cmpXchg->Data()));
+            return visitor(cmpXchg->Comparand());
         }
 
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* const arrElem = this->AsArrElem();
-            if (visitor(arrElem->gtArrObj) == VisitResult::Abort)
-            {
-                return;
-            }
+            RETURN_IF_ABORT(visitor(arrElem->gtArrObj));
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                if (visitor(arrElem->gtArrInds[i]) == VisitResult::Abort)
-                {
-                    return;
-                }
+                RETURN_IF_ABORT(visitor(arrElem->gtArrInds[i]));
             }
-            return;
+            return VisitResult::Continue;
         }
 
         case GT_CALL:
@@ -4541,78 +4651,55 @@ void GenTree::VisitOperands(TVisitor visitor)
 
             for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
-                if (visitor(arg.GetEarlyNode()) == VisitResult::Abort)
-                {
-                    return;
-                }
+                RETURN_IF_ABORT(visitor(arg.GetEarlyNode()));
             }
 
             for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                if (visitor(arg.GetLateNode()) == VisitResult::Abort)
-                {
-                    return;
-                }
+                RETURN_IF_ABORT(visitor(arg.GetLateNode()));
             }
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                if ((call->gtCallCookie != nullptr) && (visitor(call->gtCallCookie) == VisitResult::Abort))
+                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
                 {
-                    return;
+                    RETURN_IF_ABORT(visitor(call->gtCallCookie));
                 }
-                if ((call->gtCallAddr != nullptr) && (visitor(call->gtCallAddr) == VisitResult::Abort))
+                if (call->gtCallAddr != nullptr)
                 {
-                    return;
+                    RETURN_IF_ABORT(visitor(call->gtCallAddr));
                 }
             }
-            if ((call->gtControlExpr != nullptr))
+            if (call->gtControlExpr != nullptr)
             {
-                visitor(call->gtControlExpr);
+                return visitor(call->gtControlExpr);
             }
-            return;
+            return VisitResult::Continue;
         }
 
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
-            if (visitor(cond->gtCond) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(cond->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(cond->gtOp2);
-            return;
+            RETURN_IF_ABORT(visitor(cond->gtCond));
+            RETURN_IF_ABORT(visitor(cond->gtOp1));
+            return visitor(cond->gtOp2);
         }
 
         // Binary nodes
         default:
             assert(this->OperIsBinary());
-            VisitBinOpOperands<TVisitor>(visitor);
-            return;
-    }
-}
+            GenTree* op1 = gtGetOp1();
+            if (op1 != nullptr)
+            {
+                RETURN_IF_ABORT(visitor(op1));
+            }
 
-template <typename TVisitor>
-void GenTree::VisitBinOpOperands(TVisitor visitor)
-{
-    assert(this->OperIsBinary());
-
-    GenTreeOp* const op = this->AsOp();
-
-    GenTree* const op1 = op->gtOp1;
-    if ((op1 != nullptr) && (visitor(op1) == VisitResult::Abort))
-    {
-        return;
-    }
-
-    GenTree* const op2 = op->gtOp2;
-    if (op2 != nullptr)
-    {
-        visitor(op2);
+            GenTree* op2 = gtGetOp2();
+            if (op2 != nullptr)
+            {
+                return visitor(op2);
+            }
+            return VisitResult::Continue;
     }
 }
 

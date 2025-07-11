@@ -39,5 +39,27 @@ namespace Microsoft.Extensions.Configuration
                 return children.ToList();
             }
         }
+
+        internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
+        {
+            // common cases Providers is IList<IConfigurationProvider> in ConfigurationRoot
+            IList<IConfigurationProvider> providers = root.Providers is IList<IConfigurationProvider> list
+                ? list
+                : root.Providers.ToList();
+
+            // ensure looping in the reverse order
+            for (int i = providers.Count - 1; i >= 0; i--)
+            {
+                IConfigurationProvider provider = providers[i];
+                if (provider.TryGet(key, out value))
+                {
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
+
     }
 }

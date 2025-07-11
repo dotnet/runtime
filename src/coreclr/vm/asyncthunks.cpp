@@ -53,34 +53,8 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     ilResolver->SetStubTargetMethodDesc(pAsyncOtherVariant);
 
     // Generate all IL associated data for JIT
-    {
-        UINT maxStack;
-        size_t cbCode = sl.Link(&maxStack);
-        DWORD cbSig = sl.GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-
-        size_t numEH = sl.GetNumEHClauses();
-        if (numEH > 0)
-        {
-            sl.WriteEHClauses(ilResolver->AllocEHSect(numEH));
-        }
-
-        sl.GenerateCode(pbBuffer, cbCode);
-        sl.GetLocalSig(pbLocalSig, cbSig);
-
-        // Store the token lookup map
-        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-        *resolver = (DynamicResolver*)ilResolver;
-        *methodILDecoder = pILHeader;
-    }
-
-    ilResolver.SuppressRelease();
+    *methodILDecoder = ilResolver->FinalizeILStub(&sl);
+    *resolver = ilResolver.Extract();
     return true;
 }
 
@@ -564,7 +538,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
         getIsCompletedToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, mdIsCompleted);
         getResultToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, mdGetResult);
     }
-    else 
+    else
     {
         getAwaiterToken = pCode->GetToken(mdGetAwaiter);
         getIsCompletedToken = pCode->GetToken(mdIsCompleted);

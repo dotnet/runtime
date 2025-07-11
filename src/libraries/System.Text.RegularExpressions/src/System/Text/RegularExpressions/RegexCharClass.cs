@@ -935,7 +935,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Assume that everything else might overlap.  In the future if it proved impactful, we could be more accurate here,
-            // at the exense of more computation time.
+            // at the expense of more computation time.
             return true;
 
             static bool KnownDistinctSets(string set1, string set2) =>

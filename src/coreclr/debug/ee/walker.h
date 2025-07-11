@@ -77,7 +77,7 @@ public:
 
     virtual void Init(const BYTE *ip, REGDISPLAY *pregisters)
     {
-        PREFIX_ASSUME(pregisters != NULL);
+        _ASSERTE(pregisters != NULL);
         _ASSERTE(GetControlPC(pregisters) == (PCODE)ip);
 
         m_registers = pregisters;

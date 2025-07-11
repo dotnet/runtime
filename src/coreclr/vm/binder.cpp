@@ -21,6 +21,8 @@
 #include "sigbuilder.h"
 #include "olevariant.h"
 #include "configuration.h"
+#include "conditionalweaktable.h"
+#include "interoplibinterface_comwrappers.h"
 
 //
 // Retrieve structures from ID.
@@ -151,8 +153,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
         pMD = MemberLoader::FindMethodByName(pMT, d->name);
     }
 
-
-    PREFIX_ASSUME_MSGF(pMD != NULL, ("EE expects method to exist: %s:%s  Sig pointer: %p\n", pMT->GetDebugClassName(), d->name, d->sig));
+    _ASSERTE(pMD != NULL && ("EE expects method to exist"));
 
     VolatileStore(&m_pMethods[id], pMD);
 
@@ -201,7 +202,7 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
     pFD = MemberLoader::FindField(pMT, d->name, NULL, 0, NULL);
 
 #ifndef DACCESS_COMPILE
-    PREFIX_ASSUME_MSGF(pFD != NULL, ("EE expects field to exist: %s:%s\n", pMT->GetDebugClassName(), d->name));
+    _ASSERTE(pFD != NULL && ("EE expects field to exist"));
 
     VolatileStore(&(m_pFields[id]), pFD);
 #endif
@@ -565,7 +566,7 @@ namespace
     bool FeatureSwitchDisabled(LPCWSTR featureSwitch, bool enabledValue, bool defaultValue)
     {
         // If we don't have a feature switch, treat the switch as enabled.
-        return featureSwitch != nullptr && 
+        return featureSwitch != nullptr &&
             Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
     }
 
@@ -1044,7 +1045,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1067,7 +1068,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1090,7 +1091,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1149,7 +1150,7 @@ void CoreLibBinder::CheckExtended()
             }
             minipal_log_print_error("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         MethodDesc *pMD = MemberLoader::FindMethod(type.AsMethodTable(), td);
         _ASSERTE(pMD);

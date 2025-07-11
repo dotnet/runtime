@@ -1,0 +1,43 @@
+<Solution>
+  <Folder Name="/gen/">
+    <Project Path="../System.Runtime.InteropServices/gen/ComInterfaceGenerator/ComInterfaceGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
+    <Project Path="../System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../System.Private.Xml/src/System.Private.Xml.csproj" />
+    <Project Path="src/System.Private.Xml.Linq.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../Common/tests/System/Xml/ModuleCore/ModuleCore.csproj" />
+    <Project Path="../Common/tests/System/Xml/XmlCoreTest/XmlCoreTest.csproj" />
+    <Project Path="../Common/tests/System/Xml/XmlDiff/XmlDiff.csproj" />
+    <Project Path="../Common/tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="tests/axes/System.Xml.Linq.Axes.Tests.csproj" />
+    <Project Path="tests/events/System.Xml.Linq.Events.Tests.csproj" />
+    <Project Path="tests/misc/System.Xml.Linq.Misc.Tests.csproj" />
+    <Project Path="tests/Properties/System.Xml.Linq.Properties.Tests.csproj" />
+    <Project Path="tests/Schema/System.Xml.Schema.Extensions.Tests.csproj" />
+    <Project Path="tests/SDMSample/System.Xml.Linq.SDMSample.Tests.csproj" />
+    <Project Path="tests/Streaming/System.Xml.Linq.Streaming.Tests.csproj" />
+    <Project Path="tests/TreeManipulation/System.Xml.Linq.TreeManipulation.Tests.csproj" />
+    <Project Path="tests/XDocument.Common/XDocument.Common.csproj" />
+    <Project Path="tests/XDocument.Test.ModuleCore/XDocument.Test.ModuleCore.csproj" />
+    <Project Path="tests/xNodeBuilder/System.Xml.Linq.xNodeBuilder.Tests.csproj" />
+    <Project Path="tests/xNodeReader/System.Xml.Linq.xNodeReader.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/" />
+  <Folder Name="/tools/gen/">
+    <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
+    <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
+  </Folder>
+  <Folder Name="/tools/ref/">
+    <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj" />
+  </Folder>
+  <Folder Name="/tools/src/">
+    <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj" />
+    <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj" />
+  </Folder>
+</Solution>

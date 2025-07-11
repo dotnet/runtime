@@ -98,7 +98,7 @@ static HRESULT StubRareDisableHRWorker(Thread *pThread)
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // should always be in coop mode here
     _ASSERTE(pThread->PreemptiveGCDisabled());
@@ -587,7 +587,7 @@ static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
         {
@@ -986,7 +986,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
             MethodTable * pMT = pMD->GetMethodTable();
             IMDInternalImport * pInternalImport = pMT->GetMDImport();
-            // TODO: (async) revisit and examine if this needs to be supported somehow            
+            // TODO: (async) revisit and examine if this needs to be supported somehow
             if (pMD->IsAsyncMethod())
                 ThrowHR(COR_E_NOTSUPPORTED);
 
@@ -1176,11 +1176,7 @@ Done:
 
         m_flags |= enum_NativeInfoInitialized;
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTransientExceptions)
-
+    EX_SWALLOW_NONTRANSIENT
     RETURN;
 }
 

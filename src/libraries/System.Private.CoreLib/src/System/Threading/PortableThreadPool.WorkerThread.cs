@@ -15,16 +15,7 @@ namespace System.Threading
         {
             private static readonly short ThreadsToKeepAlive = DetermineThreadsToKeepAlive();
 
-            private const int SemaphoreSpinCountDefaultBaseline = 70;
-#if !TARGET_ARM64 && !TARGET_ARM && !TARGET_LOONGARCH64
-            private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline;
-#else
-            // On systems with ARM processors, more spin-waiting seems to be necessary to avoid perf regressions from incurring
-            // the full wait when work becomes available soon enough. This is more noticeable after reducing the number of
-            // thread requests made to the thread pool because otherwise the extra thread requests cause threads to do more
-            // busy-waiting instead and adding to contention in trying to look for work items, which is less preferable.
-            private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline * 4;
-#endif
+            private const int SemaphoreSpinCountDefault = 70;
 
             // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of

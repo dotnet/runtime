@@ -249,7 +249,16 @@ CDAC_TYPE_INDETERMINATE(Assembly)
 #ifdef FEATURE_COLLECTIBLE_TYPES
 CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
 #endif
+CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
+CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
+CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
+CDAC_TYPE_FIELD(Assembly, /*uint32*/, Level, cdac_data<Assembly>::Level)
 CDAC_TYPE_END(Assembly)
+
+CDAC_TYPE_BEGIN(LoaderAllocator)
+CDAC_TYPE_INDETERMINATE(LoaderAllocator)
+CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAllocator>::ReferenceCount)
+CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
@@ -282,7 +291,21 @@ CDAC_TYPE_END(ProbeExtensionResult)
 CDAC_TYPE_BEGIN(AppDomain)
 CDAC_TYPE_INDETERMINATE(AppDomain)
 CDAC_TYPE_FIELD(AppDomain, /*pointer*/, RootAssembly, cdac_data<AppDomain>::RootAssembly)
+CDAC_TYPE_FIELD(AppDomain, /*DomainAssemblyList*/, DomainAssemblyList, cdac_data<AppDomain>::DomainAssemblyList)
 CDAC_TYPE_END(AppDomain)
+
+CDAC_TYPE_BEGIN(ArrayListBase)
+CDAC_TYPE_INDETERMINATE(ArrayListBase)
+CDAC_TYPE_FIELD(ArrayListBase, /*uint32*/, Count, cdac_data<ArrayListBase>::Count)
+CDAC_TYPE_FIELD(ArrayListBase, /*pointer*/, FirstBlock, cdac_data<ArrayListBase>::FirstBlock)
+CDAC_TYPE_END(ArrayListBase)
+
+CDAC_TYPE_BEGIN(ArrayListBlock)
+CDAC_TYPE_INDETERMINATE(ArrayListBlock)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, Next, cdac_data<ArrayListBase>::Next)
+CDAC_TYPE_FIELD(ArrayListBlock, /*uint32*/, Size, cdac_data<ArrayListBase>::Size)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, ArrayStart, cdac_data<ArrayListBase>::ArrayStart)
+CDAC_TYPE_END(ArrayListBlock)
 
 // RuntimeTypeSystem
 
@@ -500,20 +523,35 @@ CDAC_TYPE_END(MethodDescVersioningState)
 
 CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
 CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ReadWidthOfPrecodeType, offsetof(PrecodeMachineDescriptor, ReadWidthOfPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ShiftOfPrecodeType, offsetof(PrecodeMachineDescriptor, ShiftOfPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, OffsetOfPrecodeType, offsetof(PrecodeMachineDescriptor, OffsetOfPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
 #endif
+
 #ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
-#endif
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupCodeOffset, offsetof(PrecodeMachineDescriptor, FixupCodeOffset))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupStubPrecodeSize, offsetof(PrecodeMachineDescriptor, FixupStubPrecodeSize))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, FixupBytes, offsetof(PrecodeMachineDescriptor, FixupBytes))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, FixupIgnoredBytes, offsetof(PrecodeMachineDescriptor, FixupIgnoredBytes))
+#endif // HAS_FIXUP_PRECODE
+
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeSize, offsetof(PrecodeMachineDescriptor, StubPrecodeSize))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
+
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, StubBytes, offsetof(PrecodeMachineDescriptor, StubBytes))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, StubIgnoredBytes, offsetof(PrecodeMachineDescriptor, StubIgnoredBytes))
+
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ThisPointerRetBufPrecodeType, offsetof(PrecodeMachineDescriptor, ThisPointerRetBufPrecodeType))
 #endif
+#ifdef FEATURE_INTERPRETER
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InterpreterPrecodeType, offsetof(PrecodeMachineDescriptor, InterpreterPrecodeType))
+#endif
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, DynamicHelperPrecodeType, offsetof(PrecodeMachineDescriptor, DynamicHelperPrecodeType))
+#endif
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, UMEntryPrecodeType, offsetof(PrecodeMachineDescriptor, UMEntryPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
 
@@ -543,6 +581,7 @@ CDAC_TYPE_END(FixupPrecodeData)
 
 CDAC_TYPE_BEGIN(ReadyToRunInfo)
 CDAC_TYPE_INDETERMINATE(ReadyToRunInfo)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, ReadyToRunHeader, cdac_data<ReadyToRunInfo>::ReadyToRunHeader)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, CompositeInfo, cdac_data<ReadyToRunInfo>::CompositeInfo)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumRuntimeFunctions, cdac_data<ReadyToRunInfo>::NumRuntimeFunctions)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, RuntimeFunctions, cdac_data<ReadyToRunInfo>::RuntimeFunctions)
@@ -551,6 +590,12 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, HotColdMap, cdac_data<ReadyToRunInf
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*HashMap*/, EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_END(ReadyToRunInfo)
+
+CDAC_TYPE_BEGIN(ReadyToRunHeader)
+CDAC_TYPE_INDETERMINATE(READYTORUN_HEADER)
+CDAC_TYPE_FIELD(ReadyToRunHeader, /*uint16*/, MajorVersion, offsetof(READYTORUN_HEADER, MajorVersion))
+CDAC_TYPE_FIELD(ReadyToRunHeader, /*uint16*/, MinorVersion, offsetof(READYTORUN_HEADER, MinorVersion))
+CDAC_TYPE_END(ReadyToRunHeader)
 
 CDAC_TYPE_BEGIN(ImageDataDirectory)
 CDAC_TYPE_SIZE(sizeof(IMAGE_DATA_DIRECTORY))
@@ -612,6 +657,7 @@ CDAC_TYPE_END(RangeSection)
 CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
+CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
 #ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
@@ -675,15 +721,16 @@ CDAC_TYPE_SIZE(sizeof(InlinedCallFrame))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallSiteSP, offsetof(InlinedCallFrame, m_pCallSiteSP))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallerReturnAddress, offsetof(InlinedCallFrame, m_pCallerReturnAddress))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CalleeSavedFP, offsetof(InlinedCallFrame, m_pCalleeSavedFP))
+#ifdef TARGET_ARM
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, SPAfterProlog, offsetof(InlinedCallFrame, m_pSPAfterProlog))
+#endif // TARGET_ARM
 CDAC_TYPE_END(InlinedCallFrame)
 
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_BEGIN(SoftwareExceptionFrame)
 CDAC_TYPE_SIZE(sizeof(SoftwareExceptionFrame))
 CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<SoftwareExceptionFrame>::TargetContext)
 CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*pointer*/, ReturnAddress, cdac_data<SoftwareExceptionFrame>::ReturnAddress)
 CDAC_TYPE_END(SoftwareExceptionFrame)
-#endif // FEATURE_EH_FUNCLETS
 
 CDAC_TYPE_BEGIN(FramedMethodFrame)
 CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
@@ -694,6 +741,9 @@ CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, /*pointer*/, ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
 CDAC_TYPE_FIELD(TransitionBlock, /*CalleeSavedRegisters*/, CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
+#ifdef TARGET_ARM
+CDAC_TYPE_FIELD(TransitionBlock, /*ArgumentRegisters*/, ArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
+#endif // TARGET_ARM
 CDAC_TYPE_END(TransitionBlock)
 
 #ifdef DEBUGGING_SUPPORTED
@@ -748,6 +798,30 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X28, offsetof(HijackArgs, X28))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, X29))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, Lr))
 
+#elif defined(TARGET_X86)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Edi, offsetof(HijackArgs, Edi))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Esi, offsetof(HijackArgs, Esi))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ebx, offsetof(HijackArgs, Ebx))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Edx, offsetof(HijackArgs, Edx))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ecx, offsetof(HijackArgs, Ecx))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Eax, offsetof(HijackArgs, Eax))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ebp, offsetof(HijackArgs, Ebp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Eip, offsetof(HijackArgs, Eip))
+
+#elif defined(TARGET_ARM)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R0, offsetof(HijackArgs, R0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R2, offsetof(HijackArgs, R2))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R4, offsetof(HijackArgs, R4))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R5, offsetof(HijackArgs, R5))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R6, offsetof(HijackArgs, R6))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R7, offsetof(HijackArgs, R7))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R8, offsetof(HijackArgs, R8))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R9, offsetof(HijackArgs, R9))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R10, offsetof(HijackArgs, R10))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R11, offsetof(HijackArgs, R11))
+
 #endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK
@@ -759,15 +833,48 @@ CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+CDAC_TYPE_BEGIN(TailCallFrame)
+CDAC_TYPE_SIZE(sizeof(TailCallFrame))
+CDAC_TYPE_FIELD(TailCallFrame, /*CalleeSavedRegisters*/, CalleeSavedRegisters, cdac_data<TailCallFrame>::CalleeSavedRegisters)
+CDAC_TYPE_FIELD(TailCallFrame, /*pointer*/, ReturnAddress, cdac_data<TailCallFrame>::ReturnAddress)
+CDAC_TYPE_END(TailCallFrame)
+#endif // TARGET_X86 && !UNIX_X86_ABI
+
+// ArgumentRegisters struct is different on each platform
+CDAC_TYPE_BEGIN(ArgumentRegisters)
+CDAC_TYPE_SIZE(sizeof(ArgumentRegisters))
+#if defined(TARGET_ARM)
+
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R0, offsetof(ArgumentRegisters, r[0]))
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R1, offsetof(ArgumentRegisters, r[1]))
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R2, offsetof(ArgumentRegisters, r[2]))
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R3, offsetof(ArgumentRegisters, r[3]))
+
+#endif // TARGET_ARM
+CDAC_TYPE_END(ArgumentRegisters)
+
 // CalleeSavedRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(CalleeSavedRegisters)
 CDAC_TYPE_SIZE(sizeof(CalleeSavedRegisters))
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 
 #define CALLEE_SAVED_REGISTER(regname) \
     CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, regname, offsetof(CalleeSavedRegisters, regname))
 ENUM_CALLEE_SAVED_REGISTERS()
 #undef CALLEE_SAVED_REGISTER
+
+#elif defined(TARGET_ARM)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R4, offsetof(CalleeSavedRegisters, r4))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R5, offsetof(CalleeSavedRegisters, r5))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R6, offsetof(CalleeSavedRegisters, r6))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R7, offsetof(CalleeSavedRegisters, r7))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R8, offsetof(CalleeSavedRegisters, r8))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R9, offsetof(CalleeSavedRegisters, r9))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R10, offsetof(CalleeSavedRegisters, r10))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R11, offsetof(CalleeSavedRegisters, r11))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegisters, r14))
 
 #elif defined(TARGET_ARM64)
 
@@ -817,7 +924,10 @@ CDAC_GLOBAL_STRING(Architecture, riscv64)
 
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
+CDAC_GLOBAL(GCInfoVersion, uint32, GCINFO_VERSION)
+
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
+CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
@@ -830,11 +940,6 @@ CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 #undef FRAME_TYPE_NAME
 
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
-#if FEATURE_EH_FUNCLETS
-CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
-#else
-CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
-#endif
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else

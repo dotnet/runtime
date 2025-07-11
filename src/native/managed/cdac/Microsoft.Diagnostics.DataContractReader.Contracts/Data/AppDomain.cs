@@ -13,7 +13,9 @@ internal sealed class AppDomain : IData<AppDomain>
         Target.TypeInfo type = target.GetTypeInfo(DataType.AppDomain);
 
         RootAssembly = target.ReadPointer(address + (ulong)type.Fields[nameof(RootAssembly)].Offset);
+        DomainAssemblyList = address + (ulong)type.Fields[nameof(DomainAssemblyList)].Offset;
     }
 
     public TargetPointer RootAssembly { get; init; }
+    public TargetPointer DomainAssemblyList { get; init; }
 }

@@ -472,12 +472,20 @@ namespace
     NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
     {
         STANDARD_VM_CONTRACT;
+        _ASSERTE(libName != NULL);
 
-        if (pAssembly->GetPEAssembly()->GetPath().IsEmpty())
+        SString path{ pAssembly->GetPEAssembly()->GetPath() };
+
+        // Bundled assembly - path will be empty, path to load should point to the single-file bundle
+        bool isBundledAssembly = pAssembly->GetPEAssembly()->HasPEImage() && pAssembly->GetPEAssembly()->GetPEImage()->IsInBundle();
+        _ASSERTE(!isBundledAssembly || Bundle::AppBundle != NULL);
+        if (isBundledAssembly)
+            path.Set(pAssembly->GetPEAssembly()->GetPEImage()->GetPathToLoad());
+
+        if (path.IsEmpty())
             return NULL;
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        SString path{ pAssembly->GetPEAssembly()->GetPath() };
         _ASSERTE(!Path::IsRelative(path));
 
         SString::Iterator lastPathSeparatorIter = path.End();
@@ -486,6 +494,15 @@ namespace
             lastPathSeparatorIter++;
             path.Truncate(lastPathSeparatorIter);
 
+            path.Append(libName);
+            hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
+        }
+
+        // Bundle with additional files extracted - also treat the extraction path as the assembly directory for native library load
+        if (hmod == NULL && isBundledAssembly && Bundle::AppBundle->HasExtractedFiles())
+        {
+            path.Set(Bundle::AppBundle->ExtractionPath());
+            path.Append(DIRECTORY_SEPARATOR_CHAR_W);
             path.Append(libName);
             hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
         }
@@ -824,7 +841,7 @@ namespace
         if ( !name || !*name )
             return NULL;
 
-        PREFIX_ASSUME( name != NULL );
+        _ASSERTE( name != NULL );
         MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
         NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);

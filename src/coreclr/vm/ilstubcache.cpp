@@ -97,33 +97,9 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     pResolver->SetStubMethodDesc(pStubMD);
 
-
-    {
-        UINT   maxStack;
-        size_t cbCode = pStubLinker->Link(&maxStack);
-        DWORD cbSig = pStubLinker->GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER * pILHeader = pResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE * pbBuffer   = (BYTE *)pILHeader->Code;
-        BYTE * pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-
-        size_t numEH = pStubLinker->GetNumEHClauses();
-        if (numEH > 0)
-        {
-            pStubLinker->WriteEHClauses(pResolver->AllocEHSect(numEH));
-        }
-
-        pStubLinker->GenerateCode(pbBuffer, cbCode);
-        pStubLinker->GetLocalSig(pbLocalSig, cbSig);
-
-        pResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-    }
-
-    pResolver->SetTokenLookupMap(pStubLinker->GetTokenLookupMap());
+    pResolver->FinalizeILStub(pStubLinker);
 
     RETURN pStubMD;
-
 }
 
 

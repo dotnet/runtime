@@ -8,7 +8,8 @@
 
   <ItemGroup>
     <!-- Unless a "/p:SolutionNameOverride" property is passed in, glob all solutions under src/libraries. -->
-    <SolutionFile Include="$(MSBuildThisFileDirectory)$(SolutionNameOverride)\*.sln" />
+    <SolutionFile Include="$(MSBuildThisFileDirectory)$(SolutionNameOverride)\*.slnx"
+                  Exclude="$(MSBuildThisFileDirectory)Fuzzing\*.slnx" />
   </ItemGroup>
 
   <Target Name="UpdateSolutionFile"
@@ -25,12 +26,19 @@
 
     <!-- Delete temporary template file -->
     <Delete Files="%(SolutionFile.ProjFilePath)" />
+
+    <!-- Invoke dotnet sln migrate as slngen doesn't support slnx yet. -->
+    <Exec Command="&quot;$(RepoRoot)dotnet$(ScriptExt)&quot; sln migrate &quot;%(SolutionFile.SlnFilePath)&quot;" />
+
+    <!-- Delete the intermediate sln file. -->
+    <Delete Files="%(SolutionFile.SlnFilePath)" />
   </Target>
 
   <Target Name="GetSolutionFiles">
     <ItemGroup>
       <!-- Add attributes that require a separate item mutation. -->
-      <SolutionFile ProjFilePath="%(RelativeDir)%(Filename).proj" />
+      <SolutionFile ProjFilePath="%(RelativeDir)%(Filename).proj"
+                    SlnFilePath="%(RelativeDir)%(Filename).sln" />
     </ItemGroup>
   </Target>
 </Project>

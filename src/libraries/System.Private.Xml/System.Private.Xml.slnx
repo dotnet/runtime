@@ -1,0 +1,35 @@
+<Solution>
+  <Folder Name="/gen/">
+    <Project Path="../System.Runtime.InteropServices/gen/ComInterfaceGenerator/ComInterfaceGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
+    <Project Path="../System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/System.Private.Xml.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../Common/tests/System/Xml/BaseLibManaged/BaseLibManaged.csproj" />
+    <Project Path="../Common/tests/System/Xml/ModuleCore/ModuleCore.csproj" />
+    <Project Path="../Common/tests/System/Xml/XmlCoreTest/XmlCoreTest.csproj" />
+    <Project Path="../Common/tests/System/Xml/XmlDiff/XmlDiff.csproj" />
+    <Project Path="../Common/tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="../Microsoft.XmlSerializer.Generator/tests/SerializableAssembly.csproj" />
+    <Project Path="tests/System.Private.Xml.Tests.csproj" />
+    <Project Path="tests/XmlReaderLib/System.Xml.RW.XmlReaderLib.csproj" />
+    <Project Path="tests/XmlSerializer/ReflectionOnly/System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/" />
+  <Folder Name="/tools/gen/">
+    <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
+    <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
+  </Folder>
+  <Folder Name="/tools/ref/">
+    <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj" />
+  </Folder>
+  <Folder Name="/tools/src/">
+    <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj" />
+    <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj" />
+  </Folder>
+</Solution>

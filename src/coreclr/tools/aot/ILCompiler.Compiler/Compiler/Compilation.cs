@@ -308,11 +308,20 @@ namespace ILCompiler
                     {
                         var type = (TypeDesc)targetOfLookup;
 
-                        // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-                        // If this cast happens with an object that implements IDynamicIntefaceCastable, user code will
-                        // see a RuntimeTypeHandle representing this interface.
                         if (type.IsInterface)
-                            return NodeFactory.MaximallyConstructableType(type);
+                        {
+                            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+                            // If this cast happens with an object that implements IDynamicInterfaceCastable, user code will
+                            // see a RuntimeTypeHandle representing this interface.
+                            if (NodeFactory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations(type))
+                            {
+                                return NodeFactory.MaximallyConstructableType(type);
+                            }
+                            else
+                            {
+                                return NecessaryTypeSymbolIfPossible(type);
+                            }
+                        }
 
                         if (type.IsNullable)
                             type = type.Instantiation[0];
@@ -335,7 +344,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
                         var type = (TypeDesc)targetOfLookup;
-                        return NodeFactory.ExternSymbol(JitHelper.GetNewObjectHelperForType(type));
+                        return NodeFactory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(type));
                     }
 
                 default:
@@ -641,7 +650,7 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    if (node is ConstructedEETypeNode)
                         yield return ((IEETypeNode)node).Type;
                 }
             }

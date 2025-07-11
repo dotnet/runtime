@@ -1188,9 +1188,11 @@ namespace System.IO
             fileLength = 0; // improve the test coverage for InternalReadAllBytesUnknownLengthAsync
 #endif
 
+#pragma warning disable CA2025
             return fileLength > 0 ?
                 InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
                 InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
+#pragma warning restore
         }
 
         private static async Task<byte[]> InternalReadAllBytesAsync(SafeFileHandle sfh, int count, CancellationToken cancellationToken)

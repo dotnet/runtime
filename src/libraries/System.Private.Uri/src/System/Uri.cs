@@ -156,12 +156,7 @@ namespace System
             public string? IdnHost;
             public string? PathAndQuery;
 
-            /// <summary>
-            /// Only IP v6 may need this
-            /// </summary>
-            public string? ScopeId;
-
-            private MoreInfo? _moreInfo;
+            public MoreInfo? _moreInfo;
             public MoreInfo MoreInfo
             {
                 get
@@ -195,6 +190,11 @@ namespace System
             public string? Fragment;
             public string? AbsoluteUri;
             public string? RemoteUrl;
+
+            /// <summary>
+            /// Only IP v6 may need this
+            /// </summary>
+            public string? ScopeId;
         };
 
         private void InterlockedSetFlags(Flags flags)
@@ -585,7 +585,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private static unsafe void GetCombinedString(Uri baseUri, string relativeStr,
+        private static void GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string? result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -1184,8 +1184,8 @@ namespace System
                     }
                     else if (hostType == Flags.IPv6HostType)
                     {
-                        host = _info.ScopeId != null ?
-                            string.Concat(host.AsSpan(1, host.Length - 2), _info.ScopeId) :
+                        host = _info._moreInfo?.ScopeId is string scopeId ?
+                            string.Concat(host.AsSpan(1, host.Length - 2), scopeId) :
                             host.Substring(1, host.Length - 2);
                     }
                     // Validate that this basic host qualifies as Dns safe,
@@ -1903,7 +1903,7 @@ namespace System
         //  This method is called first to figure out the scheme or a simple file path
         //  Is called only at the .ctor time
         //
-        private static unsafe ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
+        private static ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
         {
             Debug.Assert((flags & Flags.Debug_LeftConstructor) == 0);
 
@@ -2433,8 +2433,9 @@ namespace System
                     }
                 }
             }
+
             Flags flags = _flags;
-            string host = CreateHostStringHelper(_string, _info.Offset.Host, _info.Offset.Path, ref flags, ref _info.ScopeId);
+            string host = CreateHostStringHelper(_string, _info.Offset.Host, _info.Offset.Path, ref flags, _info);
 
             // now check on canonical host representation
             if (host.Length != 0)
@@ -2482,7 +2483,7 @@ namespace System
                 else if (NotAny(Flags.CanonicalDnsHost))
                 {
                     // Check to see if we can take the canonical host string out of _string
-                    if (_info.ScopeId is not null)
+                    if (_info._moreInfo?.ScopeId is not null)
                     {
                         // IPv6 ScopeId is included when serializing a Uri
                         flags |= (Flags.HostNotCanonical | Flags.E_HostNotCanonical);
@@ -2506,7 +2507,7 @@ namespace System
             InterlockedSetFlags(flags);
         }
 
-        private static string CreateHostStringHelper(string str, int idx, int end, ref Flags flags, ref string? scopeId)
+        private static string CreateHostStringHelper(string str, int idx, int end, ref Flags flags, UriInfo info)
         {
             bool loopback = false;
             string host;
@@ -2519,7 +2520,11 @@ namespace System
                 case Flags.IPv6HostType:
                     // The helper will return [...] string that is not suited for Dns.Resolve()
                     host = IPv6AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
-                    scopeId = scopeIdSpan.IsEmpty ? null : new string(scopeIdSpan);
+
+                    if (!scopeIdSpan.IsEmpty)
+                    {
+                        info.MoreInfo.ScopeId = new string(scopeIdSpan);
+                    }
                     break;
 
                 case Flags.IPv4HostType:
@@ -2603,7 +2608,8 @@ namespace System
                 }
                 else
                 {
-                    host = CreateHostStringHelper(host, 0, host.Length, ref flags, ref _info.ScopeId);
+                    host = CreateHostStringHelper(host, 0, host.Length, ref flags, _info);
+
                     for (int i = 0; i < host.Length; ++i)
                     {
                         if ((_info.Offset.Host + i) >= _info.Offset.End || host[i] != _string[_info.Offset.Host + i])
@@ -2702,7 +2708,7 @@ namespace System
             Debug.Assert(_info != null && (_flags & Flags.MinimalUriInfoSet) != 0);
 
             // Which Uri parts are not escaped canonically ?
-            // Notice that public UriComponents and private Uri.Flags must me in Sync so below code can work
+            // Notice that public UriComponents and private Uri.Flags must be in Sync so below code can work
             //
             ushort nonCanonical = unchecked((ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical));
 
@@ -2880,10 +2886,10 @@ namespace System
                     hostBuilder.Dispose();
 
                     // A fix up only for SerializationInfo and IpV6 host with a scopeID
-                    if ((parts & UriComponents.SerializationInfoString) != 0 && HostType == Flags.IPv6HostType && _info.ScopeId != null)
+                    if ((parts & UriComponents.SerializationInfoString) != 0 && HostType == Flags.IPv6HostType && _info._moreInfo?.ScopeId is string scopeId)
                     {
                         dest.Length--;
-                        dest.Append(_info.ScopeId);
+                        dest.Append(scopeId);
                         dest.Append(']');
                     }
                 }
@@ -3297,6 +3303,10 @@ namespace System
                     {
                         _string = _syntax.SchemeName + SchemeDelimiter;
                     }
+
+                    _info.Offset.Scheme = 0;
+                    _info.Offset.User = (ushort)_string.Length;
+                    _info.Offset.Host = (ushort)_string.Length;
                 }
 
                 _info.Offset.Path = (ushort)_string.Length;
@@ -4011,11 +4021,9 @@ namespace System
                     if (hasUnicode)
                     {
                         // Normalize any other host or do idn
-                        string user = new string(pString, startInput, end - startInput);
-
                         try
                         {
-                            newHost += user.Normalize(NormalizationForm.FormC);
+                            newHost = UriHelper.NormalizeAndConcat(newHost, new ReadOnlySpan<char>(pString + startInput, end - startInput));
                         }
                         catch (ArgumentException)
                         {
@@ -4057,10 +4065,9 @@ namespace System
                         if (hasUnicode)
                         {
                             // Normalize any other host
-                            string user = new string(pString, startOtherHost, end - startOtherHost);
                             try
                             {
-                                newHost += user.Normalize(NormalizationForm.FormC);
+                                newHost = UriHelper.NormalizeAndConcat(newHost, new ReadOnlySpan<char>(pString + startOtherHost, end - startOtherHost));
                             }
                             catch (ArgumentException)
                             {
@@ -4091,10 +4098,16 @@ namespace System
 
             if (hasUnicode)
             {
-                string temp = UriHelper.StripBidiControlCharacters(new ReadOnlySpan<char>(pString + start, end - start));
+                ReadOnlySpan<char> host = new ReadOnlySpan<char>(pString + start, end - start);
+
+                if (UriHelper.StripBidiControlCharacters(host, out string? stripped))
+                {
+                    host = stripped;
+                }
+
                 try
                 {
-                    newHost += temp.Normalize(NormalizationForm.FormC);
+                    newHost = UriHelper.NormalizeAndConcat(newHost, host);
                 }
                 catch (ArgumentException)
                 {

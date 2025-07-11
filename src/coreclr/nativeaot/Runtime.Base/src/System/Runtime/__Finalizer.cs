@@ -7,7 +7,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 //
-// Implements the single finalizer thread for a Redhawk instance. Essentially waits for an event to fire
+// Implements the single finalizer thread for a NativeAOT instance. Essentially waits for an event to fire
 // indicating finalization is necessary then drains the queue of pending finalizable objects, calling the
 // finalize method for each one.
 //
