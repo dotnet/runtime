@@ -77,6 +77,8 @@ namespace System.Security.Cryptography
                     return true;
                 }
 
+                Debug.Fail("RSA signatures have known size so destination length should have been validated by caller.");
+
                 bytesWritten = 0;
                 CryptographicOperations.ZeroMemory(destination);
                 return false;

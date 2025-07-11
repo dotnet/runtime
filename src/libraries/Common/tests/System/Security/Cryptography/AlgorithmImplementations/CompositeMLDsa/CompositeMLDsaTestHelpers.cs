@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
@@ -184,6 +185,150 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        internal static void AssertExportPublicKey(Action<Func<CompositeMLDsa, byte[]>> callback)
+        {
+            callback(dsa => dsa.ExportCompositeMLDsaPublicKey());
+            callback(dsa => DoTryUntilDone(dsa.TryExportCompositeMLDsaPublicKey));
+        }
+
+        internal static void AssertExportPrivateKey(Action<Func<CompositeMLDsa, byte[]>> callback)
+        {
+            callback(dsa => dsa.ExportCompositeMLDsaPrivateKey());
+            callback(dsa => DoTryUntilDone(dsa.TryExportCompositeMLDsaPrivateKey));
+        }
+
+        internal static void WithDispose<T>(T disposable, Action<T> callback)
+            where T : IDisposable
+        {
+            using (disposable)
+            {
+                callback(disposable);
+            }
+        }
+
+        internal static void AssertPublicKeyEquals(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> expected, ReadOnlySpan<byte> actual)
+        {
+            AssertExtensions.SequenceEqual(expected, actual);
+        }
+
+        internal static void AssertPrivateKeyEquals(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> expected, ReadOnlySpan<byte> actual)
+        {
+            ReadOnlySpan<byte> expectedMLDsaKey = expected.Slice(0, MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes);
+            ReadOnlySpan<byte> actualMLDsaKey = actual.Slice(0, MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes);
+
+            AssertExtensions.SequenceEqual(expectedMLDsaKey, actualMLDsaKey);
+
+            byte[] expectedTradKey = expected.Slice(expectedMLDsaKey.Length).ToArray();
+            byte[] actualTradKey = actual.Slice(actualMLDsaKey.Length).ToArray();
+
+            ExecuteComponentAction(
+                algorithm,
+                () =>
+                {
+                    RSAParameters expectedRsaParameters = RSAParametersFromRawPrivateKey(expectedTradKey);
+                    RSAParameters actualRsaParameters = RSAParametersFromRawPrivateKey(actualTradKey);
+
+                    Helpers.AssertRsaKeyEquals(expectedRsaParameters, actualRsaParameters);
+                },
+                () => Assert.Equal(expectedTradKey, actualTradKey),
+                () => Assert.Equal(expectedTradKey, actualTradKey));
+        }
+
+        private static RSAParameters RSAParametersFromRawPrivateKey(ReadOnlySpan<byte> key)
+        {
+            RSAParameters parameters = default;
+
+            AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
+            AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
+
+            if (!sequenceReader.TryReadInt32(out int version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
+            const int MaxSupportedVersion = 0;
+
+            if (version > MaxSupportedVersion)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_RSAPrivateKey_VersionTooNew,
+                        version,
+                        MaxSupportedVersion));
+            }
+
+            parameters.Modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+            int modulusLength = parameters.Modulus.Length;
+            int halfModulusLength = modulusLength / 2;
+
+            if (parameters.Modulus.Length != modulusLength)
+            {
+                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
+            }
+
+            parameters.Exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
+
+            // We're not pinning and clearing the arrays here because this is a test helper.
+            // In production code, you should always pin and clear sensitive data.
+            parameters.D = new byte[modulusLength];
+            parameters.P = new byte[halfModulusLength];
+            parameters.Q = new byte[halfModulusLength];
+            parameters.DP = new byte[halfModulusLength];
+            parameters.DQ = new byte[halfModulusLength];
+            parameters.InverseQ = new byte[halfModulusLength];
+
+            sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.D);
+            sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.P);
+            sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.Q);
+            sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DP);
+            sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DQ);
+            sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.InverseQ);
+
+            sequenceReader.ThrowIfNotEmpty();
+            reader.ThrowIfNotEmpty();
+
+            return parameters;
+        }
+
+        private static byte[] ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span)
+        {
+            if (span.Length > 1 && span[0] == 0)
+            {
+                return span.Slice(1).ToArray();
+            }
+
+            return span.ToArray();
+        }
+
+        private static void ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span, Span<byte> destination)
+        {
+            int length = destination.Length;
+
+            if (span.Length == length)
+            {
+                span.CopyTo(destination);
+                return;
+            }
+
+            if (span.Length == length + 1)
+            {
+                if (span[0] == 0)
+                {
+                    span.Slice(1).CopyTo(destination);
+                    return;
+                }
+            }
+
+            if (span.Length > length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            destination.Slice(0, destination.Length - span.Length).Clear();
+            span.CopyTo(destination.Slice(length - span.Length));
+        }
+
         internal static void VerifyDisposed(CompositeMLDsa dsa)
         {
             // A signature-sized buffer can be reused for keys as well
@@ -198,6 +343,20 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => dsa.ExportCompositeMLDsaPrivateKey());
             Assert.Throws<ObjectDisposedException>(() => dsa.TryExportCompositeMLDsaPublicKey([], out _));
             Assert.Throws<ObjectDisposedException>(() => dsa.ExportCompositeMLDsaPublicKey());
+        }
+
+        private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
+        private static byte[] DoTryUntilDone(TryExportFunc func)
+        {
+            byte[] buffer = new byte[512];
+            int written;
+
+            while (!func(buffer, out written))
+            {
+                Array.Resize(ref buffer, buffer.Length * 2);
+            }
+
+            return buffer.AsSpan(0, written).ToArray();
         }
     }
 }

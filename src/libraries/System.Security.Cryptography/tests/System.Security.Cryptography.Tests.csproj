@@ -275,12 +275,16 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaFactoryTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaFactoryTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaImplementationTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaImplementationTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestData.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestData.Raw.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestData.Raw.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestHelpers.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestsBase.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestsBase.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaMockImplementation.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaMockImplementation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs"
@@ -489,6 +493,8 @@
              Link="CommonTest\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CryptoUtils.cs"
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\Helpers.cs"
+             Link="CommonTest\System\Security\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemCngTests.NotSupported.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemCngTests.NotSupported.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\OpenSslNamedKeys.Helpers.cs"
