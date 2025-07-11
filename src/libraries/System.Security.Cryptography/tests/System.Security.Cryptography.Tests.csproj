@@ -409,6 +409,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.Shared.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.Shared.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSAFactory.cs"
@@ -493,8 +495,6 @@
              Link="CommonTest\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CryptoUtils.cs"
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\Helpers.cs"
-             Link="CommonTest\System\Security\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemCngTests.NotSupported.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemCngTests.NotSupported.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\OpenSslNamedKeys.Helpers.cs"

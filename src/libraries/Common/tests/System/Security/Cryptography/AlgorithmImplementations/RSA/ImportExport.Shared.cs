@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Numerics;
-using System.Security.Cryptography;
 using Xunit;
 
-namespace Test.Cryptography
+namespace System.Security.Cryptography.Rsa.Tests
 {
-    internal static partial class Helpers
+    // TODO This is used in multiple tests files, so move this into a common Helpers class.
+    public partial class ImportExport
     {
-        internal static void AssertRsaKeyEquals(in RSAParameters expected, in RSAParameters actual)
+        internal static void AssertKeyEquals(in RSAParameters expected, in RSAParameters actual)
         {
             Assert.Equal(expected.Modulus, actual.Modulus);
             Assert.Equal(expected.Exponent, actual.Exponent);
