@@ -2084,7 +2084,8 @@ namespace System.Diagnostics.Tracing
         private object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
-            TraceLoggingEventTypes eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
+            ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+            TraceLoggingEventTypes eventTypes = metadata.TraceLoggingEventTypes;
             int paramCount = Math.Min(eventTypes.typeInfos.Length, args.Length); // parameter count mismatch get logged in LogEventArgsMismatches
             var eventData = new object?[eventTypes.typeInfos.Length];
             for (int i = 0; i < paramCount; i++)
@@ -2103,7 +2104,8 @@ namespace System.Diagnostics.Tracing
         private void LogEventArgsMismatches(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
-            ParameterInfo[] infos = m_eventData[eventId].Parameters;
+            ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+            ParameterInfo[] infos = metadata.Parameters;
 
             if (args.Length != infos.Length)
             {
@@ -2360,9 +2362,10 @@ namespace System.Diagnostics.Tracing
                 return false;
 
             Debug.Assert(m_eventData != null);
-            EventLevel eventLevel = (EventLevel)m_eventData[eventNum].Descriptor.Level;
-            EventKeywords eventKeywords = unchecked((EventKeywords)((ulong)m_eventData[eventNum].Descriptor.Keywords & (~(SessionMask.All.ToEventKeywords()))));
-            EventChannel channel = unchecked((EventChannel)m_eventData[eventNum].Descriptor.Channel);
+            ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventNum);
+            EventLevel eventLevel = (EventLevel)metadata.Descriptor.Level;
+            EventKeywords eventKeywords = unchecked((EventKeywords)((ulong)metadata.Descriptor.Keywords & (~(SessionMask.All.ToEventKeywords()))));
+            EventChannel channel = unchecked((EventChannel)metadata.Descriptor.Channel);
 
             return IsEnabledCommon(enable, currentLevel, currentMatchAnyKeyword, eventLevel, eventKeywords, channel);
         }
