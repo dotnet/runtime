@@ -63,8 +63,13 @@ namespace Microsoft.Extensions.Configuration
                 {
                     // Skip disposed providers to avoid exceptions during access.
                     // This is especially relevant for cases like ConfigurationManager,
-                    // which implements IConfigurationRoot and may mutate the providers
-                    // collection and dispose replaced providers.
+                    // which implements IConfigurationRoot and may dispose providers
+                    // if configuration sources are concurrently modified. A new collection
+                    // is created in this case, so it's still safe to iterate over it.
+                    //
+                    // If we want to avoid this possible exception altogether, we could update
+                    // ConfigurationSection.TryGetValue to be virtual and have ConfigurationManager
+                    // implement it with reference counting like it does for the indexer.
                 }
             }
 
