@@ -2233,7 +2233,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (await acceptConnection.Task)
                 {
+                    Console.WriteLine($"Server before accept");
                     await IgnoreExceptions(server.AcceptConnectionAsync(c => Task.CompletedTask));
+                    Console.WriteLine($"Server after accept");
                 }
             });
         }
