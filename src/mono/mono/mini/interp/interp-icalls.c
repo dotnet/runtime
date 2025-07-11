@@ -93,7 +93,11 @@ void
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
 	MH_LOG_INDENT();
-	MH_LOG("Converting data to stackval for type %s", mono_type_get_name (type));
+	intptr_t data_ptr = *(intptr_t *)data;
+	MH_LOG("Converting data to stackval for type %s: ,value as intptr_t is %p", mono_type_get_name (type), data_ptr);
+	
+//	memset(result, 0, sizeof(stackval));
+	log_mono_type(type);
 	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
 		MH_LOG_UNINDENT();
@@ -108,6 +112,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 		result->data.i = *(guint8*)data;
+		MH_LOG("Assigned U1 or BOOLEAN value assigned: %p", (intptr_t)result->data.i);
 		break;
 	case MONO_TYPE_I2:
 		result->data.i = *(gint16*)data;
@@ -118,17 +123,20 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		break;
 	case MONO_TYPE_I4:
 		result->data.i = *(gint32*)data;
+		MH_LOG("Assigned I4 value assigned: (int) %d (ptr) %p", result->data.i, (intptr_t)result->data.i);
 		break;
 	case MONO_TYPE_U:
 	case MONO_TYPE_I:
-		result->data.p = *(gpointer*)data;
+		result->data.nati = *(mono_u*)data;
 		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		result->data.p = *(gpointer*)data;
+		MH_LOG("Assigned pointer  assigned: %p", result->data.p);
 		break;
-	case MONO_TYPE_U4:
+	case MONO_TYPE_U4:		
 		result->data.i = *(guint32*)data;
+		MH_LOG("Assigned U4 value assigned: (int) %d (ptr) %p",  result->data.i, (intptr_t)result->data.i);
 		break;
 	case MONO_TYPE_R4:
 		/* memmove handles unaligned case */
@@ -146,6 +154,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
+		MH_LOG("Assigned pointer value: %p",  result->data.p);
 		result->data.p = *(gpointer*)data;
 		break;
 	case MONO_TYPE_VALUETYPE:
@@ -158,6 +167,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
 			else
 				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
+			assert (size <= sizeof(stackval));
 			memcpy (result, data, size);
 			break;
 		}
@@ -169,6 +179,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 				size = mono_class_native_size (klass, NULL);
 			else
 				size = mono_class_value_size (klass, NULL);
+			assert (size <= sizeof(stackval));
 			memcpy (result, data, size);
 			break;
 		}
@@ -178,7 +189,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 	default:
 		g_error ("got type 0x%02x", type->type);
 	}
-	MH_LOG("Converted data to stackval: %s", mono_type_get_name (type));
+	MH_LOG("Converted data to stackval. Type: %s, ptr value (result->data.p): %p", mono_type_get_name (type), (intptr_t)result->data.p);
 	MH_LOG_UNINDENT();
 }
 static char * log_sig(MonoMethodSignature* sig)
@@ -256,6 +267,8 @@ void
 do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
 	MH_LOG_INDENT();
+	MH_LOG("Sig: %p op: %d ret_sp: %p sp: %p ptr: %p, save_last: %s", (void*)sig, op, (void*)ret_sp, (void*)sp, (void*)ptr, save_last_error ? "T" : "F");
+	
 	if (save_last_error)
 		mono_marshal_clear_last_error ();
 	log_op(op);
@@ -493,6 +506,7 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 		if (!strcmp(sigTest,"884_8")) {
 			typedef I8 (*T)(I8,I8,I4);
 			T func = (T)ptr;
+			MH_LOG("Calling 884_8 func with: %p %p %d", (void*)sp[0].data.p, (void*)sp[1].data.p, sp[2].data.i);
 			ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i);
 		};
 		if (!strcmp(sigTest,"888_8")) {

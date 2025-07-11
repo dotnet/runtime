@@ -119,6 +119,7 @@ interp_add_ins_explicit (TransformData *td, int opcode, int len)
 	td->cbb->last_ins = new_inst;
 	// We should delete this, but is currently used widely to set the args of an instruction
 	td->last_ins = new_inst;
+	MH_LOG("adding instruction %s at offset %d\n", mono_interp_opname (opcode), td->current_il_offset);
 	return new_inst;
 }
 
@@ -444,6 +445,7 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	local->ext_index = -1;
 
 	td->vars_size++;
+	MH_LOG("Creating var of type %s at index %d, size %d\n", mono_type_full_name (type), td->vars_size - 1, size);
 	return td->vars_size - 1;
 
 }
@@ -9927,7 +9929,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_error_set_invalid_operation (error, "%s", "Could not execute the method because the containing type is not fully instantiated.");
 		return;
 	}
-
+	MH_LOG("transforming method %s", method->name);
 	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 	method_class_vt = mono_class_vtable_checked (imethod->method->klass, error);
 	return_if_nok (error);
@@ -10017,6 +10019,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	real_imethod = imethod;
 	memcpy (&tmp_imethod, imethod, sizeof (InterpMethod));
 	imethod = &tmp_imethod;
+	MH_LOG("Copied imethod (%d) bytes", (int)sizeof (InterpMethod));
 
 	MONO_TIME_TRACK (mono_interp_stats.transform_time, generate (method, header, imethod, generic_context, error));
 

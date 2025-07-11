@@ -75,6 +75,7 @@
 #include <mono/metadata/handle.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/mh_log.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
@@ -4086,10 +4087,13 @@ GPtrArray*
 ves_icall_RuntimeType_GetConstructors_native (MonoQCallTypeHandle type_handle, guint32 bflags, MonoError *error)
 {
 	MonoType *type = type_handle.type;
+	MH_LOG("Getting constructors for type %s\n", mono_type_get_name (type));
 	if (m_type_is_byref (type)) {
-		return g_ptr_array_new ();
+		GPtrArray* res = g_ptr_array_new ();
+		MH_LOG("Allocated array %p", (void*)res);
+		return res;
 	}
-
+	
 	MonoClass *startklass, *klass;
 	klass = startklass = mono_class_from_mono_type_internal (type);
 
@@ -4101,6 +4105,7 @@ ves_icall_RuntimeType_GetConstructors_native (MonoQCallTypeHandle type_handle, g
 
 
 	GPtrArray *res_array = g_ptr_array_sized_new (4); /* FIXME, guestimating */
+	MH_LOG("Allocated array %p \n", (void*)res_array);
 
 	MonoMethod *method;
 	gpointer iter = NULL;
@@ -4724,7 +4729,7 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
 	MonoImage *image = assembly->image;
 	int count;
-
+	
 	/* FIXME: metadata-update */
 
 	if (image_is_dynamic (assembly->image)) {
@@ -4737,12 +4742,13 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 	}
 
 	GPtrArray *result = g_ptr_array_sized_new (count);
-
+	MH_LOG("Created referenced assembly array %p", (void*)result);
 	for (int i = 0; i < count; i++) {
 		MonoAssemblyName *aname = create_referenced_assembly_name (image, i, error);
 		if (!is_ok (error))
 			break;
-		g_ptr_array_add (result, aname);
+		monoeg_g_ptr_array_add (result, aname);
+		MH_LOG("Added assembly %s to referenced assembly array %p", aname->name, (void*)result);
 	}
 	return result;
 }
@@ -5061,6 +5067,8 @@ ves_icall_GetCurrentMethod (MonoError *error)
 static MonoMethod*
 mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 {
+	MH_LOG("mono_method_get_equivalent_method called for method %s\n", method->name);
+
 	int offset = -1, i;
 	if (method->is_inflated && ((MonoMethodInflated*)method)->context.method_inst) {
 		ERROR_DECL (error);
@@ -5076,6 +5084,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 			ctx.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
 		result = mono_class_inflate_generic_method_full_checked (inflated->declaring, klass, &ctx, error);
 		g_assert (is_ok (error)); /* FIXME don't swallow the error */
+		MH_LOG("returning %p", result);
 		return result;
 	}
 
@@ -5099,7 +5108,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 
 MonoReflectionMethodHandle
 ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodFromHandleInternalType_native (MonoMethod *method, MonoType *type, MonoBoolean generic_check, MonoError *error)
-{
+{		
 	MonoClass *klass;
 	if (type && generic_check) {
 		klass = mono_class_from_mono_type_internal (type);
@@ -5115,6 +5124,10 @@ ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodFromHandleInternalType_na
 		klass = mono_class_from_mono_type_internal (type);
 	else
 		klass = method->klass;
+
+	MH_LOG("About to get object handle for method %s in class %s\n", 
+		mono_method_full_name (method, true), 
+		mono_class_full_name (klass));
 	return mono_method_get_object_handle (method, klass, error);
 }
 

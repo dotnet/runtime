@@ -44,6 +44,7 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
+#include <mono/metadata/mh_log.h>
 #include "wasm-config.h"
 #include "pinvoke.h"
 
@@ -273,7 +274,7 @@ static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
 	assert (handle != sysglobal_native_handle);
-
+    MH_LOG(".");
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
 		return dlsym (handle, name);
@@ -367,6 +368,7 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
+    MH_LOG(".");
 	MonoAssembly *res;
 	assert (name);
 	MonoImageOpenStatus status;
@@ -382,6 +384,7 @@ mono_wasm_assembly_load (const char *name)
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
+    MH_LOG(".");
 	assert (assembly);
 	MonoClass *result;
 	MONO_ENTER_GC_UNSAFE;
@@ -394,6 +397,7 @@ mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, co
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
+    MH_LOG(".");
 	assert (klass);
 	MonoMethod* result;
 	MONO_ENTER_GC_UNSAFE;
@@ -405,6 +409,7 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 MonoMethod*
 mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klass, const char* name, int param_count)
 {
+    MH_LOG("mono_wasm_get_method_matching: %s.%s token=%x name=%s param_count=%d\n", mono_image_get_name (image), mono_class_get_name (klass), token, name, param_count);
 	MonoMethod *result = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	MonoMethod *method = mono_get_method (image, token, klass);
@@ -433,6 +438,7 @@ mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klas
 void
 mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, uint32_t token, int param_count)
 {
+    MH_LOG("mono_wasm_marshal_get_managed_wrapper: %s.%s.%s::%s token=%x param_count=%d\n", assemblyName, namespaceName, typeName, methodName, token, param_count);
 	MonoError error;
 	mono_error_init (&error);
 	MONO_ENTER_GC_UNSAFE;
