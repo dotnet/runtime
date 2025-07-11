@@ -58,25 +58,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.UserDefinedPrefixedAttributes, Array.Empty<DiagnosticResult>() };
 
             // Bug: https://github.com/dotnet/runtime/issues/117448
-            // This test case produces expected diagnostics instead of crashing
-            yield return new object[] { ID(), CodeSnippets.ImproperCollectionWithMarshalUsingOnElements, new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
-                    .WithLocation(20, 129)
-                    .WithArguments("Marshalling info was specified for 'ElementIndirectionDepth' 1, but marshalling info was only needed for 0 level(s) of indirection"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
-                    .WithLocation(20, 215)
-                    .WithArguments("<unknown>", "examples"),
-                DiagnosticResult.CompilerError("CS0051")
-                    .WithSpan(29, 29, 29, 66)
-                    .WithArguments("ListMarshaller<T, TUnmanagedElement>.Marshaller.AllocateContainerForUnmanagedElements(NotMyList, out int)", "NotMyList"),
-                DiagnosticResult.CompilerError("CS0051")
-                    .WithSpan(35, 39, 35, 61)
-                    .WithArguments("ListMarshaller<T, TUnmanagedElement>.Marshaller.GetManagedValuesSource(NotMyList)", "NotMyList"),
-                DiagnosticResult.CompilerError("CS0051")
-                    .WithSpan(44, 31, 44, 58)
-                    .WithArguments("ListMarshaller<T, TUnmanagedElement>.Marshaller.GetManagedValuesDestination(NotMyList)", "NotMyList"),
-            } };
+            yield return new[] { ID(), CodeSnippets.ImproperCollectionWithMarshalUsingOnElements };
 
             // No explicit marshalling for char or string
             yield return new object[] { ID(), CodeSnippets.BasicParametersAndModifiers<char>(), new[]
