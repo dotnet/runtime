@@ -265,6 +265,13 @@ namespace System.Net.Security
 
                 if (error != null && error->ErrorCode != 0)
                 {
+                    if (error->ErrorDomain == (int) Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
+                        error->ErrorCode == (int) Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
+                    {
+                        // We cancelled the connection, so this is expected as pending read will be cancelled.
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
+                        return;
+                    }
                     thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
                 }
                 else

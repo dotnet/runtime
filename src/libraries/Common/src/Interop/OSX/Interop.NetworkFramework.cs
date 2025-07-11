@@ -16,41 +16,43 @@ internal static partial class Interop
         [LibraryImport(Libraries.NetworkFramework, EntryPoint = "nw_release")]
         internal static partial void Release(IntPtr obj);
 
+        // Network Framework error domains
+        internal enum NetworkFrameworkErrorDomain
+        {
+            Invalid = 0,
+            POSIX = 1,
+            DNS = 2,
+            TLS = 3
+        }
+
+        internal enum NWErrorDomainPOSIX
+        {
+            OperationCanceled = 89, // ECANCELED
+        }
+
         internal sealed class NetworkFrameworkException : Exception
         {
             public int ErrorCode { get; }
-            public int ErrorDomain { get; }
+            public NetworkFrameworkErrorDomain ErrorDomain { get; }
 
             internal NetworkFrameworkException()
             {
             }
 
-            internal NetworkFrameworkException(int errorCode, int errorDomain, string? message)
-                : base(message ?? $"Network Framework error {errorCode} in domain {GetDomainName(errorDomain)}")
+            internal NetworkFrameworkException(int errorCode, NetworkFrameworkErrorDomain errorDomain, string? message)
+                : base(message ?? $"Network Framework error {errorCode} in domain {errorDomain}")
             {
                 HResult = errorCode;
                 ErrorCode = errorCode;
                 ErrorDomain = errorDomain;
             }
 
-            internal NetworkFrameworkException(int errorCode, int errorDomain, string? message, Exception innerException)
-                : base(message ?? $"Network Framework error {errorCode} in domain {GetDomainName(errorDomain)}", innerException)
+            internal NetworkFrameworkException(int errorCode, NetworkFrameworkErrorDomain errorDomain, string? message, Exception innerException)
+                : base(message ?? $"Network Framework error {errorCode} in domain {errorDomain}", innerException)
             {
                 HResult = errorCode;
                 ErrorCode = errorCode;
                 ErrorDomain = errorDomain;
-            }
-
-            private static string GetDomainName(int domain)
-            {
-                return domain switch
-                {
-                    0 => "Invalid",
-                    1 => "POSIX",
-                    2 => "DNS",
-                    3 => "TLS",
-                    _ => $"Unknown({domain})"
-                };
             }
 
             public override string ToString()
@@ -70,11 +72,13 @@ internal static partial class Interop
         internal static Exception CreateExceptionForNetworkFrameworkError(in NetworkFrameworkError error)
         {
             string? message = null;
+            NetworkFrameworkErrorDomain domain = (NetworkFrameworkErrorDomain)error.ErrorDomain;
+
             if (error.ErrorMessage != IntPtr.Zero)
             {
-                // For POSIX errors (domain 1), the message is a regular C string from strerror()
+                // For POSIX errors, the message is a regular C string from strerror()
                 // For other errors, it's a CFString
-                if (error.ErrorDomain == 1) // kNWErrorDomainPOSIX
+                if (domain == NetworkFrameworkErrorDomain.POSIX)
                 {
                     message = Marshal.PtrToStringUTF8(error.ErrorMessage);
                 }
@@ -87,7 +91,7 @@ internal static partial class Interop
                 }
             }
 
-            return new NetworkFrameworkException(error.ErrorCode, error.ErrorDomain, message);
+            return new NetworkFrameworkException(error.ErrorCode, domain, message);
         }
     }
 }
