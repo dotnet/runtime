@@ -2517,6 +2517,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVMSK, -1, type, fsig, args);
 #endif
+		return NULL;
 	}
 	case SN_GetElement: {
 		int elems;
