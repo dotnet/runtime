@@ -12,7 +12,7 @@ namespace System.Net.Http
     {
         private static readonly ActivitySource s_connectionsActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionsNamespace);
 
-        public static Activity? StartConnectionSetupActivity(bool isSecure, HttpAuthority authority)
+        public static Activity? StartConnectionSetupActivity(bool isSecure, string host, int port)
         {
             Activity? activity = null;
             if (s_connectionsActivitySource.HasListeners())
@@ -25,11 +25,11 @@ namespace System.Net.Http
 
             if (activity is not null)
             {
-                activity.DisplayName = $"HTTP connection_setup {authority.HostValue}:{authority.Port}";
+                activity.DisplayName = $"HTTP connection_setup {host}:{port}";
                 if (activity.IsAllDataRequested)
                 {
-                    activity.SetTag("server.address", authority.HostValue);
-                    activity.SetTag("server.port", authority.Port);
+                    activity.SetTag("server.address", host);
+                    activity.SetTag("server.port", port);
                     activity.SetTag("url.scheme", isSecure ? "https" : "http");
                 }
             }

@@ -47,11 +47,11 @@ namespace System.Net.Http
                 // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
                 if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                 {
-                    handler = new MetricsHandler(handler, _meterFactory, out _);
+                    handler = new MetricsHandler(handler, _meterFactory, proxy: null, out _);
                 }
                 if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
                 {
-                    handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                    handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current, proxy: null);
                 }
 
                 // Ensure a single handler is used for all requests.

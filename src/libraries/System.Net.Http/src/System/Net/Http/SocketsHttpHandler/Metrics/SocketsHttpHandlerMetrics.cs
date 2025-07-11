@@ -46,7 +46,7 @@ namespace System.Net.Http.Metrics
                 });
 
                 tags.Add("url.scheme", pool.IsSecure ? "https" : "http");
-                tags.Add("server.address", pool.OriginAuthority.HostValue);
+                tags.Add("server.address", pool.TelemetryServerAddress);
 
                 if (!pool.IsDefaultPort)
                 {

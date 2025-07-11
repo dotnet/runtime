@@ -73,7 +73,7 @@ namespace System.Net.Http
                         metrics,
                         protocol,
                         _pool.IsSecure ? "https" : "http",
-                        _pool.OriginAuthority.HostValue,
+                        _pool.TelemetryServerAddress,
                         _pool.OriginAuthority.Port,
                         remoteEndPoint?.Address?.ToString());
 

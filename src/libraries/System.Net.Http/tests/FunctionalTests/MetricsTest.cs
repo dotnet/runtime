@@ -920,6 +920,57 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress(bool useTls)
+        {
+            if (UseVersion == HttpVersion30 && !useTls)
+            {
+                throw new SkipTestException("No insecure connections with HTTP/3.");
+            }
+
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                uri = new Uri($"{uri.Scheme}://{IPAddress.Loopback}:{uri.Port}");
+
+                using InstrumentRecorder<long> activeRequestsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.ActiveRequests);
+                using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                using InstrumentRecorder<long> openConnectionsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.OpenConnections);
+                using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
+                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
+                request.Headers.Host = "localhost";
+                HttpResponseMessage response = await SendAsync(client, request);
+                response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
+
+                // Request metrics:
+                VerifyHostName(activeRequestsRecorder);
+                VerifyHostName(requestDurationRecorder);
+
+                // Connection metrics:
+                VerifyHostName(openConnectionsRecorder);
+                VerifyHostName(connectionDurationRecorder);
+                VerifyHostName(timeInQueueRecorder);
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+            }, options: new GenericLoopbackOptions()
+            {
+                UseSsl = useTls,
+            });
+
+            static void VerifyHostName<T>(InstrumentRecorder<T> recorder) where T : struct
+            {
+                foreach (Measurement<T> m in recorder.GetMeasurements())
+                {
+                    VerifyTag(m.Tags.ToArray(), "server.address", "localhost");
+                }
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -1157,6 +1208,53 @@ namespace System.Net.Http.Functional.Tests
                 }
 
             }, new LoopbackServer.Options() { UseSsl = true });
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public Task UseIPAddressInUri_Proxy_RecordsUriHostAsServerAddress()
+        {
+            const string IpString = "1.2.3.4";
+
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                Handler.Proxy = new UseSpecifiedUriWebProxy(uri);
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                uri = new Uri($"{uri.Scheme}://{IpString}:4242");
+
+                using InstrumentRecorder<long> activeRequestsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.ActiveRequests);
+                using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                using InstrumentRecorder<long> openConnectionsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.OpenConnections);
+                using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
+                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
+                request.Headers.Host = "localhost";
+                HttpResponseMessage response = await SendAsync(client, request);
+                response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
+
+                // Request metrics:
+                VerifyHostName(activeRequestsRecorder);
+                VerifyHostName(requestDurationRecorder);
+
+                // Connection metrics:
+                VerifyHostName(openConnectionsRecorder);
+                VerifyHostName(connectionDurationRecorder);
+                VerifyHostName(timeInQueueRecorder);
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+            }, options: new GenericLoopbackOptions()
+            {
+                UseSsl = false,
+            });
+
+            static void VerifyHostName<T>(InstrumentRecorder<T> recorder) where T : struct
+            {
+                foreach (Measurement<T> m in recorder.GetMeasurements())
+                {
+                    VerifyTag(m.Tags.ToArray(), "server.address", IpString);
+                }
+            }
         }
     }
 
