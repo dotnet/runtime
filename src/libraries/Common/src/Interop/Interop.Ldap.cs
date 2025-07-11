@@ -244,9 +244,11 @@ namespace System.DirectoryServices.Protocols
                 {
                     _managed = managed;
                     _native.sizeofcallback = sizeof(Native);
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
                     _native.query = managed.query is not null ? Marshal.GetFunctionPointerForDelegate(managed.query) : IntPtr.Zero;
                     _native.notify = managed.notify is not null ? Marshal.GetFunctionPointerForDelegate(managed.notify) : IntPtr.Zero;
                     _native.dereference = managed.dereference is not null ? Marshal.GetFunctionPointerForDelegate(managed.dereference) : IntPtr.Zero;
+#pragma warning restore CA1416
                 }
 
                 public Native ToUnmanaged() => _native;

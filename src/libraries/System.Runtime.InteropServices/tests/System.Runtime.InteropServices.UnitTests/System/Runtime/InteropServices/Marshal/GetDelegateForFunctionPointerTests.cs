@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class GetDelegateForFunctionPointerTests
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
