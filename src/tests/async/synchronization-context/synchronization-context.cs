@@ -11,7 +11,7 @@ using Xunit;
 public class Async2SynchronizationContext
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static void TestSyncContexts()
     {
         SynchronizationContext prevContext = SynchronizationContext.Current;
         try
@@ -42,6 +42,9 @@ public class Async2SynchronizationContext
 
         await WrappedYieldToThreadPool(suspend: true).ConfigureAwait(false);
         Assert.Null(SynchronizationContext.Current);
+
+        await WrappedYieldToThreadWithCustomSyncContext();
+        Assert.Null(SynchronizationContext.Current);
     }
 
     private static async Task WrappedYieldToThreadPool(bool suspend)
@@ -50,6 +53,13 @@ public class Async2SynchronizationContext
         {
             await Task.Yield();
         }
+    }
+
+    private static async Task WrappedYieldToThreadWithCustomSyncContext()
+    {
+        Assert.Null(SynchronizationContext.Current);
+        await new YieldToThreadWithCustomSyncContext();
+        Assert.True(SynchronizationContext.Current is MySyncContext { });
     }
 
     private class MySyncContext : SynchronizationContext
@@ -70,5 +80,28 @@ public class Async2SynchronizationContext
                 }
             }, null);
         }
+    }
+
+    private struct YieldToThreadWithCustomSyncContext : ICriticalNotifyCompletion
+    {
+        public YieldToThreadWithCustomSyncContext GetAwaiter() => this;
+
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            new Thread(state =>
+            {
+                SynchronizationContext.SetSynchronizationContext(new MySyncContext());
+                continuation();
+            }).Start();
+        }
+
+        public void OnCompleted(Action continuation)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsCompleted => false;
+
+        public void GetResult() { }
     }
 }

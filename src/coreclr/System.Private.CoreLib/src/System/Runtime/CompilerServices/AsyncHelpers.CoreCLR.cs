@@ -224,6 +224,11 @@ namespace System.Runtime.CompilerServices
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
 
+            internal override void ExecuteFromThreadPool(Thread threadPoolThread)
+            {
+                MoveNext();
+            }
+
             private void MoveNext()
             {
                 ThunkTaskCore.MoveNext<ThunkTask<T>, Ops>(this);
@@ -289,6 +294,11 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for Continuation.");
                 m_action = MoveNext;
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
+            }
+
+            internal override void ExecuteFromThreadPool(Thread threadPoolThread)
+            {
+                MoveNext();
             }
 
             private void MoveNext()
@@ -474,7 +484,8 @@ namespace System.Runtime.CompilerServices
 
                     // Move to thread pool. TODO: Avoid allocation here, but currently we cannot queue `task` directly
                     // due to assert in ThreadPoolWorkQueue.Enqueue.
-                    ThreadPool.UnsafeQueueUserWorkItemInternal(new ThunkTaskThreadPoolWorkItem<T, TOps>(task), preferLocal: true);
+                    TOps.SetContinuationState(task, continuation);
+                    ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal: true);
                     return true;
                 }
 
@@ -520,14 +531,6 @@ namespace System.Runtime.CompilerServices
                 }
 
                 return false;
-            }
-
-            private sealed class ThunkTaskThreadPoolWorkItem<T, TOps>(T task) : IThreadPoolWorkItem where T : Task where TOps : IThunkTaskOps<T>
-            {
-                public void Execute()
-                {
-                    MoveNext<T, TOps>(task);
-                }
             }
         }
 
