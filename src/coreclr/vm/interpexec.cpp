@@ -12,7 +12,7 @@
 // for numeric_limits
 #include <limits>
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = NULL)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = (PCODE)0)
 {
     CONTRACTL
     {
