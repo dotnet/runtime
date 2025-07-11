@@ -48,10 +48,8 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StringSegment(string buffer, int offset, int length)
         {
-            // Validate arguments, check is minimal instructions with reduced branching for inlinable fast-path
-            // Negative values discovered though conversion to high values when converted to unsigned
             // Failure should be rare and location determination and message is delegated to failure functions
-            if (buffer == null || (uint)offset > (uint)buffer.Length || (uint)length > (uint)(buffer.Length - offset))
+            if (buffer == null || !SliceArgumentsAreValid(buffer.Length, offset, length))
             {
                 ThrowInvalidArguments(buffer, offset, length);
             }
@@ -128,12 +126,17 @@ namespace Microsoft.Extensions.Primitives
         /// </exception>
         public ReadOnlySpan<char> AsSpan(int start)
         {
-            if (!HasValue || start < 0)
+            string? buffer = Buffer;
+            int offset = Offset + start;
+            int length = Length - start;
+
+            // Using the same validation as AsSpan(int, int) so that the compiler can delete the redundant validation.
+            if (buffer is null || start < 0 || !SliceArgumentsAreValid(buffer.Length, offset, length))
             {
-                ThrowInvalidArguments(start, Length - start, ExceptionArgument.start);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
             }
 
-            return Buffer.AsSpan(Offset + start, Length - start);
+            return buffer.AsSpan(offset, length);
         }
 
         /// <summary>
@@ -150,7 +153,7 @@ namespace Microsoft.Extensions.Primitives
         /// </exception>
         public ReadOnlySpan<char> AsSpan(int start, int length)
         {
-            if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
+            if (!HasValue || !SliceArgumentsAreValid(Length, start, length))
             {
                 ThrowInvalidArguments(start, length, ExceptionArgument.start);
             }
@@ -397,7 +400,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string Substring(int offset, int length)
         {
-            if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
+            if (!HasValue || !SliceArgumentsAreValid(Length, offset, length))
             {
                 ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
@@ -430,7 +433,7 @@ namespace Microsoft.Extensions.Primitives
         /// </exception>
         public StringSegment Subsegment(int offset, int length)
         {
-            if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
+            if (!HasValue || !SliceArgumentsAreValid(Length, offset, length))
             {
                 ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
@@ -668,6 +671,20 @@ namespace Microsoft.Extensions.Primitives
             if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.comparisonType);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool SliceArgumentsAreValid(int sourceLength, int start, int length)
+        {
+            // Copy of the internal MemoryExtensions.SliceArgumentsAreValid helper.
+            if (IntPtr.Size == 8)
+            {
+                return (ulong)(uint)start + (ulong)(uint)length <= (ulong)(uint)sourceLength;
+            }
+            else
+            {
+                return (uint)start <= (uint)sourceLength && (uint)length <= (uint)(sourceLength - start);
             }
         }
 
