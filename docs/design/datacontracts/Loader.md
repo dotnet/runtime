@@ -52,7 +52,9 @@ record struct ModuleLookupTables(
 ```
 
 ``` csharp
-ModuleHandle GetModuleHandle(TargetPointer module);
+ModuleHandle GetModuleHandleFromModulePtr(TargetPointer module);
+ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
+TargetPointer GetModuleAddress(ModuleHandle handle);
 IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 TargetPointer GetAssembly(ModuleHandle handle);
@@ -146,9 +148,21 @@ private enum ModuleFlags_1 : uint
 
 ### Method Implementations
 ``` csharp
-ModuleHandle GetModuleHandle(TargetPointer modulePointer)
+ModuleHandle GetModuleHandleFromModulePtr(TargetPointer modulePointer)
 {
     return new ModuleHandle(modulePointer);
+}
+
+ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer)
+{
+    Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyPointer);
+    return new ModuleHandle(assembly.Module);
+}
+
+TargetPointer ILoader.GetModuleAddress(ModuleHandle handle)
+{
+    Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+    return module.Address;
 }
 
 IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
