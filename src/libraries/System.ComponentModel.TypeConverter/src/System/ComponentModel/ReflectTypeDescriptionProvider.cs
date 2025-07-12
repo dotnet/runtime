@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -24,7 +23,7 @@ namespace System.ComponentModel
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // ReflectedTypeData contains all of the type information we have gathered for a given type.
-        private readonly ConcurrentDictionary<Type, ReflectedTypeData> _typeData = new ConcurrentDictionary<Type, ReflectedTypeData>();
+        private readonly CollectibleKeyConcurrentHashtable<Type, ReflectedTypeData> _typeData = new CollectibleKeyConcurrentHashtable<Type, ReflectedTypeData>();
 
         // This is the signature we look for when creating types that are generic, but
         // want to know what type they are dealing with. Enums are a good example of this;
@@ -49,10 +48,10 @@ namespace System.ComponentModel
         // on Control, Component and object are also automatically filled
         // in. The keys to the property and event caches are types.
         // The keys to the attribute cache are either MemberInfos or types.
-        private static Hashtable? s_propertyCache;
-        private static Hashtable? s_eventCache;
-        private static Hashtable? s_attributeCache;
-        private static Hashtable? s_extendedPropertyCache;
+        private static CollectibleKeyHashtable? s_propertyCache;
+        private static CollectibleKeyHashtable? s_eventCache;
+        private static CollectibleKeyHashtable? s_attributeCache;
+        private static CollectibleKeyHashtable? s_extendedPropertyCache;
 
         // These are keys we stuff into our object cache. We use this
         // cache data to store extender provider info for an object.
@@ -193,13 +192,13 @@ namespace System.ComponentModel
             Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
         private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
 
-        private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
+        private static CollectibleKeyHashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new CollectibleKeyHashtable());
 
-        private static Hashtable EventCache => LazyInitializer.EnsureInitialized(ref s_eventCache, () => new Hashtable());
+        private static CollectibleKeyHashtable EventCache => LazyInitializer.EnsureInitialized(ref s_eventCache, () => new CollectibleKeyHashtable());
 
-        private static Hashtable AttributeCache => LazyInitializer.EnsureInitialized(ref s_attributeCache, () => new Hashtable());
+        private static CollectibleKeyHashtable AttributeCache => LazyInitializer.EnsureInitialized(ref s_attributeCache, () => new CollectibleKeyHashtable());
 
-        private static Hashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new Hashtable());
+        private static CollectibleKeyHashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new CollectibleKeyHashtable());
 
         /// <summary>Clear the global caches this maintains on top of reflection.</summary>
         internal static void ClearReflectionCaches()
@@ -1096,7 +1095,7 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(Type type)
         {
-            Hashtable attributeCache = AttributeCache;
+            CollectibleKeyHashtable attributeCache = AttributeCache;
             Attribute[]? attrs = (Attribute[]?)attributeCache[type];
             if (attrs != null)
             {
@@ -1124,7 +1123,7 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(MemberInfo member)
         {
-            Hashtable attributeCache = AttributeCache;
+            CollectibleKeyHashtable attributeCache = AttributeCache;
             Attribute[]? attrs = (Attribute[]?)attributeCache[member];
             if (attrs != null)
             {
@@ -1152,7 +1151,7 @@ namespace System.ComponentModel
         /// </summary>
         private static EventDescriptor[] ReflectGetEvents(Type type)
         {
-            Hashtable eventCache = EventCache;
+            CollectibleKeyHashtable eventCache = EventCache;
             EventDescriptor[]? events = (EventDescriptor[]?)eventCache[type];
             if (events != null)
             {
@@ -1252,7 +1251,7 @@ namespace System.ComponentModel
             // property store.
             //
             Type providerType = provider.GetType();
-            Hashtable extendedPropertyCache = ExtendedPropertyCache;
+            CollectibleKeyHashtable extendedPropertyCache = ExtendedPropertyCache;
             ReflectPropertyDescriptor[]? extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
             if (extendedProperties == null)
             {
@@ -1337,7 +1336,7 @@ namespace System.ComponentModel
 
         private static PropertyDescriptor[] ReflectGetPropertiesImpl(Type type)
         {
-            Hashtable propertyCache = PropertyCache;
+            CollectibleKeyHashtable propertyCache = PropertyCache;
             PropertyDescriptor[]? properties = (PropertyDescriptor[]?)propertyCache[type];
             if (properties != null)
             {
