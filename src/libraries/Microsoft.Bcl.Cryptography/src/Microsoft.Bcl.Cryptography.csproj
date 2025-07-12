@@ -186,6 +186,8 @@
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
              Link="Common\System\Security\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
+             Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
@@ -196,6 +198,8 @@
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.Pkcs1.cs"
+             Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Pkcs1.cs" />
 
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
   </ItemGroup>
@@ -337,8 +341,6 @@
              Link="Common\System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
              Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
-             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
@@ -375,6 +377,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptFinalizeKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" /> 
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
@@ -389,10 +393,18 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsa.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaAlgorithm.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
+             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.cs"
              Link="Common\System\Security\Cryptography\MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.Windows.cs"
@@ -452,8 +464,6 @@
              Link="Common\System\Security\Cryptography\MLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemCng.Windows.cs"
              Link="Common\System\Security\Cryptography\MLKemCng.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs"
              Link="Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"

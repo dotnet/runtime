@@ -15,17 +15,17 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        internal static bool SupportsAny() => false;
+        internal static partial bool SupportsAny() => false;
 
-        internal static bool IsAlgorithmSupportedImpl(CompositeMLDsaAlgorithm algorithm) => false;
+        internal static partial bool IsAlgorithmSupportedImpl(CompositeMLDsaAlgorithm algorithm) => false;
 
-        internal static CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm) =>
+        internal static partial CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
-        internal static CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static CompositeMLDsa ImportCompositeMLDsaPrivateKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial CompositeMLDsa ImportCompositeMLDsaPrivateKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
         protected override bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
@@ -37,10 +37,10 @@ namespace System.Security.Cryptography
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool TryExportCompositeMLDsaPublicKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten) =>
+        protected override bool TryExportCompositeMLDsaPublicKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool TryExportCompositeMLDsaPrivateKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten) =>
+        protected override bool TryExportCompositeMLDsaPrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
     }
 }

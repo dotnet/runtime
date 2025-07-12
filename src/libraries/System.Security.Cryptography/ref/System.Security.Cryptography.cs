@@ -581,7 +581,9 @@ namespace System.Security.Cryptography
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa GenerateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPrivateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPrivateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPublicKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPublicKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
@@ -599,9 +601,9 @@ namespace System.Security.Cryptography
         public static bool IsAlgorithmSupported(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm) { throw null; }
         public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
         public bool TryExportCompositeMLDsaPrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(System.ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
         public bool TryExportCompositeMLDsaPublicKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(System.ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(System.Span<byte> destination, out int bytesWritten);
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
