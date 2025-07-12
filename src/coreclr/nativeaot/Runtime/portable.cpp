@@ -127,7 +127,7 @@ FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
 }
 FCIMPLEND
 
-FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 {
     // TODO: Implement. We tail call to RhpNewArrayFast for now since there's a bunch of TODOs in the places
     // that matter anyway.
