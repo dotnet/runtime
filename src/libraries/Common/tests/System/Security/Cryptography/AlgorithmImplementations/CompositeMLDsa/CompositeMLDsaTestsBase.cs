@@ -123,6 +123,24 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPublicKey(key.AsSpan(0, key.Length - 1), out _));       
         }
 
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void ImportPrivateKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
+        {
+            byte[] secretKeyWithTrailingData = vector.SecretKey;
+            Array.Resize(ref secretKeyWithTrailingData, vector.SecretKey.Length + 1);
+            Assert.Throws<CryptographicException>(() => ImportPrivateKey(vector.Algorithm, secretKeyWithTrailingData));
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void ImportPublicKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
+        {
+            byte[] publicKeyWithTrailingData = vector.PublicKey;
+            Array.Resize(ref publicKeyWithTrailingData, vector.PublicKey.Length + 1);
+            Assert.Throws<CryptographicException>(() => ImportPublicKey(vector.Algorithm, publicKeyWithTrailingData));
+        }
+
         protected static void ExerciseSuccessfulVerify(CompositeMLDsa dsa, byte[] data, byte[] signature, byte[] context)
         {
             ReadOnlySpan<byte> buffer = [0, 1, 2, 3];

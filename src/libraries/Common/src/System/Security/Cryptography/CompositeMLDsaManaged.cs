@@ -26,6 +26,8 @@ namespace System.Security.Cryptography
         private MLDsa _mldsa;
         private ComponentAlgorithm _componentAlgorithm;
 
+        private AlgorithmMetadata AlgorithmDetails => field ??= s_algorithmMetadata[Algorithm];
+
         private CompositeMLDsaManaged(CompositeMLDsaAlgorithm algorithm, MLDsa mldsa, ComponentAlgorithm componentAlgorithm)
             : base(algorithm)
         {
@@ -37,9 +39,11 @@ namespace System.Security.Cryptography
 
         internal static bool IsAlgorithmSupportedImpl(CompositeMLDsaAlgorithm algorithm)
         {
+            AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
+
             return s_algorithmSupport.GetOrAdd(
                 algorithm,
-                alg => MLDsaImplementation.IsAlgorithmSupported(algorithm.MLDsaAlgorithm) && s_algorithmMetadata[algorithm].TraditionalAlgorithm switch
+                alg => MLDsaImplementation.IsAlgorithmSupported(metadata.MLDsaAlgorithm) && metadata.TraditionalAlgorithm switch
                 {
                     RsaAlgorithm rsaAlgorithm => RsaComponent.IsAlgorithmSupported(rsaAlgorithm),
                     ECDsaAlgorithm ecdsaAlgorithm => ECDsaComponent.IsAlgorithmSupported(ecdsaAlgorithm),
@@ -53,6 +57,8 @@ namespace System.Security.Cryptography
         internal static CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsAlgorithmSupportedImpl(algorithm));
+
+            AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
 
             // draft-ietf-lamps-pq-composite-sigs-latest (June 20, 2025), 5.1
             //  1.  Parse each constituent encoded public key.
@@ -78,11 +84,11 @@ namespace System.Security.Cryptography
             //
             //      output(mldsaPK, tradPK)
 
-            ReadOnlySpan<byte> mldsaKey = source.Slice(0, algorithm.MLDsaAlgorithm.PublicKeySizeInBytes);
-            ReadOnlySpan<byte> tradKey = source.Slice(algorithm.MLDsaAlgorithm.PublicKeySizeInBytes);
+            ReadOnlySpan<byte> mldsaKey = source.Slice(0, metadata.MLDsaAlgorithm.PublicKeySizeInBytes);
+            ReadOnlySpan<byte> tradKey = source.Slice(metadata.MLDsaAlgorithm.PublicKeySizeInBytes);
 
-            MLDsaImplementation mldsa = MLDsaImplementation.ImportPublicKey(algorithm.MLDsaAlgorithm, mldsaKey);
-            ComponentAlgorithm componentAlgorithm = s_algorithmMetadata[algorithm].TraditionalAlgorithm switch
+            MLDsaImplementation mldsa = MLDsaImplementation.ImportPublicKey(metadata.MLDsaAlgorithm, mldsaKey);
+            ComponentAlgorithm componentAlgorithm = metadata.TraditionalAlgorithm switch
             {
                 RsaAlgorithm rsaAlgorithm => RsaComponent.ImportPublicKey(rsaAlgorithm, tradKey),
                 _ => throw FailAndGetException(),
@@ -101,6 +107,8 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(IsAlgorithmSupportedImpl(algorithm));
 
+            AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
+
             // draft-ietf-lamps-pq-composite-sigs-latest (June 20, 2025), 5.2
             //  1.  Parse each constituent encoded key.
             //      The length of an ML-DSA private key is always a 32 byte seed
@@ -117,11 +125,11 @@ namespace System.Security.Cryptography
             //
             //      output (mldsaSeed, tradSK)
 
-            ReadOnlySpan<byte> mldsaKey = source.Slice(0, algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes);
-            ReadOnlySpan<byte> tradKey = source.Slice(algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes);
+            ReadOnlySpan<byte> mldsaKey = source.Slice(0, metadata.MLDsaAlgorithm.PrivateSeedSizeInBytes);
+            ReadOnlySpan<byte> tradKey = source.Slice(metadata.MLDsaAlgorithm.PrivateSeedSizeInBytes);
 
-            MLDsaImplementation mldsa = MLDsaImplementation.ImportSeed(algorithm.MLDsaAlgorithm, mldsaKey);
-            ComponentAlgorithm componentAlgorithm = s_algorithmMetadata[algorithm].TraditionalAlgorithm switch
+            MLDsaImplementation mldsa = MLDsaImplementation.ImportSeed(metadata.MLDsaAlgorithm, mldsaKey);
+            ComponentAlgorithm componentAlgorithm = metadata.TraditionalAlgorithm switch
             {
                 RsaAlgorithm rsaAlgorithm => RsaComponent.ImportPrivateKey(rsaAlgorithm, tradKey),
                 _ => throw FailAndGetException(),
@@ -155,7 +163,7 @@ namespace System.Security.Cryptography
             Span<byte> r = stackalloc byte[CompositeMLDsaAlgorithm.RandomizerSizeInBytes];
             RandomNumberGenerator.Fill(r);
 
-            byte[] M_prime = GetMessageRepresentative(Algorithm, context, r, data);
+            byte[] M_prime = GetMessageRepresentative(AlgorithmDetails, context, r, data);
 
             //  3.  Separate the private key into component keys
             //      and re-generate the ML-DSA key from seed.
@@ -177,15 +185,15 @@ namespace System.Security.Cryptography
             //  attackers from learning which component algorithm failed.
 
             Span<byte> randomizer = destination.Slice(0, CompositeMLDsaAlgorithm.RandomizerSizeInBytes);
-            Span<byte> mldsaSig = destination.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
-            Span<byte> tradSig = destination.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
+            Span<byte> mldsaSig = destination.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes, AlgorithmDetails.MLDsaAlgorithm.SignatureSizeInBytes);
+            Span<byte> tradSig = destination.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes + AlgorithmDetails.MLDsaAlgorithm.SignatureSizeInBytes);
 
             bool mldsaSigned = false;
             bool tradSigned = false;
 
             try
             {
-                _mldsa.SignData(M_prime, mldsaSig, s_algorithmMetadata[Algorithm].DomainSeparator);
+                _mldsa.SignData(M_prime, mldsaSig, AlgorithmDetails.DomainSeparator);
                 mldsaSigned = true;
             }
             catch (CryptographicException)
@@ -193,12 +201,11 @@ namespace System.Security.Cryptography
             }
 
             int tradBytesWritten = 0;
-            bool tradResult = false;
 
             try
             {
-                tradResult = _componentAlgorithm.TrySignData(M_prime, tradSig, out tradBytesWritten);
-                tradSigned = true;
+                tradSigned = _componentAlgorithm.TrySignData(M_prime, tradSig, out tradBytesWritten);
+                Debug.Assert(tradSigned, "Signature buffer should be exactly sized.");
             }
             catch (CryptographicException)
             {
@@ -214,12 +221,6 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(destination);
                 throw new CryptographicException(); // TODO resx
-            }
-            else if (!tradResult)
-            {
-                CryptographicOperations.ZeroMemory(destination);
-                bytesWritten = 0;
-                return false;
             }
 
             //  6.  Output the encoded composite signature value.
@@ -251,8 +252,8 @@ namespace System.Security.Cryptography
             //      "Invalid signature" and stop.
 
             ReadOnlySpan<byte> r = signature.Slice(0, CompositeMLDsaAlgorithm.RandomizerSizeInBytes);
-            ReadOnlySpan<byte> mldsaSig = signature.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes, Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
-            ReadOnlySpan<byte> tradSig = signature.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes);
+            ReadOnlySpan<byte> mldsaSig = signature.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes, AlgorithmDetails.MLDsaAlgorithm.SignatureSizeInBytes);
+            ReadOnlySpan<byte> tradSig = signature.Slice(CompositeMLDsaAlgorithm.RandomizerSizeInBytes + AlgorithmDetails.MLDsaAlgorithm.SignatureSizeInBytes);
 
             //  3.  Compute a Hash of the Message.
             //      As in FIPS 204, len(ctx) is encoded as a single unsigned byte.
@@ -260,7 +261,7 @@ namespace System.Security.Cryptography
             //          M' = Prefix || Domain || len(ctx) || ctx || r
             //                                                   || PH( M )
 
-            byte[] M_prime = GetMessageRepresentative(Algorithm, context, r, data);
+            byte[] M_prime = GetMessageRepresentative(AlgorithmDetails, context, r, data);
 
             //  4.  Check each component signature individually, according to its
             //      algorithm specification.
@@ -277,7 +278,7 @@ namespace System.Security.Cryptography
 
             // We don't short circuit here because we want to avoid revealing which component signature failed.
             // This is not required in the spec, but it is a good practice to avoid timing attacks.
-            return _mldsa.VerifyData(M_prime, mldsaSig, s_algorithmMetadata[Algorithm].DomainSeparator) & _componentAlgorithm.VerifyData(M_prime, tradSig);
+            return _mldsa.VerifyData(M_prime, mldsaSig, AlgorithmDetails.DomainSeparator) & _componentAlgorithm.VerifyData(M_prime, tradSig);
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
@@ -290,11 +291,11 @@ namespace System.Security.Cryptography
             //
             //      output mldsaPK || tradPK
 
-            _mldsa.ExportMLDsaPublicKey(destination.Slice(0, Algorithm.MLDsaAlgorithm.PublicKeySizeInBytes));
+            _mldsa.ExportMLDsaPublicKey(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes));
 
-            if (_componentAlgorithm.TryExportPublicKey(destination.Slice(Algorithm.MLDsaAlgorithm.PublicKeySizeInBytes), out int componentBytesWritten))
+            if (_componentAlgorithm.TryExportPublicKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes), out int componentBytesWritten))
             {
-                bytesWritten = Algorithm.MLDsaAlgorithm.PublicKeySizeInBytes + componentBytesWritten;
+                bytesWritten = AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes + componentBytesWritten;
                 return true;
             }
 
@@ -311,11 +312,11 @@ namespace System.Security.Cryptography
 
             try
             {
-                _mldsa.ExportMLDsaPrivateSeed(destination.Slice(0, Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes));
+                _mldsa.ExportMLDsaPrivateSeed(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes));
 
-                if (_componentAlgorithm.TryExportPrivateKey(destination.Slice(Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes), out int componentBytesWritten))
+                if (_componentAlgorithm.TryExportPrivateKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes), out int componentBytesWritten))
                 {
-                    bytesWritten = Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes + componentBytesWritten;
+                    bytesWritten = AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes + componentBytesWritten;
                     return true;
                 }
 
@@ -344,14 +345,12 @@ namespace System.Security.Cryptography
         }
 
         private static byte[] GetMessageRepresentative(
-            CompositeMLDsaAlgorithm algorithm,
+            AlgorithmMetadata metadata,
             ReadOnlySpan<byte> context,
             ReadOnlySpan<byte> r,
             ReadOnlySpan<byte> message)
         {
             Debug.Assert(r.Length is CompositeMLDsaAlgorithm.RandomizerSizeInBytes);
-
-            AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
 
             // M' = Prefix || Domain || len(ctx) || ctx || r || PH( M )
 
@@ -505,6 +504,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa44,
                         new RsaAlgorithm(2048, HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x00],
                         HashAlgorithmName.SHA256)
@@ -512,6 +512,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pkcs15,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa44,
                         new RsaAlgorithm(2048, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x01],
                         HashAlgorithmName.SHA256)
@@ -519,6 +520,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa44WithEd25519,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa44,
                         new EdDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x02],
                         HashAlgorithmName.SHA512)
@@ -526,6 +528,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa44,
                         new ECDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x03],
                         HashAlgorithmName.SHA256)
@@ -533,6 +536,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x04],
                         HashAlgorithmName.SHA512)
@@ -540,6 +544,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pkcs15,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new RsaAlgorithm(3072, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x05],
                         HashAlgorithmName.SHA512)
@@ -547,6 +552,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x06],
                         HashAlgorithmName.SHA512)
@@ -554,6 +560,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pkcs15,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x07],
                         HashAlgorithmName.SHA512)
@@ -561,6 +568,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new ECDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x08],
                         HashAlgorithmName.SHA512)
@@ -568,6 +576,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new ECDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x09],
                         HashAlgorithmName.SHA512)
@@ -575,6 +584,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new ECDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0A],
                         HashAlgorithmName.SHA512)
@@ -582,6 +592,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa65WithEd25519,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa65,
                         new EdDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0B],
                         HashAlgorithmName.SHA512)
@@ -589,6 +600,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa87,
                         new ECDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0C],
                         HashAlgorithmName.SHA512)
@@ -596,6 +608,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa87,
                         new ECDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0D],
                         HashAlgorithmName.SHA512)
@@ -603,6 +616,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa87WithEd448,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa87,
                         new EdDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0E],
                         new HashAlgorithmName("SHAKE256"))
@@ -610,6 +624,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa87,
                         new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0F],
                         HashAlgorithmName.SHA512)
@@ -617,6 +632,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa87,
                         new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x10],
                         HashAlgorithmName.SHA512)
@@ -624,6 +640,7 @@ namespace System.Security.Cryptography
                 {
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521,
                     new AlgorithmMetadata(
+                        MLDsaAlgorithm.MLDsa87,
                         new ECDsaAlgorithm(),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x11],
                         HashAlgorithmName.SHA512)
@@ -635,8 +652,13 @@ namespace System.Security.Cryptography
             return algorithmMetadata;
         }
 
-        private sealed class AlgorithmMetadata(object traditionalAlgorithm, byte[] domainSeparator, HashAlgorithmName hashAlgorithmName)
+        private sealed class AlgorithmMetadata(
+            MLDsaAlgorithm mldsaAlgorithm,
+            object traditionalAlgorithm,
+            byte[] domainSeparator,
+            HashAlgorithmName hashAlgorithmName)
         {
+            internal MLDsaAlgorithm MLDsaAlgorithm { get; } = mldsaAlgorithm;
             internal object TraditionalAlgorithm { get; } = traditionalAlgorithm;
             internal byte[] DomainSeparator { get; } = domainSeparator;
             internal HashAlgorithmName HashAlgorithmName { get; } = hashAlgorithmName;

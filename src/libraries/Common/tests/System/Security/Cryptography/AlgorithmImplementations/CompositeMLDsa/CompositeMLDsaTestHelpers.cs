@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Formats.Asn1;
 using Xunit;
 using Xunit.Sdk;
@@ -64,43 +65,81 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        internal static void ExecuteComponentAction(CompositeMLDsaAlgorithm algo, Action rsaFunc, Action ecdsaFunc, Action eddsaFunc)
+        internal class RsaAlgorithm(int keySizeInBits)
+        {
+            internal int KeySizeInBits { get; } = keySizeInBits;
+        }
+
+        internal class ECDsaAlgorithm(int keySizeInBits)
+        {
+            internal int KeySizeInBits { get; } = keySizeInBits;
+        }
+
+        internal class EdDsaAlgorithm(int keySizeInBits)
+        {
+            internal int KeySizeInBits { get; } = keySizeInBits;
+        }
+
+        internal static void ExecuteComponentAction(
+            CompositeMLDsaAlgorithm algo,
+            Action<RsaAlgorithm> rsaFunc,
+            Action<ECDsaAlgorithm> ecdsaFunc,
+            Action<EdDsaAlgorithm> eddsaFunc)
         {
             ExecuteComponentFunc(
                 algo,
-                () => { rsaFunc(); return true; },
-                () => { ecdsaFunc(); return true; },
-                () => { eddsaFunc(); return true; });
+                info => { rsaFunc(info); return true; },
+                info => { ecdsaFunc(info); return true; },
+                info => { eddsaFunc(info); return true; });
         }
 
-        internal static T ExecuteComponentFunc<T>(CompositeMLDsaAlgorithm algo, Func<T> rsaFunc, Func<T> ecdsaFunc, Func<T> eddsaFunc)
+        internal static T ExecuteComponentFunc<T>(
+            CompositeMLDsaAlgorithm algo,
+            Func<RsaAlgorithm, T> rsaFunc,
+            Func<ECDsaAlgorithm, T> ecdsaFunc,
+            Func<EdDsaAlgorithm, T> eddsaFunc)
         {
             if (algo == CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pkcs15 ||
-                algo == CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss ||
-                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pkcs15 ||
-                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss ||
-                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pkcs15 ||
-                algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss ||
-                algo == CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss ||
-                algo == CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss)
+                algo == CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss)
             {
-                return rsaFunc();
+                return rsaFunc(new RsaAlgorithm(2048));
+            }
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pkcs15 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss)
+            {
+                return rsaFunc(new RsaAlgorithm(3072));
+            }
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pkcs15 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss)
+            {
+                return rsaFunc(new RsaAlgorithm(4096));
             }
             else if (algo == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
                      algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521)
+                     algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256)
             {
-                return ecdsaFunc();
+                return ecdsaFunc(new ECDsaAlgorithm(256));
             }
-            else if (algo == CompositeMLDsaAlgorithm.MLDsa87WithEd448 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa44WithEd25519 ||
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1 ||
+                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384)
+            {
+                return ecdsaFunc(new ECDsaAlgorithm(384));
+            }
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521)
+            {
+                return ecdsaFunc(new ECDsaAlgorithm(521));
+            }
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa44WithEd25519 ||
                      algo == CompositeMLDsaAlgorithm.MLDsa65WithEd25519)
             {
-                return eddsaFunc();
+                return eddsaFunc(new EdDsaAlgorithm(256));
+            }
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa87WithEd448)
+            {
+                return eddsaFunc(new EdDsaAlgorithm(456));
             }
             else
             {
@@ -146,15 +185,15 @@ namespace System.Security.Cryptography.Tests
 
             ExecuteComponentAction(
                 algorithm,
-                () =>
+                _ =>
                 {
                     RSAParameters expectedRsaParameters = RSAParametersFromRawPrivateKey(expectedTradKey);
                     RSAParameters actualRsaParameters = RSAParametersFromRawPrivateKey(actualTradKey);
 
                     Rsa.Tests.ImportExport.AssertKeyEquals(expectedRsaParameters, actualRsaParameters);
                 },
-                () => Assert.Equal(expectedTradKey, actualTradKey),
-                () => Assert.Equal(expectedTradKey, actualTradKey));
+                _ => Assert.Equal(expectedTradKey, actualTradKey),
+                _ => Assert.Equal(expectedTradKey, actualTradKey));
         }
 
         private static RSAParameters RSAParametersFromRawPrivateKey(ReadOnlySpan<byte> key)

@@ -143,37 +143,17 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (Algorithm.MinSignatureSizeInBytes == Algorithm.MaxSignatureSizeInBytes)
+            if (Algorithm.SignatureSize.IsExact)
             {
-                byte[] signature = new byte[Algorithm.MaxSignatureSizeInBytes];
-
-                if (!TrySignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), signature, out int written) ||
-                    written != Algorithm.MaxSignatureSizeInBytes)
-                {
-                    Debug.Fail($"Signature exceeds {nameof(Algorithm.MaxSignatureSizeInBytes)} ({Algorithm.MaxSignatureSizeInBytes}).");
-                    throw new CryptographicException();
-                }
-
-                return signature;
+                return ExportExactSize(
+                    Algorithm.MaxSignatureSizeInBytes,
+                    (key, dest, out written) => key.TrySignData(new ReadOnlySpan<byte>(data), dest, out written, new ReadOnlySpan<byte>(context)));
             }
 
-            byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
-
-            try
-            {
-                if (!TrySignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), rented, out int written))
-                {
-                    Debug.Fail($"Signature exceeds {nameof(Algorithm.MaxSignatureSizeInBytes)} ({Algorithm.MaxSignatureSizeInBytes}).");
-                    throw new CryptographicException();
-                }
-
-                return rented.AsSpan(0, written).ToArray();
-            }
-            finally
-            {
-                // Signature does not contain sensitive information.
-                CryptoPool.Return(rented, clearSize: 0);
-            }
+            return ExportWithCallback(
+                Algorithm.MaxSignatureSizeInBytes,
+                (key, dest, out written) => key.TrySignData(new ReadOnlySpan<byte>(data), dest, out written, new ReadOnlySpan<byte>(context)),
+                key => key.ToArray());
         }
 
         /// <summary>
@@ -224,13 +204,29 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (destination.Length < Algorithm.MinSignatureSizeInBytes)
+            if (Algorithm.SignatureSize.IsAlwaysLargerThan(destination.Length))
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            return TrySignDataCore(data, context, destination, out bytesWritten);
+            if (TrySignDataCore(data, context, destination, out int written))
+            {
+                if (!Algorithm.SignatureSize.IsValidSize(written))
+                {
+                    CryptographicOperations.ZeroMemory(destination);
+                    bytesWritten = 0;
+
+                    // TODO resx
+                    throw new CryptographicException();
+                }
+
+                bytesWritten = written;
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <summary>
@@ -336,12 +332,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (signature.Length < Algorithm.MinSignatureSizeInBytes)
-            {
-                return false;
-            }
-
-            return VerifyDataCore(data, context, signature);
+            return Algorithm.SignatureSize.IsValidSize(signature.Length) && VerifyDataCore(data, context, signature);
         }
 
         /// <summary>
@@ -680,9 +671,9 @@ namespace System.Security.Cryptography
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
-                if (key.Length < algorithm.MLDsaAlgorithm.PublicKeySizeInBytes)
+                if (!algorithm.PublicKeySize.IsValidSize(key.Length))
                 {
-                    throw new CryptographicException(SR.Argument_PublicKeyTooShortForAlgorithm);
+                    throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
 
                 dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key.Span);
@@ -879,9 +870,9 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                if (key.Length < algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes)
+                if (!algorithm.PrivateKeySize.IsValidSize(key.Length))
                 {
-                    throw new CryptographicException(SR.Argument_PrivateKeyTooShortForAlgorithm);
+                    throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                 }
 
                 dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, key);
@@ -894,6 +885,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static CompositeMLDsa ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm algorithm, byte[] source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ArgumentNullException.ThrowIfNull(source);
 
             return ImportCompositeMLDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
@@ -926,11 +918,12 @@ namespace System.Security.Cryptography
         /// </exception>
         public static CompositeMLDsa ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported(algorithm);
 
-            if (source.Length < algorithm.MLDsaAlgorithm.PublicKeySizeInBytes)
+            if (!algorithm.PublicKeySize.IsValidSize(source.Length))
             {
-                throw new CryptographicException(SR.Argument_PublicKeyTooShortForAlgorithm);
+                throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
             }
 
             return CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, source);
@@ -942,6 +935,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static CompositeMLDsa ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm algorithm, byte[] source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ArgumentNullException.ThrowIfNull(source);
 
             return ImportCompositeMLDsaPrivateKey(algorithm, new ReadOnlySpan<byte>(source));
@@ -974,11 +968,12 @@ namespace System.Security.Cryptography
         /// </exception>
         public static CompositeMLDsa ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported(algorithm);
 
-            if (source.Length < algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes)
+            if (!algorithm.PrivateKeySize.IsValidSize(source.Length))
             {
-                throw new CryptographicException(SR.Argument_PrivateKeyTooShortForAlgorithm);
+                throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
             }
 
             return CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, source);
@@ -1389,7 +1384,7 @@ namespace System.Security.Cryptography
 
             // The bound can be tightened but private key length of some traditional algorithms,
             // can vary and aren't worth the complex calculation.
-            int minimumPossiblePkcs8Key = Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes;
+            int minimumPossiblePkcs8Key = Algorithm.PrivateKeySize.MinimumSizeInBytes;
 
             if (destination.Length < minimumPossiblePkcs8Key)
             {
@@ -1508,6 +1503,13 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
+            if (Algorithm.PublicKeySize.IsExact)
+            {
+                return ExportExactSize(
+                    Algorithm.PublicKeySize.MinimumSizeInBytes,
+                    static (key, dest, out written) => key.TryExportCompositeMLDsaPublicKey(dest, out written));
+            }
+
             return ExportPublicKeyCallback(static publicKey => publicKey.ToArray());
         }
 
@@ -1535,13 +1537,29 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            if (destination.Length < Algorithm.MLDsaAlgorithm.PublicKeySizeInBytes)
+            if (Algorithm.PublicKeySize.IsAlwaysLargerThan(destination.Length))
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            return TryExportCompositeMLDsaPublicKeyCore(destination, out bytesWritten);
+            if (TryExportCompositeMLDsaPublicKeyCore(destination, out int written))
+            {
+                if (!Algorithm.PublicKeySize.IsValidSize(written))
+                {
+                    CryptographicOperations.ZeroMemory(destination);
+                    bytesWritten = 0;
+
+                    // TODO resx
+                    throw new CryptographicException();
+                }
+
+                bytesWritten = written;
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <summary>
@@ -1560,12 +1578,16 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO The private key has a max size so add it as CompositeMLDsaAlgorithm.MaxPrivateKeySize and use it here.
-            int initalSize = Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes;
+            if (Algorithm.PrivateKeySize.IsExact)
+            {
+                return ExportExactSize(
+                    Algorithm.PrivateKeySize.MinimumSizeInBytes,
+                    static (key, dest, out written) => key.TryExportCompositeMLDsaPrivateKey(dest, out written));
+            }
 
             return ExportWithCallback(
-                initalSize,
-                static (key, dest, out written) => key.TryExportCompositeMLDsaPrivateKeyCore(dest, out written),
+                Algorithm.PrivateKeySize.InitialExportBufferSizeInBytes,
+                static (key, dest, out written) => key.TryExportCompositeMLDsaPrivateKey(dest, out written),
                 static privateKey => privateKey.ToArray());
         }
 
@@ -1593,13 +1615,29 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            if (destination.Length < Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes)
+            if (Algorithm.PrivateKeySize.IsAlwaysLargerThan(destination.Length))
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            return TryExportCompositeMLDsaPrivateKeyCore(destination, out bytesWritten);
+            if (TryExportCompositeMLDsaPrivateKeyCore(destination, out int written))
+            {
+                if (!Algorithm.PrivateKeySize.IsValidSize(written))
+                {
+                    CryptographicOperations.ZeroMemory(destination);
+                    bytesWritten = 0;
+
+                    // TODO resx
+                    throw new CryptographicException();
+                }
+
+                bytesWritten = written;
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <summary>
@@ -1721,8 +1759,7 @@ namespace System.Security.Cryptography
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(ProcessExportedContent<TResult> func)
         {
-            // TODO Pick a good estimate for the initial size of the buffer.
-            int initialSize = 1;
+            int initialSize = Algorithm.PrivateKeySize.InitialExportBufferSizeInBytes;
 
             return ExportWithCallback(
                 initialSize,
@@ -1759,13 +1796,9 @@ namespace System.Security.Cryptography
 
         private TResult ExportPublicKeyCallback<TResult>(ProcessExportedContent<TResult> func)
         {
-            // TODO RSA is the only algo without a strict max size. The exponent can be arbitrarily large,
-            // but in practice it is always 65537. Add an internal CompositeMLDsaAlgorithm.EstimatedMaxPublicKeySizeInBytes and use that here.
-            int initialSize = Algorithm.MLDsaAlgorithm.PublicKeySizeInBytes;
-
             return ExportWithCallback(
-                initialSize,
-                static (key, dest, out written) => key.TryExportCompositeMLDsaPublicKeyCore(dest, out written),
+                Algorithm.PublicKeySize.InitialExportBufferSizeInBytes,
+                static (key, dest, out written) => key.TryExportCompositeMLDsaPublicKey(dest, out written),
                 func);
         }
 
@@ -1805,6 +1838,21 @@ namespace System.Security.Cryptography
             {
                 CryptoPool.Return(buffer, written);
             }
+        }
+
+        private byte[] ExportExactSize(int exactSize, TryExportFunc tryExportFunc)
+        {
+            byte[] ret = new byte[exactSize];
+
+            if (!tryExportFunc(this, ret, out int written) || written != exactSize)
+            {
+                CryptographicOperations.ZeroMemory(ret);
+
+                // TODO resx
+                throw new CryptographicException();
+            }
+
+            return ret;
         }
 
         private static CompositeMLDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)

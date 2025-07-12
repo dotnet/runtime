@@ -4,7 +4,7 @@
 using System.Security.Cryptography.Tests;
 using Xunit;
 
-namespace System.Security.Cryptography.SLHDsa.Tests
+namespace System.Security.Cryptography.Tests
 {
     [ConditionalClass(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
     public sealed class CompositeMLDsaImplementationTests : CompositeMLDsaTestsBase

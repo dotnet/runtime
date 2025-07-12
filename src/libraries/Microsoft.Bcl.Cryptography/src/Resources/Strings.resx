@@ -105,11 +105,8 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
-  <data name="Argument_PrivateKeyTooShortForAlgorithm" xml:space="preserve">
+  <data name="Argument_PrivateKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The private key is too short for the indicated algorithm.</value>
-  </data>
-  <data name="Argument_PublicKeyTooShortForAlgorithm" xml:space="preserve">
-    <value>The public key is too short for the indicated algorithm.</value>
   </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>

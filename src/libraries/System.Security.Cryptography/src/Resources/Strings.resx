@@ -141,14 +141,14 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_PrivateKeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The private key is too short for the indicated algorithm.</value>
+  </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>
   </data>
   <data name="Argument_SecretKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The secret key is not the correct size for the indicated algorithm.</value>
-  </data>
-  <data name="Argument_PrivateKeyTooShortForAlgorithm" xml:space="preserve">
-    <value>The private key is too short for the indicated algorithm.</value>
   </data>
   <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
     <value>The private seed is not the correct size for the indicated algorithm.</value>
