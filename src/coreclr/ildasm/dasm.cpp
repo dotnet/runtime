@@ -1133,6 +1133,7 @@ BOOL PrintClassList()
             if (IsTdAbstract(dwClassAttrs))         szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(abstract) ");
             if (IsTdAutoLayout(dwClassAttrs))       szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(auto) ");
             if (IsTdSequentialLayout(dwClassAttrs)) szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(sequential) ");
+            if (IsTdExtendedLayout(dwClassAttrs))   szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(extended) ");
             if (IsTdExplicitLayout(dwClassAttrs))   szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(explicit) ");
             if (IsTdAnsiClass(dwClassAttrs))        szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(ansi) ");
             if (IsTdUnicodeClass(dwClassAttrs))     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(unicode) ");
@@ -4684,6 +4685,7 @@ BOOL DumpClass(mdTypeDef cl, DWORD dwEntryPointToken, void* GUICookie, ULONG Wha
     if (IsTdAutoLayout(dwClassAttrs))               szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"auto ");
     if (IsTdSequentialLayout(dwClassAttrs))         szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"sequential ");
     if (IsTdExplicitLayout(dwClassAttrs))           szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"explicit ");
+    if (IsTdExtendedLayout(dwClassAttrs))           szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"extended ");
     if (IsTdAnsiClass(dwClassAttrs))                szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"ansi ");
     if (IsTdUnicodeClass(dwClassAttrs))             szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"unicode ");
     if (IsTdAutoClass(dwClassAttrs))                szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"autochar ");
