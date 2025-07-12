@@ -5,6 +5,7 @@
         <SubprojectProps Include="RuntimeConfiguration" Value="$(RuntimeConfiguration)" />
         <SubprojectProps Include="LibrariesConfiguration" Value="$(LibrariesConfiguration)" />
         <SubprojectProps Include="RuntimeIdentifier" Value="$(TargetRid)" />
+        <SubprojectProps Include="UseBootstrapLayout" Value="$(UseBootstrap)" />
     </ItemGroup>
 
     <PropertyGroup>

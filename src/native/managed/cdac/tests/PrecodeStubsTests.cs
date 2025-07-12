@@ -117,6 +117,16 @@ public class PrecodeStubsTests
         StubPrecodeSize = 12,
     };
 
+    internal static PrecodeTestDescriptor RiscV64TestDescriptor = new PrecodeTestDescriptor("RiscV64") {
+        Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
+        ReadWidthOfPrecodeType = 1,
+        ShiftOfPrecodeType = 0,
+        OffsetOfPrecodeType = 0,
+        StubCodePageSize = 0x4000u, // 16KiB
+        StubPrecode = 0x17,
+        StubPrecodeSize = 24,
+    };
+
     public static IEnumerable<object[]> PrecodeTestDescriptorData()
     {
         var arch32le = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false };
@@ -125,6 +135,7 @@ public class PrecodeStubsTests
 
         yield return new object[] { X64TestDescriptor };
         yield return new object[] { Arm64TestDescriptor };
+        yield return new object[] { RiscV64TestDescriptor };
         yield return new object[] { LoongArch64TestDescriptor };
         yield return new object[] { Arm32Thumb };
         // FIXME: maybe make these a little more exotic
@@ -329,11 +340,11 @@ public class PrecodeStubsTests
             Builder.AddHeapFragment(stubCodeFragment);
 
             Span<byte> thisPtrStubData = Builder.BorrowAddressRange(thisPtrRetBufStubDataFragment.Address, (int)thisPtrRetBufDataTypeInfo.Size);
-            
+
             Builder.TargetTestHelpers.WritePointer(thisPtrStubData.Slice(thisPtrRetBufDataTypeInfo.Fields[nameof(Data.ThisPtrRetBufPrecodeData.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
 
             Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)stubDataTypeInfo.Size);
-            
+
             Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.Type)].Offset, sizeof(byte)), test.ThisPtrRetBufPrecode);
             Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.SecretParam)].Offset, Builder.TargetTestHelpers.PointerSize), thisPtrRetBufStubDataFragment.Address);
 
