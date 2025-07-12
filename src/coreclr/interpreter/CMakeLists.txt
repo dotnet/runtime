@@ -41,7 +41,7 @@ else()
     add_custom_target(interpreter_exports DEPENDS ${EXPORTS_FILE})
 endif()
 
-if(CLR_CMAKE_TARGET_BROWSER)
+if(FEATURE_STATICALLY_LINKED)
   set(LIBRARY_TYPE STATIC)
 else()
   set(LIBRARY_TYPE SHARED)
