@@ -1696,28 +1696,15 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
 
     /* Set the instruction - special case jumping a function */
-    instruction ins;
-
-    ins = INS_jalr; // jalr
-    id->idIns(ins);
+    id->idIns(INS_jalr);
 
     id->idInsOpt(INS_OPTS_C);
-    // TODO-RISCV64: maybe optimize.
-
-    // INS_OPTS_C: placeholders.  1/2/4-ins:
+    // INS_OPTS_C: placeholders.  1/2-ins:
     //   if (callType == EC_INDIR_R)
-    //      jalr REG_R0/REG_RA, ireg, offset   <---- 1-ins
+    //      jalr zero/ra, ireg, offset
     //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
-    //     if reloc:
-    //             //pc + offset_38bits       # only when reloc.
-    //      auipc t2, addr-hi20
-    //      jalr r0/1, t2, addr-lo12
-    //
-    //     else:
-    //      lui  t2, dst_offset_lo32-hi
-    //      ori  t2, t2, dst_offset_lo32-lo
-    //      lui  t2, dst_offset_hi32-lo
-    //      jalr REG_R0/REG_RA, t2, 0
+    //      auipc t2/ra, offset-hi20
+    //      jalr zero/ra, t2/ra, offset-lo12
 
     /* Record the address: method, indirection, or funcptr */
     if (params.callType == EC_INDIR_R)
@@ -1750,16 +1737,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         void* addr =
             (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
         id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (emitComp->opts.compReloc)
-        {
-            id->idSetIsDspReloc();
-            id->idCodeSize(8);
-        }
-        else
-        {
-            id->idCodeSize(32);
-        }
+        id->idCodeSize(2 * sizeof(code_t));
+        id->idSetIsDspReloc();
     }
 
 #ifdef DEBUG
@@ -1794,11 +1773,10 @@ void emitter::emitIns_Call(const EmitCallParams& params)
  *  Output a call instruction.
  */
 
-unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
+unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
 {
-    unsigned char callInstrSize = sizeof(code_t); // 4 bytes
-    regMaskTP     gcrefRegs;
-    regMaskTP     byrefRegs;
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
 
@@ -1837,130 +1815,29 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
 #endif // DEBUG
 
     assert(id->idIns() == INS_jalr);
+    BYTE* origDst = dst;
     if (id->idIsCallRegPtr())
     { // EC_INDIR_R
         ssize_t offset = id->idSmallCns();
-        assert(isValidSimm12(offset));
-        code = emitInsCode(id->idIns());
-        code |= (code_t)id->idReg4() << 7;
-        code |= (code_t)id->idReg3() << 15;
-        code |= (code_t)offset << 20;
-        emitOutput_Instr(dst, code);
-    }
-    else if (id->idIsReloc())
-    {
-        // pc + offset_32bits
-        //
-        //   auipc t2, addr-hi20
-        //   jalr r0/1,t2,addr-lo12
-
-        emitOutput_Instr(dst, 0x00000397);
-
-        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
-
-        int reg2 = (int)(addr & 1);
-        addr -= reg2;
-
-        if (!emitComp->opts.compReloc)
-        {
-            assert(isValidSimm32(addr - (ssize_t)dst));
-        }
-
-        assert((addr & 1) == 0);
-
-        dst += 4;
-        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
-
-#ifdef DEBUG
-        code = emitInsCode(INS_auipc);
-        assert((code | (REG_DEFAULT_HELPER_CALL_TARGET << 7)) == 0x00000397);
-        assert((int)REG_DEFAULT_HELPER_CALL_TARGET == 7);
-        code = emitInsCode(INS_jalr);
-        assert(code == 0x00000067);
-#endif
-        emitOutput_Instr(dst, 0x00000067 | (REG_DEFAULT_HELPER_CALL_TARGET << 15) | reg2 << 7);
-
-        emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg4(), id->idReg3(), TrimSignedToImm12(offset));
     }
     else
     {
-        // lui  t2, dst_offset_hi32-hi
-        // addi t2, t2, dst_offset_hi32-lo
-        // slli t2, t2, 11
-        // addi t2, t2, dst_offset_low32-hi
-        // slli t2, t2, 11
-        // addi t2, t2, dst_offset_low32-md
-        // slli t2, t2, 10
-        // jalr t2
+        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
 
-        ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
-        assert((uint64_t)(imm >> 32) <= 0x7fff); // RISC-V Linux Kernel SV48
+        regNumber linkReg = (regNumber)(addr & 1);
+        assert(linkReg == REG_ZERO || linkReg == REG_RA);
+        addr -= linkReg;
+        assert((addr & 1) == 0);
+        regNumber tempReg = (linkReg == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
 
-        int reg2 = (int)(imm & 1);
-        imm -= reg2;
+        dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, 0);
+        emitGCregDeadUpd(tempReg, dst);
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
 
-        UINT32 high = imm >> 32;
-        code        = emitInsCode(INS_lui);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
-
-        code = emitInsCode(INS_addi);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(high & 0xfff) << 20;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_slli);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(11 << 20);
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        UINT32 low = imm & 0xffffffff;
-
-        code = emitInsCode(INS_addi);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= ((low >> 21) & 0x7ff) << 20;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_slli);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(11 << 20);
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_addi);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= ((low >> 10) & 0x7ff) << 20;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_slli);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(10 << 20);
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_jalr);
-        code |= (code_t)reg2 << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (low & 0x3ff) << 20;
-        // the offset default is 0;
-        emitOutput_Instr(dst, code);
+        assert(id->idIsDspReloc());
+        emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
     }
-
-    dst += 4;
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
     if (id->idGCref() == GCT_GCREF)
@@ -2008,25 +1885,17 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         // So we're not really doing a "stack pop" here (note that "args" is 0), but we use this mechanism
         // to record the call for GC info purposes.  (It might be best to use an alternate call,
         // and protect "emitStackPop" under the EMIT_TRACK_STACK_DEPTH preprocessor variable.)
-        emitStackPop(dst, /*isCall*/ true, callInstrSize, /*args*/ 0);
+        emitStackPop(dst, /*isCall*/ true, sizeof(code_t), /*args*/ 0);
 
         // Do we need to record a call location for GC purposes?
         //
         if (!emitFullGCinfo)
         {
-            emitRecordGCcall(dst, callInstrSize);
+            emitRecordGCcall(dst, sizeof(code_t));
         }
     }
-    if (id->idIsCallRegPtr())
-    {
-        callInstrSize = 1 << 2;
-    }
-    else
-    {
-        callInstrSize = id->idIsReloc() ? (2 << 2) : (8 << 2); // INS_OPTS_C: 2/9-ins.
-    }
 
-    return callInstrSize;
+    return dst - origDst;
 }
 
 void emitter::emitJumpDistBind()
@@ -3257,7 +3126,7 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* i
         assert(!id->idIsLargeCns());
         *size = sizeof(instrDesc);
     }
-    dst += emitOutputCall(ig, dst, id, 0);
+    dst += emitOutputCall(ig, dst, id);
     return dst;
 }
 
