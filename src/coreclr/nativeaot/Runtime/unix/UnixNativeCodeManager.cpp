@@ -64,6 +64,84 @@ UnixNativeCodeManager::~UnixNativeCodeManager()
 {
 }
 
+#if defined(TARGET_ARM64)
+static size_t readULEB(const uint8_t *&p, const uint8_t *end)
+{
+    size_t result = 0;
+    unsigned shift = 0;
+    while (p < end) {
+        uint8_t byte = *p++;
+        result |= size_t(byte & 0x7F) << shift;
+        if ((byte & 0x80) == 0) // clear top bit indicates the last by of the value
+            break;
+        shift += 7;
+    }
+    return result;
+}
+
+bool UnixNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
+                                        REGDISPLAY *    pRegisterSet)
+{
+    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
+    const uint8_t *p = (uint8_t *) pNativeMethodInfo->unwind_info;
+    const uint8_t *end = p + *((uint32_t *)p);
+    p += 4; // Skip length
+    assert(*((uint32_t *)p) != 0); // Ensure it's FDE entry
+    p += 4; // Skip offset to CIE
+    p += 4; // Skip PC start
+    p += 4; // Skip function length
+    size_t augmentationLength = readULEB(p, end);
+    p += augmentationLength;    // skip augmentation data
+
+    while (p < end) {
+        uint8_t op = *p++;
+
+        if (op == DW_CFA_AARCH64_negate_ra_state)
+        {
+            return true;
+        }
+
+        if ((op & 0xC0) == DW_CFA_advance_loc)
+        {
+            continue;
+        }
+        if ((op & ~(0x3F)) == DW_CFA_offset)
+        {
+            readULEB(p, end);  // offset
+            continue;
+        }
+
+        // Extended, single‐byte opcodes:
+        switch (op) {
+            case DW_CFA_advance_loc1:
+            case DW_CFA_def_cfa_register:
+                p++;   // offset
+                break;
+
+            case DW_CFA_offset_extended_sf:
+            case DW_CFA_offset_extended:
+                readULEB(p, end);  // register
+                readULEB(p, end);  // offset
+                break;
+
+            case DW_CFA_def_cfa_offset: // DW_CFA_def_cfa_offset
+                readULEB(p, end);  // offset
+                break;
+
+            case DW_CFA_def_cfa:  // DW_CFA_def_cfa
+                p++;    // register
+                readULEB(p, end);  // offset
+                break;
+
+            default: // Unknown unwind op code
+                //TODO-PAC: Handle unknown op codes correctly. return false/assert false?
+                p++;
+        }
+    }
+    return false;
+}
+#endif // TARGET_ARM64
+
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
 bool UnixNativeCodeManager::VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet)
 {
