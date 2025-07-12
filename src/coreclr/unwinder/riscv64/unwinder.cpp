@@ -428,7 +428,7 @@ Return Value:
     }
 
     FunctionLength = HeaderWord & 0x3ffff;
-    OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 4;
+    OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 2;
 
     //
     // Determine the number of epilog scope records and the maximum number
