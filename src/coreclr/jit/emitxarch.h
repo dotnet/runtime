@@ -123,6 +123,7 @@ static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsKMOVInstruction(instruction ins);
 static bool IsAVXVNNIFamilyInstruction(instruction ins);
 static bool IsAVXVNNIINTInstruction(instruction ins);
+static bool IsSETZUccInstruction(instruction ins);
 static bool Is3OpRmwInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
@@ -599,6 +600,33 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
     else
     {
         assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexZuIfNeeded: set Evex.zu on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexZuIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        instruction ins = id->idIns();
+#ifdef TARGET_AMD64
+        assert(IsSETZUccInstruction(ins));
+#else
+        // This method is not expected to be used on 32-bit systems.
+        unreached();
+#endif
+        id->idSetEvexZuContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_zu_MASK) == 0);
     }
 }
 

@@ -167,6 +167,24 @@ bool emitter::IsKMOVInstruction(instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// IsSETZUccInstruction: Is this a SETcc instruction with APX-ZU feature?
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a SETcc instruction with APX-ZU feature.
+//
+bool emitter::IsSETZUccInstruction(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return ((ins >= INS_setzuo) && (ins <= INS_setzug));
+#else
+    return false;
+#endif
+}
+
 regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
@@ -479,6 +497,12 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
     if (ins == INS_crc32_apx || ins == INS_movbe_apx)
     {
         // With the new opcode, CRC32 is promoted to EVEX with APX.
+        return true;
+    }
+
+    if (IsSETZUccInstruction(ins))
+    {
+        // SETcc can use EVEX.ZU feature.
         return true;
     }
 
@@ -1988,14 +2012,23 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return false;
     }
 
-    if (id->idIsEvexNdContextSet())
+    if (id->idIsEvexNdContextSet() && HasApxNdd(ins))
     {
+        // The instruction uses APX-ND hint, and it requires EVEX.
         return true;
     }
 
-    if (id->idIsEvexNfContextSet())
+    if (id->idIsEvexNfContextSet() && HasApxNf(ins))
     {
+        // The instruction uses APX-NF hint, and it requires EVEX.
         return true;
+    }
+
+    if (IsSETZUccInstruction(ins))
+    {
+        // These are promoted forms of SETcc instruction with EVEX.ZU.
+        // TODO-XArch-APX: maybe consider return true as we may only use those instructions with ZU set.
+        return id->idIsEvexZuContextSet();
     }
 
     if (ins == INS_crc32_apx || ins == INS_movbe_apx)
@@ -2106,8 +2139,14 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         // TODO-XArch-APX:
         // verify if it is actually safe to reuse the EVEX.ND with EVEX.B on instrDesc.
-        if (id->idIsEvexNdContextSet())
+        if (id->idIsEvexNdContextSet() && HasApxNdd(ins))
         {
+            code |= ND_BIT_IN_BYTE_EVEX_PREFIX;
+        }
+
+        if (id->idIsEvexZuContextSet())
+        {
+            // EVEX.ZU reuses the EVEX.ND bit for SETcc and IMUL.
             code |= ND_BIT_IN_BYTE_EVEX_PREFIX;
         }
 
@@ -2124,11 +2163,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         if (instrIsExtendedReg3opImul(ins))
         {
             // EVEX.R3
-            // TODO-XArch-APX:
-            // A few side notes: based on how JIT defined IMUL, we may need to extend
-            // the definition to `IMUL_31` to cover EGPRs. And it can be defined in a
-            // similar way that opcodes comes with built-in REX2 prefix, and convert
-            // it to EVEX when needed with some helper functions.
             code &= 0xFF7FFFFFFFFFFFFFULL;
         }
 #ifdef TARGET_AMD64
@@ -2137,6 +2171,13 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code &= 0xFFFF87F0FFFFFFFF;
             code |= ((size_t)id->idGetEvexDFV()) << 43;
             code |= ((size_t)GetCCFromCCMP(ins)) << 32;
+        }
+
+        if (IsSETZUccInstruction(ins))
+        {
+            // SETcc in EVEX space are assigned with new opcode: EVEX.LLZ.F2.MAP4.IGNORED 4x.
+            // Here we need to hard code the EVEX.pp for F2 prefix.
+            code |= 0x30000000000ULL;
         }
 #endif
 
@@ -2968,7 +3009,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             //
             //   00  - None   (0F    - packed float)
             //   01  - 66     (66 0F - packed double)
-            //   10  - F3     (F3 0F - scalar float
+            //   10  - F3     (F3 0F - scalar float)
             //   11  - F2     (F2 0F - scalar double)
             switch (sizePrefix)
             {
@@ -6918,6 +6959,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts i
     }
 
     SetEvexNfIfNeeded(id, instOptions);
+    SetEvexZuIfNeeded(id, instOptions);
 
     // Vex bytes
     sz += emitGetAdjustedSize(id, insEncodeMRreg(id, reg, attr, insCodeMR(ins)));
@@ -16426,20 +16468,22 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case INS_setge:
         case INS_setle:
         case INS_setg:
-
+        {
             assert(id->idGCref() == GCT_NONE);
             assert(size == EA_1BYTE);
 
-            code = insEncodeMRreg(id, reg, EA_1BYTE, insCodeMR(ins));
+            code = insCodeMR(ins);
 
             if (TakesRex2Prefix(id))
             {
                 code = AddRex2Prefix(ins, code);
+                code = insEncodeMRreg(id, reg, EA_1BYTE, code);
                 dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
                 dst += emitOutputWord(dst, code & 0x0000FFFF);
             }
             else
             {
+                code = insEncodeMRreg(id, reg, EA_1BYTE, code);
                 // Output the REX prefix
                 dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
                 // We expect this to always be a 'big' opcode
@@ -16449,6 +16493,37 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 dst += emitOutputWord(dst, code & 0x0000FFFF);
             }
             break;
+        }
+
+#ifdef TARGET_AMD64
+        case INS_setzuo:
+        case INS_setzuno:
+        case INS_setzub:
+        case INS_setzuae:
+        case INS_setzue:
+        case INS_setzune:
+        case INS_setzube:
+        case INS_setzua:
+        case INS_setzus:
+        case INS_setzuns:
+        case INS_setzup:
+        case INS_setzunp:
+        case INS_setzul:
+        case INS_setzuge:
+        case INS_setzule:
+        case INS_setzug:
+        {
+            assert(TakesApxExtendedEvexPrefix(id));
+            assert(size == EA_1BYTE);
+
+            code = insCodeMR(ins);
+            code = AddEvexPrefix(id, code, size);
+            code = insEncodeMRreg(id, reg, EA_1BYTE, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputWord(dst, code & 0x0000FFFF);
+            break;
+        }
+#endif
 
         case INS_mulEAX:
         case INS_imulEAX:
@@ -20658,6 +20733,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_setge:
         case INS_setle:
         case INS_setg:
+#ifdef TARGET_AMD64
+        case INS_setzuo:
+        case INS_setzuno:
+        case INS_setzub:
+        case INS_setzuae:
+        case INS_setzue:
+        case INS_setzune:
+        case INS_setzube:
+        case INS_setzua:
+        case INS_setzus:
+        case INS_setzuns:
+        case INS_setzup:
+        case INS_setzunp:
+        case INS_setzul:
+        case INS_setzuge:
+        case INS_setzule:
+        case INS_setzug:
+#endif
         {
             result.insLatency += PERFSCORE_LATENCY_1C;
             if (insFmt == IF_RRD)

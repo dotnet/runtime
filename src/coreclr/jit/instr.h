@@ -306,6 +306,10 @@ enum insOpts: unsigned
     // One-bit:  0b10_0000_0000_0000
     INS_OPTS_APX_ppx_MASK = 0x2000,   // mask for APX-EVEX.ppx feature.
 
+    INS_OPTS_EVEX_zu = 1 << 14,      // Zero Upper for APX-EVEX
+    // One-bit:  0b100_0000_0000_0000
+    INS_OPTS_EVEX_zu_MASK = 0x4000,   // mask for APX-EVEX.zu feature.
+
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
