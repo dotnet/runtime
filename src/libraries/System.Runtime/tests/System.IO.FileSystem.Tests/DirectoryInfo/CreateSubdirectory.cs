@@ -235,6 +235,50 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => di.CreateSubdirectory(Path.Combine("..", randomName + "abc", GetTestFileName())));
         }
 
+        [Fact]
+        public void CreateSubdirectoryFromRootDirectory()
+        {
+            string rootPath = Path.GetPathRoot(TestDirectory);
+            if (rootPath != null)
+            {
+                DirectoryInfo rootDir = new DirectoryInfo(rootPath);
+                string subDirName = GetTestFileName();
+                
+                // For the actual root directory, we expect permission issues, but the validation should pass
+                // So we can't test actual creation, but we can ensure it doesn't throw ArgumentException
+                try
+                {
+                    DirectoryInfo result = rootDir.CreateSubdirectory(subDirName);
+                    
+                    // If we get here without ArgumentException, the validation passed
+                    Assert.NotNull(result);
+                    Assert.Equal(Path.Combine(rootPath, subDirName), result.FullName);
+                    
+                    // Clean up if somehow we managed to create it
+                    try
+                    {
+                        if (result.Exists)
+                            result.Delete();
+                    }
+                    catch
+                    {
+                        // Ignore cleanup errors
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // This is expected for root directories - the validation passed but creation failed due to permissions
+                    // This is the correct behavior and indicates our fix worked
+                }
+                catch (IOException ex) when (ex.Message.Contains("Permission denied"))
+                {
+                    // This is also expected for root directories - the validation passed but creation failed due to permissions
+                    // This is the correct behavior and indicates our fix worked
+                }
+                // ArgumentException should NOT be thrown - if it is, the test will fail
+            }
+        }
+
         #endregion
     }
 }
