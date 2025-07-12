@@ -25,8 +25,11 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static string s_references = string.Empty;
         private static readonly Dictionary<string, string> s_referencedic = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public static TextWriter InfoWriter { get; internal set; } = Console.Out;
+        public static TextWriter WarningWriter { get; internal set; } = Console.Out;
+        public static TextWriter ErrorWriter { get; internal set; } = Console.Error;
 
-        private int Run(string[] args)
+        internal int Run(string[] args)
         {
             string assembly = null;
             var types = new List<string>();
@@ -177,7 +180,7 @@ namespace Microsoft.XmlSerializer.Generator
                 {
                     foreach (string err in errs)
                     {
-                        Console.Error.WriteLine(FormatMessage(parsableErrors, true, SR.Format(SR.Warning, err)));
+                        ErrorWriter.WriteLine(FormatMessage(parsableErrors, true, SR.Format(SR.Warning, err)));
                     }
                 }
 
@@ -185,7 +188,7 @@ namespace Microsoft.XmlSerializer.Generator
                 {
                     if (assembly == null)
                     {
-                        Console.Error.WriteLine(FormatMessage(parsableErrors, false, SR.Format(SR.ErrMissingRequiredArgument, SR.Format(SR.ErrAssembly, "assembly"))));
+                        ErrorWriter.WriteLine(FormatMessage(parsableErrors, false, SR.Format(SR.ErrMissingRequiredArgument, SR.Format(SR.ErrAssembly, "assembly"))));
                     }
 
                     WriteHelp();
@@ -194,8 +197,8 @@ namespace Microsoft.XmlSerializer.Generator
 
                 if (disableRun)
                 {
-                    Console.WriteLine("This tool is not intended to be used directly.");
-                    Console.WriteLine("Please refer to https://go.microsoft.com/fwlink/?linkid=858594 on how to use it.");
+                    InfoWriter.WriteLine("This tool is not intended to be used directly.");
+                    InfoWriter.WriteLine("Please refer to https://go.microsoft.com/fwlink/?linkid=858594 on how to use it.");
                     return 0;
                 }
 
@@ -254,7 +257,7 @@ namespace Microsoft.XmlSerializer.Generator
                     Type type = assembly.GetType(typeName);
                     if (type == null)
                     {
-                        Console.Error.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrorDetails, SR.Format(SR.ErrLoadType, typeName, assemblyName))));
+                        ErrorWriter.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrorDetails, SR.Format(SR.ErrLoadType, typeName, assemblyName))));
                     }
 
                     types[typeIndex++] = type;
@@ -275,7 +278,7 @@ namespace Microsoft.XmlSerializer.Generator
                     {
                         if (verbose)
                         {
-                            Console.WriteLine(SR.Format(SR.ImportInfo, type.Name, i + 1, types.Length));
+                            InfoWriter.WriteLine(SR.Format(SR.ImportInfo, type.Name, i + 1, types.Length));
                         }
 
                         bool isObsolete = false;
@@ -300,7 +303,7 @@ namespace Microsoft.XmlSerializer.Generator
                 {
                     if (verbose)
                     {
-                        Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoIgnoreType, type.FullName)));
+                        InfoWriter.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoIgnoreType, type.FullName)));
                         WriteWarning(e, parsableerrors);
                     }
 
@@ -372,7 +375,7 @@ namespace Microsoft.XmlSerializer.Generator
 
                         if (method == null)
                         {
-                            Console.Error.WriteLine(FormatMessage(parsableerrors: false, warning: false, message: SR.GenerateSerializerNotFound));
+                            ErrorWriter.WriteLine(FormatMessage(parsableerrors: false, warning: false, message: SR.GenerateSerializerNotFound));
                         }
                         else
                         {
@@ -404,21 +407,20 @@ namespace Microsoft.XmlSerializer.Generator
                 {
                     if (!silent)
                     {
-                        Console.Out.WriteLine(SR.Format(SR.InfoFileName, codePath));
-                        Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, assembly.Location, codePath));
+                        InfoWriter.WriteLine(SR.Format(SR.InfoFileName, codePath));
+                        InfoWriter.WriteLine(SR.Format(SR.InfoGeneratedFile, assembly.Location, codePath));
                     }
                 }
                 else
                 {
-                    Console.Out.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, assembly.Location)));
+                    InfoWriter.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, assembly.Location)));
                 }
             }
             else
             {
-                Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, assembly.Location)));
+                InfoWriter.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, assembly.Location)));
             }
         }
-
 
         private static bool ArgumentMatch(string arg, string formal)
         {
@@ -459,7 +461,7 @@ namespace Microsoft.XmlSerializer.Generator
 
                 if (verbose)
                 {
-                    Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoIgnoreType, type.FullName)));
+                    InfoWriter.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoIgnoreType, type.FullName)));
                     WriteWarning(e, parsableerrors);
                 }
 
@@ -489,22 +491,22 @@ namespace Microsoft.XmlSerializer.Generator
         private static void WriteHeader()
         {
             // do not localize Copyright header
-            Console.WriteLine($".NET Xml Serialization Generation Utility, Version {ThisAssembly.InformationalVersion}]");
+            InfoWriter.WriteLine($".NET Xml Serialization Generation Utility, Version {ThisAssembly.InformationalVersion}]");
         }
 
         private void WriteHelp()
         {
-            Console.Out.WriteLine(SR.HelpDescription);
-            Console.Out.WriteLine(SR.Format(SR.HelpUsage, this.GetType().Assembly.GetName().Name.Substring("dotnet-".Length)));
-            Console.Out.WriteLine(SR.HelpDevOptions);
-            Console.Out.WriteLine(SR.Format(SR.HelpAssembly, "-a", "--assembly"));
-            Console.Out.WriteLine(SR.Format(SR.HelpType, "--type"));
-            Console.Out.WriteLine(SR.Format(SR.HelpProxy, "--proxytypes"));
-            Console.Out.WriteLine(SR.Format(SR.HelpForce, "--force"));
-            Console.Out.WriteLine(SR.Format(SR.HelpOut, "-o", "--out"));
+            InfoWriter.WriteLine(SR.HelpDescription);
+            InfoWriter.WriteLine(SR.Format(SR.HelpUsage, this.GetType().Assembly.GetName().Name.Substring("dotnet-".Length)));
+            InfoWriter.WriteLine(SR.HelpDevOptions);
+            InfoWriter.WriteLine(SR.Format(SR.HelpAssembly, "-a", "--assembly"));
+            InfoWriter.WriteLine(SR.Format(SR.HelpType, "--type"));
+            InfoWriter.WriteLine(SR.Format(SR.HelpProxy, "--proxytypes"));
+            InfoWriter.WriteLine(SR.Format(SR.HelpForce, "--force"));
+            InfoWriter.WriteLine(SR.Format(SR.HelpOut, "-o", "--out"));
 
-            Console.Out.WriteLine(SR.HelpMiscOptions);
-            Console.Out.WriteLine(SR.Format(SR.HelpHelp, "-h", "--help"));
+            InfoWriter.WriteLine(SR.HelpMiscOptions);
+            InfoWriter.WriteLine(SR.Format(SR.HelpHelp, "-h", "--help"));
         }
 
         private static string FormatMessage(bool parsableerrors, bool warning, string message)
@@ -524,7 +526,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static void WriteError(Exception e, bool parsableerrors)
         {
-            Console.Error.WriteLine(FormatMessage(parsableerrors, false, e.Message));
+            ErrorWriter.WriteLine(FormatMessage(parsableerrors, false, e.Message));
             if (e.InnerException != null)
             {
                 WriteError(e.InnerException, parsableerrors);
@@ -533,7 +535,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static void WriteWarning(Exception e, bool parsableerrors)
         {
-            Console.Out.WriteLine(FormatMessage(parsableerrors, true, e.Message));
+            WarningWriter.WriteLine(FormatMessage(parsableerrors, true, e.Message));
             if (e.InnerException != null)
             {
                 WriteWarning(e.InnerException, parsableerrors);
