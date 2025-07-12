@@ -297,7 +297,7 @@ namespace System.Net.Security
 
             if (context is SafeDeleteNwContext)
             {
-                // we are being called form network framework, we will retrieve
+                // We are being called from Network Framework, we will retrieve
                 // the selected certificate from higher frame in the callstack
                 // and return it as return value of the callback
                 return true;
