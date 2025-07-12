@@ -8,16 +8,13 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
+using OSStatus = Interop.AppleCrypto.OSStatus;
 
 namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
         // mapped from OSX error codes
-        private const int OSStatus_writErr = -20;
-        private const int OSStatus_readErr = -19;
-        private const int OSStatus_noErr = 0;
-        private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
         private readonly SafeSslHandle _sslContext;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
@@ -241,14 +238,14 @@ namespace System.Net
                     context._outputBuffer.Commit(toWrite);
                     // Since we can enqueue everything, no need to re-assign *dataLength.
 
-                    return OSStatus_noErr;
+                    return OSStatus.NoErr;
                 }
             }
             catch (Exception e)
             {
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(context, $"WritingToConnection failed: {e.Message}");
-                return OSStatus_writErr;
+                return OSStatus.WritErr;
             }
         }
 
@@ -266,7 +263,7 @@ namespace System.Net
 
                     if (toRead == 0)
                     {
-                        return OSStatus_noErr;
+                        return OSStatus.NoErr;
                     }
 
                     uint transferred = 0;
@@ -274,7 +271,7 @@ namespace System.Net
                     if (context._inputBuffer.ActiveLength == 0)
                     {
                         *dataLength = (void*)0;
-                        return OSStatus_errSSLWouldBlock;
+                        return OSStatus.ErrSSLWouldBlock;
                     }
 
                     int limit = Math.Min((int)toRead, context._inputBuffer.ActiveLength);
@@ -284,14 +281,14 @@ namespace System.Net
                     transferred = (uint)limit;
 
                     *dataLength = (void*)transferred;
-                    return OSStatus_noErr;
+                    return OSStatus.NoErr;
                 }
             }
             catch (Exception e)
             {
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(context, $"ReadFromConnectionfailed: {e.Message}");
-                return OSStatus_readErr;
+                return OSStatus.ReadErr;
             }
         }
 
