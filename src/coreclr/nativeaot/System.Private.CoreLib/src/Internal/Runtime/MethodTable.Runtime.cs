@@ -37,7 +37,7 @@ namespace Internal.Runtime
 
                 // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
                 // Otherwise check the base type.
-                return IsPrimitive && (IsGenericTypeDefinition || NonArrayBaseType == MethodTable.Of<Enum>());
+                return IsPrimitive && (IsGenericTypeDefinition || NonArrayBaseType == MethodTable.ForCastingOf<Enum>());
             }
         }
 
@@ -47,7 +47,7 @@ namespace Internal.Runtime
             get
             {
                 return (ElementType is > EETypeElementType.Void and < EETypeElementType.ValueType)
-                    && NonArrayBaseType == MethodTable.Of<ValueType>();
+                    && NonArrayBaseType == MethodTable.ForCastingOf<ValueType>();
             }
         }
     }
