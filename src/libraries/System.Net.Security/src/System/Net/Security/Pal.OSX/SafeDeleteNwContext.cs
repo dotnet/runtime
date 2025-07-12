@@ -148,6 +148,8 @@ namespace System.Net.Security
 
         internal async Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"App sending {buffer.Length} bytes");
 
             TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -184,23 +186,51 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", nameof(WriteAsync));
-                GCHandle handle = GCHandle.FromIntPtr(context);
-                TaskCompletionSource tcs = (TaskCompletionSource)handle.Target!;
-                if (error != null)
+                GCHandle? handle = null;
+                try
                 {
-                    tcs.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
+                    handle = GCHandle.FromIntPtr(context);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", nameof(WriteAsync));
+
+
+                    if (handle?.IsAllocated != true)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Error(null, "WriteAsync CompletionCallback called with unallocated handle");
+                        }
+                        return;
+                    }
+
+                    TaskCompletionSource? tcs = handle?.Target as TaskCompletionSource;
+
+                    if (error != null)
+                    {
+                        tcs?.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
+                    }
+                    else
+                    {
+                        tcs?.TrySetResult();
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    tcs.TrySetResult();
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(null, $"WriteAsync CompletionCallback exception: {ex}");
+                    }
                 }
-                handle.Free();
+                finally
+                {
+                    handle?.Free();
+                }
             }
         }
 
         internal ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (_pendingAppReceiveBufferFillTask == null && _appReceiveBuffer.ActiveLength > 0)
             {
                 // fast path, data available
@@ -215,13 +245,16 @@ namespace System.Net.Security
 
             async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken)
             {
+                // Create a linked token that respects both the user's cancellation token and our shutdown token
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _shutdownCts.Token);
+
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Internal buffer empty, refilling.");
 
                 // Previous read may have been canceled, leaving a pending read
                 // in the underlying native layer. In such cases, we await the
                 // pending read. Otherwise, we issue a new one.
-                _pendingAppReceiveBufferFillTask ??= FillAppDataBufferAsync();
-                await _pendingAppReceiveBufferFillTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+                _pendingAppReceiveBufferFillTask ??= FillAppDataBufferAsync(linkedCts.Token);
+                await _pendingAppReceiveBufferFillTask.ConfigureAwait(false);
                 _pendingAppReceiveBufferFillTask = null;
 
                 if (_appReceiveBuffer.ActiveLength == 0)
@@ -241,9 +274,9 @@ namespace System.Net.Security
             }
         }
 
-        internal Task FillAppDataBufferAsync()
+        internal Task FillAppDataBufferAsync(CancellationToken cancellationToken)
         {
-            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, CancellationToken.None);
+            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, cancellationToken);
             Debug.Assert(success, "Concurrent FillAppDataBufferAsync detected");
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
@@ -252,34 +285,45 @@ namespace System.Net.Security
                 Interop.NetworkFramework.Tls.ReadFromConnection(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
             }
 
-            return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
+            return _pendingAppReceiveBufferFillTask = valueTask.AsTask().WaitAsync(cancellationToken);
 
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error, byte* data, int length)
             {
-                GCHandle handle = GCHandle.FromIntPtr(context);
-                SafeDeleteNwContext thisContext = (SafeDeleteNwContext)handle.Target!;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {(error != null ? error->ErrorCode : 0)}, len: {length}", nameof(FillAppDataBufferAsync));
-
-                ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
-
-                if (error != null && error->ErrorCode != 0)
+                try
                 {
-                    if (error->ErrorDomain == (int) Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
-                        error->ErrorCode == (int) Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
+                    SafeDeleteNwContext thisContext = ResolveThisHandle(context);
+
+                    if (NetEventSource.Log.IsEnabled())
+                        NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {(error != null ? error->ErrorCode : 0)}, len: {length}", nameof(FillAppDataBufferAsync));
+
+                    ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
+
+                    if (error != null && error->ErrorCode != 0)
                     {
-                        // We cancelled the connection, so this is expected as pending read will be cancelled.
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
-                        return;
+                        if (error->ErrorDomain == (int)Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
+                            error->ErrorCode == (int)Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
+                        {
+                            // We cancelled the connection, so this is expected as pending read will be cancelled.
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
+                            return;
+                        }
+                        thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
                     }
-                    thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
+                    else
+                    {
+                        buffer.EnsureAvailableSpace(length);
+                        new Span<byte>(data, length).CopyTo(buffer.AvailableSpan);
+                        buffer.Commit(length);
+                        thisContext._appReceiveBufferTcs.TrySetResult();
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    buffer.EnsureAvailableSpace(length);
-                    new Span<byte>(data, length).CopyTo(buffer.AvailableSpan);
-                    buffer.Commit(length);
-                    thisContext._appReceiveBufferTcs.TrySetResult();
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(null, $"FillAppDataBufferAsync CompletionCallback exception: {ex}");
+                    }
                 }
             }
         }
@@ -287,7 +331,7 @@ namespace System.Net.Security
         internal void Shutdown()
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Shutting down Network Framework context");
-
+            _shutdownCts.Cancel();
             Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
         }
 
@@ -338,19 +382,26 @@ namespace System.Net.Security
                 {
                     _disposed = true;
 
-                    _shutdownCts.Cancel();
+                    Shutdown();
+                    _appReceiveBufferTcs.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
                     if (_pendingAppReceiveBufferFillTask is Task t)
                     {
-                        t.Wait();
+                        try
+                        {
+                            t.Wait();
+                        }
+                        catch
+                        {
+                            // Ignore exceptions from the pending task, as we are disposing
+                            // and it may have been cancelled or completed with an exception.
+                        }
                     }
 
                     _handshakeCompletionSource.TrySetResult(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
-                    Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
 
                     // wait for callback signalling connection has been truly closed.
                     _connectionClosedTcs.Task.GetAwaiter().GetResult();
 
-                    // TODO: Wait for connection cancellation through status update with TCS.
                     // Complete any pending writes with disposed exception
                     TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
                     if (writeCompletion != null)
@@ -368,16 +419,21 @@ namespace System.Net.Security
 
         private static SafeDeleteNwContext ResolveThisHandle(IntPtr thisHandle)
         {
-            return (SafeDeleteNwContext)GCHandle.FromIntPtr(thisHandle).Target!;
+            GCHandle handle = GCHandle.FromIntPtr(thisHandle);
+            if (!handle.IsAllocated)
+            {
+                throw new ObjectDisposedException(nameof(SafeDeleteNwContext), "Handle has been freed");
+            }
+            return (SafeDeleteNwContext)handle.Target!;
         }
 
         [UnmanagedCallersOnly]
         private static unsafe int WriteOutboundWireData(IntPtr thisHandle, byte* data, void** dataLength)
         {
-            SafeDeleteNwContext nwContext = ResolveThisHandle(thisHandle);
-
+            SafeDeleteNwContext? nwContext = null;
             try
             {
+                nwContext = ResolveThisHandle(thisHandle);
                 ulong length = (ulong)*dataLength;
                 Debug.Assert(length <= int.MaxValue);
 
@@ -393,10 +449,10 @@ namespace System.Net.Security
                 }
 
                 // Complete the write operation with the exception
-                TaskCompletionSource? writeCompletion = nwContext._currentWriteCompletionSource;
+                TaskCompletionSource? writeCompletion = nwContext?._currentWriteCompletionSource;
                 if (writeCompletion != null)
                 {
-                    nwContext._currentWriteCompletionSource = null;
+                    nwContext?._currentWriteCompletionSource = null;
                     writeCompletion.TrySetException(e);
                 }
 
@@ -412,25 +468,36 @@ namespace System.Net.Security
         [UnmanagedCallersOnly]
         private static IntPtr ChallengeCallback(IntPtr thisHandle, IntPtr acceptableIssuersHandle, IntPtr remoteCertificateHandle)
         {
-            SafeDeleteNwContext nwContext = ResolveThisHandle(thisHandle);
+            try
+            {
+                SafeDeleteNwContext nwContext = ResolveThisHandle(thisHandle);
 
-            // the callback may end up being called multiple times for some reason.
-            // check if we've already processed the challenge callback
-            if (Interlocked.CompareExchange(ref nwContext._challengeCallbackCompleted, 1, 0) != 0)
+                // the callback may end up being called multiple times for some reason.
+                // check if we've already processed the challenge callback
+                if (Interlocked.CompareExchange(ref nwContext._challengeCallbackCompleted, 1, 0) != 0)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(nwContext, $"ChallengeCallback already processed, returning cached result: {nwContext._selectedClientCertificate}");
+                    }
+                    return nwContext._selectedClientCertificate;
+                }
+
+                nwContext._acceptableIssuers = ExtractAcceptableIssuers(acceptableIssuersHandle);
+                Debug.Assert(nwContext._peerCertChainHandle != null, "Peer certificate chain handle should be set before challenge callback");
+
+                byte[]? dummy = null;
+                nwContext._sslStream.AcquireClientCredentials(ref dummy, true);
+                return nwContext._selectedClientCertificate = nwContext.SslAuthenticationOptions.CertificateContext?.TargetCertificate.Handle ?? IntPtr.Zero;
+            }
+            catch (Exception ex)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Info(nwContext, $"ChallengeCallback already processed, returning cached result: {nwContext._selectedClientCertificate}");
+                    NetEventSource.Error(null, $"ChallengeCallback exception: {ex}");
                 }
-                return nwContext._selectedClientCertificate;
+                return IntPtr.Zero;
             }
-
-            nwContext._acceptableIssuers = ExtractAcceptableIssuers(acceptableIssuersHandle);
-            Debug.Assert(nwContext._peerCertChainHandle != null, "Peer certificate chain handle should be set before challenge callback");
-
-            byte[]? dummy = null;
-            nwContext._sslStream.AcquireClientCredentials(ref dummy, true);
-            return nwContext._selectedClientCertificate = nwContext.SslAuthenticationOptions.CertificateContext?.TargetCertificate.Handle ?? IntPtr.Zero;
         }
 
         private void WriteOutboundWireData(ReadOnlySpan<byte> data)
@@ -463,11 +530,20 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
             {
-                Debug.Assert(error == null || error->ErrorCode == 0, $"CompletionCallback called with error {(error != null ? error->ErrorCode : 0)}");
+                try
+                {
+                    Debug.Assert(error == null || error->ErrorCode == 0, $"CompletionCallback called with error {(error != null ? error->ErrorCode : 0)}");
 
-                GCHandle handle = GCHandle.FromIntPtr(context);
-                SafeDeleteNwContext thisContext = (SafeDeleteNwContext)handle.Target!;
-                thisContext._transportReadTcs.TrySetResult();
+                    SafeDeleteNwContext thisContext = ResolveThisHandle(context);
+                    thisContext._transportReadTcs.TrySetResult();
+                }
+                catch (Exception ex)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(null, $"WriteInboundWireDataAsync CompletionCallback exception: {ex}");
+                    }
+                }
             }
         }
 
@@ -476,17 +552,18 @@ namespace System.Net.Security
         [UnmanagedCallersOnly]
         private static unsafe void StatusUpdateCallback(IntPtr thisHandle, NetworkFrameworkStatusUpdates statusUpdate, IntPtr data, IntPtr data2, Interop.NetworkFramework.NetworkFrameworkError* error)
         {
-            SafeDeleteNwContext? nwContext = null;
-
-            if (thisHandle != IntPtr.Zero)
-            {
-                nwContext = ResolveThisHandle(thisHandle);
-            }
-
-            if (NetEventSource.Log.IsEnabled() && statusUpdate != NetworkFrameworkStatusUpdates.DebugLog) NetEventSource.Info(nwContext, $"Received status update: {statusUpdate}");
-
             try
             {
+                SafeDeleteNwContext? nwContext = null;
+
+                if (thisHandle != IntPtr.Zero)
+                {
+                    nwContext = ResolveThisHandle(thisHandle);
+                }
+
+                if (NetEventSource.Log.IsEnabled() && statusUpdate != NetworkFrameworkStatusUpdates.DebugLog)
+                    NetEventSource.Info(nwContext, $"Received status update: {statusUpdate}");
+
                 switch (statusUpdate)
                 {
                     case NetworkFrameworkStatusUpdates.FramerStart:
@@ -524,10 +601,9 @@ namespace System.Net.Security
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"Exception: {ex.Message}");
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(nwContext, $"StatusUpdateCallback failed: {ex}");
+                    NetEventSource.Error(null, $"StatusUpdateCallback failed for {statusUpdate}: {ex}");
                 }
             }
         }
