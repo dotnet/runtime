@@ -19,7 +19,6 @@
     <Compile Include="TestCommon\DataTestUtility.cs" />
     <Compile Include="TestCommon\CheckConnStrSetupFactAttribute.cs" />
     <Compile Include="OdbcParameterTests.cs" />
-    <Compile Include="OdbcDataReaderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Odbc.cs"

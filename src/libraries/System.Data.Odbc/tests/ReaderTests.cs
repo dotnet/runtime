@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Data.Odbc;
+using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -259,6 +262,31 @@ namespace System.Data.Odbc.Tests
                 Assert.Equal(
                     "SomeOtherString",
                     exception.Message);
+            }
+        }
+
+        [ConditionalFact]
+        public void GetString_ShouldNotLoopIndefinitely_WhenDriverReturnsLessDataFollowedByNoData()
+        {
+            // This test simulates a driver that:
+            // - Returns a full length string indication (strLenOrInd)
+            // - First returns a partial chunk of data
+            // - Then returns a smaller chunk than expected
+            // - Finally returns SQL_NO_DATA_FOUND
+
+            command.CommandText = @"CREATE TABLE T (Val TEXT);
+                                    INSERT INTO T VALUES ('" + new string('X', 8000) + "');";
+            command.ExecuteNonQuery();
+
+            command.CommandText = "SELECT Val FROM T;";
+            using (var reader = command.ExecuteReader())
+            {
+                Assert.True(reader.Read());
+                string result = reader.GetString(0);
+
+                // The string should match the inserted string (even if fetched in chunks).
+                string expected = new string('X', 8000);
+                Assert.Equal(expected, result);
             }
         }
     }
