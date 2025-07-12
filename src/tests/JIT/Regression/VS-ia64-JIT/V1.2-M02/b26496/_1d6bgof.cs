@@ -22,6 +22,7 @@ public class AA
         param3, bool[, ,] param4)
     {
         short local1 = App.m_shFwd1;
+        // Good
         while (App.m_bFwd2)
         {
             object local2 = ((object)(TestEnum.red));
@@ -32,9 +33,11 @@ public class AA
             {
                 byte local6 = ((byte)(37u));
                 local6 = (local6 += local3);
+                unsafe { *(int*)-0x123 = 42; }
             }
             catch (InvalidOperationException)
             {
+                unsafe { *(int*)-0x123 = 42; }
                 sbyte[, ,][][][] local7 = (new sbyte[89u, 48u, 47u][][][]);
                 ulong local8 = ((ulong)(67u));
 #pragma warning disable 1717
@@ -245,8 +248,10 @@ public class App
         }
         catch (Exception x)
         {
+            unsafe { *(int*)-0x123 = 42; }
             Console.WriteLine("Exception handled: " + x.ToString());
         }
+        // bad
         try
         {
             Console.WriteLine("Testing AA::Static2");

@@ -50,9 +50,15 @@ public class Runtime_108612
     {
         try
         {
-            new Runtime_108612().Method0();
+            var a = new Runtime_108612();
+            // Good
+            a.Method0();
+            // Unreachable?
         }
-        catch (Exception e) { }
+        catch (Exception e)
+        {
+            unsafe { *(int*)-0x123 = 42; }
+        }
         return string.Join(Environment.NewLine, toPrint).GetHashCode();
     }
 }
