@@ -196,25 +196,13 @@ namespace System.Threading
 
         public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, bool isUserScope, out bool createdNew)
         {
-            // For initially owned, newly created named mutexes, there is a potential race
-            // between adding the mutex to the named object table and initially acquiring it.
-            // To avoid the possibility of another thread retrieving the mutex via its name
-            // before we managed to acquire it, we perform both steps while holding s_lock.
-            LockHolder lockHolder = new LockHolder(s_lock);
-            try
+            NamedMutex? namedMutex = NamedMutex.CreateNamedMutex(name, isUserScope, initiallyOwned: initiallyOwned, out createdNew);
+            if (namedMutex == null)
             {
-                NamedMutex? namedMutex = NamedMutex.CreateNamedMutex_Locked(name, isUserScope, initiallyOwned: initiallyOwned, out createdNew);
-                if (namedMutex == null)
-                {
-                    return null;
-                }
-                SafeWaitHandle safeWaitHandle = NewHandle(namedMutex);
-                return safeWaitHandle;
+                return null;
             }
-            finally
-            {
-                lockHolder.Dispose();
-            }
+            SafeWaitHandle safeWaitHandle = NewHandle(namedMutex);
+            return safeWaitHandle;
         }
 
         public static OpenExistingResult OpenNamedMutex(string name, bool isUserScope, out SafeWaitHandle? result)

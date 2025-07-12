@@ -20,6 +20,8 @@ namespace System.Threading
     {
         private const byte SyncSystemVersion = 1;
         protected const int PollLoopMaximumSleepMilliseconds = 100;
+        protected const uint InvalidProcessId = unchecked((uint)-1);
+        protected const uint InvalidThreadId = unchecked((uint)-1);
 
         [FeatureSwitchDefinition("System.Threading.Mutex.NamedMutexUsePThreadMutex")]
         private static bool UsePThreadMutexes { get; } = AppContext.TryGetSwitch("System.Threading.Mutex.NamedMutexUsePThreadMutex", out bool value)
@@ -31,15 +33,27 @@ namespace System.Threading
         private Thread? _lockOwnerThread;
         private NamedMutexProcessDataBase? _nextInThreadOwnedNamedMutexList;
 
-        protected SharedMemoryId Id => _processDataHeader._id;
+        public SharedMemoryId Id => _processDataHeader._id;
 
         public abstract bool IsLockOwnedByCurrentThread { get; }
         public bool IsLockOwnedByAnyThreadInThisProcess => _lockOwnerThread is not null;
 
         protected abstract void SetLockOwnerToCurrentThread();
 
-        public MutexTryAcquireLockResult TryAcquireLock(WaitSubsystem.ThreadWaitInfo waitInfo, int timeoutMilliseconds)
+        public void IncrementRefCount()
         {
+            _processDataHeader.IncrementRefCount();
+        }
+
+        public void DecrementRefCount()
+        {
+            _processDataHeader.DecrementRefCount();
+        }
+
+        public MutexTryAcquireLockResult TryAcquireLock(WaitSubsystem.ThreadWaitInfo waitInfo, int timeoutMilliseconds, ref WaitSubsystem.LockHolder holder)
+        {
+            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+            holder.Dispose();
             MutexTryAcquireLockResult result = AcquireLockCore(timeoutMilliseconds);
 
             if (result == MutexTryAcquireLockResult.AcquiredLockRecursively)
@@ -47,6 +61,13 @@ namespace System.Threading
                 return MutexTryAcquireLockResult.AcquiredLock;
             }
 
+            if (result == MutexTryAcquireLockResult.TimedOut)
+            {
+                // If the lock was not acquired, we don't have any more work to do.
+                return result;
+            }
+
+            holder = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
             SetLockOwnerToCurrentThread();
             _lockCount = 1;
             _lockOwnerThread = waitInfo.Thread;
@@ -63,6 +84,9 @@ namespace System.Threading
 
         private static void AddOwnedNamedMutex(Thread thread, NamedMutexProcessDataBase namedMutexProcessDataBase)
         {
+            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+            // This adds a reference to the named mutex in the thread's wait info.
+            namedMutexProcessDataBase.IncrementRefCount();
             namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList = thread.WaitInfo.LockedNamedMutexesHead;
             thread.WaitInfo.LockedNamedMutexesHead = namedMutexProcessDataBase;
         }
@@ -80,13 +104,24 @@ namespace System.Threading
                 return;
             }
 
-            RemoveOwnedNamedMutex(Thread.CurrentThread, this);
-            _lockOwnerThread = null;
-            ReleaseLockCore();
+            WaitSubsystem.LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+            try
+            {
+                RemoveOwnedNamedMutex(Thread.CurrentThread, this);
+                _lockOwnerThread = null;
+                ReleaseLockCore();
+                // This removes the reference to the named mutex in the thread's wait info.
+                DecrementRefCount();
+            }
+            finally
+            {
+                scope.Dispose();
+            }
         }
 
         private static void RemoveOwnedNamedMutex(Thread currentThread, NamedMutexProcessDataBase namedMutexProcessDataBase)
         {
+            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
             if (currentThread.WaitInfo.LockedNamedMutexesHead == namedMutexProcessDataBase)
             {
                 currentThread.WaitInfo.LockedNamedMutexesHead = namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList;
@@ -111,9 +146,16 @@ namespace System.Threading
         public void Abandon()
         {
             IsAbandoned = true;
+
             _lockCount = 0;
-            _lockOwnerThread = null;
+
+            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
             ReleaseLockCore();
+
+            RemoveOwnedNamedMutex(Thread.CurrentThread, this);
+            _lockOwnerThread = null;
+            // This removes the reference to the named mutex in the thread's wait info.
+            DecrementRefCount();
         }
 
         protected abstract MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds);
@@ -124,49 +166,56 @@ namespace System.Threading
 
         internal static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
-            using Lock.Scope creationDeletionProcessLock = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
-
-            SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? processDataHeader = SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.CreateOrOpen(
-                name,
-                isUserScope,
-                new SharedMemorySharedDataHeader(SharedMemoryType.Mutex, SyncSystemVersion),
-                UsePThreadMutexes ? NamedMutexProcessDataWithPThreads.SharedData.Size : (nuint)sizeof(NamedMutexProcessDataNoPThreads.SharedData),
-                createIfNotExist,
-                acquireLockIfCreated,
-                out created,
-                out AutoReleaseFileLock creationDeletionLockFileScope);
-
-            if (processDataHeader is null)
+            WaitSubsystem.LockHolder creationDeletionProcessLock = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+            try
             {
-                return null;
+
+                SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? processDataHeader = SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.CreateOrOpen(
+                    name,
+                    isUserScope,
+                    new SharedMemorySharedDataHeader(SharedMemoryType.Mutex, SyncSystemVersion),
+                    UsePThreadMutexes ? NamedMutexProcessDataWithPThreads.SharedData.Size : (nuint)sizeof(NamedMutexProcessDataNoPThreads.SharedData),
+                    createIfNotExist,
+                    acquireLockIfCreated,
+                    out created,
+                    out AutoReleaseFileLock creationDeletionLockFileScope);
+
+                if (processDataHeader is null)
+                {
+                    return null;
+                }
+
+                using (creationDeletionLockFileScope)
+                {
+                    if (created)
+                    {
+                        InitializeSharedData(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader));
+                    }
+
+                    if (processDataHeader._processData is null)
+                    {
+                        if (UsePThreadMutexes)
+                        {
+                            processDataHeader._processData = new NamedMutexProcessDataWithPThreads(processDataHeader);
+                        }
+                        else
+                        {
+                            processDataHeader._processData = new NamedMutexProcessDataNoPThreads(processDataHeader, created);
+                        }
+
+                        if (created && acquireLockIfCreated)
+                        {
+                            MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(Thread.CurrentThread.WaitInfo, timeoutMilliseconds: 0, ref creationDeletionProcessLock);
+                            Debug.Assert(acquireResult == MutexTryAcquireLockResult.AcquiredLock);
+                        }
+                    }
+
+                    return processDataHeader;
+                }
             }
-
-            using (creationDeletionLockFileScope)
+            finally
             {
-                if (created)
-                {
-                    InitializeSharedData(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader));
-                }
-
-                if (processDataHeader._processData is null)
-                {
-                    if (UsePThreadMutexes)
-                    {
-                        processDataHeader._processData = new NamedMutexProcessDataWithPThreads(processDataHeader);
-                    }
-                    else
-                    {
-                        processDataHeader._processData = new NamedMutexProcessDataNoPThreads(processDataHeader, created);
-                    }
-
-                    if (created && acquireLockIfCreated)
-                    {
-                        MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(Thread.CurrentThread.WaitInfo, timeoutMilliseconds: 0);
-                        Debug.Assert(acquireResult != MutexTryAcquireLockResult.AcquiredLock);
-                    }
-                }
-
-                return processDataHeader;
+                creationDeletionProcessLock.Dispose();
             }
         }
 
@@ -180,15 +229,15 @@ namespace System.Threading
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     throw Interop.GetExceptionForIoErrno(errorInfo, "Failed to initialize pthread mutex");
                 }
-                sharedData->LockOwnerProcessId = SharedMemoryHelpers.InvalidProcessId;
-                sharedData->LockOwnerThreadId = SharedMemoryHelpers.InvalidThreadId;
+                sharedData->LockOwnerProcessId = InvalidProcessId;
+                sharedData->LockOwnerThreadId = InvalidThreadId;
                 sharedData->IsAbandoned = false;
             }
             else
             {
                 NamedMutexProcessDataNoPThreads.SharedData* sharedData = (NamedMutexProcessDataNoPThreads.SharedData*)v;
-                sharedData->LockOwnerProcessId = SharedMemoryHelpers.InvalidProcessId;
-                sharedData->LockOwnerThreadId = SharedMemoryHelpers.InvalidThreadId;
+                sharedData->LockOwnerProcessId = InvalidProcessId;
+                sharedData->LockOwnerThreadId = InvalidThreadId;
                 sharedData->IsAbandoned = false;
                 sharedData->TimedWaiterCount = 0;
             }
@@ -274,8 +323,8 @@ namespace System.Threading
         {
             Debug.Assert(IsLockOwnedByCurrentThread);
             Debug.Assert(_lockCount == 0);
-            _sharedData->LockOwnerProcessId = 0;
-            _sharedData->LockOwnerThreadId = 0;
+            _sharedData->LockOwnerProcessId = InvalidProcessId;
+            _sharedData->LockOwnerThreadId = InvalidThreadId;
 
             Interop.Sys.PThreadMutex_Release(_sharedData->LockAddress);
         }
@@ -374,8 +423,8 @@ namespace System.Threading
         {
             get
             {
-                return _sharedData->LockOwnerProcessId != SharedMemoryHelpers.InvalidProcessId &&
-                       _sharedData->LockOwnerThreadId != SharedMemoryHelpers.InvalidThreadId;
+                return _sharedData->LockOwnerProcessId != InvalidProcessId &&
+                       _sharedData->LockOwnerThreadId != InvalidThreadId;
             }
         }
 
@@ -383,8 +432,8 @@ namespace System.Threading
         {
             Debug.Assert(IsLockOwnedByCurrentThread);
             Debug.Assert(_lockCount == 0);
-            _sharedData->LockOwnerProcessId = 0;
-            _sharedData->LockOwnerThreadId = 0;
+            _sharedData->LockOwnerProcessId = InvalidProcessId;
+            _sharedData->LockOwnerThreadId = InvalidThreadId;
 
             Interop.Sys.FLock(_sharedLockFileHandle, Interop.Sys.LockOperations.LOCK_UN);
             _processLevelLock.Exit();
@@ -401,6 +450,7 @@ namespace System.Threading
             base.Close(releaseSharedData);
 
             _sharedLockFileHandle.Dispose();
+            _processLevelLock.Dispose();
         }
 
         protected override unsafe MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds)
@@ -413,84 +463,94 @@ namespace System.Threading
 
             // Acquire the process lock. A file lock can only be acquired once per file descriptor, so to synchronize the threads of
             // this process, the process lock is used.
-            using Lock.Scope scope = _processLevelLock.EnterScope();
-
-            if (_lockCount > 0)
+            bool releaseProcessLock = true;
+            if (!_processLevelLock.TryEnter(timeoutMilliseconds))
             {
-                Debug.Assert(IsLockOwnedByCurrentThread);
-                // The lock is already owned by the current thread.
-                checked
-                {
-                    _lockCount++;
-                }
-                return MutexTryAcquireLockResult.AcquiredLockRecursively;
+                return MutexTryAcquireLockResult.TimedOut;
             }
 
-            switch (timeoutMilliseconds)
+            try
             {
-                case -1:
-                    bool acquiredLock = false;
-                    while (_sharedData->TimedWaiterCount > 0)
+                if (_lockCount > 0)
+                {
+                    Debug.Assert(IsLockOwnedByCurrentThread);
+                    // The lock is already owned by the current thread.
+                    checked
+                    {
+                        _lockCount++;
+                    }
+                    return MutexTryAcquireLockResult.AcquiredLockRecursively;
+                }
+
+                switch (timeoutMilliseconds)
+                {
+                    case -1:
+                        bool acquiredLock = false;
+                        while (_sharedData->TimedWaiterCount > 0)
+                        {
+                            if (SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true))
+                            {
+                                acquiredLock = true;
+                                break;
+                            }
+                            Thread.Sleep(PollLoopMaximumSleepMilliseconds);
+                        }
+
+                        if (acquiredLock)
+                        {
+                            break;
+                        }
+
+                        acquiredLock = SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: false);
+                        Debug.Assert(acquiredLock);
+                        break;
+                    case 0:
+                        if (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true))
+                        {
+                            return MutexTryAcquireLockResult.TimedOut;
+                        }
+                        break;
+                    default:
                     {
                         if (SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true))
                         {
-                            acquiredLock = true;
                             break;
                         }
-                        Thread.Sleep(PollLoopMaximumSleepMilliseconds);
-                    }
 
-                    if (acquiredLock)
-                    {
-                        break;
-                    }
+                        _sharedData->TimedWaiterCount++;
 
-                    acquiredLock = SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: false);
-                    Debug.Assert(acquiredLock);
-                    break;
-                case 0:
-                    if (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true))
-                    {
-                        return MutexTryAcquireLockResult.TimedOut;
-                    }
-                    break;
-                default:
-                {
-                    if (SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true))
-                    {
-                        break;
-                    }
-
-                    _sharedData->TimedWaiterCount++;
-
-                    do
-                    {
-                        int elapsedMilliseconds = Environment.TickCount - startTime;
-                        if (elapsedMilliseconds >= timeoutMilliseconds)
+                        do
                         {
-                            _sharedData->TimedWaiterCount--;
-                            return MutexTryAcquireLockResult.TimedOut;
-                        }
+                            int elapsedMilliseconds = Environment.TickCount - startTime;
+                            if (elapsedMilliseconds >= timeoutMilliseconds)
+                            {
+                                _sharedData->TimedWaiterCount--;
+                                return MutexTryAcquireLockResult.TimedOut;
+                            }
 
-                        int remainingTimeoutMilliseconds = timeoutMilliseconds - elapsedMilliseconds;
-                        int sleepMilliseconds = Math.Min(PollLoopMaximumSleepMilliseconds, remainingTimeoutMilliseconds);
-                        Thread.Sleep(sleepMilliseconds);
-                    } while (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true));
-                    _sharedData->TimedWaiterCount--;
-                    break;
+                            int remainingTimeoutMilliseconds = timeoutMilliseconds - elapsedMilliseconds;
+                            int sleepMilliseconds = Math.Min(PollLoopMaximumSleepMilliseconds, remainingTimeoutMilliseconds);
+                            Thread.Sleep(sleepMilliseconds);
+                        } while (!SharedMemoryHelpers.TryAcquireFileLock(_sharedLockFileHandle, nonBlocking: true));
+                        _sharedData->TimedWaiterCount--;
+                        break;
+                    }
+                }
+                releaseProcessLock = false;
+
+                // Detect abandoned lock that isn't marked as abandoned.
+                if (IsLockOwnedByAnyThread)
+                    return MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned;
+
+                return MutexTryAcquireLockResult.AcquiredLock;
+            }
+            finally
+            {
+                if (releaseProcessLock)
+                {
+                    _processLevelLock.Exit();
                 }
             }
-
-            // We've now acquired the lock.
-            // We're going to release the scoped process lock we took above,
-            // so recursively acquire it to maintain the lock ownership.
-            _processLevelLock.Enter();
-
-            // Detect abandoned lock that isn't marked as abandoned.
-            if (IsLockOwnedByAnyThread)
-                return MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned;
-
-            return MutexTryAcquireLockResult.AcquiredLock;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -550,113 +610,79 @@ namespace System.Threading
 
     internal static partial class WaitSubsystem
     {
-        private sealed class NamedMutex(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader) : IWaitableObject
+        private sealed class NamedMutex : IWaitableObject
         {
-            /// <summary>
-            /// Dictionary to look up named mutexes.
-            /// </summary>
-            private static Dictionary<string, NamedMutex>? s_namedObjects;
-            private int _referenceCount = 1;
+            private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader;
 
-            public void IncrementRefCount()
+            public NamedMutex(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader)
             {
-                Debug.Assert(_referenceCount > 0, "Ref count should not be negative.");
-                _referenceCount++;
+                _processDataHeader = processDataHeader;
             }
 
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder)
             {
-                // We're done touching the wait subsystem data structures, so we can release the lock on them.
-                lockHolder.Dispose();
-                MutexTryAcquireLockResult result = processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds);
-                return result switch
+                LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+                try
                 {
-                    MutexTryAcquireLockResult.AcquiredLock => WaitHandle.WaitSuccess,
-                    MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned => WaitHandle.WaitAbandoned,
-                    MutexTryAcquireLockResult.TimedOut => WaitHandle.WaitTimeout,
-                    _ => throw new InvalidOperationException("Unexpected result from TryAcquireLock")
-                };
+                    lockHolder.Dispose();
+                    MutexTryAcquireLockResult result = _processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds, ref scope);
+                    return result switch
+                    {
+                        MutexTryAcquireLockResult.AcquiredLock => WaitHandle.WaitSuccess,
+                        MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned => WaitHandle.WaitAbandoned,
+                        MutexTryAcquireLockResult.TimedOut => WaitHandle.WaitTimeout,
+                        _ => throw new InvalidOperationException("Unexpected result from TryAcquireLock")
+                    };
+                }
+                finally
+                {
+                    scope.Dispose();
+                }
             }
 
             public void Signal(int count, ref LockHolder lockHolder)
             {
                 lockHolder.Dispose();
-                processDataHeader._processData!.ReleaseLock();
+                _processDataHeader._processData!.ReleaseLock();
             }
 
             public void OnDeleteHandle()
             {
-                s_lock.Acquire();
+                LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
-                    // Multiple handles may refer to the same named object.  Make sure the object
-                    // is only abandoned once the last handle to it is deleted.  Also, remove the
-                    // object from the named objects dictionary at this point.
-                    _referenceCount--;
-                    if (_referenceCount > 0)
-                    {
-                        return;
-                    }
-
-                    processDataHeader.Close();
+                    _processDataHeader.DecrementRefCount();
                 }
                 finally
                 {
-                    s_lock.Release();
+                    scope.Dispose();
                 }
             }
 
-            public static NamedMutex? CreateNamedMutex_Locked(string name, bool isUserScope, bool initiallyOwned, out bool createdNew)
+            public static NamedMutex? CreateNamedMutex(string name, bool isUserScope, bool initiallyOwned, out bool createdNew)
             {
-                s_lock.VerifyIsLocked();
-
-                s_namedObjects ??= [];
-
-                if (s_namedObjects.TryGetValue(name, out NamedMutex? result))
+                var namedMutexProcessData = NamedMutexProcessDataBase.CreateOrOpen(name, isUserScope, createIfNotExist: true, acquireLockIfCreated: initiallyOwned, out createdNew);
+                if (namedMutexProcessData is null)
                 {
                     createdNew = false;
-                    result._referenceCount++;
-                }
-                else
-                {
-                    var namedMutexProcessData = NamedMutexProcessDataBase.CreateOrOpen(name, isUserScope, createIfNotExist: true, acquireLockIfCreated: initiallyOwned, out createdNew);
-                    if (namedMutexProcessData is null)
-                    {
-                        createdNew = false;
-                        return null;
-                    }
-                    result = new NamedMutex(namedMutexProcessData);
-                    s_namedObjects.Add(name, result);
-                    return result;
+                    return null;
                 }
 
-                return result;
+                Debug.Assert(namedMutexProcessData._processData is not null);
+                return new NamedMutex(namedMutexProcessData);
             }
 
             public static OpenExistingResult OpenNamedMutex(string name, bool isUserScope, out NamedMutex? result)
             {
-                s_lock.VerifyIsLocked();
-
-                if (s_namedObjects is null || !s_namedObjects.TryGetValue(name, out NamedMutex? namedMutex))
+                var namedMutexProcessData = NamedMutexProcessDataBase.CreateOrOpen(name, isUserScope, createIfNotExist: false, acquireLockIfCreated: false, out _);
+                if (namedMutexProcessData is null)
                 {
-                    // We haven't seen this named mutex before in this process.
-                    // Try seeing if it exists on the system.
-                    var namedMutexProcessData = NamedMutexProcessDataBase.CreateOrOpen(name, isUserScope, createIfNotExist: false, acquireLockIfCreated: false, out _);
-                    if (namedMutexProcessData is null)
-                    {
-                        // This mutex does not exist.
-                        result = null;
-                        return OpenExistingResult.NameNotFound;
-                    }
-
-                    // We found the mutex on the system, so we can open it.
-                    s_namedObjects ??= [];
-                    namedMutex = new NamedMutex(namedMutexProcessData);
-                    s_namedObjects.Add(name, namedMutex);
+                    result = null;
+                    return OpenExistingResult.NameNotFound;
                 }
 
-                namedMutex.IncrementRefCount();
-                result = namedMutex;
+                Debug.Assert(namedMutexProcessData._processData is not null);
+                result = new NamedMutex(namedMutexProcessData);
                 return OpenExistingResult.Success;
             }
         }

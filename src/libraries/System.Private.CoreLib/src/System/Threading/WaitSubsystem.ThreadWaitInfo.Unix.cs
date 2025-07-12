@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Threading
 {
@@ -564,12 +565,12 @@ namespace System.Threading
             {
                 get
                 {
-                    s_lock.VerifyIsLocked();
+                    SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
                     return _lockedNamedMutexesHead;
                 }
                 set
                 {
-                    s_lock.VerifyIsLocked();
+                    SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
                     _lockedNamedMutexesHead = value;
                 }
             }
@@ -592,7 +593,15 @@ namespace System.Threading
                         waitableObject.AbandonMutex();
                         Debug.Assert(LockedMutexesHead != waitableObject);
                     }
+                }
+                finally
+                {
+                    s_lock.Release();
+                }
 
+                LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+                try
+                {
                     while (true)
                     {
                         NamedMutexProcessDataBase? namedMutex = LockedNamedMutexesHead;
@@ -607,7 +616,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    s_lock.Release();
+                    scope.Dispose();
                 }
             }
 

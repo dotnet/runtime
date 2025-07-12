@@ -48,7 +48,7 @@ namespace System.IO
 
             if (name.ContainsAny(['\\', '/']))
             {
-                throw new ArgumentException("Name cannot contain path separators after prefixes.", nameof(name));
+                throw new ArgumentException($"Name '{name}' cannot contain path separators after prefixes.", nameof(name));
             }
 
             IsUserScope = isUserScope;
@@ -126,11 +126,12 @@ namespace System.IO
     internal sealed unsafe class SharedMemoryProcessDataHeader<TSharedMemoryProcessData>
         where TSharedMemoryProcessData : class, ISharedMemoryProcessData
     {
-        internal SharedMemoryId _id;
+        internal readonly SharedMemoryId _id;
         internal TSharedMemoryProcessData? _processData;
         private readonly SafeFileHandle _fileHandle;
         private readonly SharedMemorySharedDataHeader* _sharedDataHeader;
         private readonly nuint _sharedDataTotalByteCount;
+        private int _referenceCount = 1;
 
         public SharedMemoryProcessDataHeader(SharedMemoryId id, SafeFileHandle fileHandle, SharedMemorySharedDataHeader* sharedDataHeader, nuint sharedDataTotalByteCount)
         {
@@ -139,6 +140,7 @@ namespace System.IO
             _sharedDataHeader = sharedDataHeader;
             _sharedDataTotalByteCount = sharedDataTotalByteCount;
             _processData = null; // Will be initialized later
+            SharedMemoryManager<TSharedMemoryProcessData>.Instance.AddProcessDataHeader(this);
         }
 
         public static void* GetDataPointer(SharedMemoryProcessDataHeader<TSharedMemoryProcessData> processDataHeader)
@@ -170,6 +172,7 @@ namespace System.IO
             if (processDataHeader is not null)
             {
                 Debug.Assert(processDataHeader._sharedDataTotalByteCount == sharedDataTotalByteCount);
+                processDataHeader.IncrementRefCount();
                 return processDataHeader;
             }
 
@@ -251,9 +254,12 @@ namespace System.IO
             using MemoryMappedFileHolder memory = SharedMemoryHelpers.MemoryMapFile(fileHandle, sharedDataTotalByteCount);
 
             SharedMemorySharedDataHeader* sharedDataHeader = (SharedMemorySharedDataHeader*)memory.Pointer;
-            if (createdFile && clearContents)
+            if (createdFile)
             {
-                NativeMemory.Clear(memory.Pointer, sharedDataUsedByteCount);
+                if (clearContents)
+                {
+                    NativeMemory.Clear(memory.Pointer, sharedDataTotalByteCount);
+                }
                 *sharedDataHeader = requiredSharedDataHeader;
             }
             else
@@ -295,7 +301,7 @@ namespace System.IO
 
             static void SetFileSize(SafeFileHandle fd, string path, long size)
             {
-                if (Interop.Sys.FTruncate(fd, 0) < 0)
+                if (Interop.Sys.FTruncate(fd, size) < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     if (errorInfo.Error != Interop.Error.EBADF && errorInfo.Error != Interop.Error.EINVAL)
@@ -309,8 +315,25 @@ namespace System.IO
             }
         }
 
-        internal void Close()
+        public void IncrementRefCount()
         {
+            Debug.Assert(_referenceCount > 0, "Ref count should not be negative.");
+            _referenceCount++;
+        }
+
+        public void DecrementRefCount()
+        {
+            Debug.Assert(_referenceCount > 0, "Ref count should not be negative.");
+            _referenceCount--;
+            if (_referenceCount == 0)
+            {
+                Close();
+            }
+        }
+
+        private void Close()
+        {
+            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
             SharedMemoryManager<TSharedMemoryProcessData>.Instance.RemoveProcessDataHeader(this);
 
             using AutoReleaseFileLock autoReleaseFileLock = SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(_id);
@@ -359,13 +382,10 @@ namespace System.IO
 
     internal static class SharedMemoryHelpers
     {
-        public const uint InvalidProcessId = unchecked((uint)-1);
-        public const uint InvalidThreadId = unchecked((uint)-1);
-
         private const UnixFileMode PermissionsMask_OwnerUser_ReadWrite = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         private const UnixFileMode PermissionsMask_OwnerUser_ReadWriteExecute = PermissionsMask_OwnerUser_ReadWrite | UnixFileMode.UserExecute;
         private const UnixFileMode PermissionsMask_NonOwnerUsers_Write = UnixFileMode.GroupWrite | UnixFileMode.OtherWrite;
-        private const UnixFileMode PermissionsMask_AllUsers_ReadWrite = UnixFileMode.UserRead | UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
+        private const UnixFileMode PermissionsMask_AllUsers_ReadWrite = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
         private const UnixFileMode PermissionsMask_AllUsers_ReadWriteExecute = PermissionsMask_AllUsers_ReadWrite | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
         private const UnixFileMode PermissionsMask_Sticky = UnixFileMode.StickyBit;
 
@@ -409,14 +429,15 @@ namespace System.IO
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
         {
-            SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR, 0);
+            SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
+            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
             if (!fd.IsInvalid)
             {
                 if (id.IsUserScope)
                 {
                     if (Interop.Sys.FStat(fd, out Interop.Sys.FileStatus fileStatus) != 0)
                     {
-                        Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                        error = Interop.Sys.GetLastErrorInfo();
                         fd.Dispose();
                         throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
                     }
@@ -437,7 +458,12 @@ namespace System.IO
                 return fd;
             }
 
-            Debug.Assert(Interop.Sys.GetLastError() == Interop.Error.ENOENT);
+            if (error.Error == Interop.Error.ENAMETOOLONG)
+            {
+                throw new ArgumentException(SR.Arg_ArgumentException, "name");
+            }
+
+            Debug.Assert(error.Error == Interop.Error.ENOENT);
             if (!createIfNotExist)
             {
                 createdFile = false;
@@ -452,14 +478,20 @@ namespace System.IO
 
             fd = Interop.Sys.Open(
                 sharedMemoryFilePath,
-                Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
+                Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
                 (int)permissionsMask);
+
+            if (fd.IsInvalid)
+            {
+                error = Interop.Sys.GetLastErrorInfo();
+                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+            }
 
             int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
 
             if (result != 0)
             {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                error = Interop.Sys.GetLastErrorInfo();
                 fd.Dispose();
                 Interop.Sys.Unlink(sharedMemoryFilePath);
                 throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
@@ -634,7 +666,7 @@ namespace System.IO
                 Interop.Sys.MemoryMappedProtections.PROT_READ | Interop.Sys.MemoryMappedProtections.PROT_WRITE,
                 Interop.Sys.MemoryMappedFlags.MAP_SHARED,
                 fileHandle,
-                (long)sharedDataTotalByteCount);
+                0);
 
             if (addr == -1)
             {
@@ -714,18 +746,23 @@ namespace System.IO
 
         internal const string SharedMemorySharedMemoryDirectoryName = "shm";
 
-        private readonly Lock _creationDeletionProcessLock = new Lock();
+        private readonly LowLevelLock _creationDeletionProcessLock = new();
         private SafeFileHandle? _creationDeletionLockFileHandle;
         private readonly Dictionary<uint, SafeFileHandle> _uidToFileHandleMap = [];
 
-        public Lock.Scope AcquireCreationDeletionProcessLock()
+        public WaitSubsystem.LockHolder AcquireCreationDeletionProcessLock()
         {
-            return _creationDeletionProcessLock.EnterScope();
+            return new WaitSubsystem.LockHolder(_creationDeletionProcessLock);
+        }
+
+        public void VerifyCreationDeletionProcessLockIsLocked()
+        {
+            _creationDeletionProcessLock.VerifyIsLocked();
         }
 
         public AutoReleaseFileLock AcquireCreationDeletionLockForId(SharedMemoryId id)
         {
-            Debug.Assert(_creationDeletionProcessLock.IsHeldByCurrentThread);
+            _creationDeletionProcessLock.VerifyIsLocked();
             SafeFileHandle? fd = id.IsUserScope ? GetUserScopeCreationDeletionLockFileHandle(id.Uid) : _creationDeletionLockFileHandle;
             if (fd is null)
             {
@@ -753,40 +790,39 @@ namespace System.IO
                     fd.Dispose();
                     throw Interop.GetExceptionForIoErrno(error, sharedMemoryDirectory);
                 }
-            }
 
-            if (id.IsUserScope)
-            {
-                _uidToFileHandleMap.Add(id.Uid, fd);
+                if (id.IsUserScope)
+                {
+                    _uidToFileHandleMap.Add(id.Uid, fd);
+                }
+                else
+                {
+                    _creationDeletionLockFileHandle = fd;
+                }
             }
-
-            _creationDeletionLockFileHandle = fd;
 
             bool acquired = SharedMemoryHelpers.TryAcquireFileLock(fd, nonBlocking: true, exclusive: true);
             Debug.Assert(acquired);
             return new AutoReleaseFileLock(fd);
-        }
 
-        public void AddUserScopeCreationDeletionLockFileHandle(uint uid, SafeFileHandle fileHandle)
-        {
-            _uidToFileHandleMap[uid] = fileHandle;
-        }
-
-        public SafeFileHandle? GetUserScopeCreationDeletionLockFileHandle(uint uid)
-        {
-            _uidToFileHandleMap.TryGetValue(uid, out SafeFileHandle? fileHandle);
-            return fileHandle;
+            SafeFileHandle? GetUserScopeCreationDeletionLockFileHandle(uint uid)
+            {
+                _uidToFileHandleMap.TryGetValue(uid, out SafeFileHandle? fileHandle);
+                return fileHandle;
+            }
         }
 
         private Dictionary<SharedMemoryId, SharedMemoryProcessDataHeader<TSharedMemoryProcessData>> _processDataHeaders = [];
 
         public void AddProcessDataHeader(SharedMemoryProcessDataHeader<TSharedMemoryProcessData> processDataHeader)
         {
+            VerifyCreationDeletionProcessLockIsLocked();
             _processDataHeaders[processDataHeader._id] = processDataHeader;
         }
 
         public void RemoveProcessDataHeader(SharedMemoryProcessDataHeader<TSharedMemoryProcessData> processDataHeader)
         {
+            VerifyCreationDeletionProcessLockIsLocked();
             _processDataHeaders.Remove(processDataHeader._id);
         }
 
