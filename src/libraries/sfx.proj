@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
   </PropertyGroup>
 
   <ItemGroup>

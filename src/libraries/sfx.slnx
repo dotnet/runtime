@@ -10,7 +10,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/gen/">
-    <Project Path="../Microsoft.Extensions.Configuration.Binder/gen/Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj">
+    <Project Path="System.Private.CoreLib/gen/System.Private.CoreLib.Generators.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -18,7 +18,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Abstractions/gen/Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj">
+    <Project Path="System.Runtime.InteropServices.JavaScript/gen/JSImportGenerator/JSImportGenerator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -26,7 +26,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Abstractions/gen/Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj">
+    <Project Path="System.Runtime.InteropServices/gen/ComInterfaceGenerator/ComInterfaceGenerator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -34,7 +34,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Abstractions/gen/Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj">
+    <Project Path="System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -42,7 +42,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Private.CoreLib/gen/System.Private.CoreLib.Generators.csproj">
+    <Project Path="System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -50,7 +50,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices.JavaScript/gen/JSImportGenerator/JSImportGenerator.csproj">
+    <Project Path="System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -58,7 +58,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices/gen/ComInterfaceGenerator/ComInterfaceGenerator.csproj">
+    <Project Path="System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn3.11.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -66,7 +66,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj">
+    <Project Path="System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.0.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -74,7 +74,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj">
+    <Project Path="System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.4.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -82,47 +82,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
-    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn3.11.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
-    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.0.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
-    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.4.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
-    <Project Path="../System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
-    <Project Path="gen/Microsoft.Extensions.Options.SourceGeneration.csproj">
+    <Project Path="System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -132,7 +92,7 @@
     </Project>
   </Folder>
   <Folder Name="/ref/">
-    <Project Path="../Microsoft.Extensions.Configuration.Abstractions/ref/Microsoft.Extensions.Configuration.Abstractions.csproj">
+    <Project Path="Microsoft.CSharp/ref/Microsoft.CSharp.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -140,7 +100,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.Binder/ref/Microsoft.Extensions.Configuration.Binder.csproj">
+    <Project Path="Microsoft.VisualBasic.Core/ref/Microsoft.VisualBasic.Core.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -148,7 +108,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.CommandLine/ref/Microsoft.Extensions.Configuration.CommandLine.csproj">
+    <Project Path="Microsoft.Win32.Primitives/ref/Microsoft.Win32.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -156,7 +116,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.EnvironmentVariables/ref/Microsoft.Extensions.Configuration.EnvironmentVariables.csproj">
+    <Project Path="Microsoft.Win32.Registry/ref/Microsoft.Win32.Registry.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -164,7 +124,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.FileExtensions/ref/Microsoft.Extensions.Configuration.FileExtensions.csproj">
+    <Project Path="System.Collections.Concurrent/ref/System.Collections.Concurrent.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -172,7 +132,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.Json/ref/Microsoft.Extensions.Configuration.Json.csproj">
+    <Project Path="System.Collections.Immutable/ref/System.Collections.Immutable.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -180,7 +140,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.UserSecrets/ref/Microsoft.Extensions.Configuration.UserSecrets.csproj">
+    <Project Path="System.Collections.NonGeneric/ref/System.Collections.NonGeneric.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -188,7 +148,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration/ref/Microsoft.Extensions.Configuration.csproj">
+    <Project Path="System.Collections.Specialized/ref/System.Collections.Specialized.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -196,7 +156,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.DependencyInjection.Abstractions/ref/Microsoft.Extensions.DependencyInjection.Abstractions.csproj">
+    <Project Path="System.Collections/ref/System.Collections.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -204,7 +164,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.DependencyInjection/ref/Microsoft.Extensions.DependencyInjection.csproj">
+    <Project Path="System.ComponentModel.Annotations/ref/System.ComponentModel.Annotations.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -212,7 +172,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Diagnostics.Abstractions/ref/Microsoft.Extensions.Diagnostics.Abstractions.csproj">
+    <Project Path="System.ComponentModel.EventBasedAsync/ref/System.ComponentModel.EventBasedAsync.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -220,7 +180,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Diagnostics/ref/Microsoft.Extensions.Diagnostics.csproj">
+    <Project Path="System.ComponentModel.Primitives/ref/System.ComponentModel.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -228,7 +188,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.FileProviders.Abstractions/ref/Microsoft.Extensions.FileProviders.Abstractions.csproj">
+    <Project Path="System.ComponentModel.TypeConverter/ref/System.ComponentModel.TypeConverter.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -236,7 +196,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.FileProviders.Physical/ref/Microsoft.Extensions.FileProviders.Physical.csproj">
+    <Project Path="System.ComponentModel/ref/System.ComponentModel.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -244,7 +204,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.FileSystemGlobbing/ref/Microsoft.Extensions.FileSystemGlobbing.csproj">
+    <Project Path="System.Console/ref/System.Console.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -252,7 +212,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Hosting.Abstractions/ref/Microsoft.Extensions.Hosting.Abstractions.csproj">
+    <Project Path="System.Data.Common/ref/System.Data.Common.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -260,7 +220,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Hosting/ref/Microsoft.Extensions.Hosting.csproj">
+    <Project Path="System.Diagnostics.Contracts/ref/System.Diagnostics.Contracts.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -268,7 +228,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Abstractions/ref/Microsoft.Extensions.Logging.Abstractions.csproj">
+    <Project Path="System.Diagnostics.DiagnosticSource/ref/System.Diagnostics.DiagnosticSource.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -276,7 +236,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Configuration/ref/Microsoft.Extensions.Logging.Configuration.csproj">
+    <Project Path="System.Diagnostics.FileVersionInfo/ref/System.Diagnostics.FileVersionInfo.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -284,7 +244,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Console/ref/Microsoft.Extensions.Logging.Console.csproj">
+    <Project Path="System.Diagnostics.Process/ref/System.Diagnostics.Process.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -292,7 +252,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Debug/ref/Microsoft.Extensions.Logging.Debug.csproj">
+    <Project Path="System.Diagnostics.StackTrace/ref/System.Diagnostics.StackTrace.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -300,7 +260,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.EventLog/ref/Microsoft.Extensions.Logging.EventLog.csproj">
+    <Project Path="System.Diagnostics.TextWriterTraceListener/ref/System.Diagnostics.TextWriterTraceListener.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -308,7 +268,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.EventSource/ref/Microsoft.Extensions.Logging.EventSource.csproj">
+    <Project Path="System.Diagnostics.TraceSource/ref/System.Diagnostics.TraceSource.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -316,7 +276,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging/ref/Microsoft.Extensions.Logging.csproj">
+    <Project Path="System.Diagnostics.Tracing/ref/System.Diagnostics.Tracing.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -324,7 +284,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Options.ConfigurationExtensions/ref/Microsoft.Extensions.Options.ConfigurationExtensions.csproj">
+    <Project Path="System.Drawing.Primitives/ref/System.Drawing.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -332,7 +292,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Options.DataAnnotations/ref/Microsoft.Extensions.Options.DataAnnotations.csproj">
+    <Project Path="System.Formats.Asn1/ref/System.Formats.Asn1.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -340,7 +300,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Primitives/ref/Microsoft.Extensions.Primitives.csproj">
+    <Project Path="System.Formats.Tar/ref/System.Formats.Tar.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -348,7 +308,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Win32.Primitives/ref/Microsoft.Win32.Primitives.csproj">
+    <Project Path="System.IO.Compression.Brotli/ref/System.IO.Compression.Brotli.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -356,7 +316,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Win32.Registry/ref/Microsoft.Win32.Registry.csproj">
+    <Project Path="System.IO.Compression.ZipFile/ref/System.IO.Compression.ZipFile.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -364,7 +324,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.Concurrent/ref/System.Collections.Concurrent.csproj">
+    <Project Path="System.IO.Compression/ref/System.IO.Compression.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -372,7 +332,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.Immutable/ref/System.Collections.Immutable.csproj">
+    <Project Path="System.IO.FileSystem.AccessControl/ref/System.IO.FileSystem.AccessControl.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -380,7 +340,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.NonGeneric/ref/System.Collections.NonGeneric.csproj">
+    <Project Path="System.IO.FileSystem.DriveInfo/ref/System.IO.FileSystem.DriveInfo.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -388,7 +348,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.Specialized/ref/System.Collections.Specialized.csproj">
+    <Project Path="System.IO.FileSystem.Watcher/ref/System.IO.FileSystem.Watcher.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -396,7 +356,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections/ref/System.Collections.csproj">
+    <Project Path="System.IO.IsolatedStorage/ref/System.IO.IsolatedStorage.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -404,7 +364,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel.Annotations/ref/System.ComponentModel.Annotations.csproj">
+    <Project Path="System.IO.MemoryMappedFiles/ref/System.IO.MemoryMappedFiles.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -412,7 +372,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel.Primitives/ref/System.ComponentModel.Primitives.csproj">
+    <Project Path="System.IO.Pipelines/ref/System.IO.Pipelines.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -420,7 +380,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel.TypeConverter/ref/System.ComponentModel.TypeConverter.csproj">
+    <Project Path="System.IO.Pipes.AccessControl/ref/System.IO.Pipes.AccessControl.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -428,7 +388,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel/ref/System.ComponentModel.csproj">
+    <Project Path="System.IO.Pipes/ref/System.IO.Pipes.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -436,7 +396,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Console/ref/System.Console.csproj">
+    <Project Path="System.Linq.AsyncEnumerable/ref/System.Linq.AsyncEnumerable.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -444,7 +404,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.DiagnosticSource/ref/System.Diagnostics.DiagnosticSource.csproj">
+    <Project Path="System.Linq.Expressions/ref/System.Linq.Expressions.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -452,7 +412,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.EventLog/ref/System.Diagnostics.EventLog.csproj">
+    <Project Path="System.Linq.Parallel/ref/System.Linq.Parallel.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -460,7 +420,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.StackTrace/ref/System.Diagnostics.StackTrace.csproj">
+    <Project Path="System.Linq.Queryable/ref/System.Linq.Queryable.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -468,7 +428,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.TraceSource/ref/System.Diagnostics.TraceSource.csproj">
+    <Project Path="System.Linq/ref/System.Linq.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -476,7 +436,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.Tracing/ref/System.Diagnostics.Tracing.csproj">
+    <Project Path="System.Memory/ref/System.Memory.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -484,7 +444,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Drawing.Primitives/ref/System.Drawing.Primitives.csproj">
+    <Project Path="System.Net.Http.Json/ref/System.Net.Http.Json.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -492,7 +452,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Formats.Asn1/ref/System.Formats.Asn1.csproj">
+    <Project Path="System.Net.Http/ref/System.Net.Http.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -500,7 +460,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.Compression.Brotli/ref/System.IO.Compression.Brotli.csproj">
+    <Project Path="System.Net.HttpListener/ref/System.Net.HttpListener.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -508,7 +468,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.Compression/ref/System.IO.Compression.csproj">
+    <Project Path="System.Net.Mail/ref/System.Net.Mail.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -516,7 +476,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.MemoryMappedFiles/ref/System.IO.MemoryMappedFiles.csproj">
+    <Project Path="System.Net.NameResolution/ref/System.Net.NameResolution.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -524,7 +484,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.Pipelines/ref/System.IO.Pipelines.csproj">
+    <Project Path="System.Net.NetworkInformation/ref/System.Net.NetworkInformation.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -532,7 +492,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Linq.Expressions/ref/System.Linq.Expressions.csproj">
+    <Project Path="System.Net.Ping/ref/System.Net.Ping.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -540,7 +500,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Linq/ref/System.Linq.csproj">
+    <Project Path="System.Net.Primitives/ref/System.Net.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -548,7 +508,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Memory/ref/System.Memory.csproj">
+    <Project Path="System.Net.Quic/ref/System.Net.Quic.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -556,7 +516,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Http/ref/System.Net.Http.csproj">
+    <Project Path="System.Net.Requests/ref/System.Net.Requests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -564,7 +524,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.NameResolution/ref/System.Net.NameResolution.csproj">
+    <Project Path="System.Net.Security/ref/System.Net.Security.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -572,7 +532,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.NetworkInformation/ref/System.Net.NetworkInformation.csproj">
+    <Project Path="System.Net.ServerSentEvents/ref/System.Net.ServerSentEvents.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -580,7 +540,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Primitives/ref/System.Net.Primitives.csproj">
+    <Project Path="System.Net.Sockets/ref/System.Net.Sockets.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -588,7 +548,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Quic/ref/System.Net.Quic.csproj">
+    <Project Path="System.Net.WebClient/ref/System.Net.WebClient.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -596,7 +556,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Security/ref/System.Net.Security.csproj">
+    <Project Path="System.Net.WebHeaderCollection/ref/System.Net.WebHeaderCollection.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -604,7 +564,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Sockets/ref/System.Net.Sockets.csproj">
+    <Project Path="System.Net.WebProxy/ref/System.Net.WebProxy.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -612,7 +572,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Numerics.Vectors/ref/System.Numerics.Vectors.csproj">
+    <Project Path="System.Net.WebSockets.Client/ref/System.Net.WebSockets.Client.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -620,7 +580,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ObjectModel/ref/System.ObjectModel.csproj">
+    <Project Path="System.Net.WebSockets/ref/System.Net.WebSockets.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -628,7 +588,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Private.CoreLib/ref/System.Private.CoreLib.csproj">
+    <Project Path="System.Numerics.Vectors/ref/System.Numerics.Vectors.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -636,7 +596,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Emit.ILGeneration/ref/System.Reflection.Emit.ILGeneration.csproj">
+    <Project Path="System.ObjectModel/ref/System.ObjectModel.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -644,7 +604,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Emit.Lightweight/ref/System.Reflection.Emit.Lightweight.csproj">
+    <Project Path="System.Private.CoreLib/ref/System.Private.CoreLib.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -652,7 +612,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Emit/ref/System.Reflection.Emit.csproj">
+    <Project Path="System.Reflection.DispatchProxy/ref/System.Reflection.DispatchProxy.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -660,7 +620,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Metadata/ref/System.Reflection.Metadata.csproj">
+    <Project Path="System.Reflection.Emit.ILGeneration/ref/System.Reflection.Emit.ILGeneration.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -668,7 +628,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Primitives/ref/System.Reflection.Primitives.csproj">
+    <Project Path="System.Reflection.Emit.Lightweight/ref/System.Reflection.Emit.Lightweight.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -676,7 +636,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Resources.Writer/ref/System.Resources.Writer.csproj">
+    <Project Path="System.Reflection.Emit/ref/System.Reflection.Emit.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -684,7 +644,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices.JavaScript/ref/System.Runtime.InteropServices.JavaScript.csproj">
+    <Project Path="System.Reflection.Metadata/ref/System.Reflection.Metadata.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -692,7 +652,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices/ref/System.Runtime.InteropServices.csproj">
+    <Project Path="System.Reflection.Primitives/ref/System.Reflection.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -700,7 +660,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Intrinsics/ref/System.Runtime.Intrinsics.csproj">
+    <Project Path="System.Reflection.TypeExtensions/ref/System.Reflection.TypeExtensions.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -708,7 +668,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Loader/ref/System.Runtime.Loader.csproj">
+    <Project Path="System.Resources.Writer/ref/System.Resources.Writer.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -716,7 +676,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Numerics/ref/System.Runtime.Numerics.csproj">
+    <Project Path="System.Runtime.CompilerServices.VisualC/ref/System.Runtime.CompilerServices.VisualC.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -724,7 +684,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Serialization.Formatters/ref/System.Runtime.Serialization.Formatters.csproj">
+    <Project Path="System.Runtime.InteropServices.JavaScript/ref/System.Runtime.InteropServices.JavaScript.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -732,7 +692,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime/ref/System.Runtime.csproj">
+    <Project Path="System.Runtime.InteropServices/ref/System.Runtime.InteropServices.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -740,7 +700,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.AccessControl/ref/System.Security.AccessControl.csproj">
+    <Project Path="System.Runtime.Intrinsics/ref/System.Runtime.Intrinsics.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -748,7 +708,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.Claims/ref/System.Security.Claims.csproj">
+    <Project Path="System.Runtime.Loader/ref/System.Runtime.Loader.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -756,7 +716,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.Cryptography/ref/System.Security.Cryptography.csproj">
+    <Project Path="System.Runtime.Numerics/ref/System.Runtime.Numerics.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -764,7 +724,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.Principal.Windows/ref/System.Security.Principal.Windows.csproj">
+    <Project Path="System.Runtime.Serialization.Formatters/ref/System.Runtime.Serialization.Formatters.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -772,7 +732,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.Encoding.Extensions/ref/System.Text.Encoding.Extensions.csproj">
+    <Project Path="System.Runtime.Serialization.Json/ref/System.Runtime.Serialization.Json.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -780,7 +740,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.Encodings.Web/ref/System.Text.Encodings.Web.csproj">
+    <Project Path="System.Runtime.Serialization.Primitives/ref/System.Runtime.Serialization.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -788,7 +748,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.Json/ref/System.Text.Json.csproj">
+    <Project Path="System.Runtime.Serialization.Xml/ref/System.Runtime.Serialization.Xml.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -796,7 +756,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.RegularExpressions/ref/System.Text.RegularExpressions.csproj">
+    <Project Path="System.Runtime/ref/System.Runtime.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -804,7 +764,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.AccessControl/ref/System.Threading.AccessControl.csproj">
+    <Project Path="System.Security.AccessControl/ref/System.Security.AccessControl.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -812,7 +772,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.Channels/ref/System.Threading.Channels.csproj">
+    <Project Path="System.Security.Claims/ref/System.Security.Claims.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -820,7 +780,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.Overlapped/ref/System.Threading.Overlapped.csproj">
+    <Project Path="System.Security.Cryptography/ref/System.Security.Cryptography.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -828,7 +788,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.Thread/ref/System.Threading.Thread.csproj">
+    <Project Path="System.Security.Principal.Windows/ref/System.Security.Principal.Windows.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -836,7 +796,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.ThreadPool/ref/System.Threading.ThreadPool.csproj">
+    <Project Path="System.Text.Encoding.CodePages/ref/System.Text.Encoding.CodePages.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -844,7 +804,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading/ref/System.Threading.csproj">
+    <Project Path="System.Text.Encoding.Extensions/ref/System.Text.Encoding.Extensions.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -852,7 +812,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Xml.ReaderWriter/ref/System.Xml.ReaderWriter.csproj">
+    <Project Path="System.Text.Encodings.Web/ref/System.Text.Encodings.Web.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -860,7 +820,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Xml.XDocument/ref/System.Xml.XDocument.csproj">
+    <Project Path="System.Text.Json/ref/System.Text.Json.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -868,7 +828,153 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="ref/Microsoft.Extensions.Options.csproj">
+    <Project Path="System.Text.RegularExpressions/ref/System.Text.RegularExpressions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.AccessControl/ref/System.Threading.AccessControl.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Channels/ref/System.Threading.Channels.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Overlapped/ref/System.Threading.Overlapped.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Tasks.Dataflow/ref/System.Threading.Tasks.Dataflow.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Tasks.Parallel/ref/System.Threading.Tasks.Parallel.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Thread/ref/System.Threading.Thread.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.ThreadPool/ref/System.Threading.ThreadPool.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading/ref/System.Threading.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Transactions.Local/ref/System.Transactions.Local.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Web.HttpUtility/ref/System.Web.HttpUtility.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.ReaderWriter/ref/System.Xml.ReaderWriter.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XDocument/ref/System.Xml.XDocument.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XmlSerializer/ref/System.Xml.XmlSerializer.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XPath.XDocument/ref/System.Xml.XPath.XDocument.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XPath/ref/System.Xml.XPath.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/ref/shims/">
+    <Project Path="shims/mscorlib/ref/mscorlib.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Data/ref/System.Data.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System/ref/System.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -878,14 +984,14 @@
     </Project>
   </Folder>
   <Folder Name="/src/">
-    <Project Path="../../coreclr/System.Private.CoreLib/System.Private.CoreLib.csproj">
+    <Project Path="../coreclr/System.Private.CoreLib/System.Private.CoreLib.csproj">
       <Platform Solution="*|Any CPU" Project="x64" />
       <Platform Solution="*|arm" Project="arm" />
       <Platform Solution="*|arm64" Project="arm64" />
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|x86" Project="x86" />
     </Project>
-    <Project Path="../Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj">
+    <Project Path="Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -893,7 +999,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.Abstractions/src/Microsoft.Extensions.Configuration.Abstractions.csproj">
+    <Project Path="Microsoft.Bcl.Memory/src/Microsoft.Bcl.Memory.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -901,7 +1007,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.Binder/src/Microsoft.Extensions.Configuration.Binder.csproj">
+    <Project Path="Microsoft.CSharp/src/Microsoft.CSharp.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -909,7 +1015,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.CommandLine/src/Microsoft.Extensions.Configuration.CommandLine.csproj">
+    <Project Path="Microsoft.VisualBasic.Core/src/Microsoft.VisualBasic.Core.vbproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -917,7 +1023,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.EnvironmentVariables/src/Microsoft.Extensions.Configuration.EnvironmentVariables.csproj">
+    <Project Path="Microsoft.Win32.Primitives/src/Microsoft.Win32.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -925,7 +1031,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.FileExtensions/src/Microsoft.Extensions.Configuration.FileExtensions.csproj">
+    <Project Path="Microsoft.Win32.Registry/src/Microsoft.Win32.Registry.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -933,7 +1039,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.Json/src/Microsoft.Extensions.Configuration.Json.csproj">
+    <Project Path="System.Collections.Concurrent/src/System.Collections.Concurrent.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -941,7 +1047,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration.UserSecrets/src/Microsoft.Extensions.Configuration.UserSecrets.csproj">
+    <Project Path="System.Collections.Immutable/src/System.Collections.Immutable.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -949,7 +1055,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Configuration/src/Microsoft.Extensions.Configuration.csproj">
+    <Project Path="System.Collections.NonGeneric/src/System.Collections.NonGeneric.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -957,7 +1063,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.DependencyInjection.Abstractions/src/Microsoft.Extensions.DependencyInjection.Abstractions.csproj">
+    <Project Path="System.Collections.Specialized/src/System.Collections.Specialized.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -965,7 +1071,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.DependencyInjection/src/Microsoft.Extensions.DependencyInjection.csproj">
+    <Project Path="System.Collections/src/System.Collections.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -973,7 +1079,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Diagnostics.Abstractions/src/Microsoft.Extensions.Diagnostics.Abstractions.csproj">
+    <Project Path="System.ComponentModel.Annotations/src/System.ComponentModel.Annotations.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -981,7 +1087,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Diagnostics/src/Microsoft.Extensions.Diagnostics.csproj">
+    <Project Path="System.ComponentModel.EventBasedAsync/src/System.ComponentModel.EventBasedAsync.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -989,7 +1095,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.FileProviders.Abstractions/src/Microsoft.Extensions.FileProviders.Abstractions.csproj">
+    <Project Path="System.ComponentModel.Primitives/src/System.ComponentModel.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -997,7 +1103,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.FileProviders.Physical/src/Microsoft.Extensions.FileProviders.Physical.csproj">
+    <Project Path="System.ComponentModel.TypeConverter/src/System.ComponentModel.TypeConverter.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1005,7 +1111,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.FileSystemGlobbing/src/Microsoft.Extensions.FileSystemGlobbing.csproj">
+    <Project Path="System.ComponentModel/src/System.ComponentModel.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1013,7 +1119,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Hosting.Abstractions/src/Microsoft.Extensions.Hosting.Abstractions.csproj">
+    <Project Path="System.Console/src/System.Console.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1021,7 +1127,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Hosting/src/Microsoft.Extensions.Hosting.csproj">
+    <Project Path="System.Data.Common/src/System.Data.Common.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1029,7 +1135,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Abstractions/src/Microsoft.Extensions.Logging.Abstractions.csproj">
+    <Project Path="System.Diagnostics.Contracts/src/System.Diagnostics.Contracts.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1037,7 +1143,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Configuration/src/Microsoft.Extensions.Logging.Configuration.csproj">
+    <Project Path="System.Diagnostics.DiagnosticSource/src/System.Diagnostics.DiagnosticSource.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1045,7 +1151,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Console/src/Microsoft.Extensions.Logging.Console.csproj">
+    <Project Path="System.Diagnostics.FileVersionInfo/src/System.Diagnostics.FileVersionInfo.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1053,7 +1159,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.Debug/src/Microsoft.Extensions.Logging.Debug.csproj">
+    <Project Path="System.Diagnostics.Process/src/System.Diagnostics.Process.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1061,7 +1167,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.EventLog/src/Microsoft.Extensions.Logging.EventLog.csproj">
+    <Project Path="System.Diagnostics.StackTrace/src/System.Diagnostics.StackTrace.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1069,7 +1175,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging.EventSource/src/Microsoft.Extensions.Logging.EventSource.csproj">
+    <Project Path="System.Diagnostics.TextWriterTraceListener/src/System.Diagnostics.TextWriterTraceListener.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1077,7 +1183,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Logging/src/Microsoft.Extensions.Logging.csproj">
+    <Project Path="System.Diagnostics.TraceSource/src/System.Diagnostics.TraceSource.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1085,7 +1191,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Options.ConfigurationExtensions/src/Microsoft.Extensions.Options.ConfigurationExtensions.csproj">
+    <Project Path="System.Diagnostics.Tracing/src/System.Diagnostics.Tracing.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1093,7 +1199,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Options.DataAnnotations/src/Microsoft.Extensions.Options.DataAnnotations.csproj">
+    <Project Path="System.Drawing.Primitives/src/System.Drawing.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1101,7 +1207,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Extensions.Primitives/src/Microsoft.Extensions.Primitives.csproj">
+    <Project Path="System.Formats.Asn1/src/System.Formats.Asn1.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1109,7 +1215,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Win32.Primitives/src/Microsoft.Win32.Primitives.csproj">
+    <Project Path="System.Formats.Tar/src/System.Formats.Tar.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1117,7 +1223,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../Microsoft.Win32.Registry/src/Microsoft.Win32.Registry.csproj">
+    <Project Path="System.IO.Compression.Brotli/src/System.IO.Compression.Brotli.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1125,7 +1231,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.Concurrent/src/System.Collections.Concurrent.csproj">
+    <Project Path="System.IO.Compression.ZipFile/src/System.IO.Compression.ZipFile.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1133,7 +1239,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.Immutable/src/System.Collections.Immutable.csproj">
+    <Project Path="System.IO.Compression/src/System.IO.Compression.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1141,7 +1247,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.NonGeneric/src/System.Collections.NonGeneric.csproj">
+    <Project Path="System.IO.FileSystem.AccessControl/src/System.IO.FileSystem.AccessControl.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1149,7 +1255,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections.Specialized/src/System.Collections.Specialized.csproj">
+    <Project Path="System.IO.FileSystem.DriveInfo/src/System.IO.FileSystem.DriveInfo.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1157,7 +1263,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Collections/src/System.Collections.csproj">
+    <Project Path="System.IO.FileSystem.Watcher/src/System.IO.FileSystem.Watcher.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1165,7 +1271,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel.Annotations/src/System.ComponentModel.Annotations.csproj">
+    <Project Path="System.IO.IsolatedStorage/src/System.IO.IsolatedStorage.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1173,7 +1279,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel.Primitives/src/System.ComponentModel.Primitives.csproj">
+    <Project Path="System.IO.MemoryMappedFiles/src/System.IO.MemoryMappedFiles.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1181,7 +1287,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel.TypeConverter/src/System.ComponentModel.TypeConverter.csproj">
+    <Project Path="System.IO.Pipelines/src/System.IO.Pipelines.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1189,7 +1295,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ComponentModel/src/System.ComponentModel.csproj">
+    <Project Path="System.IO.Pipes.AccessControl/src/System.IO.Pipes.AccessControl.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1197,7 +1303,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Console/src/System.Console.csproj">
+    <Project Path="System.IO.Pipes/src/System.IO.Pipes.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1205,7 +1311,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.DiagnosticSource/src/System.Diagnostics.DiagnosticSource.csproj">
+    <Project Path="System.Linq.AsyncEnumerable/src/System.Linq.AsyncEnumerable.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1213,7 +1319,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.EventLog/src/Messages/System.Diagnostics.EventLog.Messages.csproj">
+    <Project Path="System.Linq.Expressions/src/System.Linq.Expressions.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1221,7 +1327,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.EventLog/src/System.Diagnostics.EventLog.csproj">
+    <Project Path="System.Linq.Parallel/src/System.Linq.Parallel.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1229,7 +1335,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.StackTrace/src/System.Diagnostics.StackTrace.csproj">
+    <Project Path="System.Linq.Queryable/src/System.Linq.Queryable.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1237,7 +1343,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.TraceSource/src/System.Diagnostics.TraceSource.csproj">
+    <Project Path="System.Linq/src/System.Linq.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1245,7 +1351,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Diagnostics.Tracing/src/System.Diagnostics.Tracing.csproj">
+    <Project Path="System.Memory/src/System.Memory.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1253,7 +1359,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Drawing.Primitives/src/System.Drawing.Primitives.csproj">
+    <Project Path="System.Net.Http.Json/src/System.Net.Http.Json.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1261,7 +1367,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Formats.Asn1/src/System.Formats.Asn1.csproj">
+    <Project Path="System.Net.Http/src/System.Net.Http.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1269,7 +1375,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.Compression.Brotli/src/System.IO.Compression.Brotli.csproj">
+    <Project Path="System.Net.HttpListener/src/System.Net.HttpListener.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1277,7 +1383,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.Compression/src/System.IO.Compression.csproj">
+    <Project Path="System.Net.Mail/src/System.Net.Mail.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1285,7 +1391,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.MemoryMappedFiles/src/System.IO.MemoryMappedFiles.csproj">
+    <Project Path="System.Net.NameResolution/src/System.Net.NameResolution.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1293,7 +1399,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.Pipelines/src/System.IO.Pipelines.csproj">
+    <Project Path="System.Net.NetworkInformation/src/System.Net.NetworkInformation.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1301,7 +1407,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Linq.Expressions/src/System.Linq.Expressions.csproj">
+    <Project Path="System.Net.Ping/src/System.Net.Ping.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1309,7 +1415,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Linq/src/System.Linq.csproj">
+    <Project Path="System.Net.Primitives/src/System.Net.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1317,7 +1423,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Memory/src/System.Memory.csproj">
+    <Project Path="System.Net.Quic/src/System.Net.Quic.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1325,7 +1431,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Http/src/System.Net.Http.csproj">
+    <Project Path="System.Net.Requests/src/System.Net.Requests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1333,7 +1439,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.NameResolution/src/System.Net.NameResolution.csproj">
+    <Project Path="System.Net.Security/src/System.Net.Security.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1341,7 +1447,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.NetworkInformation/src/System.Net.NetworkInformation.csproj">
+    <Project Path="System.Net.ServerSentEvents/src/System.Net.ServerSentEvents.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1349,7 +1455,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Primitives/src/System.Net.Primitives.csproj">
+    <Project Path="System.Net.Sockets/src/System.Net.Sockets.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1357,7 +1463,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Quic/src/System.Net.Quic.csproj">
+    <Project Path="System.Net.WebClient/src/System.Net.WebClient.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1365,7 +1471,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Security/src/System.Net.Security.csproj">
+    <Project Path="System.Net.WebHeaderCollection/src/System.Net.WebHeaderCollection.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1373,7 +1479,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Net.Sockets/src/System.Net.Sockets.csproj">
+    <Project Path="System.Net.WebProxy/src/System.Net.WebProxy.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1381,7 +1487,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Numerics.Vectors/src/System.Numerics.Vectors.csproj">
+    <Project Path="System.Net.WebSockets.Client/src/System.Net.WebSockets.Client.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1389,7 +1495,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.ObjectModel/src/System.ObjectModel.csproj">
+    <Project Path="System.Net.WebSockets/src/System.Net.WebSockets.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1397,7 +1503,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Private.Uri/src/System.Private.Uri.csproj">
+    <Project Path="System.Numerics.Vectors/src/System.Numerics.Vectors.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1405,7 +1511,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Private.Xml.Linq/src/System.Private.Xml.Linq.csproj">
+    <Project Path="System.ObjectModel/src/System.ObjectModel.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1413,7 +1519,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Private.Xml/src/System.Private.Xml.csproj">
+    <Project Path="System.Private.DataContractSerialization/src/System.Private.DataContractSerialization.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1421,7 +1527,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Emit.ILGeneration/src/System.Reflection.Emit.ILGeneration.csproj">
+    <Project Path="System.Private.Uri/src/System.Private.Uri.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1429,7 +1535,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Emit.Lightweight/src/System.Reflection.Emit.Lightweight.csproj">
+    <Project Path="System.Private.Xml.Linq/src/System.Private.Xml.Linq.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1437,7 +1543,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Emit/src/System.Reflection.Emit.csproj">
+    <Project Path="System.Private.Xml/src/System.Private.Xml.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1445,7 +1551,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Metadata/src/System.Reflection.Metadata.csproj">
+    <Project Path="System.Reflection.DispatchProxy/src/System.Reflection.DispatchProxy.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1453,7 +1559,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Reflection.Primitives/src/System.Reflection.Primitives.csproj">
+    <Project Path="System.Reflection.Emit.ILGeneration/src/System.Reflection.Emit.ILGeneration.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1461,7 +1567,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Resources.Writer/src/System.Resources.Writer.csproj">
+    <Project Path="System.Reflection.Emit.Lightweight/src/System.Reflection.Emit.Lightweight.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1469,7 +1575,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj">
+    <Project Path="System.Reflection.Emit/src/System.Reflection.Emit.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1477,7 +1583,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.InteropServices/src/System.Runtime.InteropServices.csproj">
+    <Project Path="System.Reflection.Metadata/src/System.Reflection.Metadata.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1485,7 +1591,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Intrinsics/src/System.Runtime.Intrinsics.csproj">
+    <Project Path="System.Reflection.Primitives/src/System.Reflection.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1493,7 +1599,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Loader/src/System.Runtime.Loader.csproj">
+    <Project Path="System.Reflection.TypeExtensions/src/System.Reflection.TypeExtensions.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1501,7 +1607,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Numerics/src/System.Runtime.Numerics.csproj">
+    <Project Path="System.Resources.Writer/src/System.Resources.Writer.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1509,7 +1615,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime.Serialization.Formatters/src/System.Runtime.Serialization.Formatters.csproj">
+    <Project Path="System.Runtime.CompilerServices.VisualC/src/System.Runtime.CompilerServices.VisualC.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1517,7 +1623,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Runtime/src/System.Runtime.csproj">
+    <Project Path="System.Runtime.InteropServices.JavaScript/src/System.Runtime.InteropServices.JavaScript.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1525,7 +1631,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.AccessControl/src/System.Security.AccessControl.csproj">
+    <Project Path="System.Runtime.InteropServices/src/System.Runtime.InteropServices.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1533,7 +1639,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.Claims/src/System.Security.Claims.csproj">
+    <Project Path="System.Runtime.Intrinsics/src/System.Runtime.Intrinsics.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1541,7 +1647,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.Cryptography/src/System.Security.Cryptography.csproj">
+    <Project Path="System.Runtime.Loader/src/System.Runtime.Loader.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1549,7 +1655,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Security.Principal.Windows/src/System.Security.Principal.Windows.csproj">
+    <Project Path="System.Runtime.Numerics/src/System.Runtime.Numerics.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1557,7 +1663,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.Encoding.Extensions/src/System.Text.Encoding.Extensions.csproj">
+    <Project Path="System.Runtime.Serialization.Formatters/src/System.Runtime.Serialization.Formatters.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1565,7 +1671,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj">
+    <Project Path="System.Runtime.Serialization.Json/src/System.Runtime.Serialization.Json.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1573,7 +1679,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.Json/src/System.Text.Json.csproj">
+    <Project Path="System.Runtime.Serialization.Primitives/src/System.Runtime.Serialization.Primitives.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1581,7 +1687,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Text.RegularExpressions/src/System.Text.RegularExpressions.csproj">
+    <Project Path="System.Runtime.Serialization.Xml/src/System.Runtime.Serialization.Xml.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1589,7 +1695,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.AccessControl/src/System.Threading.AccessControl.csproj">
+    <Project Path="System.Runtime/src/System.Runtime.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1597,7 +1703,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.Channels/src/System.Threading.Channels.csproj">
+    <Project Path="System.Security.AccessControl/src/System.Security.AccessControl.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1605,7 +1711,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.Overlapped/src/System.Threading.Overlapped.csproj">
+    <Project Path="System.Security.Claims/src/System.Security.Claims.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1613,7 +1719,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.Thread/src/System.Threading.Thread.csproj">
+    <Project Path="System.Security.Cryptography/src/System.Security.Cryptography.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1621,7 +1727,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading.ThreadPool/src/System.Threading.ThreadPool.csproj">
+    <Project Path="System.Security.Principal.Windows/src/System.Security.Principal.Windows.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1629,7 +1735,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Threading/src/System.Threading.csproj">
+    <Project Path="System.Text.Encoding.CodePages/src/System.Text.Encoding.CodePages.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1637,7 +1743,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.Xml.XDocument/src/System.Xml.XDocument.csproj">
+    <Project Path="System.Text.Encoding.Extensions/src/System.Text.Encoding.Extensions.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1645,7 +1751,143 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="src/Microsoft.Extensions.Options.csproj">
+    <Project Path="System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Text.Json/src/System.Text.Json.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Text.RegularExpressions/src/System.Text.RegularExpressions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.AccessControl/src/System.Threading.AccessControl.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Channels/src/System.Threading.Channels.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Overlapped/src/System.Threading.Overlapped.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Tasks.Dataflow/src/System.Threading.Tasks.Dataflow.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Tasks.Parallel/src/System.Threading.Tasks.Parallel.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.Thread/src/System.Threading.Thread.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading.ThreadPool/src/System.Threading.ThreadPool.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Threading/src/System.Threading.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Transactions.Local/src/System.Transactions.Local.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Web.HttpUtility/src/System.Web.HttpUtility.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.ReaderWriter/src/System.Xml.ReaderWriter.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XDocument/src/System.Xml.XDocument.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XmlSerializer/src/System.Xml.XmlSerializer.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XPath.XDocument/src/System.Xml.XPath.XDocument.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="System.Xml.XPath/src/System.Xml.XPath.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1654,8 +1896,8 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="../Common/tests/TestUtilities/TestUtilities.csproj">
+  <Folder Name="/src/shims/">
+    <Project Path="shims/Microsoft.VisualBasic/src/Microsoft.VisualBasic.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1663,7 +1905,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="tests/Microsoft.Extensions.Options.Tests/Microsoft.Extensions.Options.Tests.csproj">
+    <Project Path="shims/mscorlib/src/mscorlib.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1671,7 +1913,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj">
+    <Project Path="shims/netstandard/src/netstandard.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1679,7 +1921,607 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="tests/SourceGenerationTests/Microsoft.Extensions.Options.SourceGeneration.Tests.csproj">
+    <Project Path="shims/stubs/Microsoft.Win32.SystemEvents.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.CodeDom.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Configuration.ConfigurationManager.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Data.Odbc.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Data.OleDb.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Data.SqlClient.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Diagnostics.EventLog.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Diagnostics.PerformanceCounter.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Drawing.Common.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.IO.Packaging.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.IO.Ports.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Runtime.Serialization.Schema.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Security.Cryptography.Pkcs.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Security.Cryptography.ProtectedData.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Security.Cryptography.Xml.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Security.Permissions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.ServiceModel.Syndication.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.ServiceProcess.ServiceController.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/stubs/System.Windows.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.AppContext/src/System.AppContext.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Buffers/src/System.Buffers.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.ComponentModel.DataAnnotations/src/System.ComponentModel.DataAnnotations.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Configuration/src/System.Configuration.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Core/src/System.Core.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Data.DataSetExtensions/src/System.Data.DataSetExtensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Data/src/System.Data.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Diagnostics.Debug/src/System.Diagnostics.Debug.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Diagnostics.Tools/src/System.Diagnostics.Tools.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Drawing/src/System.Drawing.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Dynamic.Runtime/src/System.Dynamic.Runtime.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Globalization.Calendars/src/System.Globalization.Calendars.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Globalization.Extensions/src/System.Globalization.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Globalization/src/System.Globalization.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.IO.Compression.FileSystem/src/System.IO.Compression.FileSystem.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.IO.FileSystem.Primitives/src/System.IO.FileSystem.Primitives.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.IO.FileSystem/src/System.IO.FileSystem.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.IO.UnmanagedMemoryStream/src/System.IO.UnmanagedMemoryStream.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.IO/src/System.IO.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Net.ServicePoint/src/System.Net.ServicePoint.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Net/src/System.Net.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Numerics/src/System.Numerics.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Reflection.Extensions/src/System.Reflection.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Reflection/src/System.Reflection.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Resources.Reader/src/System.Resources.Reader.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Resources.ResourceManager/src/System.Resources.ResourceManager.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Runtime.CompilerServices.Unsafe/src/System.Runtime.CompilerServices.Unsafe.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Runtime.Extensions/src/System.Runtime.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Runtime.Handles/src/System.Runtime.Handles.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Runtime.InteropServices.RuntimeInformation/src/System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Runtime.Serialization/src/System.Runtime.Serialization.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Cryptography.Algorithms/src/System.Security.Cryptography.Algorithms.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Cryptography.Cng/src/System.Security.Cryptography.Cng.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Cryptography.Csp/src/System.Security.Cryptography.Csp.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Cryptography.Encoding/src/System.Security.Cryptography.Encoding.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Cryptography.OpenSsl/src/System.Security.Cryptography.OpenSsl.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Cryptography.Primitives/src/System.Security.Cryptography.Primitives.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Cryptography.X509Certificates/src/System.Security.Cryptography.X509Certificates.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.Principal/src/System.Security.Principal.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security.SecureString/src/System.Security.SecureString.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Security/src/System.Security.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.ServiceModel.Web/src/System.ServiceModel.Web.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.ServiceProcess/src/System.ServiceProcess.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Text.Encoding/src/System.Text.Encoding.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Threading.Tasks.Extensions/src/System.Threading.Tasks.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Threading.Tasks/src/System.Threading.Tasks.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Threading.Timer/src/System.Threading.Timer.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Transactions/src/System.Transactions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.ValueTuple/src/System.ValueTuple.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Web/src/System.Web.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Windows/src/System.Windows.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Xml.Linq/src/System.Xml.Linq.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Xml.Serialization/src/System.Xml.Serialization.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Xml.XmlDocument/src/System.Xml.XmlDocument.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System.Xml/src/System.Xml.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/System/src/System.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="shims/WindowsBase/src/WindowsBase.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1690,7 +2532,7 @@
   </Folder>
   <Folder Name="/tools/" />
   <Folder Name="/tools/gen/">
-    <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj">
+    <Project Path="../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1698,7 +2540,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj">
+    <Project Path="../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1708,7 +2550,7 @@
     </Project>
   </Folder>
   <Folder Name="/tools/ref/">
-    <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj">
+    <Project Path="../tools/illink/src/linker/ref/Mono.Linker.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1718,7 +2560,7 @@
     </Project>
   </Folder>
   <Folder Name="/tools/src/">
-    <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj">
+    <Project Path="../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1726,7 +2568,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj">
+    <Project Path="../tools/illink/src/linker/Mono.Linker.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -1735,4 +2577,36 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
   </Folder>
+  <Project Path="sfx-finish.proj" Type="C#">
+    <BuildType Solution="Checked|*" Project="Debug" />
+    <Build Solution="*|arm" Project="false" />
+    <Build Solution="*|arm64" Project="false" />
+    <Build Solution="Checked|Any CPU" Project="false" />
+    <Build Solution="Checked|x64" Project="false" />
+    <Build Solution="Checked|x86" Project="false" />
+  </Project>
+  <Project Path="sfx-gen.proj" Type="C#">
+    <BuildType Solution="Checked|*" Project="Debug" />
+    <Build Solution="*|arm" Project="false" />
+    <Build Solution="*|arm64" Project="false" />
+    <Build Solution="Checked|Any CPU" Project="false" />
+    <Build Solution="Checked|x64" Project="false" />
+    <Build Solution="Checked|x86" Project="false" />
+  </Project>
+  <Project Path="sfx-src.proj" Type="C#">
+    <BuildType Solution="Checked|*" Project="Debug" />
+    <Build Solution="*|arm" Project="false" />
+    <Build Solution="*|arm64" Project="false" />
+    <Build Solution="Checked|Any CPU" Project="false" />
+    <Build Solution="Checked|x64" Project="false" />
+    <Build Solution="Checked|x86" Project="false" />
+  </Project>
+  <Project Path="sfx.proj" Type="C#">
+    <BuildType Solution="Checked|*" Project="Debug" />
+    <Build Solution="*|arm" Project="false" />
+    <Build Solution="*|arm64" Project="false" />
+    <Build Solution="Checked|Any CPU" Project="false" />
+    <Build Solution="Checked|x64" Project="false" />
+    <Build Solution="Checked|x86" Project="false" />
+  </Project>
 </Solution>
