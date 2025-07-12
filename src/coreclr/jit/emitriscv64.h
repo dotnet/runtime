@@ -62,13 +62,15 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
+// RVC emitters
 bool tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
+
+// RVC helpers
 instruction tryGetCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
-
-regNumber   tryGetRvcRegisterNumber(regNumber reg);
-instruction tryGetCompressedArithmeticIns(instruction ins);
+unsigned    tryGetRvcRegisterNumber(regNumber reg);
+instruction getCompressedArithmeticIns(instruction ins);
 regNumber   getRegNumberFromRvcReg(unsigned rvcReg);
 
 void emitDispInsName(

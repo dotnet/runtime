@@ -1022,9 +1022,9 @@ bool emitter::tryEmitCompressedIns_R_R_R(
         case INS_c_addw:
         case INS_c_subw:
         {
-            regNumber rdRvc  = tryGetRvcRegisterNumber(rd);
-            regNumber rs2Rvc = tryGetRvcRegisterNumber(rs2);
-            assert((rdRvc != REG_NA) && (rs2Rvc != REG_NA));
+            unsigned rdRvc  = tryGetRvcRegisterNumber(rd);
+            unsigned rs2Rvc = tryGetRvcRegisterNumber(rs2);
+            assert((rdRvc != -1) && (rs2Rvc != -1));
             code = insEncodeCATypeInstr(compressedIns, rdRvc, rs2Rvc);
             break;
         }
@@ -1070,11 +1070,11 @@ instruction emitter::tryGetCompressedIns_R_R_R(
         case INS_addw:
         case INS_subw:
         {
-            regNumber rdRvc  = tryGetRvcRegisterNumber(rd);
-            regNumber rs2Rvc = tryGetRvcRegisterNumber(rs2);
-            if ((rd == rs1) && (rdRvc != REG_NA) && (rs2Rvc != REG_NA))
+            unsigned rdRvc  = tryGetRvcRegisterNumber(rd);
+            unsigned rs2Rvc = tryGetRvcRegisterNumber(rs2);
+            if ((rd == rs1) && (rdRvc != -1) && (rs2Rvc != -1))
             {
-                return tryGetCompressedArithmeticIns(ins);
+                return getCompressedArithmeticIns(ins);
             }
             break;
         }
@@ -1084,28 +1084,28 @@ instruction emitter::tryGetCompressedIns_R_R_R(
     return INS_none;
 }
 
-regNumber emitter::tryGetRvcRegisterNumber(regNumber reg)
+unsigned emitter::tryGetRvcRegisterNumber(regNumber reg)
 {
     switch (reg)
     {
         case REG_FP:
-            return (regNumber)0;
+            return 0;
         case REG_S1:
-            return (regNumber)1;
+            return 1;
         case REG_A0:
-            return (regNumber)2;
+            return 2;
         case REG_A1:
-            return (regNumber)3;
+            return 3;
         case REG_A2:
-            return (regNumber)4;
+            return 4;
         case REG_A3:
-            return (regNumber)5;
+            return 5;
         case REG_A4:
-            return (regNumber)6;
+            return 6;
         case REG_A5:
-            return (regNumber)7;
+            return 7;
         default:
-            return REG_NA;
+            return -1;
     }
 }
 
@@ -1135,8 +1135,10 @@ regNumber emitter::getRegNumberFromRvcReg(unsigned rvcReg)
     }
 }
 
-instruction emitter::tryGetCompressedArithmeticIns(instruction ins)
+instruction emitter::getCompressedArithmeticIns(instruction ins)
 {
+    assert((ins == INS_and) || (ins == INS_or) || (ins == INS_xor) || (ins == INS_sub) || (ins == INS_addw) ||
+           (ins == INS_subw));
     switch (ins)
     {
         case INS_and:
@@ -1152,7 +1154,7 @@ instruction emitter::tryGetCompressedArithmeticIns(instruction ins)
         case INS_subw:
             return INS_c_subw;
         default:
-            return INS_none;
+            unreached();
     }
 }
 
