@@ -21,6 +21,7 @@ namespace ILCompiler
         private FileLayoutAlgorithm _fileLayoutAlgorithm;
         private ILProvider _ilProvider = new NativeAotILProvider();
         private ProfileDataManager _profileDataManager;
+        private string _orderFile;
         private string _jitPath;
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
@@ -32,6 +33,12 @@ namespace ILCompiler
         public RyuJitCompilationBuilder UseProfileData(IEnumerable<string> mibcFiles)
         {
             _profileDataManager = new ProfileDataManager(mibcFiles, _context);
+            return this;
+        }
+
+        public RyuJitCompilationBuilder UseSymbolOrder(string filePath)
+        {
+            _orderFile = filePath;
             return this;
         }
 
@@ -149,7 +156,8 @@ namespace ILCompiler
                 options,
                 _methodLayoutAlgorithm,
                 _fileLayoutAlgorithm,
-                _parallelism);
+                _parallelism,
+                _orderFile);
         }
     }
 }

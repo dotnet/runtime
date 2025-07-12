@@ -31,6 +31,8 @@ namespace ILCompiler
             new("--method-layout") { CustomParser = MakeMethodLayoutAlgorithm, DefaultValueFactory = MakeMethodLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging methods in a file.", HelpName = "arg" };
         public Option<FileLayoutAlgorithm> FileLayout { get; } =
             new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.", HelpName = "arg" };
+        public Option<string> OrderFile { get; } =
+            new("--order") { Description = "File that specifies order of symbols within the generated object file" };
         public Option<string[]> SatelliteFilePaths { get; } =
             new("--satellite") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Satellite assemblies associated with inputs/references" };
         public Option<bool> EnableDebugInfo { get; } =
@@ -193,6 +195,7 @@ namespace ILCompiler
             Options.Add(MibcFilePaths);
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
+            Options.Add(OrderFile);
             Options.Add(SatelliteFilePaths);
             Options.Add(EnableDebugInfo);
             Options.Add(UseDwarf5);
@@ -300,7 +303,7 @@ namespace ILCompiler
 
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
-                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
+                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite", "--order" },
                             outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat", "--sourcelink" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
@@ -424,6 +427,7 @@ namespace ILCompiler
                 "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
                 "pettishansen" => MethodLayoutAlgorithm.PettisHansen,
                 "random" => MethodLayoutAlgorithm.Random,
+                "explicit" => MethodLayoutAlgorithm.Explicit,
                 _ => throw new CommandLineException(result.Tokens[0].Value)
             };
         }
