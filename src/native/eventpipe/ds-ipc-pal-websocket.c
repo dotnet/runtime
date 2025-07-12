@@ -425,12 +425,24 @@ ipc_stream_close_func (void *object)
 	return ds_ipc_stream_close (ipc_stream, NULL);
 }
 
+static
+DiagnosticsIpcPollEvents
+ipc_stream_poll_func (
+	void *object,
+	uint32_t timeout_ms)
+{
+	EP_ASSERT (!"ipc_stream_poll_func needs to be implemented for WebSockets");
+	// TODO: Implement ipc_stream_poll_func for WebSockets
+	return DS_IPC_POLL_EVENTS_UNKNOWN;
+}
+
 static IpcStreamVtable ipc_stream_vtable = {
 	ipc_stream_free_func,
 	ipc_stream_read_func,
 	ipc_stream_write_func,
 	ipc_stream_flush_func,
-	ipc_stream_close_func };
+	ipc_stream_close_func,
+	ipc_stream_poll_func };
 
 static
 DiagnosticsIpcStream *
