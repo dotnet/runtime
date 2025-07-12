@@ -4430,6 +4430,7 @@ private:
 #endif
         // This call is a task await
         PREFIX_IS_TASK_AWAIT = 0x00000080,
+        PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);

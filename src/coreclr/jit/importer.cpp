@@ -9094,17 +9094,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // many other places.  We unfortunately embed that knowledge here.
                 if (opcode != CEE_CALLI)
                 {
-                    bool isAwait = false;
-                    // TODO: The configVal should be wired to the actual implementation
-                    //       that control the flow of sync context.
-                    //       We do not have that yet.
-                    int configVal = -1; // -1 not configured, 0/1 configured to false/true
+                    bool isAwait   = false;
+                    int  configVal = -1; // -1 not configured, 0/1 configured to false/true
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
                         if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
                         {
                             isAwait = true;
                             prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                            if (configVal != 0)
+                            {
+                                prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                            }
                         }
                     }
 
