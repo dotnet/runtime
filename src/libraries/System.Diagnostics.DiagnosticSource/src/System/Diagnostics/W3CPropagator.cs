@@ -601,14 +601,35 @@ namespace System.Diagnostics
         // Example 00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01
         private static bool IsInvalidTraceParent(string? traceParent)
         {
-            if (string.IsNullOrEmpty(traceParent) || traceParent.Length != 55)
+            if (string.IsNullOrEmpty(traceParent) || traceParent.Length < 55)
             {
                 return true;
             }
 
-            if (traceParent[0] == 'f' || traceParent[1] == 'f' || IsInvalidTraceParentCharacter(traceParent[0]) || IsInvalidTraceParentCharacter(traceParent[1]))
+            if ((traceParent[0] == 'f' && traceParent[1] == 'f') || IsInvalidTraceParentCharacter(traceParent[0]) || IsInvalidTraceParentCharacter(traceParent[1]))
             {
                 return true;
+            }
+
+            if (traceParent[0] == '0' && traceParent[1] == '0')
+            {
+                // version 00 should have exactly 55 characters
+                if (traceParent.Length != 55)
+                {
+                    return true; // invalid length for version 00
+                }
+            }
+            else
+            {
+                // If a higher version is detected, the implementation SHOULD try to parse it by trying the following:
+                //      o If the size of the header is shorter than 55 characters, the vendor should not parse the header and should restart the trace.
+                //      o Parse trace-id (from the first dash through the next 32 characters). Vendors MUST check that the 32 characters are hex, and that they are followed by a dash (-).
+                //      o Parse parent-id (from the second dash at the 35th position through the next 16 characters). Vendors MUST check that the 16 characters are hex and followed by a dash.
+                //      o Parse the sampled bit of flags (2 characters from the third dash). Vendors MUST check that the 2 characters are either the end of the string or a dash.
+                if (traceParent.Length > 55 && traceParent[55] != '-')
+                {
+                    return true; // invalid format for version other than 00
+                }
             }
 
             if (traceParent[2] != '-' || traceParent[35] != '-' || traceParent[52] != '-')
