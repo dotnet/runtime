@@ -177,11 +177,7 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<TTo>();
 
-#if MONO
-            return Unsafe.As<Vector128<TFrom>, Vector128<TTo>>(ref vector);
-#else
             return Unsafe.BitCast<Vector128<TFrom>, Vector128<TTo>>(vector);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see langword="Vector128&lt;Byte&gt;" />.</summary>

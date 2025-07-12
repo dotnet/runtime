@@ -51,7 +51,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             Type publicParameterlessConstructorType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             Type publicConstructorsType,
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type nonPublicConstructorsType)
         {
             switch (GetHashCode())
@@ -209,7 +209,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 UnsupportedType unsupportedTypeInstance)
             {
             }
@@ -234,7 +234,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 [ExpectedWarning("IL2098")]
                 static void RequirePublicFields(
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                     ref string s)
                 {
                 }
