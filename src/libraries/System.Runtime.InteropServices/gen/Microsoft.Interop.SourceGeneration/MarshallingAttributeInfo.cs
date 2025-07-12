@@ -142,11 +142,14 @@ namespace Microsoft.Interop
 
                     foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in Marshallers.Modes)
                     {
-                        foreach (TypePositionInfo nestedElement in mode.Value.CollectionElementMarshallingInfo.ElementDependencies)
+                        if (mode.Value.CollectionElementMarshallingInfo is not null)
                         {
-                            if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                            foreach (TypePositionInfo nestedElement in mode.Value.CollectionElementMarshallingInfo.ElementDependencies)
                             {
-                                yield return nestedElement;
+                                if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                                {
+                                    yield return nestedElement;
+                                }
                             }
                         }
                     }
