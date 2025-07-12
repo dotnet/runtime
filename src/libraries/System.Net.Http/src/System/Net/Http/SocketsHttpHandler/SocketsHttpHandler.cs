@@ -527,14 +527,14 @@ namespace System.Net.Http
             // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
             if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
             {
-                handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+                handler = new MetricsHandler(handler, settings._meterFactory, settings._proxy, out Meter meter);
                 settings._metrics = new SocketsHttpHandlerMetrics(meter);
             }
 
             // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
             if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
             {
-                handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
+                handler = new DiagnosticsHandler(handler, propagator, settings._proxy, settings._allowAutoRedirect);
             }
 
             if (settings._allowAutoRedirect)

@@ -35,6 +35,7 @@ namespace System.Net.Http
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
         private readonly Uri? _proxyUri;
+        private readonly string? _telemetryServerAddress;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
         private readonly HttpAuthority _originAuthority;
@@ -72,12 +73,14 @@ namespace System.Net.Http
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri)
+        /// <param name="telemetryServerAddress">The value of the 'server.address' tag to be emitted by Metrics and Distributed Tracing.</param>
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string? telemetryServerAddress)
         {
             _poolManager = poolManager;
             _kind = kind;
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
+            _telemetryServerAddress = telemetryServerAddress;
 
             // The only case where 'host' will not be set is if this is a Proxy connection pool.
             Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
@@ -279,6 +282,7 @@ namespace System.Net.Http
             return sslOptions;
         }
 
+        public string? TelemetryServerAddress => _telemetryServerAddress;
         public HttpAuthority OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
@@ -557,7 +561,7 @@ namespace System.Net.Http
             Exception? exception = null;
             TransportContext? transportContext = null;
 
-            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, OriginAuthority);
+            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, _telemetryServerAddress, OriginAuthority.Port);
 
             try
             {
