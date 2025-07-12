@@ -2216,6 +2216,7 @@ namespace System.Net.Http.Functional.Tests
                     // WinHTTP validates the input before opening connection whereas SocketsHttpHandler opens connection first and validates only when writing to the wire.
                     acceptConnection.SetResult(!IsWinHttpHandler);
                     var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                    Console.WriteLine($"Client exception: {ex}");
                     if (IsWinHttpHandler)
                     {
                         var fex = Assert.IsType<FormatException>(ex);
@@ -2232,7 +2233,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (await acceptConnection.Task)
                 {
+                    Console.WriteLine($"Server before accept");
                     await IgnoreExceptions(server.AcceptConnectionAsync(c => Task.CompletedTask));
+                    Console.WriteLine($"Server after accept");
                 }
             });
         }
