@@ -82,11 +82,6 @@
     <DefaultSubsets Condition="'$(DotNetBuildPass)' == '2' and '$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86'">crossdacpack</DefaultSubsets>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- In .NET product build mode we want to build all of the assets even in a PGO-instrumented build as downstream repos will not be able to pull assets from a matching non-PGO-instrumented build. -->
-    <BuildOnlyPgoInstrumentedAssets Condition="'$(PgoInstrument)' == 'true' and '$(DotNetBuild)' != 'true'">true</BuildOnlyPgoInstrumentedAssets>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(DotNetBuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
     <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
@@ -522,7 +517,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Category="clr" />
   </ItemGroup>
 
@@ -578,7 +573,7 @@
     <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
   </ItemGroup>
@@ -635,11 +630,6 @@
   <Choose>
     <When Condition="$(_subset.Contains('+packs.product+'))">
       <Choose>
-        <When Condition="'$(BuildOnlyPgoInstrumentedAssets)' == 'true'">
-          <ItemGroup>
-            <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" Category="packs" />
-          </ItemGroup>
-        </When>
         <When Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true'">
           <ItemGroup Condition="'$(MonoCrossAOTTargetOS)' != ''">
             <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.proj" Category="packs" />
@@ -709,12 +699,12 @@
     </When>
   </Choose>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.installers+')) AND '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+packs.installers+'))">
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\installers.proj" />
     <ProjectToBuild Include="@(InstallerProjectToBuild)" Category="packs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.tests+')) AND '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+packs.tests+'))">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="packs" />
   </ItemGroup>
