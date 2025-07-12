@@ -2550,9 +2550,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.genFPorder = true;
     opts.genFPopt   = true;
 
-    opts.instrCount     = 0;
-    opts.callInstrCount = 0;
-    opts.lvRefCount     = 0;
+    opts.instrCount = 0;
+    opts.lvRefCount = 0;
 
 #ifdef PROFILING_SUPPORTED
     opts.compJitELTHookEnabled = false;

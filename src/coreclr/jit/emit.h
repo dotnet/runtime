@@ -844,7 +844,9 @@ protected:
         unsigned _idCustom5 : 1;
         unsigned _idCustom6 : 1;
 
-#define _idEvexbContext  (_idCustom6 << 1) | _idCustom5 /* Evex.b: embedded broadcast, rounding, SAE */
+#define _idEvexbContext                                                                                                \
+    (_idCustom6 << 1) | _idCustom5  /* Evex.b: embedded broadcast, embedded rounding, embedded SAE                     \
+                                     */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
 
@@ -1732,21 +1734,10 @@ protected:
             return idGetEvexbContext() != 0;
         }
 
-        void idSetEvexBroadcastBit()
-        {
-            assert(!idIsEvexbContextSet());
-            _idCustom5 = 1;
-        }
-
-        void idSetEvexCompressedDisplacementBit()
-        {
-            assert(_idCustom6 == 0);
-            _idCustom6 = 1;
-        }
-
         void idSetEvexbContext(insOpts instOptions)
         {
             assert(!idIsEvexbContextSet());
+            assert(idGetEvexbContext() == 0);
             unsigned value = static_cast<unsigned>(instOptions & INS_OPTS_EVEX_b_MASK);
 
             _idCustom5 = ((value >> 0) & 1);
@@ -2397,7 +2388,7 @@ protected:
     ssize_t  emitGetInsCIdisp(instrDesc* id) const;
     unsigned emitGetInsCIargs(instrDesc* id) const;
 
-    inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) const;
+    inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast = false) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -4173,7 +4164,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
     else if (tupleType == INS_TT_FULL)
     {
         // Embedded broadcast supported, so either loading scalar or full vector
-        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
+        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4192,7 +4183,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         {
             memSize = 16;
         }
-        else if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
+        else if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4204,7 +4195,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
     else if (tupleType == INS_TT_HALF)
     {
         // Embedded broadcast supported, so either loading scalar or half vector
-        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
+        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
         {
             memSize = GetInputSizeInBytes(id);
         }

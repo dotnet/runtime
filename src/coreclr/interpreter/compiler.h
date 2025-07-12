@@ -9,8 +9,52 @@
 #include "datastructs.h"
 #include "enum_class_flags.h"
 #include <new>
-#include "failures.h"
-#include "simdhash.h"
+
+#include "../../native/containers/dn-simdhash.h"
+#include "../../native/containers/dn-simdhash-specializations.h"
+#include "../../native/containers/dn-simdhash-utils.h"
+
+class dn_simdhash_ptr_ptr_holder
+{
+    dn_simdhash_ptr_ptr_t *Value;
+public:
+    dn_simdhash_ptr_ptr_holder() :
+        Value(nullptr)
+    {
+    }
+
+    dn_simdhash_ptr_ptr_t* GetValue()
+    {
+        if (!Value)
+            Value = dn_simdhash_ptr_ptr_new(0, nullptr);
+        return Value;
+    }
+
+    dn_simdhash_ptr_ptr_holder(const dn_simdhash_ptr_ptr_holder&) = delete;
+    dn_simdhash_ptr_ptr_holder& operator=(const dn_simdhash_ptr_ptr_holder&) = delete;
+    dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_holder&& other)
+    {
+        Value = other.Value;
+        other.Value = nullptr;
+    }
+    dn_simdhash_ptr_ptr_holder& operator=(dn_simdhash_ptr_ptr_holder&& other)
+    {
+        if (this != &other)
+        {
+            if (Value != nullptr)
+                dn_simdhash_free(Value);
+            Value = other.Value;
+            other.Value = nullptr;
+        }
+        return *this;
+    }
+
+    ~dn_simdhash_ptr_ptr_holder()
+    {
+        if (Value != nullptr)
+            dn_simdhash_free(Value);
+    }
+};
 
 struct InterpException
 {
@@ -22,6 +66,16 @@ struct InterpException
     const char* const m_message;
     const CorJitResult m_result;
 };
+
+#if defined(__GNUC__) || defined(__clang__)
+#define INTERPRETER_NORETURN    __attribute__((noreturn))
+#else
+#define INTERPRETER_NORETURN    __declspec(noreturn)
+#endif
+
+INTERPRETER_NORETURN void NO_WAY(const char* message);
+INTERPRETER_NORETURN void BADCODE(const char* message);
+INTERPRETER_NORETURN void NOMEM();
 
 class InterpCompiler;
 
@@ -486,11 +540,15 @@ private:
     dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
     bool PointerInNameMap(void* ptr)
     {
-        return dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL) != 0;
+        if (dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL))
+        {
+            return true;
+        }
+        return false;
     }
     void AddPointerToNameMap(void* ptr, const char* name)
     {
-        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
+        dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name);
     }
     void PrintNameInPointerMap(void* ptr);
 #endif
@@ -807,10 +865,7 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
     memcpy(&pLookup->payload, &lookup, sizeof(T));
 
-    checkAddedNew(dn_simdhash_ght_try_insert(
-        hash, (void*)pLookup, (void*)(size_t)dataItemIndex, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE
-    ));
-
+    dn_simdhash_ght_insert(hash, (void*)pLookup, (void*)(size_t)dataItemIndex);
     return dataItemIndex;
 }
 
