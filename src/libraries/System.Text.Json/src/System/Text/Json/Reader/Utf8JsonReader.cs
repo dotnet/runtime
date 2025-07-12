@@ -1161,7 +1161,7 @@ namespace System.Text.Json
                     if (span[i] != literal[i])
                     {
                         _bytePositionInLine += i;
-                        ThrowInvalidLiteral(span);
+                        throw GetInvalidLiteral(span);
                     }
                 }
                 else
@@ -1176,12 +1176,12 @@ namespace System.Text.Json
             if (IsLastSpan)
             {
                 _bytePositionInLine += indexOfFirstMismatch;
-                ThrowInvalidLiteral(span);
+                throw GetInvalidLiteral(span);
             }
             return false;
         }
 
-        private void ThrowInvalidLiteral(ReadOnlySpan<byte> span)
+        private JsonException GetInvalidLiteral(ReadOnlySpan<byte> span)
         {
             byte firstByte = span[0];
 
@@ -1199,7 +1199,7 @@ namespace System.Text.Json
                     resource = ExceptionResource.ExpectedNull;
                     break;
             }
-            ThrowHelper.ThrowJsonReaderException(ref this, resource, bytes: span);
+            return ThrowHelper.GetJsonReaderException(ref this, resource, nextByte: default, bytes: span);
         }
 
         private bool ConsumeNumber()
