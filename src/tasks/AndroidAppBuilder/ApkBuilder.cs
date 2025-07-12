@@ -424,6 +424,11 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
+        if (InvariantGlobalization)
+        {
+            envVariables += $"\t\tsetEnv(\"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT\", \"true\");\n";
+        }
+
         string jniLibraryName = (IsLibraryMode) ? ProjectName! :
             (StaticLinkedRuntime && IsCoreCLR) ? "monodroid" : "System.Security.Cryptography.Native.Android";
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")

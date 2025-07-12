@@ -251,6 +251,7 @@
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        InvariantGlobalization="$(InvariantGlobalization)"
         IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
         RuntimeHeaders="@(RuntimeHeaders)"
