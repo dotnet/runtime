@@ -49,13 +49,13 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (!options.AbortServerOnClientExit)
             {
-                return RunClientAndServerAsync(
+                return RunClientAndHttpServerAsync(
                     loopbackClientFunc, loopbackServerFunc, options, CancellationToken.None, globalCt);
             }
 
             CancellationTokenSource clientExitCts = new CancellationTokenSource();
 
-            return RunClientAndServerAsync(
+            return RunClientAndHttpServerAsync(
                 async uri =>
                 {
                     try
@@ -145,7 +145,6 @@ namespace System.Net.WebSockets.Client.Tests
             public bool AbortServerOnClientExit { get; set; }
             public string? ServerSubProtocol { get; set; }
             public string? ServerExtensions { get; set; }
-            public Action<Http2Options>? ConfigureHttp2Options { get; set; }
 
             public bool DisposeClientWebSocket { get; set; }
             public bool DisposeHttpInvoker { get; set; }

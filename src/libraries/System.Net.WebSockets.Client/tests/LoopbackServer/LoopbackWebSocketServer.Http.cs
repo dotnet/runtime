@@ -12,7 +12,7 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static partial class LoopbackWebSocketServer
     {
-        private static Task RunClientAndServerAsync(
+        private static Task RunClientAndHttpServerAsync(
             Func<Uri, Task> clientFunc,
             Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc,
             Options options,
@@ -31,7 +31,6 @@ namespace System.Net.WebSockets.Client.Tests
             if (options.HttpVersion == HttpVersion.Version20)
             {
                 var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl, EnsureThreadSafeIO = true };
-                options.ConfigureHttp2Options?.Invoke(http2Options);
 
                 return Http2LoopbackServer.CreateClientAndServerAsync(
                     clientFunc,
