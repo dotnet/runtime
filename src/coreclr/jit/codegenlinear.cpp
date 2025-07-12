@@ -2255,8 +2255,13 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     }
     else if (varTypeIsFloating(tree->gtOp1))
     {
+#ifdef TARGET_XARCH
+        // These casts should have been lowered to HWIntrinsics
+        unreached();
+#else
         // Casts float/double --> int32/int64
         genFloatToIntCast(tree);
+#endif
     }
     else if (varTypeIsFloating(targetType))
     {
