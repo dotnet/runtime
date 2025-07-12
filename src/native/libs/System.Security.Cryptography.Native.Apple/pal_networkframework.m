@@ -122,6 +122,7 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
 
         void * ptr;
         [num getValue:&ptr];
+        [num release];  // Release the NSNumber after extracting the value
         size_t size = message_length;
 
         nw_framer_parse_output(framer, 1, message_length, NULL, ^size_t(uint8_t *buffer, size_t buffer_length, bool is_complete2) {
@@ -150,6 +151,7 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) 
         if (num != NULL)
         {
             [num getValue:&state];
+            [num release];  // Release the NSNumber after extracting the value
             (_statusFunc)(state, PAL_NwStatusUpdates_FramerStop, 0, 0, NULL);
         }
 
@@ -175,6 +177,7 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
     assert(num != NULL);
 
     [num getValue:&state];
+    [num release];  // Release the NSNumber after extracting the value
 
     // Notify SafeHandle with framer instance so we can submit to it directly.
     (_statusFunc)(state, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0, NULL);
@@ -282,7 +285,7 @@ PALEXPORT void AppleCryptoNative_NwCancelConnection(nw_connection_t connection)
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
 PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t state, uint8_t* buffer, int length, void* context, CompletionCallback completionCallback)
 {
-    dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
+    dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 
     (void)state;
 
@@ -297,6 +300,9 @@ PALEXPORT void AppleCryptoNative_NwSendToConnection(nw_connection_t connection, 
             CFRelease(cfStringToRelease);
         }
     });
+    
+    // Release our reference to dispatch_data - nw_connection_send retains it
+    dispatch_release(data);
 }
 
 // This is used by decrypt. We feed data in via AppleCryptoNative_NwProcessInputData and we try to read from the connection.
@@ -565,7 +571,7 @@ PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connecti
         *pCipherSuiteOut = sec_protocol_metadata_get_negotiated_tls_ciphersuite(secMeta);
 
         nw_release(meta);
-        nw_release(secMeta);
+        sec_release(secMeta);
         return 0;
     }
 

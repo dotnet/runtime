@@ -62,9 +62,27 @@ namespace System.Net.Security
 
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
-        private ResettableValueTaskSource _transportReadTcs = new ResettableValueTaskSource();
+        private ResettableValueTaskSource _transportReadTcs = new ResettableValueTaskSource()
+        {
+            CancellationAction = target =>
+            {
+                if (target is SafeDeleteNwContext nwContext)
+                {
+                    nwContext._transportReadTcs.TrySetException(new OperationCanceledException());
+                }
+            }
+        };
         private ArrayBuffer _appReceiveBuffer = new(InitialReceiveBufferSize);
-        private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource();
+        private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource()
+        {
+            CancellationAction = target =>
+            {
+                if (target is SafeDeleteNwContext nwContext)
+                {
+                    nwContext._appReceiveBufferTcs.TrySetException(new OperationCanceledException());
+                }
+            }
+        };
         private Task? _pendingAppReceiveBufferFillTask;
         private readonly TaskCompletionSource _connectionClosedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
@@ -107,7 +125,9 @@ namespace System.Net.Security
             {
                 try
                 {
-                    byte[] buffer = new byte[16 * 1024];
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(16 * 1024);
+                    try
+                    {
                     Memory<byte> readBuffer = new Memory<byte>(buffer);
 
                     while (!_shutdownCts.IsCancellationRequested)
@@ -129,6 +149,11 @@ namespace System.Net.Security
                             Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
                             break;
                         }
+                        }
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
                     }
                 }
                 catch (OperationCanceledException)
@@ -276,7 +301,7 @@ namespace System.Net.Security
 
         internal Task FillAppDataBufferAsync(CancellationToken cancellationToken)
         {
-            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, null, cancellationToken);
+            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken);
             Debug.Assert(success, "Concurrent FillAppDataBufferAsync detected");
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
@@ -285,7 +310,7 @@ namespace System.Net.Security
                 Interop.NetworkFramework.Tls.ReadFromConnection(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
             }
 
-            return _pendingAppReceiveBufferFillTask = valueTask.AsTask().WaitAsync(cancellationToken);
+            return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
 
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error, byte* data, int length)
@@ -383,12 +408,27 @@ namespace System.Net.Security
                     _disposed = true;
 
                     Shutdown();
-                    _appReceiveBufferTcs.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
+
+                    // Wait for the transport read task to complete
+                    if (_transportReadTask is Task transportTask)
+                    {
+                        try
+                        {
+                            transportTask.Wait();
+                            transportTask.Dispose();
+                        }
+                        catch
+                        {
+                            // Ignore exceptions from the transport task
+                        }
+                    }
+
                     if (_pendingAppReceiveBufferFillTask is Task t)
                     {
                         try
                         {
                             t.Wait();
+                            t.Dispose();
                         }
                         catch
                         {
@@ -397,10 +437,14 @@ namespace System.Net.Security
                         }
                     }
 
-                    _handshakeCompletionSource.TrySetResult(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
-
                     // wait for callback signalling connection has been truly closed.
                     _connectionClosedTcs.Task.GetAwaiter().GetResult();
+                    // Complete all pending operations with ObjectDisposedException
+                    var disposedException = new ObjectDisposedException(nameof(SafeDeleteNwContext));
+
+                    _appReceiveBufferTcs.TrySetException(disposedException);
+                    _transportReadTcs.TrySetException(disposedException);
+                    _handshakeCompletionSource.TrySetException(disposedException);
 
                     // Complete any pending writes with disposed exception
                     TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
@@ -411,7 +455,10 @@ namespace System.Net.Security
                     }
 
                     ConnectionHandle.Dispose();
+                    _framerHandle?.Dispose();
                     _peerCertChainHandle?.Dispose();
+                    _appReceiveBuffer.Dispose();
+                    _shutdownCts?.Dispose();
                 }
             }
             base.Dispose(disposing);
@@ -516,7 +563,7 @@ namespace System.Net.Security
                 // the data needs to be pinned until the callback fires
                 using MemoryHandle memoryHandle = buf.Pin();
 
-                bool success = _transportReadTcs.TryGetValueTask(out ValueTask valueTask, null, CancellationToken.None);
+                bool success = _transportReadTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
                 Debug.Assert(success, "Concurrent WriteInboundWireDataAsync detected");
 
                 unsafe
