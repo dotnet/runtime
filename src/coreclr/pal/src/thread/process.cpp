@@ -213,9 +213,6 @@ Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 std::vector<const char*> g_argvCreateDump;
 
-// Are we in the child process of the fork created by singlefile createdump?
-// If so, do not clean up the process, as the diagnostic server is still needed by the parent.
-bool g_ContinueCleanup = true;
 //
 // Key used for associating CPalThread's with the underlying pthread
 // (through pthread_setspecific)
@@ -1986,9 +1983,7 @@ PROCNotifyProcessShutdown(bool isExecutingOnAltStack)
 {
     // Call back into the coreclr to clean up the debugger transport pipes
     PSHUTDOWN_CALLBACK callback = InterlockedExchangePointer(&g_shutdownCallback, NULL);
-    // Check the cleanup flag to ensure that we are not in the child process of createdump.
-    // If we are, we do not want to call the callback, as it will unlink the diagnostic server socket.
-    if (callback != NULL && g_ContinueCleanup)
+    if (callback != NULL)
     {
         callback(isExecutingOnAltStack);
     }
@@ -2259,10 +2254,10 @@ PROCCreateCrashDump(
 
             // Call the statically linked createdump code
             callbackResult = g_createdumpCallback(argv.size(), argv.data());
-            // Set the global flag to false and exit
+            // Set the shutdown callback to nullptr and exit
             // If we don't exit, the child's execution will continue into the diagnostic server behavior
             // which causes all sorts of problems.
-            g_ContinueCleanup = false;
+            g_shutdownCallback = nullptr;
             exit(callbackResult);
         }
         else
