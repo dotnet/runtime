@@ -36,12 +36,12 @@ public unsafe class LoaderTests
         ILoader contract = target.Contracts.Loader;
         Assert.NotNull(contract);
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
             string actual = contract.GetPath(handle);
             Assert.Equal(expected, actual);
         }
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddrEmptyPath);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyPath);
             string actual = contract.GetFileName(handle);
             Assert.Equal(string.Empty, actual);
         }
@@ -70,12 +70,12 @@ public unsafe class LoaderTests
         Contracts.ILoader contract = target.Contracts.Loader;
         Assert.NotNull(contract);
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
             string actual = contract.GetFileName(handle);
             Assert.Equal(expected, actual);
         }
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddrEmptyName);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyName);
             string actual = contract.GetFileName(handle);
             Assert.Equal(string.Empty, actual);
         }
