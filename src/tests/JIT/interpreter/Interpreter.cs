@@ -5,6 +5,8 @@ using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 public interface ITest
 {
@@ -949,11 +951,23 @@ public class InterpreterTest
         if (!TestPreciseInitCctors())
             Environment.FailFast(null);
 
-	Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+        Console.WriteLine("TestThreading_Interlocked_CompareExchange");
+        if (!TestThreading_Interlocked_CompareExchange())
+            Environment.FailFast(null);
 
-	Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+        Console.WriteLine("TestRuntimeHelpers_IsReferenceOrContainsReferences");
+        if (!TestRuntimeHelpers_IsReferenceOrContainsReferences())
+            Environment.FailFast(null);
 
-	Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+        Console.WriteLine("TestMemoryMarshal_GetArrayDataReference");
+        if (!TestMemoryMarshal_GetArrayDataReference())
+            Environment.FailFast(null);
+
+        Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+
+        Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+
+        Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
 
         System.GC.Collect();
 
@@ -2040,7 +2054,7 @@ public class InterpreterTest
 
     public static T[,,] TestNewMDArr<T>(int len)
     {
-        return new T[len,len-1,len-2];
+        return new T[len, len - 1, len - 2];
     }
 
     public static object Box<T>(T value)
@@ -2072,7 +2086,7 @@ public class InterpreterTest
         }
 
         public static void TriggerCctorMethod<U>()
-        {}
+        { }
     }
 
     class MyClass<T>
@@ -2905,5 +2919,73 @@ public class InterpreterTest
             return false;
 
         return true;
+    }
+
+    public static bool TestThreading_Interlocked_CompareExchange()
+    {
+        // Value type test
+        int location = 1;
+        int value = 2;
+        int comparand = 1;
+        int result = System.Threading.Interlocked.CompareExchange(ref location, value, comparand);
+        if (!(result == 1 && location == 2))
+            return false;
+
+        // Reference type test
+        object objLocation = "a";
+        object objValue = "b";
+        object objComparand = "a";
+        object objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objComparand) && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        // Reference type test (fail)
+        objLocation = "a";
+        objValue = "b";
+        objComparand = "c";
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objLocation) && object.ReferenceEquals(objLocation, "a")))
+            return false;
+
+        // Null reference test
+        objLocation = null;
+        objValue = "b";
+        objComparand = null;
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(objResult is null && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        return true;
+    }
+
+    public static bool TestRuntimeHelpers_IsReferenceOrContainsReferences()
+    {
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<object>())
+            return false;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<int>())
+            return false;
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<int[]>())
+            return false;
+        return true;
+    }
+
+    public static bool TestMemoryMarshal_GetArrayDataReference()
+    {
+        int[] arr = new int[1];
+        ref int dataRef = ref MemoryMarshal.GetArrayDataReference(arr);
+        dataRef = 42;
+        if (arr[0] != 42)
+            return false;
+
+        arr = null;
+        try
+        {
+            MemoryMarshal.GetArrayDataReference(arr);
+            return false;
+        }
+        catch (NullReferenceException)
+        {
+            return true;
+        }
     }
 }

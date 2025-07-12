@@ -17,6 +17,13 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     if (!namespaceName)
         return NI_Illegal;
 
+    // Namespace is zero-terinated empty string
+    if (!strcmp(className, "Arm64"))
+    {
+        if (!strcmp(methodName, "get_IsSupported"))
+            return NI_IsSupported_False;
+    }
+
     if (!HAS_PREFIX(namespaceName, "System"))
         return NI_Illegal;
 
@@ -76,6 +83,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             {
                 if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                else if (!strcmp(methodName, "GetMethodTable"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
             }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))
