@@ -224,18 +224,18 @@ namespace Internal.Runtime.CompilerServices
             return ((OpenMethodResolver)obj).Equals(this);
         }
 
-        private static LowLevelDictionary<OpenMethodResolver, IntPtr> s_internedResolverHash = new LowLevelDictionary<OpenMethodResolver, IntPtr>();
+        private static Dictionary<OpenMethodResolver, IntPtr> s_internedResolverHash = new Dictionary<OpenMethodResolver, IntPtr>();
 
         public IntPtr ToIntPtr()
         {
             lock (s_internedResolverHash)
             {
-                IntPtr returnValue;
-                if (s_internedResolverHash.TryGetValue(this, out returnValue))
-                    return returnValue;
-                returnValue = (IntPtr)NativeMemory.Alloc((nuint)sizeof(OpenMethodResolver));
-                *((OpenMethodResolver*)returnValue) = this;
-                s_internedResolverHash.Add(this, returnValue);
+                ref IntPtr returnValue = ref CollectionsMarshal.GetValueRefOrAddDefault(s_internedResolverHash, this, out bool exists);
+                if (!exists)
+                {
+                    returnValue = (IntPtr)NativeMemory.Alloc((nuint)sizeof(OpenMethodResolver));
+                    *((OpenMethodResolver*)returnValue) = this;
+                }
                 return returnValue;
             }
         }
