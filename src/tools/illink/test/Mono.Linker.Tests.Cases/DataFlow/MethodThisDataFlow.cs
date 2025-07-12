@@ -93,9 +93,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             class UnsupportedType
             {
                 // The AttributeTargets don't support constructors.
-                // [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                // public UnsupportedType () {
-                // 	RequirePublicFields (this);
+                // [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                // public UnsupportedType() {
+                //     RequirePublicFields(this);
                 // }
 
                 [ExpectedWarning("IL2041")]
@@ -119,7 +119,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 UnsupportedType unsupportedTypeInstance)
             { }
 
@@ -129,14 +129,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 t.GetMethod("foo");
             }
 
-            // static void TestConstructorThisParameter () {
-            // 	new UnsupportedType ();
+            // static void TestConstructorThisParameter() {
+            //     new UnsupportedType();
             // }
 
             public static void Test()
             {
                 TestMethodThisParameter();
-                // TestConstructorThisParameter ();
+                // TestConstructorThisParameter();
                 UnsupportedType.StaticMethod();
             }
         }

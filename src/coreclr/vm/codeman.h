@@ -1722,11 +1722,19 @@ public:
 
     virtual BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars) = 0;
+
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        BoundsType boundsType,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)) = 0;
 
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest& request,
@@ -1850,11 +1858,19 @@ public:
 protected:
     BOOL GetBoundariesAndVarsWorker(
         PTR_BYTE pDebugInfo,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    size_t WalkILOffsetsWorker(
+        PTR_BYTE pDebugInfo,
+        BoundsType boundsType,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
     BOOL GetRichDebugInfoWorker(
         PTR_BYTE pDebugInfo,
@@ -2056,11 +2072,19 @@ public:
     // Used to read debug info.
     virtual BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        BoundsType boundsType,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest& request,
@@ -2617,11 +2641,19 @@ public:
     // Used to read debug info.
     virtual BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        BoundsType boundsType,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest & request,
@@ -2736,11 +2768,19 @@ public:
     // Used to read debug info.
     virtual BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        BoundsType boundsType,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest& request,

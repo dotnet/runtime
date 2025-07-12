@@ -6409,7 +6409,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<byte> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<ushort> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
-        public static  System.Numerics.Vector<byte> VectorTableLookup((System.Numerics.Vector<byte> data1, System.Numerics.Vector<byte> data2) table, System.Numerics.Vector<byte> indices) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractHighNarrowingEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractHighNarrowingEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractHighNarrowingEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<byte> SubtractHighNarrowingEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractHighNarrowingEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractHighNarrowingEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractHighNarrowingOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractHighNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractHighNarrowingOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<byte> SubtractHighNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractHighNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractHighNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> SubtractSaturateReversed(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractSaturateReversed(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractSaturateReversed(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractSaturateReversed(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractSaturateReversed(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractSaturateReversed(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractSaturateReversed(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractSaturateReversed(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static new System.Numerics.Vector<byte> SubtractSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static new System.Numerics.Vector<short> SubtractSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static new System.Numerics.Vector<int> SubtractSaturate(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static new System.Numerics.Vector<long> SubtractSaturate(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static new System.Numerics.Vector<sbyte> SubtractSaturate(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static new System.Numerics.Vector<ushort> SubtractSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static new System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static new System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningEven(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningEvenOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningEvenOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningEvenOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningOdd(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningOddEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningOddEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningOddEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWithBorrowWideningLower(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWithBorrowWideningLower(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWithBorrowWideningUpper(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWithBorrowWideningUpper(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<byte> VectorTableLookup((System.Numerics.Vector<byte> data1, System.Numerics.Vector<byte> data2) table, System.Numerics.Vector<byte> indices) { throw null; }
         public static  System.Numerics.Vector<ushort> VectorTableLookup((System.Numerics.Vector<ushort> data1, System.Numerics.Vector<ushort> data2) table, System.Numerics.Vector<ushort> indices) { throw null; }
         public static  System.Numerics.Vector<uint> VectorTableLookup((System.Numerics.Vector<uint> data1, System.Numerics.Vector<uint> data2) table, System.Numerics.Vector<uint> indices) { throw null; }
         public static  System.Numerics.Vector<ulong> VectorTableLookup((System.Numerics.Vector<ulong> data1, System.Numerics.Vector<ulong> data2) table, System.Numerics.Vector<ulong> indices) { throw null; }
