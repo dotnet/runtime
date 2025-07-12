@@ -1062,7 +1062,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            if (ObjectInterner.IsNull)
+            if (!ObjectInterner.CanFold(method))
                 return FatFunctionPointer(method, isUnboxingStub);
 
             return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
@@ -1128,7 +1128,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
         public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (unboxingStub || ObjectInterner.IsNull)
+            if (unboxingStub || !ObjectInterner.CanFold(method))
                 return MethodEntrypoint(method, unboxingStub);
 
             return _addressTakenMethods.GetOrAdd(method);
