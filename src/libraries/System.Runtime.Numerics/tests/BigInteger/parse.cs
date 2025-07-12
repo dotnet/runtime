@@ -226,6 +226,22 @@ namespace System.Numerics.Tests
             VerifyFormatParse("123&4567^ <", NumberStyles.Any, nfi, new BigInteger(-1234567));
         }
 
+        [Fact]
+        [OuterLoop("The test needs ~1.2GB memory")]
+        public static void TryParse_VeryLargeNegativeNumber()
+        {
+            // 8 is from IBigIntegerHexOrBinaryParser<BigIntegerHexParser<char>, char>.DigitsPerBlock;
+            Span<char> largeSpan = new char[BigInteger.MaxLength * 8 + 2].AsSpan();
+            largeSpan.Fill('0');
+            largeSpan[0] = 'F';
+
+            Assert.False(BigInteger.TryParse(largeSpan, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
+            Assert.True(BigInteger.TryParse(largeSpan[..^2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
+
+            // The following line shouldn't throw. Previously it threw rather than returned false.
+            Assert.False(BigInteger.TryParse(largeSpan[..^1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
+        }
+
         private static bool NoGrouping(int[] sizes) => sizes.Length == 0 || (sizes.Length == 1 && sizes[0] == 0);
 
         private static void VerifyDefaultParse(Random random)
