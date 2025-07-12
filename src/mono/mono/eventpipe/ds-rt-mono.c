@@ -219,7 +219,8 @@ ds_rt_mono_transport_get_default_name (
 		// In sandbox, all IPC files (locks, pipes) should be written to the application group
 		// container. The path returned by GetTempPathA will be unique for each process and cannot
 		// be used for IPC between two different processes
-		const char *home_dir = getpwuid (getuid ())->pw_dir;
+		const char *home_dir;
+		while (NULL == (home_dir = getpwuid (getuid ())->pw_dir) && errno == EINTR);
 		size_t home_dir_len = strlen (home_dir);
 
 		// Verify the size of the path won't exceed maximum allowed size

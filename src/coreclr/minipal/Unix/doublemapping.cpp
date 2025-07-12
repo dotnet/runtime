@@ -70,9 +70,9 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         char name[24];
         sprintf(name, "/shm-dotnet-%d", getpid());
         name[sizeof(name) - 1] = '\0';
-        shm_unlink(name);
+        while (-1 == shm_unlink(name) && errno == EINTR);
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
-        shm_unlink(name);
+        while (-1 == shm_unlink(name) && errno == EINTR);
     }
 #endif // !TARGET_ANDROID
 
@@ -82,7 +82,9 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     }
 #endif
 
-    if (ftruncate(fd, MaxDoubleMappedSize) == -1)
+    int ftruncate_result;
+    while (-1 == (ftruncate_result = ftruncate(fd, MaxDoubleMappedSize)) && errno == EINTR);
+    if (ftruncate_result == -1)
     {
         close(fd);
         return false;
@@ -381,16 +383,18 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
             char name[24];
             sprintf(name, "/shm-dotnet-template-%d", getpid());
             name[sizeof(name) - 1] = '\0';
-            shm_unlink(name);
+            while (-1 == shm_unlink(name) && errno == EINTR);
             fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
-            shm_unlink(name);
+            while (-1 == shm_unlink(name) && errno == EINTR);
         }
 #endif // !TARGET_ANDROID
 #endif
         if (fd != -1)
         {
             off_t maxFileSize = MAX_TEMPLATE_THUNK_TYPES * 0x10000; // The largest page size we support currently is 64KB.
-            if (ftruncate(fd, maxFileSize) == -1) // Reserve a decent size chunk of logical memory for these things.
+            int ftruncate_result;
+            while (-1 == (ftruncate_result = ftruncate(fd, maxFileSize)) && errno == EINTR);
+            if (ftruncate_result == -1) // Reserve a decent size chunk of logical memory for these things.
             {
                 close(fd);
             }

@@ -275,7 +275,9 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                         memset(&ifmr, 0, sizeof(ifmr));
                         strncpy(ifmr.ifm_name, actualName, sizeof(ifmr.ifm_name));
 
-                        if ((ioctl(fd, SIOCGIFMEDIA, (caddr_t)&ifmr) == 0) && (IFM_TYPE(ifmr.ifm_current) == IFM_IEEE80211))
+                        int ioctl_result;
+                        while (-1 == (ioctl_result = ioctl(fd, SIOCGIFMEDIA, (caddr_t)&ifmr)) && errno == EINTR);
+                        if ((ioctl_result == 0) && (IFM_TYPE(ifmr.ifm_current) == IFM_IEEE80211))
                         {
                             lla.HardwareType = NetworkInterfaceType_Wireless80211;
                         }
@@ -479,7 +481,9 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
             if (socketfd > -1)
             {
-                if (ioctl(socketfd, SIOCGIFMTU, &ifr) == 0)
+                int ioctl_result;
+                while (-1 == (ioctl_result = ioctl(socketfd, SIOCGIFMTU, &ifr)) && errno == EINTR);
+                if (ioctl_result == 0)
                 {
                     nii->Mtu = ifr.ifr_mtu;
                 }
@@ -493,7 +497,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
                     ecmd.cmd = ETHTOOL_GLINK;
                     ifr.ifr_data = (char *) &ecmd;
-                    if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
+                    while (-1 == (ioctl_result = ioctl(socketfd, SIOCETHTOOL, &ifr)) && errno == EINTR);
+                    if (ioctl_result == 0)
                     {
                         if (!ecmd.supported)
                         {
@@ -504,7 +509,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                         // Try to get link speed if link is up.
                         // Use older ETHTOOL_GSET instead of ETHTOOL_GLINKSETTINGS to support RH6
                         ecmd.cmd = ETHTOOL_GSET;
-                        if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
+                        while (-1 == (ioctl_result = ioctl(socketfd, SIOCETHTOOL, &ifr)) && errno == EINTR);
+                        if (ioctl_result == 0)
                         {
 #ifdef TARGET_ANDROID
                             nii->Speed = (int64_t)ecmd.speed;

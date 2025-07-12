@@ -115,7 +115,7 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
                 fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
 #else
                 fd = open("/dev/urandom", O_RDONLY);
-                fcntl(fd, F_SETFD, FD_CLOEXEC);
+                while (-1 == fcntl(fd, F_SETFD, FD_CLOEXEC) && errno == EINTR);
 #endif
             }
             while ((fd == -1) && (errno == EINTR));

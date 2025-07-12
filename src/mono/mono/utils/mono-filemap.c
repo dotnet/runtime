@@ -10,6 +10,7 @@
  */
 
 #include "config.h"
+#include <errno.h>
 
 #if HAVE_SYS_STAT_H
 #include <sys/stat.h>
@@ -48,7 +49,9 @@ guint64
 mono_file_map_size (MonoFileMap *fmap)
 {
 	struct stat stat_buf;
-	if (fstat (mono_file_map_fd (fmap), &stat_buf) < 0)
+	int result;
+	while (-1 == (result = fstat (mono_file_map_fd (fmap), &stat_buf)) && errno == EINTR);
+	if (result < 0)
 		return 0;
 	return stat_buf.st_size;
 }

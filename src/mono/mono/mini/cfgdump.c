@@ -59,7 +59,9 @@ create_socket (const char *hostname, const int port)
     serv_addr.sin_port = htons (GINT_TO_UINT16 (port));
     serv_addr.sin_addr.s_addr = inet_addr (hostname);
 
-    if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    int connect_result;
+    while (-1 == (connect_result = connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) && errno == EINTR);
+    if (connect_result < 0) {
         g_warning ("cfg_dump: Connect Failed: %s", strerror (errno));
         return -2;
     }

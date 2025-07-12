@@ -1072,7 +1072,9 @@ BOOL LOADSetExeName(LPWSTR name)
             ERROR("WCToMB failure, unable to get full name of exe\n");
             goto exit;
         }
-        if (-1 == stat(pszExeName, &stat_buf))
+        int stat_result;
+        while (-1 == (stat_result = stat(pszExeName, &stat_buf)) && errno == EINTR);
+        if (-1 == stat_result)
         {
             SetLastError(ERROR_MOD_NOT_FOUND);
             goto exit;

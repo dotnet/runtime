@@ -195,7 +195,7 @@ FileMappingCleanupRoutine(
 
     if (pImmutableData->bPALCreatedTempFile)
     {
-        unlink(pImmutableData->lpFileName);
+        while (-1 == unlink(pImmutableData->lpFileName) && errno == EINTR);
     }
 
     if (FALSE == fShutdown)
@@ -467,7 +467,7 @@ CorUnix::InternalCreateFileMapping(
             // information, though...
             //
 
-            UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+            while (-1 == (UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0)) && errno == EINTR); // dup, but with CLOEXEC
             if (-1 == UnixFd)
             {
                 ERROR( "Unable to duplicate the Unix file descriptor!\n" );
@@ -519,7 +519,9 @@ CorUnix::InternalCreateFileMapping(
 #endif // !CORECLR
         }
 
-        if (-1 == fstat(UnixFd, &UnixFileInformation))
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(UnixFd, &UnixFileInformation)) && errno == EINTR);
+        if (-1 == fstat_result)
         {
             ASSERT("fstat() failed for this reason %s.\n", strerror(errno));
             palError = ERROR_INTERNAL_ERROR;
@@ -598,7 +600,9 @@ CorUnix::InternalCreateFileMapping(
     {
         struct stat st;
 
-        if (0 == fstat(UnixFd, &st))
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(UnixFd, &st)) && errno == EINTR);
+        if (0 == fstat_result)
         {
             pLocalData->MappedFileDevNum = st.st_dev;
             pLocalData->MappedFileInodeNum = st.st_ino;
@@ -651,7 +655,7 @@ ExitInternalCreateFileMapping:
 
         if (bPALCreatedTempFile)
         {
-            unlink(pImmutableData->lpFileName);
+            while (-1 == unlink(pImmutableData->lpFileName) && errno == EINTR);
         }
 
         if (-1 != UnixFd)
@@ -1489,8 +1493,8 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
     /* ftruncate is a standard function, but the behavior of enlarging files is
     non-standard.  So I will try to enlarge a file, and if that fails try the
     less efficient way.*/
-    TruncateRetVal = ftruncate( UnixFD, NewSize );
-    fstat( UnixFD, &FileInfo );
+    while (-1 == (TruncateRetVal = ftruncate( UnixFD, NewSize )) && errno == EINTR);
+    while (-1 == fstat( UnixFD, &FileInfo ) && errno == EINTR);
 
     if ( TruncateRetVal != 0 || FileInfo.st_size != NewSize )
     {

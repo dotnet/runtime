@@ -71,7 +71,9 @@ bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryTy
     }
 
     *fdRef = fd;
-    if (ftruncate(fd, getpagesize()) != 0)
+    int result;
+    while (-1 == (result = ftruncate(fd, getpagesize())) && errno == EINTR);
+    if (result != 0)
         return false;
     if (lseek(fd, 0, SEEK_SET) != 0)
         return false;
@@ -81,5 +83,7 @@ bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryTy
     if (write(fd, buffer, ARRAY_SIZE(buffer)) != ARRAY_SIZE(buffer))
         return false;
 
-    return flock(fd, LOCK_SH | LOCK_NB) == 0;
+    int flock_result;
+    while (-1 == (flock_result = flock(fd, LOCK_SH | LOCK_NB)) && errno == EINTR);
+    return flock_result == 0;
 }

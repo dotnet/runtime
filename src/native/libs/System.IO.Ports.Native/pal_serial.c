@@ -24,7 +24,9 @@ intptr_t SystemIoPortsNative_SerialPortOpen(const char * name)
         return fd;
     }
 
-    if (ioctl(fd, TIOCEXCL) != 0)
+    int ioctl_result;
+    while (-1 == (ioctl_result = ioctl(fd, TIOCEXCL)) && errno == EINTR);
+    if (ioctl_result != 0)
     {
         // We couldn't get exclusive access to the device file
         int oldErrno = errno;
@@ -43,7 +45,7 @@ int SystemIoPortsNative_SerialPortClose(intptr_t handle)
     // preventing reopening after closing the handle
 
     // ignoring the error - best effort
-    ioctl(fd, TIOCNXCL);
+    while (-1 == ioctl(fd, TIOCNXCL) && errno == EINTR);
     return close(fd);
 }
 

@@ -24,7 +24,8 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
     assert(windowSize != NULL);
 
 #if HAVE_IOCTL && HAVE_TIOCGWINSZ
-    int error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize);
+    int error;
+    while (-1 == (error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize)) && errno == EINTR);
 
     if (error != 0)
     {
@@ -370,7 +371,9 @@ int32_t SystemNative_StdinReady(void)
 {
     SystemNative_InitializeConsoleBeforeRead(/* minChars */ 1, /* decisecondsTimeout */ 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
-    int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
+    int poll_result;
+    while (-1 == (poll_result = poll(&fd, 1, 0)) && errno == EINTR);
+    int rv = poll_result > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
     return rv;
 }

@@ -230,7 +230,9 @@ load_runtimeconfig (void)
 
 	assert (num_char > 0 && num_char == str_len);
 
-	if (stat (file_path, &buffer) == 0) {
+	int stat_result;
+	while (-1 == (stat_result = stat (file_path, &buffer)) && errno == EINTR);
+	if (stat_result == 0) {
 		MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
 		arg->kind = 0;
 		arg->runtimeconfig.name.path = file_path;

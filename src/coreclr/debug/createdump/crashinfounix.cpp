@@ -84,7 +84,7 @@ CrashInfo::CleanupAndResumeProcess()
         if (ptrace(PTRACE_DETACH, thread->Tid(), nullptr, nullptr) != -1)
         {
             int waitStatus;
-            waitpid(thread->Tid(), &waitStatus, __WALL);
+            while (-1 == waitpid(thread->Tid(), &waitStatus, __WALL) && errno == EINTR);
         }
     }
     if (m_fdMem != -1)
@@ -113,7 +113,9 @@ CrashInfo::EnumerateAndSuspendThreads()
         return false;
     }
 
-    DIR* taskDir = opendir(taskPath);
+    DIR* taskDir;
+    while ((taskDir = opendir(taskPath)) == nullptr && errno == EINTR);
+
     if (taskDir == nullptr)
     {
         printf_error("Problem enumerating threads: opendir(%s) FAILED %s (%d)\n", taskPath, strerror(errno), errno);
@@ -121,8 +123,16 @@ CrashInfo::EnumerateAndSuspendThreads()
     }
 
     struct dirent* entry;
-    while ((entry = readdir(taskDir)) != nullptr)
+    while (true)
     {
+        do
+        {
+            errno = 0;
+            entry = readdir(taskDir);
+        }
+        while (entry == nullptr && errno == EINTR);
+        if (entry == nullptr) break;
+
         pid_t tid = static_cast<pid_t>(strtol(entry->d_name, nullptr, 10));
         if (tid != 0)
         {
@@ -130,7 +140,7 @@ CrashInfo::EnumerateAndSuspendThreads()
             if (ptrace(PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
             {
                 int waitStatus;
-                waitpid(tid, &waitStatus, __WALL);
+                while (-1 == waitpid(tid, &waitStatus, __WALL) && errno == EINTR);
             }
             else
             {

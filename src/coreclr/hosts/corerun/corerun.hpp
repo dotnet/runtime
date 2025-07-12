@@ -441,7 +441,9 @@ namespace pal
     {
         // Check if the specified path exists
         struct stat sb;
-        if (stat(file_path, &sb) == -1)
+        int result;
+        while (-1 == (result = stat(file_path, &sb)) && errno == EINTR);
+        if (result == -1)
         {
             perror(W("Path not found"));
             return false;
@@ -470,7 +472,9 @@ namespace pal
             return false;
 
         struct stat buf;
-        if (fstat(fd, &buf) == -1)
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(fd, &buf)) && errno == EINTR);
+        if (fstat_result == -1)
         {
             close(fd);
             return false;
@@ -504,7 +508,9 @@ namespace pal
         assert(ext != nullptr);
         const size_t ext_len = pal::strlen(ext);
 
-        DIR* dir = opendir(directory.c_str());
+        DIR* dir;
+        while ((dir = opendir(directory.c_str())) == nullptr && errno == EINTR);
+
         if (dir == nullptr)
             return {};
 
@@ -512,8 +518,16 @@ namespace pal
 
         // For all entries in the directory
         struct dirent* entry;
-        while ((entry = readdir(dir)) != nullptr)
+        while (true)
         {
+            do
+            {
+                errno = 0;
+                entry = readdir(dir);
+            }
+            while (entry == nullptr && errno == EINTR);
+            if (entry == nullptr) break;
+
 #if HAVE_DIRENT_D_TYPE
             int dirEntryType = entry->d_type;
 #else

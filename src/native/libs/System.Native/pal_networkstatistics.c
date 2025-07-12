@@ -658,7 +658,9 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
                     memset(&ifmr, 0, sizeof(ifmr));
                     strncpy(ifmr.ifm_name, interfaceName, sizeof(ifmr.ifm_name));
 
-                    if (ioctl(fd, SIOCGIFMEDIA, (caddr_t)&ifmr) < 0)
+                    int ioctl_result;
+                    while (-1 == (ioctl_result = ioctl(fd, SIOCGIFMEDIA, (caddr_t)&ifmr)) && errno == EINTR);
+                    if (ioctl_result < 0)
                     {
                         if (errno == EOPNOTSUPP || errno == EINVAL)
                         {
