@@ -64,23 +64,26 @@ namespace System.Formats.Tar
 
         public override bool CanWrite => false;
 
-        internal bool HasReachedEnd
+        private long Remaining => _endInSuperStream - _positionInSuperStream;
+
+        private int LimitByRemaining(int bufferSize) => (int)Math.Min(Remaining, bufferSize);
+
+        internal ValueTask AdvanceToEndAsync(CancellationToken cancellationToken)
         {
-            get
-            {
-                if (!_hasReachedEnd && _positionInSuperStream > _endInSuperStream)
-                {
-                    _hasReachedEnd = true;
-                }
-                return _hasReachedEnd;
-            }
-            set
-            {
-                if (value) // Don't allow revert to false
-                {
-                    _hasReachedEnd = true;
-                }
-            }
+            _hasReachedEnd = true;
+
+            long remaining = Remaining;
+            _positionInSuperStream = _endInSuperStream;
+            return TarHelpers.AdvanceStreamAsync(_superStream, remaining, cancellationToken);
+        }
+
+        internal void AdvanceToEnd()
+        {
+            _hasReachedEnd = true;
+
+            long remaining = Remaining;
+            _positionInSuperStream = _endInSuperStream;
+            TarHelpers.AdvanceStream(_superStream, remaining);
         }
 
         protected void ThrowIfDisposed()
@@ -90,7 +93,7 @@ namespace System.Formats.Tar
 
         private void ThrowIfBeyondEndOfStream()
         {
-            if (HasReachedEnd)
+            if (_hasReachedEnd)
             {
                 throw new EndOfStreamException();
             }
@@ -107,21 +110,12 @@ namespace System.Formats.Tar
             ThrowIfDisposed();
             ThrowIfBeyondEndOfStream();
 
-            // parameter validation sent to _superStream.Read
-            int origCount = destination.Length;
-            int count = destination.Length;
+            destination = destination[..LimitByRemaining(destination.Length)];
 
-            if (_positionInSuperStream + count > _endInSuperStream)
-            {
-                count = (int)(_endInSuperStream - _positionInSuperStream);
-            }
-
-            Debug.Assert(count >= 0);
-            Debug.Assert(count <= origCount);
-
-            int ret = _superStream.Read(destination.Slice(0, count));
+            int ret = _superStream.Read(destination);
 
             _positionInSuperStream += ret;
+
             return ret;
         }
 
@@ -158,14 +152,12 @@ namespace System.Formats.Tar
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (_positionInSuperStream > _endInSuperStream - buffer.Length)
-            {
-                buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
-            }
+            buffer = buffer[..LimitByRemaining(buffer.Length)];
 
             int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             _positionInSuperStream += ret;
+
             return ret;
         }
 
