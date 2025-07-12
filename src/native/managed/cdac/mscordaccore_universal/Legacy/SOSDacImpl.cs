@@ -235,13 +235,12 @@ internal sealed unsafe partial class SOSDacImpl
         TargetPointer addr = 0;
         try
         {
-            addr = assembly.ToTargetPointer(_target);
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(addr);
-            TargetPointer modulePointer = loader.GetModuleAddress(handle);
-
-            if (modules is not null && modules.Length > 0 && count > 0 && modulePointer != 0)
+            if (modules is not null && modules.Length > 0 && count > 0)
             {
+                addr = assembly.ToTargetPointer(_target);
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(addr);
+                TargetPointer modulePointer = loader.GetModuleAddress(handle);
                 modules[0] = modulePointer.ToClrDataAddress(_target);
             }
 
