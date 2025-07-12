@@ -62,11 +62,6 @@ namespace System.Threading
                 name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
             }
 
-            if (options.WasSpecified && options.CurrentUserOnly)
-            {
-                name = @"User\" + name;
-            }
-
             return name;
         }
 

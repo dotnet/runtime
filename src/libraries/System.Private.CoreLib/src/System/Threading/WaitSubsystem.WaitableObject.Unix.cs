@@ -82,7 +82,7 @@ namespace System.Threading
                 return new WaitableObject(WaitableObjectType.Mutex, 1, 1, null, new OwnershipInfo());
             }
 
-            public static WaitableObject? CreateNamedMutex_Locked(string name, out bool createdNew)
+            public static WaitableObject? CreateNamedMutex(string name, out bool createdNew)
             {
                 s_lock.VerifyIsLocked();
 
