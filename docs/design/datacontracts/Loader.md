@@ -155,7 +155,7 @@ ModuleHandle GetModuleHandleFromModulePtr(TargetPointer modulePointer)
 
 ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer)
 {
-    Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyPointer);
+    Data.Assembly assembly = // read Assembly object at assemblyPointer
     return new ModuleHandle(assembly.Module);
 }
 
