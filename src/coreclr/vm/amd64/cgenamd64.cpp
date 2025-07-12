@@ -59,6 +59,11 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
     pContextPointers->R9  = NULL;
     pContextPointers->R10 = NULL;
     pContextPointers->R11 = NULL;
+
+#if defined(TARGET_UNIX)
+    for (int i=0; i < 16; i++)
+        pRD->volatileCurrContextPointers.R[i] = NULL;
+#endif // TARGET_UNIX
 }
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -226,6 +231,11 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pCurrentContextPointers->R13 = &m_Regs->R13;
     pRD->pCurrentContextPointers->R14 = &m_Regs->R14;
     pRD->pCurrentContextPointers->R15 = &m_Regs->R15;
+
+#if defined(TARGET_UNIX)
+    for (int i = 0; i < 16; i++)
+        pRD->volatileCurrContextPointers.R[i] = &m_Regs->R[i];
+#endif // TARGET_UNIX
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
