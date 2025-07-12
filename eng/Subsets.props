@@ -82,11 +82,6 @@
     <DefaultSubsets Condition="'$(DotNetBuildPass)' == '2' and '$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86'">crossdacpack</DefaultSubsets>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- In .NET product build mode we want to build all of the assets even in a PGO-instrumented build as downstream repos will not be able to pull assets from a matching non-PGO-instrumented build. -->
-    <BuildOnlyPgoInstrumentedAssets Condition="'$(PgoInstrument)' == 'true' and '$(DotNetBuild)' != 'true'">true</BuildOnlyPgoInstrumentedAssets>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(DotNetBuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
     <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
@@ -158,9 +153,21 @@
     <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' == 'true'">$(BootstrapSubsets)+clr.nativeaotlibs+clr.nativeaotruntime+libs.native</BootstrapSubsets>
 
     <SwapNativeForIL Condition="$(_subset.Contains('+bootstrap+')) and '$(RuntimeFlavor)' == 'CoreCLR'">true</SwapNativeForIL>
+    
+    <!-- Define AllSubsets to include all available subsets including OnDemand ones -->
+    <AllSubsetsExpansion>clr.nativeprereqs+clr.iltools+clr.runtime+clr.native+clr.aot+clr.nativeaotlibs+clr.nativeaotruntime+clr.crossarchtools</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.packages</AllSubsetsExpansion>
+    <AllSubsetsExpansion Condition="$([MSBuild]::IsOsPlatform(Windows))">$(AllSubsetsExpansion)+linuxdac+alpinedac</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+mono.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi+mono.workloads</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+host.native+host.pkg+host.tools+host.pretest+host.tests</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+libs.native+libs.sfx+libs.oob+libs.pretest+libs.tests</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+packs.product+packs.installers+packs.tests</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+regeneratedownloadtable+regeneratethirdpartynotices+tasks</AllSubsetsExpansion>
   </PropertyGroup>
 
   <PropertyGroup>
+    <_subset>$(_subset.Replace('+allsubsets+', '+$(AllSubsetsExpansion)+'))</_subset>
     <_subset>$(_subset.Replace('+clr.paltests+', '+clr.paltests+clr.paltestlist+'))</_subset>
     <_subset>$(_subset.Replace('+clr+', '+$(DefaultCoreClrSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+clr.aot+', '+$(DefaultNativeAotSubsets)+'))</_subset>
@@ -268,6 +275,9 @@
     <SubsetName Include="RegenerateThirdPartyNotices" OnDemand="true" Description="Regenerates the THIRD-PARTY-NOTICES.TXT file based on other repos' TPN files." />
     <SubsetName Include="tasks" OnDemand="true" Description="Build the repo local task projects." />
     <SubsetName Include="bootstrap" OnDemand="true" Description="Build the projects needed to build shipping assets in the repo against live assets." />
+
+    <!-- AllSubsets option to include everything -->
+    <SubsetName Include="AllSubsets" Description="Includes all available subsets for comprehensive restore/build operations. This includes all regular subsets and on-demand subsets." />
 
   </ItemGroup>
 
@@ -522,7 +532,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Category="clr" />
   </ItemGroup>
 
@@ -578,7 +588,7 @@
     <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
   </ItemGroup>
@@ -635,11 +645,6 @@
   <Choose>
     <When Condition="$(_subset.Contains('+packs.product+'))">
       <Choose>
-        <When Condition="'$(BuildOnlyPgoInstrumentedAssets)' == 'true'">
-          <ItemGroup>
-            <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" Category="packs" />
-          </ItemGroup>
-        </When>
         <When Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true'">
           <ItemGroup Condition="'$(MonoCrossAOTTargetOS)' != ''">
             <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.proj" Category="packs" />
@@ -650,8 +655,7 @@
             <_BuildCoreCLRRuntimePack Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
-            <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxMusl)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
-            <_BuildCdacPack Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'riscv64'">false</_BuildCdacPack>
+            <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 
@@ -709,12 +713,12 @@
     </When>
   </Choose>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.installers+')) AND '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+packs.installers+'))">
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\installers.proj" />
     <ProjectToBuild Include="@(InstallerProjectToBuild)" Category="packs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.tests+')) AND '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+packs.tests+'))">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="packs" />
   </ItemGroup>

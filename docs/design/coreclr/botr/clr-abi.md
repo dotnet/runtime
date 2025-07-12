@@ -116,12 +116,12 @@ To return `Continuation` we use a volatile/calee-trash register that cannot be u
 | risc-v  | a2  |
 
 ### Passing `Continuation` argument
-The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present.
+The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present. For x86 the argument order is reversed.
 
 ```
 call(["this" pointer] [return buffer pointer] [generics context] [continuation] [userargs])   // not x86
 
-call(["this" pointer] [return buffer pointer] [userargs] [generics context] [continuation])   // x86
+call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generics context])   // x86
 ```
 
 ## AMD64-only: by-value value types

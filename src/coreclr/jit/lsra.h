@@ -1066,7 +1066,7 @@ private:
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
     regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForReturn(GenTree* returnNode);
     regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);

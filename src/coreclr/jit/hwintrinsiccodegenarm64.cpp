@@ -1722,6 +1722,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve2_VectorTableLookup:
+            {
+                assert(intrin.op1->OperIsFieldList());
+                GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op1Reg                       = firstField->GetRegNum();
+#ifdef DEBUG
+                unsigned  regCount = 0;
+                regNumber argReg   = op1Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    regCount++;
+
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = getNextSIMDRegWithWraparound(argReg);
+                }
+                assert(regCount == 2);
+#endif
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
+                break;
+            }
+
             case NI_Sve_StoreAndZipx2:
             case NI_Sve_StoreAndZipx3:
             case NI_Sve_StoreAndZipx4:
@@ -2285,6 +2309,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter8BitNarrowing:
             case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
+            case NI_Sve_ScatterWithByteOffsets:
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
@@ -2685,8 +2710,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve2_AddCarryWideningLower:
-            case NI_Sve2_AddCarryWideningUpper:
+            case NI_Sve2_AddCarryWideningEven:
+            case NI_Sve2_AddCarryWideningOdd:
                 if (targetReg != op3Reg)
                 {
                     GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op3Reg, /* canSkip */ true);
@@ -2718,6 +2743,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Always use the lane size D. It's a bitwise operation so this is fine for all integer vector types.
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
+
+            case NI_Sve2_SubtractWideningEven:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublb : INS_sve_ssublb;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve2_SubtractWideningOdd:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublt : INS_sve_ssublt;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
 
             default:
                 unreached();

@@ -99,50 +99,50 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // ArrayValues in the ValueSet for the pattern in this method, hitting the limit.
             // When this happens, we replace the ValueSet with an unknown value, producing
             // this warning.
-            [ExpectedWarning("IL2055", Tool.Analyzer, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+            [UnexpectedWarning("IL2055", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
+            [ExpectedWarning("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/87596")]
             public static void Test<T>()
             {
                 Type[] types = new Type[20] {
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int)
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int)
                 };
                 if (Condition) types[0] = typeof(T);
                 if (Condition) types[1] = typeof(T);

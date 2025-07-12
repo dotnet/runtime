@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Cose
             if (key is not ECDsa)
                 throw new ArgumentException(SR.Format(SR.Sign1UnsupportedKey, key.GetType().Name), nameof(key));
 
-            CoseKey = CoseKey.FromKey((ECDsa)key, hashAlgorithm);
+            CoseKey = new CoseKey((ECDsa)key, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Cose
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(signaturePadding);
 
-            CoseKey = CoseKey.FromKey(key, signaturePadding, hashAlgorithm);
+            CoseKey = new CoseKey(key, signaturePadding, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;

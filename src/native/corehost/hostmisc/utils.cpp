@@ -52,18 +52,21 @@ bool utils::ends_with(const pal::string_t& value, const pal::char_t* suffix, siz
 
 void append_path(pal::string_t* path1, const pal::char_t* path2)
 {
-    if (pal::is_path_rooted(path2))
+    if (pal::strlen(path2) == 0)
+        return;
+
+    if (path1->empty())
     {
         path1->assign(path2);
+        return;
     }
-    else
+
+    if (path1->back() != DIR_SEPARATOR && path2[0] != DIR_SEPARATOR)
     {
-        if (!path1->empty() && path1->back() != DIR_SEPARATOR)
-        {
-            path1->push_back(DIR_SEPARATOR);
-        }
-        path1->append(path2);
+        path1->push_back(DIR_SEPARATOR);
     }
+
+    path1->append(path2);
 }
 
 pal::string_t strip_executable_ext(const pal::string_t& filename)

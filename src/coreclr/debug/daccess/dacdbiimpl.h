@@ -183,13 +183,6 @@ private:
                            CORDB_ADDRESS    startAddr,
                            SequencePoints * pNativeMap);
 
-    // Helper to compose a IL->IL and IL->Native mapping
-    void ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount);
-
-    // Helper function to convert an instrumented IL offset to the corresponding original IL offset.
-    ULONG TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
-                                                  const InstrumentedILOffsetMapping * pMapping);
-
 public:
 //----------------------------------------------------------------------------------
     // class MapSortILMap:  A template class that will sort an array of DebuggerILToNativeMap.
@@ -822,9 +815,8 @@ public:
     // (or a dump was generated while in this callback)
     VMPTR_OBJECTHANDLE GetCurrentCustomDebuggerNotification(VMPTR_Thread vmThread);
 
-
-    // Return the current appdomain the specified thread is in.
-    VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
+    // Return the current appdomain
+    VMPTR_AppDomain GetCurrentAppDomain();
 
     // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
     VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef);

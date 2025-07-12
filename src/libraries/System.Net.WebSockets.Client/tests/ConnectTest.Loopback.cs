@@ -53,8 +53,9 @@ namespace System.Net.WebSockets.Client.Tests
     {
         #region HTTP/1.1-only loopback tests
 
-        [ConditionalFact] // Uses SkipTestException
-        public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_DowngradeSuccess()
+        [ConditionalTheory] // Uses SkipTestException
+        [MemberData(nameof(UseSsl))]
+        public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_DowngradeSuccess(bool useSsl)
         {
             if (UseSharedHandler)
             {
@@ -79,7 +80,7 @@ namespace System.Net.WebSockets.Client.Tests
                         await connectTask;
                         Assert.Equal(WebSocketState.Open, cws.State);
                     }
-                }, new LoopbackServer.Options { UseSsl = true, WebSocketEndpoint = true });
+                }, new LoopbackServer.Options { UseSsl = useSsl, WebSocketEndpoint = true });
         }
 
         #endregion

@@ -714,7 +714,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2091",
-                [nameof (TOuter),
+                [nameof(TOuter),
                 "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
                 "TMethods",
                 "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()"], Tool.Analyzer, "")]
