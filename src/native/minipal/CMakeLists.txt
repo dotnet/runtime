@@ -12,6 +12,7 @@ set(SOURCES
     utf8.c
     xoshiro128pp.c
     log.c
+    env.c
 )
 
 # Provide an object library for scenarios where we ship static libraries
