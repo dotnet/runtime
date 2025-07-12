@@ -7,11 +7,12 @@
 #include "gcenv.h"
 #include "interpexec.h"
 #include "callstubgenerator.h"
+#include "frames.h"
 
 // for numeric_limits
 #include <limits>
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = (PCODE)0)
 {
     CONTRACTL
     {
@@ -44,7 +45,11 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
+    if (overrideTarget)
+        // Interpreter-FIXME: Is this a race condition?
+        pHeader->SetTarget(overrideTarget);
+    else
+        pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -163,10 +168,11 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
 {
     size_t helperDirectOrIndirect = (size_t)dataItem;
-    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-        return *(THelper *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+    if (helperDirectOrIndirect & INTERP_DIRECT_HELPER_TAG)
+        // Clear the direct flag and then raise the thumb bit as needed
+        return (THelper)PINSTRToPCODE((TADDR)(helperDirectOrIndirect & ~INTERP_DIRECT_HELPER_TAG));
     else
-        return (THelper)helperDirectOrIndirect;
+        return *(THelper *)helperDirectOrIndirect;
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
@@ -329,7 +335,7 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
     // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
-    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only 
+    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only
     // if check to figure out which one to use, and then have the rest of the logic be straight-line code.
     MethodTable *pMT = nullptr;
     MethodDesc* pMD = nullptr;
@@ -1820,6 +1826,42 @@ MAIN_LOOP:
                     ip += 5;
 
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
+                    break;
+                }
+
+                case INTOP_CALL_PINVOKE:
+                {
+                    // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
+                    //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
+
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    int32_t targetAddrSlot = ip[4];
+                    int32_t indirectFlag = ip[5];
+
+                    ip += 6;
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    PCODE callTarget = indirectFlag
+                        ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
+                        : (PCODE)pMethod->pDataItems[targetAddrSlot];
+
+                    InlinedCallFrame inlinedCallFrame;
+                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
+                    inlinedCallFrame.m_pCallSiteSP = pFrame;
+                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+                    inlinedCallFrame.m_pThread = GetThread();
+                    inlinedCallFrame.m_Datum = NULL;
+                    inlinedCallFrame.Push();
+
+                    {
+                        // Interpreter-FIXME: Create InlinedCallFrame.
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
+
+                    inlinedCallFrame.Pop();
+
                     break;
                 }
 
