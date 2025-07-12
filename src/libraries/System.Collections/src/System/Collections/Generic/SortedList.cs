@@ -780,7 +780,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _sortedList.Count + 1))
+                    if (_index <= 0)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -801,7 +801,7 @@ namespace System.Collections.Generic
                     return true;
                 }
 
-                _index = _sortedList.Count + 1;
+                _index = -1;
                 _key = default;
                 _value = default;
                 return false;
@@ -811,7 +811,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _sortedList.Count + 1))
+                    if (_index <= 0)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -826,7 +826,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _sortedList.Count + 1))
+                    if (_index <= 0)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -846,7 +846,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _sortedList.Count + 1))
+                    if (_index <= 0)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -901,7 +901,7 @@ namespace System.Collections.Generic
                     return true;
                 }
 
-                _index = _sortedList.Count + 1;
+                _index = -1;
                 _currentKey = default;
                 return false;
             }
@@ -912,7 +912,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _sortedList.Count + 1))
+                    if (_index <= 0)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -965,7 +965,7 @@ namespace System.Collections.Generic
                     return true;
                 }
 
-                _index = _sortedList.Count + 1;
+                _index = -1;
                 _currentValue = default;
                 return false;
             }
@@ -976,7 +976,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _sortedList.Count + 1))
+                    if (_index <= 0)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }

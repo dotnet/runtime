@@ -300,11 +300,13 @@ namespace System
 
             public bool MoveNext()
             {
-                if (_current < _end)
+                int current = _current + 1;
+                if ((uint)current < (uint)_end)
                 {
-                    _current++;
-                    return _current < _end;
+                    _current = current;
+                    return true;
                 }
+                _current = -2;
                 return false;
             }
 
@@ -313,9 +315,7 @@ namespace System
                 get
                 {
                     if (_current < _start)
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
-                    if (_current >= _end)
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
+                        ThrowHelper.ThrowInvalidOperationException_EnumCurrent(_current - _start);
                     return _array![_current];
                 }
             }

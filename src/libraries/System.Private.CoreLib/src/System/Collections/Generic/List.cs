@@ -1205,23 +1205,19 @@ namespace System.Collections.Generic
             {
                 List<T> localList = _list;
 
-                if (_version == localList._version && ((uint)_index < (uint)localList._size))
+                if (_version != localList._version)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+                }
+
+                if ((uint)_index < (uint)localList._size)
                 {
                     _current = localList._items[_index];
                     _index++;
                     return true;
                 }
-                return MoveNextRare();
-            }
 
-            private bool MoveNextRare()
-            {
-                if (_version != _list._version)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                }
-
-                _index = _list._size + 1;
+                _index = -1;
                 _current = default;
                 return false;
             }
@@ -1232,7 +1228,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || _index == _list._size + 1)
+                    if (_index <= 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
