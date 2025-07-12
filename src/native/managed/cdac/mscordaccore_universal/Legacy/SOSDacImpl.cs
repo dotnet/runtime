@@ -310,7 +310,10 @@ internal sealed unsafe partial class SOSDacImpl
             ClrDataAddress domainLocal;
             int hrLocal = _legacyImpl.GetDomainFromContext(context, &domainLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            Debug.Assert(domainLocal == context, $"cDAC: {context:x}, DAC: {domainLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(domainLocal == context, $"cDAC: {context:x}, DAC: {domainLocal:x}");
+            }
         }
 #endif
         return hr;
