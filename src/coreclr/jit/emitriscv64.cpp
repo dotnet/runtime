@@ -5983,6 +5983,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case MajorOpcode::Op:
         case MajorOpcode::Op32:
+        case MajorOpcode::JrJalrMvAdd:
+        case MajorOpcode::MiscAlu:
             if (id->idInsIs(INS_mul, INS_mulh, INS_mulhu, INS_mulhsu, INS_mulw))
             {
                 result.insLatency = PERFSCORE_LATENCY_3C;
@@ -6006,8 +6008,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case MajorOpcode::NmAdd:
         case MajorOpcode::NmSub:
         case MajorOpcode::OpFp:
-        case MajorOpcode::JrJalrMvAdd:
-        case MajorOpcode::MiscAlu:
             if (id->idInsIs(INS_fadd_s, INS_fsub_s, INS_fmul_s, INS_fmadd_s, INS_fmsub_s, INS_fnmadd_s, INS_fnmsub_s))
             {
                 result.insLatency = PERFSCORE_LATENCY_5C;
