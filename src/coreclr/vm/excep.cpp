@@ -3567,8 +3567,9 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 #ifdef HOST_WINDOWS
                 CreateCrashDumpIfEnabled(fSOException);
 #endif
-                RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                                       pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
+                bool fAvoidReportContextToRaiseFailFast = tore.IsFatalError(); // avoid reporting incorrect thread context to Watson
+                RaiseFailFastException(pExceptionInfo == NULL                                       ? NULL : pExceptionInfo->ExceptionRecord,
+                                       pExceptionInfo == NULL || fAvoidReportContextToRaiseFailFast ? NULL : pExceptionInfo->ContextRecord,
                                        0);
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
             }
