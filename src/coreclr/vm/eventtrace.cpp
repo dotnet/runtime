@@ -2730,15 +2730,6 @@ extern "C"
                 }
             }
 
-#ifdef TARGET_AMD64
-            // We only do this on amd64  (NOT ARM, because ARM uses frame based stack crawling)
-            // If we have turned on the JIT keyword to the INFORMATION setting (needed to get JIT names) then
-            // we assume that we also want good stack traces so we need to publish unwind information so
-            // ETW can get at it
-            if(bIsPublicTraceHandle && ETW_CATEGORY_ENABLED(providerContext, TRACE_LEVEL_INFORMATION, CLR_RUNDOWNJIT_KEYWORD))
-                UnwindInfoTable::PublishUnwindInfo(g_fEEStarted != FALSE);
-#endif
-
             if(g_fEEStarted && !g_fEEShutDown && bIsRundownTraceHandle)
             {
                 // Start and End Method/Module Rundowns
@@ -3610,7 +3601,7 @@ VOID ETW::MethodLog::DynamicMethodDestroyed(MethodDesc *pMethodDesc)
 {
     CONTRACTL {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     EX_TRY
@@ -4253,15 +4244,16 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+    // There are not relevant method details for dynamic methods.
+    if (pMethodDesc->IsDynamicMethod())
+        return;
+
     EX_TRY
     {
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_METHODDIAGNOSTIC_KEYWORD))
         {
-            if (pMethodDesc->IsDynamicMethod())
-                goto done;
-
             Instantiation inst = pMethodDesc->GetMethodInstantiation();
 
             if (inst.GetNumArgs() > 1024) // ETW has a limit for maximum event size. Do not log overly large method type argument sets
@@ -4275,19 +4267,10 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
             StackSArray<ULONGLONG> rgTypeParameters;
             DWORD cParams = inst.GetNumArgs();
-
-            BOOL fSucceeded = FALSE;
-            EX_TRY
+            for (COUNT_T i = 0; i < cParams; i++)
             {
-                for (COUNT_T i = 0; i < cParams; i++)
-                {
-                    rgTypeParameters.Append((ULONGLONG)inst[i].AsPtr());
-                }
-                fSucceeded = TRUE;
+                rgTypeParameters.Append((ULONGLONG)inst[i].AsPtr());
             }
-            EX_SWALLOW_NONTERMINAL
-            if (!fSucceeded)
-                goto done;
 
             // Log any referenced parameter types
             for (COUNT_T i=0; i < cParams; i++)
@@ -4995,7 +4978,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     MethodDescSet sentMethodDetailsSet;
     MethodDescSet* pSentMethodDetailsSet = fSendRichDebugInfoEvent ? &sentMethodDetailsSet : NULL;
 
-    EEJitManager::CodeHeapIterator heapIterator(pLoaderAllocatorFilter);
+    CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter);
     while (heapIterator.Next())
     {
         MethodDesc * pMD = heapIterator.GetMethod();
@@ -5039,7 +5022,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             }
         }
         else
-#endif
+#endif // FEATURE_CODE_VERSIONING
         if (codeStart != pMD->GetNativeCode())
         {
             continue;
@@ -5136,7 +5119,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
         // A word about ReJitManager::TableLockHolder... As we enumerate through the functions,
         // we may need to grab their code IDs. The ReJitManager grabs its table Crst in order to
         // fetch these. However, several other kinds of locks are being taken during this
-        // enumeration, such as the SystemDomain lock and the EEJitManager::CodeHeapIterator's
+        // enumeration, such as the SystemDomain lock and the CodeHeapIterator's
         // lock. In order to avoid lock-leveling issues, we grab the appropriate ReJitManager
         // table locks after SystemDomain and before CodeHeapIterator. In particular, we need to
         // grab the SharedDomain's ReJitManager table lock as well as the specific AppDomain's

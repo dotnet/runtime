@@ -78,7 +78,7 @@ Crst AppDomainCache
 End
 
 Crst PinnedHeapHandleTable
-    AcquiredBefore AvailableParamTypes HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList
+    AcquiredBefore AvailableParamTypes HandleTable SyncBlockCache SystemDomainDelayedUnloadList
                    SystemDomain
 End
 
@@ -91,7 +91,7 @@ Crst AvailableClass
 End
 
 Crst AvailableParamTypes
-    AcquiredBefore ModuleLookupTable IbcProfile LoaderHeap
+    AcquiredBefore ModuleLookupTable LoaderHeap
 End
 
 Crst CCompRC
@@ -103,7 +103,7 @@ Crst ClassFactInfoHash
 End
 
 Crst ClassInit
-    AcquiredBefore DeadlockDetection IbcProfile
+    AcquiredBefore DeadlockDetection
     SameLevelAs Jit
 End
 
@@ -176,14 +176,14 @@ Crst DbgTransport
 End
 
 Crst GenericDictionaryExpansion
-    AcquiredBefore PinnedHeapHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
+    AcquiredBefore PinnedHeapHandleTable LoaderHeap SystemDomainDelayedUnloadList UniqueStack
 End
 
 Crst DynamicIL
 End
 
 Crst DynamicMT
-    AcquiredBefore IbcProfile CodeVersioning
+    AcquiredBefore CodeVersioning
 End
 
 Crst EventStore
@@ -209,7 +209,7 @@ Crst MethodTableExposedObject
 End
 
 Crst FuncPtrStubs
-    AcquiredBefore IbcProfile LoaderHeap UniqueStack CodeFragmentHeap JumpStubCache
+    AcquiredBefore LoaderHeap UniqueStack CodeFragmentHeap JumpStubCache
 End
 
 Crst FusionAppCtx
@@ -221,14 +221,11 @@ Crst GCCover
 End
 
 Crst GlobalStrLiteralMap
-    AcquiredBefore PinnedHeapHandleTable HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
+    AcquiredBefore PinnedHeapHandleTable HandleTable SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
 End
 
 Crst HandleTable
     SameLevelAs HandleTable
-End
-
-Crst IbcProfile
 End
 
 Crst IJWFixupData
@@ -329,7 +326,7 @@ Crst PendingTypeLoadEntry
     AcquiredBefore AppDomainCache PinnedHeapHandleTable AssemblyLoader AvailableClass AvailableParamTypes
                    ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
                    GenericDictionaryExpansion Exception FuncPtrStubs
-                   FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
+                   FusionAppCtx GlobalStrLiteralMap HandleTable
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
                    Module ModuleLookupTable PEImage
                    SigConvert SingleUseLock StubDispatchCache
@@ -352,7 +349,7 @@ Crst ProfilingAPIStatus
 End
 
 Crst RCWCache
-    AcquiredBefore IbcProfile LoaderHeap RCWCleanupList
+    AcquiredBefore LoaderHeap RCWCleanupList
 End
 
 Crst RCWCleanupList
@@ -415,7 +412,7 @@ Crst SyncHashLock
 End
 
 Crst SystemDomain
-    AcquiredBefore DebuggerMutex HandleTable IbcProfile
+    AcquiredBefore DebuggerMutex HandleTable
                    ThreadIdDispenser ThreadStore
 End
 
@@ -431,7 +428,7 @@ End
 
 Crst ThreadStore
     AcquiredBefore AvailableParamTypes DeadlockDetection DebuggerController
-                   DebuggerHeapLock DebuggerJitInfo DynamicIL HandleTable IbcProfile
+                   DebuggerHeapLock DebuggerJitInfo DynamicIL HandleTable
                    JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
                    JitInlineTrackingMap
@@ -453,11 +450,11 @@ Crst UniqueStack
 End
 
 Crst UnresolvedClassLock
-    AcquiredBefore AvailableParamTypes IbcProfile JumpStubCache
+    AcquiredBefore AvailableParamTypes JumpStubCache
 End
 
 Crst WrapperTemplate
-    AcquiredBefore IbcProfile
+    AcquiredBefore ExecutableAllocatorLock
 End
 
 Crst UMEntryThunkCache
@@ -479,7 +476,6 @@ Crst MulticoreJitManager
 End
 
 Crst InlineTrackingMap
-    AcquiredBefore IbcProfile
 End
 
 Crst JitInlineTrackingMap

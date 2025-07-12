@@ -837,12 +837,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    // returns if there is some extra work for the finalizer thread.
-    BOOL HaveExtraWorkForFinalizer();
-
-    // do the extra finalizer work.
-    void DoExtraWorkForFinalizer();
-
 #ifndef DACCESS_COMPILE
     DWORD CatchAtSafePoint()
     {
@@ -1568,10 +1562,6 @@ public:
 
         return PTR_ThreadExceptionState(PTR_HOST_MEMBER_TADDR(Thread, this, m_ExceptionState));
     }
-
-private:
-    // ClearContext are to be called only during shutdown
-    void ClearContext();
 
 public:
 

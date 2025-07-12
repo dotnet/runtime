@@ -32,7 +32,7 @@ CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
 
-BOOL FinalizerThread::IsCurrentThreadFinalizer()
+bool FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -46,11 +46,124 @@ void FinalizerThread::EnableFinalization()
     hEventFinalizer->Set();
 }
 
-BOOL FinalizerThread::HaveExtraWorkForFinalizer()
+namespace
+{
+    // This is a linked list of the LCGMethodResolvers that represent DynamicMethodDescs
+    // waiting to be destroyed. The resolvers are used since they can be chained together
+    // to avoid allocations when destroying multiple DynamicMethodDescs.
+    VolatilePtr<LCGMethodResolver> s_delayDestroyDynamicMethod = nullptr;
+
+    bool HasDelayedDynamicMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_delayDestroyDynamicMethod != nullptr;
+    }
+
+    void AddDelayedDynamicMethod(DynamicMethodDesc* pDMD)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(pDMD != nullptr);
+
+        // Get the LCGMethodResolver from the DynamicMethodDesc.
+        LCGMethodResolver* lcgResolver = pDMD->GetLCGMethodResolver();
+
+        // Append any existing resolvers to form a linked list.
+        if (s_delayDestroyDynamicMethod != nullptr)
+            lcgResolver->SetNextDynamicMethodForDelayCleanup((DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod());
+
+        s_delayDestroyDynamicMethod = lcgResolver;
+    }
+
+    void CleanupDelayedDynamicMethods()
+    {
+        STANDARD_VM_CONTRACT;
+
+        while (s_delayDestroyDynamicMethod != nullptr)
+        {
+            // Get the next method to destroy.
+            DynamicMethodDesc* next = s_delayDestroyDynamicMethod->GetNextDynamicMethodForDelayCleanup();
+
+            // Destroy the current method.
+            DynamicMethodDesc* curr = (DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod();
+            if (!curr->TryDestroy())
+                return;
+
+            // Update the head of the list.
+            s_delayDestroyDynamicMethod = next == nullptr ? nullptr : next->GetLCGMethodResolver();
+        }
+    }
+}
+
+void FinalizerThread::DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD)
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
-    return GetFinalizerThread()->HaveExtraWorkForFinalizer();
+    AddDelayedDynamicMethod(pDMD);
+}
+
+bool FinalizerThread::HaveExtraWorkForFinalizer()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    Thread* finalizerThread = GetFinalizerThread();
+    return finalizerThread->RequireSyncBlockCleanup()
+        || SystemDomain::System()->RequireAppDomainCleanup()
+        || (Thread::m_DetachCount > 0)
+        || Thread::CleanupNeededForFinalizedThread()
+        || YieldProcessorNormalization::IsMeasurementScheduled()
+        || HasDelayedDynamicMethod()
+        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+}
+
+static void DoExtraWorkForFinalizer(Thread* finalizerThread)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(finalizerThread != NULL);
+        PRECONDITION(finalizerThread == FinalizerThread::GetFinalizerThread());
+        PRECONDITION(FinalizerThread::HaveExtraWorkForFinalizer());
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    if (finalizerThread->RequiresCoInitialize())
+    {
+        finalizerThread->SetApartment(Thread::AS_InMTA);
+    }
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    if (finalizerThread->RequireSyncBlockCleanup())
+    {
+        SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
+    }
+    if (SystemDomain::System()->RequireAppDomainCleanup())
+    {
+        SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
+    }
+
+    if (Thread::m_DetachCount > 0
+        || Thread::CleanupNeededForFinalizedThread())
+    {
+        Thread::CleanupDetachedThreads();
+    }
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        GCX_PREEMP();
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+
+    if (HasDelayedDynamicMethod())
+    {
+        GCX_PREEMP();
+        CleanupDelayedDynamicMethods();
+    }
+
+    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
@@ -342,9 +455,9 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
         // we might want to do some extra work on the finalizer thread
         // check and do it
-        if (GetFinalizerThread()->HaveExtraWorkForFinalizer())
+        if (HaveExtraWorkForFinalizer())
         {
-            GetFinalizerThread()->DoExtraWorkForFinalizer();
+            DoExtraWorkForFinalizer(GetFinalizerThread());
         }
         LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 

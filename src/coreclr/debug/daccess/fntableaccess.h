@@ -15,8 +15,8 @@ struct FakeEEJitManager
 {
     LPVOID      __VFN_table;
     LPVOID      m_runtimeSupport;
-    LPVOID      m_pCodeHeap;
-    // Nothing after this point matters: we only need the correct offset of m_pCodeHeap.
+    LPVOID      m_pAllCodeHeaps;
+    // Nothing after this point matters: we only need the correct offset of m_pAllCodeHeaps.
 };
 
 struct FakeHeapList
@@ -76,7 +76,7 @@ class CheckDuplicatedStructLayouts
 {
 #define CHECK_OFFSET(cls, fld) CPP_ASSERT(cls##fld, offsetof(Fake##cls, fld) == offsetof(cls, fld))
 
-    CHECK_OFFSET(EEJitManager, m_pCodeHeap);
+    CHECK_OFFSET(EEJitManager, m_pAllCodeHeaps);
 
     CHECK_OFFSET(HeapList, hpNext);
     CHECK_OFFSET(HeapList, startAddress);

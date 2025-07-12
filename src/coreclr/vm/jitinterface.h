@@ -541,8 +541,6 @@ public:
         m_numRichOffsetMappings = 0;
     }
 
-    virtual void BackoutJitData(EECodeGenManager * jitMgr) = 0;
-
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
@@ -619,9 +617,6 @@ protected:
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
 #endif
-
-    size_t                  m_GCinfo_len;   // Cached copy of GCinfo_len so we can backout in BackoutJitData()
-    size_t                  m_EHinfo_len;   // Cached copy of EHinfo_len so we can backout in BackoutJitData()
 
     ULONG32                 m_iOffsetMapping;
     ICorDebugInfo::OffsetMapping * m_pOffsetMapping;
@@ -717,7 +712,6 @@ public:
 
     uint32_t getExpectedTargetArchitecture() override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     void ResetForJitRetry() override
@@ -974,7 +968,6 @@ public:
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
