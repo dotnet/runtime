@@ -11405,6 +11405,10 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     else
                     {
                         newNode = gtNewSimdUnOpNode(GT_NOT, op1Type, op1, simdBaseJitType, simdSize);
+
+#if defined(TARGET_XARCH)
+                        newNode->AsHWIntrinsic()->Op(2)->SetMorphed(this);
+#endif // TARGET_XARCH
                     }
 
                     if (newNode != nullptr)
@@ -11439,7 +11443,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
         GenTree* op1 = tree->Op(1);
         GenTree* op2 = tree->Op(2);
 
-        if (!isScalar && op1->OperIsConst())
+        if (!isScalar && op1->IsCnsVec())
         {
             // Move constant vectors from op1 to op2 for comparison operations
             // Noting that we can't handle scalar operations since they can copy upper bits from op1
