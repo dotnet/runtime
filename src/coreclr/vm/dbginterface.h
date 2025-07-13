@@ -277,6 +277,7 @@ public:
                                          ULONG32 *pcMap,
                                          COR_DEBUG_IL_TO_NATIVE_MAP map[]) = 0;
 
+#ifdef DEBUG
     virtual HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -284,6 +285,7 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset) = 0;
+#endif // DEBUG
 
     virtual DWORD GetHelperThreadID(void ) = 0;
 

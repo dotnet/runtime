@@ -2744,6 +2744,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
 
+            case NI_Sve2_SubtractWideningEven:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublb : INS_sve_ssublb;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve2_SubtractWideningOdd:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublt : INS_sve_ssublt;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
             default:
                 unreached();
         }

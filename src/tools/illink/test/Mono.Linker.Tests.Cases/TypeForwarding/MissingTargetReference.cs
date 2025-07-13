@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Console.WriteLine (new DummyClass ());
+            Console.WriteLine(new DummyClass());
 #endif
         }
     }
