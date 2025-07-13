@@ -1573,14 +1573,39 @@ namespace System.Reflection
                                 }
                             }
 
-                            RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
-                                attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, Type.EmptyTypes)) ??
-                                throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-                            RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
+                            RuntimeMethodInfo? setMethod = null;
+                            RuntimeMethodInfo? getMethod = null;
+                            RuntimePropertyInfo? property = null;
+                            Type? baseAttributeType = attributeType;
 
-                            // Public properties may have non-public setter methods
-                            if (!setMethod.IsPublic)
+                            while (setMethod is null && baseAttributeType is not null
+                                && (property is null || getMethod is null || getMethod.IsVirtual))
+                            {
+                                property = (RuntimePropertyInfo?)(type is null ?
+                                    baseAttributeType.GetProperty(name) :
+                                    baseAttributeType.GetProperty(name, type, Type.EmptyTypes));
+
+                                if (property is not null)
+                                {
+                                    // Public properties may have non-public setter methods
+                                    setMethod = property.GetSetMethod(true)!;
+                                    getMethod = property.GetGetMethod(true)!;
+                                }
+                                else
+                                {
+                                    setMethod = null;
+                                    getMethod = null;
+                                }
+
+                                baseAttributeType = attributeType.BaseType;
+                            }
+
+                            if (property is null)
+                            {
+                                throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
+                            }
+
+                            if (setMethod is null || !setMethod.IsPublic)
                             {
                                 continue;
                             }
