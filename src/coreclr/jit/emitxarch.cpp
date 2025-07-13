@@ -8019,7 +8019,7 @@ void emitter::emitIns_R_R_I(
 void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs, insOpts instOptions)
 {
     assert(ins == INS_prefetcht0 || ins == INS_prefetcht1 || ins == INS_prefetcht2 || ins == INS_prefetchnta ||
-           ins == INS_inc || ins == INS_dec);
+           ins == INS_inc || ins == INS_dec || ins == INS_umonitor);
 
     instrDesc* id = emitNewInstrAmd(attr, offs);
 
