@@ -1793,6 +1793,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+
+        if (HasExplicitSize() && GetHalfBakedClass()->IsInlineArray())
+        {
+            BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT_SIZE);
+        }
     }
 
     if (CheckIfSIMDAndUpdateSize())

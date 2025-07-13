@@ -23,6 +23,18 @@ public unsafe class Validate
     }
 
     [Fact]
+    public static void ExplicitSize_Fails()
+    {
+        Console.WriteLine($"{nameof(ExplicitSize_Fails)}...");
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSize); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            return sizeof(ExplicitSize);
+        });
+    }
+
+    [Fact]
     public static void ZeroLength_Fails()
     {
         Console.WriteLine($"{nameof(ZeroLength_Fails)}...");

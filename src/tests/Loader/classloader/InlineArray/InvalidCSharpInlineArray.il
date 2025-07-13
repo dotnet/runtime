@@ -14,6 +14,17 @@
     .field [0] public valuetype [System.Runtime]System.Guid Guid
 }
 
+.class public sequential ansi sealed beforefieldinit ExplicitSize
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.InlineArrayAttribute::.ctor(int32) = (
+        01 00 01 00 00 00 00 00
+    )
+
+    .size 256
+    .field [0] public valuetype [System.Runtime]System.Guid Guid
+}
+
 .class public sequential ansi sealed beforefieldinit ZeroLength
     extends [System.Runtime]System.ValueType
 {
