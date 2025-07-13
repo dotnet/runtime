@@ -4320,7 +4320,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_WAITPKG_WaitForUserLevelMonitor:
         {
             assert(sig->numArgs == 2);
-            assert(JITtype2varType(sig->retType) == TYP_BYTE);
+            assert(JITtype2varType(sig->retType) == TYP_UBYTE);
             assert(simdSize == 0);
 
             op2 = impPopStack().val;
