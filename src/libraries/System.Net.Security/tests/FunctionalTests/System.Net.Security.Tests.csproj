@@ -7,11 +7,6 @@
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
-  
-  <!-- Enable Network Framework for macOS tests -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">
-    <RuntimeHostConfigurationOption Include="System.Net.Security.UseNetworkFramework" Value="true" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
