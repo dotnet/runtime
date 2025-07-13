@@ -193,7 +193,7 @@ namespace R2RDump
                     Machine.LoongArch64 => 4 * 2 + 1,
 
                     // Instructions are dumped as 4-byte hexadecimal integers
-                    // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
+                    // TODO-RISCV64-CEXT: update once RISC-V runtime supports "C" extension (compressed instructions)
                     Machine.RiscV64 => 4 * 2 + 1,
 
                     _ => throw new NotImplementedException()
@@ -270,7 +270,7 @@ namespace R2RDump
                     }
                     else
                     {
-                        // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
+                        // TODO-RISCV64-RVC: update once RISC-V runtime supports "C" extension (compressed instructions)
                         if (_reader.Machine is Machine.Arm64 or Machine.LoongArch64 or Machine.RiscV64)
                         {
                             // Replace " hh hh hh hh " byte dump with " hhhhhhhh ".
@@ -1233,11 +1233,11 @@ namespace R2RDump
                     addi
                     ld
                     jalr
-            
+
                     auipc
                     ld
                     jalr
-            
+
                     auipc
                     addi
                     ld

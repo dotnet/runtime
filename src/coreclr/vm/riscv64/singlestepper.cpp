@@ -263,7 +263,7 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
                 LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup emulated breakpoint\n"));
                 pCtx->Pc = m_originalPc;
 
-                _ASSERTE((pCtx->Pc & 0x3) == 0); // TODO change this after "C" Standard Extension support implemented
+                _ASSERTE((pCtx->Pc & 0x3) == 0); // TODO-RISCV64-CEXT: change this after "C" Standard Extension support implemented
                 return false;
             }
         }
@@ -352,7 +352,7 @@ bool RiscV64SingleStepper::TryEmulate(T_CONTEXT *pCtx, uint32_t opcode, bool exe
     // instruction address).
     bool fEmulated = false;
 
-    // TODO after "C" Standard Extension support implemented, add C.J, C.JAL, C.JR, C.JALR, C.BEQZ, C.BNEZ
+    // TODO-RISCV64-CEXT: after "C" Standard Extension support implemented, add C.J, C.JAL, C.JR, C.JALR, C.BEQZ, C.BNEZ
 
     if ((opcode & 0x7f) == 0x17) // AUIPC
     {

@@ -764,6 +764,7 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
         // TODO-RISCV64: Move jump logic to emitIns_J
+        // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
         id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
