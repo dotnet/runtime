@@ -451,11 +451,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.tools+'))">
-
-    <!-- We may use these targets with the in-build ILCompiler or with the shipping ILCompiler. Produce them whenever we may use them. -->
-    <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
-
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
                              $(CoreClrProjectRoot)tools\tieringtest\tieringtest.csproj;
                              $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
@@ -470,6 +465,10 @@
     -->
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_inbuild.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" />
+
+    <!-- We may use these targets with the in-build ILCompiler or with the shipping ILCompiler. Produce them whenever we may use them. -->
+    <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
@@ -657,8 +656,6 @@
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
             <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
-            <!-- Some source build configurations and musl need to work out packaging errors before they can be enabled -->
-            <_BuildCdacPack Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(TargetsLinuxMusl)' == 'true'">false</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 
