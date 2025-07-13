@@ -1794,7 +1794,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
 
-        if (HasExplicitSize() && GetHalfBakedClass()->IsInlineArray())
+        if (HasExplicitSize() &&
+            bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Sequential &&
+            GetHalfBakedClass()->IsInlineArray())
         {
             BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT_SIZE);
         }

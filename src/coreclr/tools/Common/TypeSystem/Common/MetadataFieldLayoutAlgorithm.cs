@@ -473,6 +473,12 @@ namespace Internal.TypeSystem
 
             if (type.IsInlineArray)
             {
+                // inline array cannot have explicit instance size
+                if (layoutMetadata.Size != 0)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicitSize, type);
+                }
+
                 AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
