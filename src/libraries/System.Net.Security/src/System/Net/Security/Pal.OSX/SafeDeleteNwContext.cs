@@ -128,27 +128,27 @@ namespace System.Net.Security
                     byte[] buffer = ArrayPool<byte>.Shared.Rent(16 * 1024);
                     try
                     {
-                    Memory<byte> readBuffer = new Memory<byte>(buffer);
+                        Memory<byte> readBuffer = new Memory<byte>(buffer);
 
-                    while (!_shutdownCts.IsCancellationRequested)
-                    {
-                        // Read data from the transport stream
-                        int bytesRead = await TransportStream.ReadAsync(readBuffer, _shutdownCts.Token).ConfigureAwait(false);
-
-                        if (bytesRead > 0)
+                        while (!_shutdownCts.IsCancellationRequested)
                         {
-                            // Process the read data
-                            await WriteInboundWireDataAsync(readBuffer.Slice(0, bytesRead)).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            // EOF reached, signal completion
-                            _transportReadTcs.TrySetResult(final: true);
+                            // Read data from the transport stream
+                            int bytesRead = await TransportStream.ReadAsync(readBuffer, _shutdownCts.Token).ConfigureAwait(false);
 
-                            // TODO: can this race with actual handshake completion?
-                            Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
-                            break;
-                        }
+                            if (bytesRead > 0)
+                            {
+                                // Process the read data
+                                await WriteInboundWireDataAsync(readBuffer.Slice(0, bytesRead)).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                // EOF reached, signal completion
+                                _transportReadTcs.TrySetResult(final: true);
+
+                                // TODO: can this race with actual handshake completion?
+                                Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
+                                break;
+                            }
                         }
                     }
                     finally
@@ -403,63 +403,60 @@ namespace System.Net.Security
         {
             if (disposing && !_disposed)
             {
-                if (!_disposed)
+                _disposed = true;
+
+                Shutdown();
+
+                // Wait for the transport read task to complete
+                if (_transportReadTask is Task transportTask)
                 {
-                    _disposed = true;
-
-                    Shutdown();
-
-                    // Wait for the transport read task to complete
-                    if (_transportReadTask is Task transportTask)
+                    try
                     {
-                        try
-                        {
-                            transportTask.Wait();
-                            transportTask.Dispose();
-                        }
-                        catch
-                        {
-                            // Ignore exceptions from the transport task
-                        }
+                        transportTask.Wait();
+                        transportTask.Dispose();
                     }
-
-                    if (_pendingAppReceiveBufferFillTask is Task t)
+                    catch
                     {
-                        try
-                        {
-                            t.Wait();
-                            t.Dispose();
-                        }
-                        catch
-                        {
-                            // Ignore exceptions from the pending task, as we are disposing
-                            // and it may have been cancelled or completed with an exception.
-                        }
+                        // Ignore exceptions from the transport task
                     }
-
-                    // wait for callback signalling connection has been truly closed.
-                    _connectionClosedTcs.Task.GetAwaiter().GetResult();
-                    // Complete all pending operations with ObjectDisposedException
-                    var disposedException = new ObjectDisposedException(nameof(SafeDeleteNwContext));
-
-                    _appReceiveBufferTcs.TrySetException(disposedException);
-                    _transportReadTcs.TrySetException(disposedException);
-                    _handshakeCompletionSource.TrySetException(disposedException);
-
-                    // Complete any pending writes with disposed exception
-                    TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
-                    if (writeCompletion != null)
-                    {
-                        _currentWriteCompletionSource = null;
-                        writeCompletion.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
-                    }
-
-                    ConnectionHandle.Dispose();
-                    _framerHandle?.Dispose();
-                    _peerCertChainHandle?.Dispose();
-                    _appReceiveBuffer.Dispose();
-                    _shutdownCts?.Dispose();
                 }
+
+                if (_pendingAppReceiveBufferFillTask is Task t)
+                {
+                    try
+                    {
+                        t.Wait();
+                        t.Dispose();
+                    }
+                    catch
+                    {
+                        // Ignore exceptions from the pending task, as we are disposing
+                        // and it may have been cancelled or completed with an exception.
+                    }
+                }
+
+                // wait for callback signalling connection has been truly closed.
+                _connectionClosedTcs.Task.GetAwaiter().GetResult();
+                // Complete all pending operations with ObjectDisposedException
+                var disposedException = new ObjectDisposedException(nameof(SafeDeleteNwContext));
+
+                _appReceiveBufferTcs.TrySetException(disposedException);
+                _transportReadTcs.TrySetException(disposedException);
+                _handshakeCompletionSource.TrySetException(disposedException);
+
+                // Complete any pending writes with disposed exception
+                TaskCompletionSource? writeCompletion = _currentWriteCompletionSource;
+                if (writeCompletion != null)
+                {
+                    _currentWriteCompletionSource = null;
+                    writeCompletion.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
+                }
+
+                ConnectionHandle.Dispose();
+                _framerHandle?.Dispose();
+                _peerCertChainHandle?.Dispose();
+                _appReceiveBuffer.Dispose();
+                _shutdownCts?.Dispose();
             }
             base.Dispose(disposing);
         }

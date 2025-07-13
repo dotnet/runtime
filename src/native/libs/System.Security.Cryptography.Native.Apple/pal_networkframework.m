@@ -228,7 +228,6 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
     if (connection == NULL)
         return -1;
 
-    nw_retain(connection); // hold a reference until canceled
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
         PAL_NetworkFrameworkError errorInfo;
         CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
@@ -253,7 +252,6 @@ PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, 
             case nw_connection_state_cancelled:
             {
                 (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0, NULL);
-                nw_release(connection); // release the reference we held
             }
             break;
             case nw_connection_state_invalid:
@@ -638,7 +636,6 @@ PALEXPORT int32_t AppleCryptoNative_NwInit(StatusUpdateCallback statusFunc, Writ
         _tlsDefinition = nw_protocol_copy_tls_definition();
         _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
         _inputQueue = _tlsQueue;
-        //_inputQueue = dispatch_queue_create("com.dotnet.networkframework.inputqueue", NULL);
 
         return 0;
    }
