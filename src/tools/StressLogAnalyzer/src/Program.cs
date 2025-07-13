@@ -56,8 +56,8 @@ public static class Program
 
     public static async Task<int> Main(string[] args)
     {
-        CommandLineConfiguration configuration = new(CreateRootCommand());
-        ParseResult parsedArguments = configuration.Parse(args);
+        RootCommand rootCommand = CreateRootCommand();
+        ParseResult parsedArguments = rootCommand.Parse(args);
 
         while (true)
         {
@@ -79,11 +79,12 @@ public static class Program
                 {
                     // Parse the remaining string as new arguments for the analyzer.
                     FileInfo inputFileArgument = parsedArguments.GetValue(InputFileArgument)!;
-                    parsedArguments = configuration.Parse($"\"{inputFileArgument.FullName}\" {command[1..]}");
+                    parsedArguments = rootCommand.Parse($"\"{inputFileArgument.FullName}\" {command[1..]}");
                     break;
                 }
             }
-        };
+        }
+        ;
     }
 
     private static readonly Argument<FileInfo> InputFileArgument = new Argument<FileInfo>("log file")

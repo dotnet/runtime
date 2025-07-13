@@ -3,6 +3,7 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 
 public interface ITest
@@ -863,9 +864,15 @@ public class InterpreterTest
         // Unchecked to ensure that the divide-by-zero here doesn't throw since we're using it to generate a NaN
         unchecked
         {
+            Console.WriteLine("TestConvOvf");
             if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
                 Environment.FailFast(null);
 
+            Console.WriteLine("TestConvOvfUn");
+            if (!TestConvOvfUn(1, 2, 3, uint.MaxValue, ulong.MaxValue))
+                Environment.FailFast(null);
+
+            Console.WriteLine("TestConvBoundaries");
             if (!TestConvBoundaries(
                 32767.999999999996, 32768.00000000001,
                 2147483647.9999998, 2147483648.0000005
@@ -926,6 +933,10 @@ public class InterpreterTest
         if (!TestDelegate())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestIntrinsics");
+        if (!TestIntrinsics())
+            Environment.FailFast(null);
+
         Console.WriteLine("TestCalli");
         if (!TestCalli())
             Environment.FailFast(null);
@@ -947,6 +958,17 @@ public class InterpreterTest
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
+    }
+
+    public static bool TestIntrinsics()
+    {
+        Console.WriteLine("Vector128.IsHardwareAccelerated=");
+        Console.WriteLine(Vector128.IsHardwareAccelerated);
+        Console.WriteLine("X86Base.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.X86.X86Base.IsSupported);
+        Console.WriteLine("ArmBase.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.Arm.ArmBase.IsSupported);
+        return true;
     }
 
     public static void TestExceptionHandling()
@@ -1606,6 +1628,43 @@ public class InterpreterTest
             try
             {
                 c = (byte)negativeInt;
+                return false;
+            }
+            catch (OverflowException)
+            {
+            }
+        }
+
+        return true;
+    }
+
+    public static bool TestConvOvfUn(ushort u2, uint u4, ulong u8, uint hugeUint, ulong hugeUlong)
+    {
+        checked
+        {
+            byte a = (byte)u2,
+                b = (byte)u4,
+                c = (byte)u8;
+
+            if (a != u2)
+                return false;
+            if (b != u4)
+                return false;
+            if (c != u8)
+                return false;
+
+            try
+            {
+                a = (byte)hugeUint;
+                return false;
+            }
+            catch (OverflowException)
+            {
+            }
+
+            try
+            {
+                b = (byte)hugeUlong;
                 return false;
             }
             catch (OverflowException)
