@@ -83,7 +83,7 @@ elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
 elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == osx ]]; then
+elif [[ "$__TargetOS" == osx || "$__TargetOS" == maccatalyst ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
