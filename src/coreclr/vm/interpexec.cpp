@@ -12,7 +12,7 @@
 // for numeric_limits
 #include <limits>
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = (PCODE)0)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     CONTRACTL
     {
@@ -45,11 +45,8 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE ov
         }
     }
 
-    if (overrideTarget)
-        // Interpreter-FIXME: Is this a race condition?
-        pHeader->SetTarget(overrideTarget);
-    else
-        pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
+    // Interpreter-FIXME: Potential race condition if a single CallStubHeader is reused for multiple targets.
+    pHeader->SetTarget(target); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -164,6 +161,20 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
+#define WITH_INLINED_CALL_FRAME(block) \
+    do { \
+        InlinedCallFrame inlinedCallFrame; \
+        inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip; \
+        inlinedCallFrame.m_pCallSiteSP = pFrame; \
+        inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack; \
+        inlinedCallFrame.m_pThread = GetThread(); \
+        inlinedCallFrame.m_Datum = NULL; \
+        inlinedCallFrame.Push(); \
+        \
+        block\
+        \
+        inlinedCallFrame.Pop(); \
+    } while (0)
 
 template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
 {
@@ -1850,21 +1861,10 @@ MAIN_LOOP:
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
                         : (PCODE)pMethod->pDataItems[targetAddrSlot];
 
-                    InlinedCallFrame inlinedCallFrame;
-                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
-                    inlinedCallFrame.m_pCallSiteSP = pFrame;
-                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-                    inlinedCallFrame.m_pThread = GetThread();
-                    inlinedCallFrame.m_Datum = NULL;
-                    inlinedCallFrame.Push();
-
-                    {
-                        // Interpreter-FIXME: Create InlinedCallFrame.
+                    WITH_INLINED_CALL_FRAME({
                         GCX_PREEMP();
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
-                    }
-
-                    inlinedCallFrame.Pop();
+                    });
 
                     break;
                 }
@@ -1902,7 +1902,7 @@ CALL_INTERP_METHOD:
                         if (targetIp == NULL)
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
-                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
                             break;
                         }
                     }
