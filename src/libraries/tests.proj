@@ -621,6 +621,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj"/>
   </ItemGroup>
 
