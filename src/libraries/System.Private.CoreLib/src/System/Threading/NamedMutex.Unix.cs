@@ -23,10 +23,13 @@ namespace System.Threading
         protected const uint InvalidProcessId = unchecked((uint)-1);
         protected const uint InvalidThreadId = unchecked((uint)-1);
 
-        [FeatureSwitchDefinition("System.Threading.Mutex.NamedMutexUsePThreadMutex")]
-        private static bool UsePThreadMutexes { get; } = AppContext.TryGetSwitch("System.Threading.Mutex.NamedMutexUsePThreadMutex", out bool value)
-            ? value
-            : false;
+        // Use PThread mutex-backed named mutexes on all platforms except Apple platforms.
+        // macOS has support for the features we need in the pthread mutexes on arm64
+        // but not in the Rosetta 2 x64 emulation layer.
+        // Until Rosetta 2 is removed, we need to use the non-PThread mutexes on Apple platforms.
+        // On FreeBSD, pthread process-shared robust mutexes cannot be placed in shared memory mapped
+        // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
+        private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD();
 
         private SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
