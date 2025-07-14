@@ -11,8 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Ancillary.Interop\Ancillary.Interop.csproj" />
-    <!-- This project just has shared types, but shouldn't generate code for the types --> 
-    <EnabledGenerators Remove="@(EnabledGenerators)" />
+    <Compile Include="..\..\Common\ComInterfaces\IGetAndSetInt.cs" />
   </ItemGroup>
 
 </Project>
