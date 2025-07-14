@@ -11321,12 +11321,105 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
     if (tree->isCommutativeHWIntrinsic())
     {
         assert(tree->GetOperandCount() == 2);
+
         GenTree*& op1 = tree->Op(1);
+        GenTree*& op2 = tree->Op(2);
 
         if (op1->OperIsConst())
         {
             // Move constants from op1 to op2 for commutative operations
-            std::swap(op1, tree->Op(2));
+            std::swap(op1, op2);
+        }
+
+        if (((oper == GT_EQ) || (oper == GT_NE)) && op1->OperIsHWIntrinsic() && op2->IsCnsVec())
+        {
+            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
+            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
+            var_types           op1Type        = op1Intrinsic->TypeGet();
+
+            if (HWIntrinsicInfo::ReturnsPerElementMask(op1IntrinsicId) &&
+                (genTypeSize(simdBaseType) == genTypeSize(op1Intrinsic->GetSimdBaseType())))
+            {
+                // This optimization is only safe if we know the other node produces
+                // AllBitsSet or Zero per element and if the outer comparison is the
+                // same size as what the other node produces for its mask
+
+                bool reverseCond = false;
+
+                if (oper == GT_EQ)
+                {
+                    // Handle `Mask == Zero` and `Zero == Mask` for integral types
+                    if (op2->IsVectorZero())
+                    {
+                        reverseCond = true;
+                    }
+                }
+                else if (oper == GT_NE)
+                {
+                    // Handle `Mask != AllBitsSet` and `AllBitsSet != Mask` for integral types
+                    if (op2->IsVectorAllBitsSet())
+                    {
+                        reverseCond = true;
+                    }
+                }
+
+                if (reverseCond)
+                {
+                    GenTree* newNode = nullptr;
+
+                    if (op1Intrinsic->OperIsConvertVectorToMask())
+                    {
+#if defined(TARGET_XARCH)
+                        op1 = op1Intrinsic->Op(1);
+#elif defined(TARGET_ARM64)
+                        op1 = op1Intrinsic->Op(2);
+                        DEBUG_DESTROY_NODE(op1Intrinsic->Op(1));
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                        op1Type = op1->TypeGet();
+                        DEBUG_DESTROY_NODE(op1Intrinsic);
+                    }
+
+                    if (op1Type == TYP_MASK)
+                    {
+#if defined(TARGET_XARCH)
+                        newNode = gtNewSimdHWIntrinsicNode(op1Type, op1, NI_AVX512_NotMask, simdBaseJitType, simdSize);
+#endif // TARGET_XARCH
+                    }
+                    else
+                    {
+                        newNode = gtNewSimdUnOpNode(GT_NOT, op1Type, op1, simdBaseJitType, simdSize);
+
+#if defined(TARGET_XARCH)
+                        newNode->AsHWIntrinsic()->Op(2)->SetMorphed(this);
+#endif // TARGET_XARCH
+                    }
+
+                    if (newNode != nullptr)
+                    {
+                        DEBUG_DESTROY_NODE(op2);
+                        DEBUG_DESTROY_NODE(tree);
+
+                        if (op1Type != retType)
+                        {
+                            newNode = fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
+
+                            if (retType == TYP_MASK)
+                            {
+                                newNode = gtNewSimdCvtVectorToMaskNode(retType, newNode, simdBaseJitType, simdSize);
+                            }
+                            else
+                            {
+                                newNode = gtNewSimdCvtMaskToVectorNode(retType, newNode, simdBaseJitType, simdSize);
+                            }
+                        }
+
+                        return fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
+                    }
+                }
+            }
         }
     }
     else if (GenTree::OperIsCompare(oper))
@@ -11384,20 +11477,15 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
-
+                FloatComparisonMode mode    = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
                 FloatComparisonMode newMode = mode;
 
                 switch (mode)
                 {
                     case FloatComparisonMode::UnorderedEqualNonSignaling:
-                    case FloatComparisonMode::OrderedFalseNonSignaling:
                     case FloatComparisonMode::OrderedNotEqualNonSignaling:
-                    case FloatComparisonMode::UnorderedTrueNonSignaling:
                     case FloatComparisonMode::UnorderedEqualSignaling:
-                    case FloatComparisonMode::OrderedFalseSignaling:
                     case FloatComparisonMode::OrderedNotEqualSignaling:
-                    case FloatComparisonMode::UnorderedTrueSignaling:
                     {
                         tree->Op(1) = op2;
                         tree->Op(2) = op1;
