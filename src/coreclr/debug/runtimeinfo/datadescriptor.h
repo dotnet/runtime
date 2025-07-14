@@ -968,6 +968,7 @@ CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
+CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, uint8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)

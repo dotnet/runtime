@@ -27,6 +27,7 @@ public static class Constants
 
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
+        public const string DacNotificationFlags = nameof(DacNotificationFlags);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
