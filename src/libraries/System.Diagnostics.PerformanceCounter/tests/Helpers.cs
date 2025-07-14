@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
         /// Determines if an exception is retriable for performance counter operations.
         /// Typically used for file access conflicts and transient system errors.
         /// </summary>
-        private static bool IsRetriableException(Exception ex)
+        internal static bool IsRetriableException(Exception ex)
         {
             // Handle Win32Exception with specific error codes for file access conflicts
             if (ex is Win32Exception win32Ex)

@@ -112,7 +112,10 @@ namespace System.Diagnostics.Tests
 
             Helpers.DeleteCategory(categoryName);
 
-            PerformanceCounterCategory.Create(categoryName, "category help", counterName, "counter help");
+            RetryHelper.Execute(() =>
+            {
+                PerformanceCounterCategory.Create(categoryName, "category help", counterName, "counter help");
+            }, maxAttempts: 10, retryWhen: Helpers.IsRetriableException);
 
             Assert.True(PerformanceCounterCategory.Exists(categoryName));
             Helpers.DeleteCategory(categoryName);
@@ -129,7 +132,10 @@ namespace System.Diagnostics.Tests
 
             Helpers.DeleteCategory(categoryName);
 
-            PerformanceCounterCategory.Create(categoryName, "category help", ccdc);
+            RetryHelper.Execute(() =>
+            {
+                PerformanceCounterCategory.Create(categoryName, "category help", ccdc);
+            }, maxAttempts: 10, retryWhen: Helpers.IsRetriableException);
 
             Assert.True(PerformanceCounterCategory.Exists(categoryName));
             Helpers.DeleteCategory(categoryName);
@@ -209,7 +215,7 @@ namespace System.Diagnostics.Tests
             string categoryName = nameof(PerformanceCounterCategory_DeleteCategory) + "_Category";
             Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
 
             Assert.False(PerformanceCounterCategory.Exists(categoryName));
         }
