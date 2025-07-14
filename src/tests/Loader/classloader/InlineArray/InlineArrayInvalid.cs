@@ -26,6 +26,10 @@ public unsafe class Validate
     public static void ExplicitSize_Fails()
     {
         Console.WriteLine($"{nameof(ExplicitSize_Fails)}...");
+
+        // .size is ignored for auto layout
+        Assert.Equal(true, sizeof(ExplicitSizeAuto) > 0);
+
         Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSize); });
 
         Assert.Throws<TypeLoadException>(() =>
