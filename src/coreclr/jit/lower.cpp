@@ -4447,7 +4447,37 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             cmp->gtFlags |= GTF_UNSIGNED;
         }
     }
-#endif // TARGET_XARCH
+#elif defined(TARGET_RISCV64)
+    GenTree*& left  = cmp->AsOp()->gtOp1;
+    GenTree*& right = cmp->AsOp()->gtOp2;
+
+    LIR::Use cmpUse;
+    if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+    {
+        if (varTypeIsFloating(left))
+        {
+            assert(left->TypeIs(right->TypeGet()));
+            if ((cmp->gtFlags & GTF_RELOP_NAN_UN) != 0)
+            {
+                comp->gtReverseCond(cmp);
+                GenTree* notOp = comp->gtNewOperNode(GT_NOT, cmp->gtType, cmp);
+                BlockRange().InsertAfter(cmp, notOp);
+                cmpUse.ReplaceWith(notOp);
+            }
+        }
+    }
+
+    if (varTypeIsFloating(left))
+    {
+        bool isUnordered = (cmp->gtFlags & GTF_RELOP_NAN_UN) != 0;
+        if ((!isUnordered && cmp->OperIs(GT_GT, GT_GE)) || (isUnordered && cmp->OperIs(GT_LE, GT_LT)))
+        {
+            cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
+            std::swap(left, right);
+        }
+    }
+#endif // TARGET_RISCV64
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }

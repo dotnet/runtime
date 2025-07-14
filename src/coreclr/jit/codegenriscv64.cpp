@@ -1691,7 +1691,8 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     else if (tree->OperIs(GT_NOT))
     {
         assert(!varTypeIsFloating(targetType));
-        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
+        ssize_t mask = tree->gtGetOp1()->OperIsCmpCompare() ? 1 : -1;
+        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, mask);
     }
 
     genProduceReg(tree);
@@ -3131,20 +3132,10 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     {
         assert(!op2->isContainedIntOrIImmed());
         assert(op1Type == op2Type);
-        genTreeOps oper = tree->OperGet();
+        noway_assert((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
 
-        bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-        if (isUnordered)
-        {
-            oper = GenTree::ReverseRelop(oper);
-        }
-        if (oper == GT_GT || oper == GT_GE)
-        {
-            oper = GenTree::SwapRelop(oper);
-            std::swap(op1, op2);
-        }
         instruction instr = INS_none;
-        switch (oper)
+        switch (tree->OperGet())
         {
             case GT_LT:
                 instr = (cmpSize == EA_4BYTE) ? INS_flt_s : INS_flt_d;
@@ -3159,8 +3150,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 unreached();
         }
         emit->emitIns_R_R_R(instr, cmpSize, targetReg, op1->GetRegNum(), op2->GetRegNum());
-        if (isUnordered)
-            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
     }
     else
     {
