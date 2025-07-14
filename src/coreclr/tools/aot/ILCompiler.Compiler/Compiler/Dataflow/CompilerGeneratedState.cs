@@ -31,10 +31,13 @@ namespace ILCompiler.Dataflow
 
         private readonly Logger _logger;
 
-        public CompilerGeneratedState(ILProvider ilProvider, Logger logger)
+        private readonly bool _disableGeneratedCodeHeuristics;
+
+        public CompilerGeneratedState(ILProvider ilProvider, Logger logger, bool disableGeneratedCodeHeuristics)
         {
             _typeCacheHashtable = new TypeCacheHashtable(ilProvider);
             _logger = logger;
+            _disableGeneratedCodeHeuristics = disableGeneratedCodeHeuristics;
         }
 
         private sealed class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
@@ -658,6 +661,14 @@ namespace ILCompiler.Dataflow
         {
             MetadataType generatedType = (MetadataType)type.GetTypeDefinition();
             Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
+
+            // Avoid the heuristics for .NET10+, where DynamicallyAccessedMembers flows to generated code
+            // because it is annotated with CompilerLoweringPreserveAttribute.
+            if (_disableGeneratedCodeHeuristics &&
+                generatedType.Module.Assembly is EcmaAssembly asm && asm.GetTargetFrameworkVersion() >= new Version(10, 0))
+            {
+                return null;
+            }
 
             var typeCache = GetCompilerGeneratedStateForType(generatedType);
             if (typeCache is null)

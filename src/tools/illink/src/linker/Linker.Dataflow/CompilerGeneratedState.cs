@@ -516,7 +516,7 @@ namespace Mono.Linker.Dataflow
 
         /// <summary>
         /// Gets the attributes on the "original" method of a generated type, i.e. the
-        /// attributes on the corresponding type arguments from the owning method.
+        /// attributes on the corresponding type parameters from the owning method.
         /// </summary>
         public IList<GenericParameter>? GetGeneratedTypeAttributes(TypeDefinition generatedType)
         {

@@ -177,6 +177,8 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<string[]> UnmanagedEntryPointsAssemblies { get; } =
             new("--generateunmanagedentrypoints") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate unmanaged entrypoints for a given assembly" };
+        public Option<bool> DisableGeneratedCodeHeuristics { get; } =
+            new("--disable-generated-code-heuristics") { Description = "Disable heuristics for detecting compiler-generated code" };
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -266,6 +268,7 @@ namespace ILCompiler
             Options.Add(SingleMethodGenericArgs);
             Options.Add(MakeReproPath);
             Options.Add(UnmanagedEntryPointsAssemblies);
+            Options.Add(DisableGeneratedCodeHeuristics);
 
             this.SetAction(result =>
             {

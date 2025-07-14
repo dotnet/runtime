@@ -399,7 +399,7 @@ namespace ILCompiler
                         logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
             }
 
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger, Get(_command.DisableGeneratedCodeHeuristics));
 
             if (Get(_command.UseReachability) is string reachabilityInstrumentationFileName)
             {
