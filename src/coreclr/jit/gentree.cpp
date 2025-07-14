@@ -20740,7 +20740,7 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
         // Some intrinsics are effectively bitwise operations and so we
         // can freely update them to match the size of the actual mask
 
-        bool supportsMaskBaseSize4Or8 = false;
+        bool supportsMaskBaseSize2Or4 = false;
 
         switch (ins)
         {
@@ -20765,13 +20765,13 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
             case INS_xorpd:
             case INS_xorps:
             {
-                // These intrinsics support embedded broadcast and have masking support for 4 or 8
-                assert((maskBaseSize == 4) || (maskBaseSize == 8));
+                // These intrinsics support embedded broadcast and have masking support for 2 or 4
+                assert((maskBaseSize == 2) || (maskBaseSize == 4));
 
                 if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, node->Op(2)))
                 {
                     // We cannot change the base type if we've already contained a broadcast
-                    supportsMaskBaseSize4Or8 = true;
+                    supportsMaskBaseSize2Or4 = true;
                 }
                 break;
             }
@@ -20779,13 +20779,13 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
             case INS_vpternlogd:
             case INS_vpternlogq:
             {
-                // These intrinsics support embedded broadcast and have masking support for 4 or 8
-                assert((maskBaseSize == 4) || (maskBaseSize == 8));
+                // These intrinsics support embedded broadcast and have masking support for 2 or 4
+                assert((maskBaseSize == 2) || (maskBaseSize == 4));
 
                 if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, node->Op(3)))
                 {
                     // We cannot change the base type if we've already contained a broadcast
-                    supportsMaskBaseSize4Or8 = true;
+                    supportsMaskBaseSize2Or4 = true;
                 }
                 break;
             }
@@ -20815,9 +20815,9 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
             case INS_vinserti64x2:
             case INS_vinserti64x4:
             {
-                // These intrinsics don't support embedded broadcast and have masking support for 4 or 8
-                assert((maskBaseSize == 4) || (maskBaseSize == 8));
-                supportsMaskBaseSize4Or8 = true;
+                // These intrinsics don't support embedded broadcast and have masking support for 2 or 4
+                assert((maskBaseSize == 2) || (maskBaseSize == 4));
+                supportsMaskBaseSize2Or4 = true;
                 break;
             }
 
@@ -20827,9 +20827,9 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
             }
         }
 
-        if (supportsMaskBaseSize4Or8)
+        if (supportsMaskBaseSize2Or4)
         {
-            if (tgtMaskBaseSize == 8)
+            if (tgtMaskBaseSize == 2)
             {
                 if (varTypeIsFloating(simdBaseType))
                 {
