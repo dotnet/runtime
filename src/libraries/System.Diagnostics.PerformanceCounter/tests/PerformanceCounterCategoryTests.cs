@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory pcc = new PerformanceCounterCategory(categoryName);
 
             Assert.Equal(PerformanceCounterCategoryType.MultiInstance, Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.CategoryType));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
@@ -100,7 +100,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory pcc = new PerformanceCounterCategory(categoryName);
 
             Assert.Equal(PerformanceCounterCategoryType.SingleInstance, Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.CategoryType));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
 #pragma warning disable 0618 // obsolete warning
@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory.Create(categoryName, "category help", counterName, "counter help");
 
             Assert.True(PerformanceCounterCategory.Exists(categoryName));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
@@ -132,7 +132,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory.Create(categoryName, "category help", ccdc);
 
             Assert.True(PerformanceCounterCategory.Exists(categoryName));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 #pragma warning restore 0618
 
@@ -232,7 +232,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounter[] counters = pcc.GetCounters();
 
             Assert.True(counters.Length > 0);
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
         [Fact]
