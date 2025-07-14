@@ -295,6 +295,8 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
 
+    UnhandledExceptionMarkerFrame unhandledExceptionMarkerFrame;
+
     Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
@@ -303,6 +305,11 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         {
             goto ErrExit;
         }
+    }
+
+    {
+        GCX_COOP();
+        unhandledExceptionMarkerFrame.Push(pThread);
     }
 
     INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
@@ -327,7 +334,6 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     {
         GCX_COOP();
-
         PTRARRAYREF arguments = NULL;
         GCPROTECT_BEGIN(arguments);
 
@@ -358,6 +364,11 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+
+    {
+        GCX_COOP();
+        unhandledExceptionMarkerFrame.Pop(pThread);
+    }
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     ExecutableAllocator::DumpHolderUsage();
