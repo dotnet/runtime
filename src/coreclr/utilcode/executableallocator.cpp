@@ -978,7 +978,7 @@ void ExecutableAllocator::UnmapRW(void* pRW)
     }
 }
 
-void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t templateSize)
+void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
     {
@@ -1003,7 +1003,7 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
             BackoutBlock(block, isFreeBlock);
         }
 
-        void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, block->baseRX);
+        void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, block->baseRX, dataPageGenerator);
 
         if (pTemplateAddressAllocated == NULL)
         {
@@ -1014,7 +1014,7 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
     }
     else
     {
-        return VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, NULL);
+        return VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, NULL, dataPageGenerator);
     }
 }
 

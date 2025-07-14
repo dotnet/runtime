@@ -460,9 +460,10 @@ struct InterleavedLoaderHeapConfig
     uint32_t StubSize;
     void* Template;
     void (*CodePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
+    void (*DataPageGenerator)(uint8_t* pageBase, size_t size);
 };
 
-void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
+void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
 //===============================================================================
 // This is the base class for InterleavedLoaderHeap It's used as a simple
