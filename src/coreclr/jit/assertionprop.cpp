@@ -3045,7 +3045,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
 
         // Were able to optimize.
         conValTree->gtVNPair = vnPair;
-        return gtWrapWithSideEffects(conValTree, tree, GTF_ALL_EFFECT);
+        return gtWrapWithSideEffects(conValTree, tree, GTF_SIDE_EFFECT);
     }
     else
     {
