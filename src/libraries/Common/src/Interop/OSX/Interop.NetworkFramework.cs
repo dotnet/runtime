@@ -66,7 +66,7 @@ internal static partial class Interop
         {
             public int ErrorCode;
             public int ErrorDomain;
-            public IntPtr ErrorMessage; // CFStringRef for most errors, C string for POSIX errors
+            public IntPtr ErrorMessage; // C string of NULL
         }
 
         internal static Exception CreateExceptionForNetworkFrameworkError(in NetworkFrameworkError error)
