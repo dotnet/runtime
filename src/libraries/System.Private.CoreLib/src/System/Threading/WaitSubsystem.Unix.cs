@@ -145,7 +145,10 @@ namespace System.Threading
             }
         }
 
+#pragma warning disable CA1859 // Change type of parameter 'waitableObject' from 'System.Threading.IWaitableObject' to 'System.Threading.WaitableObject' for improved performance
+                               // Some platforms have more implementations of IWaitableObject than just WaitableObject.
         private static SafeWaitHandle NewHandle(IWaitableObject waitableObject)
+#pragma warning restore CA1859 // Change type of parameter 'waitableObject' from 'System.Threading.IWaitableObject' to 'System.Threading.WaitableObject' for improved performance
         {
             var safeWaitHandle = new SafeWaitHandle();
 
@@ -194,6 +197,7 @@ namespace System.Threading
             return safeWaitHandle;
         }
 
+#if FEATURE_CROSS_PROCESS_MUTEX
         public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, bool isUserScope, out bool createdNew)
         {
             NamedMutex? namedMutex = NamedMutex.CreateNamedMutex(name, isUserScope, initiallyOwned: initiallyOwned, out createdNew);
@@ -211,6 +215,58 @@ namespace System.Threading
             result = status == OpenExistingResult.Success ? NewHandle(mutex!) : null;
             return status;
         }
+#else
+        public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, bool isUserScope, out bool createdNew)
+        {
+            // For initially owned, newly created named mutexes, there is a potential race
+            // between adding the mutex to the named object table and initially acquiring it.
+            // To avoid the possibility of another thread retrieving the mutex via its name
+            // before we managed to acquire it, we perform both steps while holding s_lock.
+            LockHolder lockHolder = new LockHolder(s_lock);
+            try
+            {
+                if (isUserScope)
+                {
+                    name = $"User\\{name}";
+                }
+
+                WaitableObject? waitableObject = WaitableObject.CreateNamedMutex_Locked(name, out createdNew);
+                if (waitableObject == null)
+                {
+                    return null;
+                }
+                SafeWaitHandle safeWaitHandle = NewHandle(waitableObject);
+                if (!initiallyOwned || !createdNew)
+                {
+                    return safeWaitHandle;
+                }
+
+                // Acquire the mutex. A thread's <see cref="ThreadWaitInfo"/> has a reference to all <see cref="Mutex"/>es locked
+                // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
+                // possibilities for exceptions have been exhausted.
+                ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
+                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false, ref lockHolder);
+                Debug.Assert(status == 0);
+                return safeWaitHandle;
+            }
+            finally
+            {
+                lockHolder.Dispose();
+            }
+        }
+
+        public static OpenExistingResult OpenNamedMutex(string name, bool isUserScope, out SafeWaitHandle? result)
+        {
+            if (isUserScope)
+            {
+                name = $"User\\{name}";
+            }
+
+            OpenExistingResult status = WaitableObject.OpenNamedMutex(name, out WaitableObject? mutex);
+            result = status == OpenExistingResult.Success ? NewHandle(mutex!) : null;
+            return status;
+        }
+#endif
 
         public static void DeleteHandle(IntPtr handle)
         {
@@ -328,11 +384,13 @@ namespace System.Threading
 
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
 
+#if FEATURE_CROSS_PROCESS_MUTEX
             if (waitHandles.Length == 1 && HandleManager.FromHandle(waitHandles[0]) is NamedMutex namedMutex)
             {
                 // Named mutexes don't participate in the wait subsystem fully.
                 return namedMutex.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
             }
+#endif
 
             WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;

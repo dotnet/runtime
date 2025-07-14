@@ -87,12 +87,14 @@ namespace System.Threading
             /// </summary>
             private WaitableObject? _lockedMutexesHead;
 
+#if FEATURE_CROSS_PROCESS_MUTEX
             /// <summary>
             /// Linked list of named mutexes that are locked by the thread and need to be abandoned before the thread exits.
             /// The linked list has only a head and no tail, which means acquired mutexes are prepended and
             /// mutexes are abandoned in reverse order.
             /// </summary>
             private NamedMutexProcessDataBase? _lockedNamedMutexesHead;
+#endif
 
             public ThreadWaitInfo(Thread thread)
             {
@@ -561,6 +563,7 @@ namespace System.Threading
                 }
             }
 
+#if FEATURE_CROSS_PROCESS_MUTEX
             public NamedMutexProcessDataBase? LockedNamedMutexesHead
             {
                 get
@@ -574,6 +577,7 @@ namespace System.Threading
                     _lockedNamedMutexesHead = value;
                 }
             }
+#endif
 
             public void OnThreadExiting()
             {
@@ -599,6 +603,7 @@ namespace System.Threading
                     s_lock.Release();
                 }
 
+#if FEATURE_CROSS_PROCESS_MUTEX
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
@@ -618,6 +623,7 @@ namespace System.Threading
                 {
                     scope.Dispose();
                 }
+#endif
             }
 
             public sealed class WaitedListNode
