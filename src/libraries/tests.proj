@@ -555,6 +555,8 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.IO.UnmanagedMemoryStream.Tests/System.IO.UnmanagedMemoryStream.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj" />
   </ItemGroup>
 
   <!-- wasi/interp smoke tests -->
