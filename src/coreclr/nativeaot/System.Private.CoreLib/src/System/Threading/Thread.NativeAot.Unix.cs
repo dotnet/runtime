@@ -18,8 +18,6 @@ namespace System.Threading
 
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
 
-        internal NamedMutexProcessDataBase? _ownedSharedNamedMutexes; // shared named mutexes owned by this thread
-
         private void PlatformSpecificInitialize()
         {
             _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
