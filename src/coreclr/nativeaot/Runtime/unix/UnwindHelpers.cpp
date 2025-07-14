@@ -28,11 +28,11 @@
 template <class To, class From>
 inline To unwindhelpers_bitcast(From from)
 {
-  static_assert(sizeof(From)==sizeof(To), "Sizes must match");
+    static_assert(sizeof(From)==sizeof(To), "Sizes must match");
 
-  To to;
-  memcpy(&to, &from, sizeof(To));
-  return to;
+    To to;
+    memcpy(&to, &from, sizeof(To));
+    return to;
 }
 
 #if defined(TARGET_AMD64)
