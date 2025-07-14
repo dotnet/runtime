@@ -7310,7 +7310,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -7416,7 +7415,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Mark the block as containing an index expression
                 if (op3->OperIs(GT_LCL_VAR) && op1->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -8417,7 +8415,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // via an underlying address, just null check the address.
                         if (op1->OperIs(GT_IND, GT_BLK))
                         {
-                            gtChangeOperToNullCheck(op1, block);
+                            gtChangeOperToNullCheck(op1);
                         }
                         else
                         {
@@ -10382,7 +10380,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
-                                GenTree* nullcheck = gtNewNullCheck(op1, block);
+                                GenTree* nullcheck = gtNewNullCheck(op1);
                                 // Add an ordering dependency between the null
                                 // check and forming the byref; the JIT assumes
                                 // in many places that the only legal null
@@ -10964,7 +10962,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length, block);
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
 
                     op1 = arrLen;
                 }
@@ -11442,8 +11440,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             }
 
             // If gtSubstExpr is an arbitrary tree then we may need to
-            // propagate mandatory "IR presence" flags (e.g. BBF_HAS_IDX_LEN)
-            // to the BB it ends up in.
+            // propagate mandatory "IR presence" flags to the BB it ends up in.
             inlRetExpr->gtSubstBB = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
         }
     }

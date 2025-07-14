@@ -9596,18 +9596,15 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 break;
 
             case GT_ARR_LENGTH:
-                copy =
-                    gtNewArrLen(tree->TypeGet(), tree->AsArrLen()->ArrRef(), tree->AsArrLen()->ArrLenOffset(), nullptr);
+                copy = gtNewArrLen(tree->TypeGet(), tree->AsArrLen()->ArrRef(), tree->AsArrLen()->ArrLenOffset());
                 break;
 
             case GT_MDARR_LENGTH:
-                copy =
-                    gtNewMDArrLen(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank(), nullptr);
+                copy = gtNewMDArrLen(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank());
                 break;
 
             case GT_MDARR_LOWER_BOUND:
-                copy = gtNewMDArrLowerBound(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank(),
-                                            nullptr);
+                copy = gtNewMDArrLowerBound(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank());
                 break;
 
             case GT_QMARK:
@@ -14218,7 +14215,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             {
                 // we still have to emit a null-check
                 // obj.GetType == typeof() -> (nullcheck) true/false
-                GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
+                GenTree* nullcheck = gtNewNullCheck(objOp);
                 return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, compareResult);
             }
             else if (objOp->gtFlags & GTF_ALL_EFFECT)
@@ -17373,7 +17370,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                 if (node->OperIsBlk() && !node->OperIsStoreBlk())
                 {
                     JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                    m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
+                    m_compiler->gtChangeOperToNullCheck(node);
                 }
 
                 Append(node);

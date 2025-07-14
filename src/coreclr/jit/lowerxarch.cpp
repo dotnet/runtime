@@ -5212,7 +5212,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             if (indir->OperMayThrow(comp))
             {
                 GenTree* addrClone = comp->gtCloneExpr(addr);
-                GenTree* nullcheck = comp->gtNewNullCheck(addrClone, comp->compCurBB);
+                GenTree* nullcheck = comp->gtNewNullCheck(addrClone);
                 BlockRange().InsertBefore(indir, addrClone, nullcheck);
                 LowerNode(nullcheck);
 

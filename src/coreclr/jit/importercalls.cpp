@@ -3635,7 +3635,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         break;
                     }
                 }
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
                 op1                   = arrLen;
 
                 // Getting the length of a null string should throw
@@ -3737,7 +3737,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     array = impCloneExpr(array, &arrayClone, CHECK_SPILL_ALL,
                                          nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
 
-                    impAppendTree(gtNewNullCheck(array, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
+                    impAppendTree(gtNewNullCheck(array), CHECK_SPILL_ALL, impCurStmtDI);
                     array = arrayClone;
                 }
 
