@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(sign1);
             Assert.NotNull(msg.Content);
-            Assert.True(msg.VerifyEmbedded(CoseKey.FromKey(pubKey)));
+            Assert.True(msg.VerifyEmbedded(new CoseKey(pubKey)));
 
             Assert.Equal(2, msg.ProtectedHeaders.Count);
             Assert.Equal(0, msg.UnprotectedHeaders.Count);

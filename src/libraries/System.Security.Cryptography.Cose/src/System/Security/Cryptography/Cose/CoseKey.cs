@@ -16,10 +16,10 @@ namespace System.Security.Cryptography.Cose
         internal KeyType KeyType { get; }
         internal HashAlgorithmName? HashAlgorithm { get; }
 
-        internal RSASignaturePadding? RSASignaturePadding { get; private set; }
+        internal RSASignaturePadding? RSASignaturePadding { get; }
 
         // only used for backward compatibility
-        internal AsymmetricAlgorithm? AsymmetricAlgorithm { get; private set; }
+        internal AsymmetricAlgorithm? AsymmetricAlgorithm { get; }
 
         private RSA? _rsaKey;
         private ECDsa? _ecdsaKey;
@@ -27,48 +27,43 @@ namespace System.Security.Cryptography.Cose
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         private MLDsa? _mldsaKey;
 
-        private CoseKey(KeyType keyType, CoseAlgorithm algorithm, HashAlgorithmName? hashAlgorithm)
-        {
-            KeyType = keyType;
-            Algorithm = algorithm;
-            HashAlgorithm = hashAlgorithm;
-        }
-
-        public static CoseKey FromKey(RSA key, RSASignaturePadding signaturePadding, HashAlgorithmName hashAlgorithm)
+        public CoseKey(RSA key, RSASignaturePadding signaturePadding, HashAlgorithmName hashAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(signaturePadding);
             ArgumentNullException.ThrowIfNull(hashAlgorithm.Name);
 
-            CoseAlgorithm coseAlgorithm = GetRSAAlgorithm(signaturePadding, hashAlgorithm);
-            CoseKey coseKey = new(KeyType.RSA, coseAlgorithm, hashAlgorithm);
-            coseKey.AsymmetricAlgorithm = key;
-            coseKey.RSASignaturePadding = signaturePadding;
-            coseKey._rsaKey = key;
-            return coseKey;
+            KeyType = KeyType.RSA;
+            Algorithm = GetRSAAlgorithm(signaturePadding, hashAlgorithm);
+
+            HashAlgorithm = hashAlgorithm;
+            AsymmetricAlgorithm = key;
+            RSASignaturePadding = signaturePadding;
+            _rsaKey = key;
         }
 
-        public static CoseKey FromKey(ECDsa key, HashAlgorithmName hashAlgorithm)
+        public CoseKey(ECDsa key, HashAlgorithmName hashAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(hashAlgorithm.Name);
 
-            CoseAlgorithm coseAlgorithm = GetECDsaAlgorithm(hashAlgorithm);
-            CoseKey coseKey = new(KeyType.ECDsa, coseAlgorithm, hashAlgorithm);
-            coseKey.AsymmetricAlgorithm = key;
-            coseKey._ecdsaKey = key;
-            return coseKey;
+            KeyType = KeyType.ECDsa;
+            Algorithm = GetECDsaAlgorithm(hashAlgorithm);
+
+            HashAlgorithm = hashAlgorithm;
+            AsymmetricAlgorithm = key;
+            _ecdsaKey = key;
         }
 
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-        public static CoseKey FromKey(MLDsa key)
+        public CoseKey(MLDsa key)
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            CoseAlgorithm coseAlgorithm = GetMLDsaAlgorithm(key.Algorithm);
-            CoseKey coseKey = new(KeyType.MLDsa, coseAlgorithm, null);
-            coseKey._mldsaKey = key;
-            return coseKey;
+            KeyType = KeyType.MLDsa;
+            Algorithm = GetMLDsaAlgorithm(key.Algorithm);
+
+            _mldsaKey = key;
         }
 
         internal static CoseKey FromUntrustedAlgorithmAndKey(CoseAlgorithm untrustedAlgorithm, IDisposable key)
@@ -77,9 +72,9 @@ namespace System.Security.Cryptography.Cose
             {
                 return untrustedAlgorithm switch
                 {
-                    CoseAlgorithm.ES256 => FromKey(ecdsaKey, HashAlgorithmName.SHA256),
-                    CoseAlgorithm.ES384 => FromKey(ecdsaKey, HashAlgorithmName.SHA384),
-                    CoseAlgorithm.ES512 => FromKey(ecdsaKey, HashAlgorithmName.SHA512),
+                    CoseAlgorithm.ES256 => new CoseKey(ecdsaKey, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.ES384 => new CoseKey(ecdsaKey, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.ES512 => new CoseKey(ecdsaKey, HashAlgorithmName.SHA512),
                     _ => throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, untrustedAlgorithm))
                 };
             }
@@ -87,12 +82,12 @@ namespace System.Security.Cryptography.Cose
             {
                 return untrustedAlgorithm switch
                 {
-                    CoseAlgorithm.RS256 => FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256),
-                    CoseAlgorithm.RS384 => FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA384),
-                    CoseAlgorithm.RS512 => FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA512),
-                    CoseAlgorithm.PS256 => FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA256),
-                    CoseAlgorithm.PS384 => FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA384),
-                    CoseAlgorithm.PS512 => FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA512),
+                    CoseAlgorithm.RS256 => new CoseKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.RS384 => new CoseKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.RS512 => new CoseKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA512),
+                    CoseAlgorithm.PS256 => new CoseKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.PS384 => new CoseKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.PS512 => new CoseKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA512),
                     _ => throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, untrustedAlgorithm))
                 };
             }
@@ -108,7 +103,7 @@ namespace System.Security.Cryptography.Cose
                 };
 
                 CoseKey FromKeyWithExpectedAlgorithm(MLDsaAlgorithm expected, MLDsa key)
-                    => key.Algorithm.Name == expected.Name ? FromKey(key) : throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, untrustedAlgorithm));
+                    => key.Algorithm.Name == expected.Name ? new CoseKey(key) : throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, untrustedAlgorithm));
             }
 #pragma warning restore SYSLIB5006
             else
@@ -207,7 +202,9 @@ namespace System.Security.Cryptography.Cose
 #pragma warning disable SYSLIB5006
                 case KeyType.MLDsa:
                     Debug.Assert(_mldsaKey != null);
-                    return _mldsaKey.SignData(toBeSigned, destination);
+                    Span<byte> mldsaSignature = destination.Slice(0, _mldsaKey.Algorithm.SignatureSizeInBytes);
+                    _mldsaKey.SignData(toBeSigned, mldsaSignature);
+                    return mldsaSignature.Length;
 #pragma warning restore SYSLIB5006
                 default:
                     Debug.Fail("Unknown key type");

@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Numerics.Tensors
 {
     /// <summary>Represents a tensor.</summary>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface ITensor : IReadOnlyTensor
     {
         /// <summary>Gets or sets the specified element of the tensor.</summary>

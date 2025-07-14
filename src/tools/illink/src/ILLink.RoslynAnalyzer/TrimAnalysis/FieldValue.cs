@@ -12,13 +12,23 @@ namespace ILLink.Shared.TrimAnalysis
     internal partial record FieldValue
     {
         public FieldValue(IFieldSymbol fieldSymbol)
+            : this(fieldSymbol, fieldSymbol.Type, FlowAnnotations.GetFieldAnnotation(fieldSymbol))
         {
-            FieldSymbol = fieldSymbol;
-            StaticType = new(fieldSymbol.Type);
-            DynamicallyAccessedMemberTypes = FlowAnnotations.GetFieldAnnotation(fieldSymbol);
         }
 
-        public readonly IFieldSymbol FieldSymbol;
+        public FieldValue(IPropertySymbol propertySymbol)
+            : this(propertySymbol, propertySymbol.Type, FlowAnnotations.GetBackingFieldAnnotation(propertySymbol))
+        {
+        }
+
+        private FieldValue(ISymbol fieldSymbol, ITypeSymbol fieldType, DynamicallyAccessedMemberTypes annotations)
+        {
+            FieldSymbol = fieldSymbol;
+            StaticType = new(fieldType);
+            DynamicallyAccessedMemberTypes = annotations;
+        }
+
+        public readonly ISymbol FieldSymbol;
 
         public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 

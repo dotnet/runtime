@@ -592,7 +592,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags) const;
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -844,9 +844,7 @@ protected:
         unsigned _idCustom5 : 1;
         unsigned _idCustom6 : 1;
 
-#define _idEvexbContext                                                                                                \
-    (_idCustom6 << 1) | _idCustom5  /* Evex.b: embedded broadcast, embedded rounding, embedded SAE                     \
-                                     */
+#define _idEvexbContext  (_idCustom6 << 1) | _idCustom5 /* Evex.b: embedded broadcast, rounding, SAE */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
 
@@ -1734,10 +1732,21 @@ protected:
             return idGetEvexbContext() != 0;
         }
 
+        void idSetEvexBroadcastBit()
+        {
+            assert(!idIsEvexbContextSet());
+            _idCustom5 = 1;
+        }
+
+        void idSetEvexCompressedDisplacementBit()
+        {
+            assert(_idCustom6 == 0);
+            _idCustom6 = 1;
+        }
+
         void idSetEvexbContext(insOpts instOptions)
         {
             assert(!idIsEvexbContextSet());
-            assert(idGetEvexbContext() == 0);
             unsigned value = static_cast<unsigned>(instOptions & INS_OPTS_EVEX_b_MASK);
 
             _idCustom5 = ((value >> 0) & 1);
@@ -2370,7 +2379,7 @@ protected:
 #endif // TARGET_ARM
 
     insUpdateModes emitInsUpdateMode(instruction ins);
-    insFormat      emitInsModeFormat(instruction ins, insFormat base);
+    insFormat      emitInsModeFormat(instruction ins, insFormat base, bool useNDD = false);
 
     static const BYTE emitInsModeFmtTab[];
 #ifdef DEBUG
@@ -2381,14 +2390,14 @@ protected:
 
 #ifdef TARGET_XARCH
 
-    ssize_t emitGetInsCns(instrDesc* id);
-    ssize_t emitGetInsDsp(instrDesc* id);
-    ssize_t emitGetInsAmd(instrDesc* id);
+    ssize_t emitGetInsCns(instrDesc* id) const;
+    ssize_t emitGetInsDsp(instrDesc* id) const;
+    ssize_t emitGetInsAmd(instrDesc* id) const;
 
-    ssize_t  emitGetInsCIdisp(instrDesc* id);
-    unsigned emitGetInsCIargs(instrDesc* id);
+    ssize_t  emitGetInsCIdisp(instrDesc* id) const;
+    unsigned emitGetInsCIargs(instrDesc* id) const;
 
-    inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast = false) const;
+    inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2446,6 +2455,7 @@ protected:
     void emitDispEmbBroadcastCount(instrDesc* id) const;
     void emitDispEmbRounding(instrDesc* id) const;
     void emitDispEmbMasking(instrDesc* id) const;
+    void emitDispConstant(const instrDesc* id, bool skipComma = false) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -4100,12 +4110,12 @@ inline emitter::instrDesc* emitter::emitNewInstrLoadImm(emitAttr attr, cnsval_ss
  *  get stored in different places within the instruction descriptor.
  */
 
-inline ssize_t emitter::emitGetInsCns(instrDesc* id)
+inline ssize_t emitter::emitGetInsCns(instrDesc* id) const
 {
     return id->idIsLargeCns() ? ((instrDescCns*)id)->idcCnsVal : id->idSmallCns();
 }
 
-inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
+inline ssize_t emitter::emitGetInsDsp(instrDesc* id) const
 {
     if (id->idIsLargeDsp())
     {
@@ -4123,7 +4133,7 @@ inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
  *  Get hold of the argument count for an indirect call.
  */
 
-inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
+inline unsigned emitter::emitGetInsCIargs(instrDesc* id) const
 {
     if (id->idIsLargeCall())
     {
@@ -4163,7 +4173,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
     else if (tupleType == INS_TT_FULL)
     {
         // Embedded broadcast supported, so either loading scalar or full vector
-        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
+        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4182,7 +4192,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         {
             memSize = 16;
         }
-        else if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
+        else if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4194,7 +4204,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
     else if (tupleType == INS_TT_HALF)
     {
         // Embedded broadcast supported, so either loading scalar or half vector
-        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
+        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
         {
             memSize = GetInputSizeInBytes(id);
         }

@@ -501,7 +501,7 @@ EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 EXTERN bool g_fWeControlLifetime;
 
 // There is a global table of prime numbers that's available for e.g. hashing
-extern const DWORD g_rgPrimes[71];
+extern const DWORD g_rgPrimes[102];
 
 //
 // Macros to check debugger and profiler settings.

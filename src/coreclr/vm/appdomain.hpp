@@ -782,6 +782,12 @@ public: // Handles
         return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
     }
 
+    OBJECTHANDLE CreateCrossReferenceHandle(OBJECTREF object, void* userContext)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateCrossReferenceHandle(m_handleStore, object, userContext);
+    }
+
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
     {
@@ -1931,7 +1937,7 @@ public:
 template<>
 struct cdac_data<SystemDomain>
 {
-    static constexpr PTR_SystemDomain* SystemDomain = &SystemDomain::m_pSystemDomain;
+    static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
 };
 #endif // DACCESS_COMPILE
 
