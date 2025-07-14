@@ -61,41 +61,41 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public async Task WarningInArgument()
         {
             var test = $$"""
-			using System.Diagnostics.CodeAnalysis;
-			public class C
-			{
-				[RequiresUnreferencedCode("message")]
-				public int M1() => 0;
-				public void M2(int x)
-				{
-				}
-				public void M3() => M2(M1());
-			}
-			""";
+            using System.Diagnostics.CodeAnalysis;
+            public class C
+            {
+                [RequiresUnreferencedCode("message")]
+                public int M1() => 0;
+                public void M2(int x)
+                {
+                }
+                public void M3() => M2(M1());
+            }
+            """;
             var fixtest = $$"""
-			using System.Diagnostics.CodeAnalysis;
-			public class C
-			{
-				[RequiresUnreferencedCode("message")]
-				public int M1() => 0;
-				public void M2(int x)
-				{
-				}
+            using System.Diagnostics.CodeAnalysis;
+            public class C
+            {
+                [RequiresUnreferencedCode("message")]
+                public int M1() => 0;
+                public void M2(int x)
+                {
+                }
 
-			    [RequiresUnreferencedCode()]
-			    public void M3() => M2(M1());
-			}
-			""";
+                [RequiresUnreferencedCode()]
+                public void M3() => M2(M1());
+            }
+            """;
             await VerifyRequiresUnreferencedCodeCodeFix(
                 source: test,
                 fixedSource: fixtest,
                 baselineExpected: new[] {
-					// /0/Test0.cs(9,25): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 25, 9, 27).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(9,28): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 28, 9, 30).WithArguments("C.M1()", " message.", ""),
                 },
                 fixedExpected: new[] {
-					// /0/Test0.cs(10,3): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
-					DiagnosticResult.CompilerError("CS7036").WithSpan(10, 6, 10, 32).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
+                    // /0/Test0.cs(10,3): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
+                    DiagnosticResult.CompilerError("CS7036").WithSpan(10, 6, 10, 32).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
                 });
         }
 
@@ -103,81 +103,81 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public async Task SimpleDiagnosticFix()
         {
             var test = $$"""
-			using System.Diagnostics.CodeAnalysis;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-				int M2() => M1();
-			}
-			class D
-			{
-				public int M3(C c) => c.M1();
+                int M2() => M1();
+            }
+            class D
+            {
+                public int M3(C c) => c.M1();
 
-				public class E
-				{
-					public int M4(C c) => c.M1();
-				}
-			}
-			public class E
-			{
-				public class F
-				{
-					public int M5(C c) => c.M1();
-				}
-			}
-			""";
+                public class E
+                {
+                    public int M4(C c) => c.M1();
+                }
+            }
+            public class E
+            {
+                public class F
+                {
+                    public int M5(C c) => c.M1();
+                }
+            }
+            """;
 
             var fixtest = $$"""
-			using System.Diagnostics.CodeAnalysis;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-			    [RequiresUnreferencedCode("Calls C.M1()")]
-			    int M2() => M1();
-			}
-			class D
-			{
-			    [RequiresUnreferencedCode("Calls C.M1()")]
-			    public int M3(C c) => c.M1();
+                [RequiresUnreferencedCode("Calls C.M1()")]
+                int M2() => M1();
+            }
+            class D
+            {
+                [RequiresUnreferencedCode("Calls C.M1()")]
+                public int M3(C c) => c.M1();
 
-				public class E
-				{
-			        [RequiresUnreferencedCode("Calls C.M1()")]
-			        public int M4(C c) => c.M1();
-				}
-			}
-			public class E
-			{
-				public class F
-				{
-			        [RequiresUnreferencedCode()]
-			        public int M5(C c) => c.M1();
-				}
-			}
-			""";
+                public class E
+                {
+                    [RequiresUnreferencedCode("Calls C.M1()")]
+                    public int M4(C c) => c.M1();
+                }
+            }
+            public class E
+            {
+                public class F
+                {
+                    [RequiresUnreferencedCode()]
+                    public int M5(C c) => c.M1();
+                }
+            }
+            """;
 
             await VerifyRequiresUnreferencedCodeCodeFix(
                 source: test,
                 fixedSource: fixtest,
                 baselineExpected: new[] {
-					// /0/Test0.cs(8,14): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (8, 14, 8, 16).WithArguments ("C.M1()", " message.", ""),
-					// /0/Test0.cs(12,24): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan (12, 24, 12, 28).WithArguments("C.M1()", " message.", ""),
-					// /0/Test0.cs(16,25): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (16, 25, 16, 29).WithArguments ("C.M1()", " message.", ""),
-					// /0/Test0.cs(23,25): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (23, 25, 23, 29).WithArguments ("C.M1()", " message.", "")
+                    // /0/Test0.cs(8,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(8, 17, 8, 19).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(12,27): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 27, 12, 31).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(16,31): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(16, 31, 16, 35).WithArguments("C.M1()", " message.", ""),
+                    // /0/Test0.cs(23,28): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(23, 31, 23, 35).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: new[] {
-					// /0/Test0.cs(26,10): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
-					DiagnosticResult.CompilerError("CS7036").WithSpan(26, 10, 26, 36).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
+                    // /0/Test0.cs(26,10): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
+                    DiagnosticResult.CompilerError("CS7036").WithSpan(26, 10, 26, 36).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
                 });
         }
 
@@ -185,23 +185,23 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task FixInLambda()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-				Action M2()
-				{
-					return () => M1();
-				}
-			}
-			""";
+                Action M2()
+                {
+                    return () => M1();
+                }
+            }
+            """;
             var diag = new[] {
-				// /0/Test0.cs(11,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 16, 11, 18).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(11,22): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
             };
             // No fix available inside a lambda, requires manual code change since attribute cannot
             // be applied
@@ -212,45 +212,45 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task FixInLocalFunc()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-				Action M2()
-				{
-					void Wrapper () => M1();
-					return Wrapper;
-				}
-			}
-			""";
+                Action M2()
+                {
+                    void Wrapper() => M1();
+                    return Wrapper;
+                }
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-			    [RequiresUnreferencedCode("Calls Wrapper()")]
-			    Action M2()
-				{
-			        [RequiresUnreferencedCode("Calls C.M1()")] void Wrapper () => M1();
-					return Wrapper;
-				}
-			}
-			""";
+                [RequiresUnreferencedCode("Calls Wrapper()")]
+                Action M2()
+                {
+                    [RequiresUnreferencedCode("Calls C.M1()")] void Wrapper() => M1();
+                    return Wrapper;
+                }
+            }
+            """;
             // Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
             return VerifyRequiresUnreferencedCodeCodeFix(
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-					// /0/Test0.cs(11,22): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(11,27): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(11, 27, 11, 29).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>(),
                 // The default iterations for the codefix is the number of diagnostics (1 in this case)
@@ -263,41 +263,41 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task FixInCtor()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public static int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public static int M1() => 0;
 
-				public C() => M1();
-			}
-			""";
+                public C() => M1();
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public static int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public static int M1() => 0;
 
-			    [RequiresUnreferencedCode()]
-			    public C() => M1();
-			}
-			""";
+                [RequiresUnreferencedCode()]
+                public C() => M1();
+            }
+            """;
             // Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
             return VerifyRequiresUnreferencedCodeCodeFix(
                 source: src,
                 fixedSource: fix,
                 baselineExpected: new[] {
-					// /0/Test0.cs(9,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 16, 9, 18).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(9,19): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 19, 9, 21).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: new[] {
-					// /0/Test0.cs(9,3): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
-					DiagnosticResult.CompilerError ("CS7036").WithSpan (9, 6, 9, 32).WithArguments ("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)")
+                    // /0/Test0.cs(9,3): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
+                    DiagnosticResult.CompilerError("CS7036").WithSpan(9, 6, 9, 32).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)")
                 });
         }
 
@@ -305,20 +305,20 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task FixInPropertyDecl()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-				int M2 => M1();
-			}
-			""";
+                int M2 => M1();
+            }
+            """;
             var diag = new[] {
-				// /0/Test0.cs(10,15): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 12, 9, 14).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(9,15): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 15, 9, 17).WithArguments("C.M1()", " message.", "")
             };
             // Can't apply RUC on properties at the moment
             return VerifyRequiresUnreferencedCodeCodeFix(src, src, diag, diag);
@@ -328,47 +328,47 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task FixInPropertyAccessor()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-				public int field;
+                public int field;
 
-				private int M2 {
-					get { return M1(); }
-					set { field = M1(); }
-				}
-			}
-			""";
+                private int M2 {
+                    get { return M1(); }
+                    set { field = M1(); }
+                }
+            }
+            """;
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				public int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                public int M1() => 0;
 
-				public int field;
+                public int field;
 
-				private int M2 {
-			        [RequiresUnreferencedCode("Calls C.M1()")]
-			        get { return M1(); }
+                private int M2 {
+                    [RequiresUnreferencedCode("Calls C.M1()")]
+                    get { return M1(); }
 
-			        [RequiresUnreferencedCode("Calls C.M1()")]
-			        set { field = M1(); }
-				}
-			}
-			""";
+                    [RequiresUnreferencedCode("Calls C.M1()")]
+                    set { field = M1(); }
+                }
+            }
+            """;
             var diag = new[] {
-				// /0/Test0.cs(12,16): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 16, 12, 18).WithArguments("C.M1()", " message.", ""),
-				// /0/Test0.cs(13,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(13, 17, 13, 19).WithArguments("C.M1()", " message.", "")
+                // /0/Test0.cs(12,22): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 22, 12, 24).WithArguments("C.M1()", " message.", ""),
+                // /0/Test0.cs(13,23): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(13, 23, 13, 25).WithArguments("C.M1()", " message.", "")
             };
             return VerifyRequiresUnreferencedCodeCodeFix(src, fix, diag, Array.Empty<DiagnosticResult>());
         }
@@ -377,39 +377,39 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task FixInClass()
         {
             var src = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				static int M1() => 0;
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                static int M1() => 0;
 
-				static int Field = M1();
-			}
-			""";
+                static int Field = M1();
+            }
+            """;
 
             var fix = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			[RequiresUnreferencedCode()]
-			public class C
-			{
-				[RequiresUnreferencedCodeAttribute("message")]
-				static int M1() => 0;
+            [RequiresUnreferencedCode()]
+            public class C
+            {
+                [RequiresUnreferencedCodeAttribute("message")]
+                static int M1() => 0;
 
-				static int Field = M1();
-			}
-			""";
+                static int Field = M1();
+            }
+            """;
             return VerifyRequiresUnreferencedCodeCodeFix(src, fix,
                 baselineExpected: new[] {
-					// /0/Test0.cs(9,21): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 21, 9, 23).WithArguments("C.M1()", " message.", "")
+                    // /0/Test0.cs(9,24): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 24, 9, 26).WithArguments("C.M1()", " message.", "")
                 },
                 fixedExpected: new[] {
-					// /0/Test0.cs(4,2): error CS7036: There is no argument given that corresponds to the required parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
-					DiagnosticResult.CompilerError("CS7036").WithSpan(4, 2, 4, 28).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
+                    // /0/Test0.cs(4,2): error CS7036: There is no argument given that corresponds to the required parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
+                    DiagnosticResult.CompilerError("CS7036").WithSpan(4, 2, 4, 28).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
                     });
         }
 
@@ -417,50 +417,50 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task TestMakeGenericMethodUsage()
         {
             var source = $$"""
-			using System.Diagnostics.CodeAnalysis;
-			using System.Reflection;
+            using System.Diagnostics.CodeAnalysis;
+            using System.Reflection;
 
-			class C
-			{
-				static void M1 (MethodInfo methodInfo)
-				{
-					methodInfo.MakeGenericMethod (typeof (C));
-				}
+            class C
+            {
+                static void M1(MethodInfo methodInfo)
+                {
+                    methodInfo.MakeGenericMethod(typeof(C));
+                }
 
-				[RequiresUnreferencedCode ("Message from RUC")]
-				static void M2 (MethodInfo methodInfo)
-				{
-					methodInfo.MakeGenericMethod (typeof (C));
-				}
-			}
-			""";
+                [RequiresUnreferencedCode("Message from RUC")]
+                static void M2(MethodInfo methodInfo)
+                {
+                    methodInfo.MakeGenericMethod(typeof(C));
+                }
+            }
+            """;
 
             return VerifyRequiresUnreferencedCodeAnalyzer(source,
-                // (8,3): warning IL2060: Call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
-                VerifyCS.Diagnostic(DiagnosticId.MakeGenericMethod).WithSpan(8, 3, 8, 44).WithArguments("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])"));
+                // (8,9): warning IL2060: Call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
+                VerifyCS.Diagnostic(DiagnosticId.MakeGenericMethod).WithSpan(8, 9, 8, 48).WithArguments("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])"));
         }
 
         [Fact]
         public Task TestMakeGenericTypeUsage()
         {
             var source = $$"""
-			using System;
-			using System.Diagnostics.CodeAnalysis;
+            using System;
+            using System.Diagnostics.CodeAnalysis;
 
-			class C
-			{
-				static void M1 (Type t)
-				{
-					typeof (Nullable<>).MakeGenericType (typeof (C));
-				}
+            class C
+            {
+                static void M1(Type t)
+                {
+                    typeof(Nullable<>).MakeGenericType(typeof(C));
+                }
 
-				[RequiresUnreferencedCode ("Message from RUC")]
-				static void M2 (Type t)
-				{
-					typeof (Nullable<>).MakeGenericType (typeof (C));
-				}
-			}
-			""";
+                [RequiresUnreferencedCode("Message from RUC")]
+                static void M2(Type t)
+                {
+                    typeof(Nullable<>).MakeGenericType(typeof(C));
+                }
+            }
+            """;
 
             return VerifyRequiresUnreferencedCodeAnalyzer(source);
         }
@@ -469,14 +469,14 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task VerifyThatAnalysisOfFieldsDoesNotNullRef()
         {
             var source = $$"""
-			using System.Diagnostics.CodeAnalysis;
+            using System.Diagnostics.CodeAnalysis;
 
-			[DynamicallyAccessedMembers (field)]
-			class C
-			{
-				public const DynamicallyAccessedMemberTypes field = DynamicallyAccessedMemberTypes.PublicMethods;
-			}
-			""";
+            [DynamicallyAccessedMembers(field)]
+            class C
+            {
+                public const DynamicallyAccessedMemberTypes field = DynamicallyAccessedMemberTypes.PublicMethods;
+            }
+            """;
 
             return VerifyRequiresUnreferencedCodeAnalyzer(source);
         }
@@ -485,14 +485,14 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         public Task TestPropertyAssignmentInAssemblyAttribute()
         {
             var source = $$"""
-			using System;
-			[assembly: MyAttribute (Value = 5)]
+            using System;
+            [assembly: MyAttribute(Value = 5)]
 
-			class MyAttribute : Attribute
-			{
-				public int Value { get; set; }
-			}
-			""";
+            class MyAttribute : Attribute
+            {
+                public int Value { get; set; }
+            }
+            """;
             return VerifyRequiresUnreferencedCodeAnalyzer(source);
         }
     }
