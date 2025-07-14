@@ -1775,6 +1775,15 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.EventWaitHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Mutex.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Semaphore.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Timer.cs">
       <Link>Interop\Windows\Kernel32\Interop.Timer.cs</Link>
     </Compile>
@@ -2233,6 +2242,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.OverlappedValueTaskSource.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Windows.cs" />
@@ -2271,10 +2281,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Windows.cs" />
@@ -2299,15 +2311,11 @@
   </ItemGroup>
   <!-- CoreCLR uses PAL layer that emulates Windows API on Unix. This is bridge for that PAL layer. See issue dotnet/runtime/#31721. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.Constants.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.EventWaitHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs</Link>
@@ -2321,12 +2329,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Mutex.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Semaphore.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs</Link>
     </Compile>
@@ -2337,8 +2339,6 @@
       <Link>Common\System\Memory\FixedBufferExtensions.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
@@ -2846,7 +2846,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and ('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Unix.cs" />
@@ -2857,7 +2857,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsUnix)' == 'true' and '$(FeatureCrossProcessMutex)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(FeatureCrossProcessMutex)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\SharedMemoryManager.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NamedMutex.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelCrossProcessMutex.cs">

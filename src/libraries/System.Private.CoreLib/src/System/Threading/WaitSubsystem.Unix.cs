@@ -44,9 +44,6 @@ namespace System.Threading
     /// ## Design goals
     ///
     /// Behave similarly to wait operations on Windows
-    ///   - The design is similar to the one used by CoreCLR's PAL, but much simpler due to there being no need for supporting
-    ///     process/thread waits, or cross-process multi-waits (which CoreCLR also does not support but there are many design
-    ///     elements specific to it)
     ///   - Waiting
     ///     - A waiter keeps an array of objects on which it is waiting (see <see cref="ThreadWaitInfo._waitedObjects"/>).
     ///     - The waiter registers a <see cref="ThreadWaitInfo.WaitedListNode"/> with each <see cref="WaitableObject"/>

@@ -238,7 +238,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
@@ -291,7 +290,6 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.PlatformNotSupported.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.CoreCLR.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
@@ -301,6 +299,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantChangeTypeEx.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantChangeTypeEx.cs</Link>
     </Compile>
+    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.CoreCLR.cs" />
