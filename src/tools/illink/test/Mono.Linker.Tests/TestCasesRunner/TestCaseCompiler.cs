@@ -252,7 +252,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if NET
             return CompileCSharpAssemblyWithRoslyn(options);
 #else
-            return CompileCSharpAssemblyWithCsc (options);
+            return CompileCSharpAssemblyWithCsc(options);
 #endif
         }
 

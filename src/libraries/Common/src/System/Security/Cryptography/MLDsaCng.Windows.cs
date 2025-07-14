@@ -266,6 +266,14 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        /// <inheritdoc/>
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
         [SupportedOSPlatform("windows")]
         internal static MLDsaCng ImportPkcs8PrivateKey(byte[] source, out int bytesRead)
         {
