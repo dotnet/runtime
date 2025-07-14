@@ -17370,9 +17370,9 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
             if (m_compiler->gtNodeHasSideEffects(node, m_flags))
             {
-                if (node->OperIsBlk() && !node->OperIsStoreBlk())
+                if (node->OperIs(GT_ARR_LENGTH) || (node->OperIsBlk() && !node->OperIsStoreBlk()))
                 {
-                    JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                    JITDUMP("Replace an unused node [%06d] with a NULLCHECK\n", dspTreeID(node));
                     m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
                 }
 

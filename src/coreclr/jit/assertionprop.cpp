@@ -3045,7 +3045,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
 
         // Were able to optimize.
         conValTree->gtVNPair = vnPair;
-        return gtWrapWithSideEffects(conValTree, tree, GTF_SIDE_EFFECT, true);
+        return gtWrapWithSideEffects(conValTree, tree, GTF_SIDE_EFFECT);
     }
     else
     {
@@ -5486,14 +5486,6 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
                 assert((stmt->GetRootNode() == tree) && (stmt->GetRootNodePointer() == useEdge));
                 stmt->SetRootNode(newTree);
             }
-
-            // We only need to ensure that the gtNext field is set as it is used to traverse
-            // to the next node in the tree. We will re-morph this entire statement in
-            // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
-            newTree->gtNext = tree->gtNext;
-
-            // Old tree should not be referenced anymore.
-            DEBUG_DESTROY_NODE(tree);
         }
     }
 

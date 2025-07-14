@@ -1716,8 +1716,8 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             if (switchTree->gtFlags & GTF_SIDE_EFFECT)
             {
                 /* Extract the side effects from the conditional */
+                compCurBB            = block;
                 GenTree* sideEffList = nullptr;
-
                 gtExtractSideEffList(switchTree, &sideEffList);
 
                 if (sideEffList == nullptr)
@@ -2414,13 +2414,12 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
         if (cond->gtFlags & GTF_SIDE_EFFECT)
         {
             /* Extract the side effects from the conditional */
+            compCurBB            = block;
             GenTree* sideEffList = nullptr;
-
             gtExtractSideEffList(cond, &sideEffList);
 
             if (sideEffList == nullptr)
             {
-                compCurBB = block;
                 fgRemoveStmt(block, condStmt);
             }
             else
@@ -2444,8 +2443,6 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
                 if (fgNodeThreading == NodeThreading::AllTrees)
                 {
-                    compCurBB = block;
-
                     /* Update ordering, costs, FP levels, etc. */
                     gtSetStmtInfo(condStmt);
 
@@ -2456,7 +2453,6 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
         }
         else
         {
-            compCurBB = block;
             /* conditional has NO side effect - remove it */
             fgRemoveStmt(block, condStmt);
         }
