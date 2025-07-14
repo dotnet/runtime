@@ -550,9 +550,10 @@ public:
     // Is this patch at a position at which it's safe to take a stack?
     bool IsSafeForStackTrace();
 
+#ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // gets a pointer to the shared buffer
-    SharedPatchBypassBuffer* CreateSharedPatchBypassBuffer();
+    SharedPatchBypassBuffer* CreateSharedPatchBypassBuffer(DebuggerControllerPatch *patch, InstructionAttribute *pInstrAttrib);
     SharedPatchBypassBuffer* GetSharedPatchBypassBuffer()
     {
         SharedPatchBypassBuffer *pRet = m_pSharedPatchBypassBuffer;
@@ -563,6 +564,8 @@ public:
         }
         return pRet;
     }
+
+    void CopyInstructionBlock(BYTE *to, const BYTE* from);
 
     // entry point for general initialization when the controller is being created
     void Initialize()
@@ -577,6 +580,7 @@ public:
             m_pSharedPatchBypassBuffer->Release();
     }
 #endif // !FEATURE_EMULATE_SINGLESTEP
+#endif // !DACCESS_COMPILE
 
     void LogInstance()
     {
@@ -1524,8 +1528,6 @@ class DebuggerPatchSkip : public DebuggerController
 
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
         { return DEBUGGER_CONTROLLER_PATCH_SKIP; }
-
-    void CopyInstructionBlock(BYTE *to, const BYTE* from);
 
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
 
