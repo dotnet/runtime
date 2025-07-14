@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
         // Returns a CNG hash algorithm identifier for an OID.
         // restrictedHashAlgorithmCombination is true if the hash algorithm is known, but Windows does not permit
         // it to be used with the ML-DSA algorithm.
-        // Trial an error show
+        // Trial and error shows
         // * ML-DSA-44 works with all SHA-2, SHA-3, SHAKE128 and SHAKE256 hash algorithms.
         // * ML-DSA-65 works with SHA-2-384, SHA-2-512, SHA-3-384, SHA-3-512, and SHAKE256.
         // * ML-DSA-87 works with SHA-2-512, SHA-3-512, and SHAKE256.
