@@ -181,7 +181,6 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer(
 
     // CopyInstructionBlock copies all the code bytes except the breakpoint byte(s).
     _ASSERTE( patch->IsBound() );
-    _ASSERTE(DebuggerController::HasLock());
     CopyInstructionBlock(patchBypassRW, (const BYTE *)patch->address);
 
     // Technically, we could create a patch skipper for an inactive patch, but we rely on the opcode being
@@ -4669,6 +4668,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     // Create the shared instruction block. this will also create the shared RIP-relative buffer
     //
 
+    _ASSERTE(DebuggerController::HasLock());
     m_pSharedPatchBypassBuffer = patch->GetSharedPatchBypassBuffer();
 
     if (m_pSharedPatchBypassBuffer == NULL)
