@@ -464,8 +464,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var tfm = PathUtilities.TargetFrameworkMoniker;
             var tfmDisplayName = PathUtilities.TargetFrameworkMonikerDisplayName;
             return $"""
-				[assembly: System.Runtime.Versioning.TargetFramework("{tfm}", FrameworkDisplayName = "{tfmDisplayName}")]
-				""";
+                [assembly: System.Runtime.Versioning.TargetFramework("{tfm}", FrameworkDisplayName = "{tfmDisplayName}")]
+                """;
         }
     }
 }

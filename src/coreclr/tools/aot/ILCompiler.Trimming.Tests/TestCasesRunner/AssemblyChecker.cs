@@ -51,22 +51,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         // Note: It's enough to exclude the type name, all of its members will also be excluded then
         private static readonly HashSet<string> ExcludeDisplayNames = new() {
-				// Ignore compiler injected attributes to describe language version
-				"Microsoft.CodeAnalysis.EmbeddedAttribute",
-                "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+            // Ignore compiler injected attributes to describe language version
+            "Microsoft.CodeAnalysis.EmbeddedAttribute",
+            "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
 
-				// Ignore NativeAOT injected members
-				"<Module>.StartupCodeMain(Int32,IntPtr)",
-                "<Module>.MainMethodWrapper()",
-                "<Module>.MainMethodWrapper(String[])",
-                "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.__GetFieldHelper(Int32,MethodTable*&)",
-                "System.Runtime.InteropServices.TypeMapping",
-                "System.Runtime.InteropServices.TypeMapping.GetOrCreateExternalTypeMapping<TTypeMapGroup>()",
-                "System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping<TTypeMapGroup>()",
+            // Ignore NativeAOT injected members
+            "<Module>.StartupCodeMain(Int32,IntPtr)",
+            "<Module>.MainMethodWrapper()",
+            "<Module>.MainMethodWrapper(String[])",
+            "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.__GetFieldHelper(Int32,MethodTable*&)",
+            "System.Runtime.InteropServices.TypeMapping",
+            "System.Runtime.InteropServices.TypeMapping.GetOrCreateExternalTypeMapping<TTypeMapGroup>()",
+            "System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping<TTypeMapGroup>()",
 
-				// Ignore compiler generated code which can't be reasonably matched to the source method
-				"<PrivateImplementationDetails>",
-            };
+            // Ignore compiler generated code which can't be reasonably matched to the source method
+            "<PrivateImplementationDetails>",
+        };
 
         public AssemblyChecker(
             BaseAssemblyResolver originalsResolver,
