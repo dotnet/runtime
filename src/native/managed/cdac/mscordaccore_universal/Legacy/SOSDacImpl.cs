@@ -117,7 +117,34 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainName(addr, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainStoreData(data) : HResults.E_NOTIMPL;
+    {
+        DacpAppDomainStoreData* appDomainStoreData = (DacpAppDomainStoreData*)data;
+        try
+        {
+            appDomainStoreData->sharedDomain = 0;
+            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+            appDomainStoreData->systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
+            appDomainStoreData->DomainCount = (ulong)(_target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain)) != 0 ? 1 : 0);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+#if DEBUG
+        {
+            if (_legacyImpl is not null)
+            {
+                DacpAppDomainStoreData legacyData = default;
+                int hrLocal = _legacyImpl.GetAppDomainStoreData(&legacyData);
+                Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
+                Debug.Assert(appDomainStoreData->sharedDomain == legacyData.sharedDomain, $"cDAC: {appDomainStoreData->sharedDomain:x}, DAC: {legacyData.sharedDomain:x}");
+                Debug.Assert(appDomainStoreData->systemDomain == legacyData.systemDomain, $"cDAC: {appDomainStoreData->systemDomain:x}, DAC: {legacyData.systemDomain:x}");
+                Debug.Assert(appDomainStoreData->DomainCount == legacyData.DomainCount, $"cDAC: {appDomainStoreData->DomainCount}, DAC: {legacyData.DomainCount}");
+            }
+        }
+#endif
+        return HResults.S_OK;
+    }
     int ISOSDacInterface.GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded)
     {
         // Method is not supported on CoreCLR
