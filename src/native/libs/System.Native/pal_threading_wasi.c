@@ -3,7 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_threading.h"
-#include <pal_errno.h>
+#include "pal_errno.h"
 
 #include <stdio.h>
 #include <limits.h>
@@ -96,30 +96,57 @@ uint32_t SystemNative_TryGetUInt32OSThreadId(void)
     return (uint32_t)-1;
 }
 
-int32_t SystemNative_PThreadMutex_Init(void* mutex)
+struct LowLevelCrossProcessMutex
 {
-    return 0;
+    bool Dummy;
+};
+
+int32_t SystemNative_LowLevelCrossPlatformMutex_Size(void)
+{
+    return (int32_t)sizeof(LowLevelCrossProcessMutex);
 }
 
-int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds)
+int32_t SystemNative_LowLevelCrossPlatformMutex_Init(LowLevelCrossProcessMutex* mutex)
 {
-    assert(mutex != NULL);
+    assert(false);
     return Error_EINVAL;
 }
 
-int32_t SystemNative_PThreadMutex_Release(void* mutex)
+int32_t SystemNative_LowLevelCrossPlatformMutex_Acquire(LowLevelCrossProcessMutex* mutex, int32_t timeoutMilliseconds)
 {
-    assert(mutex != NULL);
+    assert(false);
     return Error_EINVAL;
 }
 
-int32_t SystemNative_PThreadMutex_Destroy(void* mutex)
+int32_t SystemNative_LowLevelCrossPlatformMutex_Release(LowLevelCrossProcessMutex* mutex)
 {
-    assert(mutex != NULL);
+    assert(false);
     return Error_EINVAL;
 }
 
-int32_t SystemNative_PThreadMutex_Size(void)
+int32_t SystemNative_LowLevelCrossPlatformMutex_Destroy(LowLevelCrossProcessMutex* mutex)
 {
-    return 0;
+    assert(false);
+    return Error_EINVAL;
+}
+
+void SystemNative_LowLevelCrossPlatformMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint32_t* pOwnerThreadId)
+{
+    assert(false);
+}
+
+void SystemNative_LowLevelCrossPlatformMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint32_t ownerThreadId)
+{
+    assert(false);
+}
+
+uint8_t SystemNative_LowLevelCrossPlatformMutex_IsAbandoned(LowLevelCrossProcessMutex* mutex)
+{
+    assert(false);
+    return Error_EINVAL;
+}
+
+void SystemNative_LowLevelCrossPlatformMutex_SetAbandoned(LowLevelCrossProcessMutex* mutex, uint8_t isAbandoned)
+{
+    assert(false);
 }
