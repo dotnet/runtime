@@ -18,7 +18,7 @@ bool Compiler::optDoEarlyPropForFunc()
 {
     // TODO-MDArray: bool propMDArrayLen = (optMethodFlags & OMF_HAS_MDNEWARRAY) && (optMethodFlags &
     // OMF_HAS_MDARRAYREF);
-    bool propArrayLen  = (optMethodFlags & OMF_HAS_ARRAYREF);
+    bool propArrayLen  = (optMethodFlags & OMF_HAS_ARRAYREF) != 0;
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
     return propArrayLen || propNullCheck;
 }
