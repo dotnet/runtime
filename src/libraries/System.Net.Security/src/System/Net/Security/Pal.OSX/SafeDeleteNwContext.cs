@@ -96,15 +96,14 @@ namespace System.Net.Security
         public SafeDeleteNwContext(SslStream stream) : base(IntPtr.Zero)
         {
             _sslStream = stream;
-            ConnectionHandle = Interop.NetworkFramework.Tls.CreateContext(SslAuthenticationOptions.IsServer);
+            ValidateSslAuthenticationOptions(SslAuthenticationOptions);
+            _thisHandle = GCHandle.Alloc(this, GCHandleType.Normal);
+            ConnectionHandle = CreateConnectionHandle(SslAuthenticationOptions, _thisHandle);
+
             if (ConnectionHandle.IsInvalid)
             {
                 throw new Exception("Failed to create Network Framework connection"); // TODO: Make this string resource
             }
-
-            ValidateSslAuthenticationOptions(SslAuthenticationOptions);
-            _thisHandle = GCHandle.Alloc(this, GCHandleType.Normal);
-            SetTlsOptions(SslAuthenticationOptions);
         }
 
         public static bool IsNetworkFrameworkAvailable => IsSwitchEnabled && s_isNetworkFrameworkAvailable.Value;
@@ -113,7 +112,7 @@ namespace System.Net.Security
 
         internal async Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
-            Interop.NetworkFramework.Tls.StartTlsHandshake(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle));
+            Interop.NetworkFramework.Tls.NwConnectionStart(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle));
 
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
             {
@@ -146,7 +145,7 @@ namespace System.Net.Security
                                 _transportReadTcs.TrySetResult(final: true);
 
                                 // TODO: can this race with actual handshake completion?
-                                Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
+                                Interop.NetworkFramework.Tls.NwConnectionCancel(ConnectionHandle);
                                 break;
                             }
                         }
@@ -193,7 +192,7 @@ namespace System.Net.Security
             using MemoryHandle memoryHandle = buffer.Pin();
             unsafe
             {
-                Interop.NetworkFramework.Tls.SendToConnection(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
             }
             try
             {
@@ -307,7 +306,7 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
             unsafe
             {
-                Interop.NetworkFramework.Tls.ReadFromConnection(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.NwConnectionReceive(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
             }
 
             return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
@@ -357,7 +356,7 @@ namespace System.Net.Security
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Shutting down Network Framework context");
             _shutdownCts.Cancel();
-            Interop.NetworkFramework.Tls.CancelConnection(ConnectionHandle);
+            Interop.NetworkFramework.Tls.NwConnectionCancel(ConnectionHandle);
         }
 
         private static bool CheckNetworkFrameworkAvailability()
@@ -394,9 +393,116 @@ namespace System.Net.Security
             }
         }
 
-        private void SetTlsOptions(SslAuthenticationOptions options)
+        private static SafeNwHandle CreateConnectionHandle(SslAuthenticationOptions options, GCHandle thisHandle)
         {
-            Interop.NetworkFramework.Tls.SetTlsOptions(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), options);
+            int alpnLength = GetAlpnProtocolListSerializedLength(options.ApplicationProtocols);
+
+            SslProtocols minProtocol = SslProtocols.None;
+            SslProtocols maxProtocol = SslProtocols.None;
+
+            if (options.EnabledSslProtocols != SslProtocols.None)
+            {
+                (minProtocol, maxProtocol) = GetMinMaxProtocols(options.EnabledSslProtocols);
+            }
+
+            byte[]? alpnBuffer = null;
+            try
+            {
+                const int StackAllocThreshold = 256;
+                Span<byte> alpn = alpnLength == 0
+                    ? Span<byte>.Empty
+                    : alpnLength <= StackAllocThreshold
+                        ? stackalloc byte[StackAllocThreshold]
+                        : (alpnBuffer = ArrayPool<byte>.Shared.Rent(alpnLength));
+
+                if (alpnLength > 0)
+                {
+                    SerializeAlpnProtocolList(options.ApplicationProtocols!, alpn.Slice(0, alpnLength));
+                }
+
+                Span<uint> ciphers = options.CipherSuitesPolicy is null
+                   ? Span<uint>.Empty
+                   : options.CipherSuitesPolicy.Pal.TlsCipherSuites;
+
+                string idnHost = TargetHostNameHelper.NormalizeHostName(options.TargetHost);
+
+                unsafe
+                {
+                    fixed (byte* alpnPtr = alpn)
+                    fixed (uint* ciphersPtr = ciphers)
+                    {
+                        return Interop.NetworkFramework.Tls.NwConnectionCreate(options.IsServer, GCHandle.ToIntPtr(thisHandle), idnHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length);
+                    }
+                }
+            }
+            finally
+            {
+                if (alpnBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(alpnBuffer);
+                }
+            }
+
+            //
+            // Native API accepts only a single ALPN protocol at a time
+            // (null-terminated string). We serialize all used app protocols
+            // into a single buffer in the format <len><protocol><0>
+            //
+
+            static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
+            {
+                if (applicationProtocols is null)
+                {
+                    return 0;
+                }
+
+                int protocolSize = 0;
+
+                foreach (SslApplicationProtocol protocol in applicationProtocols)
+                {
+                    protocolSize += protocol.Protocol.Length + 2;
+                }
+
+                return protocolSize;
+            }
+
+            static void SerializeAlpnProtocolList(List<SslApplicationProtocol> applicationProtocols, Span<byte> buffer)
+            {
+                Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length);
+
+                int offset = 0;
+
+                foreach (SslApplicationProtocol protocol in applicationProtocols)
+                {
+                    buffer[offset] = (byte)protocol.Protocol.Length; // preffix len
+                    protocol.Protocol.Span.CopyTo(buffer.Slice(offset + 1)); // ALPN
+                    buffer[offset + protocol.Protocol.Length + 1] = 0; // null-terminator
+
+                    offset += protocol.Protocol.Length + 2;
+                }
+            }
+
+            static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols)
+            {
+                ReadOnlySpan<SslProtocols> orderedProtocols = [
+#pragma warning disable 0618
+                    SslProtocols.Ssl2,
+                    SslProtocols.Ssl3,
+#pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    SslProtocols.Tls,
+                    SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
+                    SslProtocols.Tls12,
+                    SslProtocols.Tls13
+                ];
+
+                (int minIndex, int maxIndex) = protocols.ValidateContiguous(orderedProtocols);
+                SslProtocols minProtocolId = orderedProtocols[minIndex];
+                SslProtocols maxProtocolId = orderedProtocols[maxIndex];
+
+                return (minProtocolId, maxProtocolId);
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -472,18 +578,15 @@ namespace System.Net.Security
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int WriteOutboundWireData(IntPtr thisHandle, byte* data, void** dataLength)
+        private static unsafe void WriteOutboundWireData(IntPtr thisHandle, byte* data, ulong dataLength)
         {
             SafeDeleteNwContext? nwContext = null;
             try
             {
                 nwContext = ResolveThisHandle(thisHandle);
-                ulong length = (ulong)*dataLength;
-                Debug.Assert(length <= int.MaxValue);
+                Debug.Assert(dataLength <= int.MaxValue);
 
-                nwContext.WriteOutboundWireData(new ReadOnlySpan<byte>(data, (int)length));
-
-                return (int)NwOSStatus.NoErr;
+                nwContext.WriteOutboundWireData(new ReadOnlySpan<byte>(data, (int)dataLength));
             }
             catch (Exception e)
             {
@@ -499,8 +602,6 @@ namespace System.Net.Security
                     nwContext?._currentWriteCompletionSource = null;
                     writeCompletion.TrySetException(e);
                 }
-
-                return (int)NwOSStatus.WritErr;
             }
             finally
             {
@@ -565,7 +666,7 @@ namespace System.Net.Security
 
                 unsafe
                 {
-                    Interop.NetworkFramework.Tls.ProcessInputData(ConnectionHandle, _framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
+                    Interop.NetworkFramework.Tls.NwFramerDeliverInput(_framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
                 }
 
                 await valueTask.ConfigureAwait(false);
