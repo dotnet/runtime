@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
-#include <pal_errno.h>
+#include "pal_errno.h"
 #include "pal_threading.h"
 
 #include <limits.h>
@@ -341,6 +341,7 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
     return pthread_mutex_timedlock((pthread_mutex_t*)mutex, &timeoutTimeSpec);
 #endif
 }
+
 struct LowLevelCrossProcessMutex
 {
     pthread_mutex_t Mutex;
