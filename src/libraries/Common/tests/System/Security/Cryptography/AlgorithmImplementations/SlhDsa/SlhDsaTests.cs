@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
 
@@ -48,50 +49,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] msg = vector.Message;
             byte[] ctx = vector.Context;
             byte[] sig = vector.Signature;
-            byte[] hash;
-
-#if NET
-            if (vector.HashAlgorithm == SlhDsaTestHelpers.Shake128Oid)
-            {
-                using (Shake128 hasher = new Shake128())
-                {
-                    hasher.AppendData(msg);
-                    hash = hasher.GetHashAndReset(256 / 8);
-                }
-            }
-            else if (vector.HashAlgorithm == SlhDsaTestHelpers.Shake256Oid)
-            {
-                using (Shake256 hasher = new Shake256())
-                {
-                    hasher.AppendData(msg);
-                    hash = hasher.GetHashAndReset(512 / 8);
-                }
-            }
-            else
-#endif
-            {
-                HashAlgorithmName hashAlgorithmName =
-                    vector.HashAlgorithm switch
-                    {
-                        SlhDsaTestHelpers.Md5Oid => HashAlgorithmName.MD5,
-                        SlhDsaTestHelpers.Sha1Oid => HashAlgorithmName.SHA1,
-                        SlhDsaTestHelpers.Sha256Oid => HashAlgorithmName.SHA256,
-                        SlhDsaTestHelpers.Sha384Oid => HashAlgorithmName.SHA384,
-                        SlhDsaTestHelpers.Sha512Oid => HashAlgorithmName.SHA512,
-#if NET
-                        SlhDsaTestHelpers.Sha3_256Oid => HashAlgorithmName.SHA3_256,
-                        SlhDsaTestHelpers.Sha3_384Oid => HashAlgorithmName.SHA3_384,
-                        SlhDsaTestHelpers.Sha3_512Oid => HashAlgorithmName.SHA3_512,
-#endif
-                        _ => throw new XunitException($"Unknown hash algorithm OID: {vector.HashAlgorithm}"),
-                    };
-
-                using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
-                {
-                    hasher.AppendData(msg);
-                    hash = hasher.GetHashAndReset();
-                }
-            }
+            byte[] hash = HashInfo.HashData(vector.HashAlgorithm, msg);
 
             // Test signature verification with public key
             using SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey);
@@ -226,8 +184,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void GenerateSignPreHashExportPublicVerifyWithPublicOnly(SlhDsaAlgorithm algorithm)
         {
             byte[] publicKey;
-            string shake256Oid = SlhDsaTestHelpers.Shake256Oid;
-            byte[] data = new byte[512 / 8];
+            string shake256Oid = HashInfo.Shake256.Oid;
+            byte[] data = new byte[HashInfo.Shake256.OutputSize];
             byte[] signature;
 
             using (SlhDsa slhDsa = GenerateKey(algorithm))
@@ -249,8 +207,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void GenerateExportSecretKeySignPreHashAndVerify(SlhDsaAlgorithm algorithm)
         {
             byte[] secretKey;
-            string shake256Oid = SlhDsaTestHelpers.Shake256Oid;
-            byte[] data = new byte[512 / 8];
+            string shake256Oid = HashInfo.Shake256.Oid;
+            byte[] data = new byte[HashInfo.Shake256.OutputSize];
             byte[] signature;
 
             using (SlhDsa slhDsa = GenerateKey(algorithm))

@@ -498,7 +498,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // LValueFlowCaptureProvider doesn't take into account IsInitialization = true,
                 // so it doesn't properly detect this as an l-value capture.
                 // Context: https://github.com/dotnet/roslyn/issues/60757
-                // Debug.Assert (IsLValueFlowCapture (operation.Id));
+                // Debug.Assert(IsLValueFlowCapture(operation.Id));
                 Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Write),
                     $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
@@ -513,7 +513,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // where the variable is declared before being passed as an out param, for example:
 
                 // string s;
-                // Method (out s, b ? 0 : 1);
+                // Method(out s, b ? 0 : 1);
 
                 // The second argument is necessary to create multiple branches so that the compiler
                 // turns both arguments into flow capture references, instead of just passing a local
@@ -522,8 +522,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // This can also happen for a deconstruction assignments, where the write is not to a byref.
                 // Once the analyzer implements support for deconstruction assignments (https://github.com/dotnet/linker/issues/3158),
                 // we can try enabling this assert to ensure that this case is only hit for byrefs.
-                // Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
-                //     $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+                // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
+                //     $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 return TopValue;
             }
 
@@ -644,8 +644,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // Property references may be passed as ref/out parameters.
                 // Enable this assert once we have support for deconstruction assignments.
                 // https://github.com/dotnet/linker/issues/3158
-                // Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
-                // $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+                // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
+                //   $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 return TopValue;
             }
 

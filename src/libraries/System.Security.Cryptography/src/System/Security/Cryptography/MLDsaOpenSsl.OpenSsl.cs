@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -75,6 +76,30 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.Crypto.MLDsaVerifyPure(_key, data, context, signature);
+
+        /// <inheritdoc />
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            Helpers.MLDsaPreHash(
+                hash,
+                context,
+                hashAlgorithmOid,
+                _key,
+                destination,
+                static (key, encodedMessage, destination) =>
+                {
+                    Interop.Crypto.MLDsaSignPreEncoded(key, encodedMessage, destination);
+                    return true;
+                });
+
+        /// <inheritdoc />
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            Helpers.MLDsaPreHash(
+                hash,
+                context,
+                hashAlgorithmOid,
+                _key,
+                signature,
+                static (key, encodedMessage, signature) => Interop.Crypto.MLDsaVerifyPreEncoded(key, encodedMessage, signature));
 
         /// <inheritdoc />
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
