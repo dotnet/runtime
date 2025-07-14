@@ -198,9 +198,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         IEnumerable<string> VerifyKeptByAttribute(string keptAttributeProviderName, CustomAttribute attribute)
         {
-            // public KeptByAttribute (string dependencyProvider, string reason) { }
-            // public KeptByAttribute (Type dependencyProvider, string reason) { }
-            // public KeptByAttribute (Type dependencyProvider, string memberName, string reason) { }
+            // public KeptByAttribute(string dependencyProvider, string reason) { }
+            // public KeptByAttribute(Type dependencyProvider, string reason) { }
+            // public KeptByAttribute(Type dependencyProvider, string memberName, string reason) { }
 
             Assert.AreEqual(nameof(KeptByAttribute), attribute.AttributeType.Name);
 
@@ -210,8 +210,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
             expectedDependency.Marked = true;
             if (attribute.ConstructorArguments.Count == 2)
             {
-                // public KeptByAttribute (string dependencyProvider, string reason) { }
-                // public KeptByAttribute (Type dependencyProvider, string reason) { }
+                // public KeptByAttribute(string dependencyProvider, string reason) { }
+                // public KeptByAttribute(Type dependencyProvider, string reason) { }
                 if (attribute.ConstructorArguments[0].Type.IsTypeOf<string>())
                     expectedDependency.Source = (string)attribute.ConstructorArguments[0].Value;
                 else if (attribute.ConstructorArguments[0].Type.IsTypeOf<Type>())
@@ -223,7 +223,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
             else if (attribute.ConstructorArguments.Count == 3)
             {
-                // public KeptByAttribute (Type dependencyProvider, string memberName, string reason) { }
+                // public KeptByAttribute(Type dependencyProvider, string memberName, string reason) { }
                 if (!attribute.ConstructorArguments[0].Type.IsTypeOf<Type>())
                     throw new NotImplementedException("Unexpected KeptByAttribute ctor variant");
                 var type = (TypeDefinition)attribute.ConstructorArguments[0].Value;
@@ -850,14 +850,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 .ToHashSet();
 
             /*
-			 - The test case will always need to have at least 1 reference.
-			 - Forcing all tests to define their expected references seems tedious
+             - The test case will always need to have at least 1 reference.
+             - Forcing all tests to define their expected references seems tedious
 
-			 Given the above, let's assume that when no [KeptReference] attributes are present,
-			 the test case does not want to make any assertions regarding references.
+             Given the above, let's assume that when no [KeptReference] attributes are present,
+             the test case does not want to make any assertions regarding references.
 
-			 Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
-			*/
+             Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
+            */
             if (expected.Count == 0)
                 yield break;
 

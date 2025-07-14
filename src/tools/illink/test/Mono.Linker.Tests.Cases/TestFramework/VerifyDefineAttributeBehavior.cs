@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.TestFramework
         static void Main()
         {
 #if SOME_DEFINE
-			MethodThatIsUsedIfDefineIsWorkingProperly ();
+            MethodThatIsUsedIfDefineIsWorkingProperly();
 #endif
         }
 
