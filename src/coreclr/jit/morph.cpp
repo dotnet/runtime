@@ -359,6 +359,22 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             }
         }
     }
+
+    // If we have a double->float cast, and the double node is itself a cast,
+    // look through it and see if we can cast directly to float. This is valid
+    // only if the cast to double would have been lossless.
+    //
+    // This pattern most often appears as CAST(float <- CAST(double <- float)),
+    // which is reduced to CAST(float <- float) and handled in codegen as an optional mov.
+    else if ((srcType == TYP_DOUBLE) && (dstType == TYP_FLOAT) && oper->OperIs(GT_CAST) &&
+             !varTypeIsLong(oper->AsCast()->CastOp()))
+    {
+        oper->gtType       = TYP_FLOAT;
+        oper->CastToType() = TYP_FLOAT;
+
+        return fgMorphTree(oper);
+    }
+
 #ifndef TARGET_64BIT
     // The code generation phase (for x86 & ARM32) does not handle casts
     // directly from [u]long to anything other than [u]int. Insert an
@@ -371,36 +387,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         tree->AsCast()->CastOp() = oper;
     }
 #endif //! TARGET_64BIT
-
-#if defined(TARGET_ARMARCH) || defined(TARGET_XARCH)
-    // Because there is no IL instruction conv.r4.un, uint/ulong -> float
-    // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
-    // We can usually eliminate the redundant intermediate cast as an optimization.
-    //
-    // AArch and xarch+EVEX have instructions that can cast directly from
-    // all integers (except for longs on ARM32) to floats.
-    // On x64, we also have the option of widening uint -> long and
-    // using the signed conversion instructions, and ulong -> float/double
-    // is handled directly in codegen, so we can allow all casts.
-    //
-    // This logic will also catch CAST(float <- CAST(double <- float))
-    // and reduce it to CAST(float <- float), which is handled in codegen as
-    // an optional mov.
-    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
-#ifndef TARGET_64BIT
-             && !varTypeIsLong(oper->AsCast()->CastOp())
-#endif // !TARGET_64BIT
-#ifdef TARGET_X86
-             && canUseEvexEncoding()
-#endif // TARGET_X86
-    )
-    {
-        oper->gtType       = TYP_FLOAT;
-        oper->CastToType() = TYP_FLOAT;
-
-        return fgMorphTree(oper);
-    }
-#endif // TARGET_ARMARCH || TARGET_XARCH
 
 #ifdef TARGET_ARM
     // converts long/ulong --> float/double casts into helper calls.
@@ -3043,7 +3029,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         }
 #endif // TARGET_64BIT
 
-        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)indexAddr->gtLenOffset, compCurBB);
+        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)indexAddr->gtLenOffset);
 
         if (bndsChkType != TYP_INT)
         {
@@ -3757,7 +3743,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         }
 
         GenTree* lclVar  = gtNewLclvNode(lclNum, objRefType);
-        GenTree* nullchk = gtNewNullCheck(lclVar, compCurBB);
+        GenTree* nullchk = gtNewNullCheck(lclVar);
 
         nullchk->SetHasOrderingSideEffect();
 
@@ -5273,7 +5259,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
                 {
                     // COMMA(tmp = "this", deref(tmp))
                     GenTree* tmp          = gtNewLclvNode(lclNum, objp->TypeGet());
-                    GenTree* nullcheck    = gtNewNullCheck(tmp, compCurBB);
+                    GenTree* nullcheck    = gtNewNullCheck(tmp);
                     doBeforeStoreArgsStub = gtNewOperNode(GT_COMMA, TYP_VOID, doBeforeStoreArgsStub, nullcheck);
                 }
 
@@ -5289,7 +5275,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
                 if (callNeedsNullCheck)
                 {
                     // deref("this")
-                    doBeforeStoreArgsStub = gtNewNullCheck(objp, compCurBB);
+                    doBeforeStoreArgsStub = gtNewNullCheck(objp);
 
                     if (stubNeedsThisPtr)
                     {
@@ -5829,7 +5815,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 
                 // COMMA(tmp = "this", deref(tmp))
                 GenTree* tmp       = gtNewLclvNode(lclNum, vt);
-                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
+                GenTree* nullcheck = gtNewNullCheck(tmp);
                 store              = gtNewOperNode(GT_COMMA, TYP_VOID, store, nullcheck);
 
                 // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
@@ -5838,7 +5824,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
             else
             {
                 // thisPtr = COMMA(deref("this"), "this")
-                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
+                GenTree* nullcheck = gtNewNullCheck(thisPtr);
                 thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
             }
 
@@ -6358,7 +6344,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         assert(call->gtArgs.CountArgs() >= 1);
         GenTree* objPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
 
-        GenTree* nullCheck = gtNewNullCheck(objPtr, compCurBB);
+        GenTree* nullCheck = gtNewNullCheck(objPtr);
 
         return fgMorphTree(nullCheck);
     }
@@ -15429,13 +15415,13 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 assert((idx->gtFlags & GTF_ALL_EFFECT) == 0); // We should have taken care of side effects earlier.
 
                 GenTreeMDArr* const mdArrLowerBound =
-                    m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                    m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank);
                 // unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
                 unsigned            effIdxLcl    = m_pTempCache->GrabTemp(TYP_INT);
                 GenTree* const      effIndex     = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
                 GenTree* const      effIdxLclDef = m_compiler->gtNewTempStore(effIdxLcl, effIndex);
                 GenTreeMDArr* const mdArrLength =
-                    m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                    m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank);
                 GenTreeBoundsChk* const arrBndsChk = new (m_compiler, GT_BOUNDS_CHECK)
                     GenTreeBoundsChk(m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), mdArrLength, SCK_RNGCHK_FAIL);
                 GenTree* const boundsCheckComma =
@@ -15449,7 +15435,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                     assert(fullTree != nullptr);
 
                     GenTreeMDArr* const mdArrLengthScale =
-                        m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                        m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank);
                     GenTree* const scale    = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, fullTree, mdArrLengthScale);
                     GenTree* const effIndex = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, scale, idxComma);
 
