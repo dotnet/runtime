@@ -395,7 +395,8 @@ IErrorMarshalTesting : IUnknown
 
 enum IDispatchTesting_Exception
 {
-    IDispatchTesting_Exception_Disp,
+    IDispatchTesting_Exception_Disp,        // scode
+    IDispatchTesting_Exception_Disp_Legacy, // wCode
     IDispatchTesting_Exception_HResult,
     IDispatchTesting_Exception_Int,
 };
