@@ -61,15 +61,8 @@ internal readonly struct Loader_1 : ILoader
 
         return new ModuleHandle(assembly.Module);
     }
-    TargetPointer ILoader.GetModuleAddress(ModuleHandle handle)
-    {
-        if (handle.Address == TargetPointer.Null)
-            throw new ArgumentNullException(nameof(handle));
 
-        return handle.Address;
-    }
-
-    IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+    IEnumerable<ModuleHandle> ILoader.GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
     {
         if (appDomain == TargetPointer.Null)
             throw new ArgumentNullException(nameof(appDomain));
@@ -146,7 +139,10 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
         return appDomain.RootAssembly;
     }
-
+    TargetPointer ILoader.GetModule(ModuleHandle handle)
+    {
+        return handle.Address;
+    }
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

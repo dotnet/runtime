@@ -157,7 +157,7 @@ internal sealed unsafe partial class SOSDacImpl
             else
             {
                 ILoader loader = _target.Contracts.Loader;
-                List<Contracts.ModuleHandle> modules = loader.GetModules(
+                List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                     appDomain,
                     AssemblyIterationFlags.IncludeLoading |
                     AssemblyIterationFlags.IncludeLoaded |
@@ -239,7 +239,7 @@ internal sealed unsafe partial class SOSDacImpl
                 TargetPointer addr = assembly.ToTargetPointer(_target);
                 Contracts.ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(addr);
-                TargetPointer modulePointer = loader.GetModuleAddress(handle);
+                TargetPointer modulePointer = loader.GetModule(handle);
                 modules[0] = modulePointer.ToClrDataAddress(_target);
             }
 

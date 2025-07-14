@@ -159,12 +159,7 @@ ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointe
     return new ModuleHandle(assembly.Module);
 }
 
-TargetPointer ILoader.GetModuleAddress(ModuleHandle handle)
-{
-    return handle.Address;
-}
-
-IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
 {
     if (appDomain == TargetPointer.Null) throw new ArgumentException("appDomain must not be null");
 
@@ -266,6 +261,11 @@ TargetPointer GetRootAssembly()
     TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
     AppDomain appDomain = // read AppDomain object starting at appDomainPointer
     return appDomain.RootAssembly;
+}
+
+TargetPointer ILoader.GetModule(ModuleHandle handle)
+{
+    return handle.Address;
 }
 
 TargetPointer GetAssembly(ModuleHandle handle)
