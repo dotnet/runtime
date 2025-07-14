@@ -31,12 +31,10 @@
 
     <_AppleExpectedExitCode Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</_AppleExpectedExitCode>
 
-    <_EnvVars Condition="'$(DOTNET_Interpreter)' != ''">--set-env DOTNET_Interpreter=$(DOTNET_Interpreter) --set-env COMPlus_InterpDump=$(DOTNET_Interpreter)</_EnvVars>
-
     <_AfterBuildCommands>
       mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
       $(_AppleSignCommand)
-      xharness $(_AppleBuildCommand) --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) $(_AppleExpectedExitCode) $(_EnvVars) -- </_AfterBuildCommands>
+      xharness $(_AppleBuildCommand) --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) $(_AppleExpectedExitCode) -- </_AfterBuildCommands>
 
     <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
   </PropertyGroup>
