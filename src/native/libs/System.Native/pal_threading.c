@@ -305,7 +305,7 @@ int32_t SystemNative_PThreadMutex_Init(void* mutex)
     int error = pthread_mutexattr_init(&mutexAttributes);
     if (error != 0)
     {
-        return error;
+        return ConvertErrorPlatformToPal(error);
     }
 
     error = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
@@ -318,7 +318,7 @@ int32_t SystemNative_PThreadMutex_Init(void* mutex)
     assert(error == 0);
 
     error = pthread_mutex_init((pthread_mutex_t*)mutex, &mutexAttributes);
-    return error;
+    return ConvertErrorPlatformToPal(error);
 }
 
 static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t timeoutMilliseconds)
@@ -375,19 +375,19 @@ int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMillisecon
         int setConsistentResult = pthread_mutex_consistent((pthread_mutex_t*)mutex);
     }
 
-    return SystemNative_ConvertErrorPlatformToPal(result);
+    return ConvertErrorPlatformToPal(result);
 }
 
 int32_t SystemNative_PThreadMutex_Release(void* mutex)
 {
     assert(mutex != NULL);
-    return pthread_mutex_unlock((pthread_mutex_t*)mutex);
+    return ConvertErrorPlatformToPal(pthread_mutex_unlock((pthread_mutex_t*)mutex));
 }
 
 int32_t SystemNative_PThreadMutex_Destroy(void* mutex)
 {
     assert(mutex != NULL);
-    return pthread_mutex_destroy((pthread_mutex_t*)mutex);
+    return ConvertErrorPlatformToPal(pthread_mutex_destroy((pthread_mutex_t*)mutex));
 }
 
 int32_t SystemNative_PThreadMutex_Size(void)

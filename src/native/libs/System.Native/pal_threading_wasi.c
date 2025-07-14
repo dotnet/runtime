@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_threading.h"
+#include <pal_errno.h>
 
 #include <stdio.h>
 #include <limits.h>
@@ -93,4 +94,32 @@ uint64_t SystemNative_GetUInt64OSThreadId(void)
 uint32_t SystemNative_TryGetUInt32OSThreadId(void)
 {
     return (uint32_t)-1;
+}
+
+int32_t SystemNative_PThreadMutex_Init(void* mutex)
+{
+    return 0;
+}
+
+int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds)
+{
+    assert(mutex != NULL);
+    return Error_EINVAL;
+}
+
+int32_t SystemNative_PThreadMutex_Release(void* mutex)
+{
+    assert(mutex != NULL);
+    return Error_EINVAL;
+}
+
+int32_t SystemNative_PThreadMutex_Destroy(void* mutex)
+{
+    assert(mutex != NULL);
+    return Error_EINVAL;
+}
+
+int32_t SystemNative_PThreadMutex_Size(void)
+{
+    return 0;
 }
