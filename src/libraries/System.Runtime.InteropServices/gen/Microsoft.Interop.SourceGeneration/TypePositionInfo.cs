@@ -96,7 +96,7 @@ namespace Microsoft.Interop
                 ByValueContentsMarshalKind = byValueContentsMarshalKind,
                 ByValueMarshalAttributeLocations = (inLocation, outLocation),
                 ScopedKind = paramSymbol.ScopedKind,
-                IsExplicitThis = ((ParameterSyntax)paramSymbol.DeclaringSyntaxReferences[0].GetSyntax()).Modifiers.Any(SyntaxKind.ThisKeyword)
+                IsExplicitThis = (paramSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as ParameterSyntax)?.Modifiers.Any(SyntaxKind.ThisKeyword) ?? false
             };
 
             return typeInfo;

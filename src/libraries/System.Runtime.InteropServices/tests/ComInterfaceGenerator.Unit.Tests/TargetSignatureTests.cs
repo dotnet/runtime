@@ -8,8 +8,10 @@ using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.Interop;
 using Xunit;
 
@@ -365,14 +367,14 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
-                partial interface {|#1:IComInterface2|} : IComInterface
+                internal partial interface {|#1:IComInterface2|} : IComInterface
                 {
                     void DerivedMethod();
                 }
 
                 [GeneratedComInterface]
                 [Guid("0951f7b7-a700-4de4-930e-0b1fbc4684a9")]
-                partial interface {|#2:IComInterface3|} : IComInterface
+                internal partial interface {|#2:IComInterface3|} : IComInterface
                 {
                     void DerivedMethod();
                 }
@@ -383,33 +385,27 @@ namespace ComInterfaceGenerator.Unit.Tests
                 baseSource,
                 "IComInterface2",
                 "DerivedMethod",
-                (newComp, invocation) =>
+                (newComp, _) =>
                 {
-                    ILocalSymbol vtableSlot = Assert.IsAssignableFrom<ILocalReferenceOperation>(invocation.Target).Local;
-                    IVariableDeclaratorOperation vtableSlotDeclarator = Assert.IsAssignableFrom<IVariableDeclaratorOperation>(invocation.SemanticModel!.GetOperation(vtableSlot.DeclaringSyntaxReferences[0].GetSyntax()));
-                    IOperation vtableSlotInitialization = vtableSlotDeclarator.Initializer!.Value;
+                    if (newComp.GetDiagnostics().Where(d => d.Severity is DiagnosticSeverity.Error or DiagnosticSeverity.Warning).Any())
+                    {
+                        Assert.Fail(string.Join(Environment.NewLine, newComp.GetDiagnostics().Select(d => d.GetMessage())));
+                        return;
+                    }
+                    ValidateInterface("IComInterface2", 5);
+                    ValidateInterface("IComInterface3", 5);
 
-                    Assert.Equal(4, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
-
-                    INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName("IComInterface3");
-                    Assert.NotNull(userDefinedInterface);
-
-                    INamedTypeSymbol generatedInterfaceImplementation = new ComInterfaceImplementationLocator().FindImplementationInterface(newComp, userDefinedInterface);
-
-                    IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers("CreateManagedVirtualFunctionTable").OfType<IMethodSymbol>());
-
-                    SyntaxNode emittedImplementationSyntax = methodImplementation.DeclaringSyntaxReferences[0].GetSyntax();
-
-                    SemanticModel model = newComp.GetSemanticModel(emittedImplementationSyntax.SyntaxTree);
-
-                    IOperation body = model.GetOperation(emittedImplementationSyntax)!;
-
-                    var operation = body
-                        .ChildOperations.OfType<IBlockOperation>().Single()
-                        .ChildOperations.OfType<IVariableDeclarationGroupOperation>().First()
-                        .Descendants().OfType<IArgumentOperation>().Last()
-                        .Descendants().OfType<ILiteralOperation>().Single();
-                    Assert.Equal(5, operation.ConstantValue);
+                    void ValidateInterface(string name, int expectedVTableSize)
+                    {
+                        INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName(name);
+                        Assert.NotNull(userDefinedInterface);
+                        ITypeSymbol vtableType = new ComInterfaceImplementationLocator().FindVTableStructType(newComp, userDefinedInterface);
+                        if (expectedVTableSize != vtableType.GetMembers().OfType<IFieldSymbol>().Count())
+                        {
+                            Assert.Fail(vtableType.DeclaringSyntaxReferences[0].GetSyntax().SyntaxTree.GetText().ToString());
+                        }
+                        Assert.Equal(expectedVTableSize, vtableType.GetMembers().OfType<IFieldSymbol>().Count());
+                    }
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning),
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface").WithLocation(2).WithSeverity(DiagnosticSeverity.Warning));
@@ -653,6 +649,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass?.OriginalDefinition, iUnknownDerivedAttributeType));
 
                 return (INamedTypeSymbol)iUnknownDerivedAttribute.AttributeClass!.TypeArguments[1];
+            }
+
+            public ITypeSymbol FindVTableStructType(Compilation compilation, INamedTypeSymbol userDefinedInterface)
+            {
+                INamedTypeSymbol? implementationInterface = FindImplementationInterface(compilation, userDefinedInterface);
+                var vtableField = implementationInterface.GetMembers("Vtable").OfType<IFieldSymbol>().SingleOrDefault();
+                Assert.NotNull(vtableField);
+                return vtableField.Type;
             }
         }
     }

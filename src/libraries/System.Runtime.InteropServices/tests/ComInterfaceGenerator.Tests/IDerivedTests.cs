@@ -13,6 +13,57 @@ namespace ComInterfaceGenerator.Tests
 {
     public partial class IDerivedTests
     {
+
+        // [GeneratedComInterface]
+        // [Guid("7F0DB364-3C04-4487-9193-4BB05DC7B654")]
+        // internal partial interface IDerivedFromSharedType2 : SharedTypes.ComInterfaces.IGetAndSetInt
+        // {
+        //     int GetTwoTimesInt();
+        // }
+
+        [GeneratedComInterface]
+        [Guid("7F0DB364-3C04-4487-9194-4BB05DC7B654")]
+#pragma warning disable SYSLIB1230 // Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported
+        internal partial interface IDerivedFromSharedType : SharedTypes.ComInterfaces.IGetAndSetInt
+#pragma warning restore SYSLIB1230
+        {
+            int GetIntPlusOne();
+        }
+
+        [GeneratedComClass]
+        [Guid("7F0DB364-3C04-4487-9195-4BB05DC7B654")]
+        internal partial class DerivedFromSharedTypeImpl : IDerivedFromSharedType//, IDerivedFromSharedType2
+        {
+            int _value = 42;
+
+            public int GetInt() => _value;
+            public int GetIntPlusOne() => _value + 1;
+            public int GetTwoTimesInt() => _value * 2;
+            public void SetInt(int value) { _value = value; }
+        }
+
+        [Fact]
+        public unsafe void TypesDerivedFromSharedTypeHaveCorrectVTableSize()
+        {
+            var managedSourceObject = new DerivedFromSharedTypeImpl();
+            var cw = new StrategyBasedComWrappers();
+            var nativeObj = cw.GetOrCreateComInterfaceForObject(managedSourceObject, CreateComInterfaceFlags.None);
+            object managedObj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+            IGetAndSetInt getAndSetInt = (IGetAndSetInt)managedObj;
+            IDerivedFromSharedType derivedFromSharedType = (IDerivedFromSharedType)managedObj;
+            // IDerivedFromSharedType2 derivedFromSharedType2 = (IDerivedFromSharedType2)managedObj;
+
+            Assert.Equal(42, getAndSetInt.GetInt());
+            Assert.Equal(42, derivedFromSharedType.GetInt());
+            // Assert.Equal(42, derivedFromSharedType2.GetInt());
+
+            getAndSetInt.SetInt(100);
+            Assert.Equal(100, getAndSetInt.GetInt());
+            Assert.Equal(101, derivedFromSharedType.GetIntPlusOne());
+            // Assert.Equal(200, derivedFromSharedType2.GetTwoTimesInt());
+        }
+
+
         [Fact]
         public unsafe void DerivedInterfaceTypeProvidesBaseInterfaceUnmanagedToManagedMembers()
         {

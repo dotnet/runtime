@@ -9,7 +9,9 @@ namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
     [Guid(IID)]
+#pragma warning disable SYSLIB1230 // Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported
     internal partial interface IDerived : IGetAndSetInt
+#pragma warning restore SYSLIB1230
     {
         void SetName([MarshalUsing(typeof(Utf16StringMarshaller))] string name);
 
