@@ -1597,7 +1597,7 @@ namespace System.Reflection
                                     getMethod = null;
                                 }
 
-                                baseAttributeType = attributeType.BaseType;
+                                baseAttributeType = baseAttributeType.BaseType;
                             }
 
                             if (property is null)
