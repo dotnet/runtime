@@ -17,7 +17,7 @@ namespace System.Net
             bool isServer,
             string? hostName)
         {
-            return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);
+            return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName, Span<byte>.Empty);
         }
 
         private static X509Certificate2? GetRemoteCertificate(

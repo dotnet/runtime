@@ -16,8 +16,6 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        private static readonly IdnMapping s_idnMapping = new IdnMapping();
-
         // Read data from connection (or an instance delegate captured context) and write it to data
         // dataLength comes in as the capacity of data, goes out as bytes written.
         // Note: the true type of dataLength is `size_t*`, but on macOS that's most equal to `void**`
