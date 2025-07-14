@@ -56,24 +56,6 @@ namespace System.Security.Cryptography
         internal string Oid { get; }
         internal int LambdaCollisionStrength { get; }
 
-        /// <summary>
-        ///  Initializes a new instance of the <see cref="MLDsaAlgorithm" /> structure with a custom name.
-        /// </summary>
-        /// <param name="name">
-        ///   The name of the algorithm.
-        /// </param>
-        /// <param name="secretKeySizeInBytes">
-        ///   The size of the secret key in bytes.
-        /// </param>
-        /// <param name="publicKeySizeInBytes">
-        ///   The size of the public key in bytes.
-        /// </param>
-        /// <param name="signatureSizeInBytes">
-        ///   The size of the signature in bytes.
-        /// </param>
-        /// <param name="oid">
-        ///   The OID of the algorithm.
-        /// </param>
         private MLDsaAlgorithm(
             string name,
             int secretKeySizeInBytes,
