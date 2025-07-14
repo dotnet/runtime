@@ -30,24 +30,31 @@ namespace System.Security.Cryptography
                 case Oids.Sha256:
                     hashLambda = 256 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHA256;
+                    break;
                 case Oids.Sha3_256:
                     hashLambda = 256 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_256;
+                    break;
                 case Oids.Sha384:
                     hashLambda = 384 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHA384;
+                    break;
                 case Oids.Sha3_384:
                     hashLambda = 384 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_384;
+                    break;
                 case Oids.Sha512:
                     hashLambda = 512 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHA512;
+                    break;
                 case Oids.Sha3_512:
                     hashLambda = 512 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_512;
+                    break;
                 case Oids.Shake128: // SHAKE-128 with 256-bits of output
                     hashLambda = 256 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE128;
+                    break;
                 case Oids.Shake256: // SHAKE-256 with 512-bits of output
                     hashLambda = 512 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE256;
