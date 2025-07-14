@@ -1,6 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
+// Network.framework requires an underlying network connection for TLS operations,
+// but we need to perform TLS without an actual connection so that we can expose
+// it as the SslStream abstraction. This implementation uses a workaround: we
+// create a dummy UDP connection that will never be used.
+// 
+// The trick works by layering a custom framer on top of this dummy connection,
+// then adding TLS on top of the framer. The framer intercepts the raw TLS data
+// and exposes it to SslStream, preventing it from ever reaching the underlying
+// connection.
+//
+
 #include "pal_networkframework.h"
 #include <Foundation/Foundation.h>
 #include <Network/Network.h>
@@ -38,13 +50,23 @@ static void* FramerGetManagedState(nw_framer_t framer)
 
         NSNumber* num = nw_framer_options_copy_object_value(framer_options, MANAGED_STATE_KEY);
         assert(num != NULL);
-
         [num getValue:&ptr];
-        [num release];  // Release the NSNumber after extracting the value
+        [num release];
+
         nw_release(framer_options);
     }
 
     return ptr;
+}
+
+static void FramerOptionsSetManagedState(nw_protocol_options_t framer_options, void* state)
+{
+    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
+    {
+        NSNumber *ref = [NSNumber numberWithLong:(long)state];
+        nw_framer_options_set_object_value(framer_options, MANAGED_STATE_KEY, ref);
+        [ref release];
+    }
 }
 
 static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol palProtocolId)
@@ -131,17 +153,6 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     if (isServer != 0)  // the current implementation only supports client
         return NULL;
 
-    // Network.framework requires an underlying network connection for TLS operations,
-    // but we need to perform TLS without an actual connection. This implementation
-    // uses a workaround: we create a dummy UDP connection that will never be used.
-    // 
-    // The trick works by layering a custom framer on top of this dummy connection,
-    // then adding TLS on top of the framer. The framer intercepts the raw TLS data
-    // and exposes it to SslStream, preventing it from ever reaching the underlying
-    // connection.
-    //
-    // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
-    // syntactically and semantically valid since the connection is never established.
     nw_parameters_t parameters = nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
 
 #pragma clang diagnostic push
@@ -289,11 +300,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     nw_release(sec_options);
 
     nw_protocol_options_t framer_options = nw_framer_create_options(_framerDefinition);
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
-    {
-        NSNumber *ref = [NSNumber numberWithLong:(long)state];
-        nw_framer_options_set_object_value(framer_options, MANAGED_STATE_KEY, ref);
-    }
+    FramerOptionsSetManagedState(framer_options, state);
 
     nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(parameters);
     nw_protocol_stack_prepend_application_protocol(protocol_stack, framer_options);
@@ -601,8 +608,11 @@ PALEXPORT int32_t AppleCryptoNative_Init(StatusUpdateCallback statusFunc, WriteC
             NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
         _tlsDefinition = nw_protocol_copy_tls_definition();
         _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
-        _endpoint = nw_endpoint_create_host("127.0.0.1", "42");
         _inputQueue = _tlsQueue;
+
+        // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
+        // syntactically and semantically valid since the connection is never established.
+        _endpoint = nw_endpoint_create_host("127.0.0.1", "42");
 
         return 0;
    }
