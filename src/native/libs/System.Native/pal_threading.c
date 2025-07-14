@@ -299,28 +299,6 @@ uint32_t SystemNative_TryGetUInt32OSThreadId(void)
     return result == 0 ? (uint32_t)-1 : result;
 }
 
-int32_t SystemNative_PThreadMutex_Init(void* mutex)
-{
-    pthread_mutexattr_t mutexAttributes;
-    int error = pthread_mutexattr_init(&mutexAttributes);
-    if (error != 0)
-    {
-        return ConvertErrorPlatformToPal(error);
-    }
-
-    error = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    assert(error == 0);
-
-    error = pthread_mutexattr_setrobust(&mutexAttributes, PTHREAD_MUTEX_ROBUST);
-    assert(error == 0);
-
-    error = pthread_mutexattr_setpshared(&mutexAttributes, PTHREAD_PROCESS_SHARED);
-    assert(error == 0);
-
-    error = pthread_mutex_init((pthread_mutex_t*)mutex, &mutexAttributes);
-    return ConvertErrorPlatformToPal(error);
-}
-
 static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t timeoutMilliseconds)
 {
     assert(mutex != NULL);
@@ -345,7 +323,7 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
     error = pthread_mutex_reltimedlock_np(mutex, &timeoutTimeSpec);
 #else
 #if HAVE_PTHREAD_CONDATTR_SETCLOCK && HAVE_CLOCK_MONOTONIC
-    int error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
+    error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
     assert(error == 0);
 #else
     struct timeval tv;
@@ -363,34 +341,99 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
     return pthread_mutex_timedlock((pthread_mutex_t*)mutex, &timeoutTimeSpec);
 #endif
 }
-
-int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds)
+struct LowLevelCrossProcessMutex
 {
-    int32_t result = AcquirePThreadMutexWithTimeout((pthread_mutex_t*)mutex, timeoutMilliseconds);
+    pthread_mutex_t Mutex;
+    uint32_t OwnerProcessId;
+    uint32_t OwnerThreadId;
+    uint8_t IsAbandoned;
+};
+
+#define INVALID_PROCESS_ID (uint32_t)(-1)
+#define INVALID_THREAD_ID (uint32_t)(-1)
+
+int32_t SystemNative_LowLevelCrossPlatformMutex_Size(void)
+{
+    return (int32_t)sizeof(LowLevelCrossProcessMutex);
+}
+
+int32_t SystemNative_LowLevelCrossPlatformMutex_Init(LowLevelCrossProcessMutex* mutex)
+{
+    mutex->OwnerProcessId = INVALID_PROCESS_ID;
+    mutex->OwnerThreadId = INVALID_THREAD_ID;
+    mutex->IsAbandoned = 0;
+    pthread_mutexattr_t mutexAttributes;
+    int error = pthread_mutexattr_init(&mutexAttributes);
+    if (error != 0)
+    {
+        return ConvertErrorPlatformToPal(error);
+    }
+
+    error = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+    assert(error == 0);
+
+    error = pthread_mutexattr_setrobust(&mutexAttributes, PTHREAD_MUTEX_ROBUST);
+    assert(error == 0);
+
+    error = pthread_mutexattr_setpshared(&mutexAttributes, PTHREAD_PROCESS_SHARED);
+    assert(error == 0);
+
+    error = pthread_mutex_init(&mutex->Mutex, &mutexAttributes);
+    return ConvertErrorPlatformToPal(error);
+}
+
+int32_t SystemNative_LowLevelCrossPlatformMutex_Acquire(LowLevelCrossProcessMutex* mutex, int32_t timeoutMilliseconds)
+{
+    int32_t result = AcquirePThreadMutexWithTimeout(&mutex->Mutex, timeoutMilliseconds);
 
     if (result == EOWNERDEAD)
     {
         // The mutex was abandoned by the previous owner.
         // Make it consistent so that it can be used again.
-        int setConsistentResult = pthread_mutex_consistent((pthread_mutex_t*)mutex);
+        int setConsistentResult = pthread_mutex_consistent(&mutex->Mutex);
     }
 
     return ConvertErrorPlatformToPal(result);
 }
 
-int32_t SystemNative_PThreadMutex_Release(void* mutex)
+int32_t SystemNative_LowLevelCrossPlatformMutex_Release(LowLevelCrossProcessMutex* mutex)
 {
     assert(mutex != NULL);
-    return ConvertErrorPlatformToPal(pthread_mutex_unlock((pthread_mutex_t*)mutex));
+    return ConvertErrorPlatformToPal(pthread_mutex_unlock(&mutex->Mutex));
 }
 
-int32_t SystemNative_PThreadMutex_Destroy(void* mutex)
+int32_t SystemNative_LowLevelCrossPlatformMutex_Destroy(LowLevelCrossProcessMutex* mutex)
 {
     assert(mutex != NULL);
-    return ConvertErrorPlatformToPal(pthread_mutex_destroy((pthread_mutex_t*)mutex));
+    return ConvertErrorPlatformToPal(pthread_mutex_destroy(&mutex->Mutex));
 }
 
-int32_t SystemNative_PThreadMutex_Size(void)
+void SystemNative_LowLevelCrossPlatformMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint32_t* pOwnerThreadId)
 {
-    return (int32_t)sizeof(pthread_mutex_t);
+    assert(mutex != NULL);
+    assert(pOwnerProcessId != NULL);
+    assert(pOwnerThreadId != NULL);
+
+    *pOwnerProcessId = mutex->OwnerProcessId;
+    *pOwnerThreadId = mutex->OwnerThreadId;
+}
+
+void SystemNative_LowLevelCrossPlatformMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint32_t ownerThreadId)
+{
+    assert(mutex != NULL);
+
+    mutex->OwnerProcessId = ownerProcessId;
+    mutex->OwnerThreadId = ownerThreadId;
+}
+
+uint8_t SystemNative_LowLevelCrossPlatformMutex_IsAbandoned(LowLevelCrossProcessMutex* mutex)
+{
+    assert(mutex != NULL);
+    return mutex->IsAbandoned;
+}
+
+void SystemNative_LowLevelCrossPlatformMutex_SetAbandoned(LowLevelCrossProcessMutex* mutex, uint8_t isAbandoned)
+{
+    assert(mutex != NULL);
+    mutex->IsAbandoned = isAbandoned;
 }
