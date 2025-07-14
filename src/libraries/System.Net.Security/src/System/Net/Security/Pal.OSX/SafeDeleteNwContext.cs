@@ -204,44 +204,22 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
             {
-                GCHandle? handle = null;
-                try
+                GCHandle handle = GCHandle.FromIntPtr(context);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", nameof(WriteAsync));
+
+                Debug.Assert(handle.Target is TaskCompletionSource, "Expected handle to target a TaskCompletionSource");
+                TaskCompletionSource tcs = (TaskCompletionSource)handle.Target;
+
+                if (error != null)
                 {
-                    handle = GCHandle.FromIntPtr(context);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", nameof(WriteAsync));
-
-
-                    if (handle?.IsAllocated != true)
-                    {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            NetEventSource.Error(null, "WriteAsync CompletionCallback called with unallocated handle");
-                        }
-                        return;
-                    }
-
-                    TaskCompletionSource? tcs = handle?.Target as TaskCompletionSource;
-
-                    if (error != null)
-                    {
-                        tcs?.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
-                    }
-                    else
-                    {
-                        tcs?.TrySetResult();
-                    }
+                    tcs.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
                 }
-                catch (Exception ex)
+                else
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Error(null, $"WriteAsync CompletionCallback exception: {ex}");
-                    }
+                    tcs.TrySetResult();
                 }
-                finally
-                {
-                    handle?.Free();
-                }
+
+                handle.Free();
             }
         }
 
@@ -329,41 +307,32 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error, byte* data, int length)
             {
-                try
+                SafeDeleteNwContext thisContext = ResolveThisHandle(context);
+                Debug.Assert(thisContext != null, "Expected thisContext to be non-null");
+
+                if (NetEventSource.Log.IsEnabled())
+                    NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {(error != null ? error->ErrorCode : 0)}, len: {length}", nameof(FillAppDataBufferAsync));
+
+                ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
+
+                if (error != null && error->ErrorCode != 0)
                 {
-                    SafeDeleteNwContext thisContext = ResolveThisHandle(context);
-
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Info(thisContext, $"Completing ConnectionRead, status: {(error != null ? error->ErrorCode : 0)}, len: {length}", nameof(FillAppDataBufferAsync));
-
-                    ref ArrayBuffer buffer = ref thisContext._appReceiveBuffer;
-
-                    if (error != null && error->ErrorCode != 0)
+                    if (error->ErrorDomain == (int)Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
+                        error->ErrorCode == (int)Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
                     {
-                        if (error->ErrorDomain == (int)Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
-                            error->ErrorCode == (int)Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
-                        {
-                            // We cancelled the connection, so this is expected as pending read will be cancelled.
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
-                            thisContext._appReceiveBufferTcs.TrySetResult();
-                            return;
-                        }
-                        thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
-                    }
-                    else
-                    {
-                        buffer.EnsureAvailableSpace(length);
-                        new Span<byte>(data, length).CopyTo(buffer.AvailableSpan);
-                        buffer.Commit(length);
+                        // We cancelled the connection, so this is expected as pending read will be cancelled.
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
                         thisContext._appReceiveBufferTcs.TrySetResult();
+                        return;
                     }
+                    thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
                 }
-                catch (Exception ex)
+                else
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Error(null, $"FillAppDataBufferAsync CompletionCallback exception: {ex}");
-                    }
+                    buffer.EnsureAvailableSpace(length);
+                    new Span<byte>(data, length).CopyTo(buffer.AvailableSpan);
+                    buffer.Commit(length);
+                    thisContext._appReceiveBufferTcs.TrySetResult();
                 }
             }
         }
@@ -566,6 +535,9 @@ namespace System.Net.Security
                 _framerHandle?.Dispose();
                 _peerCertChainHandle?.Dispose();
                 _shutdownCts?.Dispose();
+
+                // now that we know all callbacks are done, we can free the handle
+                _thisHandle.Free();
             }
             base.Dispose(disposing);
         }
@@ -674,20 +646,12 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
             {
-                try
-                {
-                    Debug.Assert(error == null || error->ErrorCode == 0, $"CompletionCallback called with error {(error != null ? error->ErrorCode : 0)}");
+                Debug.Assert(error == null || error->ErrorCode == 0, $"CompletionCallback called with error {(error != null ? error->ErrorCode : 0)}");
 
-                    SafeDeleteNwContext thisContext = ResolveThisHandle(context);
-                    thisContext._transportReadTcs.TrySetResult();
-                }
-                catch (Exception ex)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Error(null, $"WriteInboundWireDataAsync CompletionCallback exception: {ex}");
-                    }
-                }
+                SafeDeleteNwContext thisContext = ResolveThisHandle(context);
+                Debug.Assert(thisContext != null, "Expected thisContext to be non-null");
+
+                thisContext._transportReadTcs.TrySetResult();
             }
         }
 
@@ -784,8 +748,6 @@ namespace System.Net.Security
                 _currentWriteCompletionSource = null;
                 writeCompletion.TrySetException(new IOException(SR.net_io_eof));
             }
-
-            _thisHandle.Free();
         }
 
         private void CertificateAvailable(SafeX509ChainHandle peerCertChainHandle)

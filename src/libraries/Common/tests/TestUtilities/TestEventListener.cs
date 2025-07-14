@@ -22,23 +22,23 @@ public sealed class TestEventListener : EventListener
 {
     public static string[] NetworkingEvents => new[]
     {
-        "System.Net.Http",
-        "System.Net.NameResolution",
-        "System.Net.Sockets",
+        // "System.Net.Http",
+        // "System.Net.NameResolution",
+        // "System.Net.Sockets",
         "System.Net.Security",
-        "System.Net.TestLogging",
-        "Private.InternalDiagnostics.System.Net.Http",
-        "Private.InternalDiagnostics.System.Net.NameResolution",
-        "Private.InternalDiagnostics.System.Net.Sockets",
+        // "System.Net.TestLogging",
+        // "Private.InternalDiagnostics.System.Net.Http",
+        // "Private.InternalDiagnostics.System.Net.NameResolution",
+        // "Private.InternalDiagnostics.System.Net.Sockets",
         "Private.InternalDiagnostics.System.Net.Security",
-        "Private.InternalDiagnostics.System.Net.Quic",
-        "Private.InternalDiagnostics.System.Net.WebSockets",
-        "Private.InternalDiagnostics.System.Net.Http.WinHttpHandler",
-        "Private.InternalDiagnostics.System.Net.HttpListener",
-        "Private.InternalDiagnostics.System.Net.Mail",
-        "Private.InternalDiagnostics.System.Net.NetworkInformation",
-        "Private.InternalDiagnostics.System.Net.Primitives",
-        "Private.InternalDiagnostics.System.Net.Requests",
+        // "Private.InternalDiagnostics.System.Net.Quic",
+        // "Private.InternalDiagnostics.System.Net.WebSockets",
+        // "Private.InternalDiagnostics.System.Net.Http.WinHttpHandler",
+        // "Private.InternalDiagnostics.System.Net.HttpListener",
+        // "Private.InternalDiagnostics.System.Net.Mail",
+        // "Private.InternalDiagnostics.System.Net.NetworkInformation",
+        // "Private.InternalDiagnostics.System.Net.Primitives",
+        // "Private.InternalDiagnostics.System.Net.Requests",
     };
 
     private readonly Action<string> _writeFunc;
@@ -129,7 +129,7 @@ public sealed class TestEventListener : EventListener
                 }
             }
 #endif
-            sb.Append($"[{eventData.EventName}] ");
+        sb.Append($"[{eventData.EventName}] ");
 
         for (int i = 0; i < eventData.Payload?.Count; i++)
         {

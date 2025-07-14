@@ -1954,7 +1954,7 @@ namespace System.IO.Tests
                 Assert.Equal('o', readable.ReadByte());
             }
 
-            Assert.Equal(0, await ReadAsync(mode, readable, new byte[1], 0, 1));
+            Assert.Equal(0, await ReadAsync(mode, readable, new byte[1], 0, 1).WaitAsync(TimeSpan.FromSeconds(4)));
 
             await readable.DisposeAsync();
             await write;

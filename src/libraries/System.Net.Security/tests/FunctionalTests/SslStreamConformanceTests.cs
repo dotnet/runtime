@@ -7,6 +7,10 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
+using Microsoft.DotNet.XUnitExtensions;
+
+using TestUtilities;
 
 namespace System.Net.Security.Tests
 {
@@ -47,6 +51,23 @@ namespace System.Net.Security.Tests
             }
 
             return new StreamPair(ssl1, ssl2);
+        }
+
+        [ConditionalTheory]
+        [InlineData(ReadWriteMode.SyncArray)]
+        [InlineData(ReadWriteMode.SyncSpan)]
+        [InlineData(ReadWriteMode.AsyncArray)]
+        [InlineData(ReadWriteMode.AsyncMemory)]
+        [InlineData(ReadWriteMode.SyncAPM)]
+        [InlineData(ReadWriteMode.AsyncAPM)]
+        public override Task ZeroByteRead_PerformsZeroByteReadOnUnderlyingStreamWhenDataNeeded(ReadWriteMode mode)
+        {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("NetworkFramework works in Async and does not issue zero-byte reads to underlying stream.");
+            }
+
+            return base.ZeroByteRead_PerformsZeroByteReadOnUnderlyingStreamWhenDataNeeded(mode);
         }
     }
 
