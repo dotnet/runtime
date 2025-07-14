@@ -538,7 +538,7 @@ ep_ipc_stream_close_vcall (IpcStream *ipc_stream)
 	return vtable->close_func (ipc_stream);
 }
 
-DiagnosticsIpcPollEvents
+IpcPollEvents
 ep_ipc_stream_poll_vcall (IpcStream *ipc_stream, uint32_t timeout_ms)
 {
 	EP_ASSERT (ipc_stream != NULL);

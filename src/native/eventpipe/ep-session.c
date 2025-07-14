@@ -230,8 +230,8 @@ bool
 session_is_stream_connection_closed (IpcStream *stream)
 {
 	EP_ASSERT (stream != NULL);
-	DiagnosticsIpcPollEvents poll_event = ep_ipc_stream_poll_vcall (stream, DS_IPC_TIMEOUT_INFINITE);
-	return poll_event == DS_IPC_POLL_EVENTS_HANGUP;
+	IpcPollEvents poll_event = ep_ipc_stream_poll_vcall (stream, IPC_TIMEOUT_INFINITE);
+	return poll_event == IPC_POLL_EVENTS_HANGUP || poll_event == IPC_POLL_EVENTS_ERR;
 }
 
 /*
