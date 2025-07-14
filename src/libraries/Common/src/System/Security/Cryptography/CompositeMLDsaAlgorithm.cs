@@ -33,17 +33,17 @@ namespace System.Security.Cryptography
         /// </value>
         public int MaxSignatureSizeInBytes => SignatureSize.MaximumSizeInBytes!.Value;
 
-        internal SizeInBytes SignatureSize { get; }
-        internal SizeInBytes PrivateKeySize { get; }
-        internal SizeInBytes PublicKeySize { get; }
+        internal SizeRange SignatureSize { get; }
+        internal SizeRange PrivateKeySize { get; }
+        internal SizeRange PublicKeySize { get; }
 
         internal string Oid { get; }
 
         private CompositeMLDsaAlgorithm(
             string name,
-            SizeInBytes signatureSize,
-            SizeInBytes privateKeySize,
-            SizeInBytes publicKeySize,
+            SizeRange signatureSize,
+            SizeRange privateKeySize,
+            SizeRange publicKeySize,
             string oid)
         {
             Debug.Assert(signatureSize.MaximumSizeInBytes is not null);
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pss { get; } =
             new("MLDSA44-RSA2048-PSS-SHA256",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes + 2048 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes + 2048 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa44, 2048),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa44, 2048),
                 Oids.MLDsa44WithRSA2048PssPreHashSha256);
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pkcs15 { get; } =
             new("MLDSA44-RSA2048-PKCS15-SHA256",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes + 2048 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes + 2048 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa44, 2048),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa44, 2048),
                 Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256);
@@ -89,9 +89,9 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa44WithEd25519 { get; } =
             new("MLDSA44-Ed25519-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes + 64),
-                SizeInBytes.CreateExact(MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes + 32),
-                SizeInBytes.CreateExact(MLDsaAlgorithm.MLDsa44.PublicKeySizeInBytes + 32),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes + 64),
+                SizeRange.CreateExact(MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes + 32),
+                SizeRange.CreateExact(MLDsaAlgorithm.MLDsa44.PublicKeySizeInBytes + 32),
                 Oids.MLDsa44WithEd25519PreHashSha512);
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa44WithECDsaP256 { get; } =
             new("MLDSA44-ECDSA-P256-SHA256",
-                SizeInBytes.CreateBounded(
+                SizeRange.CreateBounded(
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes,
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256)),
                 CreateECDsaPrivateKeySize(MLDsaAlgorithm.MLDsa44, 256),
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pss { get; } =
             new("MLDSA65-RSA3072-PSS-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 3072 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 3072 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa65, 3072),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa65, 3072),
                 Oids.MLDsa65WithRSA3072PssPreHashSha512);
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pkcs15 { get; } =
             new("MLDSA65-RSA3072-PKCS15-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 3072 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 3072 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa65, 3072),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa65, 3072),
                 Oids.MLDsa65WithRSA3072Pkcs15PreHashSha512);
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pss { get; } =
             new("MLDSA65-RSA4096-PSS-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 4096 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 4096 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa65, 4096),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa65, 4096),
                 Oids.MLDsa65WithRSA4096PssPreHashSha512);
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pkcs15 { get; } =
             new("MLDSA65-RSA4096-PKCS15-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 4096 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 4096 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa65, 4096),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa65, 4096),
                 Oids.MLDsa65WithRSA4096Pkcs15PreHashSha512);
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithECDsaP256 { get; } =
             new("MLDSA65-ECDSA-P256-SHA512",
-                SizeInBytes.CreateBounded(
+                SizeRange.CreateBounded(
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes,
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256)),
                 CreateECDsaPrivateKeySize(MLDsaAlgorithm.MLDsa65, 256),
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithECDsaP384 { get; } =
             new("MLDSA65-ECDSA-P384-SHA512",
-                SizeInBytes.CreateBounded(
+                SizeRange.CreateBounded(
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes,
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384)),
                 CreateECDsaPrivateKeySize(MLDsaAlgorithm.MLDsa65, 384),
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithECDsaBrainpoolP256r1 { get; } =
             new("MLDSA65-ECDSA-brainpoolP256r1-SHA512",
-                SizeInBytes.CreateBounded(
+                SizeRange.CreateBounded(
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes,
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(256)),
                 CreateECDsaPrivateKeySize(MLDsaAlgorithm.MLDsa65, 256),
@@ -214,9 +214,9 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa65WithEd25519 { get; } =
             new("MLDSA65-Ed25519-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 64),
-                SizeInBytes.CreateExact(MLDsaAlgorithm.MLDsa65.PrivateSeedSizeInBytes + 32),
-                SizeInBytes.CreateExact(MLDsaAlgorithm.MLDsa65.PublicKeySizeInBytes + 32),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes + 64),
+                SizeRange.CreateExact(MLDsaAlgorithm.MLDsa65.PrivateSeedSizeInBytes + 32),
+                SizeRange.CreateExact(MLDsaAlgorithm.MLDsa65.PublicKeySizeInBytes + 32),
                 Oids.MLDsa65WithEd25519PreHashSha512);
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa87WithECDsaP384 { get; } =
             new("MLDSA87-ECDSA-P384-SHA512",
-                SizeInBytes.CreateBounded(
+                SizeRange.CreateBounded(
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes,
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384)),
                 CreateECDsaPrivateKeySize(MLDsaAlgorithm.MLDsa87, 384),
@@ -242,7 +242,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa87WithECDsaBrainpoolP384r1 { get; } =
             new("MLDSA87-ECDSA-brainpoolP384r1-SHA512",
-                SizeInBytes.CreateBounded(
+                SizeRange.CreateBounded(
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes,
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(384)),
                 CreateECDsaPrivateKeySize(MLDsaAlgorithm.MLDsa87, 384),
@@ -257,9 +257,9 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa87WithEd448 { get; } =
             new("MLDSA87-Ed448-SHAKE256",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + 114),
-                SizeInBytes.CreateExact(MLDsaAlgorithm.MLDsa87.PrivateSeedSizeInBytes + 57),
-                SizeInBytes.CreateExact(MLDsaAlgorithm.MLDsa87.PublicKeySizeInBytes + 57),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + 114),
+                SizeRange.CreateExact(MLDsaAlgorithm.MLDsa87.PrivateSeedSizeInBytes + 57),
+                SizeRange.CreateExact(MLDsaAlgorithm.MLDsa87.PublicKeySizeInBytes + 57),
                 Oids.MLDsa87WithEd448PreHashShake256_512);
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa87WithRSA3072Pss { get; } =
             new("MLDSA87-RSA3072-PSS-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + 3072 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + 3072 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa87, 3072),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa87, 3072),
                 Oids.MLDsa87WithRSA3072PssPreHashSha512);
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa87WithRSA4096Pss { get; } =
             new("MLDSA87-RSA4096-PSS-SHA512",
-                SizeInBytes.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + 4096 / 8),
+                SizeRange.CreateExact(RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + 4096 / 8),
                 CreateRsaPrivateKeySize(MLDsaAlgorithm.MLDsa87, 4096),
                 CreateRsaPublicKeySize(MLDsaAlgorithm.MLDsa87, 4096),
                 Oids.MLDsa87WithRSA4096PssPreHashSha512);
@@ -296,7 +296,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static CompositeMLDsaAlgorithm MLDsa87WithECDsaP521 { get; } =
             new("MLDSA87-ECDSA-P521-SHA512",
-                SizeInBytes.CreateBounded(
+                SizeRange.CreateBounded(
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes,
                     RandomizerSizeInBytes + MLDsaAlgorithm.MLDsa87.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(521)),
                 CreateECDsaPrivateKeySize(MLDsaAlgorithm.MLDsa87, 521),
@@ -385,11 +385,11 @@ namespace System.Security.Cryptography
             };
         }
 
-        private static SizeInBytes CreateRsaPrivateKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
+        private static SizeRange CreateRsaPrivateKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
         {
             int keySizeInBytes = keySizeInBits / 8;
 
-            return SizeInBytes.CreateUnbounded(
+            return SizeRange.CreateUnbounded(
                 // n must be modulus length, but other parameters can vary. This is a weak lower bound.
                 minimumSize: algorithm.PrivateSeedSizeInBytes + keySizeInBytes,
                 // n and d are about modulus length, p, q, dP, dQ, qInv are about half modulus length.
@@ -397,50 +397,50 @@ namespace System.Security.Cryptography
                 initialExportBufferSize: algorithm.PrivateSeedSizeInBytes + keySizeInBytes * 2 + (keySizeInBytes / 2) * 5 + 64);
         }
 
-        private static SizeInBytes CreateRsaPublicKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
+        private static SizeRange CreateRsaPublicKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
         {
             int keySizeInBytes = keySizeInBits / 8;
 
-            return SizeInBytes.CreateUnbounded(
+            return SizeRange.CreateUnbounded(
                 // n must be modulus length, but other parameters can vary. This is a weak lower bound.
                 minimumSize: algorithm.PublicKeySizeInBytes + keySizeInBytes,
                 // Estimated that e is usually small (65537 = 3 bytes) and 16 bytes for ASN.1 overhead.
                 initialExportBufferSize: algorithm.PublicKeySizeInBytes + keySizeInBytes + 16);
         }
 
-        private static SizeInBytes CreateECDsaPublicKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
+        private static SizeRange CreateECDsaPublicKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
         {
             // Uncompressed
             int keySizeInBytes = (keySizeInBits + 7) / 8;
-            return SizeInBytes.CreateExact(algorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes);
+            return SizeRange.CreateExact(algorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes);
         }
 
-        private static SizeInBytes CreateECDsaPrivateKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
+        private static SizeRange CreateECDsaPrivateKeySize(MLDsaAlgorithm algorithm, int keySizeInBits)
         {
             int keySizeInBytes = (keySizeInBits + 7) / 8;
 
             // ECPrivateKey
-            return SizeInBytes.CreateUnbounded(
+            return SizeRange.CreateUnbounded(
                 minimumSize: algorithm.PrivateSeedSizeInBytes + 1 + keySizeInBytes,
                 // Add optional uncompressed public key and estimate 32 bytes for version, optional ECParameters and ASN.1 overhead.
                 initialExportBufferSize: algorithm.PrivateSeedSizeInBytes + 1 + keySizeInBytes + 1 + 2 * keySizeInBytes + 32);
         }
 
-        internal abstract class SizeInBytes
+        internal abstract class SizeRange
         {
             internal abstract bool IsExact { get; }
             internal abstract int MinimumSizeInBytes { get; }
             internal abstract int? MaximumSizeInBytes { get; }
             internal abstract int InitialExportBufferSizeInBytes { get; }
 
-            internal static SizeInBytes CreateExact(int size)
+            internal static SizeRange CreateExact(int size)
             {
                 Debug.Assert(size >= 0);
 
                 return new ExactSize(size);
             }
 
-            internal static SizeInBytes CreateBounded(int minimumSize, int maximumSize)
+            internal static SizeRange CreateBounded(int minimumSize, int maximumSize)
             {
                 Debug.Assert(minimumSize >= 0);
                 Debug.Assert(maximumSize >= minimumSize);
@@ -448,7 +448,7 @@ namespace System.Security.Cryptography
                 return minimumSize == maximumSize ? new ExactSize(minimumSize) : new VariableSize(minimumSize, maximumSize, maximumSize);
             }
 
-            internal static SizeInBytes CreateUnbounded(int minimumSize, int initialExportBufferSize)
+            internal static SizeRange CreateUnbounded(int minimumSize, int initialExportBufferSize)
             {
                 Debug.Assert(minimumSize >= 0);
                 Debug.Assert(initialExportBufferSize >= minimumSize);
@@ -466,7 +466,7 @@ namespace System.Security.Cryptography
                 return size < MinimumSizeInBytes;
             }
 
-            private sealed class ExactSize : SizeInBytes
+            private sealed class ExactSize : SizeRange
             {
                 private readonly int _size;
 
@@ -481,7 +481,7 @@ namespace System.Security.Cryptography
                 internal override int InitialExportBufferSizeInBytes => _size;
             }
 
-            private sealed class VariableSize : SizeInBytes
+            private sealed class VariableSize : SizeRange
             {
                 internal VariableSize(int minimumSize, int? maximumSize, int initialExportBufferSize)
                 {

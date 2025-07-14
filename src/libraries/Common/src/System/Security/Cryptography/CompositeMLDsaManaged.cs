@@ -220,7 +220,7 @@ namespace System.Security.Cryptography
             if (!mldsaSigned || !tradSigned)
             {
                 CryptographicOperations.ZeroMemory(destination);
-                throw new CryptographicException(); // TODO resx
+                throw new CryptographicException(SR.Cryptography_CompositeSignDataError);
             }
 
             //  6.  Output the encoded composite signature value.

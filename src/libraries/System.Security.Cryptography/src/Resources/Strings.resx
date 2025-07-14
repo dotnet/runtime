@@ -142,7 +142,7 @@
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
   <data name="Argument_PrivateKeyWrongSizeForAlgorithm" xml:space="preserve">
-    <value>The private key is too short for the indicated algorithm.</value>
+    <value>The private key is not the correct size for the indicated algorithm.</value>
   </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>
@@ -326,6 +326,9 @@
   </data>
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
+  </data>
+  <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
+    <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
   <data name="Cryptography_ConcurrentUseNotSupported" xml:space="preserve">
     <value>Concurrent operations from multiple threads on this type are not supported.</value>
@@ -746,6 +749,9 @@
   </data>
   <data name="Cryptography_TlsRequiresLabelAndSeed" xml:space="preserve">
     <value>The TLS key derivation function requires both the label and seed properties to be set.</value>
+  </data>
+  <data name="Cryptography_UnexpectedExportBufferSize" xml:space="preserve">
+    <value>The result returned by the cryptographic provider had an unexpected length.</value>
   </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>

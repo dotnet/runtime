@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Formats.Asn1;
 using Xunit;
 using Xunit.Sdk;

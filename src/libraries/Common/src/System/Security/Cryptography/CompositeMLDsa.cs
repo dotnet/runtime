@@ -215,10 +215,9 @@ namespace System.Security.Cryptography
                 if (!Algorithm.SignatureSize.IsValidSize(written))
                 {
                     CryptographicOperations.ZeroMemory(destination);
-                    bytesWritten = 0;
 
-                    // TODO resx
-                    throw new CryptographicException();
+                    bytesWritten = 0;
+                    throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
                 }
 
                 bytesWritten = written;
@@ -1548,10 +1547,9 @@ namespace System.Security.Cryptography
                 if (!Algorithm.PublicKeySize.IsValidSize(written))
                 {
                     CryptographicOperations.ZeroMemory(destination);
-                    bytesWritten = 0;
 
-                    // TODO resx
-                    throw new CryptographicException();
+                    bytesWritten = 0;
+                    throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
                 }
 
                 bytesWritten = written;
@@ -1626,10 +1624,9 @@ namespace System.Security.Cryptography
                 if (!Algorithm.PrivateKeySize.IsValidSize(written))
                 {
                     CryptographicOperations.ZeroMemory(destination);
-                    bytesWritten = 0;
 
-                    // TODO resx
-                    throw new CryptographicException();
+                    bytesWritten = 0;
+                    throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
                 }
 
                 bytesWritten = written;
@@ -1848,8 +1845,7 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(ret);
 
-                // TODO resx
-                throw new CryptographicException();
+                throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
             }
 
             return ret;

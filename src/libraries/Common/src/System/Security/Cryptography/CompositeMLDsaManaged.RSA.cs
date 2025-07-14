@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
 
 #if NETFRAMEWORK
             // RSA-PSS requires RSACng on .NET Framework
-            private static RSACng CreateRSA() => new();
+            private static RSACng CreateRSA() => new RSACng();
 #else
             private static RSA CreateRSA() => RSA.Create();
 #endif
@@ -101,7 +101,8 @@ namespace System.Security.Cryptography
 #endif
             }
 
-            public static RsaComponent GenerateKey(RsaAlgorithm algorithm) => throw new NotImplementedException();
+            public static RsaComponent GenerateKey(RsaAlgorithm algorithm) =>
+                throw new NotImplementedException();
 
             public static RsaComponent ImportPrivateKey(RsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
@@ -118,8 +119,7 @@ namespace System.Security.Cryptography
 
                     if (bytesRead != source.Length)
                     {
-                        // TODO resx
-                        throw new CryptographicException();
+                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                     }
 #else
                     ConvertRSAPrivateKeyToParameters(algorithm, source, (in parameters) =>
@@ -152,8 +152,7 @@ namespace System.Security.Cryptography
 
                     if (bytesRead != source.Length)
                     {
-                        // TODO resx
-                        throw new CryptographicException();
+                        throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                     }
 #else
                     ConvertRSAPublicKeyToParameters(algorithm, source, (in parameters) =>
