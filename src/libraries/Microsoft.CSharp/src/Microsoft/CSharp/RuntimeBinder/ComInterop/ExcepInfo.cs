@@ -59,15 +59,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             // 16-bit Windows error codes. This means it will never be an error
             // scode (HRESULT, < 0) and we will get a null exception.
             int errorCode = (scode != 0) ? scode : wCode;
-            Exception? exception = Marshal.GetExceptionForHR(errorCode);
 
             // If the error code doesn't resolve to an exception, we create a
             // generic COMException with the error code and no message.
-            if (exception is null)
-            {
-                // If we don't recognize the error code, create a generic COMException.
-                exception = new COMException(null, errorCode);
-            }
+            Exception exception = Marshal.GetExceptionForHR(errorCode) ?? new COMException(null, errorCode);
 
             string? message = ConvertAndFreeBstr(ref bstrDescription);
             if (message is not null)
