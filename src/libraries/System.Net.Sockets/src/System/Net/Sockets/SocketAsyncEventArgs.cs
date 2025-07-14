@@ -673,7 +673,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Gets the index of the next address in the specified family.</summary>
-        /// <param name="addresses">The array of IP addresses to search, typycally from DNS resolution</param>
+        /// <param name="addresses">The array of IP addresses to search, typically from DNS resolution</param>
         /// <param name="addressFamily">The address family to match.</param>
         /// <param name="lastIndex">The index of the last matched address or -1 on first round. </param>
         /// <returns>The index of the next matching address, or -1 if none found.</returns>
@@ -743,17 +743,17 @@ namespace System.Net.Sockets
 
                     int nextAddressIndex = 0;
                     int nextIPv6AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetworkV6, -1);
-                    int nextUPv4AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetwork, -1);
+                    int nextIPv4AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetwork, -1);
 
 
                     // We can do parallel connect only if socket was not specified and when there is at least one address of each AF.
-                    bool parallelConnect = connectAlgorithm == ConnectAlgorithm.Parallel && _currentSocket == null && RemoteEndPoint!.AddressFamily == AddressFamily.Unspecified &&
-                                           nextIPv6AddressIndex >= 0 && nextUPv4AddressIndex >= 0;
+                    bool parallelConnect = connectAlgorithm == ConnectAlgorithm.Parallel && _currentSocket == null &&
+                                            RemoteEndPoint!.AddressFamily == AddressFamily.Unspecified &&
+                                            nextIPv6AddressIndex >= 0 && nextIPv4AddressIndex >= 0;
 
                     if (parallelConnect)
                     {
-                        nextAddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetwork, -1);
-                        nextIPv6AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetworkV6, -1);
+                        nextAddressIndex = nextIPv4AddressIndex;
                         internalArgs.SecondarySaea = new MultiConnectSocketAsyncEventArgs();
                     }
                     internalArgs.SocketError = SocketError.Success;
@@ -942,10 +942,8 @@ namespace System.Net.Sockets
 
                             using (cancellationToken.UnsafeRegister(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), internalArgs))
                             {
-                                //var tasks = new List<ValueTask> { new ValueTask(internalArgs, internalArgs.Version) };
                                 if (internalArgs.SecondarySaea != null)
                                 {
-                                    //var tasks = new List<ValueTask> { new ValueTask(internalArgs, internalArgs.Version) };
                                     var t1 = new ValueTask(internalArgs, internalArgs.Version).AsTask();
                                     var t2 = new ValueTask(internalArgs.SecondarySaea, internalArgs.SecondarySaea.Version).AsTask();
                                     await Task.WhenAny(t1, t2).ConfigureAwait(false);
@@ -982,7 +980,7 @@ namespace System.Net.Sockets
                         lastError = internalArgs.SocketError;
 
                         // If multi-connect is no longer possible, terminate propagating the last error.
-                        if (!attemptSocket!.CanProceedWithMultiConnect)
+                        if (attemptSocket?.CanProceedWithMultiConnect != true)
                         {
                             break;
                         }
