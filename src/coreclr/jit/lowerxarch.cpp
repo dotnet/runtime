@@ -9255,15 +9255,15 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX512_LoadAlignedVector512:
         {
-            // In minOpts, we need to ensure that an unaligned address will fault when an explicit LoadAligned is used.
-            // Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for scalar
-            // loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
+            // For debug code, we need to ensure that an unaligned address will fault when an explicit LoadAligned is
+            // used. Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for
+            // scalar loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
             //
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
             // requirement.
 
-            return (supportsSIMDLoad &&
-                    ((!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16)) || !comp->opts.MinOpts()));
+            return (supportsSIMDLoad && ((!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16)) ||
+                                         comp->opts.Tier0OptimizationEnabled()));
         }
 
         case NI_X86Base_LoadScalarVector128:
@@ -9279,7 +9279,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512_BroadcastScalarToVector512:
         {
-            if (comp->opts.MinOpts() || !comp->canUseEmbeddedBroadcast())
+            if (!comp->opts.Tier0OptimizationEnabled() || !comp->canUseEmbeddedBroadcast())
             {
                 return false;
             }
@@ -9369,113 +9369,84 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         return;
     }
 
-    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
-    // The containment check has already validated that the child is sufficiently large.
-    //
     // We use the parent node's base type, because we must ensure that the constant repeats correctly for that size,
     // regardless of how the constant vector was created.
 
-    var_types   simdType            = childNode->TypeGet();
-    var_types   simdBaseType        = parentNode->GetSimdBaseType();
-    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
-    bool        isCreatedFromScalar = true;
+    var_types   simdBaseType    = parentNode->GetSimdBaseType();
+    CorInfoType simdBaseJitType = parentNode->GetSimdBaseJitType();
 
-    if (varTypeIsSmall(simdBaseType))
+    if (varTypeIsSmall(simdBaseType) || !childNode->IsBroadcast(simdBaseType))
     {
-        isCreatedFromScalar = false;
+        MakeSrcContained(parentNode, childNode);
+        return;
+    }
+
+    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
+    // The containment check has already validated that the child is sufficiently large.
+
+    var_types      simdType      = childNode->TypeGet();
+    NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
+    GenTree*       constScalar   = nullptr;
+
+    if (simdType == TYP_SIMD32)
+    {
+        broadcastName = NI_AVX2_BroadcastScalarToVector256;
+    }
+    else if (simdType == TYP_SIMD64)
+    {
+        broadcastName = NI_AVX512_BroadcastScalarToVector512;
     }
     else
     {
-        isCreatedFromScalar = childNode->IsBroadcast(simdBaseType);
+        assert(simdType == TYP_SIMD16);
     }
 
-    if (isCreatedFromScalar)
+    switch (simdBaseType)
     {
-        NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
-        if (simdType == TYP_SIMD32)
+        case TYP_FLOAT:
         {
-            broadcastName = NI_AVX2_BroadcastScalarToVector256;
+            float scalar = childNode->gtSimdVal.f32[0];
+            constScalar  = comp->gtNewDconNodeF(scalar);
+            break;
         }
-        else if (simdType == TYP_SIMD64)
+        case TYP_DOUBLE:
         {
-            broadcastName = NI_AVX512_BroadcastScalarToVector512;
+            double scalar = childNode->gtSimdVal.f64[0];
+            constScalar   = comp->gtNewDconNodeD(scalar);
+            break;
         }
-        else
+        case TYP_INT:
+        case TYP_UINT:
         {
-            assert(simdType == TYP_SIMD16);
+            int32_t scalar = childNode->gtSimdVal.i32[0];
+            constScalar    = comp->gtNewIconNode(scalar);
+            break;
         }
-
-        GenTree* constScalar = nullptr;
-        switch (simdBaseType)
+        case TYP_LONG:
+        case TYP_ULONG:
         {
-            case TYP_FLOAT:
-            {
-                float scalar = childNode->gtSimdVal.f32[0];
-                constScalar  = comp->gtNewDconNodeF(scalar);
-                break;
-            }
-            case TYP_DOUBLE:
-            {
-                double scalar = childNode->gtSimdVal.f64[0];
-                constScalar   = comp->gtNewDconNodeD(scalar);
-                break;
-            }
-            case TYP_INT:
-            {
-                int32_t scalar = childNode->gtSimdVal.i32[0];
-                constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
-                break;
-            }
-            case TYP_UINT:
-            {
-                uint32_t scalar = childNode->gtSimdVal.u32[0];
-                constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
-                break;
-            }
-            case TYP_LONG:
-            case TYP_ULONG:
-            {
-                int64_t scalar = childNode->gtSimdVal.i64[0];
-                constScalar    = comp->gtNewLconNode(scalar);
-                break;
-            }
-            default:
-                unreached();
+            int64_t scalar = childNode->gtSimdVal.i64[0];
+            constScalar    = comp->gtNewLconNode(scalar);
+            break;
         }
-
-        GenTreeHWIntrinsic* createScalar =
-            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe, simdBaseJitType,
-                                           16);
-        GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName,
-                                                                           simdBaseJitType, genTypeSize(simdType));
-        BlockRange().InsertBefore(childNode, broadcastNode);
-        BlockRange().InsertBefore(broadcastNode, createScalar);
-        BlockRange().InsertBefore(createScalar, constScalar);
-        LIR::Use use;
-        if (BlockRange().TryGetUse(childNode, &use))
-        {
-            use.ReplaceWith(broadcastNode);
-        }
-        else
-        {
-            broadcastNode->SetUnusedValue();
-        }
-
-        BlockRange().Remove(childNode);
-        LowerNode(createScalar);
-        LowerNode(broadcastNode);
-        if (varTypeIsFloating(simdBaseType))
-        {
-            MakeSrcContained(broadcastNode, createScalar);
-        }
-        else if (constScalar->TypeIs(TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG))
-        {
-            MakeSrcContained(broadcastNode, constScalar);
-        }
-        MakeSrcContained(parentNode, broadcastNode);
-        return;
+        default:
+            unreached();
     }
-    MakeSrcContained(parentNode, childNode);
+
+    GenTreeHWIntrinsic* broadcastNode =
+        comp->gtNewSimdHWIntrinsicNode(simdType, constScalar, broadcastName, simdBaseJitType, genTypeSize(simdType));
+
+    BlockRange().InsertBefore(childNode, constScalar, broadcastNode);
+    BlockRange().Remove(childNode);
+
+    GenTree** use      = nullptr;
+    bool      useFound = parentNode->TryGetUse(childNode, &use);
+    assert(useFound);
+
+    parentNode->ReplaceOperand(use, broadcastNode);
+
+    MakeSrcContained(broadcastNode, constScalar);
+    MakeSrcContained(parentNode, broadcastNode);
 }
 
 //------------------------------------------------------------------------
