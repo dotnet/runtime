@@ -16,6 +16,9 @@ namespace System.Security.Cryptography
             string hashOid,
             out bool restrictedHashAlgorithmCombination)
         {
+            int hashLambda;
+            string hashAlgorithmIdentifier;
+
             switch (hashOid)
             {
                 case Oids.Md5:
@@ -25,33 +28,36 @@ namespace System.Security.Cryptography
                     restrictedHashAlgorithmCombination = true;
                     return HashAlgorithmNames.SHA1;
                 case Oids.Sha256:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44;
-                    return HashAlgorithmNames.SHA256;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA256;
                 case Oids.Sha3_256:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44;
-                    return HashAlgorithmNames.SHA3_256;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_256;
                 case Oids.Sha384:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44 && Algorithm != MLDsaAlgorithm.MLDsa65;
-                    return HashAlgorithmNames.SHA384;
+                    hashLambda = 384 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA384;
                 case Oids.Sha3_384:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44 && Algorithm != MLDsaAlgorithm.MLDsa65;
-                    return HashAlgorithmNames.SHA3_384;
+                    hashLambda = 384 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_384;
                 case Oids.Sha512:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44 && Algorithm != MLDsaAlgorithm.MLDsa65 && Algorithm != MLDsaAlgorithm.MLDsa87;
-                    return HashAlgorithmNames.SHA512;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA512;
                 case Oids.Sha3_512:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44 && Algorithm != MLDsaAlgorithm.MLDsa65 && Algorithm != MLDsaAlgorithm.MLDsa87;
-                    return HashAlgorithmNames.SHA3_512;
-                case Oids.Shake128:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44;
-                    return HashAlgorithmNames.SHAKE128;
-                case Oids.Shake256:
-                    restrictedHashAlgorithmCombination = Algorithm != MLDsaAlgorithm.MLDsa44 && Algorithm != MLDsaAlgorithm.MLDsa65 && Algorithm != MLDsaAlgorithm.MLDsa87;
-                    return HashAlgorithmNames.SHAKE256;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_512;
+                case Oids.Shake128: // SHAKE-128 with 256-bits of output
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE128;
+                case Oids.Shake256: // SHAKE-256 with 512-bits of output
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE256;
                 default:
                     restrictedHashAlgorithmCombination = false;
                     return null;
             }
+
+            restrictedHashAlgorithmCombination = hashLambda < Algorithm.LambdaCollisionStrength;
+            return hashAlgorithmIdentifier;
         }
     }
 }
