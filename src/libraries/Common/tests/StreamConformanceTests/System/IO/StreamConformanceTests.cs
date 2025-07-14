@@ -1641,7 +1641,7 @@ namespace System.IO.Tests
         protected abstract Task<StreamPair> CreateConnectedStreamsAsync();
 
         protected (Stream writeable, Stream readable) GetReadWritePair(StreamPair streams) =>
-            GetReadWritePairs(streams).First();
+            GetReadWritePairs(streams).Last();
 
         protected IEnumerable<(Stream writeable, Stream readable)> GetReadWritePairs(StreamPair streams)
         {

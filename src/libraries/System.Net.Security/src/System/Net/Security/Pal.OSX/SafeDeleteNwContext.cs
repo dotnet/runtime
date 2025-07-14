@@ -57,7 +57,9 @@ namespace System.Net.Security
         private SafeX509ChainHandle? _peerCertChainHandle;
         internal SafeX509ChainHandle? PeerX509ChainHandle => _peerCertChainHandle;
 
-        // Provides backreference from native code
+        // Provides backreference from native code. This GC handle is expected
+        // to be always valid and is only freed once we are sure there will be
+        // no more callbacks from the native code
         private readonly GCHandle _thisHandle;
 
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -73,16 +75,7 @@ namespace System.Net.Security
             }
         };
         private ArrayBuffer _appReceiveBuffer = new(InitialReceiveBufferSize);
-        private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource()
-        {
-            CancellationAction = target =>
-            {
-                if (target is SafeDeleteNwContext nwContext)
-                {
-                    nwContext._appReceiveBufferTcs.TrySetException(new OperationCanceledException());
-                }
-            }
-        };
+        private ResettableValueTaskSource _appReceiveBufferTcs = new ResettableValueTaskSource();
         private Task? _pendingAppReceiveBufferFillTask;
         private readonly TaskCompletionSource _connectionClosedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
@@ -90,6 +83,7 @@ namespace System.Net.Security
         private bool _disposed;
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
+
         // TODO: Bind every tcs to the message, so we can complete it when the specific message is sent (avoiding wrong completions by post-handshake message etc.).
         private TaskCompletionSource? _currentWriteCompletionSource;
 
@@ -274,11 +268,32 @@ namespace System.Net.Security
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Internal buffer empty, refilling.");
 
-                // Previous read may have been canceled, leaving a pending read
-                // in the underlying native layer. In such cases, we await the
-                // pending read. Otherwise, we issue a new one.
-                _pendingAppReceiveBufferFillTask ??= FillAppDataBufferAsync(linkedCts.Token);
-                await _pendingAppReceiveBufferFillTask.ConfigureAwait(false);
+                // Since the native nw_connection_receive is asynchronous and
+                // not cancellable, we save reference to the pending task. In
+                // case of cancellation, we cancel only waiting on the task, and
+                // on the next ReadAsync call, we don't issue another native
+                // nw_connection_receive call, but rather wait for the pending
+                // task to complete.
+                _pendingAppReceiveBufferFillTask ??= FillAppDataBufferAsync();
+                try
+                {
+                    // Wait for the pending task to complete, which will fill the buffer
+                    await _pendingAppReceiveBufferFillTask.WaitAsync(linkedCts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Throw with correct cancellation token if cancellation was
+                    // requested by user
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // otherwise we are tearing down the connection, simulate EOS
+                    Debug.Assert(_shutdownCts.IsCancellationRequested, "Expected shutdown cancellation token to be triggered");
+
+                    ObjectDisposedException.ThrowIf(_disposed, _sslStream);
+                }
+                // other exception types are expected to be fatal and it is okay to not
+                // clear the pending task and rethrow the same exception
+
                 _pendingAppReceiveBufferFillTask = null;
 
                 if (_appReceiveBuffer.ActiveLength == 0)
@@ -298,9 +313,9 @@ namespace System.Net.Security
             }
         }
 
-        internal Task FillAppDataBufferAsync(CancellationToken cancellationToken)
+        internal Task FillAppDataBufferAsync()
         {
-            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken);
+            bool success = _appReceiveBufferTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
             Debug.Assert(success, "Concurrent FillAppDataBufferAsync detected");
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
@@ -330,6 +345,7 @@ namespace System.Net.Security
                         {
                             // We cancelled the connection, so this is expected as pending read will be cancelled.
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
+                            thisContext._appReceiveBufferTcs.TrySetResult();
                             return;
                         }
                         thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error)));
@@ -516,30 +532,18 @@ namespace System.Net.Security
                 // Wait for the transport read task to complete
                 if (_transportReadTask is Task transportTask)
                 {
-                    try
-                    {
-                        transportTask.Wait();
-                        transportTask.Dispose();
-                    }
-                    catch
-                    {
-                        // Ignore exceptions from the transport task
-                    }
+                    // Ignore exceptions from the transport task
+                    transportTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
                 }
 
+
+                // Wait for any pending app receive tasks so that we may safely dispose the app receive buffer.
                 if (_pendingAppReceiveBufferFillTask is Task t)
                 {
-                    try
-                    {
-                        t.Wait();
-                        t.Dispose();
-                    }
-                    catch
-                    {
-                        // Ignore exceptions from the pending task, as we are disposing
-                        // and it may have been cancelled or completed with an exception.
-                    }
+                    t.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
                 }
+
+                _appReceiveBuffer.Dispose();
 
                 // wait for callback signalling connection has been truly closed.
                 _connectionClosedTcs.Task.GetAwaiter().GetResult();
@@ -561,7 +565,6 @@ namespace System.Net.Security
                 ConnectionHandle.Dispose();
                 _framerHandle?.Dispose();
                 _peerCertChainHandle?.Dispose();
-                _appReceiveBuffer.Dispose();
                 _shutdownCts?.Dispose();
             }
             base.Dispose(disposing);
@@ -570,10 +573,6 @@ namespace System.Net.Security
         private static SafeDeleteNwContext ResolveThisHandle(IntPtr thisHandle)
         {
             GCHandle handle = GCHandle.FromIntPtr(thisHandle);
-            if (!handle.IsAllocated)
-            {
-                throw new ObjectDisposedException(nameof(SafeDeleteNwContext), "Handle has been freed");
-            }
             return (SafeDeleteNwContext)handle.Target!;
         }
 
@@ -706,37 +705,39 @@ namespace System.Net.Security
                     nwContext = ResolveThisHandle(thisHandle);
                 }
 
+                if (nwContext == null)
+                {
+                    Debug.Assert(statusUpdate == NetworkFrameworkStatusUpdates.DebugLog,
+                        "StatusUpdateCallback called with null thisHandle, but not a DebugLog update");
+                }
+
                 if (NetEventSource.Log.IsEnabled() && statusUpdate != NetworkFrameworkStatusUpdates.DebugLog)
                     NetEventSource.Info(nwContext, $"Received status update: {statusUpdate}");
 
                 switch (statusUpdate)
                 {
                     case NetworkFrameworkStatusUpdates.FramerStart:
-                        nwContext?.FramerStartCallback(new SafeNwHandle(Interop.NetworkFramework.Retain(data), true));
-                        break;
-                    case NetworkFrameworkStatusUpdates.FramerStop:
-                        nwContext?.FramerStopCallback();
+                        nwContext!.FramerStartCallback(new SafeNwHandle(Interop.NetworkFramework.Retain(data), true));
                         break;
                     case NetworkFrameworkStatusUpdates.HandshakeFinished:
-                        nwContext?.HandshakeFinished();
+                        nwContext!.HandshakeFinished();
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionFailed:
-                        if (error != null)
-                        {
-                            nwContext?.ConnectionFailed(in *error);
-                        }
+                        Debug.Assert(error != null, "ConnectionFailed should have an error");
+                        nwContext!.ConnectionFailed(in *error);
                         break;
                     case NetworkFrameworkStatusUpdates.ConnectionCancelled:
-                        nwContext?.ConnectionClosed();
+                        nwContext!.ConnectionClosed();
                         break;
                     case NetworkFrameworkStatusUpdates.CertificateAvailable:
                         global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeX509ChainHandle>.ManagedToUnmanagedOut marshaller = new();
                         marshaller.FromUnmanaged(data);
-                        nwContext?.CertificateAvailable(marshaller.ToManaged());
+                        nwContext!.CertificateAvailable(marshaller.ToManaged());
                         marshaller.Free();
                         break;
                     case NetworkFrameworkStatusUpdates.DebugLog:
-                        HandleDebugLog(nwContext, data, data2);
+                        if (NetEventSource.Log.IsEnabled())
+                            NetEventSource.Info(nwContext, Marshal.PtrToStringAnsi(data)!, "Native");
                         break;
                     default: // We shouldn't hit here.
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nwContext, $"Unknown status update: {statusUpdate}");
@@ -755,12 +756,6 @@ namespace System.Net.Security
         private void FramerStartCallback(SafeNwHandle framerHandle)
         {
             _framerHandle = framerHandle;
-        }
-
-        private void FramerStopCallback()
-        {
-            _framerHandle?.Dispose();
-            _framerHandle = null;
         }
 
         private void HandshakeFinished()
@@ -796,12 +791,6 @@ namespace System.Net.Security
         private void CertificateAvailable(SafeX509ChainHandle peerCertChainHandle)
         {
             _peerCertChainHandle = peerCertChainHandle;
-        }
-
-        private static void HandleDebugLog(SafeDeleteNwContext? nwContext, IntPtr _, IntPtr data)
-        {
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(nwContext, Marshal.PtrToStringAnsi(data)!, "Native");
         }
 
         private static string[] ExtractAcceptableIssuers(IntPtr acceptableIssuersHandle)

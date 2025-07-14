@@ -448,7 +448,6 @@ namespace System.Net.Security
                 SafeDeleteNwContext.IsNetworkFrameworkAvailable &&
                 (sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.None ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
-                   sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
                     (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13)));
         }
 

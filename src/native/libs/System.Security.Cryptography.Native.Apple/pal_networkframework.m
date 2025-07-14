@@ -34,7 +34,7 @@ static nw_endpoint_t _endpoint;
     do { \
         char buff[256]; \
         snprintf(buff, sizeof(buff), __VA_ARGS__); \
-        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)-1, (size_t)(buff), NULL); \
+        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)(buff), (size_t)(-1), NULL); \
     } while (0)
 
 #define MANAGED_STATE_KEY "GCHANDLE"
@@ -348,12 +348,7 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
 
 static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer)
 {
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 8.4, *))
-    {
-        void* state = FramerGetManagedState(framer);
-        (_statusFunc)(state, PAL_NwStatusUpdates_FramerStop, 0, 0, NULL);
-    }
-
+    (void)framer;
     return TRUE;
 };
 
