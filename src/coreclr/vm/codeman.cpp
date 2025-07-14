@@ -5088,17 +5088,6 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
     }
     CONTRACTL_END
 
-#ifdef FEATURE_INTERPRETER
-    // For interpreted methods, the currentPC can point to the InterpreterPrecode. So we need to get the MethodDesc from it,
-    // the EECodeInfo works only for the actual IR bytecode.
-    PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(currentPC);
-    if (pPrecode != NULL && pPrecode->GetType() == InterpreterPrecode::Type)
-    {
-        // If we are in an interpreter precode, we get the MethodDesc from the precode
-        return pPrecode->GetMethodDesc();
-    }
-#endif // FEATURE_INTERPRETER
-
     EECodeInfo codeInfo(currentPC);
     if (!codeInfo.IsValid())
         return NULL;
@@ -6407,7 +6396,7 @@ size_t ReadyToRunJitManager::WalkILOffsets(
     BoundsType boundsType,
     void* pContext,
     size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
-{
+{   
     CONTRACTL {
         THROWS;       // on OOM.
         GC_NOTRIGGER; // getting vars shouldn't trigger
