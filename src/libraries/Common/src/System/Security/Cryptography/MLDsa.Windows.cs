@@ -58,6 +58,7 @@ namespace System.Security.Cryptography
                 case Oids.Shake256: // SHAKE-256 with 512-bits of output
                     hashLambda = 512 / 2;
                     hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE256;
+                    break;
                 default:
                     restrictedHashAlgorithmCombination = false;
                     return null;
