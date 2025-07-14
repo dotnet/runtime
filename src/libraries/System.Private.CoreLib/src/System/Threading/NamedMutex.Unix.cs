@@ -177,7 +177,7 @@ namespace System.Threading
                     name,
                     isUserScope,
                     new SharedMemorySharedDataHeader(SharedMemoryType.Mutex, SyncSystemVersion),
-                    UsePThreadMutexes ? NamedMutexProcessDataWithPThreads.SharedData.Size : (nuint)sizeof(NamedMutexProcessDataNoPThreads.SharedData),
+                    UsePThreadMutexes ? NamedMutexProcessDataWithPThreads.SharedDataSize : (nuint)sizeof(NamedMutexProcessDataNoPThreads.SharedData),
                     createIfNotExist,
                     acquireLockIfCreated,
                     out created,
@@ -226,15 +226,11 @@ namespace System.Threading
         {
             if (UsePThreadMutexes)
             {
-                NamedMutexProcessDataWithPThreads.SharedData* sharedData = (NamedMutexProcessDataWithPThreads.SharedData*)v;
-                if (Interop.Sys.PThreadMutex_Init(sharedData->LockAddress) != 0)
+                if (Interop.Sys.LowLevelCrossProcessMutex_Init(v) != 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     throw Interop.GetExceptionForIoErrno(errorInfo, "Failed to initialize pthread mutex");
                 }
-                sharedData->LockOwnerProcessId = InvalidProcessId;
-                sharedData->LockOwnerThreadId = InvalidThreadId;
-                sharedData->IsAbandoned = false;
             }
             else
             {
@@ -257,32 +253,36 @@ namespace System.Threading
 
     internal sealed unsafe class NamedMutexProcessDataWithPThreads(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader) : NamedMutexProcessDataBase(processDataHeader)
     {
-        private readonly SharedData* _sharedData = (SharedData*)SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader);
+        public static nuint SharedDataSize { get; } = (nuint)Interop.Sys.LowLevelCrossProcessMutex_Size();
+        private readonly void* _sharedData = SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader);
 
         public override bool IsLockOwnedByCurrentThread
         {
             get
             {
-                return _sharedData->LockOwnerProcessId == (uint)Environment.ProcessId &&
-                       _sharedData->LockOwnerThreadId == (uint)Thread.CurrentThread.ManagedThreadId;
+                Interop.Sys.LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(_sharedData, out uint ownerProcessId, out uint ownerThreadId);
+                return ownerProcessId == (uint)Environment.ProcessId &&
+                       ownerThreadId == (uint)Thread.CurrentThread.ManagedThreadId;
             }
         }
 
         protected override void SetLockOwnerToCurrentThread()
         {
-            _sharedData->LockOwnerProcessId = (uint)Environment.ProcessId;
-            _sharedData->LockOwnerThreadId = (uint)Thread.CurrentThread.ManagedThreadId;
+            Interop.Sys.LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(
+                _sharedData,
+                (uint)Environment.ProcessId,
+                (uint)Thread.CurrentThread.ManagedThreadId);
         }
 
         protected override bool IsAbandoned
         {
-            get => _sharedData->IsAbandoned;
-            set => _sharedData->IsAbandoned = value;
+            get => Interop.Sys.LowLevelCrossProcessMutex_IsAbandoned(_sharedData);
+            set => Interop.Sys.LowLevelCrossProcessMutex_SetAbandoned(_sharedData, value);
         }
 
         protected override MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds)
         {
-            Interop.Error lockResult = (Interop.Error)Interop.Sys.PThreadMutex_Acquire(_sharedData->LockAddress, timeoutMilliseconds);
+            Interop.Error lockResult = (Interop.Error)Interop.Sys.LowLevelCrossProcessMutex_Acquire(_sharedData, timeoutMilliseconds);
 
             MutexTryAcquireLockResult result = lockResult switch
             {
@@ -315,7 +315,7 @@ namespace System.Threading
                 finally
                 {
                     // The lock is released upon acquiring a recursive lock from the thread that already owns the lock
-                    Interop.Sys.PThreadMutex_Release(_sharedData->LockAddress);
+                    Interop.Sys.LowLevelCrossProcessMutex_Release(_sharedData);
                 }
             }
 
@@ -326,10 +326,12 @@ namespace System.Threading
         {
             Debug.Assert(IsLockOwnedByCurrentThread);
             Debug.Assert(_lockCount == 0);
-            _sharedData->LockOwnerProcessId = InvalidProcessId;
-            _sharedData->LockOwnerThreadId = InvalidThreadId;
+            Interop.Sys.LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(
+                _sharedData,
+                InvalidProcessId,
+                InvalidThreadId);
 
-            Interop.Sys.PThreadMutex_Release(_sharedData->LockAddress);
+            Interop.Sys.LowLevelCrossProcessMutex_Release(_sharedData);
         }
 
         public override void Close(bool releaseSharedData)
@@ -339,38 +341,8 @@ namespace System.Threading
             if (releaseSharedData)
             {
                 // Release the pthread mutex.
-                Interop.Sys.PThreadMutex_Destroy(_sharedData->LockAddress);
+                Interop.Sys.LowLevelCrossProcessMutex_Destroy(_sharedData);
             }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe ref struct SharedData
-        {
-            public static nuint Size => (nuint)PThreadMutexSize + IsAbandonedOffset + sizeof(byte);
-            private static readonly int PThreadMutexSize = Interop.Sys.PThreadMutex_Size();
-
-            private const uint LockOwnerProcessIdOffset = 0x0;
-            private const uint LockOwnerThreadIdOffset = 0x4;
-            private const uint IsAbandonedOffset = 0x8;
-
-            [UnscopedRef]
-            public ref uint LockOwnerProcessId => ref *(uint*)((byte*)Unsafe.AsPointer(ref this) + PThreadMutexSize + LockOwnerProcessIdOffset);
-            [UnscopedRef]
-            public ref uint LockOwnerThreadId => ref *(uint*)((byte*)Unsafe.AsPointer(ref this) + PThreadMutexSize + LockOwnerThreadIdOffset);
-
-            public bool IsAbandoned
-            {
-                get
-                {
-                    return *((byte*)Unsafe.AsPointer(ref this) + PThreadMutexSize + IsAbandonedOffset) != 0;
-                }
-                set
-                {
-                    *((byte*)Unsafe.AsPointer(ref this) + PThreadMutexSize + IsAbandonedOffset) = value ? (byte)1 : (byte)0;
-                }
-            }
-
-            public void* LockAddress => Unsafe.AsPointer(ref this);
         }
     }
 

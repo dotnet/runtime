@@ -2488,8 +2488,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PThreadMutex.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.PThreadMutex.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelCrossProcessMutex.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.LowLevelCrossProcessMutex.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PosixFAdvise.cs</Link>
