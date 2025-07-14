@@ -11,18 +11,12 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
 {
     const char* className = NULL;
     const char* namespaceName = NULL;
-    const char* methodName = compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+    const char* enclosingClassNames[2] = {nullptr};
+    const char* methodName = compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames, ArrLen(enclosingClassNames));
 
     // Array methods don't have metadata
     if (!namespaceName)
         return NI_Illegal;
-
-    // Namespace is zero-terinated empty string
-    if (!strcmp(className, "Arm64"))
-    {
-        if (!strcmp(methodName, "get_IsSupported"))
-            return NI_IsSupported_False;
-    }
 
     if (!HAS_PREFIX(namespaceName, "System"))
         return NI_Illegal;
