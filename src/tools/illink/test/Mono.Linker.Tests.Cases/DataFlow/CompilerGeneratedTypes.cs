@@ -164,27 +164,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-        [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#if !DEBUG
-        [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333")]
-        [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-        [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
-#endif
         private static void IteratorInsideClosure()
         {
             Outer<string>();
 
 #if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-#if DEBUG
             [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
             [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
             [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#else // !DEBUG
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
+            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
 #endif
             IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
@@ -203,27 +191,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-        [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#if !DEBUG
-        [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333")]
-        [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-        [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
-#endif
         private static void IteratorInsideClosureMismatch()
         {
             Outer<string>();
 
 #if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-#if DEBUG
             [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
             [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
             [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#else // !DEBUG
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.NativeAot,"https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.NativeAot,"https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
+            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
 #endif
             IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T1>()
             {
