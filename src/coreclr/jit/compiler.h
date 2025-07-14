@@ -6153,8 +6153,6 @@ public:
 
     bool fgExpandRarelyRunBlocks();
 
-    bool fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter);
-
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
     PhaseStatus fgHeadTailMerge(bool early);
