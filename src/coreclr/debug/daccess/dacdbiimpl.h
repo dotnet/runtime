@@ -183,13 +183,6 @@ private:
                            CORDB_ADDRESS    startAddr,
                            SequencePoints * pNativeMap);
 
-    // Helper to compose a IL->IL and IL->Native mapping
-    void ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount);
-
-    // Helper function to convert an instrumented IL offset to the corresponding original IL offset.
-    ULONG TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
-                                                  const InstrumentedILOffsetMapping * pMapping);
-
 public:
 //----------------------------------------------------------------------------------
     // class MapSortILMap:  A template class that will sort an array of DebuggerILToNativeMap.
