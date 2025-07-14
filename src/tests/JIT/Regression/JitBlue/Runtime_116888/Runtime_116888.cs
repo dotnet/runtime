@@ -48,7 +48,10 @@ public class TestClass
     [Fact]
     public static void TestEntryPoint()
     {
-        new TestClass().Method0();
+        if (Sve.IsSupported)
+        {
+            new TestClass().Method0();
+        }
         return;
     }
 }
