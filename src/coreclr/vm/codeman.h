@@ -183,9 +183,6 @@ public:
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
 #endif // FEATURE_EH_FUNCLETS
-
-public:
-// if we're using the indirect codeheaders then all enumeration is done by the code header
 };
 
 struct InterpreterRealCodeHeader
@@ -468,10 +465,10 @@ struct CodeHeapRequestInfo
 // committed on demand).
 //
 // A CodeHeap is naturally protected from multiple threads by the code heap
-// critical section - m_pCodeHeapCritSec - so if the implementation of the heap
+// critical section - m_CodeHeapLock - so if the implementation of the heap
 // is only for the code manager, no locking needs to occur.
 // It's important however that a delete operation on the CodeHeap (if any) happens
-// via EECodeGenManager::FreeCodeMemory(HostCodeHeap*, void*)
+// via a EECodeGenManager and not directly.
 //
 // The heap to be created depends on the MethodDesc that is being compiled.
 // Standard code uses the LoaderCodeHeap, a heap based on the LoaderHeap.
@@ -490,10 +487,10 @@ class CodeHeap
     VPTR_BASE_VTABLE_CLASS(CodeHeap)
 
 public:
-    CodeHeap() {}
+    CodeHeap() = default;
 
     // virtual dtor. Clean up heap
-    virtual ~CodeHeap() {}
+    virtual ~CodeHeap() = default;
 
     // Alloc the specified numbers of bytes for code. Returns NULL if the request does not fit
     // Space for header is reserved immediately before. It is not included in size.
@@ -502,9 +499,6 @@ public:
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
 #endif
-
-protected:
-    friend class EEJitManager;
 };
 
 //-----------------------------------------------------------------------------
@@ -562,7 +556,7 @@ struct HeapList
 //
 typedef VPTR(class LoaderCodeHeap) PTR_LoaderCodeHeap;
 
-class LoaderCodeHeap : CodeHeap
+class LoaderCodeHeap final : public CodeHeap
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -582,10 +576,7 @@ public:
     static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap *pJitMetaHeap);
 
 public:
-    virtual ~LoaderCodeHeap()
-    {
-        WRAPPER_NO_CONTRACT;
-    }
+    virtual ~LoaderCodeHeap() = default;
 
     virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs) DAC_EMPTY_RET(NULL);
 
@@ -598,32 +589,23 @@ public:
 #endif
 };
 
-#if defined(HOST_64BIT)
-// On non X86 platforms, the OS defined UnwindInfo (accessed from RUNTIME_FUNCTION
-// structures) to  support the ability unwind the stack.   Unfortunatey the pre-Win8
+typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
+// On Windows x64, publish OS UnwindInfo (accessed from RUNTIME_FUNCTION
+// structures) to support the ability unwind the stack. Unfortunately the pre-Win8
 // APIs defined a callback API for publishing this data dynamically that ETW does
-// not use (and really can't because the walk happens in the kernel).   In Win8
+// not use (and really can't because the walk happens in the kernel). In Win8
 // new APIs were defined that allow incremental publishing via a table.
 //
 // UnwindInfoTable is a class that wraps the OS APIs that we use to publish
-// this table.  Its job is to allocate the table, deallocate it when we are
-// done and allow us to add new entries one at a time (AddToUnwindInfoTable)
+// this table. Its job is to allocate the table, deallocate it when we are
+// done and allow us to add new entries one at a time (AddToUnwindInfoTable).
 //
 // Each _rangesection has a UnwindInfoTable's which hold the
 // RUNTIME_FUNCTION array as well as other bookkeeping (the current and maximum
 // size of the array, and the handle used to publish it to the OS.
 //
-// Ideally we would just use this new API when it is available, however to mininmize
-// risk and to make the change perfectly pay-for-play, we us the original mechanism
-// ALWAYS, and in addition publish via the Table ONLY WHEN ETW JIT events are turned
-// on.
-//
-// This class implements a 'catchup' routine that allows us to publish existing JITTed
-// methods when ETW turns on.  Currently this is 'sticky' (once we start publishing
-// both ways, we do so for the life of the process.
-//
-typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
-class UnwindInfoTable {
+class UnwindInfoTable final
+{
 public:
     // All public functions are thread-safe.
 
@@ -631,25 +613,24 @@ public:
     static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount);
     static void UnpublishUnwindInfoForMethod(TADDR entryPoint);
 
+    static void Initialize();
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+private:
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
-    // These are used by the stublinker and the high-level method functions above
+    // These are used by the high-level method functions above
     static void AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, T_RUNTIME_FUNCTION* data, TADDR rangeStart, TADDR rangeEnd);
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
-    // By default this publishing is off, this routine turns it on (and optionally publishes existing methods)
-    static void PublishUnwindInfo(bool publishExisting);
+public:
     ~UnwindInfoTable();
 
 private:
     void UnRegister();
     void Register();
     UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG size);
-    static void PublishUnwindInfoForExistingMethods();
 
 private:
-    static Volatile<bool> s_publishingActive;            // Publishing to ETW is turned on
-    static class Crst*  s_pUnwindInfoTableLock;          // lock protects all public UnwindInfoTable functions
-
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
     ULONG_PTR           iRangeEnd;        // End of memory described by this table
@@ -657,9 +638,8 @@ private:
     ULONG               cTableCurCount;
     ULONG               cTableMaxCount;
     int                 cDeletedEntries;    // Number of slots we removed.
+#endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
-
-#endif // defined(HOST_64BIT)
 
 //-----------------------------------------------------------------------------
 // The ExecutionManager uses RangeSection as the abstraction of a contiguous
@@ -1649,7 +1629,7 @@ class CodeFragmentHeap : public ILoaderHeapBackout
     PTR_FreeBlock       m_pFreeBlocks;
     StubCodeBlockKind   m_kind;
 
-    Crst                m_CritSec;
+    Crst                m_Lock;
 
     void AddBlock(VOID * pMem, size_t dwSize);
     void RemoveBlock(FreeBlock ** ppBlock);
@@ -1815,6 +1795,53 @@ protected:
     PTR_ICodeManager m_runtimeSupport;
 };
 
+#if !defined(DACCESS_COMPILE)
+class CodeHeapIterator final
+{
+    // Captured state for each heap in the iterator.
+    struct HeapListState
+    {
+        HeapList* Heap;
+        void* MapBase;
+        void* HdrMap;
+        size_t MaxCodeHeapSize;
+    };
+
+    EECodeGenManager* m_manager;
+    MethodSectionIterator m_Iterator;
+    CUnorderedArray<HeapListState, 64> m_Heaps;
+    int32_t m_HeapsIndexNext;
+    LoaderAllocator* m_pLoaderAllocatorFilter;
+    MethodDesc* m_pCurrent;
+
+public:
+    CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList, LoaderAllocator* pLoaderAllocatorFilter);
+    ~CodeHeapIterator();
+
+    CodeHeapIterator(CodeHeapIterator const&) = delete;
+    CodeHeapIterator& operator=(CodeHeapIterator const&) = delete;
+    CodeHeapIterator(CodeHeapIterator&&) = default;
+    CodeHeapIterator& operator=(CodeHeapIterator&&) = default;
+
+    bool Next();
+
+    MethodDesc* GetMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pCurrent;
+    }
+
+    TADDR GetMethodCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (TADDR)m_Iterator.GetMethodCode();
+    }
+
+private:
+    bool NextMethodSectionIterator();
+};
+#endif // !DACCESS_COMPILE
+
 class HostCodeHeap;
 typedef VPTR(class HostCodeHeap) PTR_HostCodeHeap;
 
@@ -1826,14 +1853,16 @@ class EECodeGenManager : public IJitManager
 #endif
     friend class CheckDuplicatedStructLayouts;
     friend class EECodeInfo;
+    friend class CodeHeapIterator;
 
     VPTR_ABSTRACT_VTABLE_CLASS(EECodeGenManager, IJitManager)
 
-    struct DomainCodeHeapList {
+    struct DomainCodeHeapList
+    {
         LoaderAllocator *m_pAllocator;
         CDynArray<HeapList *> m_CodeHeapList;
-        DomainCodeHeapList();
-        ~DomainCodeHeapList();
+        DomainCodeHeapList(LoaderAllocator* allocator);
+        ~DomainCodeHeapList() = default;
     };
 
 public:
@@ -1892,50 +1921,51 @@ public:
     virtual TypeHandle ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                        CrawlFrame *pCf);
 
-    template<typename TCodeHeader>
-    void RemoveJitData(TCodeHeader* pCHdr, size_t GCinfo_len, size_t EHinfo_len);
     void Unload(LoaderAllocator* pAllocator);
+
+public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
 #ifdef FEATURE_EH_FUNCLETS
                  , UINT nUnwindInfos
 #endif
                   );
 
-    BYTE *allocFromJitMetaHeap(MethodDesc *pMD, DWORD blockSize, size_t * pAllocationSize);
+    BYTE *AllocFromJitMetaHeap(MethodDesc *pMD, size_t blockSize);
 
-	// Heap Management functions
+    // Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
-    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize);
-    void NibbleMapDelete(HeapList* pHp, TADDR pCode);
-    void NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode);
+    void AddToCleanupList(HostCodeHeap* pCodeHeap);
+    bool TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* codeStart);
+    CodeHeapIterator GetCodeHeapIterator(LoaderAllocator* pLoaderAllocatorFilter = NULL);
 
-    void FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart);
-    void RemoveFromCleanupList(HostCodeHeap *pCodeHeap);
-    void AddToCleanupList(HostCodeHeap *pCodeHeap);
-    void DeleteCodeHeap(HeapList *pHeapList);
-    void RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator);
-
-    HeapList* NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapList *pADHeapList);
-    bool CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap);
+private:
+    void AddRefIterator();
+    void ReleaseIterator();
 
 protected:
-    void* allocCodeRaw(CodeHeapRequestInfo *pInfo, size_t header, size_t blockSize, unsigned align, HeapList ** ppCodeHeap);
-    virtual void UnpublishUnwindInfoForMethod(TADDR codeStart) = 0;
     virtual void DeleteFunctionTable(PVOID pvTableID) = 0;
 
-    DomainCodeHeapList *GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
+    void* AllocCodeWorker(CodeHeapRequestInfo *pInfo, size_t header, size_t blockSize, unsigned align, HeapList ** ppCodeHeap);
+    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize);
+    void NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode);
+
+private:
+    HeapList* NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapList *pADHeapList);
+    void DeleteCodeHeap(HeapList *pHeapList);
+    void RemoveFromCleanupList(HostCodeHeap *pCodeHeap);
+    void RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator);
+    bool CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap);
+
+    DomainCodeHeapList* GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
     DomainCodeHeapList* CreateCodeHeapList(CodeHeapRequestInfo *pInfo);
     LoaderHeap* GetJitMetaHeap(MethodDesc *pMD);
 
-    HeapList * GetCodeHeapList()
-    {
-        return m_pCodeHeap;
-    }
-
+    void UnloadWorker(LoaderAllocator* pAllocator);
+    void FreeHostCodeHeapMemoryWorker(HostCodeHeap* pCodeHeap, void* codeStart);
 #else // !DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 protected:
@@ -1944,13 +1974,19 @@ protected:
 #endif // !DACCESS_COMPILE
 
 private:
-    PTR_HeapList m_pCodeHeap;
+    PTR_HeapList m_pAllCodeHeaps; // Includes all code heaps, including dynamic ones.
     PTR_HostCodeHeap m_cleanupList;
+
     // must hold critical section to access this structure.
-    CUnorderedArray<DomainCodeHeapList *, 5> m_DomainCodeHeaps;
-    CUnorderedArray<DomainCodeHeapList *, 5> m_DynamicDomainCodeHeaps;
+    CUnorderedArray<DomainCodeHeapList*, 5> m_DomainCodeHeaps;
+    CUnorderedArray<DomainCodeHeapList*, 5> m_DynamicDomainCodeHeaps;
+#ifndef DACCESS_COMPILE
+    CUnorderedArray<LoaderAllocator*, 4> m_delayUnload;
+#endif // !DACCESS_COMPILE
+
 protected:
-    Crst m_CodeHeapCritSec;
+    Crst m_CodeHeapLock;
+    ULONG m_iteratorCount;
     bool m_storeRichDebugInfo;
 };
 
@@ -2011,7 +2047,6 @@ class EEJitManager final : public EECodeGenManager
     friend class DacDbiInterfaceImpl;
 #endif
     friend class CheckDuplicatedStructLayouts;
-    friend class CodeHeapIterator;
 
     VPTR_VTABLE_CLASS(EEJitManager, EECodeGenManager)
 
@@ -2057,11 +2092,8 @@ public:
 
 #if !defined DACCESS_COMPILE
     EEJitManager();
-
-    // No destructor necessary. Only one instance of this class that is destroyed at process shutdown.
-    // ~EEJitManager();
+    ~EEJitManager() = default;
 #endif // !DACCESS_COMPILE
-
 
     virtual DWORD GetCodeType()
     {
@@ -2115,12 +2147,12 @@ public:
 #if !defined DACCESS_COMPILE
     BOOL                LoadJIT();
 
-    JumpStubBlockHeader* allocJumpStubBlock(MethodDesc* pMD, DWORD numJumps,
+    JumpStubBlockHeader* AllocJumpStubBlock(MethodDesc* pMD, DWORD numJumps,
                                             BYTE * loAddr, BYTE * hiAddr,
                                             LoaderAllocator *pLoaderAllocator,
                                             bool throwOnOutOfMemoryWithinRange);
 
-    void *              allocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind);
+    void *              AllocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind);
 #endif // !DACCESS_COMPILE
 
     static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
@@ -2148,33 +2180,7 @@ public:
 #endif // FEATURE_EH_FUNCLETS
 
 #if !defined DACCESS_COMPILE
-    class CodeHeapIterator
-    {
-        CrstHolder m_lockHolder;
-        HeapList *m_pHeapList;
-        LoaderAllocator *m_pLoaderAllocator;
-        MethodSectionIterator m_Iterator;
-        MethodDesc *m_pCurrent;
-
-    public:
-        CodeHeapIterator(LoaderAllocator *pLoaderAllocatorFilter = NULL);
-        ~CodeHeapIterator();
-        BOOL Next();
-
-        MethodDesc *GetMethod()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_pCurrent;
-        }
-
-        TADDR GetMethodCode()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (TADDR)m_Iterator.GetMethodCode();
-        }
-    };
 protected:
-    virtual void UnpublishUnwindInfoForMethod(TADDR codeStart);
     virtual void DeleteFunctionTable(PVOID pvTableID);
 #endif // !DACCESS_COMPILE
 
@@ -2193,7 +2199,7 @@ public:
     }
 
 private :
-    Crst                m_JitLoadCritSec;
+    Crst                m_JitLoadLock;
 
 #ifdef TARGET_AMD64
 private:
@@ -2623,7 +2629,7 @@ public:
 
 #ifdef FEATURE_READYTORUN
 
-class ReadyToRunJitManager final: public IJitManager
+class ReadyToRunJitManager final : public IJitManager
 {
     VPTR_VTABLE_CLASS(ReadyToRunJitManager, IJitManager)
 
@@ -2803,11 +2809,6 @@ public:
 
 #if !defined DACCESS_COMPILE
 protected:
-    virtual void UnpublishUnwindInfoForMethod(TADDR codeStart)
-    {
-        // Nothing to do for the interpreter
-    }
-
     virtual void DeleteFunctionTable(PVOID pvTableID)
     {
         // Nothing to do for the interpreter
@@ -2837,7 +2838,7 @@ public:
 #endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 private :
-    Crst m_interpreterLoadCritSec;
+    Crst m_interpreterLoadLock;
 };
 
 #endif // FEATURE_INTERPRETER

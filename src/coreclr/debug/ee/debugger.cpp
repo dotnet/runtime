@@ -2286,10 +2286,10 @@ void DebuggerLazyInit::Init()
 DebuggerLazyInit::~DebuggerLazyInit()
 {
     {
-        USHORT cBlobs = m_pMemBlobs.Count();
+        INT32 cBlobs = m_pMemBlobs.Count();
         void **rgpBlobs = m_pMemBlobs.Table();
 
-        for (int i = 0; i < cBlobs; i++)
+        for (INT32 i = 0; i < cBlobs; i++)
         {
             g_pDebugger->ReleaseRemoteBuffer(rgpBlobs[i], false);
         }
@@ -12154,10 +12154,10 @@ HRESULT Debugger::ReleaseRemoteBuffer(void *pBuffer, bool removeFromBlobList)
     // Remove the buffer from the blob list if necessary.
     if (removeFromBlobList)
     {
-        USHORT cBlobs = GetMemBlobs()->Count();
+        INT32 cBlobs = GetMemBlobs()->Count();
         void **rgpBlobs = GetMemBlobs()->Table();
 
-        USHORT i;
+        INT32 i;
         for (i = 0; i < cBlobs; i++)
         {
             if (rgpBlobs[i] == pBuffer)
