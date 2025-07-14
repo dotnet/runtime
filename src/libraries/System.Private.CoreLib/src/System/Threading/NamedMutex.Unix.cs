@@ -31,7 +31,7 @@ namespace System.Threading
         // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
         private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD();
 
-        private SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
+        private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
         private Thread? _lockOwnerThread;
         private NamedMutexProcessDataBase? _nextInThreadOwnedNamedMutexList;
@@ -42,16 +42,6 @@ namespace System.Threading
         public bool IsLockOwnedByAnyThreadInThisProcess => _lockOwnerThread is not null;
 
         protected abstract void SetLockOwnerToCurrentThread();
-
-        public void IncrementRefCount()
-        {
-            _processDataHeader.IncrementRefCount();
-        }
-
-        public void DecrementRefCount()
-        {
-            _processDataHeader.DecrementRefCount();
-        }
 
         public MutexTryAcquireLockResult TryAcquireLock(WaitSubsystem.ThreadWaitInfo waitInfo, int timeoutMilliseconds, ref WaitSubsystem.LockHolder holder)
         {
@@ -74,6 +64,8 @@ namespace System.Threading
             SetLockOwnerToCurrentThread();
             _lockCount = 1;
             _lockOwnerThread = waitInfo.Thread;
+            // Add the ref count for the thread's wait info.
+            _processDataHeader.IncrementRefCount();
             AddOwnedNamedMutex(waitInfo.Thread, this);
 
             if (IsAbandoned)
@@ -88,8 +80,6 @@ namespace System.Threading
         private static void AddOwnedNamedMutex(Thread thread, NamedMutexProcessDataBase namedMutexProcessDataBase)
         {
             SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-            // This adds a reference to the named mutex in the thread's wait info.
-            namedMutexProcessDataBase.IncrementRefCount();
             namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList = thread.WaitInfo.LockedNamedMutexesHead;
             thread.WaitInfo.LockedNamedMutexesHead = namedMutexProcessDataBase;
         }
@@ -113,8 +103,8 @@ namespace System.Threading
                 RemoveOwnedNamedMutex(Thread.CurrentThread, this);
                 _lockOwnerThread = null;
                 ReleaseLockCore();
-                // This removes the reference to the named mutex in the thread's wait info.
-                DecrementRefCount();
+                // Remove the refcount from the thread's wait info.
+                _processDataHeader.DecrementRefCount();
             }
             finally
             {
@@ -157,8 +147,8 @@ namespace System.Threading
 
             RemoveOwnedNamedMutex(Thread.CurrentThread, this);
             _lockOwnerThread = null;
-            // This removes the reference to the named mutex in the thread's wait info.
-            DecrementRefCount();
+            // Remove the refcount from the thread's wait info.
+            _processDataHeader.DecrementRefCount();
         }
 
         protected abstract MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds);
