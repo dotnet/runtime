@@ -4963,9 +4963,14 @@ void DacDbiInterfaceImpl::Hijack(
     // Setup context for hijack
     //
     T_CONTEXT ctx;
+    static_assert(sizeof(T_CONTEXT) == sizeof(DT_CONTEXT), "T_CONTEXT and DT_CONTEXT must be the same size");
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
-        CONTEXT_FULL,
+        CONTEXT_FULL | CONTEXT_FLOATING_POINT
+#ifdef CONTEXT_EXTENDED_REGISTERS
+        | CONTEXT_EXTENDED_REGISTERS
+#endif
+        ,
         sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
