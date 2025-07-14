@@ -55,7 +55,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             wReserved = -1; // to ensure that the method gets called only once
 #endif
 
-            // If the scode is non-zero, we use the wCode. The wCode is a legacy of
+            // If the scode is zero, we use the wCode. The wCode is a legacy of
             // 16-bit Windows error codes. This means it will never be an error
             // scode (HRESULT, < 0) and we will get a null exception.
             int errorCode = (scode != 0) ? scode : wCode;
