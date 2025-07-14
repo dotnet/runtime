@@ -10,8 +10,6 @@ using Xunit;
 using Xunit.Abstractions;
 using Microsoft.DotNet.XUnitExtensions;
 
-using TestUtilities;
-
 namespace System.Net.Security.Tests
 {
     public abstract class SslStreamConformanceTests : WrappingConnectedStreamConformanceTests

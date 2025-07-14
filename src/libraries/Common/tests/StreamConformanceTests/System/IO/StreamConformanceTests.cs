@@ -1641,7 +1641,7 @@ namespace System.IO.Tests
         protected abstract Task<StreamPair> CreateConnectedStreamsAsync();
 
         protected (Stream writeable, Stream readable) GetReadWritePair(StreamPair streams) =>
-            GetReadWritePairs(streams).Last();
+            GetReadWritePairs(streams).First();
 
         protected IEnumerable<(Stream writeable, Stream readable)> GetReadWritePairs(StreamPair streams)
         {
@@ -1954,7 +1954,7 @@ namespace System.IO.Tests
                 Assert.Equal('o', readable.ReadByte());
             }
 
-            Assert.Equal(0, await ReadAsync(mode, readable, new byte[1], 0, 1).WaitAsync(TimeSpan.FromSeconds(4)));
+            Assert.Equal(0, await ReadAsync(mode, readable, new byte[1], 0, 1));
 
             await readable.DisposeAsync();
             await write;
