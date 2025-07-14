@@ -428,7 +428,6 @@ enum BasicBlockFlags : uint64_t
     BBF_NEEDS_GCPOLL         = MAKE_BBFLAG( 6), // BB may need a GC poll because it uses the slow tail call helper
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 7), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG( 8), // Last block of a cloned finally region
-    BBF_HAS_NULLCHECK        = MAKE_BBFLAG( 9), // BB contains a null check
     BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(10), // BB contains a call to a method with SuppressGCTransitionAttribute
     BBF_RUN_RARELY           = MAKE_BBFLAG(11), // BB is rarely run (catch clauses, blocks with throws etc)
     BBF_HAS_LABEL            = MAKE_BBFLAG(12), // BB needs a label
@@ -436,8 +435,6 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_ALIGN            = MAKE_BBFLAG(14), // BB ends with 'align' instruction
     BBF_HAS_JMP              = MAKE_BBFLAG(15), // BB executes a JMP instruction (instead of return)
     BBF_GC_SAFE_POINT        = MAKE_BBFLAG(16), // BB has a GC safe point (e.g. a call)
-    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(17), // BB contains simple index or length expressions on an SD array local var.
-    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(18), // BB contains simple index, length, or lower bound expressions on an MD array local var.
     BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(19), // Block has a multi-dimensional array reference
     BBF_HAS_NEWOBJ           = MAKE_BBFLAG(20), // BB contains 'new' of an object type.
 
@@ -468,8 +465,8 @@ enum BasicBlockFlags : uint64_t
 
     // Flags to update when two blocks are compacted
 
-    BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+    BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | \
+                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
 
     // Flags a block should not have had before it is split.
 
@@ -484,18 +481,18 @@ enum BasicBlockFlags : uint64_t
 
     // Flags gained by the bottom block when a block is split.
     // Note, this is a conservative guess.
-    // For example, the bottom block might or might not have BBF_HAS_NULLCHECK, but we assume it has BBF_HAS_NULLCHECK.
+    // For example, the bottom block might or might not have BBF_HAS_NEWARR, but we assume it has BBF_HAS_NEWARR.
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
-    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_ASYNC_RESUMPTION,
+    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_ASYNC_RESUMPTION,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
     // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
     // we don't know (unless we actually pay close attention during the copy).
 
-    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
 };
 
 FORCEINLINE

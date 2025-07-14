@@ -9704,7 +9704,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             LIR::Use nodeUse;
             BlockRange().TryGetUse(node, &nodeUse);
             GenTree* nodeClone = comp->gtNewLclvNode(nodeUse.ReplaceWithLclVar(comp), genActualType(node));
-            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone, comp->compCurBB);
+            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone);
             BlockRange().InsertAfter(nodeUse.Def(), nodeClone, nullcheck);
             LowerNode(nullcheck);
         }
@@ -11157,7 +11157,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
     {
-        comp->gtChangeOperToNullCheck(ind, block);
+        comp->gtChangeOperToNullCheck(ind);
         ind->ClearUnusedValue();
     }
     else if (!useNullCheck && !ind->OperIs(GT_IND))

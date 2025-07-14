@@ -3043,7 +3043,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         }
 #endif // TARGET_64BIT
 
-        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)indexAddr->gtLenOffset, compCurBB);
+        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)indexAddr->gtLenOffset);
 
         if (bndsChkType != TYP_INT)
         {
@@ -3757,7 +3757,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         }
 
         GenTree* lclVar  = gtNewLclvNode(lclNum, objRefType);
-        GenTree* nullchk = gtNewNullCheck(lclVar, compCurBB);
+        GenTree* nullchk = gtNewNullCheck(lclVar);
 
         nullchk->SetHasOrderingSideEffect();
 
@@ -5273,7 +5273,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
                 {
                     // COMMA(tmp = "this", deref(tmp))
                     GenTree* tmp          = gtNewLclvNode(lclNum, objp->TypeGet());
-                    GenTree* nullcheck    = gtNewNullCheck(tmp, compCurBB);
+                    GenTree* nullcheck    = gtNewNullCheck(tmp);
                     doBeforeStoreArgsStub = gtNewOperNode(GT_COMMA, TYP_VOID, doBeforeStoreArgsStub, nullcheck);
                 }
 
@@ -5289,7 +5289,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
                 if (callNeedsNullCheck)
                 {
                     // deref("this")
-                    doBeforeStoreArgsStub = gtNewNullCheck(objp, compCurBB);
+                    doBeforeStoreArgsStub = gtNewNullCheck(objp);
 
                     if (stubNeedsThisPtr)
                     {
@@ -5829,7 +5829,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 
                 // COMMA(tmp = "this", deref(tmp))
                 GenTree* tmp       = gtNewLclvNode(lclNum, vt);
-                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
+                GenTree* nullcheck = gtNewNullCheck(tmp);
                 store              = gtNewOperNode(GT_COMMA, TYP_VOID, store, nullcheck);
 
                 // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
@@ -5838,7 +5838,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
             else
             {
                 // thisPtr = COMMA(deref("this"), "this")
-                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
+                GenTree* nullcheck = gtNewNullCheck(thisPtr);
                 thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
             }
 
@@ -6358,7 +6358,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         assert(call->gtArgs.CountArgs() >= 1);
         GenTree* objPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
 
-        GenTree* nullCheck = gtNewNullCheck(objPtr, compCurBB);
+        GenTree* nullCheck = gtNewNullCheck(objPtr);
 
         return fgMorphTree(nullCheck);
     }
@@ -15429,13 +15429,13 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 assert((idx->gtFlags & GTF_ALL_EFFECT) == 0); // We should have taken care of side effects earlier.
 
                 GenTreeMDArr* const mdArrLowerBound =
-                    m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                    m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank);
                 // unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
                 unsigned            effIdxLcl    = m_pTempCache->GrabTemp(TYP_INT);
                 GenTree* const      effIndex     = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
                 GenTree* const      effIdxLclDef = m_compiler->gtNewTempStore(effIdxLcl, effIndex);
                 GenTreeMDArr* const mdArrLength =
-                    m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                    m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank);
                 GenTreeBoundsChk* const arrBndsChk = new (m_compiler, GT_BOUNDS_CHECK)
                     GenTreeBoundsChk(m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), mdArrLength, SCK_RNGCHK_FAIL);
                 GenTree* const boundsCheckComma =
@@ -15449,7 +15449,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                     assert(fullTree != nullptr);
 
                     GenTreeMDArr* const mdArrLengthScale =
-                        m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                        m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank);
                     GenTree* const scale    = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, fullTree, mdArrLengthScale);
                     GenTree* const effIndex = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, scale, idxComma);
 

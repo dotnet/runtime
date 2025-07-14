@@ -10506,20 +10506,18 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 // Arguments:
 //    tree  - the node to change;
-//    block - basic block of the node.
 //
 // Notes:
 //    the function should not be called after lowering for platforms that do not support
 //    emitting NULLCHECK nodes, like arm32. Use `Lowering::TransformUnusedIndirection`
 //    that handles it and calls this function when appropriate.
 //
-void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
+void Compiler::gtChangeOperToNullCheck(GenTree* tree)
 {
     assert(tree->OperIs(GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);
-    block->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
 
