@@ -196,15 +196,15 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
         if (testingForConversion)
         {
             assert(ccmpVec != nullptr);
-            BitVecTraits* ccmpTraits = new BitVecTraits(fgBBNumMax + 1, this);
-            if (BitVecOps::IsMember(ccmpTraits, *ccmpVec, firstBlock->bbNum))
+            BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
+            if (BitVecOps::IsMember(&ccmpTraits, *ccmpVec, firstBlock->bbNum))
             {
-                BitVecOps::RemoveElemD(ccmpTraits, *ccmpVec, firstBlock->bbNum);
+                BitVecOps::RemoveElemD(&ccmpTraits, *ccmpVec, firstBlock->bbNum);
                 return true;
             }
             else
             {
-                *ccmpVec = BitVecOps::MakeEmpty(ccmpTraits);
+                *ccmpVec = BitVecOps::MakeEmpty(&ccmpTraits);
             }
         }
 
@@ -229,7 +229,8 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
             {
                 // Only the first conditional block can have multiple statements.
                 // Stop searching and process what we already have.
-                goto optSwitchConvert;
+                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                        testingForConversion, ccmpVec);
             }
 
             // Inspect secondary blocks
@@ -239,25 +240,29 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
                 if (currTrueTarget != trueTarget)
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
-                    goto optSwitchConvert;
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (!GenTree::Compare(currVariableNode, variableNode->gtEffectiveVal()))
                 {
                     // A different variable node is used, stop searching and process what we already have.
-                    goto optSwitchConvert;
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (currBb->GetUniquePred(this) != prevBlock)
                 {
                     // Multiple preds in a secondary block, stop searching and process what we already have.
-                    goto optSwitchConvert;
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (!BasicBlock::sameEHRegion(prevBlock, currBb))
                 {
                     // Current block is in a different EH region, stop searching and process what we already have.
-                    goto optSwitchConvert;
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 // Ok we can work with that, add the test value to the list
@@ -267,29 +272,28 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
                 {
                     // Too many suitable tests found - stop and process what we already have.
-                    goto optSwitchConvert;
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (isReversed)
                 {
                     // We only support reversed test (GT_NE) for the last block.
-                    goto optSwitchConvert;
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
                 prevBlock = currBb;
             }
             else
             {
                 // Current block is not a suitable test, stop searching and process what we already have.
-                goto optSwitchConvert;
+                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                        testingForConversion, ccmpVec);
             }
         }
     }
 
     return false;
-
-optSwitchConvert:
-    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode, testingForConversion,
-                            ccmpVec);
 }
 
 //------------------------------------------------------------------------------
@@ -405,13 +409,13 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
     if (testingForConversion)
     {
         assert(ccmpVec != nullptr);
-        BitVecTraits* ccmpTraits = new BitVecTraits(fgBBNumMax + 1, this);
+        BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
         // Return if we are just checking for a possibility of a switch convert and not actually making the conversion
         // to switch here.
         BasicBlock* iterBlock = firstBlock;
         for (int i = 0; i < testsCount; i++)
         {
-            BitVecOps::AddElemD(ccmpTraits, *ccmpVec, iterBlock->bbNum);
+            BitVecOps::AddElemD(&ccmpTraits, *ccmpVec, iterBlock->bbNum);
             iterBlock = iterBlock->GetFalseTarget();
         }
         return true;

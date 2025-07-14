@@ -1576,13 +1576,13 @@ PhaseStatus Compiler::optOptimizeBools()
         printf("*************** In optOptimizeBools()\n");
     }
 #endif
-    bool          change     = false;
-    bool          retry      = false;
-    unsigned      numCond    = 0;
-    unsigned      numPasses  = 0;
-    unsigned      stress     = false;
-    BitVecTraits* ccmpTraits = new BitVecTraits(fgBBNumMax + 1, this);
-    BitVec        ccmpVec    = BitVecOps::MakeEmpty(ccmpTraits);
+    bool         change    = false;
+    bool         retry     = false;
+    unsigned     numCond   = 0;
+    unsigned     numPasses = 0;
+    unsigned     stress    = false;
+    BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
+    BitVec       ccmpVec = BitVecOps::MakeEmpty(&ccmpTraits);
 
     do
     {
