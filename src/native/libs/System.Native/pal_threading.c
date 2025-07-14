@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include <pal_errno.h>
 #include "pal_threading.h"
 
 #include <limits.h>
@@ -320,27 +321,28 @@ int32_t SystemNative_PThreadMutex_Init(void* mutex)
     return error;
 }
 
-int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds)
+static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t timeoutMilliseconds)
 {
     assert(mutex != NULL);
 
     if (timeoutMilliseconds == -1)
     {
-        return pthread_mutex_lock((pthread_mutex_t*)mutex);
+        return pthread_mutex_lock(mutex);
     }
     else if (timeoutMilliseconds == 0)
     {
-        return pthread_mutex_trylock((pthread_mutex_t*)mutex);
+        return pthread_mutex_trylock(mutex);
     }
 
     // Calculate the time at which a timeout should occur, and wait. Older versions of OSX don't support clock_gettime with
     // CLOCK_MONOTONIC, so we instead compute the relative timeout duration, and use a relative variant of the timed wait.
     struct timespec timeoutTimeSpec;
+    int32_t error = 0;
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     timeoutTimeSpec.tv_sec = timeoutMilliseconds / 1000;
     timeoutTimeSpec.tv_nsec = (timeoutMilliseconds % 1000) * 1000 * 1000;
 
-    error = pthread_mutex_reltimedlock_np((pthread_mutex_t*)mutex, &timeoutTimeSpec);
+    error = pthread_mutex_reltimedlock_np(mutex, &timeoutTimeSpec);
 #else
 #if HAVE_PTHREAD_CONDATTR_SETCLOCK && HAVE_CLOCK_MONOTONIC
     int error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
@@ -360,6 +362,20 @@ int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMillisecon
 
     return pthread_mutex_timedlock((pthread_mutex_t*)mutex, &timeoutTimeSpec);
 #endif
+}
+
+int32_t SystemNative_PThreadMutex_Acquire(void* mutex, int32_t timeoutMilliseconds)
+{
+    int32_t result = AcquirePThreadMutexWithTimeout((pthread_mutex_t*)mutex, timeoutMilliseconds);
+
+    if (result == EOWNERDEAD)
+    {
+        // The mutex was abandoned by the previous owner.
+        // Make it consistent so that it can be used again.
+        int setConsistentResult = pthread_mutex_consistent((pthread_mutex_t*)mutex);
+    }
+
+    return SystemNative_ConvertErrorPlatformToPal(result);
 }
 
 int32_t SystemNative_PThreadMutex_Release(void* mutex)
