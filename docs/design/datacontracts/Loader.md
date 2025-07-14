@@ -161,8 +161,7 @@ ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointe
 
 TargetPointer ILoader.GetModuleAddress(ModuleHandle handle)
 {
-    Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-    return module.Address;
+    return handle.Address;
 }
 
 IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)

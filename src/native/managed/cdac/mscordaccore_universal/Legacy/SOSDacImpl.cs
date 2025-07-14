@@ -232,12 +232,11 @@ internal sealed unsafe partial class SOSDacImpl
             return HResults.E_INVALIDARG;
         }
         int hr = HResults.S_OK;
-        TargetPointer addr = 0;
         try
         {
             if (modules is not null && modules.Length > 0 && count > 0)
             {
-                addr = assembly.ToTargetPointer(_target);
+                TargetPointer addr = assembly.ToTargetPointer(_target);
                 Contracts.ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(addr);
                 TargetPointer modulePointer = loader.GetModuleAddress(handle);
