@@ -1868,6 +1868,8 @@
              Link="Common\System\Security\Cryptography\ECDsaCng.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
              Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsa.Windows.cs"
+             Link="Common\System\Security\Cryptography\MLDsa.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.Windows.cs"
              Link="Common\System\Security\Cryptography\MLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.Windows.cs"
