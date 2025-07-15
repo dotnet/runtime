@@ -315,7 +315,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 CSharpSyntaxTree.ParseText(
                     text: p.ReadAllText(),
                     options: parseOptions,
-                    path: p.ToString()
+                    path: p.ToString(),
+                    Encoding.UTF8
                 )
             ).ToList();
 
@@ -324,7 +325,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 syntaxTrees.Add(CSharpSyntaxTree.ParseText(
                     text: GenerateTargetFrameworkAttributeSource(),
                     options: parseOptions,
-                    path: "AssemblyInfo.g.cs"
+                    path: "AssemblyInfo.g.cs",
+                    Encoding.UTF8
                 ));
             }
 
