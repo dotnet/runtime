@@ -171,5 +171,19 @@ namespace System.Net.Security
         {
             return new SslStreamCertificateContext(new X509Certificate2(TargetCertificate), IntermediateCertificates, Trust);
         }
+
+        internal void ReleaseResources()
+        {
+            // TargetCertificate is owned by the user, but we have created the cert context
+            // which looked up intermediate certificates and only we have reference to them.
+            foreach (X509Certificate2 cert in IntermediateCertificates)
+            {
+                cert.Dispose();
+            }
+
+            ReleasePlatformSpecificResources();
+        }
+
+        private partial void ReleasePlatformSpecificResources();
     }
 }

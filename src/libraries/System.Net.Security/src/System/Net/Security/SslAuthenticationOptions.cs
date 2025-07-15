@@ -237,12 +237,7 @@ namespace System.Net.Security
         {
             if (OwnsCertificateContext && CertificateContext != null)
             {
-                // TargetCertificate is owned by the user, but we have created the cert context
-                // which looked up intermediate certificates and only we have reference to them.
-                foreach (X509Certificate2 cert in CertificateContext.IntermediateCertificates)
-                {
-                    cert.Dispose();
-                }
+                CertificateContext.ReleaseResources();
             }
 
 #if TARGET_ANDROID
