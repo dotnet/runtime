@@ -38,6 +38,13 @@ namespace System
                               FormatFullInst
     }
 
+    public partial class MHTestClass 
+    {        
+        public static IntPtr RunTestArray()
+        {
+            return RuntimeType.TestArray();
+        }
+    }
     internal unsafe partial class RuntimeType
     {
         #region Definitions
@@ -2180,6 +2187,23 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetConstructors_native(QCallTypeHandle type, BindingFlags bindingAttr);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr TestArray_native();
+
+        public static IntPtr TestArray()
+        {
+            // This is a test method to ensure that the native code can be called correctly.
+            // It is not used in production code and is only for testing purposes.
+            IntPtr result = TestArray_native();
+
+            var h = new Mono.SafeGPtrArrayHandle(result);
+            var a = h[0];
+            var b = h[1];
+            var c = h[2];
+            var sum = a + b + c;
+            return sum;
+        }
 
         private RuntimeConstructorInfo[] GetConstructors_internal(BindingFlags bindingAttr, RuntimeType reflectedType)
         {
