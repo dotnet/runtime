@@ -1354,37 +1354,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svmlslb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
         ///   SMLSLB Ztied1.H, Zop2.B, Zop3.B
         /// </summary>
-        public static Vector<short> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> MultiplyWideningEvenAndSubtract(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svmlslb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
         ///   SMLSLB Ztied1.S, Zop2.H, Zop3.H
         /// </summary>
-        public static Vector<int> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<int> minuend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> MultiplyWideningEvenAndSubtract(Vector<int> minuend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svmlslb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
         ///   SMLSLB Ztied1.D, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<long> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<long> minuend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> MultiplyWideningEvenAndSubtract(Vector<long> minuend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svmlslb[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
         ///   UMLSLB Ztied1.H, Zop2.B, Zop3.B
         /// </summary>
-        public static Vector<ushort> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<ushort> minuend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> MultiplyWideningEvenAndSubtract(Vector<ushort> minuend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svmlslb[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
         ///   UMLSLB Ztied1.S, Zop2.H, Zop3.H
         /// </summary>
-        public static Vector<uint> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<uint> minuend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> MultiplyWideningEvenAndSubtract(Vector<uint> minuend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svmlslb[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
         ///   UMLSLB Ztied1.D, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<ulong> MultiplyBySelectedScalarWideningEvenAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> MultiplyWideningEvenAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svmlslb_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
