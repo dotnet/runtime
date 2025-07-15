@@ -372,7 +372,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <see langword="false" /> to fail loading when duplicate attributes are found.
         ///   The default is <see langword="false" />.
         /// </value>
-        internal bool AllowDuplicateAttributes
+        public bool AllowDuplicateAttributes
         {
             get => _allowDuplicateAttributes;
             set
