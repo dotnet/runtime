@@ -602,7 +602,8 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <!-- Android CoreCLR emulator tests are disabled due to capacity issue: https://github.com/dotnet/runtime/issues/117615 -->
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetArchitecture)' == 'arm64'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
