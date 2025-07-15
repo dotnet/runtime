@@ -57,7 +57,7 @@
 #include "monitor.h"
 #include "icall-decl.h"
 #include "icall-signatures.h"
-
+#include <mono/metadata/mh_log.h>
 #if _MSC_VER
 #pragma warning(disable:4312) // FIXME pointer cast to different size
 #endif
@@ -7996,7 +7996,7 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 	g_assert (size >= 0);
 	if (align)
 		*align = m_class_get_min_align (klass);
-
+	MH_LOG("Returning size %d for class %s\n", size, m_class_get_name(klass));
 	return size;
 }
 

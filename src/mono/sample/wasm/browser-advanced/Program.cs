@@ -91,7 +91,8 @@ namespace Sample
         internal static void SimpleTestArray()
         {
             
-            var arrayPtr = System.MHTestClass.RunTestArray();
+            //var arrayPtr = System.MHTestClass.RunTestArray();
+            var arrayPtr = System.MHTestClass.RunTestArrayRaw();
             //var h = new Mono.SafeGPtrArrayHandle(arrayPtr);
 
             var a = 1;// h[0];

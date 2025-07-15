@@ -6218,6 +6218,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 	switch (native_type) {
 	case MONO_NATIVE_BOOLEAN:
 		*align = 4;
+		MH_LOG("size is 4, align is 4 for native type %02x", native_type);
 		return 4;
 	case MONO_NATIVE_I1:
 	case MONO_NATIVE_U1:
@@ -6232,6 +6233,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 	case MONO_NATIVE_U4:
 	case MONO_NATIVE_ERROR:
 		*align = 4;
+		MH_LOG("size is 4, align is 4 for native type %02x", native_type);
 		return 4;
 	case MONO_NATIVE_I8:
 	case MONO_NATIVE_U8:
@@ -6261,6 +6263,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 	case MONO_NATIVE_FUNC:
 	case MONO_NATIVE_LPSTRUCT:
 		*align = MONO_ABI_ALIGNOF (gpointer);
+		MH_LOG("size is %d, for native type %02x", TARGET_SIZEOF_VOID_P, native_type);
 		return TARGET_SIZEOF_VOID_P;
 	case MONO_NATIVE_STRUCT:
 		klass = mono_class_from_mono_type_internal (type);
@@ -6272,11 +6275,13 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 		padded_size = mono_class_native_size (klass, align);
 		if (padded_size == 0)
 			padded_size = 1;
+		MH_LOG("size is %d, for native type %02x", padded_size, native_type);
 		return padded_size;
 	case MONO_NATIVE_BYVALTSTR: {
 		int esize = unicode ? 2: 1;
 		g_assert (mspec);
 		*align = esize;
+		MH_LOG("size is %d, for native type %02x", mspec->data.array_data.num_elem * esize, native_type);
 		return mspec->data.array_data.num_elem * esize;
 	}
 	case MONO_NATIVE_BYVALARRAY: {
@@ -6290,6 +6295,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			esize = mono_class_native_size (m_class_get_element_class (klass), align);
 		}
 		g_assert (mspec);
+		MH_LOG("size is %d, for native type %02x", mspec->data.array_data.num_elem * esize, native_type);
 		return mspec->data.array_data.num_elem * esize;
 	}
 	case MONO_NATIVE_CUSTOM:

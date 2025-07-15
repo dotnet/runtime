@@ -5363,7 +5363,7 @@ mono_type_size (MonoType *t, int *align)
 		*align = MONO_ABI_ALIGNOF (gpointer);
 		return MONO_ABI_SIZEOF (gpointer);
 	case MONO_TYPE_VALUETYPE: {
-		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t)))
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t)))			
 			return mono_type_size (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t)), align);
 		else
 			return mono_class_value_size (m_type_data_get_klass_unchecked (t), (guint32*)align);

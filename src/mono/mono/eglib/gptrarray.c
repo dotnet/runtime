@@ -120,8 +120,8 @@ g_ptr_array_add(GPtrArray *array, gpointer data)
 	g_assert(sizeof(gpointer) == 8);
 	g_ptr_array_grow((GPtrArrayPriv *)array, 1);
 	array->pdata[array->len++] = data;
-	fprintf(stderr, "MH_LOG_EGLIB: Added %p to gptr_array %p. Length is now %d. Size is now %d. array->pdata is %p."
-		"address of array is %p. size of GPtrArray struct is %d\n", data, array, array->len, ((GPtrArrayPriv *)array)->size, array->pdata, &array, (int)sizeof(GPtrArray));
+	fprintf(stderr, "MH_LOG_EGLIB: Added %p to gptr_array %p. Sizeof gpointer is %zd. Length is now %d. Size is now %d. array->pdata is %p."
+		"address of array is %p. size of GPtrArray struct is %d\n", data, array, sizeof(gpointer), array->len, ((GPtrArrayPriv *)array)->size, array->pdata, &array, (int)sizeof(GPtrArray));
 	fflush(stderr);
 	/*for(guint i = 0; i < array->len; i++) {
 		fprintf(stderr, "MH_LOG_EGLIB: gptr_array %p contains %p at index %d\n", array, array->pdata[i], i);

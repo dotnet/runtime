@@ -4102,9 +4102,20 @@ ves_icall_RuntimeType_TestArray_Native(MonoError *error)
 	return res;
 }
 
-gpointer_ptr
-ves_icall_RuntimeType_TestArray_Raw(MonoError *error)
+gpointer
+ves_icall_RuntimeType_TestArray_Raw_Native(MonoError *error)
 {
+	assert(sizeof(gpointer) == sizeof(gpointer_ptr));
+	assert(sizeof(gpointer) == 8);
+	//bypass GPtrArray
+	MH_LOG ("allocating new test array. sizeof intptr_t is %zd", sizeof(intptr_t));
+	int numElems = 4;
+	
+#define MH_USE_GPTR_ARRAY 1
+#define MH_USER_INT64_ARRAY 0
+	#if(0)
+	int64_t *rawArray = malloc(numElems * sizeof(int64_t));
+	memset(rawArray, 0, numElems * sizeof(int64_t));
 	GPtrArray* res = g_ptr_array_new ();
 	gpointer val1 = (gpointer)0x111;
 	gpointer val2 = (gpointer)0x222;
@@ -4116,9 +4127,39 @@ ves_icall_RuntimeType_TestArray_Raw(MonoError *error)
 	g_ptr_array_add (res, val3);
 	g_ptr_array_add (res, val4);
 
+	MH_LOG ("gpointer size %zd", sizeof(gpointer));
 	MH_LOG ("test array values: %p %p %p", res->pdata[0], res->pdata[1], res->pdata[2]);
 	MH_LOG ("test array addresses: %p %p %p", &(res->pdata[0]), &(res->pdata[1]), &(res->pdata[2]));
-	return &(res->pdata);
+	return res->pdata;
+	#elif (MH_USER_INT64_ARRAY)
+	int64_t *rawArray = malloc(numElems * sizeof(int64_t));
+	memset(rawArray, 0, numElems * sizeof(int64_t));
+	int64_t val1 = (int64_t)0x111;
+	int64_t val2 = (int64_t)0x222;
+	int64_t val3 = (int64_t)0x333;
+	int64_t val4 = (int64_t)0x444;
+	rawArray[0] = val1;
+	rawArray[1] = val2;	
+	rawArray[2] = val3;	
+	rawArray[3] = val4;
+	#elif (MH_USE_GPTR_ARRAY)	
+	gpointer *rawArray = malloc(numElems * sizeof(gpointer));
+	memset(rawArray, 0, numElems * sizeof(gpointer));
+	gpointer val1 = (gpointer)0x111;
+	gpointer val2 = (gpointer)0x222;
+	gpointer val3 = (gpointer)0x333;
+	gpointer val4 = (gpointer)0x444;
+	rawArray[0] = val1;
+	rawArray[1] = val2;	
+	rawArray[2] = val3;	
+	rawArray[3] = val4;
+	#endif
+	// 8 digits for 4 byte value
+	MH_LOG ("raw array values: %p %p %p", (void*)rawArray[0], (void*)rawArray[1], (void*)rawArray[2]);
+	MH_LOG ("raw array addresses: %p %p %p", &(rawArray[0]), &(rawArray[1]), &(rawArray[2]));
+	return (gpointer)rawArray;
+	
+	
 }
 
 GPtrArray*

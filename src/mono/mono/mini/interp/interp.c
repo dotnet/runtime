@@ -5017,10 +5017,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
 	NULL_CHECK (ptr); \
-	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) {\
+		MH_LOG("LDIND memcpy into %d + %d, from %p, size %zd", locals, ip[1], ptr, sizeof(datatype)); \
 		memcpy (locals + ip [1], ptr, sizeof (datatype)); \
-	else \
+	} else {\
+		MH_LOG("LDIND LOCAL_VAR (%d, %s) = *(%s*)%p", ip[1], #datatype, #casttype, ptr); \
 		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
+	} \
 	ip += 3; \
 	MONO_RESTORE_WARNING \
 } while (0)
@@ -5042,8 +5045,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDIND_I8)
 #ifdef NO_UNALIGNED_ACCESS
+			MH_LOG("doing unaligned access for MINT_LDIND_I8\n");
 			LDIND(gint64, gint64, TRUE);
 #else
+			MH_LOG("doing aligned access for MINT_LDIND_I8\n");
 			LDIND(gint64, gint64, FALSE);
 #endif
 			MINT_IN_BREAK;

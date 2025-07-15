@@ -1799,7 +1799,7 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 	MonoClass *element_class = m_class_get_element_class (array_class);
 	int rank = m_class_get_rank (array_class);
 	int size = mono_class_array_element_size (element_class);
-
+	MH_LOG("Emiting LDELEMA for %s, size %d\n", m_class_get_name (array_class), size);
 	gboolean bounded = m_class_get_byval_arg (array_class) ? m_class_get_byval_arg (array_class)->type == MONO_TYPE_ARRAY : FALSE;
 
 	td->sp -= rank + 1;
