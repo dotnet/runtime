@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -80,13 +79,15 @@ namespace Microsoft.Interop
 
         private GeneratedMethodContextBase CreateManagedToUnmanagedStub()
         {
-            if (IsExternallyDefined)
-                throw new InvalidOperationException("Cannot generate stubs for externally defined interfaces.");
-            if (GenerationContext is not SourceAvailableIncrementalMethodStubGenerationContext sourceAvailableContext)
-                throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
-            if (sourceAvailableContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
+                || IsHiddenOnDerivedInterface
+                || IsExternallyDefined)
             {
                 return new SkippedStubContext(OriginalDeclaringInterface.Info.Type);
+            }
+            if (GenerationContext is not SourceAvailableIncrementalMethodStubGenerationContext sourceAvailableContext)
+            {
+                throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
             }
             var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(sourceAvailableContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
             return new GeneratedStubCodeContext(sourceAvailableContext.TypeKeyOwner, sourceAvailableContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
@@ -98,13 +99,15 @@ namespace Microsoft.Interop
 
         private GeneratedMethodContextBase CreateUnmanagedToManagedStub()
         {
-            if (IsExternallyDefined)
-                throw new InvalidOperationException("Cannot generate stubs for externally defined interfaces.");
-            if (GenerationContext is not SourceAvailableIncrementalMethodStubGenerationContext sourceAvailableContext)
-                throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
-            if (sourceAvailableContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
+                || IsHiddenOnDerivedInterface
+                || IsExternallyDefined)
             {
-                return new SkippedStubContext(sourceAvailableContext.OriginalDefiningType);
+                return new SkippedStubContext(GenerationContext.OriginalDefiningType);
+            }
+            if (GenerationContext is not SourceAvailableIncrementalMethodStubGenerationContext sourceAvailableContext)
+            {
+                throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
             }
             var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(sourceAvailableContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
             return new GeneratedStubCodeContext(sourceAvailableContext.OriginalDefiningType, sourceAvailableContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));

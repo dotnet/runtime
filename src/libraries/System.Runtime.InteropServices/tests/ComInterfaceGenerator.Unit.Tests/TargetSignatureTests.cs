@@ -387,6 +387,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 "DerivedMethod",
                 (newComp, _) =>
                 {
+                    // Validate VTable sizes for interfaces inheriting from the same base
+                    // IUnknown has 3 methods, IComInterface adds 1 method = 4 total
+                    // Both IComInterface2 and IComInterface3 inherit from IComInterface and add 1 method each = 5 total
                     ValidateInterface("IComInterface2", 5);
                     ValidateInterface("IComInterface3", 5);
 
@@ -395,11 +398,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                         INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName(name);
                         Assert.NotNull(userDefinedInterface);
                         ITypeSymbol vtableType = new ComInterfaceImplementationLocator().FindVTableStructType(newComp, userDefinedInterface);
-                        if (expectedVTableSize != vtableType.GetMembers().OfType<IFieldSymbol>().Count())
+                        int actualVTableSize = vtableType.GetMembers().OfType<IFieldSymbol>().Count();
+
+                        if (expectedVTableSize != actualVTableSize)
                         {
-                            Assert.Fail(vtableType.DeclaringSyntaxReferences[0].GetSyntax().SyntaxTree.GetText().ToString());
+                            Assert.Fail($"VTable size mismatch for {name}. Expected: {expectedVTableSize}, Actual: {actualVTableSize}. VTable structure:\n{vtableType.DeclaringSyntaxReferences[0].GetSyntax().SyntaxTree.GetText()}");
                         }
-                        Assert.Equal(expectedVTableSize, vtableType.GetMembers().OfType<IFieldSymbol>().Count());
+
+                        Assert.Equal(expectedVTableSize, actualVTableSize);
                     }
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning),
@@ -508,6 +514,84 @@ namespace ComInterfaceGenerator.Unit.Tests
                     Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
+        }
+
+        [Fact]
+        public async Task ComInterfaceDeepInheritanceChainCalculatesCorrectVTableSizes()
+        {
+            string baseSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                public partial interface IComInterface
+                {
+                    void BaseMethod();
+                }
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98178")]
+                public partial interface IComInterface2 : IComInterface
+                {
+                    void MiddleMethod();
+                }
+                """;
+
+            string derivedSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
+                partial interface {|#1:IComInterface3|} : IComInterface2
+                {
+                    void DerivedMethod();
+                }
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817B")]
+                partial interface IComInterface4 : IComInterface3
+                {
+                    void DeepDerivedMethod();
+                }
+                """;
+
+            await VerifyInvocationWithMultipleProjectsAsync(
+                derivedSource,
+                baseSource,
+                "IComInterface4",
+                "DeepDerivedMethod",
+                (newComp, _) =>
+                {
+                    // Validate VTable sizes for deep inheritance chain
+                    // IUnknown has 3 methods (QueryInterface=0, AddRef=1, Release=2)
+                    // IComInterface: IUnknown (3) + BaseMethod (1) = 4 total
+                    // IComInterface2: IComInterface (4) + MiddleMethod (1) = 5 total
+                    // IComInterface3: IComInterface2 (5) + DerivedMethod (1) = 6 total
+                    // IComInterface4: IComInterface3 (6) + DeepDerivedMethod (1) = 7 total
+
+                    ValidateInterface("IComInterface3", 6);
+                    ValidateInterface("IComInterface4", 7);
+
+                    void ValidateInterface(string name, int expectedVTableSize)
+                    {
+                        INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName(name);
+                        Assert.NotNull(userDefinedInterface);
+                        ITypeSymbol vtableType = new ComInterfaceImplementationLocator().FindVTableStructType(newComp, userDefinedInterface);
+                        int actualVTableSize = vtableType.GetMembers().OfType<IFieldSymbol>().Count();
+
+                        if (expectedVTableSize != actualVTableSize)
+                        {
+                            Assert.Fail($"VTable size mismatch for {name}. Expected: {expectedVTableSize}, Actual: {actualVTableSize}. VTable structure:\n{vtableType.DeclaringSyntaxReferences[0].GetSyntax().SyntaxTree.GetText()}");
+                        }
+
+                        Assert.Equal(expectedVTableSize, actualVTableSize);
+                    }
+                },
+                VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface2").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
         }
 
         private static async Task VerifyInvocationWithMultipleProjectsAsync(

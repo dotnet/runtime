@@ -85,10 +85,6 @@ namespace Microsoft.Interop
                 {
                     return ComMethodContext.CalculateAllMethods(data, ct);
                 });
-            // Now that we've determined method offsets, we can remove all externally defined methods.
-            // // We'll also filter out methods originally declared on externally defined base interfaces
-            // // as we may not be able to emit them into our assembly.
-            // .Where(context => !context.Method.OriginalDeclaringInterface.IsExternallyDefined);
 
             // Now that we've determined method offsets, we can remove all externally defined interfaces.
             var interfaceContextsToGenerate = interfaceContexts.Where(context => !context.IsExternallyDefined);
@@ -425,7 +421,7 @@ namespace Microsoft.Interop
                     generatorDiagnostics);
             }
 
-            var sharedData =new
+            var sharedData = new
             {
                 SignatureContext = signatureContext,
                 CallConv = callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
@@ -437,7 +433,7 @@ namespace Microsoft.Interop
 
             return new IncrementalMethodStubGenerationContext(
                 sharedData.SignatureContext,
-                NoneSignatureDiagnosticLocations.Instance,
+                diagnosticLocations,
                 sharedData.CallConv,
                 new VirtualMethodIndexData(index, ImplicitThisParameter: true, sharedData.Direction, true, ExceptionMarshalling.Com),
                 sharedData.ExceptionMarshallingInfo,
@@ -476,7 +472,7 @@ namespace Microsoft.Interop
                 sourcelessStubInformation.SignatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                sourcelessStubInformation.DiagnosticLocation,
+                locations,
                 sourcelessStubInformation.CallingConvention,
                 sourcelessStubInformation.VtableIndexData,
                 sourcelessStubInformation.ExceptionMarshallingInfo,
@@ -795,7 +791,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                // NativeMemory.Copy(StrategyBasedComWrappers.DefaultIUnknownInteraceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<baseInterfaceType>).TypeHandle).ManagedVirtualMethodTable, vtable, (nuint)(sizeof(void*) * <baseVTableSize>));
+                // NativeMemory.Copy(StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<baseInterfaceType>).TypeHandle).ManagedVirtualMethodTable, vtable, (nuint)(sizeof(void*) * <baseVTableSize>));
                 fillBaseInterfaceSlots = Block(
                         MethodInvocationStatement(
                             TypeSyntaxes.System_Runtime_InteropServices_NativeMemory,
