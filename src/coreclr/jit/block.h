@@ -382,22 +382,8 @@ public:
     }
 };
 
-// BBSwitchTargetList: adapter class for forward iteration of switch targets, using range-based `for`,
-// normally used via BasicBlock::SwitchCases(), e.g.:
-//    for (BasicBlock* const target : block->SwitchCases()) ...
-//
-class BBSwitchTargetList
-{
-    BBswtDesc* m_bbsDesc;
-
-public:
-    BBSwitchTargetList(BBswtDesc* bbsDesc);
-    BBArrayIterator begin() const;
-    BBArrayIterator end() const;
-};
-
 // BBJumpTableList: adapter class for forward iteration of blocks with N successors, using range-based `for`,
-// normally used via BasicBlock::EHFinallyRetSuccs(), e.g.:
+// normally used via BasicBlock::EHFinallyRetSuccs() or BasicBlock::SwitchSuccs(), e.g.:
 //    for (BasicBlock* const succ : block->EHFinallyRetSuccs()) ...
 //
 class BBJumpTableList
@@ -1407,15 +1393,6 @@ public:
     // GetSucc: Returns the "i"th successor block. Requires (0 <= i < NumSucc()).
     BasicBlock* GetSucc(unsigned i) const;
     BasicBlock* GetSucc(unsigned i, Compiler* comp);
-
-    // SwitchCases: convenience method for enabling range-based `for` iteration over a switch block's cases, e.g.:
-    //    for (BasicBlock* const bTarget : block->SwitchCases()) ...
-    //
-    BBSwitchTargetList SwitchCases() const
-    {
-        assert(bbKind == BBJ_SWITCH);
-        return BBSwitchTargetList(bbSwtTargets);
-    }
 
     // SwitchSuccs: convenience method for enabling range-based `for` iteration over a switch block's unique successors,
     // e.g.:
@@ -2473,26 +2450,6 @@ public:
         return bbsDominantCase;
     }
 };
-
-// BBSwitchTargetList out-of-class-declaration implementations (here due to C++ ordering requirements).
-//
-
-inline BBSwitchTargetList::BBSwitchTargetList(BBswtDesc* bbsDesc)
-    : m_bbsDesc(bbsDesc)
-{
-    assert(m_bbsDesc != nullptr);
-    assert(m_bbsDesc->GetCases() != nullptr);
-}
-
-inline BBArrayIterator BBSwitchTargetList::begin() const
-{
-    return BBArrayIterator(m_bbsDesc->GetCases());
-}
-
-inline BBArrayIterator BBSwitchTargetList::end() const
-{
-    return BBArrayIterator(m_bbsDesc->GetCases() + m_bbsDesc->GetCaseCount());
-}
 
 // BBJumpTableList out-of-class-declaration implementations (here due to C++ ordering requirements).
 //

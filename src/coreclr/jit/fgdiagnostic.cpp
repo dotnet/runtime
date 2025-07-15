@@ -3945,8 +3945,9 @@ void Compiler::fgDebugCheckBlockLinks()
             // Create a set with all the successors.
             BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
             BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-            for (BasicBlock* const bTarget : block->SwitchCases())
+            for (unsigned i = 0; i < block->GetSwitchTargets()->GetCaseCount(); i++)
             {
+                BasicBlock* const bTarget = block->GetSwitchTargets()->GetCase(i)->getDestinationBlock();
                 BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
             }
             // Now we should have a set of unique successors that matches what's in the switchMap.
