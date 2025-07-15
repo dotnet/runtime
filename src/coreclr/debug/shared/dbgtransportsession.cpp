@@ -111,7 +111,6 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     m_fDebuggerAttached = false;
 #else // RIGHT_SIDE_COMPILE
     m_pDCB = pDCB;
-    m_pADB = pADB;
 #endif // RIGHT_SIDE_COMPILE
 
     m_sStateLock.Init();
