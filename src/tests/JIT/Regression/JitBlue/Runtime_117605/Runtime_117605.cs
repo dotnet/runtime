@@ -37,7 +37,7 @@ public class Runtime_117605
         var vr4 = Avx2.InsertVector128(vr6, vr7, 0);
         var vr8 = Vector256.CreateScalar(1497050855019840058UL);
         var vr2 = Avx2.BlendVariable(vr3, vr4, vr8);
-        C0 vr9 = default(C0);
+        C0 vr9 = new C0();
         var vr1 = vr9.M3(ref s_2, vr2);
     }
 
