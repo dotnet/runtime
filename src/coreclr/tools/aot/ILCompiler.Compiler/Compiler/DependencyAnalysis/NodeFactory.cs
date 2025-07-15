@@ -628,10 +628,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new CanonicalDefinitionEETypeNode(this, type);
                 }
-                else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                {
-                    return new NecessaryCanonicalEETypeNode(this, type);
-                }
                 else
                 {
                     return new EETypeNode(this, type);
@@ -654,10 +650,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (type.IsGenericDefinition)
                 {
                     return new ReflectionVisibleGenericDefinitionEETypeNode(this, type);
-                }
-                else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                {
-                    return new CanonicalEETypeNode(this, type);
                 }
                 else
                 {

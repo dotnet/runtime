@@ -8488,6 +8488,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
             case GT_EQ:
             {
+                NamedIntrinsic argIntrinsicId;
+                unsigned       argSimdSize;
+                CorInfoType    argSimdBaseJitType;
+
                 if (varTypeIsFloating(baseType))
                 {
                     // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
@@ -8496,6 +8500,30 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     if (VNIsVectorNaN(simdType, baseType, cnsVN))
                     {
                         return VNZeroForType(type);
+                    }
+                }
+                else if (IsVNHWIntrinsicFunc(argVN, &argIntrinsicId, &argSimdSize, &argSimdBaseJitType))
+                {
+                    // This optimization is only safe if we know the other node produces
+                    // AllBitsSet or Zero per element and if the outer comparison is the
+                    // same size as what the other node produces for its mask
+
+                    if (!HWIntrinsicInfo::ReturnsPerElementMask(argIntrinsicId))
+                    {
+                        break;
+                    }
+
+                    if (genTypeSize(baseType) == genTypeSize(JitType2PreciseVarType(argSimdBaseJitType)))
+                    {
+                        break;
+                    }
+
+                    // Handle `(Mask == AllBitsSet) == Mask` and `(AllBitsSet == Mask) == Mask` for integral types
+                    ValueNum allBitsVN = VNAllBitsForType(type, simdSize);
+
+                    if (cnsVN == allBitsVN)
+                    {
+                        return argVN;
                     }
                 }
                 break;
@@ -8646,6 +8674,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             {
                 var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
 
+                NamedIntrinsic argIntrinsicId;
+                unsigned       argSimdSize;
+                CorInfoType    argSimdBaseJitType;
+
                 if (varTypeIsFloating(baseType))
                 {
                     // Handle `(x != NaN) == true` and `(NaN != x) == true` for floating-point types
@@ -8653,6 +8685,30 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     {
                         unsigned elementCount = simdSize / genTypeSize(baseType);
                         return VNAllBitsForType(type, elementCount);
+                    }
+                }
+                else if (IsVNHWIntrinsicFunc(argVN, &argIntrinsicId, &argSimdSize, &argSimdBaseJitType))
+                {
+                    // This optimization is only safe if we know the other node produces
+                    // AllBitsSet or Zero per element and if the outer comparison is the
+                    // same size as what the other node produces for its mask
+
+                    if (!HWIntrinsicInfo::ReturnsPerElementMask(argIntrinsicId))
+                    {
+                        break;
+                    }
+
+                    if (genTypeSize(baseType) != genTypeSize(JitType2PreciseVarType(argSimdBaseJitType)))
+                    {
+                        break;
+                    }
+
+                    // Handle `(Mask != Zero) == Mask` and `(Zero != Mask) == Mask` for integral types
+                    ValueNum zeroVN = VNZeroForType(type);
+
+                    if (cnsVN == zeroVN)
+                    {
+                        return argVN;
                     }
                 }
                 break;
@@ -9969,6 +10025,65 @@ bool ValueNumStore::IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1, ValueNu
         return true;
     }
     return false;
+}
+
+//----------------------------------------------------------------------------------
+// IsVNHWIntrinsicFunc: A specialized version of GetVNFunc that checks if the given ValueNum
+//     is a HWIntrinsic. If so, it returns the intrinsicId, simdSize, and simdBaseJitType.
+//
+// Arguments:
+//    vn              - The ValueNum to check.
+//    intrinsicId     - The intrinsic id.
+//    simdSize        - The simd size of the intrinsic.
+//    simdBaseJitType - The simd base jit type for the intrinsic.
+//
+// Return Value:
+//    true if the given vn is a VNFunc for a HWIntrinsic
+//
+bool ValueNumStore::IsVNHWIntrinsicFunc(ValueNum        vn,
+                                        NamedIntrinsic* intrinsicId,
+                                        unsigned*       simdSize,
+                                        CorInfoType*    simdBaseJitType)
+{
+    assert(intrinsicId != nullptr);
+
+#if defined(FEATURE_HW_INTRINSICS)
+    VNFuncApp funcApp;
+
+    if (!GetVNFunc(vn, &funcApp))
+    {
+        return false;
+    }
+
+    VNFunc outerFunc = funcApp.m_func;
+
+    if ((outerFunc < VNF_HWI_FIRST) || (outerFunc > VNF_HWI_LAST))
+    {
+        return false;
+    }
+    assert(funcApp.m_arity != 0);
+
+    if (GetVNFunc(funcApp.m_args[funcApp.m_arity - 1], &funcApp))
+    {
+        return false;
+    }
+
+    assert(funcApp.m_func == VNF_SimdType);
+    assert(funcApp.m_arity != 2);
+
+    if (!IsVNConstant(funcApp.m_args[0]) || !IsVNConstant(funcApp.m_args[1]))
+    {
+        return false;
+    }
+
+    *intrinsicId     = NamedIntrinsic((outerFunc - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
+    *simdSize        = static_cast<uint32_t>(GetConstantInt32(funcApp.m_args[0]));
+    *simdBaseJitType = static_cast<CorInfoType>(GetConstantInt32(funcApp.m_args[1]));
+
+    return true;
+#else
+    return false;
+#endif // FEATURE_HW_INTRINSICS
 }
 
 bool ValueNumStore::VNIsValid(ValueNum vn)

@@ -2239,6 +2239,7 @@ PROCCreateCrashDump(
     else if (childpid == 0)
     {
         // Close the read end of the pipe, the child doesn't need it
+        int callbackResult = 0;
         close(parent_pipe);
 
         // Only dup the child's stderr if there is error buffer
@@ -2252,7 +2253,12 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            g_createdumpCallback(argv.size(), argv.data());
+            callbackResult = g_createdumpCallback(argv.size(), argv.data());
+            // Set the shutdown callback to nullptr and exit
+            // If we don't exit, the child's execution will continue into the diagnostic server behavior
+            // which causes all sorts of problems.
+            g_shutdownCallback = nullptr;
+            exit(callbackResult);
         }
         else
         {

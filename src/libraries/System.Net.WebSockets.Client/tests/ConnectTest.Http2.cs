@@ -244,7 +244,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_Success()
         {
