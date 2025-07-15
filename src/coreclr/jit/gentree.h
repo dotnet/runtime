@@ -4343,6 +4343,8 @@ struct AsyncCallInfo
 {
     ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+    bool SaveAndRestoreSynchronizationContextField = false;
+    unsigned SynchronizationContextLclNum = BAD_VAR_NUM;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4615,6 +4617,7 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
+    AsyncSuspendedIndicator,
 };
 
 #ifdef DEBUG

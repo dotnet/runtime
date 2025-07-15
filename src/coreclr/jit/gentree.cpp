@@ -11574,9 +11574,9 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-                if (varDsc->IsHiddenBufferStructArg())
+                if (varDsc->IsDefinedViaAddress())
                 {
-                    printf("(RB)"); // Variable is hidden return buffer
+                    printf("(DA)"); // Variable is defined via address
                 }
                 if (varDsc->lvUnusedStruct)
                 {
@@ -19657,7 +19657,27 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
+
+    return node->AsLclVarCommon();
+}
+
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspensionIndicatorLclAddr(GenTreeCall* call)
+{
+    if (!call->IsAsync())
+    {
+        return nullptr;
+    }
+
+    CallArg* asyncSuspensionIndicatorArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
+    if (asyncSuspensionIndicatorArg == nullptr)
+    {
+        return nullptr;
+    }
+
+    GenTree* node = asyncSuspensionIndicatorArg->GetNode();
+
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 
     return node->AsLclVarCommon();
 }

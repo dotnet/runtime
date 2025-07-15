@@ -1919,6 +1919,14 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
+        if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
+        {
+            // Represents a definition of a local indicating whether the call
+            // suspended or not. Removed by async transformation.
+            arg.AbiInfo = ABIPassingInformation(comp, 0);
+            continue;
+        }
+
         const var_types            argSigType  = arg.GetSignatureType();
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);

@@ -1464,7 +1464,7 @@ private:
 
         GenTreeFlags defFlag            = GTF_EMPTY;
         GenTreeCall* callUser           = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
-        bool         hasHiddenStructArg = false;
+        bool         escapeAddr = true;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
@@ -1484,7 +1484,7 @@ private:
                 (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
-                hasHiddenStructArg = true;
+                escapeAddr = false;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 defFlag = GTF_VAR_DEF;
 
@@ -1496,7 +1496,12 @@ private:
             }
         }
 
-        if (!hasHiddenStructArg)
+        if ((callUser != nullptr) && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
+        {
+
+        }
+
+        if (escapeAddr)
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
 
@@ -1618,7 +1623,7 @@ private:
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(m_compiler->lvaVarAddrExposed(lclNum) ||
                ((m_lclAddrAssertions != nullptr) && m_lclAddrAssertions->IsMarkedForExposure(lclNum)) ||
-               m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
+               m_compiler->lvaGetDesc(lclNum)->IsDefinedViaAddress());
 
         if (m_compiler->IsValidLclAddr(lclNum, offset))
         {

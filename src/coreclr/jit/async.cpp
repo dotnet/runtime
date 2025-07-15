@@ -67,115 +67,133 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    BasicBlock* curBB = fgFirstBB;
-    while (curBB != nullptr)
-    {
-        BasicBlock* nextBB = curBB->Next();
-
-        for (Statement* stmt : curBB->Statements())
-        {
-            GenTree* tree = stmt->GetRootNode();
-            if (tree->OperIs(GT_STORE_LCL_VAR))
-            {
-                tree = tree->AsLclVarCommon()->Data();
-            }
-
-            if (!tree->IsCall() || !tree->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
-            {
-                ValidateNoAsyncSavesNecessaryInStatement(stmt);
-                continue;
-            }
-
-            GenTreeCall* call = tree->AsCall();
-
-            unsigned lclNum = lvaGrabTemp(false DEBUGARG("ExecutionContext for SaveAndRestore async call"));
-
-            JITDUMP("Saving ExecutionContext in V%02u around [%06u]\n", lclNum, call->gtTreeID);
-
-            CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
-
-            GenTreeCall*      capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureExecutionContextMethHnd, TYP_REF);
-            CORINFO_CALL_INFO callInfo = {};
-            callInfo.hMethod           = capture->gtCallMethHnd;
-            callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-            impMarkInlineCandidate(capture, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
-
-            if (capture->IsInlineCandidate())
-            {
-                Statement* captureStmt = fgNewStmtFromTree(capture);
-
-                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(capture, TYP_REF);
-
-                capture->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-                GenTree*   storeCapture                          = gtNewTempStore(lclNum, retExpr);
-                Statement* storeCaptureStmt                      = fgNewStmtFromTree(storeCapture);
-
-                fgInsertStmtBefore(curBB, stmt, captureStmt);
-                fgInsertStmtBefore(curBB, stmt, storeCaptureStmt);
-
-                JITDUMP("Inserted capture:\n");
-                DISPSTMT(captureStmt);
-                DISPSTMT(storeCaptureStmt);
-            }
-            else
-            {
-                GenTree*   storeCapture     = gtNewTempStore(lclNum, capture);
-                Statement* storeCaptureStmt = fgNewStmtFromTree(storeCapture);
-
-                fgInsertStmtBefore(curBB, stmt, storeCaptureStmt);
-
-                JITDUMP("Inserted capture:\n");
-                DISPSTMT(storeCaptureStmt);
-            }
-
-            BasicBlock* restoreBB        = curBB;
-            Statement*  restoreAfterStmt = stmt;
-
-            if (call->IsInlineCandidate() && (call->gtReturnType != TYP_VOID))
-            {
-                restoreAfterStmt = stmt->GetNextStmt();
-                assert(restoreAfterStmt->GetRootNode()->OperIs(GT_RET_EXPR) ||
-                       (restoreAfterStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR) &&
-                        restoreAfterStmt->GetRootNode()->AsLclVarCommon()->Data()->OperIs(GT_RET_EXPR)));
-            }
-
-            if (curBB->hasTryIndex())
-            {
-#ifdef FEATURE_EH_WINDOWS_X86
-                IMPL_LIMITATION("Cannot handle insertion of try-finally without funclets");
-#else
-                // Await is inside a try, need to insert try-finally around it.
-                restoreBB        = InsertTryFinallyForContextRestore(curBB, stmt, restoreAfterStmt);
-                restoreAfterStmt = nullptr;
-#endif
-            }
-
-            GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
-            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lclNum)));
-
-            callInfo             = {};
-            callInfo.hMethod     = restore->gtCallMethHnd;
-            callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-            impMarkInlineCandidate(restore, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
-
-            Statement* restoreStmt = fgNewStmtFromTree(restore);
-            if (restoreAfterStmt == nullptr)
-            {
-                fgInsertStmtNearEnd(restoreBB, restoreStmt);
-            }
-            else
-            {
-                fgInsertStmtAfter(restoreBB, restoreAfterStmt, restoreStmt);
-            }
-
-            JITDUMP("Inserted restore:\n");
-            DISPSTMT(restoreStmt);
-
-            result = PhaseStatus::MODIFIED_EVERYTHING;
-        }
-
-        curBB = nextBB;
-    }
+//    BasicBlock* curBB = fgFirstBB;
+//    while (curBB != nullptr)
+//    {
+//        BasicBlock* nextBB = curBB->Next();
+//
+//        for (Statement* stmt : curBB->Statements())
+//        {
+//            GenTree* tree = stmt->GetRootNode();
+//            if (tree->OperIs(GT_STORE_LCL_VAR))
+//            {
+//                tree = tree->AsLclVarCommon()->Data();
+//            }
+//
+//            if (!tree->IsCall())
+//            {
+//                ValidateNoAsyncSavesNecessaryInStatement(stmt);
+//                continue;
+//            }
+//
+//            GenTreeCall* call = tree->AsCall();
+//            const AsyncCallInfo& asyncCallInfo = call->GetAsyncInfo();
+//
+//            // Currently we always expect that ExecutionContenxt and
+//            // SynchronizationContext to correlate about their save/restore
+//            // behavior.
+//            assert((asyncCallInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore) == asyncCallInfo.SaveAndRestoreSynchronizationContextField);
+//
+//            if (asyncCallInfo.ExecutionContextHandling != ExecutionContextHandling::SaveAndRestore)
+//            {
+//                continue;
+//            }
+//
+//            unsigned callSuspendedIndicatorLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Suspended indicator for [%06u]", dspTreeID(call))));
+//            lvaGetDesc(callSuspendedIndicatorLclNum)->lvType = TYP_INT;
+//
+//            call->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclAddrNode(callSuspendedIndicatorLclNum, 0)));
+//
+//            unsigned threadLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Thread for [%06u]", dspTreeID(call))));
+//            unsigned execCtxLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("ExecutionContext for [%06u]", dspTreeID(call))));
+//            unsigned syncCtxLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("SynchronizationContext for [%06u]", dspTreeID(call))));
+//
+//            JITDUMP("Saving contexts around [%06u], thread = V%02u, ExecutionContext = V%02u, SynchronizationContext = V%02u\n", call->gtTreeID, threadLclNum, execCtxLclNum, syncCtxLclNum);
+//
+//            CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
+//
+//            GenTreeCall*      capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureExecutionContextMethHnd, TYP_REF);
+//            CORINFO_CALL_INFO callInfo = {};
+//            callInfo.hMethod           = capture->gtCallMethHnd;
+//            callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+//            impMarkInlineCandidate(capture, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+//
+//            if (capture->IsInlineCandidate())
+//            {
+//                Statement* captureStmt = fgNewStmtFromTree(capture);
+//
+//                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(capture, TYP_REF);
+//
+//                capture->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+//                GenTree*   storeCapture                          = gtNewTempStore(lclNum, retExpr);
+//                Statement* storeCaptureStmt                      = fgNewStmtFromTree(storeCapture);
+//
+//                fgInsertStmtBefore(curBB, stmt, captureStmt);
+//                fgInsertStmtBefore(curBB, stmt, storeCaptureStmt);
+//
+//                JITDUMP("Inserted capture:\n");
+//                DISPSTMT(captureStmt);
+//                DISPSTMT(storeCaptureStmt);
+//            }
+//            else
+//            {
+//                GenTree*   storeCapture     = gtNewTempStore(lclNum, capture);
+//                Statement* storeCaptureStmt = fgNewStmtFromTree(storeCapture);
+//
+//                fgInsertStmtBefore(curBB, stmt, storeCaptureStmt);
+//
+//                JITDUMP("Inserted capture:\n");
+//                DISPSTMT(storeCaptureStmt);
+//            }
+//
+//            BasicBlock* restoreBB        = curBB;
+//            Statement*  restoreAfterStmt = stmt;
+//
+//            if (call->IsInlineCandidate() && (call->gtReturnType != TYP_VOID))
+//            {
+//                restoreAfterStmt = stmt->GetNextStmt();
+//                assert(restoreAfterStmt->GetRootNode()->OperIs(GT_RET_EXPR) ||
+//                       (restoreAfterStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR) &&
+//                        restoreAfterStmt->GetRootNode()->AsLclVarCommon()->Data()->OperIs(GT_RET_EXPR)));
+//            }
+//
+//            if (curBB->hasTryIndex())
+//            {
+//#ifdef FEATURE_EH_WINDOWS_X86
+//                IMPL_LIMITATION("Cannot handle insertion of try-finally without funclets");
+//#else
+//                // Await is inside a try, need to insert try-finally around it.
+//                restoreBB        = InsertTryFinallyForContextRestore(curBB, stmt, restoreAfterStmt);
+//                restoreAfterStmt = nullptr;
+//#endif
+//            }
+//
+//            GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
+//            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lclNum)));
+//
+//            callInfo             = {};
+//            callInfo.hMethod     = restore->gtCallMethHnd;
+//            callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+//            impMarkInlineCandidate(restore, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+//
+//            Statement* restoreStmt = fgNewStmtFromTree(restore);
+//            if (restoreAfterStmt == nullptr)
+//            {
+//                fgInsertStmtNearEnd(restoreBB, restoreStmt);
+//            }
+//            else
+//            {
+//                fgInsertStmtAfter(restoreBB, restoreAfterStmt, restoreStmt);
+//            }
+//
+//            JITDUMP("Inserted restore:\n");
+//            DISPSTMT(restoreStmt);
+//
+//            result = PhaseStatus::MODIFIED_EVERYTHING;
+//        }
+//
+//        curBB = nextBB;
+//    }
 
     return result;
 }

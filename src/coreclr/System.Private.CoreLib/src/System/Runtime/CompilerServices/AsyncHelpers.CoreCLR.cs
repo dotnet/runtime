@@ -591,13 +591,32 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreExecutionContext(ExecutionContext? previousExecutionCtx)
+        private static void RestoreExecutionContext(ExecutionContext? previousExecCtx)
         {
             Thread thread = Thread.CurrentThreadAssumedInitialized;
-            ExecutionContext? currentExecutionCtx = thread._executionContext;
-            if (previousExecutionCtx != currentExecutionCtx)
+            ExecutionContext? currentExecCtx = thread._executionContext;
+            if (previousExecCtx != currentExecCtx)
             {
-                ExecutionContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
+                ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CaptureContexts(out Thread currentThread, out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
+        {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            currentThread = thread;
+            execCtx = thread._executionContext;
+            syncCtx = thread._synchronizationContext;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RestoreExecutionContextWithThread(Thread thread, ExecutionContext? previousExecCtx)
+        {
+            ExecutionContext? currentExecCtx = thread._executionContext;
+            if (previousExecCtx != currentExecCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
             }
         }
 
