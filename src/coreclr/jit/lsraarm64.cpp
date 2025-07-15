@@ -2287,8 +2287,8 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             assert(delayFreeOp != nullptr);
             break;
 
-        case NI_Sve2_AddCarryWideningLower:
-        case NI_Sve2_AddCarryWideningUpper:
+        case NI_Sve2_AddCarryWideningEven:
+        case NI_Sve2_AddCarryWideningOdd:
             // RMW operates on the third op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(3);
