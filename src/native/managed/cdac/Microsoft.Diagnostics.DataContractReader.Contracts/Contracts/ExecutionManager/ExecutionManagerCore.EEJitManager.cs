@@ -46,7 +46,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
-            // TODO: This only works with funclets enabled. See runtime definition of RealCodeHeader for more info.
             if (rangeSection.IsRangeList)
                 return TargetPointer.Null;
             if (rangeSection.Data == null)
@@ -60,16 +59,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return TargetPointer.Null;
 
-            if (realCodeHeader.NumUnwindInfos is not uint numUnwindInfos)
-            {
-                throw new InvalidOperationException("Unable to get NumUnwindInfos");
-            }
-            if (realCodeHeader.UnwindInfos is not TargetPointer unwindInfos)
-            {
-                throw new InvalidOperationException("Unable to get NumUnwindInfos");
-            }
-
-            if (numUnwindInfos == 0)
+            if (realCodeHeader.NumUnwindInfos == 0)
             {
                 return TargetPointer.Null;
             }
@@ -79,10 +69,34 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer imageBase = rangeSection.Data.RangeBegin;
             TargetPointer relativeAddr = addr - imageBase;
 
-            if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(unwindInfos, numUnwindInfos, relativeAddr, out uint index))
+            if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(realCodeHeader.UnwindInfos, realCodeHeader.NumUnwindInfos, relativeAddr, out uint index))
                 return TargetPointer.Null;
 
-            return _runtimeFunctions.GetRuntimeFunctionAddress(unwindInfos, index);
+            return _runtimeFunctions.GetRuntimeFunctionAddress(realCodeHeader.UnwindInfos, index);
+        }
+
+        public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
+        {
+            gcInfo = TargetPointer.Null;
+            gcVersion = 0;
+
+            // EEJitManager::GetGCInfoToken
+            if (rangeSection.IsRangeList)
+                return;
+
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
+            if (codeStart == TargetPointer.Null)
+                return;
+            Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
+
+            if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
+                return;
+
+            gcVersion = Target.ReadGlobal<uint>(Constants.Globals.GCInfoVersion);
+            gcInfo = realCodeHeader.GCInfo;
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)

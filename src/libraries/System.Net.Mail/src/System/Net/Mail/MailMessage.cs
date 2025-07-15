@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Mime;
@@ -430,23 +429,6 @@ namespace System.Net.Mail
             {
                 _bodyView.TransferEncoding = _bodyTransferEncoding;
             }
-        }
-
-        internal void Send(BaseWriter writer, bool sendEnvelope, bool allowUnicode, CancellationToken cancellationToken = default)
-        {
-            Task task = SendAsync<SyncReadWriteAdapter>(writer, sendEnvelope, allowUnicode, cancellationToken);
-            Debug.Assert(task.IsCompleted, "SendAsync should be completed synchronously.");
-            task.GetAwaiter().GetResult();
-        }
-
-        internal IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode, AsyncCallback callback, object? state)
-        {
-            return TaskToAsyncResult.Begin(SendAsync<AsyncReadWriteAdapter>(writer, sendEnvelope, allowUnicode), callback, state);
-        }
-
-        internal static void EndSend(IAsyncResult asyncResult)
-        {
-            TaskToAsyncResult.End(asyncResult);
         }
 
         internal async Task SendAsync<TIOAdapter>(BaseWriter writer, bool sendEnvelope, bool allowUnicode, CancellationToken cancellationToken = default)

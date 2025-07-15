@@ -37,7 +37,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "throw_exception")
                 .EnvironmentVariable(Constants.Breadcrumbs.EnvironmentVariable, sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
-                .Execute(expectedToFail: true)
+                .DisableDumps() // Expected to throw an exception
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining("Unhandled exception.")
                 .And.HaveStdErrContaining("System.Exception: Goodbye World")

@@ -6,6 +6,7 @@
 #include "utilcode.h"
 #include "corjit.h"
 #include "jithost.h"
+#include "minipal/time.h"
 
 void* JitHost::allocateMemory(size_t size)
 {
@@ -176,7 +177,7 @@ void JitHost::reclaim()
 {
     if (m_pCurrentCachedList != NULL || m_pPreviousCachedList != NULL)
     {
-        DWORD ticks = ::GetTickCount();
+        DWORD ticks = (DWORD)minipal_lowres_ticks();
 
         if (m_lastFlush == 0) // Just update m_lastFlush first time around
         {

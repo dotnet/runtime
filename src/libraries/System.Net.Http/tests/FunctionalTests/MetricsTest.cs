@@ -651,9 +651,22 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact(nameof(SupportsSeparateHttpSpansForRedirects))]
-        public Task ActiveRequests_Redirect_RecordedForEachHttpSpan()
+        private class CustomCredentials : ICredentials
         {
+            public NetworkCredential? GetCredential(Uri uri, string authType) => null;
+        }
+
+        [ConditionalTheory(nameof(SupportsSeparateHttpSpansForRedirects))]
+        [InlineData(0)] // null
+        [InlineData(1)] // CredentialCache
+        [InlineData(2)] // CustomCredentials
+        public Task ActiveRequests_Redirect_RecordedForEachHttpSpan(int credentialsMode)
+        {
+            if (credentialsMode > 0)
+            {
+                Handler.Credentials = credentialsMode == 1 ? new CredentialCache() : new CustomCredentials();
+            }
+
             return LoopbackServerFactory.CreateServerAsync((originalServer, originalUri) =>
             {
                 return LoopbackServerFactory.CreateServerAsync(async (redirectServer, redirectUri) =>

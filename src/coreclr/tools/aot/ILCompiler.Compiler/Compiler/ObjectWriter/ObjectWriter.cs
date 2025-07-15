@@ -467,7 +467,7 @@ namespace ILCompiler.ObjectWriter
                         relocTarget.Offset);
 
                     if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternSymbolNode)
+                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternFunctionSymbolNode)
                     {
                         // For now consider all method symbols address taken.
                         // We could restrict this in the future to those that are referenced from

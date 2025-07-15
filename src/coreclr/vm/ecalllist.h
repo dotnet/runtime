@@ -69,8 +69,6 @@ FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
-    FCFuncElement("get_TickCount", SystemNative::GetTickCount)
-    FCFuncElement("get_TickCount64", SystemNative::GetTickCount64)
     FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
     FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
 FCFuncEnd()
@@ -366,6 +364,9 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("_InternalAlloc", MarshalNative::GCHandleInternalAlloc)
     FCFuncElement("_InternalFree", MarshalNative::GCHandleInternalFree)
     FCFuncElement("InternalGet", MarshalNative::GCHandleInternalGet)
+#ifdef FEATURE_JAVAMARSHAL
+    FCFuncElement("InternalTryGetBridgeWait", MarshalNative::GCHandleInternalTryGetBridgeWait)
+#endif
     FCFuncElement("InternalSet", MarshalNative::GCHandleInternalSet)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
 FCFuncEnd()

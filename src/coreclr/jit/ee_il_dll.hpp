@@ -176,6 +176,17 @@ inline CORINFO_EE_INFO* Compiler::eeGetEEInfo()
     return &eeInfo;
 }
 
+inline CORINFO_ASYNC_INFO* Compiler::eeGetAsyncInfo()
+{
+    if (!asyncInfoInitialized)
+    {
+        info.compCompHnd->getAsyncInfo(&asyncInfo);
+        asyncInfoInitialized = true;
+    }
+
+    return &asyncInfo;
+}
+
 /*****************************************************************************
  *
  *  Convert the type returned from the VM to a var_type.

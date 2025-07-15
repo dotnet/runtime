@@ -1990,7 +1990,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
     {
         fOk = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return fOk;
 }
 
@@ -3620,7 +3620,7 @@ VOID DebuggerController::PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID*
     {
         // not much we can do here
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 //
@@ -4469,19 +4469,7 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
         ThisFunctionMayHaveTriggerAGC();
     }
 #endif
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    if (pCurThread->m_State & Thread::TS_SSToExitApcCall)
-    {
-        if (!CheckActivationSafePoint(GetIP(pContext)))
-        {
-            return FALSE;
-        }
-        pCurThread->SetThreadState(Thread::TS_SSToExitApcCallDone);
-        pCurThread->ResetThreadState(Thread::TS_SSToExitApcCall);
-        DebuggerController::UnapplyTraceFlag(pCurThread);
-        pCurThread->MarkForSuspensionAndWait(Thread::TS_DebugSuspendPending);
-    }
-#endif
+
 
 
     // Must restore the filter context. After the filter context is gone, we're
@@ -5156,7 +5144,6 @@ DebuggerStepper::DebuggerStepper(Thread *thread,
     m_rgfMappingStop(rgfMappingStop),
     m_range(NULL),
     m_rangeCount(0),
-    m_realRangeCount(0),
     m_fp(LEAF_MOST_FRAME),
 #if defined(FEATURE_EH_FUNCLETS)
     m_fpParentMethod(LEAF_MOST_FRAME),
@@ -6625,8 +6612,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 m_reason = STEP_EXIT;
                 break;
             }
-            else if (info->m_activeFrame.frame->GetFrameType() == Frame::TYPE_SECURITY &&
-                     info->m_activeFrame.frame->GetInterception() == Frame::INTERCEPTION_NONE)
+            else if (info->m_activeFrame.frame->GetInterception() == Frame::INTERCEPTION_NONE)
             {
                 // If we're stepping out of something that was protected by (declarative) security,
                 // the security subsystem may leave a frame on the stack to cache it's computation.
@@ -6990,7 +6976,6 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
 
 
     m_rangeCount = rangeCount;
-    m_realRangeCount = rangeCount;
 
     return true;
 }
@@ -7064,7 +7049,6 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         DeleteInteropSafe(m_range);
         m_range = NULL;
         m_rangeCount = 0;
-        m_realRangeCount = 0;
     }
 
     if (rangeCount > 0)
@@ -7089,11 +7073,10 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
             }
 
             memcpy(m_range, ranges, sizeof(COR_DEBUG_STEP_RANGE) * rangeCount);
-            m_realRangeCount  = m_rangeCount = rangeCount;
+            m_rangeCount = rangeCount;
         }
         _ASSERTE(m_range != NULL);
         _ASSERTE(m_rangeCount > 0);
-        _ASSERTE(m_realRangeCount > 0);
     }
     else
     {
@@ -8706,23 +8689,19 @@ void DebuggerUserBreakpoint::HandleDebugBreak(Thread * pThread)
     }
 }
 
-
 DebuggerUserBreakpoint::DebuggerUserBreakpoint(Thread *thread)
   : DebuggerStepper(thread, (CorDebugUnmappedStop) (STOP_ALL & ~STOP_UNMANAGED), INTERCEPT_ALL,  NULL)
 {
     // Setup a step out from the current frame (which we know is
     // unmanaged, actually...)
 
-
-    // This happens to be safe, but it's a very special case (so we have a special case ticket)
-    // This is called while we're live (so no filter context) and from the fcall,
-    // and we pushed a HelperMethodFrame to protect us. We also happen to know that we have
-    // done anything illegal or dangerous since then.
+    // Initiate a step-out from Debug.Break() if the current frame allows it.
+    // This is now safe because the entry point uses QCall or dynamic transition,
+    // so no special frame setup is required.
 
     StackTraceTicket ticket(this);
     StepOut(LEAF_MOST_FRAME, ticket);
 }
-
 
 // Is this frame interesting?
 // Use this to skip all code in the namespace "Debugger.Diagnostics"

@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsShipping>false</IsShipping>
@@ -11,6 +12,9 @@
     <PackageDescription>Internal transport package to provide aspnetcore with the assemblies from dotnet/runtime that make up the Microsoft.AspNetCore.App shared framework.</PackageDescription>
     <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
     <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <!-- Include the symbols in the non-symbols package so that they get redistributed into aspnetcore's shared framework. -->
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludePkcsWindowsProjectReference</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +24,7 @@
                       PrivateAssets="all"
                       Private="true"
                       IncludeReferenceAssemblyInPackage="true" />
+
     <!-- These generators only provides an implementation targeting Roslyn 4.4 and upwards. -->
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj"
                       ReferenceOutputAssembly="false"
@@ -30,5 +35,24 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\Microsoft.Extensions.Options.SourceGeneration.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
+
+    <!-- Manually reference Pkcs to make sure that the $(NetCoreAppCurrent)-windows assembly gets included as well. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj"
+                      PrivateAssets="all"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppCurrent)-windows"
+                      OutputItemType="PkcsWindowsProjectReference" />
   </ItemGroup>
+
+  <Target Name="IncludePkcsWindowsProjectReference" DependsOnTargets="BuildOnlySettings;ResolveReferences">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(PkcsWindowsProjectReference)"
+                              PackagePath="/runtimes/win/lib/$(NetCoreAppCurrent)/" />
+      <_pkcsWindowsProjectReferenceAsPdb Include="$([System.IO.Path]::ChangeExtension('%(PkcsWindowsProjectReference.Identity)', '.pdb'))" />
+      <TfmSpecificDebugSymbolsFile Include="@(_pkcsWindowsProjectReferenceAsPdb)"
+                                   TargetPath="/runtimes/win/lib/$(NetCoreAppCurrent)/%(Filename)%(Extension)"
+                                   TargetFramework="$(NetCoreAppCurrent)" />
+    </ItemGroup>
+  </Target>
+
+
 </Project>

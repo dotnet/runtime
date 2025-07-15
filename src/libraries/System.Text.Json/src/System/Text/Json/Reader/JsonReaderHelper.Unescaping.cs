@@ -66,7 +66,7 @@ namespace System.Text.Json
             return utf8String;
         }
 
-        public static ReadOnlySpan<byte> GetUnescapedSpan(ReadOnlySpan<byte> utf8Source)
+        public static byte[] GetUnescaped(ReadOnlySpan<byte> utf8Source)
         {
             // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
             int length = utf8Source.Length;
@@ -79,8 +79,8 @@ namespace System.Text.Json
             Unescape(utf8Source, utf8Unescaped, out int written);
             Debug.Assert(written > 0);
 
-            ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written).ToArray();
-            Debug.Assert(!propertyName.IsEmpty);
+            byte[] propertyName = utf8Unescaped.Slice(0, written).ToArray();
+            Debug.Assert(propertyName.Length is not 0);
 
             if (pooledName != null)
             {

@@ -3,8 +3,8 @@
     <!-- Post Wasm MVP features -->
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
-    <!-- we are not triggering WasmPerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
-    <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
+    <!-- we are not triggering EnableDiagnostics in Debug automatically, because it would trigger re-link, making dev-loop slow -->
+    <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -48,8 +48,8 @@
 
     <_WasmGenerateAppBundleDependsOn>_GetWasmGenerateAppBundleDependencies;$(_WasmGenerateAppBundleDependsOn)</_WasmGenerateAppBundleDependsOn>
 
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
 
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
     <WasmClang>emcc</WasmClang>
@@ -101,7 +101,7 @@
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(WasmPerfTracing)' == 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(EnableDiagnostics)' == 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
@@ -114,7 +114,7 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
                        Condition="'$(WasmEmitSourceMap)' != 'false'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js.map"
-                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(WasmPerfTracing)' == 'true'" />
+                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(EnableDiagnostics)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
@@ -167,7 +167,7 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
       EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
       IsPublish="$(_WasmIsPublishing)"
@@ -308,9 +308,9 @@
     </PropertyGroup>
 
     <ItemGroup >
-      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-aot.a" Condition="$(_WasmProfilers.Contains('aot'))" />
-      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-browser.a" Condition="$(_WasmProfilers.Contains('browser'))" />
-      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-log.a" Condition="$(_WasmProfilers.Contains('log'))" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-aot.a" Condition="$(WasmProfilers.Contains('aot'))" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-browser.a" Condition="$(WasmProfilers.Contains('browser'))" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-profiler-log.a" Condition="$(WasmProfilers.Contains('log'))" />
     </ItemGroup>
 
     <ItemGroup>
@@ -391,8 +391,8 @@
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <EmscriptenEnvVars Include="WASM_PERFTRACING=1" Condition="'$(WasmPerfTracing)' == 'true'" />
-      <EmscriptenEnvVars Include="WASM_PERFTRACING=0" Condition="'$(WasmPerfTracing)' != 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=1" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=0" Condition="'$(EnableDiagnostics)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
@@ -468,8 +468,8 @@
 
     <ItemGroup>
       <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(WasmPerfTracing)' != 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(WasmPerfTracing)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(EnableDiagnostics)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>

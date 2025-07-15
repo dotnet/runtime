@@ -35,7 +35,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(PlatformSupportsMLDsa(), MLDsa.IsSupported);
         }
 
-        private static bool PlatformSupportsMLDsa() => PlatformDetection.IsOpenSsl3_5;
+        private static bool PlatformSupportsMLDsa() =>
+            PlatformDetection.IsOpenSsl3_5 || PlatformDetection.IsWindows10Version27858OrGreater;
 
         [Fact]
         public static void DisposeIsCalledOnImplementation()
@@ -73,6 +74,18 @@ namespace System.Security.Cryptography.Tests
 
             PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 42);
 
+            byte[] hash = [1, 2, 3, 4];
+            byte[] signature = [5, 6, 7, 8];
+            AssertExtensions.Throws<ArgumentNullException>("data", () => mldsa.SignData(null));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => mldsa.VerifyData(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("signature", () => mldsa.VerifyData(Array.Empty<byte>(), null));
+
+            AssertExtensions.Throws<ArgumentNullException>("hash", () => mldsa.SignPreHash(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => mldsa.SignPreHash([1, 2, 3, 4], null));
+            AssertExtensions.Throws<ArgumentNullException>("hash", () => mldsa.VerifyPreHash(null, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("signature", () => mldsa.VerifyPreHash(hash, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => mldsa.VerifyPreHash(hash, signature, null));
+
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.ExportEncryptedPkcs8PrivateKey((string)null, pbeParameters));
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, pbeParameters));
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.TryExportEncryptedPkcs8PrivateKey((string)null, pbeParameters, Span<byte>.Empty, out _));
@@ -98,6 +111,8 @@ namespace System.Security.Cryptography.Tests
             int secretKeySize = algorithm.SecretKeySizeInBytes;
             int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
             int signatureSize = algorithm.SignatureSizeInBytes;
+            byte[] signature = new byte[signatureSize];
+            byte[] hash = new byte[HashInfo.Sha256.OutputSize];
 
             if (shouldDispose)
             {
@@ -106,15 +121,239 @@ namespace System.Security.Cryptography.Tests
             }
 
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPublicKey(new byte[publicKeySize - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPublicKey(new byte[publicKeySize + 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaSecretKey(new byte[secretKeySize - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaSecretKey(new byte[secretKeySize + 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPrivateSeed(new byte[privateSeedSize - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPrivateSeed(new byte[privateSeedSize + 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize - 1], ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize + 1], ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize], new byte[signatureSize - 1], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize], new byte[signatureSize + 1], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
 
             // Context length must be less than 256
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize], new byte[256]));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignData(Array.Empty<byte>(), new byte[signatureSize], new byte[256]));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[signatureSize], new byte[256]));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.VerifyData(Array.Empty<byte>(), new byte[signatureSize], new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, signature, new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignData(Array.Empty<byte>(), signature, new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.VerifyData(Array.Empty<byte>(), signature, new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignPreHash(hash, HashInfo.Sha256.Oid, new byte[256]));
+
+            // Hash length of known OID hash algorithms must be correct
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize - 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize + 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[HashInfo.Sha256.OutputSize - 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[HashInfo.Sha256.OutputSize + 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
+
+            // Must be valid OID
+            Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([], "not.an.oid"));
+            Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([], signature, "not-an-oid"));
+            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash(Array.Empty<byte>(), signature, "1"));
+            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash([], signature.AsSpan(), "a"));
+
+            Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([1], string.Empty));
+            Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([1], signature, "-1.0.0"));
+            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[] { 1 }, signature, "a"));
+            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash([1], signature.AsSpan(), "a"));
+        }
+
+        public static IEnumerable<object[]> ArgumentValidation_Hash_WrongSizeInputs()
+        {
+            foreach (bool shouldDispose in new[] { true, false })
+            {
+                foreach (HashInfo hashInfo in HashInfo.AllHashInfos())
+                {
+                    yield return new object[] { shouldDispose, hashInfo };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ArgumentValidation_Hash_WrongSizeInputs))]
+        public static void ArgumentValidation_Hash_WrongSize(bool shouldDispose, HashInfo hashInfo)
+        {
+            using MLDsa mlDsa = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa44);
+
+            if (shouldDispose)
+            {
+                // Test that argument validation exceptions take precedence over ObjectDisposedException
+                mlDsa.Dispose();
+            }
+
+            byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+
+            Assert.Throws<CryptographicException>(() => mlDsa.SignPreHash(new byte[hashInfo.OutputSize - 1], hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => mlDsa.SignPreHash(new byte[hashInfo.OutputSize + 1], hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => mlDsa.SignPreHash(new byte[hashInfo.OutputSize - 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => mlDsa.SignPreHash(new byte[hashInfo.OutputSize + 1], signature, hashInfo.Oid));
+
+            Assert.Throws<CryptographicException>(() => mlDsa.VerifyPreHash(new byte[hashInfo.OutputSize - 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => mlDsa.VerifyPreHash(new byte[hashInfo.OutputSize + 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => mlDsa.VerifyPreHash(new byte[hashInfo.OutputSize - 1], signature.AsSpan(), hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => mlDsa.VerifyPreHash(new byte[hashInfo.OutputSize + 1], signature.AsSpan(), hashInfo.Oid));
+        }
+
+        [Fact]
+        public static void ArgumentValidation_HashAlgorithm_UnknownOidCallsCore()
+        {
+            using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa44);
+
+            byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+            string hashAlgorithmOid = "1.0";
+
+            mlDsa.SignPreHashHook = (_, _, _, _) => { };
+            mlDsa.AddSignatureBufferIsSameAssertion(signature.AsMemory());
+            mlDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            _ = mlDsa.SignPreHash([], hashAlgorithmOid);
+            Assert.Equal(1, mlDsa.SignPreHashCoreCallCount);
+
+            mlDsa.SignPreHash([], signature, hashAlgorithmOid);
+            Assert.Equal(2, mlDsa.SignPreHashCoreCallCount);
+
+            _ = mlDsa.SignPreHash([1], hashAlgorithmOid);
+            Assert.Equal(3, mlDsa.SignPreHashCoreCallCount);
+
+            mlDsa.SignPreHash([1], signature, hashAlgorithmOid);
+            Assert.Equal(4, mlDsa.SignPreHashCoreCallCount);
+
+            mlDsa.SignPreHashHook = (_, _, _, _) => Assert.Fail();
+            mlDsa.VerifyPreHashHook = (_, _, _, _) => true;
+            mlDsa.AddSignatureBufferIsSameAssertion(signature.AsMemory());
+            mlDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            _ = mlDsa.VerifyPreHash(Array.Empty<byte>(), signature, hashAlgorithmOid);
+            Assert.Equal(1, mlDsa.VerifyPreHashCoreCallCount);
+
+            _ = mlDsa.VerifyPreHash([], signature.AsSpan(), hashAlgorithmOid);
+            Assert.Equal(2, mlDsa.VerifyPreHashCoreCallCount);
+
+            _ = mlDsa.VerifyPreHash(new byte[] { 1 }, signature, hashAlgorithmOid);
+            Assert.Equal(3, mlDsa.VerifyPreHashCoreCallCount);
+
+            _ = mlDsa.VerifyPreHash([1], signature.AsSpan(), hashAlgorithmOid);
+            Assert.Equal(4, mlDsa.VerifyPreHashCoreCallCount);
+        }
+
+        public static IEnumerable<object[]> AllHashesAndLengthsAndExtraUnknown()
+        {
+            foreach (HashInfo hashInfo in HashInfo.AllHashInfos())
+            {
+                yield return new object[] { hashInfo.Oid, hashInfo.OutputSize };
+            }
+
+            yield return new object[] { "1.0", 0 };
+            yield return new object[] { "1.0", 1 };
+            yield return new object[] { "1.0", 2 };
+        }
+
+        [Theory]
+        [MemberData(nameof(AllHashesAndLengthsAndExtraUnknown))]
+        public static void SignPreHash_CallsCore(string hashAlgorithmOid, int hashLength)
+        {
+            MLDsaAlgorithm algorithm = MLDsaAlgorithm.MLDsa44;
+
+            byte[] testData = new byte[hashLength];
+            byte[] testContext = [3];
+
+            using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateNoOp(algorithm);
+            mlDsa.SignPreHashHook = (_, _, _, _) => { };
+
+            mlDsa.AddDataBufferIsSameAssertion(testData);
+            mlDsa.AddContextBufferIsSameAssertion(testContext);
+            mlDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+            mlDsa.AddFillDestination(1);
+
+            int signatureSize = algorithm.SignatureSizeInBytes;
+
+            // Array overload
+            byte[] exported = mlDsa.SignPreHash(testData, hashAlgorithmOid, testContext);
+            Assert.Equal(1, mlDsa.SignPreHashCoreCallCount);
+            Assert.Equal(signatureSize, exported.Length);
+            AssertExpectedFill(exported, fillElement: 1);
+
+            // Span overload
+            byte[] signature = CreatePaddedFilledArray(signatureSize, 42);
+
+            // Extra bytes in destination buffer should not be touched
+            Memory<byte> destination = signature.AsMemory(PaddingSize, signatureSize);
+            mlDsa.AddDestinationBufferIsSameAssertion(destination);
+
+            mlDsa.SignPreHash(testData, destination.Span, hashAlgorithmOid, testContext);
+            Assert.Equal(2, mlDsa.SignPreHashCoreCallCount);
+            AssertExpectedFill(signature, fillElement: 1, paddingElement: 42, PaddingSize, signatureSize);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllHashesAndLengthsAndExtraUnknown))]
+        public static void VerifyPreHash_CallsCore(string hashAlgorithmOid, int hashLength)
+        {
+            using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa44);
+
+            int signatureSize = MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes;
+            byte[] testSignature = CreatePaddedFilledArray(signatureSize, 42);
+            byte[] testData = new byte[hashLength];
+            byte[] testContext = [3];
+            bool returnValue = false;
+
+            mlDsa.VerifyPreHashHook = (_, _, _, _) => returnValue;
+            mlDsa.AddDataBufferIsSameAssertion(testData);
+            mlDsa.AddContextBufferIsSameAssertion(testContext);
+            mlDsa.AddSignatureBufferIsSameAssertion(testSignature.AsMemory(PaddingSize, signatureSize));
+            mlDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            // Since `returnValue` is true, this shows the Core method doesn't get called for the wrong sized signature.
+            returnValue = true;
+            AssertExtensions.FalseExpression(mlDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize - 1), hashAlgorithmOid, testContext));
+            Assert.Equal(0, mlDsa.VerifyPreHashCoreCallCount);
+
+            AssertExtensions.FalseExpression(mlDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize + 1), hashAlgorithmOid, testContext));
+            Assert.Equal(0, mlDsa.VerifyPreHashCoreCallCount);
+
+            // But does for the right one.
+            AssertExtensions.TrueExpression(mlDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize), hashAlgorithmOid, testContext));
+            Assert.Equal(1, mlDsa.VerifyPreHashCoreCallCount);
+
+            // And just to prove that the Core method controls the answer...
+            returnValue = false;
+            AssertExtensions.FalseExpression(mlDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize), hashAlgorithmOid, testContext));
+            Assert.Equal(2, mlDsa.VerifyPreHashCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllHashesAndLengthsAndExtraUnknown))]
+        public static void VerifyPreHash_ByteArray_CallsCore(string hashAlgorithmOid, int hashLength)
+        {
+            using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa44);
+
+            int signatureSize = MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes;
+            byte[] testSignature = CreateFilledArray(signatureSize, 42);
+            byte[] testData = new byte[hashLength];
+            byte[] testContext = [3];
+            bool returnValue = false;
+
+            mlDsa.VerifyPreHashHook = (_, _, _, _) => returnValue;
+            mlDsa.AddDataBufferIsSameAssertion(testData);
+            mlDsa.AddContextBufferIsSameAssertion(testContext);
+            mlDsa.AddSignatureBufferIsSameAssertion(testSignature);
+            mlDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            // Since `returnValue` is true, this shows the Core method doesn't get called for the wrong sized signature.
+            returnValue = true;
+            AssertExtensions.FalseExpression(mlDsa.VerifyPreHash(testData, new byte[signatureSize - 1], hashAlgorithmOid, testContext));
+            Assert.Equal(0, mlDsa.VerifyPreHashCoreCallCount);
+
+            AssertExtensions.FalseExpression(mlDsa.VerifyPreHash(testData, new byte[signatureSize - 1], hashAlgorithmOid, testContext));
+            Assert.Equal(0, mlDsa.VerifyPreHashCoreCallCount);
+
+            // But does for the right one.
+            AssertExtensions.TrueExpression(mlDsa.VerifyPreHash(testData, testSignature, hashAlgorithmOid, testContext));
+            Assert.Equal(1, mlDsa.VerifyPreHashCoreCallCount);
+
+            // And just to prove that the Core method controls the answer...
+            returnValue = false;
+            AssertExtensions.FalseExpression(mlDsa.VerifyPreHash(testData, testSignature, hashAlgorithmOid, testContext));
+            Assert.Equal(2, mlDsa.VerifyPreHashCoreCallCount);
         }
 
         [Theory]
@@ -164,6 +403,14 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddFillDestination(1);
 
             int publicKeySize = algorithm.PublicKeySizeInBytes;
+
+            // Array overload
+            byte[] exported = mldsa.ExportMLDsaPublicKey();
+            Assert.Equal(1, mldsa.ExportMLDsaPublicKeyCoreCallCount);
+            Assert.Equal(publicKeySize, exported.Length);
+            AssertExpectedFill(exported, fillElement: 1);
+
+            // Span overload
             byte[] publicKey = CreatePaddedFilledArray(publicKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
@@ -171,7 +418,7 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddDestinationBufferIsSameAssertion(destination);
 
             mldsa.ExportMLDsaPublicKey(destination.Span);
-            Assert.Equal(1, mldsa.ExportMLDsaPublicKeyCoreCallCount);
+            Assert.Equal(2, mldsa.ExportMLDsaPublicKeyCoreCallCount);
             AssertExpectedFill(publicKey, fillElement: 1, paddingElement: 42, PaddingSize, publicKeySize);
         }
 
@@ -184,6 +431,14 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddFillDestination(1);
 
             int secretKeySize = algorithm.SecretKeySizeInBytes;
+
+            // Array overload
+            byte[] exported = mldsa.ExportMLDsaSecretKey();
+            Assert.Equal(1, mldsa.ExportMLDsaSecretKeyCoreCallCount);
+            Assert.Equal(secretKeySize, exported.Length);
+            AssertExpectedFill(exported, fillElement: 1);
+
+            // Span overload
             byte[] secretKey = CreatePaddedFilledArray(secretKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
@@ -191,8 +446,36 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddDestinationBufferIsSameAssertion(destination);
 
             mldsa.ExportMLDsaSecretKey(destination.Span);
-            Assert.Equal(1, mldsa.ExportMLDsaSecretKeyCoreCallCount);
+            Assert.Equal(2, mldsa.ExportMLDsaSecretKeyCoreCallCount);
             AssertExpectedFill(secretKey, fillElement: 1, paddingElement: 42, PaddingSize, secretKeySize);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportMLDsaPrivateSeed_CallsCore(MLDsaAlgorithm algorithm)
+        {
+            using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+            mldsa.ExportMLDsaPrivateSeedHook = _ => { };
+            mldsa.AddFillDestination(1);
+
+            int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
+
+            // Array overload
+            byte[] exported = mldsa.ExportMLDsaPrivateSeed();
+            Assert.Equal(1, mldsa.ExportMLDsaPrivateSeedCoreCallCount);
+            Assert.Equal(privateSeedSize, exported.Length);
+            AssertExpectedFill(exported, fillElement: 1);
+
+            // Span overload
+            byte[] privateSeed = CreatePaddedFilledArray(privateSeedSize, 42);
+
+            // Extra bytes in destination buffer should not be touched
+            Memory<byte> destination = privateSeed.AsMemory(PaddingSize, privateSeedSize);
+            mldsa.AddDestinationBufferIsSameAssertion(destination);
+
+            mldsa.ExportMLDsaPrivateSeed(destination.Span);
+            Assert.Equal(2, mldsa.ExportMLDsaPrivateSeedCoreCallCount);
+            AssertExpectedFill(privateSeed, fillElement: 1, paddingElement: 42, PaddingSize, privateSeedSize);
         }
 
         [Theory]
@@ -209,6 +492,14 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddFillDestination(1);
 
             int signatureSize = algorithm.SignatureSizeInBytes;
+
+            // Array overload
+            byte[] exported = mldsa.SignData(testData, testContext);
+            Assert.Equal(1, mldsa.SignDataCoreCallCount);
+            Assert.Equal(signatureSize, exported.Length);
+            AssertExpectedFill(exported, fillElement: 1);
+
+            // Span overload
             byte[] signature = CreatePaddedFilledArray(signatureSize, 42);
 
             // Extra bytes in destination buffer should not be touched
@@ -216,7 +507,7 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddDestinationBufferIsSameAssertion(destination);
 
             mldsa.SignData(testData, destination.Span, testContext);
-            Assert.Equal(1, mldsa.SignDataCoreCallCount);
+            Assert.Equal(2, mldsa.SignDataCoreCallCount);
             AssertExpectedFill(signature, fillElement: 1, paddingElement: 42, PaddingSize, signatureSize);
         }
 

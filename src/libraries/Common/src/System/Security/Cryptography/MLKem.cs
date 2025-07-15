@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
     ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public abstract class MLKem : IDisposable
+    public abstract partial class MLKem : IDisposable
     {
         private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
 
@@ -40,10 +40,10 @@ namespace System.Security.Cryptography
         public static bool IsSupported => MLKemImplementation.IsSupported;
 
         /// <summary>
-        ///   Gets the algorithm of the current instance.
+        ///   Gets the specific ML-KEM algorithm for this key.
         /// </summary>
         /// <value>
-        ///   A value representing the ML-KEM algorithm.
+        ///   The specific ML-KEM algorithm for this key.
         /// </value>
         public MLKemAlgorithm Algorithm { get; }
 
@@ -183,6 +183,14 @@ namespace System.Security.Cryptography
         /// <param name="sharedSecret">
         ///   The buffer to receive the shared secret.
         /// </param>
+        /// <remarks>
+        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
+        ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
+        ///   deterministic but incorrect result.
+        ///   Detecting incorrect key use is a concern for consumers of the ML-KEM algorithm.
+        ///   For more information, see FIPS 203, Section 6.3.
+        /// </remarks>
         /// <exception cref="CryptographicException">
         ///   An error occurred during decapsulation.
         /// </exception>
@@ -219,6 +227,14 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The shared secret.
         /// </returns>
+        /// <remarks>
+        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
+        ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
+        ///   deterministic but incorrect result.
+        ///   Detecting incorrect key use is a concern for consumers of the ML-KEM algorithm.
+        ///   For more information, see FIPS 203, Section 6.3.
+        /// </remarks>
         /// <exception cref="CryptographicException">
         ///   An error occurred during decapsulation.
         /// </exception>
@@ -660,7 +676,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
             // SPKI does not contain sensitive data.
-            return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
+            return Helpers.EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
         }
 
         /// <summary>
@@ -1064,7 +1080,7 @@ namespace System.Security.Cryptography
                 KeyFormatHelper.WriteEncryptedPkcs8);
 
             // Skip clear since the data is already encrypted.
-            return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
+            return Helpers.EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
         }
 
         /// <summary>
@@ -1105,7 +1121,7 @@ namespace System.Security.Cryptography
                 KeyFormatHelper.WriteEncryptedPkcs8);
 
             // Skip clear since the data is already encrypted.
-            return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
+            return Helpers.EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
         }
 
         /// <summary>
@@ -1168,7 +1184,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             KeyFormatHelper.ReadSubjectPublicKeyInfo(s_knownOids, source, SubjectPublicKeyReader, out int read, out MLKem kem);
@@ -1230,7 +1246,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLKemKeyReader, out int read, out MLKem kem);
@@ -1288,7 +1304,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1333,7 +1349,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1383,7 +1399,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(password);
             ArgumentNullException.ThrowIfNull(source);
-            ThrowIfTrailingData(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1744,19 +1760,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
-        {
-            // The only thing we are checking here is that TryReadEncodedValue was able to decode it and that, given
-            // the length of the data, that it the same length as the span. The encoding rules don't matter for length
-            // checking, so just use BER.
-            bool success = AsnDecoder.TryReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out _, out int bytesRead);
-
-            if (!success || bytesRead != data.Length)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-        }
-
         private protected void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, typeof(MLKem));
@@ -1822,25 +1825,20 @@ namespace System.Security.Cryptography
             return result;
         }
 
-        private static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
+        private protected static void ThrowIfNoSeed(bool hasSeed)
         {
-#if NET10_0_OR_GREATER
-            return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
-#else
-            int length = writer.GetEncodedLength();
-            byte[] rent = CryptoPool.Rent(length);
+            if (!hasSeed)
+            {
+                throw new CryptographicException(SR.Cryptography_PqcNoSeed);
+            }
+        }
 
-            try
+        private protected static void ThrowIfNoDecapsulationKey(bool hasDecapsulationKey)
+        {
+            if (!hasDecapsulationKey)
             {
-                int written = writer.Encode(rent);
-                Debug.Assert(written == length);
-                return PemEncoding.WriteString(label, rent.AsSpan(0, written));
+                throw new CryptographicException(SR.Cryptography_KemNoDecapsulationKey);
             }
-            finally
-            {
-                CryptoPool.Return(rent, clear ? length : 0);
-            }
-#endif
         }
 
         private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);

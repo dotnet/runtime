@@ -2826,7 +2826,7 @@ static LPBYTE FollowIndirect(LPBYTE pTarget)
     {
         // Catch AVs here.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     RETURN pRet;
 }

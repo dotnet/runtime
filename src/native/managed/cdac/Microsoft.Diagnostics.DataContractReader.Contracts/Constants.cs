@@ -15,7 +15,6 @@ public static class Constants
         public const string GCThread = nameof(GCThread);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
-        public const string FeatureEHFunclets = nameof(FeatureEHFunclets);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -60,6 +59,8 @@ public static class Constants
 
         public const string Architecture = nameof(Architecture);
         public const string OperatingSystem = nameof(OperatingSystem);
+
+        public const string GCInfoVersion = nameof(GCInfoVersion);
     }
     public static class FieldNames
     {

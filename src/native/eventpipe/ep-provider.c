@@ -50,8 +50,7 @@ int64_t
 provider_compute_event_enable_mask (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
-	int64_t keywords,
-	EventPipeEventLevel event_level);
+	const EventPipeEvent *ep_event);
 
 /*
  * EventPipeProvider.
@@ -127,7 +126,7 @@ provider_refresh_event_state (EventPipeEvent *ep_event)
 	EventPipeConfiguration *config = provider->config;
 	EP_ASSERT (config != NULL);
 
-	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event_get_keywords (ep_event), ep_event_get_level (ep_event));
+	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event);
 	ep_event_set_enabled_mask (ep_event, enable_mask);
 
 	ep_requires_lock_held ();
@@ -139,8 +138,7 @@ int64_t
 provider_compute_event_enable_mask (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
-	int64_t keywords,
-	EventPipeEventLevel event_level)
+	const EventPipeEvent *ep_event)
 {
 	EP_ASSERT (provider != NULL);
 
@@ -148,29 +146,21 @@ provider_compute_event_enable_mask (
 
 	int64_t result = 0;
 	bool provider_enabled = ep_provider_get_enabled (provider);
+	if (!provider_enabled)
+		return result;
+
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
-		if (session) {
-			EventPipeSessionProvider *session_provider = config_get_session_provider (config, session, provider);
-			if (session_provider) {
-				int64_t session_keyword = ep_session_provider_get_keywords (session_provider);
-				EventPipeEventLevel session_level = ep_session_provider_get_logging_level (session_provider);
-				// The event is enabled if:
-				//  - The provider is enabled.
-				//  - The event keywords are unspecified in the manifest (== 0) or when masked with the enabled config are != 0.
-				//  - The event level is LogAlways
-                //    or the provider's verbosity level is LogAlways
-                //    or the provider's verbosity level is set to greater than the event's verbosity level in the manifest.
-				bool keyword_enabled = (keywords == 0) || ((session_keyword & keywords) != 0);
-				bool level_enabled = (event_level == EP_EVENT_LEVEL_LOGALWAYS) ||
-                    (session_level == EP_EVENT_LEVEL_LOGALWAYS) ||
-                    (session_level >= event_level);
+		if (session == NULL)
+			continue;
 
-				if (provider_enabled && keyword_enabled && level_enabled)
-					result = result | ep_session_get_mask (session);
-			}
-		}
+		EventPipeSessionProvider *session_provider = config_get_session_provider (config, session, provider);
+		if (session_provider == NULL)
+			continue;
+
+		if (ep_session_provider_allows_event (session_provider, ep_event))
+			result = result | ep_session_get_mask (session);
 	}
 
 	ep_requires_lock_held ();
