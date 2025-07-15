@@ -55,30 +55,16 @@ CObjectType CorUnix::otMutex(
 
 static CAllowedObjectTypes aotMutex(otiMutex);
 
-CObjectType CorUnix::otNamedMutex(
-                otiNamedMutex,
-                &SharedMemoryProcessDataHeader::PalObject_Close, // Cleanup routine
-                sizeof(SharedMemoryProcessDataHeader *), // Immutable data
-                NULL,   // No immutable data copy routine
-                NULL,   // No immutable data cleanup routine
-                0,      // No process local data
-                NULL,   // No process local data cleanup routine
-                CObjectType::UnwaitableObject, // PAL's waiting infrastructure is not used
-                CObjectType::SignalingNotApplicable, // PAL's signaling infrastructure is not used
-                CObjectType::ThreadReleaseNotApplicable, // PAL's signaling infrastructure is not used
-                CObjectType::OwnershipNotApplicable // PAL's ownership infrastructure is not used
-                );
-
-static CAllowedObjectTypes aotNamedMutex(otiNamedMutex);
-
-static PalObjectTypeId anyMutexTypeIds[] = {otiMutex, otiNamedMutex};
-static CAllowedObjectTypes aotAnyMutex(anyMutexTypeIds, ARRAY_SIZE(anyMutexTypeIds));
-
 /*++
 Function:
   CreateMutexW
 
-  See doc for PAL_CreateMutexW.
+Note:
+  lpMutexAttributes currently ignored:
+  -- Win32 object security not supported
+  -- handles to mutex objects are not inheritable
+
+  See MSDN docs on CreateMutexW for all other parameters.
 --*/
 
 HANDLE
@@ -88,95 +74,28 @@ CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName)
 {
-    return PAL_CreateMutexW(bInitialOwner, lpName, false /* bCurrentUserOnly */, nullptr, 0);
-}
-
-/*++
-Function:
-  PAL_CreateMutexW
-
-Note:
-  lpMutexAttributes currently ignored:
-  -- Win32 object security not supported
-  -- handles to mutex objects are not inheritable
-
-Parameters:
-  lpSystemCallErrors -- An optional buffer into which system call errors are written, for more detailed error information.
-  dwSystemCallErrorsBufferSize -- Size of the buffer pointed to by lpSystemCallErrors in bytes.
-
-  See MSDN docs on CreateMutexW for all other parameters.
---*/
-
-HANDLE
-PALAPI
-PAL_CreateMutexW(
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName,
-    IN BOOL bCurrentUserOnly,
-    IN LPSTR lpSystemCallErrors,
-    IN DWORD dwSystemCallErrorsBufferSize)
-{
+    _ASSERTE(lpName == nullptr);
     HANDLE hMutex = NULL;
     PAL_ERROR palError;
     CPalThread *pthr = NULL;
-    char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
-    PERF_ENTRY(PAL_CreateMutexW);
-    ENTRY("PAL_CreateMutexW(bInitialOwner=%d, lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d\n",
-          bInitialOwner,
-          lpName,
-          lpName?lpName:W16_NULLSTRING,
-          lpSystemCallErrors,
-          dwSystemCallErrorsBufferSize);
+    PERF_ENTRY(CreateMutexW);
+    ENTRY("CreateMutexW(lpMutexAttributes=%p, bInitialOwner=%d\n",
+        lpMutexAttributes,
+        bInitialOwner
+        );
 
     pthr = InternalGetCurrentThread();
 
-    /* validate parameters */
-    if ((int)dwSystemCallErrorsBufferSize < 0 || (lpSystemCallErrors == nullptr) != (dwSystemCallErrorsBufferSize == 0))
     {
-        ERROR("One or more parameters are invalid\n");
-        palError = ERROR_INVALID_PARAMETER;
-        goto CreateMutexWExit;
-    }
-
-    if (lpSystemCallErrors != nullptr)
-    {
-        lpSystemCallErrors[0] = '\0';
-    }
-
-    if (lpName != nullptr)
-    {
-        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, ARRAY_SIZE(utf8Name), nullptr, nullptr);
-        if (bytesWritten == 0)
-        {
-            DWORD errorCode = GetLastError();
-            if (errorCode == ERROR_INSUFFICIENT_BUFFER)
-            {
-                palError = static_cast<DWORD>(SharedMemoryError::NameTooLong);
-            }
-            else
-            {
-                ASSERT("WideCharToMultiByte failed (%u)\n", errorCode);
-                palError = errorCode;
-            }
-            goto CreateMutexWExit;
-        }
-    }
-
-    {
-        SharedMemorySystemCallErrors errors(lpSystemCallErrors, (int)dwSystemCallErrorsBufferSize);
         palError = InternalCreateMutex(
-            &errors,
             pthr,
-            nullptr,
+            nullptr, // lpMutexAttributes currently ignored
             bInitialOwner,
-            lpName == nullptr ? nullptr : utf8Name,
-            bCurrentUserOnly,
             &hMutex
             );
     }
 
-CreateMutexWExit:
     //
     // We always need to set last error, even on success:
     // we need to protect ourselves from the situation
@@ -186,8 +105,8 @@ CreateMutexWExit:
 
     pthr->SetLastError(palError);
 
-    LOGEXIT("PAL_CreateMutexW returns HANDLE %p\n", hMutex);
-    PERF_EXIT(PAL_CreateMutexW);
+    LOGEXIT("CreateMutexW returns HANDLE %p\n", hMutex);
+    PERF_EXIT(CreateMutexW);
     return hMutex;
 }
 
@@ -234,12 +153,9 @@ Parameters:
 
 PAL_ERROR
 CorUnix::InternalCreateMutex(
-    SharedMemorySystemCallErrors *errors,
     CPalThread *pthr,
     LPSECURITY_ATTRIBUTES lpMutexAttributes,
     BOOL bInitialOwner,
-    LPCSTR lpName,
-    BOOL bCurrentUserOnly,
     HANDLE *phMutex
     )
 {
@@ -249,32 +165,21 @@ CorUnix::InternalCreateMutex(
     IPalObject *pobjRegisteredMutex = NULL;
     ISynchStateController *pssc = NULL;
     HANDLE hMutex = nullptr;
-    bool createdNamedMutex = false;
 
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != phMutex);
 
     ENTRY("InternalCreateMutex(pthr=%p, lpMutexAttributes=%p, bInitialOwner=%d"
-        ", lpName=%p, phMutex=%p)\n",
+        ", phMutex=%p)\n",
         pthr,
         lpMutexAttributes,
         bInitialOwner,
-        lpName,
         phMutex
         );
 
-    if (lpName != nullptr && lpName[0] == '\0')
-    {
-        // Empty name is treated as a request for an unnamed process-local mutex
-        lpName = nullptr;
-    }
-
-    CObjectType *ot = lpName == nullptr ? &otMutex : &otNamedMutex;
-    CAllowedObjectTypes *aot = lpName == nullptr ? &aotMutex : &aotNamedMutex;
-
     palError = g_pObjectManager->AllocateObject(
         pthr,
-        ot,
+        &otMutex,
         &oa,
         &pobjMutex
         );
@@ -284,61 +189,42 @@ CorUnix::InternalCreateMutex(
         goto InternalCreateMutexExit;
     }
 
-    if (lpName == nullptr)
+    palError = pobjMutex->GetSynchStateController(
+        pthr,
+        &pssc
+        );
+
+    if (NO_ERROR != palError)
     {
-        palError = pobjMutex->GetSynchStateController(
-            pthr,
-            &pssc
-            );
+        ASSERT("Unable to create state controller (%d)\n", palError);
+        goto InternalCreateMutexExit;
+    }
 
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Unable to create state controller (%d)\n", palError);
-            goto InternalCreateMutexExit;
-        }
-
-        if (bInitialOwner)
-        {
-            palError = pssc->SetOwner(pthr);
-        }
-        else
-        {
-            palError = pssc->SetSignalCount(1);
-        }
-
-        pssc->ReleaseController();
-
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Unable to set initial mutex state (%d)\n", palError);
-            goto InternalCreateMutexExit;
-        }
+    if (bInitialOwner)
+    {
+        palError = pssc->SetOwner(pthr);
     }
     else
     {
-        SharedMemoryProcessDataHeader *processDataHeader;
-        try
-        {
-            processDataHeader =
-                NamedMutexProcessData::CreateOrOpen(errors, lpName, !!bCurrentUserOnly, !!bInitialOwner, &createdNamedMutex);
-        }
-        catch (SharedMemoryException ex)
-        {
-            palError = ex.GetErrorCode();
-            goto InternalCreateMutexExit;
-        }
+        palError = pssc->SetSignalCount(1);
+    }
 
-        SharedMemoryProcessDataHeader::PalObject_SetProcessDataHeader(pobjMutex, processDataHeader);
+    pssc->ReleaseController();
+
+    if (NO_ERROR != palError)
+    {
+        ASSERT("Unable to set initial mutex state (%d)\n", palError);
+        goto InternalCreateMutexExit;
     }
 
     palError = g_pObjectManager->RegisterObject(
         pthr,
         pobjMutex,
-        aot,
+        &aotMutex,
         &hMutex,
         &pobjRegisteredMutex
         );
-    _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
+    _ASSERTE(palError != ERROR_ALREADY_EXISTS); // Mutexes can't have names
     _ASSERTE(palError != NO_ERROR || pobjRegisteredMutex == pobjMutex);
     _ASSERTE((palError == NO_ERROR) == (hMutex != nullptr));
 
@@ -357,13 +243,6 @@ CorUnix::InternalCreateMutex(
 
     *phMutex = hMutex;
     hMutex = nullptr;
-
-    if (lpName != nullptr && !createdNamedMutex)
-    {
-        // Indicate to the caller that an existing mutex was opened, and hence the caller will not have initial ownership of the
-        // mutex if requested through bInitialOwner
-        palError = ERROR_ALREADY_EXISTS;
-    }
 
 InternalCreateMutexExit:
 
@@ -443,7 +322,7 @@ CorUnix::InternalReleaseMutex(
     palError = g_pObjectManager->ReferenceObjectByHandle(
         pthr,
         hMutex,
-        &aotAnyMutex,
+        &aotMutex,
         &pobjMutex
         );
 
@@ -453,44 +332,23 @@ CorUnix::InternalReleaseMutex(
         goto InternalReleaseMutexExit;
     }
 
-    objectTypeId = pobjMutex->GetObjectType()->GetId();
-    if (objectTypeId == otiMutex)
+    palError = pobjMutex->GetSynchStateController(
+        pthr,
+        &pssc
+        );
+
+    if (NO_ERROR != palError)
     {
-        palError = pobjMutex->GetSynchStateController(
-            pthr,
-            &pssc
-            );
-
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Error %d obtaining synch state controller\n", palError);
-            goto InternalReleaseMutexExit;
-        }
-
-        palError = pssc->DecrementOwnershipCount();
-
-        if (NO_ERROR != palError)
-        {
-            ERROR("Error %d decrementing mutex ownership count\n", palError);
-            goto InternalReleaseMutexExit;
-        }
+        ASSERT("Error %d obtaining synch state controller\n", palError);
+        goto InternalReleaseMutexExit;
     }
-    else
-    {
-        _ASSERTE(objectTypeId == otiNamedMutex);
 
-        SharedMemoryProcessDataHeader *processDataHeader =
-            SharedMemoryProcessDataHeader::PalObject_GetProcessDataHeader(pobjMutex);
-        _ASSERTE(processDataHeader != nullptr);
-        try
-        {
-            static_cast<NamedMutexProcessData *>(processDataHeader->GetData())->ReleaseLock();
-        }
-        catch (SharedMemoryException ex)
-        {
-            palError = ex.GetErrorCode();
-            goto InternalReleaseMutexExit;
-        }
+    palError = pssc->DecrementOwnershipCount();
+
+    if (NO_ERROR != palError)
+    {
+        ERROR("Error %d decrementing mutex ownership count\n", palError);
+        goto InternalReleaseMutexExit;
     }
 
 InternalReleaseMutexExit:
@@ -509,273 +367,6 @@ InternalReleaseMutexExit:
 
     return palError;
 }
-
-/*++
-Function:
-  OpenMutexA
-
-Note:
-  dwDesiredAccess is currently ignored (no Win32 object security support)
-  bInheritHandle is currently ignored (handles to mutexes are not inheritable)
-
-See MSDN doc.
---*/
-
-HANDLE
-PALAPI
-OpenMutexA (
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCSTR lpName)
-{
-    HANDLE hMutex = NULL;
-    CPalThread *pthr = NULL;
-    PAL_ERROR palError;
-
-    PERF_ENTRY(OpenMutexA);
-    ENTRY("OpenMutexA(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%s))\n",
-          dwDesiredAccess, bInheritHandle, lpName, lpName?lpName:"NULL");
-
-    pthr = InternalGetCurrentThread();
-
-    /* validate parameters */
-    if (lpName == nullptr)
-    {
-        ERROR("name is NULL\n");
-        palError = ERROR_INVALID_PARAMETER;
-        goto OpenMutexAExit;
-    }
-
-    palError = InternalOpenMutex(nullptr, pthr, lpName, false /* bCurrentUserOnly */, &hMutex);
-
-OpenMutexAExit:
-    if (NO_ERROR != palError)
-    {
-        pthr->SetLastError(palError);
-    }
-
-    LOGEXIT("OpenMutexA returns HANDLE %p\n", hMutex);
-    PERF_EXIT(OpenMutexA);
-    return hMutex;
-}
-
-/*++
-Function:
-  OpenMutexW
-
-Parameters:
-  See doc for PAL_OpenMutexW.
---*/
-
-HANDLE
-PALAPI
-OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName)
-{
-    return PAL_OpenMutexW(lpName, false /* bCurrentUserOnly */, nullptr, 0);
-}
-
-/*++
-Function:
-  PAL_OpenMutexW
-
-Note:
-  dwDesiredAccess is currently ignored (no Win32 object security support)
-  bInheritHandle is currently ignored (handles to mutexes are not inheritable)
-
-Parameters:
-  lpSystemCallErrors -- An optional buffer into which system call errors are written, for more detailed error information.
-  dwSystemCallErrorsBufferSize -- Size of the buffer pointed to by lpSystemCallErrors in bytes.
-
-  See MSDN docs on OpenMutexW for all other parameters.
---*/
-
-HANDLE
-PALAPI
-PAL_OpenMutexW(
-       IN LPCWSTR lpName,
-       IN BOOL bCurrentUserOnly,
-       IN LPSTR lpSystemCallErrors,
-       IN DWORD dwSystemCallErrorsBufferSize)
-{
-    HANDLE hMutex = NULL;
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pthr = NULL;
-    char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
-
-    PERF_ENTRY(PAL_OpenMutexW);
-    ENTRY("PAL_OpenMutexW(lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d)\n",
-          lpName,
-          lpName?lpName:W16_NULLSTRING,
-          lpSystemCallErrors,
-          dwSystemCallErrorsBufferSize);
-
-    pthr = InternalGetCurrentThread();
-
-    /* validate parameters */
-    if (lpName == nullptr ||
-        lpName[0] == W('\0') ||
-        (int)dwSystemCallErrorsBufferSize < 0 ||
-        (lpSystemCallErrors == nullptr) != (dwSystemCallErrorsBufferSize == 0))
-    {
-        ERROR("One or more parameters are invalid\n");
-        palError = ERROR_INVALID_PARAMETER;
-        goto OpenMutexWExit;
-    }
-
-    if (lpSystemCallErrors != nullptr)
-    {
-        lpSystemCallErrors[0] = '\0';
-    }
-
-    {
-        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, ARRAY_SIZE(utf8Name), nullptr, nullptr);
-        if (bytesWritten == 0)
-        {
-            DWORD errorCode = GetLastError();
-            if (errorCode == ERROR_INSUFFICIENT_BUFFER)
-            {
-                palError = static_cast<DWORD>(SharedMemoryError::NameTooLong);
-            }
-            else
-            {
-                ASSERT("WideCharToMultiByte failed (%u)\n", errorCode);
-                palError = errorCode;
-            }
-            goto OpenMutexWExit;
-        }
-
-        SharedMemorySystemCallErrors errors(lpSystemCallErrors, (int)dwSystemCallErrorsBufferSize);
-        palError = InternalOpenMutex(&errors, pthr, lpName == nullptr ? nullptr : utf8Name, bCurrentUserOnly, &hMutex);
-    }
-
-OpenMutexWExit:
-    if (NO_ERROR != palError)
-    {
-        pthr->SetLastError(palError);
-    }
-
-    LOGEXIT("PAL_OpenMutexW returns HANDLE %p\n", hMutex);
-    PERF_EXIT(PAL_OpenMutexW);
-
-    return hMutex;
-}
-
-/*++
-Function:
-  InternalOpenMutex
-
-Parameters:
-  errors -- An optional wrapper for system call errors, for more detailed error information.
-  pthr -- thread data for calling thread
-  phEvent -- on success, receives the allocated mutex handle
-
-  See MSDN docs on OpenMutex for all other parameters.
---*/
-
-PAL_ERROR
-CorUnix::InternalOpenMutex(
-    SharedMemorySystemCallErrors *errors,
-    CPalThread *pthr,
-    LPCSTR lpName,
-    BOOL bCurrentUserOnly,
-    HANDLE *phMutex
-    )
-{
-    CObjectAttributes oa;
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pobjMutex = NULL;
-    IPalObject *pobjRegisteredMutex = NULL;
-    HANDLE hMutex = nullptr;
-
-    _ASSERTE(NULL != pthr);
-    _ASSERTE(NULL != lpName);
-    _ASSERTE(NULL != phMutex);
-
-    ENTRY("InternalOpenMutex(pthr=%p, "
-        "lpName=%p, phMutex=%p)\n",
-        pthr,
-        lpName,
-        phMutex
-        );
-
-    palError = g_pObjectManager->AllocateObject(
-        pthr,
-        &otNamedMutex,
-        &oa,
-        &pobjMutex
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalOpenMutexExit;
-    }
-
-    {
-        SharedMemoryProcessDataHeader *processDataHeader;
-        try
-        {
-            processDataHeader = NamedMutexProcessData::Open(errors, lpName, bCurrentUserOnly);
-        }
-        catch (SharedMemoryException ex)
-        {
-            palError = ex.GetErrorCode();
-            goto InternalOpenMutexExit;
-        }
-
-        if (processDataHeader == nullptr)
-        {
-            palError = ERROR_FILE_NOT_FOUND;
-            goto InternalOpenMutexExit;
-        }
-
-        SharedMemoryProcessDataHeader::PalObject_SetProcessDataHeader(pobjMutex, processDataHeader);
-    }
-
-    palError = g_pObjectManager->RegisterObject(
-        pthr,
-        pobjMutex,
-        &aotNamedMutex,
-        &hMutex,
-        &pobjRegisteredMutex
-        );
-    _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
-    _ASSERTE(palError != NO_ERROR || pobjRegisteredMutex == pobjMutex);
-    _ASSERTE((palError == NO_ERROR) == (hMutex != nullptr));
-
-    // When RegisterObject succeeds, the object would have an additional reference from the handle, and one reference is
-    // released below through pobjRegisteredMutex. When RegisterObject fails, it releases the initial reference to the object.
-    // Either way, pobjMutex is invalidated by the above call to RegisterObject.
-    pobjMutex = nullptr;
-
-    if (palError != NO_ERROR)
-    {
-        goto InternalOpenMutexExit;
-    }
-
-    pobjRegisteredMutex->ReleaseReference(pthr);
-    pobjRegisteredMutex = nullptr;
-
-    *phMutex = hMutex;
-    hMutex = nullptr;
-
-InternalOpenMutexExit:
-
-    _ASSERTE(pobjRegisteredMutex == nullptr);
-    _ASSERTE(hMutex == nullptr);
-
-    if (pobjMutex != nullptr)
-    {
-        pobjMutex->ReleaseReference(pthr);
-    }
-
-    LOGEXIT("InternalCreateMutex returns %i\n", palError);
-
-    return palError;
-}
-
 
 /* Basic spinlock implementation */
 void SPINLOCKAcquire (LONG * lock, unsigned int flags)
@@ -812,919 +403,4 @@ DWORD SPINLOCKTryAcquire (LONG * lock)
 {
     return InterlockedCompareExchange(lock, 1, 0);
     // only returns 0 or 1.
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// MutexHelpers
-
-#if NAMED_MUTEX_USE_PTHREAD_MUTEX
-void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(SharedMemorySystemCallErrors *errors, pthread_mutex_t *mutex)
-{
-    _ASSERTE(mutex != nullptr);
-
-    struct AutoCleanup
-    {
-        pthread_mutexattr_t *m_mutexAttributes;
-
-        AutoCleanup() : m_mutexAttributes(nullptr)
-        {
-        }
-
-        ~AutoCleanup()
-        {
-            if (m_mutexAttributes != nullptr)
-            {
-                int error = pthread_mutexattr_destroy(m_mutexAttributes);
-                _ASSERTE(error == 0);
-            }
-        }
-    } autoCleanup;
-
-    pthread_mutexattr_t mutexAttributes;
-    int error = pthread_mutexattr_init(&mutexAttributes);
-    if (error != 0)
-    {
-        if (errors != nullptr)
-        {
-            errors->Append("pthread_mutexattr_init(...) == %s;", GetFriendlyErrorCodeString(error));
-        }
-
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));
-    }
-    autoCleanup.m_mutexAttributes = &mutexAttributes;
-
-    error = pthread_mutexattr_setpshared(&mutexAttributes, PTHREAD_PROCESS_SHARED);
-    _ASSERTE(error == 0);
-
-    error = pthread_mutexattr_setrobust(&mutexAttributes, PTHREAD_MUTEX_ROBUST);
-    _ASSERTE(error == 0);
-
-    error = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    _ASSERTE(error == 0);
-
-    error = pthread_mutex_init(mutex, &mutexAttributes);
-    if (error != 0)
-    {
-        if (errors != nullptr)
-        {
-            errors->Append("pthread_mutex_init(...) == %s;", GetFriendlyErrorCodeString(error));
-        }
-
-        throw SharedMemoryException(static_cast<DWORD>(error == EPERM ? SharedMemoryError::IO : SharedMemoryError::OutOfMemory));
-    }
-}
-
-void MutexHelpers::DestroyMutex(pthread_mutex_t *mutex)
-{
-    _ASSERTE(mutex != nullptr);
-
-    int error = pthread_mutex_destroy(mutex);
-    _ASSERTE(error == 0 || error == EBUSY); // the error will be EBUSY if the mutex is locked
-}
-
-MutexTryAcquireLockResult MutexHelpers::TryAcquireLock(
-    SharedMemorySystemCallErrors *errors,
-    pthread_mutex_t *mutex,
-    DWORD timeoutMilliseconds)
-{
-    _ASSERTE(mutex != nullptr);
-
-    int lockResult;
-    switch (timeoutMilliseconds)
-    {
-        case static_cast<DWORD>(-1):
-            lockResult = pthread_mutex_lock(mutex);
-            break;
-
-        case 0:
-            lockResult = pthread_mutex_trylock(mutex);
-            break;
-
-        default:
-        {
-            struct timespec timeoutTime;
-            PAL_ERROR palError = CPalSynchronizationManager::GetAbsoluteTimeout(timeoutMilliseconds, &timeoutTime, /*fPreferMonotonicClock*/ FALSE);
-            _ASSERTE(palError == NO_ERROR);
-            lockResult = pthread_mutex_timedlock(mutex, &timeoutTime);
-            break;
-        }
-    }
-
-    switch (lockResult)
-    {
-        case 0:
-            return MutexTryAcquireLockResult::AcquiredLock;
-
-        case EBUSY:
-            _ASSERTE(timeoutMilliseconds == 0);
-            return MutexTryAcquireLockResult::TimedOut;
-
-        case ETIMEDOUT:
-            _ASSERTE(timeoutMilliseconds != static_cast<DWORD>(-1));
-            _ASSERTE(timeoutMilliseconds != 0);
-            return MutexTryAcquireLockResult::TimedOut;
-
-        case EOWNERDEAD:
-        {
-            int setConsistentResult = pthread_mutex_consistent(mutex);
-            _ASSERTE(setConsistentResult == 0);
-            return MutexTryAcquireLockResult::AcquiredLockButMutexWasAbandoned;
-        }
-
-        case EAGAIN:
-            throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::MaximumRecursiveLocksReached));
-
-        default:
-        {
-            if (errors != nullptr)
-            {
-                errors->Append(
-                    "%s(...) == %s;",
-                    timeoutMilliseconds == (DWORD)-1 ? "pthread_mutex_lock"
-                        : timeoutMilliseconds == 0 ? "pthread_mutex_trylock"
-                        : "pthread_mutex_timedlock",
-                    GetFriendlyErrorCodeString(lockResult));
-            }
-
-            throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::Unknown));
-        }
-    }
-}
-
-void MutexHelpers::ReleaseLock(pthread_mutex_t *mutex)
-{
-    _ASSERTE(mutex != nullptr);
-
-    int unlockResult = pthread_mutex_unlock(mutex);
-    _ASSERTE(unlockResult == 0);
-}
-#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// NamedMutexSharedData
-
-NamedMutexSharedData::NamedMutexSharedData(SharedMemorySystemCallErrors *errors)
-    :
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    m_timedWaiterCount(0),
-#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    m_lockOwnerProcessId(SharedMemoryHelpers::InvalidProcessId),
-    m_lockOwnerThreadId(SharedMemoryHelpers::InvalidSharedThreadId),
-    m_isAbandoned(false)
-{
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    static_assert_no_msg(sizeof(m_timedWaiterCount) == sizeof(LONG)); // for interlocked operations
-#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionFileLockAcquired());
-
-#if NAMED_MUTEX_USE_PTHREAD_MUTEX
-    MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(errors, &m_lock);
-#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
-}
-
-NamedMutexSharedData::~NamedMutexSharedData()
-{
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionFileLockAcquired());
-
-#if NAMED_MUTEX_USE_PTHREAD_MUTEX
-    MutexHelpers::DestroyMutex(&m_lock);
-#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
-}
-
-#if NAMED_MUTEX_USE_PTHREAD_MUTEX
-pthread_mutex_t *NamedMutexSharedData::GetLock()
-{
-    return &m_lock;
-}
-#else // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-bool NamedMutexSharedData::HasAnyTimedWaiters() const
-{
-    return
-        InterlockedCompareExchange(
-            const_cast<LONG *>(reinterpret_cast<const LONG *>(&m_timedWaiterCount)),
-            -1 /* Exchange */,
-            -1 /* Comparand */) != 0;
-}
-
-void NamedMutexSharedData::IncTimedWaiterCount()
-{
-    ULONG newValue = InterlockedIncrement(reinterpret_cast<LONG *>(&m_timedWaiterCount));
-    if (newValue == 0)
-    {
-        InterlockedDecrement(reinterpret_cast<LONG *>(&m_timedWaiterCount));
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));
-    }
-}
-
-void NamedMutexSharedData::DecTimedWaiterCount()
-{
-    ULONG newValue = InterlockedDecrement(reinterpret_cast<LONG *>(&m_timedWaiterCount));
-    _ASSERTE(newValue + 1 != 0);
-}
-#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-bool NamedMutexSharedData::IsAbandoned() const
-{
-    _ASSERTE(IsLockOwnedByCurrentThread());
-    return m_isAbandoned;
-}
-
-void NamedMutexSharedData::SetIsAbandoned(bool isAbandoned)
-{
-    _ASSERTE(IsLockOwnedByCurrentThread());
-    _ASSERTE(m_isAbandoned != isAbandoned);
-
-    m_isAbandoned = isAbandoned;
-}
-
-bool NamedMutexSharedData::IsLockOwnedByAnyThread() const
-{
-    return
-        m_lockOwnerProcessId != SharedMemoryHelpers::InvalidProcessId ||
-        m_lockOwnerThreadId != SharedMemoryHelpers::InvalidSharedThreadId;
-}
-
-bool NamedMutexSharedData::IsLockOwnedByCurrentThread() const
-{
-    return m_lockOwnerProcessId == GetCurrentProcessId() && m_lockOwnerThreadId == THREADSilentGetCurrentThreadId();
-}
-
-void NamedMutexSharedData::SetLockOwnerToCurrentThread()
-{
-    m_lockOwnerProcessId = GetCurrentProcessId();
-    _ASSERTE(m_lockOwnerProcessId != SharedMemoryHelpers::InvalidProcessId);
-    m_lockOwnerThreadId = THREADSilentGetCurrentThreadId();
-    _ASSERTE(m_lockOwnerThreadId != SharedMemoryHelpers::InvalidSharedThreadId);
-}
-
-void NamedMutexSharedData::ClearLockOwner()
-{
-    _ASSERTE(IsLockOwnedByCurrentThread());
-
-    m_lockOwnerProcessId = SharedMemoryHelpers::InvalidProcessId;
-    m_lockOwnerThreadId = SharedMemoryHelpers::InvalidSharedThreadId;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// NamedMutexProcessData
-
-// This value should only be incremented if a non-backward-compatible change to the sync system is made. A process would fail to
-// open a mutex created with a different sync system version.
-const UINT8 NamedMutexProcessData::SyncSystemVersion = 1;
-
-const DWORD NamedMutexProcessData::PollLoopMaximumSleepMilliseconds = 100;
-
-SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
-    SharedMemorySystemCallErrors *errors,
-    LPCSTR name,
-    bool isUserScope,
-    bool acquireLockIfCreated,
-    bool *createdRef)
-{
-    return CreateOrOpen(errors, name, isUserScope, true /* createIfNotExist */, acquireLockIfCreated, createdRef);
-}
-
-SharedMemoryProcessDataHeader *NamedMutexProcessData::Open(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope)
-{
-    return
-        CreateOrOpen(
-            errors,
-            name,
-            isUserScope,
-            false /* createIfNotExist */,
-            false /* acquireLockIfCreated */,
-            nullptr /* createdRef */);
-}
-
-SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
-    SharedMemorySystemCallErrors *errors,
-    LPCSTR name,
-    bool isUserScope,
-    bool createIfNotExist,
-    bool acquireLockIfCreated,
-    bool *createdRef)
-{
-    _ASSERTE(name != nullptr);
-    _ASSERTE(createIfNotExist || !acquireLockIfCreated);
-
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    PathCharString lockFilePath;
-#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-    struct AutoCleanup
-    {
-        bool m_acquiredCreationDeletionProcessLock;
-        bool m_acquiredCreationDeletionFileLock;
-        SharedMemoryProcessDataHeader *m_processDataHeader;
-    #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-        PathCharString *m_lockFilePath;
-        SIZE_T m_sessionDirectoryPathCharCount;
-        bool m_createdLockFile;
-        int m_lockFileDescriptor;
-    #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-        bool m_cancel;
-
-        AutoCleanup()
-            : m_acquiredCreationDeletionProcessLock(false),
-            m_acquiredCreationDeletionFileLock(false),
-            m_processDataHeader(nullptr),
-        #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-            m_lockFilePath(nullptr),
-            m_sessionDirectoryPathCharCount(0),
-            m_createdLockFile(false),
-            m_lockFileDescriptor(-1),
-        #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-            m_cancel(false)
-        {
-        }
-
-        ~AutoCleanup()
-        {
-        #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-            if (!m_cancel)
-            {
-                if (m_lockFileDescriptor != -1)
-                {
-                    SharedMemoryHelpers::CloseFile(m_lockFileDescriptor);
-                }
-
-                if (m_createdLockFile)
-                {
-                    _ASSERTE(m_lockFilePath != nullptr);
-                    unlink(*m_lockFilePath);
-                }
-
-                if (m_sessionDirectoryPathCharCount != 0)
-                {
-                    _ASSERTE(m_lockFilePath != nullptr);
-                    m_lockFilePath->CloseBuffer(m_sessionDirectoryPathCharCount);
-                    rmdir(*m_lockFilePath);
-                }
-            }
-        #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-            if (m_acquiredCreationDeletionFileLock)
-            {
-                _ASSERTE(m_processDataHeader != nullptr);
-                SharedMemoryManager::ReleaseCreationDeletionFileLock(m_processDataHeader->GetId());
-            }
-
-            if (!m_cancel && m_processDataHeader != nullptr)
-            {
-                _ASSERTE(m_acquiredCreationDeletionProcessLock);
-                m_processDataHeader->DecRefCount();
-            }
-
-            if (m_acquiredCreationDeletionProcessLock)
-            {
-                SharedMemoryManager::ReleaseCreationDeletionProcessLock();
-            }
-        }
-    } autoCleanup;
-
-    SharedMemoryManager::AcquireCreationDeletionProcessLock();
-    autoCleanup.m_acquiredCreationDeletionProcessLock = true;
-
-    // Create or open the shared memory
-    bool created;
-    SharedMemoryProcessDataHeader *processDataHeader =
-        SharedMemoryProcessDataHeader::CreateOrOpen(
-            errors,
-            name,
-            isUserScope,
-            SharedMemorySharedDataHeader(SharedMemoryType::Mutex, SyncSystemVersion),
-            sizeof(NamedMutexSharedData),
-            createIfNotExist,
-            &created);
-    if (createdRef != nullptr)
-    {
-        *createdRef = created;
-    }
-    if (processDataHeader == nullptr)
-    {
-        _ASSERTE(!created);
-        _ASSERTE(!createIfNotExist);
-        return nullptr;
-    }
-    if (created)
-    {
-        // If the shared memory file was created, the creation/deletion file lock would have been acquired so that we can
-        // initialize the shared data
-        _ASSERTE(SharedMemoryManager::IsCreationDeletionFileLockAcquired());
-        autoCleanup.m_acquiredCreationDeletionFileLock = true;
-    }
-    autoCleanup.m_processDataHeader = processDataHeader;
-
-    if (created)
-    {
-        // Initialize the shared data
-        new(processDataHeader->GetSharedDataHeader()->GetData()) NamedMutexSharedData(errors);
-    }
-
-    if (processDataHeader->GetData() == nullptr)
-    {
-    #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-        // Create the lock files directory
-        const SharedMemoryId *id = processDataHeader->GetId();
-        SharedMemoryHelpers::VerifyStringOperation(
-            lockFilePath.Set(*gSharedFilesPath) &&
-            id->AppendRuntimeTempDirectoryName(lockFilePath) &&
-            lockFilePath.Append('/') && lockFilePath.Append(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME));
-        if (created)
-        {
-            SharedMemoryHelpers::EnsureDirectoryExists(errors, lockFilePath, id, true /* isGlobalLockAcquired */);
-        }
-
-        // Create the session directory
-        SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append('/') && id->AppendSessionDirectoryName(lockFilePath));
-        if (created)
-        {
-            SharedMemoryHelpers::EnsureDirectoryExists(errors, lockFilePath, id, true /* isGlobalLockAcquired */);
-            autoCleanup.m_lockFilePath = &lockFilePath;
-            autoCleanup.m_sessionDirectoryPathCharCount = lockFilePath.GetCount();
-        }
-
-        // Create or open the lock file
-        SharedMemoryHelpers::VerifyStringOperation(
-            lockFilePath.Append('/') && lockFilePath.Append(id->GetName(), id->GetNameCharCount()));
-        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(errors, lockFilePath, id, created);
-        if (lockFileDescriptor == -1)
-        {
-            _ASSERTE(!created);
-            if (createIfNotExist)
-            {
-                if (errors != nullptr)
-                {
-                    errors->Append(
-                        "open(\"%s\", O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0) == -1; errno == ENOENT;",
-                        (const char *)lockFilePath);
-                }
-
-                throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-            }
-
-            return nullptr;
-        }
-        autoCleanup.m_createdLockFile = created;
-        autoCleanup.m_lockFileDescriptor = lockFileDescriptor;
-    #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-        // Create the process data
-        void *processDataBuffer = SharedMemoryHelpers::Alloc(sizeof(NamedMutexProcessData));
-        AutoFreeBuffer autoFreeProcessDataBuffer(processDataBuffer);
-        NamedMutexProcessData *processData =
-            new(processDataBuffer)
-            NamedMutexProcessData(
-                processDataHeader
-            #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-                ,
-                lockFileDescriptor
-            #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-            );
-        autoFreeProcessDataBuffer.Cancel();
-        processDataHeader->SetData(processData);
-
-        // If the mutex was created and if requested, acquire the lock initially while holding the creation/deletion locks
-        if (created && acquireLockIfCreated)
-        {
-            MutexTryAcquireLockResult tryAcquireLockResult = processData->TryAcquireLock(errors, 0);
-            _ASSERTE(tryAcquireLockResult == MutexTryAcquireLockResult::AcquiredLock);
-        }
-    }
-
-    autoCleanup.m_cancel = true;
-    return processDataHeader;
-}
-
-NamedMutexProcessData::NamedMutexProcessData(
-    SharedMemoryProcessDataHeader *processDataHeader
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    ,
-    int sharedLockFileDescriptor
-#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-)
-    :
-    m_processDataHeader(processDataHeader),
-    m_lockCount(0),
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    m_sharedLockFileDescriptor(sharedLockFileDescriptor),
-#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    m_lockOwnerThread(nullptr),
-    m_nextInThreadOwnedNamedMutexList(nullptr),
-    m_hasRefFromLockOwnerThread(false)
-{
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-    _ASSERTE(processDataHeader != nullptr);
-
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    _ASSERTE(sharedLockFileDescriptor != -1);
-
-    m_processLockHandle = CreateMutex(nullptr /* lpMutexAttributes */, false /* bInitialOwner */, nullptr /* lpName */);
-    if (m_processLockHandle == nullptr)
-    {
-        throw SharedMemoryException(GetLastError());
-    }
-#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-}
-
-bool NamedMutexProcessData::CanClose() const
-{
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-
-    // When using a pthread robust mutex, the mutex may only be unlocked and destroyed by the thread that owns the lock. When
-    // using file locks, even though any thread could release that lock, the behavior is kept consistent to the more
-    // conservative case. If the last handle to the mutex is closed when a different thread owns the lock, the mutex cannot be
-    // closed. Due to these limitations, the behavior in this corner case is necessarily different from Windows. The caller will
-    // extend the lifetime of the mutex and will call OnLifetimeExtendedDueToCannotClose() shortly.
-    return m_lockOwnerThread == nullptr || m_lockOwnerThread == GetCurrentPalThread();
-}
-
-bool NamedMutexProcessData::HasImplicitRef() const
-{
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-    return m_hasRefFromLockOwnerThread;
-}
-
-void NamedMutexProcessData::SetHasImplicitRef(bool value)
-{
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-    _ASSERTE(m_hasRefFromLockOwnerThread != value);
-    _ASSERTE(!value || !CanClose());
-
-    // If value == true:
-    //   The mutex could not be closed and the caller extended the lifetime of the mutex. Record that the lock owner thread
-    //   should release the ref when the lock is released on that thread.
-    // Else:
-    //   The mutex has an implicit ref and got the first explicit reference from this process. Remove the implicit ref from the
-    //   lock owner thread.
-    m_hasRefFromLockOwnerThread = value;
-}
-
-void NamedMutexProcessData::Close(bool isAbruptShutdown, bool releaseSharedData)
-{
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-    _ASSERTE(!releaseSharedData || SharedMemoryManager::IsCreationDeletionFileLockAcquired());
-
-    // If the process is shutting down abruptly without having closed some mutexes, there could still be threads running with
-    // active references to the mutex. So when shutting down abruptly, don't clean up any object or global process-local state.
-    if (!isAbruptShutdown)
-    {
-        _ASSERTE(CanClose());
-        _ASSERTE(!m_hasRefFromLockOwnerThread);
-
-        CPalThread *lockOwnerThread = m_lockOwnerThread;
-        if (lockOwnerThread == GetCurrentPalThread())
-        {
-            // The mutex was not released before the last handle to it from this process was closed on the lock-owning thread.
-            // Another process may still have a handle to the mutex, but since it appears as though this process would not be
-            // releasing the mutex, abandon the mutex. The only way for this process to otherwise release the mutex is to open
-            // another handle to it and release the lock on the same thread, which would be incorrect-looking code. The behavior
-            // in this corner case is different from Windows.
-            lockOwnerThread->synchronizationInfo.RemoveOwnedNamedMutex(this);
-            Abandon();
-        }
-        else
-        {
-            _ASSERTE(lockOwnerThread == nullptr);
-        }
-
-        if (releaseSharedData)
-        {
-            GetSharedData()->~NamedMutexSharedData();
-        }
-
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-        CloseHandle(m_processLockHandle);
-        SharedMemoryHelpers::CloseFile(m_sharedLockFileDescriptor);
-#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-    }
-
-#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-    if (!releaseSharedData)
-    {
-        return;
-    }
-
-    try
-    {
-        // Delete the lock file, and the session directory if it's not empty
-        PathCharString path;
-        const SharedMemoryId *id = m_processDataHeader->GetId();
-        SharedMemoryHelpers::VerifyStringOperation(
-            path.Set(*gSharedFilesPath) &&
-            id->AppendRuntimeTempDirectoryName(path) &&
-            path.Append('/') && path.Append(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) &&
-            path.Append('/') && id->AppendSessionDirectoryName(path) &&
-            path.Append('/'));
-        SIZE_T sessionDirectoryPathCharCount = path.GetCount();
-        SharedMemoryHelpers::VerifyStringOperation(path.Append(id->GetName(), id->GetNameCharCount()));
-        unlink(path);
-        path.CloseBuffer(sessionDirectoryPathCharCount);
-        rmdir(path);
-    }
-    catch (SharedMemoryException)
-    {
-        // Ignore the error, just don't release shared data
-    }
-#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-}
-
-NamedMutexSharedData *NamedMutexProcessData::GetSharedData() const
-{
-    return reinterpret_cast<NamedMutexSharedData *>(m_processDataHeader->GetSharedDataHeader()->GetData());
-}
-
-void NamedMutexProcessData::SetLockOwnerThread(CorUnix::CPalThread *lockOwnerThread)
-{
-    _ASSERTE(lockOwnerThread == nullptr || lockOwnerThread == GetCurrentPalThread());
-    _ASSERTE(IsLockOwnedByCurrentThread());
-
-    m_lockOwnerThread = lockOwnerThread;
-}
-
-NamedMutexProcessData *NamedMutexProcessData::GetNextInThreadOwnedNamedMutexList() const
-{
-    _ASSERTE(IsLockOwnedByCurrentThread());
-    return m_nextInThreadOwnedNamedMutexList;
-}
-
-void NamedMutexProcessData::SetNextInThreadOwnedNamedMutexList(NamedMutexProcessData *next)
-{
-    _ASSERTE(IsLockOwnedByCurrentThread());
-    m_nextInThreadOwnedNamedMutexList = next;
-}
-
-MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(SharedMemorySystemCallErrors *errors, DWORD timeoutMilliseconds)
-{
-    NamedMutexSharedData *sharedData = GetSharedData();
-
-#if NAMED_MUTEX_USE_PTHREAD_MUTEX
-    MutexTryAcquireLockResult result = MutexHelpers::TryAcquireLock(errors, sharedData->GetLock(), timeoutMilliseconds);
-    if (result == MutexTryAcquireLockResult::TimedOut)
-    {
-        return result;
-    }
-
-    // Check if a recursive lock was just taken. The recursion level is tracked manually so that the lock owner can be cleared
-    // at the appropriate time, see ReleaseLock().
-    if (m_lockCount != 0)
-    {
-        _ASSERTE(IsLockOwnedByCurrentThread()); // otherwise, this thread would not have acquired the lock
-        _ASSERTE(GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
-
-        if (m_lockCount + 1 < m_lockCount)
-        {
-            MutexHelpers::ReleaseLock(sharedData->GetLock());
-            throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::MaximumRecursiveLocksReached));
-        }
-        ++m_lockCount;
-
-        // The lock is released upon acquiring a recursive lock from the thread that already owns the lock
-        MutexHelpers::ReleaseLock(sharedData->GetLock());
-
-        _ASSERTE(result != MutexTryAcquireLockResult::AcquiredLockButMutexWasAbandoned);
-        _ASSERTE(!sharedData->IsAbandoned());
-        return result;
-    }
-
-    // The non-recursive case is handled below (skip the #else and see below that)
-#else // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    // If a timeout is specified, determine the start time
-    DWORD startTime = 0;
-    if (timeoutMilliseconds != static_cast<DWORD>(-1) && timeoutMilliseconds != 0)
-    {
-        startTime = (DWORD)minipal_lowres_ticks();
-    }
-
-    // Acquire the process lock. A file lock can only be acquired once per file descriptor, so to synchronize the threads of
-    // this process, the process lock is used.
-    while (true)
-    {
-        DWORD waitResult = WaitForSingleObject(m_processLockHandle, timeoutMilliseconds);
-        switch (waitResult)
-        {
-            case WAIT_OBJECT_0:
-            case WAIT_ABANDONED: // abandoned state for the process lock is irrelevant, the shared lock will also have been abandoned
-                break;
-
-            case WAIT_TIMEOUT:
-                return MutexTryAcquireLockResult::TimedOut;
-
-            case WAIT_IO_COMPLETION:
-                continue;
-
-            case WAIT_FAILED:
-                throw SharedMemoryException(GetLastError());
-
-            default:
-                _ASSERTE(false);
-                break;
-        }
-        break;
-    }
-
-    struct AutoReleaseProcessLock
-    {
-        HANDLE m_processLockHandle;
-        bool m_cancel;
-
-        AutoReleaseProcessLock(HANDLE processLockHandle) : m_processLockHandle(processLockHandle), m_cancel(false)
-        {
-        }
-
-        ~AutoReleaseProcessLock()
-        {
-            if (!m_cancel)
-            {
-                ReleaseMutex(m_processLockHandle);
-            }
-        }
-    } autoReleaseProcessLock(m_processLockHandle);
-
-    // Check if it's a recursive lock attempt
-    if (m_lockCount != 0)
-    {
-        _ASSERTE(IsLockOwnedByCurrentThread()); // otherwise, this thread would not have acquired the process lock
-        _ASSERTE(GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
-
-        if (m_lockCount + 1 < m_lockCount)
-        {
-            throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::MaximumRecursiveLocksReached));
-        }
-        ++m_lockCount;
-
-        // The process lock is released upon acquiring a recursive lock from the thread that already owns the lock
-        return MutexTryAcquireLockResult::AcquiredLock;
-    }
-
-    switch (timeoutMilliseconds)
-    {
-        case static_cast<DWORD>(-1):
-        {
-            // The file lock API does not have a timeout on the wait, so timed waiters will poll the file lock in a loop,
-            // sleeping for a short duration in-between. Due to the polling nature of a timed wait, timed waiters will almost
-            // never acquire the file lock as long as there are also untimed waiters. So, in order to make the file lock
-            // acquisition reasonable, when there are timed waiters, have untimed waiters also use polling.
-            bool acquiredFileLock = false;
-            while (sharedData->HasAnyTimedWaiters())
-            {
-                if (SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
-                {
-                    acquiredFileLock = true;
-                    break;
-                }
-                Sleep(PollLoopMaximumSleepMilliseconds);
-            }
-            if (acquiredFileLock)
-            {
-                break;
-            }
-
-            acquiredFileLock = SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX);
-            _ASSERTE(acquiredFileLock);
-            break;
-        }
-
-        case 0:
-            if (!SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
-            {
-                return MutexTryAcquireLockResult::TimedOut;
-            }
-            break;
-
-        default:
-        {
-            // Try to acquire the file lock without waiting
-            if (SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
-            {
-                break;
-            }
-
-            // The file lock API does not have a timeout on the wait, so timed waiters need to poll the file lock in a loop,
-            // sleeping for a short duration in-between. Due to the polling nature of a timed wait, timed waiters will almost
-            // never acquire the file lock as long as there are also untimed waiters. So, in order to make the file lock
-            // acquisition reasonable, record that there is a timed waiter, to have untimed waiters also use polling.
-            sharedData->IncTimedWaiterCount();
-            struct AutoDecTimedWaiterCount
-            {
-                NamedMutexSharedData *m_sharedData;
-
-                AutoDecTimedWaiterCount(NamedMutexSharedData *sharedData) : m_sharedData(sharedData)
-                {
-                }
-
-                ~AutoDecTimedWaiterCount()
-                {
-                    m_sharedData->DecTimedWaiterCount();
-                }
-            } autoDecTimedWaiterCount(sharedData);
-
-            // Poll for the file lock
-            do
-            {
-                DWORD elapsedMilliseconds = (DWORD)minipal_lowres_ticks() - startTime;
-                if (elapsedMilliseconds >= timeoutMilliseconds)
-                {
-                    return MutexTryAcquireLockResult::TimedOut;
-                }
-
-                DWORD remainingMilliseconds = timeoutMilliseconds - elapsedMilliseconds;
-                DWORD sleepMilliseconds =
-                    remainingMilliseconds < PollLoopMaximumSleepMilliseconds
-                        ? remainingMilliseconds
-                        : PollLoopMaximumSleepMilliseconds;
-                Sleep(sleepMilliseconds);
-            } while (!SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB));
-            break;
-        }
-    }
-
-    // There cannot be any exceptions after this
-    autoReleaseProcessLock.m_cancel = true;
-
-    // After acquiring the file lock, if we find that a lock owner is already designated, the process that previously owned the
-    // lock must have terminated while holding the lock.
-    MutexTryAcquireLockResult result =
-        sharedData->IsLockOwnedByAnyThread()
-            ? MutexTryAcquireLockResult::AcquiredLockButMutexWasAbandoned
-            : MutexTryAcquireLockResult::AcquiredLock;
-#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
-
-    sharedData->SetLockOwnerToCurrentThread();
-    m_lockCount = 1;
-    CPalThread *currentThread = GetCurrentPalThread();
-    SetLockOwnerThread(currentThread);
-    currentThread->synchronizationInfo.AddOwnedNamedMutex(this);
-
-    if (sharedData->IsAbandoned())
-    {
-        // The thread that previously owned the lock did not release it before exiting
-        sharedData->SetIsAbandoned(false);
-        result = MutexTryAcquireLockResult::AcquiredLockButMutexWasAbandoned;
-    }
-    return result;
-}
-
-void NamedMutexProcessData::ReleaseLock()
-{
-    if (!IsLockOwnedByCurrentThread())
-    {
-        throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::ThreadHasNotAcquiredMutex));
-    }
-
-    _ASSERTE(GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
-    _ASSERTE(!m_hasRefFromLockOwnerThread);
-
-    _ASSERTE(m_lockCount != 0);
-    --m_lockCount;
-    if (m_lockCount != 0)
-    {
-        return;
-    }
-
-    GetCurrentPalThread()->synchronizationInfo.RemoveOwnedNamedMutex(this);
-    SetLockOwnerThread(nullptr);
-    ActuallyReleaseLock();
-}
-
-void NamedMutexProcessData::Abandon()
-{
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-
-    NamedMutexSharedData *sharedData = GetSharedData();
-    _ASSERTE(IsLockOwnedByCurrentThread());
-    _ASSERTE(m_lockCount != 0);
-
-    sharedData->SetIsAbandoned(true);
-    m_lockCount = 0;
-    SetLockOwnerThread(nullptr);
-    ActuallyReleaseLock();
-
-    if (m_hasRefFromLockOwnerThread)
-    {
-        m_hasRefFromLockOwnerThread = false;
-        m_processDataHeader->DecRefCount();
-    }
-}
-
-void NamedMutexProcessData::ActuallyReleaseLock()
-{
-    _ASSERTE(IsLockOwnedByCurrentThread());
-    _ASSERTE(!GetCurrentPalThread()->synchronizationInfo.OwnsNamedMutex(this));
-    _ASSERTE(m_lockCount == 0);
-
-    NamedMutexSharedData *sharedData = GetSharedData();
-    sharedData->ClearLockOwner();
-
-#if NAMED_MUTEX_USE_PTHREAD_MUTEX
-    MutexHelpers::ReleaseLock(sharedData->GetLock());
-#else // !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    SharedMemoryHelpers::ReleaseFileLock(m_sharedLockFileDescriptor);
-    ReleaseMutex(m_processLockHandle);
-#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
 }

@@ -312,7 +312,6 @@ threading/GetCurrentThread/test1/paltest_getcurrentthread_test1
 threading/GetCurrentThread/test2/paltest_getcurrentthread_test2
 threading/GetCurrentThreadId/test1/paltest_getcurrentthreadid_test1
 threading/GetExitCodeProcess/test1/paltest_getexitcodeprocess_test1
-threading/NamedMutex/test1/paltest_namedmutex_test1
 threading/OpenEventW/test1/paltest_openeventw_test1
 threading/OpenEventW/test2/paltest_openeventw_test2
 threading/OpenEventW/test3/paltest_openeventw_test3
