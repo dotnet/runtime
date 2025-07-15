@@ -582,6 +582,68 @@ inline void EvaluateUnaryMask(
         }
     }
 }
+
+template <typename TSimd, typename TBase>
+inline void EvaluateExtractMSB(simdmask_t* result, const TSimd& arg0)
+{
+    uint64_t resultValue = 0;
+    uint32_t count       = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase input0;
+        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        if (input0 < 0)
+        {
+            resultValue |= (static_cast<uint64_t>(1) << i);
+        }
+    }
+
+    memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
+}
+
+template <typename TSimd>
+inline void EvaluateExtractMSB(var_types baseType, simdmask_t* result, const TSimd& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            EvaluateExtractMSB<TSimd, int8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            EvaluateExtractMSB<TSimd, int16_t>(result, arg0);
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            EvaluateExtractMSB<TSimd, int32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            EvaluateExtractMSB<TSimd, int64_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
