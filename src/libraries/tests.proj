@@ -40,11 +40,6 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/116695 missing dev cert on Windows -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests/System.Runtime.InteropServices.JavaScript.Tests.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Samples which are too complex for CI -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
@@ -607,7 +602,8 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <!-- Android CoreCLR emulator tests are disabled due to capacity issue: https://github.com/dotnet/runtime/issues/117615 -->
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetArchitecture)' == 'arm64'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />

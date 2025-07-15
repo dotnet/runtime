@@ -5311,18 +5311,6 @@ bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBloc
 
 /*****************************************************************************
  *
- *  Returns true if it is allowable (based upon the EH regions)
- *  to place block bAfter immediately after bBefore. It is allowable
- *  if the 'bBefore' and 'bAfter' blocks are in the exact same EH region.
- */
-
-bool Compiler::fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter)
-{
-    return BasicBlock::sameEHRegion(bBefore, bAfter);
-}
-
-/*****************************************************************************
- *
  *  Function called to move the range of blocks [bStart .. bEnd].
  *  The blocks are placed immediately after the insertAfterBlk.
  *  fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.

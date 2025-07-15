@@ -1984,17 +1984,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (node->GetOperandCount() == 3)
                 {
-                    assert(node->GetAuxiliaryType() != TYP_UNKNOWN);
                     node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), node->Op(3), lclVar);
-                }
-                else if (node->GetOperandCount() == 2)
-                {
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
                 else
                 {
-                    assert(node->GetOperandCount() == 1);
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), lclVar);
+                    assert(node->GetOperandCount() == 2);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
             }
 

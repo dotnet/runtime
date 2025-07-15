@@ -2478,8 +2478,6 @@ Thread::~Thread()
         Exception::Delete (m_pExceptionDuringStartup);
     }
 
-    ClearContext();
-
     if (!IsAtProcessExit())
     {
         // Destroy any handles that we're using to hold onto exception objects
@@ -2850,7 +2848,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         GCX_COOP();
 
         _ASSERTE(IsAtProcessExit());
-        ClearContext();
         if (m_ExposedObject != NULL)
             DecExternalCount(holdingLock);             // may destruct now
     }
@@ -6779,72 +6776,6 @@ T_CONTEXT *Thread::GetFilterContext(void)
 }
 
 #ifndef DACCESS_COMPILE
-
-void Thread::ClearContext()
-{
-    CONTRACTL {
-        NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-#ifdef FEATURE_COMINTEROP
-    m_fDisableComObjectEagerCleanup = false;
-#endif //FEATURE_COMINTEROP
-}
-
-BOOL Thread::HaveExtraWorkForFinalizer()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return RequireSyncBlockCleanup()
-        || Thread::CleanupNeededForFinalizedThread()
-        || (m_DetachCount > 0)
-        || SystemDomain::System()->RequireAppDomainCleanup()
-        || YieldProcessorNormalization::IsMeasurementScheduled()
-        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
-}
-
-void Thread::DoExtraWorkForFinalizer()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(this == FinalizerThread::GetFinalizerThread());
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (RequiresCoInitialize())
-    {
-        SetApartment(AS_InMTA);
-    }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-    if (RequireSyncBlockCleanup())
-    {
-        SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
-    }
-    if (SystemDomain::System()->RequireAppDomainCleanup())
-    {
-        SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
-    }
-
-    if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
-    {
-        Thread::CleanupDetachedThreads();
-    }
-
-    if (YieldProcessorNormalization::IsMeasurementScheduled())
-    {
-        GCX_PREEMP();
-        YieldProcessorNormalization::PerformMeasurement();
-    }
-
-    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
-}
-
 
 // HELPERS FOR THE BASE OF A MANAGED THREAD, INCLUDING AD TRANSITION SUPPORT
 
