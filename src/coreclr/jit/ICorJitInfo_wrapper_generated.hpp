@@ -1269,14 +1269,14 @@ int32_t* WrapICorJitInfo::getAddrOfCaptureThreadGlobal(
     return temp;
 }
 
-void* WrapICorJitInfo::getHelperFtn(
+void WrapICorJitInfo::getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection)
+          CORINFO_CONST_LOOKUP* pNativeEntrypoint,
+          CORINFO_METHOD_HANDLE* pMethod)
 {
     API_ENTER(getHelperFtn);
-    void* temp = wrapHnd->getHelperFtn(ftnNum, ppIndirection);
+    wrapHnd->getHelperFtn(ftnNum, pNativeEntrypoint, pMethod);
     API_LEAVE(getHelperFtn);
-    return temp;
 }
 
 void WrapICorJitInfo::getFunctionEntryPoint(
@@ -1318,6 +1318,16 @@ CorInfoHelpFunc WrapICorJitInfo::getLazyStringLiteralHelper(
     return temp;
 }
 
+CORINFO_MODULE_HANDLE WrapICorJitInfo::embedModuleHandle(
+          CORINFO_MODULE_HANDLE handle,
+          void** ppIndirection)
+{
+    API_ENTER(embedModuleHandle);
+    CORINFO_MODULE_HANDLE temp = wrapHnd->embedModuleHandle(handle, ppIndirection);
+    API_LEAVE(embedModuleHandle);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection)
@@ -1335,6 +1345,16 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::embedMethodHandle(
     API_ENTER(embedMethodHandle);
     CORINFO_METHOD_HANDLE temp = wrapHnd->embedMethodHandle(handle, ppIndirection);
     API_LEAVE(embedMethodHandle);
+    return temp;
+}
+
+CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
+          CORINFO_FIELD_HANDLE handle,
+          void** ppIndirection)
+{
+    API_ENTER(embedFieldHandle);
+    CORINFO_FIELD_HANDLE temp = wrapHnd->embedFieldHandle(handle, ppIndirection);
+    API_LEAVE(embedFieldHandle);
     return temp;
 }
 
@@ -1374,6 +1394,15 @@ void* WrapICorJitInfo::GetCookieForPInvokeCalliSig(
     API_ENTER(GetCookieForPInvokeCalliSig);
     void* temp = wrapHnd->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
     API_LEAVE(GetCookieForPInvokeCalliSig);
+    return temp;
+}
+
+void* WrapICorJitInfo::GetCookieForInterpreterCalliSig(
+          CORINFO_SIG_INFO* szMetaSig)
+{
+    API_ENTER(GetCookieForInterpreterCalliSig);
+    void* temp = wrapHnd->GetCookieForInterpreterCalliSig(szMetaSig);
+    API_LEAVE(GetCookieForInterpreterCalliSig);
     return temp;
 }
 

@@ -5,57 +5,6 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-//         INDEBUG_COMMA(HelperMethodFrame *pFrame)
-//         MachState *pState
-//         )
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-
-#ifdef _DEBUG
-        mov     rdi, rsi
-#endif
-
-        // Check if the MachState is valid
-        xor     eax, eax
-        cmp     qword ptr [rdi + OFFSETOF__MachState___pRetAddr], rax
-        jne      DoRestore
-        REPRET
-DoRestore:
-
-        //
-        // If a preserved register were pushed onto the stack between
-        // the managed caller and the H_M_F, m_pReg will point to its
-        // location on the stack and it would have been updated on the
-        // stack by the GC already and it will be popped back into the
-        // appropriate register when the appropriate epilog is run.
-        //
-        // Otherwise, the register is preserved across all the code
-        // in this HCALL or FCALL, so we need to update those registers
-        // here because the GC will have updated our copies in the
-        // frame.
-        //
-        // So, if m_pReg points into the MachState, we need to update
-        // the register here.  That's what this macro does.
-        //
-#define RestoreReg(reg, regnum) \
-        lea     rax, [rdi + OFFSETOF__MachState__m_Capture + 8 * regnum]; \
-        mov     rdx, [rdi + OFFSETOF__MachState__m_Ptrs + 8 * regnum]; \
-        cmp     rax, rdx; \
-        cmove   reg, [rax];
-
-        // regnum has to match ENUM_CALLEE_SAVED_REGISTERS macro
-        RestoreReg(R12, 0)
-        RestoreReg(R13, 1)
-        RestoreReg(R14, 2)
-        RestoreReg(R15, 3)
-        RestoreReg(Rbx, 4)
-        RestoreReg(Rbp, 5)
-
-        xor     eax, eax
-        ret
-
-LEAF_END HelperMethodFrameRestoreState, _TEXT
-
 //////////////////////////////////////////////////////////////////////////
 //
 // NDirectImportThunk
@@ -108,7 +57,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         POP_ARGUMENT_REGISTERS
 
         jmp r10
-    
+
 NESTED_END NDirectImportThunk, _TEXT
 
 //------------------------------------------------

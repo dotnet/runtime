@@ -17,8 +17,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <minipal/mutex.h>
 #include "gcinfotypes.h"
 #include "patchpointinfo.h"
+
+#ifdef JIT32_GCENCODER
 
 ReturnKind VarTypeToReturnKind(var_types type)
 {
@@ -28,11 +31,9 @@ ReturnKind VarTypeToReturnKind(var_types type)
             return RT_Object;
         case TYP_BYREF:
             return RT_ByRef;
-#ifdef TARGET_X86
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return RT_Float;
-#endif // TARGET_X86
         default:
             return RT_Scalar;
     }
@@ -40,27 +41,27 @@ ReturnKind VarTypeToReturnKind(var_types type)
 
 ReturnKind GCInfo::getReturnKind()
 {
-    // Note the GCInfo representation only supports structs with up to 2 GC pointers.
+    // Note the JIT32 GCInfo representation only supports structs with 1 GC pointer.
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     const unsigned regCount    = retTypeDesc.GetReturnRegCount();
 
-    switch (regCount)
+    if (regCount == 1)
     {
-        case 1:
-            return VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0));
-        case 2:
-            return GetStructReturnKind(VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0)),
-                                       VarTypeToReturnKind(retTypeDesc.GetReturnRegType(1)));
-        default:
+        return VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0));
+    }
+    else
+    {
 #ifdef DEBUG
-            for (unsigned i = 0; i < regCount; i++)
-            {
-                assert(!varTypeIsGC(retTypeDesc.GetReturnRegType(i)));
-            }
+        for (unsigned i = 0; i < regCount; i++)
+        {
+            assert(!varTypeIsGC(retTypeDesc.GetReturnRegType(i)));
+        }
 #endif // DEBUG
-            return RT_Scalar;
+        return RT_Scalar;
     }
 }
+
+#endif // JIT32_GCENCODER
 
 // gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
 //     live in a filter is marked as pinned (often by splitting the lifetime
@@ -374,8 +375,8 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 // find . -name regen.txt | xargs cat | grep CallSite | sort | uniq -c | sort -r | head -80
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
-static FILE*     logFile = NULL;
-CRITICAL_SECTION logFileLock;
+static FILE*  logFile = NULL;
+minipal_mutex logFileLock;
 #endif
 
 #if REGEN_CALLPAT
@@ -398,12 +399,12 @@ static void regenLog(unsigned codeDelta,
     if (logFile == NULL)
     {
         logFile = fopen_utf8("regen.txt", "a");
-        InitializeCriticalSection(&logFileLock);
+        minipal_mutex_init(&logFileLock);
     }
 
     assert(((enSize > 0) && (enSize < 256)) && ((pat.val & 0xffffff) != 0xffffff));
 
-    EnterCriticalSection(&logFileLock);
+    minipal_mutex_enter(&logFileLock);
 
     fprintf(logFile, "CallSite( 0x%08x, 0x%02x%02x, 0x", pat.val, byrefArgMask, byrefRegMask);
 
@@ -415,7 +416,7 @@ static void regenLog(unsigned codeDelta,
     fprintf(logFile, "),\n");
     fflush(logFile);
 
-    LeaveCriticalSection(&logFileLock);
+    minipal_mutex_leave(&logFileLock);
 }
 #endif
 
@@ -425,10 +426,10 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
     if (logFile == NULL)
     {
         logFile = fopen_utf8("regen.txt", "a");
-        InitializeCriticalSection(&logFileLock);
+        minipal_mutex_init(&logFileLock);
     }
 
-    EnterCriticalSection(&logFileLock);
+    minipal_mutex_enter(&logFileLock);
 
     fprintf(logFile,
             "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
@@ -451,7 +452,7 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 
     fflush(logFile);
 
-    LeaveCriticalSection(&logFileLock);
+    minipal_mutex_leave(&logFileLock);
 }
 #endif
 
@@ -2264,7 +2265,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                 assert(~OFFSET_MASK % sizeof(offset) == 0);
 
-                if (varDsc->TypeGet() == TYP_BYREF)
+                if (varDsc->TypeIs(TYP_BYREF))
                 {
                     // Or in byref_OFFSET_FLAG for 'byref' pointer tracking
                     offset |= byref_OFFSET_FLAG;
@@ -2288,7 +2289,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                     totalSize += sz;
                 }
             }
-            else if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame && varDsc->HasGCPtr())
+            else if (varDsc->TypeIs(TYP_STRUCT) && varDsc->lvOnFrame && varDsc->HasGCPtr())
             {
                 ClassLayout* layout = varDsc->GetLayout();
                 unsigned     slots  = layout->GetSlotCount();
@@ -2403,7 +2404,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             // "this". So report it as a tracked variable with a liveness
             // extending over the entire method.
 
-            assert(compiler->lvaTable[compiler->info.compThisArg].TypeGet() == TYP_REF);
+            assert(compiler->lvaTable[compiler->info.compThisArg].TypeIs(TYP_REF));
 
             unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].GetStackOffset();
 
@@ -4206,7 +4207,7 @@ void GCInfo::gcMakeRegPtrTable(
 
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
-            if (varDsc->TypeGet() == TYP_BYREF)
+            if (varDsc->TypeIs(TYP_BYREF))
             {
                 // Or in byref_OFFSET_FLAG for 'byref' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
@@ -4248,7 +4249,7 @@ void GCInfo::gcMakeRegPtrTable(
 
         // If this is a TYP_STRUCT, handle its GC pointers.
         // Note that the enregisterable struct types cannot have GC pointers in them.
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr() && varDsc->lvOnFrame &&
+        if (varDsc->TypeIs(TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr() && varDsc->lvOnFrame &&
             (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
         {
             ClassLayout* layout = varDsc->GetLayout();
@@ -4358,7 +4359,7 @@ void GCInfo::gcMakeRegPtrTable(
             assert(!compiler->lvaReportParamTypeArg());
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
-            if (compiler->lvaTable[compiler->info.compThisArg].TypeGet() == TYP_BYREF)
+            if (compiler->lvaTable[compiler->info.compThisArg].TypeIs(TYP_BYREF))
             {
                 // Or in GC_SLOT_INTERIOR for 'byref' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);

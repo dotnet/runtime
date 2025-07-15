@@ -7,6 +7,8 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/112827 -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Temporarily disabled due to problems with generating interpreter bytecode for methods with existing prestub -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InterpreterTester.cs" />

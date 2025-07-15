@@ -14,6 +14,9 @@ using Xunit;
 
 namespace XarchHardwareIntrinsicTest._CpuId
 {
+    // This doesn't do an exact check for every Isa.IsSupported and the disablement hierarchy. Rather it checks
+    // most of the IsSupported APIs where it is trivial to do so and leaves more complex ones to hand checking.
+
     public class Program
     {
         const int Pass = 100;
@@ -53,76 +56,83 @@ namespace XarchHardwareIntrinsicTest._CpuId
             }
 
             uint maxFunctionId = (uint)eax;
+            Assert.True(maxFunctionId >= 1, "Max Function ID for CPUID expected to be at least 1");
 
-            if (maxFunctionId < 0x00000001)
-            {
-                Assert.Equal(Pass, testResult);
-                return;
-            }
+            // The runtime currently requires that certain instructions sets be supported together or none
+            // are supported. To handle this we simple check those paired sets twice so that if any of them
+            // are disabled the first time around, we'll then assert that they are all actually disabled the
+            // second time around
 
-            bool isX86BaseDisabled = !GetDotnetEnable("HWINTRINSIC");
-            bool isHierarchyDisabled = isX86BaseDisabled;
+            bool isHierarchyDisabled = !GetDotnetEnable("HWIntrinsic");
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
-
             int xarchCpuInfo = eax;
 
-            if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "SSE", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
+                // SSE, SSE2 are paired
+
+                if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(edx, 26, typeof(Sse2), Sse2.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
-            if (IsBitIncorrect(edx, 26, typeof(Sse2), Sse2.IsSupported, "SSE2", ref isHierarchyDisabled))
+            bool isBaselineHierarchyDisabled = isHierarchyDisabled;
+
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
+                // AES, PCLMULQDQ are paired
+
+                if (IsBitIncorrect(ecx, 25, typeof(Aes), Aes.IsSupported, "AES", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 1, typeof(Pclmulqdq), Pclmulqdq.IsSupported, "AES", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
-            bool isSse2HierarchyDisabled = isHierarchyDisabled;
+            isHierarchyDisabled = isBaselineHierarchyDisabled;
 
-            if (IsBitIncorrect(ecx, 25, typeof(Aes), Aes.IsSupported, "AES", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
-            }
+                // SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT are paired
 
-            isHierarchyDisabled = isSse2HierarchyDisabled;
+                if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "SSE42", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
-            if (IsBitIncorrect(ecx, 1, typeof(Pclmulqdq), Pclmulqdq.IsSupported, "PCLMULQDQ", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
+                if (IsBitIncorrect(ecx, 9, typeof(Ssse3), Ssse3.IsSupported, "SSE42", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
-            isHierarchyDisabled = isSse2HierarchyDisabled | !GetDotnetEnable("SSE3_4");
+                if (IsBitIncorrect(ecx, 19, typeof(Sse41), Sse41.IsSupported, "SSE42", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
-            if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "SSE3", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
+                if (IsBitIncorrect(ecx, 20, typeof(Sse42), Sse42.IsSupported, "SSE42", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
-            if (IsBitIncorrect(ecx, 9, typeof(Ssse3), Ssse3.IsSupported, "SSSE3", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            if (IsBitIncorrect(ecx, 19, typeof(Sse41), Sse41.IsSupported, "SSE41", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            bool isSse41HierarchyDisabled = isHierarchyDisabled;
-
-            if (IsBitIncorrect(ecx, 20, typeof(Sse42), Sse42.IsSupported, "SSE42", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
+                if (IsBitIncorrect(ecx, 23, typeof(Popcnt), Popcnt.IsSupported, "SSE42", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
             bool isSse42HierarchyDisabled = isHierarchyDisabled;
-
-            if (IsBitIncorrect(ecx, 23, typeof(Popcnt), Popcnt.IsSupported, "POPCNT", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isSse42HierarchyDisabled;
 
             if (IsBitIncorrect(ecx, 28, typeof(Avx), Avx.IsSupported, "AVX", ref isHierarchyDisabled))
             {
@@ -131,94 +141,201 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             bool isAvxHierarchyDisabled = isHierarchyDisabled;
 
-            if (IsBitIncorrect(ecx, 12, typeof(Fma), Fma.IsSupported, "FMA", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
-            }
+                // AVX2, BMI1, BMI2, F16C, FMA, LZCNT are paired
+                (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
 
-            bool isFmaHierarchyDisabled = isHierarchyDisabled;
+                // if (IsBitIncorrect(ecx, 29, typeof(F16c), F16c.IsSupported, "AVX2", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
 
-            if (maxFunctionId < 0x00000007)
-            {
-                Assert.Equal(Pass, testResult);
-                return;
-            }
+                if (IsBitIncorrect(ecx, 12, typeof(Fma), Fma.IsSupported, "AVX2", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
-            (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000000);
+                (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000000), 0x00000000);
+                (eax, ebx, ecx, edx) = ((uint)eax >= 0x80000001) ? X86Base.CpuId(unchecked((int)0x80000001), 0x00000000) : (0, 0, 0, 0);
 
-            isHierarchyDisabled = isAvxHierarchyDisabled;
+                if (IsBitIncorrect(ecx, 5, typeof(Lzcnt), Lzcnt.IsSupported, "AVX2", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
-            if (IsBitIncorrect(ebx, 5, typeof(Avx2), Avx2.IsSupported, "AVX2", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
+                (eax, ebx, ecx, edx) = (maxFunctionId >= 0x00000007) ? X86Base.CpuId(0x00000007, 0x00000000) : (0, 0, 0, 0);
+
+                if (IsBitIncorrect(ebx, 5, typeof(Avx2), Avx2.IsSupported, "AVX2", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ebx, 3, typeof(Bmi1), Bmi1.IsSupported, "AVX2", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ebx, 8, typeof(Bmi2), Bmi2.IsSupported, "AVX2", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
             bool isAvx2HierarchyDisabled = isHierarchyDisabled;
-
-            isHierarchyDisabled = isAvxHierarchyDisabled;
-
-            if (IsBitIncorrect(ebx, 3, typeof(Bmi1), Bmi1.IsSupported, "BMI1", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvxHierarchyDisabled;
-
-            if (IsBitIncorrect(ebx, 8, typeof(Bmi2), Bmi2.IsSupported, "BMI2", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvx2HierarchyDisabled | isFmaHierarchyDisabled | OperatingSystem.IsMacOS();
+            (eax, ebx, ecx, edx) = (maxFunctionId >= 0x00000007) ? X86Base.CpuId(0x00000007, 0x00000000) : (0, 0, 0, 0);
 
             for (int i = 0; i < 2; i++)
             {
-                // The runtime currently requires that all of F + BW + CD + DQ + VL be supported together or none
-                // are supported. To handle this we simple check them all twice so that if any of them are disabled
-                // the first time around, we'll then assert that they are all actually disabled the second time around
+                // AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL are paired
 
-                if (IsBitIncorrect(ebx, 16, typeof(Avx512F), Avx512F.IsSupported, "AVX512F", ref isHierarchyDisabled))
+                if (IsBitIncorrect(ebx, 16, typeof(Avx512F), Avx512F.IsSupported, "AVX512", ref isHierarchyDisabled))
                 {
                     testResult = Fail;
                 }
 
-                if (IsBitIncorrect(ebx, 31, typeof(Avx512F.VL), Avx512F.VL.IsSupported, "AVX512F_VL", ref isHierarchyDisabled))
+                if (IsBitIncorrect(ebx, 30, typeof(Avx512BW), Avx512BW.IsSupported, "AVX512", ref isHierarchyDisabled))
                 {
                     testResult = Fail;
                 }
 
-                if (IsBitIncorrect(ebx, 30, typeof(Avx512BW), Avx512BW.IsSupported, "AVX512BW", ref isHierarchyDisabled))
+                if (IsBitIncorrect(ebx, 28, typeof(Avx512CD), Avx512CD.IsSupported, "AVX512", ref isHierarchyDisabled))
                 {
                     testResult = Fail;
                 }
 
-                if (IsBitIncorrect(ebx, 30, typeof(Avx512BW.VL), Avx512BW.VL.IsSupported, "AVX512BW_VL", ref isHierarchyDisabled))
+                if (IsBitIncorrect(ebx, 17, typeof(Avx512DQ), Avx512DQ.IsSupported, "AVX512", ref isHierarchyDisabled))
                 {
                     testResult = Fail;
                 }
 
-                if (IsBitIncorrect(ebx, 28, typeof(Avx512CD), Avx512CD.IsSupported, "AVX512CD", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-
-                if (IsBitIncorrect(ebx, 28, typeof(Avx512CD.VL), Avx512CD.VL.IsSupported, "AVX512CD_VL", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-
-                if (IsBitIncorrect(ebx, 17, typeof(Avx512DQ), Avx512DQ.IsSupported, "AVX512DQ", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-
-                if (IsBitIncorrect(ebx, 17, typeof(Avx512DQ.VL), Avx512DQ.VL.IsSupported, "AVX512DQ_VL", ref isHierarchyDisabled))
+                if (IsBitIncorrect(ebx, 31, typeof(Avx512F.VL), Avx512F.VL.IsSupported, "AVX512", ref isHierarchyDisabled))
                 {
                     testResult = Fail;
                 }
             }
 
             bool isAvx512HierarchyDisabled = isHierarchyDisabled;
+
+            for (int i = 0; i < 2; i++)
+            {
+                // AVX512-IFMA, AVX512-VBMI are paired
+
+                // if (IsBitIncorrect(ebx, 21, typeof(AvxIfma.V512), AvxIfma.V512.IsSupported, "AVX512v2", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
+
+                if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512v2", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+            }
+
+            for (int i = 0; i < 2; i++)
+            {
+                // AVX512-BITALG, AVX512-VBMI2, AVX512-VNNI, AVX512-VPOPCNTDQ are paired
+
+                // if (IsBitIncorrect(ecx, 12, typeof(Avx512Bitalg), Avx512Bitalg.IsSupported, "AVX512v3", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
+
+                if (IsBitIncorrect(ecx, 6, typeof(Avx512Vbmi2), Avx512Vbmi2.IsSupported, "AVX512v3", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                // if (IsBitIncorrect(ecx, 11, typeof(AvxVnni.V512), AvxVnni.V512.IsSupported, "AVX512v3", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
+
+                // if (IsBitIncorrect(ecx, 14, typeof(Avx512Vpopcntdq), Avx512Vpopcntdq.IsSupported, "AVX512v3", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
+            }
+
+            bool isAvx512v3HierarchyDisabled = isHierarchyDisabled;
+
+            isHierarchyDisabled = isBaselineHierarchyDisabled;
+
+            // if (IsBitIncorrect(ebx, 29, typeof(Sha), Sha.IsSupported, "SHA", ref isHierarchyDisabled))
+            // {
+            //     testResult = Fail;
+            // }
+
+            isHierarchyDisabled = isBaselineHierarchyDisabled;
+
+            // if (IsBitIncorrect(ecx, 5, typeof(WaitPkg), WaitPkg.IsSupported, "WAITPKG", ref isHierarchyDisabled))
+            // {
+            //     testResult = Fail;
+            // }
+
+            isHierarchyDisabled = isBaselineHierarchyDisabled;
+
+            if (IsBitIncorrect(edx, 14, typeof(X86Serialize), X86Serialize.IsSupported, "X86Serialize", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isSse42HierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni), Gfni.IsSupported, "GFNI", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
+            for (int i = 0; i < 2; i++)
+            {
+                // VAES, VPCLMULQDQ are paired
+
+                // if (IsBitIncorrect(ecx, 9, typeof(Aes.V256), Aes.V256.IsSupported, "VAES", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
+
+                if (IsBitIncorrect(ecx, 10, typeof(Pclmulqdq.V256), Pclmulqdq.V256.IsSupported, "VAES", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+            }
+
+            isHierarchyDisabled = isAvx512HierarchyDisabled;
+
+            // if (IsBitIncorrect(edx, 8, typeof(Avx512Vp2intersect), Avx512Vp2intersect.IsSupported, "AVX10v1", ref isHierarchyDisabled))
+            // {
+            //     testResult = Fail;
+            // }
+
+            isHierarchyDisabled = isAvx512v3HierarchyDisabled;
+
+            for (int i = 0; i < 2; i++)
+            {
+                // AVX512-BF16, AVX512-FP16, AVX10v1 are paired
+
+                (eax, ebx, ecx, edx) = (maxFunctionId >= 0x00000007) ? X86Base.CpuId(0x00000007, 0x00000000) : (0, 0, 0, 0);
+
+                // if (IsBitIncorrect(edx, 23, typeof(Avx512Fp16), Avx512Fp16.IsSupported, "AVX10v1", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
+
+                (eax, ebx, ecx, edx) = (maxFunctionId >= 0x00000007) ? X86Base.CpuId(0x00000007, 0x00000001) : (0, 0, 0, 0);
+
+                // if (IsBitIncorrect(eax, 5, typeof(Avx512Bf16), Avx512Bf16.IsSupported, "AVX10v1", ref isHierarchyDisabled))
+                // {
+                //     testResult = Fail;
+                // }
+
+                if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10v1", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+            }
 
             int preferredVectorBitWidth = (GetDotnetEnvVar("PreferredVectorBitWidth", defaultValue: 0) / 128) * 128;
             int preferredVectorByteLength = preferredVectorBitWidth / 8;
@@ -269,99 +386,12 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 }
             }
 
-            if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi.VL), Avx512Vbmi.VL.IsSupported, "AVX512VBMI_VL", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isX86BaseDisabled;
-
-            if (IsBitIncorrect(edx, 14, typeof(X86Serialize), X86Serialize.IsSupported, "SERIALIZE", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isSse41HierarchyDisabled;
-
-            if (IsBitIncorrect(ecx, 8, typeof(Gfni), Gfni.IsSupported, "GFNI", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvxHierarchyDisabled;
-
-            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V256), Gfni.V256.IsSupported, "GFNI", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvx512HierarchyDisabled;
-
-            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V512), Gfni.V512.IsSupported, "GFNI", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvxHierarchyDisabled;
-
-            if (IsBitIncorrect(ecx, 10, typeof(Pclmulqdq.V256), Pclmulqdq.V256.IsSupported, "VPCLMULQDQ", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvx512HierarchyDisabled;
-
-            if (IsBitIncorrect(ecx, 10, typeof(Pclmulqdq.V512), Pclmulqdq.V512.IsSupported, "VPCLMULQDQ", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000001);
-
-            isHierarchyDisabled = isAvx2HierarchyDisabled;
-
-            if (IsBitIncorrect(eax, 4, typeof(AvxVnni), AvxVnni.IsSupported, "AVXVNNI", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvxHierarchyDisabled | isFmaHierarchyDisabled;
-
-            if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10V1", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000000), 0x00000000);
-
-            uint maxFunctionIdEx = (uint)eax;
-
-            if (maxFunctionIdEx < 0x00000001)
-            {
-                Assert.Equal(Pass, testResult);
-                return;
-            }
-
-            (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000001), 0x00000000);
-
-            isHierarchyDisabled = isX86BaseDisabled;
-
-            if (IsBitIncorrect(ecx, 5, typeof(Lzcnt), Lzcnt.IsSupported, "LZCNT", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
             if (IsIncorrect(typeof(Vector64), Vector64.IsHardwareAccelerated, isHierarchyDisabled: true))
             {
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector128), Vector128.IsHardwareAccelerated, isSse2HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector128), Vector128.IsHardwareAccelerated, isBaselineHierarchyDisabled))
             {
                 testResult = Fail;
             }
@@ -376,7 +406,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector), Vector.IsHardwareAccelerated, isSse2HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector), Vector.IsHardwareAccelerated, isBaselineHierarchyDisabled))
             {
                 testResult = Fail;
             }

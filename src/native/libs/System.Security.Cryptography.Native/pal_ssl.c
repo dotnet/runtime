@@ -1117,6 +1117,19 @@ int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name)
     return (int32_t)SSL_set_tlsext_host_name(ssl, name);
 }
 
+int32_t CryptoNative_SslSetSigalgs(SSL* ssl, uint8_t* str)
+{
+    ERR_clear_error();
+    return (int32_t) SSL_ctrl(ssl, SSL_CTRL_SET_SIGALGS_LIST, 0, (void*)str);
+}
+
+int32_t CryptoNative_SslSetClientSigalgs(SSL* ssl, uint8_t* str)
+{
+    if (ssl == NULL || str == NULL)
+        return 0;
+    return (int32_t) SSL_ctrl(ssl, SSL_CTRL_SET_CLIENT_SIGALGS_LIST, 0, (void*)str);
+}
+
 int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 {
     // No error queue impact.
@@ -1184,6 +1197,91 @@ static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
     {
         ASN1_TIME_free(time);
     }
+
+    return ret;
+}
+
+int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* count)
+{
+    int ret = 0;
+
+    SSL_CTX* clientCtx = CryptoNative_SslCtxCreate(TLS_method());
+    SSL_CTX* serverCtx = CryptoNative_SslCtxCreate(TLS_method());
+
+    BIO *bio1 = BIO_new(BIO_s_mem());
+    BIO *bio2 = BIO_new(BIO_s_mem());
+
+    SSL* client = NULL;
+    SSL* server = NULL;
+
+    if (clientCtx != NULL && serverCtx != NULL && bio1 != NULL && bio2 != NULL)
+    {
+        SSL_CTX_set_verify(clientCtx, SSL_VERIFY_NONE, NULL);
+        SSL_CTX_set_verify(serverCtx, SSL_VERIFY_NONE, NULL);
+
+        server = CryptoNative_SslCreate(serverCtx);
+        SSL_set_accept_state(server);
+
+        client = CryptoNative_SslCreate(clientCtx);
+        SSL_set_connect_state(client);
+
+        // set BIOs in opposite
+        SSL_set_bio(client, bio1, bio2);
+        SSL_set_bio(server, bio2, bio1);
+
+        // SSL_set_bio takes ownership so we need to up reference since same BIO is shared.
+        BIO_up_ref(bio1);
+        BIO_up_ref(bio2);
+        bio1 = NULL;
+        bio2 = NULL;
+
+        // send/receive the client hello
+        ret = SSL_do_handshake(client);
+        ret = SSL_do_handshake(server);
+        
+        int c = SSL_get_sigalgs(server, 0, NULL, NULL, NULL, NULL, NULL);
+        if (c > 0)
+        {
+            for (int i = 0; i < c; i++)
+            {
+                if (i >= *count)
+                {
+                    // this should not happen, but just in case
+                    ret = -1;
+                    break;
+                }
+
+                unsigned char sig, hash; 
+                SSL_get_sigalgs(server, i, NULL, NULL, NULL, &sig, &hash);
+                buffer[i] = (uint16_t)(hash << 8 | sig);
+            }
+
+            *count = c;        
+            ret = 0;
+        }
+    }
+
+    if (bio1)
+    {
+        BIO_free(bio1);
+    }
+
+    if (bio2)
+    {
+        BIO_free(bio2);
+    }
+
+    if (client != NULL)
+    {
+        SSL_free(client);
+    }
+
+    if (server != NULL)
+    {
+        SSL_free(server);
+    }
+
+    ERR_clear_error();
 
     return ret;
 }

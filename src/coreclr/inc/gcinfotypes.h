@@ -5,11 +5,6 @@
 #ifndef __GCINFOTYPES_H__
 #define __GCINFOTYPES_H__
 
-// HACK: debugreturn.h breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #ifndef FEATURE_NATIVEAOT
 #include "gcinfo.h"
 #endif
@@ -211,15 +206,6 @@ inline bool IsPointerFieldReturnKind(ReturnKind returnKind)
     return (returnKind == RT_Object || returnKind == RT_ByRef);
 }
 
-inline bool IsValidReturnRegister(size_t regNo)
-{
-    return (regNo == 0)
-#ifdef FEATURE_MULTIREG_RETURN
-        || (regNo == 1)
-#endif // FEATURE_MULTIREG_RETURN
-        ;
-}
-
 inline bool IsStructReturnKind(ReturnKind returnKind)
 {
     // Two bits encode integer/ref/float return-kinds.
@@ -260,7 +246,6 @@ inline ReturnKind GetStructReturnKind(ReturnKind reg0, ReturnKind reg1)
 inline ReturnKind ExtractRegReturnKind(ReturnKind returnKind, size_t returnRegOrdinal, bool& moreRegs)
 {
     _ASSERTE(IsValidReturnKind(returnKind));
-    _ASSERTE(IsValidReturnRegister(returnRegOrdinal));
 
     // Return kind of each return register is encoded in two bits at returnRegOrdinal*2 position from LSB
     ReturnKind regReturnKind = (ReturnKind)((returnKind >> (returnRegOrdinal * 2)) & 3);

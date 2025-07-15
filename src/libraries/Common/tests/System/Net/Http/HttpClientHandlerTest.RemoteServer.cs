@@ -899,7 +899,7 @@ namespace System.Net.Http.Functional.Tests
                         string responseContent = await response.Content.ReadAsStringAsync();
 
                         Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
-                        string bodyContent = System.Text.Json.JsonDocument.Parse(responseContent).RootElement.GetProperty("BodyContent").GetString();
+                        string bodyContent = System.Text.Json.JsonElement.Parse(responseContent).GetProperty("BodyContent").GetString();
                         Assert.Contains(stringContent.Substring(startingPosition), bodyContent);
                         if (startingPosition != 0)
                         {

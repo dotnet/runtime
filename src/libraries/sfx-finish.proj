@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
     <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
     <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
@@ -119,7 +120,7 @@
           DependsOnTargets="ResolveProjectReferences;GetTrimSharedFrameworkAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
           Outputs="$(SharedFrameworkAssembliesTrimMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) shared framework assemblies with ILLinker..." Importance="high" />
+    <Message Text="$(MSBuildProjectName) -> Trimming $(TargetRid) shared framework assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>

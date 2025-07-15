@@ -260,7 +260,6 @@ bool Logging2On(DWORD facility2, DWORD level) {
 //
 VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -275,7 +274,6 @@ VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
 
 VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -290,7 +288,6 @@ VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args)
 
 VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 

@@ -11,7 +11,7 @@
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -141,8 +141,8 @@
       <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/$(OutputRID)/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRID)</MonoLlvmPath>
+      <AotCompiler>$(MonoBinDir)/cross/$(TargetRid)/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross/$(TargetRid)</MonoLlvmPath>
     </PropertyGroup>
 
     <ItemGroup>

@@ -20,8 +20,6 @@
 
     <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
     <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
-
-    <IncludesTestRunner Condition="'$(TargetsAppleMobile)' == 'true'">false</IncludesTestRunner>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -544,7 +542,7 @@
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
 
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
@@ -574,8 +572,8 @@
 
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to set
          rpath so that the test can load its native library dependencies if there's any -->
-    <LinkerArg Include="-Wl,-rpath,'@executable_path/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'win' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')" />
-    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'win' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true'" />
+    <LinkerArg Include="-Wl,-rpath,'@executable_path/..'" Condition="'$(SetIlcRPath)' != 'false' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')" />
+    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />

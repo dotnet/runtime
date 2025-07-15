@@ -22,7 +22,6 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
-#include "pal/cs.hpp"
 #include "pal/file.hpp"
 #include "pal/seh.hpp"
 #include "pal/virtual.h"
@@ -48,7 +47,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 
 using namespace CorUnix;
 
-CRITICAL_SECTION virtual_critsec;
+minipal_mutex virtual_critsec;
 
 // The first node in our list of allocated blocks.
 static PCMI pVirtualMemory;
@@ -175,7 +174,7 @@ VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
 
     TRACE("Initializing the Virtual Critical Sections. \n");
 
-    InternalInitializeCriticalSection(&virtual_critsec);
+    minipal_mutex_init(&virtual_critsec);
 
     pVirtualMemory = NULL;
 
@@ -207,9 +206,7 @@ void VIRTUALCleanup()
 {
     PCMI pEntry;
     PCMI pTempEntry;
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-
-    InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_enter(&virtual_critsec);
 
     // Clean up the allocated memory.
     pEntry = pVirtualMemory;
@@ -223,10 +220,10 @@ void VIRTUALCleanup()
     }
     pVirtualMemory = NULL;
 
-    InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_leave(&virtual_critsec);
 
     TRACE( "Deleting the Virtual Critical Sections. \n" );
-    DeleteCriticalSection( &virtual_critsec );
+    minipal_mutex_destroy( &virtual_critsec );
 }
 
 /***
@@ -344,9 +341,7 @@ static void VIRTUALDisplayList( void  )
     PCMI p;
     SIZE_T count;
     SIZE_T index;
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-
-    InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_enter(&virtual_critsec);
 
     p = pVirtualMemory;
     count = 0;
@@ -365,7 +360,7 @@ static void VIRTUALDisplayList( void  )
         p = p->pNext;
     }
 
-    InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_leave(&virtual_critsec);
 }
 #endif
 
@@ -817,8 +812,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done
     SIZE_T reservationSize = ALIGN_UP(dwSize, VIRTUAL_64KB);
 
-    CPalThread *currentThread = InternalGetCurrentThread();
-    InternalEnterCriticalSection(currentThread, &virtual_critsec);
+    minipal_mutex_enter(&virtual_critsec);
 
     void *address = g_executableMemoryAllocator.AllocateMemoryWithinRange(lpBeginAddress, lpEndAddress, reservationSize);
     if (address != nullptr)
@@ -841,7 +835,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
         address,
         TRUE);
 
-    InternalLeaveCriticalSection(currentThread, &virtual_critsec);
+    minipal_mutex_leave(&virtual_critsec);
 
     LOGEXIT("PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange returning %p\n", address);
     PERF_EXIT(PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange);
@@ -939,9 +933,9 @@ VirtualAlloc(
 
     if ( flAllocationType & MEM_RESERVE )
     {
-        InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
+        minipal_mutex_enter(&virtual_critsec);
         pRetVal = VIRTUALReserveMemory( pthrCurrent, lpAddress, dwSize, flAllocationType, flProtect );
-        InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
+        minipal_mutex_leave(&virtual_critsec);
 
         if ( !pRetVal )
         {
@@ -952,7 +946,7 @@ VirtualAlloc(
 
     if ( flAllocationType & MEM_COMMIT )
     {
-        InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
+        minipal_mutex_enter(&virtual_critsec);
         if ( pRetVal != NULL )
         {
             /* We are reserving and committing. */
@@ -965,7 +959,7 @@ VirtualAlloc(
             pRetVal = VIRTUALCommitMemory( pthrCurrent, lpAddress, dwSize,
                                     flAllocationType, flProtect );
         }
-        InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
+        minipal_mutex_leave(&virtual_critsec);
     }
 
 done:
@@ -998,7 +992,7 @@ VirtualFree(
           lpAddress, dwSize, dwFreeType);
 
     pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_enter(&virtual_critsec);
 
     /* Sanity Checks. */
     if ( !lpAddress )
@@ -1157,7 +1151,7 @@ VirtualFreeExit:
         NULL,
         bRetVal);
 
-    InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_leave(&virtual_critsec);
     LOGEXIT( "VirtualFree returning %s.\n", bRetVal == TRUE ? "TRUE" : "FALSE" );
     PERF_EXIT(VirtualFree);
     return bRetVal;
@@ -1185,15 +1179,13 @@ VirtualProtect(
     SIZE_T   Index = 0;
     SIZE_T   NumberOfPagesToChange = 0;
     SIZE_T   OffSet = 0;
-    CPalThread * pthrCurrent;
 
     PERF_ENTRY(VirtualProtect);
     ENTRY("VirtualProtect(lpAddress=%p, dwSize=%u, flNewProtect=%#x, "
           "flOldProtect=%p)\n",
           lpAddress, dwSize, flNewProtect, lpflOldProtect);
 
-    pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_enter(&virtual_critsec);
 
     StartBoundary = (UINT_PTR) ALIGN_DOWN(lpAddress, GetVirtualPageSize());
     MemSize = ALIGN_UP((UINT_PTR)lpAddress + dwSize, GetVirtualPageSize()) - StartBoundary;
@@ -1249,7 +1241,7 @@ VirtualProtect(
         }
     }
 ExitVirtualProtect:
-    InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_leave(&virtual_critsec);
 
 #if defined _DEBUG
     VIRTUALDisplayList();
@@ -1444,7 +1436,7 @@ VirtualQuery(
           lpAddress, lpBuffer, dwLength);
 
     pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_enter(&virtual_critsec);
 
     if ( !lpBuffer)
     {
@@ -1525,7 +1517,7 @@ VirtualQuery(
 
 ExitVirtualQuery:
 
-    InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
+    minipal_mutex_leave(&virtual_critsec);
 
     LOGEXIT( "VirtualQuery returning %d.\n", sizeof( *lpBuffer ) );
     PERF_EXIT(VirtualQuery);
@@ -1549,9 +1541,9 @@ Function :
 void* ReserveMemoryFromExecutableAllocator(CPalThread* pThread, SIZE_T allocationSize)
 {
 #ifdef HOST_64BIT
-    InternalEnterCriticalSection(pThread, &virtual_critsec);
+    minipal_mutex_enter(&virtual_critsec);
     void* mem = g_executableMemoryAllocator.AllocateMemory(allocationSize);
-    InternalLeaveCriticalSection(pThread, &virtual_critsec);
+    minipal_mutex_leave(&virtual_critsec);
 
     return mem;
 #else // !HOST_64BIT

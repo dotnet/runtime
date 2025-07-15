@@ -22,6 +22,7 @@ set(GC_SOURCES
   gceesvr.cpp
   gceewks.cpp
   gcload.cpp
+  gcbridge.cpp
   handletablecache.cpp)
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -55,6 +56,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     env/volatile.h
     gc.h
     gcconfig.h
+    gcbridge.h
     gcdesc.h
     gcenv.ee.standalone.inl
     gcenv.inl

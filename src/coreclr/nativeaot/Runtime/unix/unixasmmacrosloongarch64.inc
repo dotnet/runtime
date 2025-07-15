@@ -171,6 +171,11 @@ C_FUNC(\Name):
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm
 
+// Target cannot be x0.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
+    INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
+.endm
+
 .macro  InterlockedOperationBarrier
     dbar  0
 .endm
