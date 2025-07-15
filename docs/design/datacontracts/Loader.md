@@ -54,9 +54,9 @@ record struct ModuleLookupTables(
 ``` csharp
 ModuleHandle GetModuleHandleFromModulePtr(TargetPointer module);
 ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
-TargetPointer GetModuleAddress(ModuleHandle handle);
-IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
+IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
+TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
