@@ -30,11 +30,11 @@ namespace System.Text.Json.Serialization.Converters
         public override JsonNode? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return options.AllowDuplicateProperties
-                ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
-                : ReadAsJsonNode(ref reader, options.GetNodeOptions());
+                ? ReadAsJsonElement(ref reader, options)
+                : ReadAsJsonNode(ref reader, options);
         }
 
-        internal static JsonNode? ReadAsJsonElement(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonNode? ReadAsJsonElement(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             switch (reader.TokenType)
             {
@@ -44,9 +44,9 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.Number:
                     return JsonValueConverter.ReadNonNullPrimitiveValue(ref reader, options);
                 case JsonTokenType.StartObject:
-                    return JsonObjectConverter.ReadAsJsonElement(ref reader, options);
+                    return JsonObjectConverter.ReadAsJsonElement(ref reader, options.GetNodeOptions());
                 case JsonTokenType.StartArray:
-                    return JsonArrayConverter.ReadAsJsonElement(ref reader, options);
+                    return JsonArrayConverter.ReadAsJsonElement(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        internal static JsonNode? ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonNode? ReadAsJsonNode(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             switch (reader.TokenType)
             {

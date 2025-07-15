@@ -5,12 +5,13 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
 {
-    internal static class JsonValueOfJsonPrimitiveHelpers
+    internal static class JsonValueOfJsonPrimitive
     {
-        internal static JsonValue CreatePrimitiveValue(ref Utf8JsonReader reader, JsonNodeOptions? options)
+        internal static JsonValue CreatePrimitiveValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             switch (reader.TokenType)
             {
@@ -18,10 +19,27 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.True:
                     return new JsonValueOfJsonBool(reader.GetBoolean(), options);
                 case JsonTokenType.String:
-                    byte[] stringValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
-                    return new JsonValueOfJsonString(stringValue, reader.ValueIsEscaped, options);
+                    byte[] quotedStringValue;
+
+                    if (reader.HasValueSequence)
+                    {
+                        // Throw if the long to int conversion fails. This can be accommodated in the future if needed by
+                        // adding another derived class that has a backing ReadOnlySequence<byte> instead of a byte[].
+                        int bufferLength = checked((int)(2 + reader.ValueSequence.Length));
+                        quotedStringValue = new byte[bufferLength];
+                        reader.ValueSequence.CopyTo(quotedStringValue.AsSpan().Slice(1, bufferLength - 2));
+                    }
+                    else
+                    {
+                        quotedStringValue = new byte[2 + reader.ValueSpan.Length];
+                        reader.ValueSpan.CopyTo(quotedStringValue.AsSpan(1, reader.ValueSpan.Length));
+                    }
+
+                    quotedStringValue[0] = quotedStringValue[quotedStringValue.Length - 1] = JsonConstants.Quote;
+                    return new JsonValueOfJsonString(quotedStringValue, reader.ValueIsEscaped, options);
                 case JsonTokenType.Number:
-                    return new JsonValueOfJsonNumber(ref reader, options);
+                    byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
+                    return new JsonValueOfJsonNumber(new JsonValueOfJsonNumber.JsonNumber(numberValue), options);
                 default:
                     Debug.Fail("Only primitives allowed.");
                     ThrowHelper.ThrowJsonException();
@@ -29,436 +47,205 @@ namespace System.Text.Json.Nodes
             }
         }
 
-        internal static bool TryGetJsonElement(JsonValue value, out JsonElement element)
+        private sealed class JsonValueOfJsonString : JsonValue
         {
-            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(
-                options: default,
-                JsonSerializerOptions.BufferSizeDefault,
-                out PooledByteBufferWriter output);
+            private readonly byte[] _value;
+            private readonly bool _isEscaped;
+            private readonly JsonSerializerOptions _serializerOptions;
 
-            try
+            internal JsonValueOfJsonString(byte[] value, bool isEscaped, JsonSerializerOptions options)
+                : base(options.GetNodeOptions())
             {
-                value.WriteTo(writer);
-                writer.Flush();
-                Utf8JsonReader reader = new(output.WrittenSpan);
-
-                bool success = JsonElement.TryParseValue(ref reader, out JsonElement? parsed);
-                element = parsed.GetValueOrDefault();
-                return success;
-            }
-            finally
-            {
-                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
-            }
-        }
-    }
-
-    internal sealed class JsonValueOfJsonString : JsonValue
-    {
-        private readonly byte[] _value;
-        private readonly bool _isEscaped;
-
-        internal JsonValueOfJsonString(byte[] value, bool isEscaped, JsonNodeOptions? options)
-            : base(options)
-        {
-            _value = value;
-            _isEscaped = isEscaped;
-        }
-
-        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonString(_value, _isEscaped, Options);
-        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.String;
-
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
-        {
-            ArgumentNullException.ThrowIfNull(writer);
-
-            if (_isEscaped)
-            {
-                writer.WriteStringValue(JsonReaderHelper.GetUnescapedString(_value));
-            }
-            else
-            {
-                writer.WriteStringValue(_value);
-            }
-        }
-
-        public override T GetValue<T>()
-        {
-            if (!TryGetValue(out T? value))
-            {
-                ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind.String, typeof(T));
+                _value = value;
+                _isEscaped = isEscaped;
+                _serializerOptions = options;
             }
 
-            return value;
-        }
+            private ReadOnlySpan<byte> ValueWithoutQuotes => _value.AsSpan(1, _value.Length - 2);
 
-        public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
-            where T : default
-        {
-            bool success;
+            internal override JsonNode DeepCloneCore() => new JsonValueOfJsonString(_value, _isEscaped, _serializerOptions);
+            private protected override JsonValueKind GetValueKindCore() => JsonValueKind.String;
 
-            if (typeof(T) == typeof(JsonElement))
+            public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
             {
-                success = JsonValueOfJsonPrimitiveHelpers.TryGetJsonElement(this, out JsonElement element);
-                value = (T)(object)element;
-                return success;
-            }
+                ArgumentNullException.ThrowIfNull(writer);
 
-            if (typeof(T) == typeof(string))
-            {
-                string? result = _isEscaped
-                    ? JsonReaderHelper.GetUnescapedString(_value)
-                    : JsonReaderHelper.TranscodeHelper(_value);
-
-                Debug.Assert(result != null);
-                value = (T)(object)result;
-                return true;
-            }
-
-            if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(DateTime?))
-            {
-                success = JsonReaderHelper.TryGetValue(_value, _isEscaped, out DateTime result);
-                value = (T)(object)result;
-                return success;
-            }
-
-            if (typeof(T) == typeof(DateTimeOffset) || typeof(T) == typeof(DateTimeOffset?))
-            {
-                success = JsonReaderHelper.TryGetValue(_value, _isEscaped, out DateTimeOffset result);
-                value = (T)(object)result;
-                return success;
-            }
-
-            if (typeof(T) == typeof(Guid) || typeof(T) == typeof(Guid?))
-            {
-                success = JsonReaderHelper.TryGetValue(_value, _isEscaped, out Guid result);
-                value = (T)(object)result;
-                return success;
-            }
-
-            if (typeof(T) == typeof(char) || typeof(T) == typeof(char?))
-            {
-                string? result = _isEscaped
-                    ? JsonReaderHelper.GetUnescapedString(_value)
-                    : JsonReaderHelper.TranscodeHelper(_value);
-
-                Debug.Assert(result != null);
-                if (result.Length == 1)
+                if (_isEscaped)
                 {
-                    value = (T)(object)result[0];
-                    return true;
+                    writer.WriteStringValue(JsonReaderHelper.GetUnescapedString(ValueWithoutQuotes));
+                }
+                else
+                {
+                    writer.WriteStringValue(ValueWithoutQuotes);
                 }
             }
 
-            value = default!;
-            return false;
-        }
-    }
-
-    internal sealed class JsonValueOfJsonBool : JsonValue
-    {
-        private readonly bool _value;
-
-        private JsonValueKind ValueKind => _value ? JsonValueKind.True : JsonValueKind.False;
-
-        internal JsonValueOfJsonBool(bool value, JsonNodeOptions? options)
-            : base(options)
-        {
-            _value = value;
-        }
-
-        public override T GetValue<T>()
-        {
-            if (!TryGetValue(out T? value))
+            public override T GetValue<T>()
             {
-                ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(ValueKind, typeof(T));
+                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind.String, typeof(T));
+                }
+
+                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
+
+                // TODO how do we handle null?
+                return JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value), typeInfo)!;
             }
 
-            return value;
-        }
-
-        public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
-            where T : default
-        {
-            bool success;
-
-            if (typeof(T) == typeof(JsonElement))
+            public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
+                where T : default
             {
-                success = JsonValueOfJsonPrimitiveHelpers.TryGetJsonElement(this, out JsonElement element);
-                value = (T)(object)element;
-                return success;
-            }
+                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                {
+                    value = default!;
+                    return false;
+                }
 
-            if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
-            {
-                value = (T)(object)_value;
-                return true;
-            }
+                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
 
-            value = default!;
-            return false;
-        }
-
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null) => writer.WriteBooleanValue(_value);
-        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonBool(_value, Options);
-        private protected override JsonValueKind GetValueKindCore() => ValueKind;
-    }
-
-    internal sealed class JsonValueOfJsonNumber : JsonValue
-    {
-        private readonly JsonNumber _value;
-
-        internal JsonValueOfJsonNumber(JsonNumber number, JsonNodeOptions? options)
-            : base(options)
-        {
-            _value = number;
-        }
-
-        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonNumber(_value, Options);
-        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Number;
-
-        public override T GetValue<T>()
-        {
-            if (!TryGetValue(out T? value))
-            {
-                ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind.Number, typeof(T));
-            }
-            return value;
-        }
-
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
-        {
-            ArgumentNullException.ThrowIfNull(writer);
-
-            writer.WriteNumberValue(_value);
-        }
-
-        // This can be optimized to also store the decimal point position and the exponent
-        internal struct JsonNumber
-        {
-            byte[] _bytes;
-        }
-    }
-
-    internal sealed class JsonValueOfJsonPrimitive : JsonValue
-    {
-        private readonly byte[] _value;
-        private readonly JsonValueKind _valueKind;
-        private readonly bool _isEscaped;
-
-        public JsonValueOfJsonPrimitive(ref Utf8JsonReader reader, JsonNodeOptions? options)
-            : base(options)
-        {
-            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.Number or JsonTokenType.True or JsonTokenType.False);
-
-            _isEscaped = reader.ValueIsEscaped;
-            _valueKind = reader.TokenType.ToValueKind();
-            _value = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
-        }
-
-        private JsonValueOfJsonPrimitive(byte[] value, JsonValueKind valueKind, bool isEscaped, JsonNodeOptions? options)
-            : base(options)
-        {
-            _value = value;
-            _valueKind = valueKind;
-            _isEscaped = isEscaped;
-        }
-
-        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonPrimitive(_value, _valueKind, _isEscaped, Options);
-        private protected override JsonValueKind GetValueKindCore() => _valueKind;
-
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
-        {
-            ArgumentNullException.ThrowIfNull(writer);
-
-            switch (_valueKind)
-            {
-                case JsonValueKind.String:
-                    if (_isEscaped)
-                    {
-                        writer.WriteStringValue(JsonReaderHelper.GetUnescapedString(_value));
-                    }
-                    else
-                    {
-                        writer.WriteStringValue(_value);
-                    }
-                    break;
-
-                case JsonValueKind.Number:
-                    writer.WriteNumberValue(_value);
-                    break;
-
-                default:
-                    ThrowHelper.ThrowJsonException();
-                    break;
+                try
+                {
+                    // TODO how do we handle null?
+                    value = JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value), typeInfo)!;
+                    return value != null;
+                }
+                catch (JsonException)
+                {
+                    value = default!;
+                    return false;
+                }
             }
         }
 
-        public override T GetValue<T>()
+        private sealed class JsonValueOfJsonBool : JsonValue
         {
-            if (!TryGetValue(out T? value))
+            private readonly bool _value;
+            private readonly JsonSerializerOptions _serializerOptions;
+
+            private JsonValueKind ValueKind => _value ? JsonValueKind.True : JsonValueKind.False;
+
+            internal JsonValueOfJsonBool(bool value, JsonSerializerOptions options)
+                : base(options.GetNodeOptions())
             {
-                ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(_valueKind, typeof(T));
+                _value = value;
+                _serializerOptions = options;
             }
 
-            return value;
+            public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null) => writer.WriteBooleanValue(_value);
+            internal override JsonNode DeepCloneCore() => new JsonValueOfJsonBool(_value, _serializerOptions);
+            private protected override JsonValueKind GetValueKindCore() => ValueKind;
+
+            public override T GetValue<T>()
+            {
+                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(_value ? JsonValueKind.True : JsonValueKind.False, typeof(T));
+                }
+
+                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
+
+                // TODO how do we handle null?
+                return JsonSerializer.Deserialize(_value ? JsonConstants.TrueValue : JsonConstants.FalseValue, typeInfo)!;
+            }
+
+            public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
+                where T : default
+            {
+                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                {
+                    value = default!;
+                    return false;
+                }
+
+                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
+
+                try
+                {
+                    // TODO how do we handle null?
+                    value = JsonSerializer.Deserialize(_value ? JsonConstants.TrueValue : JsonConstants.FalseValue, typeInfo)!;
+                    return value != null;
+                }
+                catch (JsonException)
+                {
+                    value = default!;
+                    return false;
+                }
+            }
         }
 
-        public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
-            where T : default
+        private sealed class JsonValueOfJsonNumber : JsonValue
         {
-            bool success;
+            private readonly JsonNumber _value;
+            private readonly JsonSerializerOptions _serializerOptions;
 
-            if (typeof(T) == typeof(JsonElement))
+            internal JsonValueOfJsonNumber(JsonNumber number, JsonSerializerOptions options)
+                : base(options.GetNodeOptions())
             {
-                success = JsonValueOfJsonPrimitiveHelpers.TryGetJsonElement(this, out JsonElement element);
-                value = (T)(object)element;
-                return success;
+                _value = number;
+                _serializerOptions = options;
             }
 
-            switch (_valueKind)
+            internal override JsonNode DeepCloneCore() => new JsonValueOfJsonNumber(_value, _serializerOptions);
+            private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Number;
+
+            public override T GetValue<T>()
             {
-                case JsonValueKind.Number:
-                    if (typeof(T) == typeof(int) || typeof(T) == typeof(int?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out int result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
+                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind.Number, typeof(T));
+                }
 
-                    if (typeof(T) == typeof(long) || typeof(T) == typeof(long?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out long result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
+                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
 
-                    if (typeof(T) == typeof(double) || typeof(T) == typeof(double?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out double result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(short) || typeof(T) == typeof(short?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out short result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(decimal) || typeof(T) == typeof(decimal?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out decimal result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out byte result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(float?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out float result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(uint) || typeof(T) == typeof(uint?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out uint result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(ushort) || typeof(T) == typeof(ushort?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out ushort result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(ulong) || typeof(T) == typeof(ulong?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out ulong result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(sbyte?))
-                    {
-                        success = Utf8Parser.TryParse(_value, out sbyte result, out int bytesConsumed) &&
-                                  _value.Length == bytesConsumed;
-                        value = (T)(object)result;
-                        return success;
-                    }
-                    break;
-
-                case JsonValueKind.String:
-                    if (typeof(T) == typeof(string))
-                    {
-                        string? result = _isEscaped
-                            ? JsonReaderHelper.GetUnescapedString(_value)
-                            : JsonReaderHelper.TranscodeHelper(_value);
-
-                        Debug.Assert(result != null);
-                        value = (T)(object)result;
-                        return true;
-                    }
-
-                    if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(DateTime?))
-                    {
-                        success = JsonReaderHelper.TryGetValue(_value, _isEscaped, out DateTime result);
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(DateTimeOffset) || typeof(T) == typeof(DateTimeOffset?))
-                    {
-                        success = JsonReaderHelper.TryGetValue(_value, _isEscaped, out DateTimeOffset result);
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(Guid) || typeof(T) == typeof(Guid?))
-                    {
-                        success = JsonReaderHelper.TryGetValue(_value, _isEscaped, out Guid result);
-                        value = (T)(object)result;
-                        return success;
-                    }
-
-                    if (typeof(T) == typeof(char) || typeof(T) == typeof(char?))
-                    {
-                        string? result = _isEscaped
-                            ? JsonReaderHelper.GetUnescapedString(_value)
-                            : JsonReaderHelper.TranscodeHelper(_value);
-
-                        Debug.Assert(result != null);
-                        if (result.Length == 1)
-                        {
-                            value = (T)(object)result[0];
-                            return true;
-                        }
-                    }
-                    break;
+                // TODO how do we handle null?
+                return JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value.Bytes), typeInfo)!;
             }
 
-            value = default!;
-            return false;
+            public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
+                where T : default
+            {
+                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                {
+                    value = default!;
+                    return false;
+                }
+
+                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
+
+                try
+                {
+                    // TODO how do we handle null?
+                    value = JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value.Bytes), typeInfo)!;
+                    return value != null;
+                }
+                catch (JsonException)
+                {
+                    value = default!;
+                    return false;
+                }
+            }
+
+            public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
+            {
+                ArgumentNullException.ThrowIfNull(writer);
+
+                writer.WriteNumberValue(_value.Bytes);
+            }
+
+            // This can be optimized to also store the decimal point position and the exponent so that
+            // conversion to different numeric types can be done without parsing the string again.
+            // Utf8Parser uses an internal ref struct, Number.NumberBuffer, which is really the
+            // same functionality that we would want here.
+            internal readonly struct JsonNumber
+            {
+                internal byte[] Bytes { get; }
+
+                internal JsonNumber(byte[] bytes)
+                {
+                    Bytes = bytes;
+                }
+            }
         }
     }
 }
