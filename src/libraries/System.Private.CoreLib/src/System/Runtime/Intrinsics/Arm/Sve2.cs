@@ -425,7 +425,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SADALP Ztied1.H, Pg/M, Zop2.B
         ///   SADALP Ztied1.H, Pg/M, Zop2.B
         /// </summary>
-        public static Vector<short> AddPairwiseWidening(Vector<short> left, Vector<sbyte> right) => AddPairwiseWidening(left, right);
+        public static Vector<short> AddPairwiseWideningAndAdd(Vector<short> left, Vector<sbyte> right) => AddPairwiseWideningAndAdd(left, right);
 
         /// <summary>
         /// svint32_t svadalp[_s32]_m(svbool_t pg, svint32_t op1, svint16_t op2)
@@ -434,7 +434,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SADALP Ztied1.S, Pg/M, Zop2.H
         ///   SADALP Ztied1.S, Pg/M, Zop2.H
         /// </summary>
-        public static Vector<int> AddPairwiseWidening(Vector<int> left, Vector<short> right) => AddPairwiseWidening(left, right);
+        public static Vector<int> AddPairwiseWideningAndAdd(Vector<int> left, Vector<short> right) => AddPairwiseWideningAndAdd(left, right);
 
         /// <summary>
         /// svint64_t svadalp[_s64]_m(svbool_t pg, svint64_t op1, svint32_t op2)
@@ -443,7 +443,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SADALP Ztied1.D, Pg/M, Zop2.S
         ///   SADALP Ztied1.D, Pg/M, Zop2.S
         /// </summary>
-        public static Vector<long> AddPairwiseWidening(Vector<long> left, Vector<int> right) => AddPairwiseWidening(left, right);
+        public static Vector<long> AddPairwiseWideningAndAdd(Vector<long> left, Vector<int> right) => AddPairwiseWideningAndAdd(left, right);
 
         /// <summary>
         /// svuint16_t svadalp[_u16]_m(svbool_t pg, svuint16_t op1, svuint8_t op2)
@@ -452,7 +452,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UADALP Ztied1.H, Pg/M, Zop2.B
         ///   UADALP Ztied1.H, Pg/M, Zop2.B
         /// </summary>
-        public static Vector<ushort> AddPairwiseWidening(Vector<ushort> left, Vector<byte> right) => AddPairwiseWidening(left, right);
+        public static Vector<ushort> AddPairwiseWideningAndAdd(Vector<ushort> left, Vector<byte> right) => AddPairwiseWideningAndAdd(left, right);
 
         /// <summary>
         /// svuint32_t svadalp[_u32]_m(svbool_t pg, svuint32_t op1, svuint16_t op2)
@@ -461,7 +461,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UADALP Ztied1.S, Pg/M, Zop2.H
         ///   UADALP Ztied1.S, Pg/M, Zop2.H
         /// </summary>
-        public static Vector<uint> AddPairwiseWidening(Vector<uint> left, Vector<ushort> right) => AddPairwiseWidening(left, right);
+        public static Vector<uint> AddPairwiseWideningAndAdd(Vector<uint> left, Vector<ushort> right) => AddPairwiseWideningAndAdd(left, right);
 
         /// <summary>
         /// svuint64_t svadalp[_u64]_m(svbool_t pg, svuint64_t op1, svuint32_t op2)
@@ -470,7 +470,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UADALP Ztied1.D, Pg/M, Zop2.S
         ///   UADALP Ztied1.D, Pg/M, Zop2.S
         /// </summary>
-        public static Vector<ulong> AddPairwiseWidening(Vector<ulong> left, Vector<uint> right) => AddPairwiseWidening(left, right);
+        public static Vector<ulong> AddPairwiseWideningAndAdd(Vector<ulong> left, Vector<uint> right) => AddPairwiseWideningAndAdd(left, right);
 
 
         // Saturating add

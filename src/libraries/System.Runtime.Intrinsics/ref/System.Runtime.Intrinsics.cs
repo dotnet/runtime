@@ -6171,12 +6171,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> AddPairwise(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> AddPairwise(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
-        public static System.Numerics.Vector<short> AddPairwiseWidening(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<int> AddPairwiseWidening(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
-        public static System.Numerics.Vector<long> AddPairwiseWidening(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<ushort> AddPairwiseWidening(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<uint> AddPairwiseWidening(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
-        public static System.Numerics.Vector<ulong> AddPairwiseWidening(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AddPairwiseWideningAndAdd(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AddPairwiseWideningAndAdd(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AddPairwiseWideningAndAdd(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddPairwiseWideningAndAdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddPairwiseWideningAndAdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddPairwiseWideningAndAdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
 
         public static new System.Numerics.Vector<byte> AddSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static new System.Numerics.Vector<short> AddSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
