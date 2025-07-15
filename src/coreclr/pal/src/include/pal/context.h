@@ -29,6 +29,7 @@ extern "C"
 #include <pthread.h>
 
 #include <minipal/cpuid.h>
+#include <static_assert.h>
 
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */

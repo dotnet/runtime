@@ -34,6 +34,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
+#include <static_assert.h>
 
 #include <errno.h>
 #if HAVE_POLL
@@ -174,7 +175,6 @@ DWORD gSID = (DWORD) -1;
 LPCSTR gApplicationGroupId = nullptr;
 int gApplicationGroupIdLength = 0;
 #endif // __APPLE__
-PathCharString* gSharedFilesPath = nullptr;
 
 // The lowest common supported semaphore length, including null character
 // NetBSD-7.99.25: 15 characters
