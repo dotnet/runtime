@@ -1417,23 +1417,8 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 #endif
         // The "this" argument register is not enumerated by the arg iterator, so
         // we need to "inject" it here.
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        if (argIt.HasRetBuffArg())
-        {
-#if LOG_COMPUTE_CALL_STUB
-            printf("argIt.HasRetBuffArg() on WINDOWS AMD64\n");
-#endif
-            // The return buffer on Windows AMD64 is passed in the first argument register, so the
-            // "this" argument is be passed in the second argument register.
-            m_r1 = 1;
-            m_r2 = 1;
-        }
-        else
-#endif // TARGET_WINDOWS && TARGET_AMD64
-        {
-            // The "this" pointer is passed in the first argument register.
-            m_r1 = 0;
-        }
+        // CLR ABI specifies that unlike the native Windows x64 calling convention, it is passed in the first argument register.
+        m_r1 = 0;
     }
 
     if (argIt.HasParamType())
