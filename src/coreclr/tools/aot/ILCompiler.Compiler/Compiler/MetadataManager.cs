@@ -233,7 +233,7 @@ namespace ILCompiler
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
 
-                if (eetypeNode is ConstructedEETypeNode || eetypeNode is CanonicalEETypeNode)
+                if (eetypeNode is ConstructedEETypeNode)
                 {
                     _typesWithConstructedEETypesGenerated.Add(eetypeNode.Type);
                 }

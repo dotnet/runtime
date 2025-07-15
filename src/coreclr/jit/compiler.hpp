@@ -1752,9 +1752,8 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 //
 // Arguments:
 //    arrLen    - The new GT_ARR_LENGTH or GT_MDARR_LENGTH node
-//    block     - Basic block that will contain the new length node
 //
-inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block)
+inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
     static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
@@ -1769,19 +1768,14 @@ inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block)
 //    typ       - Type of the node
 //    arrayOp   - Array node
 //    lenOffset - Offset of the length field
-//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_ARR_LENGTH node
 //
-inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset)
 {
     GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
-    gtAnnotateNewArrLen(arrLen, block);
-    if (block != nullptr)
-    {
-        block->SetFlags(BBF_HAS_IDX_LEN);
-    }
+    gtAnnotateNewArrLen(arrLen);
     optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
 }
@@ -1793,19 +1787,14 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 //    arrayOp   - Array node
 //    dim       - MD array dimension of interest
 //    rank      - MD array rank
-//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_MDARR_LENGTH node
 //
-inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
+inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank)
 {
     GenTreeMDArr* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArr(GT_MDARR_LENGTH, arrayOp, dim, rank);
-    gtAnnotateNewArrLen(arrLen, block);
-    if (block != nullptr)
-    {
-        block->SetFlags(BBF_HAS_MD_IDX_LEN);
-    }
+    gtAnnotateNewArrLen(arrLen);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrLen;
 }
@@ -1817,21 +1806,16 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, uns
 //    arrayOp   - Array node
 //    dim       - MD array dimension of interest
 //    rank      - MD array rank
-//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_MDARR_LOWER_BOUND node
 //
-inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
+inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank)
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
     static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
-    if (block != nullptr)
-    {
-        block->SetFlags(BBF_HAS_MD_IDX_LEN);
-    }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
 }
@@ -1841,17 +1825,15 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 //
 // Arguments:
 //    addr        -  Address to null check
-//    basicBlock  -  Basic block of the node
 //
 // Return Value:
 //    New GT_NULLCHECK node
 
-inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
+inline GenTree* Compiler::gtNewNullCheck(GenTree* addr)
 {
     assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
-    basicBlock->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
     return nullCheck;
 }

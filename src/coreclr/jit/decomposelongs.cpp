@@ -178,7 +178,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
                 return tree->gtNext;
             }
         }
-        else if (user->OperIs(GT_STOREIND) && tree->OperIsHWIntrinsic() && m_compiler->opts.OptimizationEnabled())
+        else if (user->OperIs(GT_STOREIND) && tree->OperIsHWIntrinsic() && m_compiler->opts.Tier0OptimizationEnabled())
         {
             NamedIntrinsic intrinsicId = tree->AsHWIntrinsic()->GetHWIntrinsicId();
             if (HWIntrinsicInfo::IsVectorToScalar(intrinsicId) && m_lowering->IsSafeToContainMem(user, tree))
