@@ -28651,6 +28651,31 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_Load2xVectorAndUnzip:
             case NI_Sve_Load3xVectorAndUnzip:
             case NI_Sve_Load4xVectorAndUnzip:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorNonFaulting:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
                 addr = Op(2);
                 break;
 
