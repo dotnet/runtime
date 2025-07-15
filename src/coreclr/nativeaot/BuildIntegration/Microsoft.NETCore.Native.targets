@@ -47,6 +47,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <RuntimeHostConfigurationOption Include="System.Linq.Expressions.CanEmitObjectArrayDelegate"
                                     Value="false"
                                     Trim="true" />
+
+    <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support"
+                                    Value="false"
+                                    Trim="true" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(SuppressAotAnalysisWarnings)' == 'true'">
