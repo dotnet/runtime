@@ -2343,6 +2343,10 @@ public:
 //     allows for a degenerate switch with zero cases. Normally, the optimizer will optimize degenerate
 //     switches with just a default case to a BBJ_ALWAYS branch, and a switch with just two cases to a BBJ_COND.
 //     However, in debuggable code, we might not do that, so bbsCount might be 1.
+//  3. BBswtDesc makes no promises about the relative positions of the 'succs' and 'cases' arrays.
+//     Callers are responsible for allocating these arrays during BBswtDesc creation.
+//     A potential optimization is to allocate one array large enough for the two;
+//     this is safe, because BBswtDesc does not support adding new cases/successors.
 //
 struct BBswtDesc : public BBJumpTable
 {
