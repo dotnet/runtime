@@ -14,8 +14,8 @@ namespace Mono.Linker.Tests.Cases.Attributes
     [KeptAttributeInAssembly(PlatformAssemblies.CoreLib, typeof(AssemblyDescriptionAttribute))]
     [KeptAttributeInAssembly(PlatformAssemblies.CoreLib, typeof(AssemblyCompanyAttribute))]
 #if !NET
-	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
-	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyCompanyAttribute))]
+    [KeptAttributeInAssembly("System.dll", typeof(AssemblyDescriptionAttribute))]
+    [KeptAttributeInAssembly("System.dll", typeof(AssemblyCompanyAttribute))]
 #endif
     public class CoreLibraryAssemblyAttributesAreKept
     {

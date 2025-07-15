@@ -27,7 +27,7 @@ namespace System.Collections.Tests
             return new Queue<string>();
         }
 
-        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throw => true;
 
         protected override Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
