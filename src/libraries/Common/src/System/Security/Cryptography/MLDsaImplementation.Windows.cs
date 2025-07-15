@@ -58,20 +58,14 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
             }
 
-            string? hashAlgorithmIdentifier = MapOidToCngHashAlgorithmIdentifer(hashAlgorithmOid, out bool restricted);
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
 
-            if (hashAlgorithmIdentifier is null)
-            {
-                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmOid));
-            }
-
-            if (restricted)
-            {
-                throw new CryptographicException(SR.Format(
-                    SR.Cryptography_HashMLDsaAlgorithmMismatch,
-                    Algorithm.Name,
-                    hashAlgorithmIdentifier));
-            }
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
 
             Interop.BCrypt.BCryptSignHashPqcPreHash(_key, hash, hashAlgorithmIdentifier, context, destination);
         }
@@ -82,12 +76,14 @@ namespace System.Security.Cryptography
             string hashAlgorithmOid,
             ReadOnlySpan<byte> signature)
         {
-            string? hashAlgorithmIdentifier = MapOidToCngHashAlgorithmIdentifer(hashAlgorithmOid, out bool restricted);
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
 
-            if (hashAlgorithmIdentifier is null || restricted)
-            {
-                return false;
-            }
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
 
             return Interop.BCrypt.BCryptVerifySignaturePqcPreHash(_key, hash, hashAlgorithmIdentifier, context, signature);
         }

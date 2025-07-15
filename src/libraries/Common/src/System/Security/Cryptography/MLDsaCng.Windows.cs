@@ -273,20 +273,14 @@ namespace System.Security.Cryptography
             string hashAlgorithmOid,
             Span<byte> destination)
         {
-            string? hashAlgorithmIdentifier = MapOidToCngHashAlgorithmIdentifer(hashAlgorithmOid, out bool restricted);
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
 
-            if (hashAlgorithmIdentifier is null)
-            {
-                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmOid));
-            }
-
-            if (restricted)
-            {
-                throw new CryptographicException(SR.Format(
-                    SR.Cryptography_HashMLDsaAlgorithmMismatch,
-                    Algorithm.Name,
-                    hashAlgorithmIdentifier));
-            }
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
 
             using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
             {
@@ -314,12 +308,14 @@ namespace System.Security.Cryptography
             string hashAlgorithmOid,
             ReadOnlySpan<byte> signature)
         {
-            string? hashAlgorithmIdentifier = MapOidToCngHashAlgorithmIdentifer(hashAlgorithmOid, out bool restricted);
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
 
-            if (hashAlgorithmIdentifier is null || restricted)
-            {
-                return false;
-            }
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
 
             using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
             {

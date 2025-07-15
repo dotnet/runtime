@@ -423,8 +423,6 @@
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsa.cs"
              Link="Common\System\Security\Cryptography\MLDsa.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsa.Windows.cs"
-             Link="Common\System\Security\Cryptography\MLDsa.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"

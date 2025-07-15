@@ -89,8 +89,6 @@ namespace Test.Cryptography
 
         public static IEnumerable<HashInfo> AllHashInfos()
         {
-            yield return Md5;
-            yield return Sha1;
             yield return Sha256;
             yield return Sha384;
             yield return Sha512;
