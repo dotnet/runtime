@@ -40,7 +40,6 @@ static PalObjectTypeId sg_rgWaitObjectsIds[] =
         otiAutoResetEvent,
         otiManualResetEvent,
         otiMutex,
-        otiNamedMutex,
         otiSemaphore,
         otiProcess,
         otiThread
@@ -53,7 +52,6 @@ static PalObjectTypeId sg_rgSignalableObjectIds[] =
     otiAutoResetEvent,
     otiManualResetEvent,
     otiMutex,
-    otiNamedMutex,
     otiSemaphore
 };
 static CAllowedObjectTypes sg_aotSignalableObject(sg_rgSignalableObjectIds, ARRAY_SIZE(sg_rgSignalableObjectIds));
@@ -417,55 +415,6 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
         goto WFMOExIntExit;
     }
 
-    if (nCount > 1)
-    {
-        // Check for any cross-process sync objects. "Wait for any" and "wait for all" operations are not supported on
-        // cross-process sync objects in the PAL.
-        for (DWORD i = 0; i < nCount; ++i)
-        {
-            if (ppIPalObjs[i]->GetObjectType()->GetId() == otiNamedMutex)
-            {
-                ERROR("Attempt to wait for any or all handles including a cross-process sync object", ERROR_NOT_SUPPORTED);
-                pThread->SetLastError(ERROR_NOT_SUPPORTED);
-                goto WFMOExIntCleanup;
-            }
-        }
-    }
-    else if (ppIPalObjs[0]->GetObjectType()->GetId() == otiNamedMutex)
-    {
-        SharedMemoryProcessDataHeader *processDataHeader =
-            SharedMemoryProcessDataHeader::PalObject_GetProcessDataHeader(ppIPalObjs[0]);
-        _ASSERTE(processDataHeader != nullptr);
-        try
-        {
-            MutexTryAcquireLockResult tryAcquireLockResult =
-                static_cast<NamedMutexProcessData *>(processDataHeader->GetData())->TryAcquireLock(nullptr, dwMilliseconds);
-            switch (tryAcquireLockResult)
-            {
-                case MutexTryAcquireLockResult::AcquiredLock:
-                    dwRet = WAIT_OBJECT_0;
-                    break;
-
-                case MutexTryAcquireLockResult::AcquiredLockButMutexWasAbandoned:
-                    dwRet = WAIT_ABANDONED_0;
-                    break;
-
-                case MutexTryAcquireLockResult::TimedOut:
-                    dwRet = WAIT_TIMEOUT;
-                    break;
-
-                default:
-                    _ASSERTE(false);
-                    break;
-            }
-        }
-        catch (SharedMemoryException ex)
-        {
-            pThread->SetLastError(ex.GetErrorCode());
-        }
-        goto WFMOExIntCleanup;
-    }
-
     if (fWAll)
     {
         // For a wait-all operation, check for duplicate wait objects in the array. This just uses a brute-force O(n^2)
@@ -761,7 +710,6 @@ DWORD CorUnix::InternalSignalObjectAndWait(
             break;
 
         case otiMutex:
-        case otiNamedMutex:
             palError = InternalReleaseMutex(thread, hObjectToSignal);
             break;
 
