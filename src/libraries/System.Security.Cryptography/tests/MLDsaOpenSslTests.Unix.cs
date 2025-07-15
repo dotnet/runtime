@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -128,6 +129,11 @@ namespace System.Security.Cryptography.Tests
             byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
             mldsa.SignData(data, signature, context);
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
+
+            byte[] hash = HashInfo.Sha256.GetHash(data);
+            signature.AsSpan().Fill(0);
+            mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, context);
+            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, context);
         }
     }
 }

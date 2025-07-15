@@ -329,7 +329,7 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
     // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
-    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only 
+    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only
     // if check to figure out which one to use, and then have the rest of the logic be straight-line code.
     MethodTable *pMT = nullptr;
     MethodDesc* pMD = nullptr;
@@ -505,6 +505,10 @@ MAIN_LOOP:
                 case INTOP_LDPTR_DEREF:
                     LOCAL_VAR(ip[1], void*) = *(void**)pMethod->pDataItems[ip[2]];
                     ip += 3;
+                    break;
+                case INTOP_NULLCHECK:
+                    NULL_CHECK(LOCAL_VAR(ip[1], void*));
+                    ip += 2;
                     break;
                 case INTOP_RET:
                     // Return stack slot sized value
@@ -1946,6 +1950,7 @@ CALL_INTERP_METHOD:
 
                     // clear the valuetype
                     memset(vtThis, 0, vtSize);
+
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
 
@@ -2357,6 +2362,29 @@ do {                                                                           \
                     void* result = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     LOCAL_VAR(dreg, void*) = result;
                     ip += 4;
+                    break;
+                }
+
+#define COMPARE_EXCHANGE(type)                                          \
+do                                                                      \
+{                                                                       \
+    type* dst = (type*)LOCAL_VAR(ip[2], void*);                         \
+    NULL_CHECK(dst);                                                    \
+    type newValue = LOCAL_VAR(ip[3], type);                             \
+    type comparand = LOCAL_VAR(ip[4], type);                            \
+    type old = InterlockedCompareExchangeT(dst, newValue, comparand);   \
+    LOCAL_VAR(ip[1], type) = old;                                       \
+    ip += 5;                                                            \
+} while (0)
+                case INTOP_COMPARE_EXCHANGE_I4:
+                {
+                    COMPARE_EXCHANGE(int32_t);
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_I8:
+                {
+                    COMPARE_EXCHANGE(int64_t);
                     break;
                 }
 
