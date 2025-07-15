@@ -139,7 +139,7 @@ void DebuggerControllerPatch::CopyInstructionBlock(BYTE *to, const BYTE* from)
 
 
 // Creates a new shared patch bypass buffer
-// Before returning it so callers only need to Release() when they're finished with it.
+// AddRef() before returning it so callers need to Release() when they're finished with it.
 SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer(DebuggerControllerPatch *patch, InstructionAttribute * pInstrAttrib)
 {
     CONTRACTL
