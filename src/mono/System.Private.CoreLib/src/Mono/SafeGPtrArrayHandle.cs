@@ -11,9 +11,11 @@
 //
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Mono
 {
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal struct SafeGPtrArrayHandle : IDisposable
     {
         private RuntimeGPtrArrayHandle handle;

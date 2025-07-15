@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Mono
 {
@@ -205,6 +206,7 @@ namespace Mono
         }
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal unsafe struct RuntimeGPtrArrayHandle
     {
         private RuntimeStructs.GPtrArray* value;

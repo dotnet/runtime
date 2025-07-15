@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 
 [assembly: DisableRuntimeMarshalling]
+[assembly: InternalsVisibleTo("Wasm.Advanced.Sample")]
 
 namespace ILCompiler.Diagnostics
 {
