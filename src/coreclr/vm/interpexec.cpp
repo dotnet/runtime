@@ -165,7 +165,7 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod *pMethod, int32_t _data)
 {
     InterpHelperData data;
-    data.packed = _data;
+    memcpy(&data, &_data, sizeof(int32_t));
 
     void *addr = pMethod->pDataItems[data.addressDataItemIndex];
     switch (data.accessType) {

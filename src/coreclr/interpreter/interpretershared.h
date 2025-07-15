@@ -17,12 +17,9 @@
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
-union InterpHelperData {
-    struct {
-        uint32_t addressDataItemIndex : 29;
-        uint32_t accessType : 3;
-    };
-    int32_t packed;
+struct InterpHelperData {
+    uint32_t addressDataItemIndex : 29;
+    uint32_t accessType : 3;
 };
 
 struct CallStubHeader;

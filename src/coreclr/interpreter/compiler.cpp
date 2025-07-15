@@ -2182,7 +2182,9 @@ int32_t InterpCompiler::GetDataForHelperFtn(CorInfoHelpFunc ftn)
     if (((int32_t)result.addressDataItemIndex != dataItemIndex) || ((InfoAccessType)result.accessType != ftnLookup.accessType))
         NO_WAY("Over/underflow in GetDataForHelperFtn");
 
-    return result.packed;
+    int32_t packed;
+    memcpy(&packed, &result, sizeof(result));
+    return packed;
 }
 
 static int32_t GetLdindForType(InterpType interpType)
@@ -6266,7 +6268,7 @@ void InterpCompiler::PrintPointer(void* pointer)
 void InterpCompiler::PrintHelperFtn(int32_t _data)
 {
     InterpHelperData data;
-    data.packed = _data;
+    memcpy(&data, &_data, sizeof(int32_t));
 
     void *helperAddr = GetDataItemAtIndex(data.addressDataItemIndex);
     PrintPointer(helperAddr);
