@@ -13267,7 +13267,7 @@ namespace System.Runtime.CompilerServices
         NoStringInterning = 8,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
-    public class CompilerLoweringPreserveAttribute : System.Attribute
+    public sealed class CompilerLoweringPreserveAttribute : System.Attribute
     {
         public CompilerLoweringPreserveAttribute() { }
     }
