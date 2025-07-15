@@ -246,7 +246,7 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, gp
 	frame->stack = (stackval*)stack;
 	frame->retval = (stackval*)retval;
 	frame->state.ip = NULL;
-	MH_LOG("Reinitializing frame %p with imethod %p, retval %p, stack %p", frame, imethod, retval, stack);
+	MH_LOG("Reinitializing frame %p with imethod %s (%p), retval %p, stack %p", frame, mono_method_get_name_full(imethod->method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL), imethod, retval, stack);
 }
 
 #define STACK_ADD_ALIGNED_BYTES(sp,bytes) ((stackval*)((char*)(sp) + (bytes)))
@@ -275,8 +275,8 @@ typedef void (*ICallMethod) (InterpFrame *frame);
 
 static MonoNativeTlsKey thread_context_id;
 
-#define DEBUG_INTERP 1
-#define COUNT_OPS 1
+#define DEBUG_INTERP 0
+#define COUNT_OPS 0
 
 #if DEBUG_INTERP
 int mono_interp_traceopt = 2;
@@ -803,7 +803,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	if (m_type_is_byref (type)) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
-		MH_LOG("Ref value. Assigning %p and returning stack slot size %d", *p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("Ref value. Assigning %p and returning stack slot size %lu", *p, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -814,7 +814,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_U1: {
 		guint8 *p = (guint8*)data;
 		*p = GINT32_TO_UINT8 (val->data.i);
-		MH_LOG("Bool I1 or U1. Assigning %d and returning stack slot size %d", *p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("Bool I1 or U1. Assigning %d and returning stack slot size %lu", *p, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -823,7 +823,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_CHAR: {
 		guint16 *p = (guint16*)data;
 		*p = GINT32_TO_UINT16 (val->data.i);
-		MH_LOG("I2 U2 or Char. Assigning %d and returning stack slot size %d", *p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("I2 U2 or Char. Assigning %d and returning stack slot size %lu", *p, MINT_STACK_SLOT_SIZE);
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I: {
@@ -833,7 +833,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 		   a native int - both by csc and mcs). Not sure what to do about sign extension
 		   as it is outside the spec... doing the obvious */
 		*p = (mono_i)val->data.nati;
-		MH_LOG("MONO_TYPE_I. Assigning %p and returning stack slot size %d", (intptr_t)*p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_I. Assigning %p and returning stack slot size %lu", (void*)*p, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -841,7 +841,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 		mono_u *p = (mono_u*)data;
 		/* see above. */
 		*p = (mono_u)val->data.nati;
-		MH_LOG("MONO_TYPE_U. Assigning %p and returning stack slot size %d", (intptr_t)*p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_U. Assigning %p and returning stack slot size %lu", (void*)*p, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -849,25 +849,25 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_U4: {
 		gint32 *p = (gint32*)data;
 		*p = val->data.i;
-		MH_LOG("MONO_TYPE_I4 or U4. Assigning %d and returning stack slot size %d", (intptr_t)*p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_I4 or U4. Assigning %d and returning stack slot size %lu", *p, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8: {
 		memmove (data, &val->data.l, sizeof (gint64));
-		MH_LOG("MONO_TYPE_I8 or U8. Assigning %p and returning stack slot size %d", (intptr_t)data, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_I8 or U8. Assigning %p and returning stack slot size %lu", (void*)data, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_R4: {
 		/* memmove handles unaligned case */
-		MH_LOG("MONO_TYPE_R4. Assigning %f and returning stack slot size %d", val->data.f_r4, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_R4. Assigning %f and returning stack slot size %lu", val->data.f_r4, MINT_STACK_SLOT_SIZE);
 		memmove (data, &val->data.f_r4, sizeof (float));
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_R8: {
-		MH_LOG("MONO_TYPE_R8. Assigning %f and returning stack slot size %d", val->data.f, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_R8. Assigning %f and returning stack slot size %lu", val->data.f, MINT_STACK_SLOT_SIZE);
 		memmove (data, &val->data.f, sizeof (double));
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -878,7 +878,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_ARRAY: {
 		gpointer *p = (gpointer *) data;
 		mono_gc_wbarrier_generic_store_internal (p, val->data.o);
-		MH_LOG("MONO_TYPE_string, object array etc. Assigning %p and returning stack slot size %d", (intptr_t)*p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_string, object array etc. Assigning %p and returning stack slot size %lu", (void*)*p, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -886,7 +886,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_FNPTR: {
 		gpointer *p = (gpointer *) data;
 		*p = val->data.p;
-		MH_LOG("MONO_TYPE_PTR or FNPTR. Assigning %p and returning stack slot size %d", (intptr_t)*p, MINT_STACK_SLOT_SIZE);
+		MH_LOG("MONO_TYPE_PTR or FNPTR. Assigning %p and returning stack slot size %lu", (void*)*p, MINT_STACK_SLOT_SIZE);
 		MH_LOG_UNINDENT();
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -3863,7 +3863,7 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 	unsigned char *locals = NULL;
 	int call_args_offset;
 	int return_offset;
-	gboolean gc_transitions = FALSE;
+	gboolean gc_transitions = FALSE;	
 
 #if DEBUG_INTERP
 	int tracing = global_tracing;
@@ -4104,6 +4104,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
+			MH_LOG("MINT_CALL_DELEGATE");
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 			MonoDelegate *del = LOCAL_VAR (call_args_offset, MonoDelegate*);
@@ -4182,7 +4183,7 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			gboolean need_unbox;
-
+			MH_LOG("MINT_CALLI");
 			/* In mixed mode, stay in the interpreter for simplicity even if there is an AOT version of the callee */
 			cmethod = ftnptr_to_imethod (LOCAL_VAR (ip [2], gpointer), &need_unbox);
 
@@ -4203,6 +4204,7 @@ main_loop:
 			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
+			MH_LOG("MINT_CALLI_NAT_FAST");
 			MintICallSig icall_sig = (MintICallSig)ip [4];
 			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [5]];
 			gboolean save_last_error = ip [6];
@@ -4325,7 +4327,7 @@ jit_call:
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			return_offset = ip [1];
 			call_args_offset = ip [2];
-			MH_LOG("MINT_CALL for %s. return offset %d, call_args_offset %d", (InterpMethod*)frame->imethod->method->name, return_offset, call_args_offset);
+			MH_LOG("MINT_CALL for %s. return offset %d, call_args_offset %d", mono_method_get_name_full(frame->imethod->method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL), return_offset, call_args_offset);
 #ifdef ENABLE_EXPERIMENT_TIERED
 			ip += 5;
 #else
@@ -4418,29 +4420,38 @@ interp_call:
 		}
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
+			MH_LOG("returning pointer %p or long %lld", frame->retval [0].data.p, frame->retval [0].data.l);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I1)
 			frame->retval [0].data.i = (gint8) LOCAL_VAR (ip [1], gint32);
+			MH_LOG("MINT_RET_I1 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_U1)
 			frame->retval [0].data.i = (guint8) LOCAL_VAR (ip [1], gint32);
+			MH_LOG("MINT_RET_U1 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I2)
 			frame->retval [0].data.i = (gint16) LOCAL_VAR (ip [1], gint32);
+			MH_LOG("MINT_RET_I2 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_U2)
 			frame->retval [0].data.i = (guint16) LOCAL_VAR (ip [1], gint32);
+			MH_LOG("MINT_RET_U2 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I4_IMM)
 			frame->retval [0].data.i = (gint16)ip [1];
+			MH_LOG("MINT_RET_I4_IMM");
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I8_IMM)
 			frame->retval [0].data.l = (gint16)ip [1];
+			MH_LOG("MINT_RET_I8_IMM casting to gint16 ip[1] = %lld", frame->retval [0].data.l);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VOID)
+			MH_LOG("void returning");
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VT) {
 			memmove (frame->retval, locals + ip [1], ip [2]);
+			MH_LOG("returning vt, moved %d bytes from offset to give %p", ip[2], ip[1], frame->retval);
 			goto exit_frame;
 		}
 		MINT_IN_CASE(MINT_RET_LOCALLOC)
@@ -6177,17 +6188,37 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 #define LDFLD(datamem, fieldtype) LDFLD_UNALIGNED(datamem, fieldtype, FALSE)
 
-		MINT_IN_CASE(MINT_LDFLD_I1) LDFLD(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_U1) LDFLD(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_I2) LDFLD(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_U2) LDFLD(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_I4) LDFLD(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_I8) LDFLD(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_R4) LDFLD(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_R8) LDFLD(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_O) LDFLD(gpointer, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_I8_UNALIGNED) LDFLD_UNALIGNED(gint64, gint64, TRUE); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_R8_UNALIGNED) LDFLD_UNALIGNED(double, double, TRUE); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_I1) MH_LOG("MINT_LDFLD_I1"); LDFLD(gint32, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_U1) MH_LOG("MINT_LDFLD_U1"); LDFLD(gint32, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_I2) MH_LOG("MINT_LDFLD_I2"); LDFLD(gint32, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_U2) MH_LOG("MINT_LDFLD_U2"); LDFLD(gint32, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_I4) MH_LOG("MINT_LDFLD_I4"); LDFLD(gint32, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_I8) MH_LOG("MINT_LDFLD_I8"); do {
+    MonoObject* o = (*(MonoObject**)(locals + (ip[2]))); do {
+        if ((!(o))) do {
+            interp_throw_ex_general((interp_get_exception_null_reference(frame, ip)), context, frame, (ip), 0); goto resume;
+        } while (0);
+    } while (0); 
+    if (0) 
+	    memcpy(locals + ip[1], (char*)o + ip[3], sizeof(gint64)); 
+    else 
+	    {
+	    MH_LOG("MINT_LDFLD_I8_UNALIGNED *(%p + %d) = %p", (void*)o, ip[3], *(gint64*)((char*)o + ip[3]));
+	    (*(gint64*)(locals + (ip[1]))) = *(gint64*)((char*)o + ip[3]); 
+	    ip += 4;
+	    }
+} while (0); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_R4) MH_LOG("MINT_LDFLD_R4"); LDFLD(float, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_R8) MH_LOG("MINT_LDFLD_R8"); LDFLD(double, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_O)  MH_LOG("MINT_LDFLD_O"); do {
+    MonoObject* o = (*(MonoObject**)(locals + (ip[2]))); do {
+        if ((!(o))) do {
+            interp_throw_ex_general((interp_get_exception_null_reference(frame, ip)), context, frame, (ip), 0); goto resume;
+        } while (0);
+    } while (0); if (0) memcpy(locals + ip[1], (char*)o + ip[3], sizeof(gpointer)); else (*(gpointer*)(locals + (ip[1]))) = *(gpointer*)((char*)o + ip[3]); ip += 4;
+} while (0); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_I8_UNALIGNED) MH_LOG("MINT_LDFLD_I8_UNALIGNED"); LDFLD_UNALIGNED(gint64, gint64, TRUE); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_R8_UNALIGNED) MH_LOG("MINT_LDFLD_R8_UNALIGNED"); LDFLD_UNALIGNED(double, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDFLD_VT) {
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
@@ -7642,24 +7673,25 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		// stack, no additional conversion is needed.
 		MINT_IN_CASE(MINT_MOV_1) 
 			(*(gint8*)(locals + (ip[1]))) = (*(gint8*)(locals + (ip[2]))); 
-			MH_LOG("MINT_MOV_1: %d <- %d: %p\n", ip[1], ip[2], (intptr_t)(*(gint8*)(locals + (ip[1]))));
+			MH_LOG("MINT_MOV_1: %d <- %d: %p\n", ip[1], ip[2], (void*)(*(gint8*)(locals + (ip[1]))));
 			ip += 3;
 		MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MOV_2) MOV(gint16, gint16); MINT_IN_BREAK;
 		// Normal moves between locals
 		MINT_IN_CASE(MINT_MOV_4) 
+			// TODO: this is hardcoded for x64
+			assert(((uintptr_t)locals % 8) == 0 && "locals is not 8-byte aligned");
 			(*(guint32*)(locals + (ip[1]))) = (*(guint32*)(locals + (ip[2]))); 
-			MH_LOG("MINT_MOV_4: %d <- %d: %p\n", ip[1], ip[2], (intptr_t)(*(guint32*)(locals + (ip[1]))));
+			MH_LOG("MINT_MOV_4: %d <- %d: %p\n", ip[1], ip[2], (void*)(*(guint32*)(locals + (ip[1]))));
 			ip += 3;; 
 		MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MOV_8) 
+			// TODO: this is hardcoded for x64
+			assert(((uintptr_t)locals % 8) == 0 && "locals is not 8-byte aligned");
+
 			(*(guint64*)(locals + (ip[1]))) = (*(guint64*)(locals + (ip[2])));
-			intptr_t result = (*(guint64*)(locals + (ip[1])));
-			intptr_t input = (*(guint64*)(locals + (ip[2]))); 
-			intptr_t inputOffsetm4 = (*(guint64*)(locals + (ip[2] - 4))); 
-			intptr_t inputOffsetp4 = (*(guint64*)(locals + (ip[2] + 4))); 
-			//MH_LOG("MINT_MOV_8: %d <- %d: %p <- %p (-4: %p) (+4: %p)\n", ip[1], ip[2], result, input, inputOffsetm4, inputOffsetp4);
-			MH_LOG("MINT_MOV_8: %d <- %d: %p <- %p", ip[1], ip[2], result, input);
+			intptr_t result = (*(guint64*)(locals + (ip[1])));		
+			MH_LOG("MINT_MOV_8: *(%p + %d) = *(%p + %d): %p", locals, ip[1], locals, ip[2], (void*)result);
 			ip += 3;; 
 		MINT_IN_BREAK;
 
@@ -8043,7 +8075,7 @@ exit_frame:
 		 * a param_area and all calls would inherit the same sp, or if we are full coop.
 		 */
 		context->stack_pointer = (guchar*)frame->stack + frame->imethod->alloca_size;
-		MH_LOG("exiting frame, frame->imethod->alloca_size: %d", frame->imethod->alloca_size);
+		MH_LOG("exiting frame %p for %s", frame, mono_method_get_name_full(frame->imethod->method, FALSE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
 		LOAD_INTERP_STATE (frame);
 
 		CHECK_RESUME_STATE (context);

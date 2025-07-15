@@ -496,6 +496,9 @@ HANDLES(RT_1, "CreateInstanceInternal", ves_icall_System_RuntimeType_CreateInsta
 HANDLES(RT_28, "FunctionPointerReturnAndParameterTypes", ves_icall_RuntimeType_FunctionPointerReturnAndParameterTypes, GPtrArray_ptr, 1, (MonoQCallTypeHandle))
 NOHANDLES(ICALL(RT_33, "GetCallingConventionFromFunctionPointerInternal", ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal))
 HANDLES(RT_2, "GetConstructors_native", ves_icall_RuntimeType_GetConstructors_native, GPtrArray_ptr, 2, (MonoQCallTypeHandle, guint32))
+HANDLES(RT_34, "TestArray_native", ves_icall_RuntimeType_TestArray_Native, GPtrArray_ptr,  0, ())
+HANDLES(RT_35, "TestArrayRaw_native", ves_icall_RuntimeType_TestArray_Raw_Native, gpointer_ptr,  0, ())
+
 HANDLES(RT_30, "GetCorrespondingInflatedMethod", ves_icall_RuntimeType_GetCorrespondingInflatedMethod, MonoReflectionMethod, 2, (MonoQCallTypeHandle, MonoReflectionMethod))
 HANDLES(RT_21, "GetDeclaringMethod", ves_icall_RuntimeType_GetDeclaringMethod, void, 2, (MonoQCallTypeHandle, MonoObjectHandleOnStack))
 HANDLES(RT_22, "GetDeclaringType", ves_icall_RuntimeType_GetDeclaringType, void, 2, (MonoQCallTypeHandle, MonoObjectHandleOnStack))

@@ -119,7 +119,7 @@ interp_add_ins_explicit (TransformData *td, int opcode, int len)
 	td->cbb->last_ins = new_inst;
 	// We should delete this, but is currently used widely to set the args of an instruction
 	td->last_ins = new_inst;
-	MH_LOG("adding instruction %s at offset %d\n", mono_interp_opname (opcode), td->current_il_offset);
+	MH_LOG("adding instruction %s at offset %d", mono_interp_opname (opcode), td->current_il_offset);
 	return new_inst;
 }
 
@@ -445,7 +445,7 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	local->ext_index = -1;
 
 	td->vars_size++;
-	MH_LOG("Creating var of type %s at index %d, size %d\n", mono_type_full_name (type), td->vars_size - 1, size);
+	MH_LOG("Creating var of type %s at index %d, size %d", mono_type_full_name (type), td->vars_size - 1, size);
 	return td->vars_size - 1;
 
 }
@@ -3083,7 +3083,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	}
 	if (td->verbose_level)
 		g_print ("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);	
-	MH_LOG("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
+	MH_LOG("Inline start method %s.%s", m_class_get_name (target_method->klass), target_method->name);
 	td->inline_depth++;	
 	ret = generate_code (td, target_method, header, generic_context, error);
 	td->inline_depth--;
@@ -5269,7 +5269,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	goto_if_nok (error, exit);
 	g_assert (bb);
 	
-	MH_LOG("Generating code for method %s\n", mono_method_full_name (method, TRUE));
+	MH_LOG("Generating code for method %s", mono_method_full_name (method, TRUE));
 	
 	td->il_code = header->code;
 	td->in_start = td->ip = header->code;
@@ -5408,7 +5408,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		for (int i = signature->param_count - 1; i >= 0; i--) {
 			MonoType *type = get_type_from_stack (td->sp [-1].type, td->sp [-1].klass);
 
-			MH_LOG("Creating local for inlined arg %d: %s\n", i, mono_type_full_name (type));
+			MH_LOG("Creating local for inlined arg %d: %s", i, mono_type_full_name (type));
 
 			local = interp_create_var (td, type);
 			arg_locals [i + !!signature->hasthis] = local;
@@ -10019,7 +10019,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	real_imethod = imethod;
 	memcpy (&tmp_imethod, imethod, sizeof (InterpMethod));
 	imethod = &tmp_imethod;
-	MH_LOG("Copied imethod (%d) bytes", (int)sizeof (InterpMethod));
 
 	MONO_TIME_TRACK (mono_interp_stats.transform_time, generate (method, header, imethod, generic_context, error));
 

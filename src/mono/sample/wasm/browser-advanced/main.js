@@ -100,7 +100,13 @@ try {
     //const IntSize = exports.Sample.Test.SimpleTestFunctionIntSize();
     //console.debug(`IntSize: ${IntSize}`);
     //console.debug("Accessing console:");
-    const consoleTest = exports.Sample.Test.SimpleTestConsole();
+
+    const arrayTest = exports.Sample.Test.SimpleTestArray();
+    console.debug("Made it past arrayTest! Value is: ", "0x" + arrayTest.toString(16));
+
+    //const consoleTest = exports.Sample.Test.SimpleTestConsole();
+
+
     //console.debug(`consoleTest: ${consoleTest}`);
     //console.debug("Printing empty string from C#:"); 
     //exports.Sample.Test.SimpleTestFunctionPrintEmptyString();

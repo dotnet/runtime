@@ -4084,6 +4084,44 @@ ves_icall_RuntimeType_GetMethodsByName_native (MonoQCallTypeHandle type_handle, 
 }
 
 GPtrArray*
+ves_icall_RuntimeType_TestArray_Native(MonoError *error)
+{
+	GPtrArray* res = g_ptr_array_new ();
+	gpointer val1 = (gpointer)0x111;
+	gpointer val2 = (gpointer)0x222;
+	gpointer val3 = (gpointer)0x333;
+	gpointer val4 = (gpointer)0x444;
+
+	g_ptr_array_add (res, val1);
+	g_ptr_array_add (res, val2);
+	g_ptr_array_add (res, val3);
+	g_ptr_array_add (res, val4);
+
+	MH_LOG ("test array values: %p %p %p", res->pdata[0], res->pdata[1], res->pdata[2]);
+	MH_LOG ("test array addresses: %p %p %p", &(res->pdata[0]), &(res->pdata[1]), &(res->pdata[2]));
+	return res;
+}
+
+gpointer_ptr
+ves_icall_RuntimeType_TestArray_Raw(MonoError *error)
+{
+	GPtrArray* res = g_ptr_array_new ();
+	gpointer val1 = (gpointer)0x111;
+	gpointer val2 = (gpointer)0x222;
+	gpointer val3 = (gpointer)0x333;
+	gpointer val4 = (gpointer)0x444;
+
+	g_ptr_array_add (res, val1);
+	g_ptr_array_add (res, val2);
+	g_ptr_array_add (res, val3);
+	g_ptr_array_add (res, val4);
+
+	MH_LOG ("test array values: %p %p %p", res->pdata[0], res->pdata[1], res->pdata[2]);
+	MH_LOG ("test array addresses: %p %p %p", &(res->pdata[0]), &(res->pdata[1]), &(res->pdata[2]));
+	return &(res->pdata);
+}
+
+GPtrArray*
 ves_icall_RuntimeType_GetConstructors_native (MonoQCallTypeHandle type_handle, guint32 bflags, MonoError *error)
 {
 	MonoType *type = type_handle.type;

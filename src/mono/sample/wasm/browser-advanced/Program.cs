@@ -87,7 +87,21 @@ namespace Sample
             System.IO.TextWriter output = Console.Out;
             return output != null;
         }
+        [JSExport]
+        internal static void SimpleTestArray()
+        {
+            
+            var arrayPtr = System.MHTestClass.RunTestArray();
+            //var h = new Mono.SafeGPtrArrayHandle(arrayPtr);
 
+            var a = 1;// h[0];
+            var b = 2;// h[1];
+            var c = 3;// h[2];
+            
+            //return a + b + c;
+            //using (var h = new Mono.SafeGPtrArrayHandle(TestArray_native());
+        }
+        
         [JSExport]
         internal static void SimpleTestFunctionPrintString()
         {

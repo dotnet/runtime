@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
-    <PublishTrimmed>true</PublishTrimmed>
+    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
+    <PublishTrimmed>false</PublishTrimmed>
     <InvariantTimezone>true</InvariantTimezone>
     <WasmEnableWebcil>false</WasmEnableWebcil>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
@@ -33,7 +33,7 @@
     <NativeFileReference Include="fibonacci.c" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
-
+  
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
 
 </Project>

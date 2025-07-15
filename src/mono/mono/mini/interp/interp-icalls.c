@@ -94,7 +94,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 {
 	MH_LOG_INDENT();
 	intptr_t data_ptr = *(intptr_t *)data;
-	MH_LOG("Converting data to stackval for type %s: ,value as intptr_t is %p", mono_type_get_name (type), data_ptr);
+	MH_LOG("Converting data to stackval for type %s: ,value as intptr_t is %p", mono_type_get_name (type), (void*)data_ptr);
 	
 //	memset(result, 0, sizeof(stackval));
 	log_mono_type(type);
@@ -112,7 +112,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 		result->data.i = *(guint8*)data;
-		MH_LOG("Assigned U1 or BOOLEAN value assigned: %p", (intptr_t)result->data.i);
+		MH_LOG("Assigned U1 or BOOLEAN value assigned: %p", (void*)result->data.i);
 		break;
 	case MONO_TYPE_I2:
 		result->data.i = *(gint16*)data;
@@ -123,7 +123,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		break;
 	case MONO_TYPE_I4:
 		result->data.i = *(gint32*)data;
-		MH_LOG("Assigned I4 value assigned: (int) %d (ptr) %p", result->data.i, (intptr_t)result->data.i);
+		MH_LOG("Assigned I4 value assigned: (int) %d (ptr) %p", result->data.i, (void*)result->data.i);
 		break;
 	case MONO_TYPE_U:
 	case MONO_TYPE_I:
@@ -136,7 +136,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		break;
 	case MONO_TYPE_U4:		
 		result->data.i = *(guint32*)data;
-		MH_LOG("Assigned U4 value assigned: (int) %d (ptr) %p",  result->data.i, (intptr_t)result->data.i);
+		MH_LOG("Assigned U4 value assigned: (int) %d (ptr) %p",  result->data.i, (void*)result->data.i);
 		break;
 	case MONO_TYPE_R4:
 		/* memmove handles unaligned case */
@@ -189,7 +189,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 	default:
 		g_error ("got type 0x%02x", type->type);
 	}
-	MH_LOG("Converted data to stackval. Type: %s, ptr value (result->data.p): %p", mono_type_get_name (type), (intptr_t)result->data.p);
+	MH_LOG("Converted data to stackval. Type: %s, ptr value (result->data.p): %p", mono_type_get_name (type), (void*)result->data.p);
 	MH_LOG_UNINDENT();
 }
 static char * log_sig(MonoMethodSignature* sig)
