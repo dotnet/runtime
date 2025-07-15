@@ -161,20 +161,6 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
-#define WITH_INLINED_CALL_FRAME(block) \
-    do { \
-        InlinedCallFrame inlinedCallFrame; \
-        inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip; \
-        inlinedCallFrame.m_pCallSiteSP = pFrame; \
-        inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack; \
-        inlinedCallFrame.m_pThread = GetThread(); \
-        inlinedCallFrame.m_Datum = NULL; \
-        inlinedCallFrame.Push(); \
-        \
-        block\
-        \
-        inlinedCallFrame.Pop(); \
-    } while (0)
 
 template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
 {
@@ -1861,10 +1847,20 @@ MAIN_LOOP:
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
                         : (PCODE)pMethod->pDataItems[targetAddrSlot];
 
-                    WITH_INLINED_CALL_FRAME({
+                    InlinedCallFrame inlinedCallFrame;
+                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
+                    inlinedCallFrame.m_pCallSiteSP = pFrame;
+                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+                    inlinedCallFrame.m_pThread = GetThread();
+                    inlinedCallFrame.m_Datum = NULL;
+                    inlinedCallFrame.Push();
+
+                    {
                         GCX_PREEMP();
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
-                    });
+                    }
+
+                    inlinedCallFrame.Pop();
 
                     break;
                 }
