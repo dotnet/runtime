@@ -417,7 +417,7 @@ bool MethodContextReader::hasTOC()
 
 bool MethodContextReader::isValid()
 {
-    return this->fileHandle != INVALID_HANDLE_VALUE && this->mutex != INVALID_HANDLE_VALUE;
+    return this->fileHandle != INVALID_HANDLE_VALUE;
 }
 
 // Return a measure of "progress" through the method contexts, as follows:
