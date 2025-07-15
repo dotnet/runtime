@@ -40,7 +40,7 @@ namespace System.Net.Security
                 fixed (byte* alpnPtr = alpn)
                 {
                     // Call the native method to get connection info
-                    osStatus = Interop.NetworkFramework.Tls.GetConnectionInfo(nwContext, out protocol, out cipherSuite, alpnPtr, ref alpnLength);
+                    osStatus = Interop.NetworkFramework.Tls.GetConnectionInfo(nwContext, context.StateHandle, out protocol, out cipherSuite, alpnPtr, ref alpnLength);
                 }
             }
 

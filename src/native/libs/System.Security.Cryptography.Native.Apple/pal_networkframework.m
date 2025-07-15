@@ -30,12 +30,20 @@ static nw_endpoint_t _endpoint;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
-#define LOG(state, ...) \
+#define LOG_IMPL_(state, isError, ...) \
     do { \
         char buff[256]; \
         snprintf(buff, sizeof(buff), __VA_ARGS__); \
-        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)(buff), (size_t)(-1), NULL); \
+        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)(buff), (size_t)(isError), NULL); \
     } while (0)
+
+#if DEBUG
+#define LOG_INFO(state, ...) LOG_IMPL_(state, 0, __VA_ARGS__)
+#else
+#define LOG_INFO(state, ...) do { (void)state; } while (0)
+#endif
+
+#define LOG_ERROR(state, ...) LOG_IMPL_(state, 1, __VA_ARGS__)
 
 #define MANAGED_STATE_KEY "GCHANDLE"
 
@@ -169,14 +177,14 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     tls_protocol_version_t version = PalSslProtocolToTlsProtocolVersion(minTlsProtocol);
     if ((int)version != 0)
     {
-        LOG(state, "Min TLS version: %d", version);
+        LOG_INFO(state, "Min TLS version: %d", version);
         sec_protocol_options_set_min_tls_protocol_version(sec_options, version);
     }
 
     version = PalSslProtocolToTlsProtocolVersion(maxTlsProtocol);
     if ((int)version != 0)
     {
-        LOG(state, "Max TLS version: %d", version);
+        LOG_INFO(state, "Max TLS version: %d", version);
         sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
     }
 
@@ -187,7 +195,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         {
             uint8_t length = alpnBuffer[offset];
             const char* alpn = (const char*) &alpnBuffer[offset + 1];
-            LOG(state, "Appending ALPN: %s", alpn);
+            LOG_INFO(state, "Appending ALPN: %s", alpn);
             sec_protocol_options_add_tls_application_protocol(sec_options, alpn);
             offset += length + 2;
         }
@@ -198,7 +206,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         for (int i = 0; i < cipherSuitesLength; i++)
         {
             uint16_t cipherSuite = (uint16_t)cipherSuites[i];
-            LOG(state, "Appending cipher suite: 0x%04x", cipherSuite);
+            LOG_INFO(state, "Appending cipher suite: 0x%04x", cipherSuite);
             sec_protocol_options_append_tls_ciphersuite(sec_options, cipherSuite);
         }
     }
@@ -208,21 +216,9 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     {
         // Extract acceptable issuers from metadata
         CFMutableArrayRef acceptableIssuers = NULL;
-        __block SecCertificateRef remoteCertificate = NULL;
         
         if (metadata != NULL)
         {
-            // Extract the peer certificate
-            __block bool firstCert = true;
-            sec_protocol_metadata_access_peer_certificate_chain(metadata, ^(sec_certificate_t certificate)
-            {
-                if (firstCert && certificate != NULL)
-                {
-                    firstCert = false;
-                    remoteCertificate = sec_certificate_copy_ref(certificate);
-                }
-            });
-            
             // Create array to hold distinguished names
             acceptableIssuers = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
             
@@ -252,21 +248,10 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         }
         
         // Call the managed callback to get the client identity
-        void* identity = NULL;
-        if (_challengeFunc != NULL)
-        {
-            identity = _challengeFunc(state, acceptableIssuers, remoteCertificate);
-        }
+        void* identity = _challengeFunc(state, acceptableIssuers);
         
         // Clean up
-        if (acceptableIssuers != NULL)
-        {
-            CFRelease(acceptableIssuers);
-        }
-        if (remoteCertificate != NULL)
-        {
-            CFRelease(remoteCertificate);
-        }
+        CFRelease(acceptableIssuers);
         
         if (identity != NULL)
         {
@@ -276,8 +261,10 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
             if (sec_identity != NULL)
             {
                 complete(sec_identity);
-                return;
+                nw_release(sec_identity);
             }
+
+            return;
         }
         
         complete(NULL);
@@ -286,7 +273,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete)
     {
-        LOG(state, "Cert validation callback called");
+        LOG_INFO(state, "Cert validation callback called");
 
         SecTrustRef chain = sec_trust_copy_ref(trust_ref);
 
@@ -316,7 +303,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
 
     if (connection == NULL)
     {
-        LOG(state, "Failed to create Network Framework connection");
+        LOG_ERROR(state, "Failed to create Network Framework connection");
         return NULL;
     }
 
@@ -357,7 +344,6 @@ static nw_framer_cleanup_handler_t framer_cleanup_handler = ^(nw_framer_t framer
     (void)framer;
 };
 
-
 // This is called when connection start to set up framer
 static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_framer_t framer)
 {
@@ -383,6 +369,7 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, con
     assert(framer != NULL);
     if (framer == NULL)
     {
+        LOG_ERROR(NULL, "NwFramerDeliverInput called with NULL framer");
         return -1;
     }
 
@@ -391,6 +378,7 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, con
     // There is a race condition when connection can fail or be canceled and if it does we fail to create the message here.
     if (message == NULL)
     {
+        LOG_ERROR(FramerGetManagedState(framer), "NwFramerDeliverInput failed to create message");
         return -1;
     }
 
@@ -409,13 +397,16 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, con
 PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, void* state)
 {
     if (connection == NULL)
+    {
+        LOG_ERROR(state, "NwConnectionStart called with NULL connection");
         return -1;
+    }
 
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error)
     {
         PAL_NetworkFrameworkError errorInfo;
         CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
-        LOG(state, "Connection state changed: %d, errorCode: %d", (int)status, errorInfo.errorCode);
+        LOG_INFO(state, "Connection state changed: %d, errorCode: %d", (int)status, errorInfo.errorCode);
         switch (status)
         {
             case nw_connection_state_preparing:
@@ -534,58 +525,60 @@ PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection,
 }
 
 // This wil get TLS details after handshake is finished
-PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength)
+PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* state, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
-    if (meta != NULL)
+
+    if (meta == NULL)
     {
-        sec_protocol_metadata_t secMeta = nw_tls_copy_sec_protocol_metadata(meta);
-
-        const char* alpn = sec_protocol_metadata_get_negotiated_protocol(secMeta);
-        if (alpn != NULL)
-        {
-            strcpy(negotiatedAlpn, alpn);
-            *negotiatedAlpnLength = (int32_t)strlen(alpn);
-        }
-        else
-        {
-            negotiatedAlpn[0] = '\0';
-            *negotiatedAlpnLength = 0;
-        }
-
-        tls_protocol_version_t version = sec_protocol_metadata_get_negotiated_tls_protocol_version(secMeta);
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        switch (version)
-        {
-            case tls_protocol_version_TLSv10:
-                *protocol = PAL_SslProtocol_Tls10;
-                break;
-            case tls_protocol_version_TLSv11:
-                *protocol = PAL_SslProtocol_Tls11;
-                break;
-           case tls_protocol_version_TLSv12:
-                *protocol = PAL_SslProtocol_Tls12;
-                break;
-           case tls_protocol_version_TLSv13:
-                *protocol = PAL_SslProtocol_Tls13;
-                break;
-           case tls_protocol_version_DTLSv10:
-           case tls_protocol_version_DTLSv12:
-           default:
-                *protocol = PAL_SslProtocol_None;
-                break;
-        }
-#pragma clang diagnostic pop
-
-        *pCipherSuiteOut = sec_protocol_metadata_get_negotiated_tls_ciphersuite(secMeta);
-
-        nw_release(meta);
-        sec_release(secMeta);
-        return 0;
+        LOG_ERROR(state, "nw_connection_copy_protocol_metadata returned null");
+        return -1;
     }
 
-    return -1;
+    sec_protocol_metadata_t secMeta = nw_tls_copy_sec_protocol_metadata(meta);
+
+    const char* alpn = sec_protocol_metadata_get_negotiated_protocol(secMeta);
+    if (alpn != NULL)
+    {
+        strcpy(negotiatedAlpn, alpn);
+        *negotiatedAlpnLength = (int32_t)strlen(alpn);
+    }
+    else
+    {
+        negotiatedAlpn[0] = '\0';
+        *negotiatedAlpnLength = 0;
+    }
+
+    tls_protocol_version_t version = sec_protocol_metadata_get_negotiated_tls_protocol_version(secMeta);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    switch (version)
+    {
+        case tls_protocol_version_TLSv10:
+            *protocol = PAL_SslProtocol_Tls10;
+            break;
+        case tls_protocol_version_TLSv11:
+            *protocol = PAL_SslProtocol_Tls11;
+            break;
+        case tls_protocol_version_TLSv12:
+            *protocol = PAL_SslProtocol_Tls12;
+            break;
+        case tls_protocol_version_TLSv13:
+            *protocol = PAL_SslProtocol_Tls13;
+            break;
+        case tls_protocol_version_DTLSv10:
+        case tls_protocol_version_DTLSv12:
+        default:
+            *protocol = PAL_SslProtocol_None;
+            break;
+    }
+#pragma clang diagnostic pop
+
+    *pCipherSuiteOut = sec_protocol_metadata_get_negotiated_tls_ciphersuite(secMeta);
+
+    nw_release(meta);
+    sec_release(secMeta);
+    return 0;
 }
 
 // this is called once to set everything up

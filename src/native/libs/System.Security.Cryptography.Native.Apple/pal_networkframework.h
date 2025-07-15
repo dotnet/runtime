@@ -24,7 +24,6 @@ typedef enum
 {
     PAL_NwStatusUpdates_UnknownError = 0,
     PAL_NwStatusUpdates_FramerStart = 1,
-    PAL_NwStatusUpdates_FramerStop = 2,
     PAL_NwStatusUpdates_HandshakeFinished = 3,
     PAL_NwStatusUpdates_ConnectionFailed = 4,
     PAL_NwStatusUpdates_ConnectionCancelled = 103,
@@ -46,7 +45,7 @@ typedef void (*StatusUpdateCallback)(void* context, PAL_NwStatusUpdates status, 
 typedef int32_t (*WriteCallback)(void* context, uint8_t* buffer, uint64_t length);
 typedef void (*CompletionCallback)(void* context, PAL_NetworkFrameworkError* error);
 typedef void (*ReadCompletionCallback)(void* context, PAL_NetworkFrameworkError* error, const uint8_t* data, size_t length);
-typedef void* (*ChallengeCallback)(void* context, CFArrayRef acceptableIssuers, SecCertificateRef remoteCertificate);
+typedef void* (*ChallengeCallback)(void* context, CFArrayRef acceptableIssuers);
 
 // Initializes global state
 PALEXPORT int32_t AppleCryptoNative_Init(StatusUpdateCallback statusFunc, WriteCallback writeFunc, ChallengeCallback challengeFunc);
@@ -59,7 +58,7 @@ PALEXPORT void AppleCryptoNative_NwConnectionCancel(nw_connection_t connection);
 
 PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, const uint8_t* data, int dataLength, void* context, CompletionCallback completionCallback);
 
-PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength);
+PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* state, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength);
 
 #ifdef __cplusplus
 }

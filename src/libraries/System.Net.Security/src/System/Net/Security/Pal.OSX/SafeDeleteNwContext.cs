@@ -62,6 +62,8 @@ namespace System.Net.Security
         // no more callbacks from the native code
         private readonly GCHandle _thisHandle;
 
+        internal IntPtr StateHandle => _thisHandle.IsAllocated ? GCHandle.ToIntPtr(_thisHandle) : IntPtr.Zero;
+
         private TaskCompletionSource<Exception?> _handshakeCompletionSource = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _transportReadTask;
         private ResettableValueTaskSource _transportReadTcs = new ResettableValueTaskSource()
@@ -106,7 +108,7 @@ namespace System.Net.Security
 
         internal async Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
-            Interop.NetworkFramework.Tls.NwConnectionStart(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle));
+            Interop.NetworkFramework.Tls.NwConnectionStart(ConnectionHandle, StateHandle);
 
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
             {
@@ -186,7 +188,7 @@ namespace System.Net.Security
             using MemoryHandle memoryHandle = buffer.Pin();
             unsafe
             {
-                Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
             }
             try
             {
@@ -299,7 +301,7 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
             unsafe
             {
-                Interop.NetworkFramework.Tls.NwConnectionReceive(ConnectionHandle, GCHandle.ToIntPtr(_thisHandle), 16 * 1024, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.NwConnectionReceive(ConnectionHandle, StateHandle, 16 * 1024, StateHandle, &CompletionCallback);
             }
 
             return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
@@ -582,7 +584,7 @@ namespace System.Net.Security
         }
 
         [UnmanagedCallersOnly]
-        private static IntPtr ChallengeCallback(IntPtr thisHandle, IntPtr acceptableIssuersHandle, IntPtr remoteCertificateHandle)
+        private static IntPtr ChallengeCallback(IntPtr thisHandle, IntPtr acceptableIssuersHandle)
         {
             try
             {
@@ -637,7 +639,7 @@ namespace System.Net.Security
 
                 unsafe
                 {
-                    Interop.NetworkFramework.Tls.NwFramerDeliverInput(_framerHandle, (byte*)memoryHandle.Pointer, buf.Length, GCHandle.ToIntPtr(_thisHandle), &CompletionCallback);
+                    Interop.NetworkFramework.Tls.NwFramerDeliverInput(_framerHandle, (byte*)memoryHandle.Pointer, buf.Length, StateHandle, &CompletionCallback);
                 }
 
                 await valueTask.ConfigureAwait(false);

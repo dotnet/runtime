@@ -24,7 +24,7 @@ internal static partial class Interop
             internal static unsafe partial bool Init(
                 delegate* unmanaged<IntPtr, StatusUpdates, IntPtr, IntPtr, NetworkFrameworkError*, void> statusCallback,
                 delegate* unmanaged<IntPtr, byte*, ulong, void> writeCallback,
-                delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr> challengeCallback);
+                delegate* unmanaged<IntPtr, IntPtr, IntPtr> challengeCallback);
 
             // Create a new connection context
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionCreate", StringMarshalling = StringMarshalling.Utf8)]
@@ -52,7 +52,7 @@ internal static partial class Interop
 
             // gets TLS connection information
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_GetConnectionInfo")]
-            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
+            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr state, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
         }
 
         // Status enumeration for Network Framework TLS operations
@@ -60,7 +60,6 @@ internal static partial class Interop
         {
             UnknownError = 0,
             FramerStart = 1,
-            FramerStop = 2,
             HandshakeFinished = 3,
             ConnectionFailed = 4,
             ConnectionCancelled = 103,
