@@ -747,9 +747,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(true)]
         public void LoadWithDuplicateAttributes(bool allowDuplicates)
         {
-            Pkcs12LoaderLimits limits = new(Pkcs12LoaderLimits.Defaults)
+            Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
+
+#if !NET10_0_OR_GREATER
+            if (allowDuplicates)
             {
+                limits = Pkcs12LoaderLimits.DangerousNoLimits;
+            }
+#endif
+
+            // remove the edit lock
+            limits = new Pkcs12LoaderLimits(limits)
+            {
+#if NET10_0_OR_GREATER
                 AllowDuplicateAttributes = allowDuplicates,
+#endif
                 PreserveCertificateAlias = false,
                 PreserveKeyName = false,
                 PreserveStorageProvider = false,
