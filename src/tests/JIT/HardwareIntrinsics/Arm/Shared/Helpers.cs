@@ -3124,6 +3124,38 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint FusedAddHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2) >> 1);
 
+        public static ulong FusedAddHalving(ulong op1, ulong op2)
+        {
+            ulong sum = op1 + op2;
+            bool carry = sum < op1;
+            return (sum >> 1) + (carry ? 1UL << 63 : 0);
+        }
+        public static long FusedAddHalving(long op1, long op2)
+        {
+            long sum = op1 + op2;
+            bool carry = sum < op1;
+            return (sum >> 1) + (carry ? 1L << 63 : 0);
+        }
+
+        public static long FusedSubtractHalving(long op1, long op2)
+        {
+            ulong uop1 = (ulong)op1;
+            ulong uop2 = (ulong)op2;
+
+            ulong udiff = uop1 - uop2;
+            long sdiff = unchecked((long)udiff);
+
+            return sdiff >> 1;
+        }
+
+        public static ulong FusedSubtractHalving(ulong op1, ulong op2)
+        {
+            ulong diff = op1 - op2;
+            bool overflow = op1 < op2;
+            return (diff >> 1) + (overflow ? 1UL << 63 : 0);
+        }
+
+
         public static uint FusedAddRoundedHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2 + 1) >> 1);
 
         public static uint FusedSubtractHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 - (ulong)op2) >> 1);
