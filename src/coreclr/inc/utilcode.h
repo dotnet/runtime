@@ -101,6 +101,15 @@ inline ResultType ThumbCodeToDataPointer(SourceType pCode)
 
 #endif // TARGET_ARM
 
+#ifdef TARGET_RISCV64
+
+inline bool Is32BitInstruction(WORD opcode)
+{
+    return (opcode & 0b11) == 0b11;
+}
+
+#endif
+
 // Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
 // on ARM, this will mask off the THUMB bit.
 inline TADDR PCODEToPINSTR(PCODE pc)
