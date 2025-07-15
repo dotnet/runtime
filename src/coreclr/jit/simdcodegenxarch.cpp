@@ -88,7 +88,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
         // Store upper 4 bytes
         emit->emitInsStoreInd(INS_movss, EA_4BYTE, treeNode);
     }
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Extract and store upper 4 bytes
         GenTreeStoreInd storeInd = storeIndirForm(TYP_SIMD16, addr, data);
@@ -135,9 +135,9 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
 
     emitter*  emit     = GetEmitter();
     regNumber tgtReg   = treeNode->GetRegNum();
-    bool      useSse41 = compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41);
+    bool      useSse42 = compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42);
 
-    if (useSse41)
+    if (useSse42)
     {
         // Load lower 8 bytes
         emit->emitInsLoadInd(INS_movsd_simd, EA_8BYTE, tgtReg, treeNode);
@@ -164,7 +164,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
 
     treeNode->Addr() = addr;
 
-    if (useSse41)
+    if (useSse42)
     {
         // Load and insert upper 4 bytes, 0x20 inserts to index 2 and 0x8 zeros index 3
         GenTreeIndir indir = indirForm(TYP_SIMD16, addr);
@@ -288,7 +288,7 @@ void CodeGen::genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigne
         // Store upper 4 bytes
         emit->emitIns_S_R(INS_movss, EA_4BYTE, dataReg, lclNum, offset + 8);
     }
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Extract and store upper 4 bytes
         emit->emitIns_S_R_I(INS_extractps, EA_16BYTE, lclNum, offset + 8, dataReg, 2);
@@ -317,7 +317,7 @@ void CodeGen::genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsign
 {
     emitter* emit = GetEmitter();
 
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
         emit->emitIns_R_S(INS_movsd_simd, EA_8BYTE, tgtReg, lclNum, offset);
@@ -524,7 +524,7 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
 {
     assert(genIsValidFloatReg(tgtReg));
 
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // ZMASK:   0b1000 - Preserve element 0, 1, and 2; Zero element 3
         // COUNT_D: 0b11   - Insert into element 3

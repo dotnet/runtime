@@ -3463,7 +3463,7 @@ namespace System.Text.Json.Tests
         [InlineData("""{ "foo" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }, "test": true, "foo2" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }}""", 3)]
         public static void TestGetPropertyCount(string json, int expectedCount)
         {
-            JsonElement element = JsonSerializer.Deserialize<JsonElement>(json);
+            JsonElement element = JsonElement.Parse(json);
             Assert.Equal(expectedCount, element.GetPropertyCount());
         }
 

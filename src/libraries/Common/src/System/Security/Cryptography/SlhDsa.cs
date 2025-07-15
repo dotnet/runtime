@@ -14,10 +14,15 @@ namespace System.Security.Cryptography
     ///   Represents an SLH-DSA key.
     /// </summary>
     /// <remarks>
-    ///   Developers are encouraged to program against the <c>SlhDsa</c> base class,
-    ///   rather than any specific derived class.
-    ///   The derived classes are intended for interop with the underlying system
-    ///   cryptographic libraries.
+    ///   <para>
+    ///     This algorithm is specified by FIPS-205.
+    ///   </para>
+    ///   <para>
+    ///     Developers are encouraged to program against the <see cref="SlhDsa"/> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class SlhDsa : IDisposable
@@ -62,9 +67,6 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
-        /// <summary>
-        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
-        /// </summary>
         private protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(SlhDsa));
 
         /// <summary>
@@ -328,7 +330,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             SignPreHashCore(hash, context, hashAlgorithmOid, destination);
@@ -426,7 +428,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             if (signature.Length != Algorithm.SignatureSizeInBytes)
@@ -556,7 +558,7 @@ namespace System.Security.Cryptography
 
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
             // SPKI does not contain sensitive data.
-            return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
+            return Helpers.EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
         }
 
         /// <summary>
@@ -569,7 +571,11 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while exporting the key.
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         public byte[] ExportPkcs8PrivateKey()
         {
@@ -603,7 +609,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // A private key export with no attributes has at least 8 bytes overhead so a buffer smaller than that cannot hold a
+            // A private key export with no attributes has at least 12 bytes overhead so a buffer smaller than that cannot hold a
             // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
             int MinimumPossiblePkcs8SlhDsaKey =
                 2 + // PrivateKeyInfo Sequence
@@ -976,7 +982,7 @@ namespace System.Security.Cryptography
             try
             {
                 // Skip clear since the data is already encrypted.
-                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
+                return Helpers.EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
             }
             finally
             {
@@ -1027,7 +1033,7 @@ namespace System.Security.Cryptography
             try
             {
                 // Skip clear since the data is already encrypted.
-                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
+                return Helpers.EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
             }
             finally
             {
@@ -1053,7 +1059,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the public key. Its length must be exactly
-        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
+        ///   <see cref="SlhDsaAlgorithm.PublicKeySizeInBytes"/>.
         /// </param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the public key.
@@ -1157,6 +1163,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Generates a new SLH-DSA key for the specified algorithm.
         /// </summary>
+        /// <param name="algorithm">
+        ///   An algorithm identifying what kind of SLH-DSA key to generate.
+        /// </param>
         /// <returns>
         ///   The generated object.
         /// </returns>
@@ -1210,29 +1219,23 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
-            ThrowIfInvalidLength(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
-            unsafe
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(s_knownOids, source, SubjectPublicKeyReader, out int read, out SlhDsa slhDsa);
+            Debug.Assert(read == source.Length);
+            return slhDsa;
+
+            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out SlhDsa slhDsa)
             {
-                fixed (byte* pointer = source)
+                SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+
+                if (key.Length != algorithm.PublicKeySizeInBytes)
                 {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-
-                        SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        ReadOnlySpan<byte> publicKey = spki.SubjectPublicKey.Span;
-
-                        if (publicKey.Length != algorithm.PublicKeySizeInBytes)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
-
-                        return ImportSlhDsaPublicKey(algorithm, spki.SubjectPublicKey.Span);
-                    }
+                    throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
+
+                slhDsa = SlhDsaImplementation.ImportPublicKey(algorithm, key.Span);
             }
         }
 
@@ -1279,7 +1282,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
-            ThrowIfInvalidLength(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             KeyFormatHelper.ReadPkcs8(
@@ -1359,7 +1362,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
-            ThrowIfInvalidLength(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1408,7 +1411,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
-            ThrowIfInvalidLength(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1981,9 +1984,8 @@ namespace System.Security.Cryptography
 
         private static SlhDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
         {
-            SlhDsaAlgorithm algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm) ??
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
+            SlhDsaAlgorithm? algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
+            Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
             if (identifier.Parameters.HasValue)
             {
@@ -1995,93 +1997,12 @@ namespace System.Security.Cryptography
             return algorithm;
         }
 
-        private static void ValidateHashAlgorithm(ReadOnlySpan<byte> hash, ReadOnlySpan<char> hashAlgorithmOid)
-        {
-            int? outputSize = hashAlgorithmOid switch
-            {
-                Oids.Md5 => 128 / 8,
-                Oids.Sha1 => 160 / 8,
-                Oids.Sha256 => 256 / 8,
-                Oids.Sha384 => 384 / 8,
-                Oids.Sha512 => 512 / 8,
-                Oids.Sha3_256 => 256 / 8,
-                Oids.Sha3_384 => 384 / 8,
-                Oids.Sha3_512 => 512 / 8,
-                Oids.Shake128 => 256 / 8,
-                Oids.Shake256 => 512 / 8,
-                _ => null,
-            };
-
-            if (outputSize is not null)
-            {
-                if (hash.Length != outputSize)
-                {
-                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
-                }
-            }
-            else
-            {
-                // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
-                const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
-
-                try
-                {
-                    // Only the format of the OID is validated here. The derived classes can decide to do more if they want to.
-                    writer.WriteObjectIdentifier(hashAlgorithmOid);
-                }
-                catch (ArgumentException ae)
-                {
-                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch, ae);
-                }
-            }
-        }
-
         private static void ThrowIfNotSupported()
         {
             if (!IsSupported)
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
             }
-        }
-
-        private static void ThrowIfInvalidLength(ReadOnlySpan<byte> data)
-        {
-            int bytesRead;
-            try
-            {
-                AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out bytesRead);
-            }
-            catch (AsnContentException ace)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ace);
-            }
-
-            if (bytesRead != data.Length)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-        }
-
-        private static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
-        {
-#if NET10_0_OR_GREATER
-            return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
-#else
-            int length = writer.GetEncodedLength();
-            byte[] rent = CryptoPool.Rent(length);
-
-            try
-            {
-                int written = writer.Encode(rent);
-                Debug.Assert(written == length);
-                return PemEncoding.WriteString(label, rent.AsSpan(0, written));
-            }
-            finally
-            {
-                CryptoPool.Return(rent, clear ? length : 0);
-            }
-#endif
         }
 
         private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);

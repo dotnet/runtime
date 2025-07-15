@@ -165,9 +165,10 @@ namespace System.Net.Http
                     _innerHandler.Send(request, cancellationToken);
                 return response;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
                 taskStatus = TaskStatus.Canceled;
+                exception = ex;
 
                 // we'll report task status in HttpRequestOut.Stop
                 throw;

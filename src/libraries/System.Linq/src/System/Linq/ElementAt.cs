@@ -16,7 +16,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IReadOnlyList<TSource> list)
+            if (source is IList<TSource> list)
             {
                 return list[index];
             }
@@ -113,7 +113,7 @@ namespace System.Linq
 
         private static TSource? TryGetElementAt<TSource>(this IEnumerable<TSource> source, int index, out bool found)
         {
-            if (source is IReadOnlyList<TSource> list)
+            if (source is IList<TSource> list)
             {
                 return (found = (uint)index < (uint)list.Count) ?
                     list[index] :

@@ -48,8 +48,8 @@ namespace System.Security.Cryptography.Tests
         {
             using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
 
-            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
-            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed(
+            Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed());
+            Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed(
                 new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
         }
 
@@ -344,7 +344,7 @@ namespace System.Security.Cryptography.Tests
                 using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
                 Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
 
-                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+                Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed());
                 AssertExtensions.SequenceEqual(MLKemTestData.MLKem512DecapsulationKey, kem.ExportDecapsulationKey());
             });
         }

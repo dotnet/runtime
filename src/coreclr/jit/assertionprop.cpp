@@ -251,17 +251,17 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_X86Base_CompareScalarUnorderedLessThan:
                 case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
                 case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_SSE41_TestC:
-                case NI_SSE41_TestZ:
-                case NI_SSE41_TestNotZAndNotC:
+                case NI_SSE42_TestC:
+                case NI_SSE42_TestZ:
+                case NI_SSE42_TestNotZAndNotC:
                 case NI_AVX_TestC:
                 case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
                 case NI_X86Base_Extract:
-                case NI_SSE41_Extract:
-                case NI_SSE41_X64_Extract:
+                case NI_SSE42_Extract:
+                case NI_SSE42_X64_Extract:
                 case NI_Vector128_ToScalar:
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
@@ -274,12 +274,12 @@ bool IntegralRange::Contains(int64_t value) const
                     }
                     break;
 
-                case NI_BMI1_TrailingZeroCount:
-                case NI_BMI1_X64_TrailingZeroCount:
-                case NI_LZCNT_LeadingZeroCount:
-                case NI_LZCNT_X64_LeadingZeroCount:
-                case NI_POPCNT_PopCount:
-                case NI_POPCNT_X64_PopCount:
+                case NI_AVX2_LeadingZeroCount:
+                case NI_AVX2_TrailingZeroCount:
+                case NI_AVX2_X64_LeadingZeroCount:
+                case NI_AVX2_X64_TrailingZeroCount:
+                case NI_SSE42_PopCount:
+                case NI_SSE42_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
@@ -2665,7 +2665,10 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 if (castFrom != NO_CLASS_HANDLE)
                 {
                     CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
-                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    // Constant prop may fail to propagate compile time class handles, so verify we have
+                    // a handle before invoking the runtime.
+                    if ((castTo != NO_CLASS_HANDLE) &&
+                        info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
                     {
                         // if castObjArg is not simple, we replace the arg with a temp assignment and
                         // continue using that temp - it allows us reliably extract all side effects
@@ -3191,11 +3194,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
     if (lclNumIsCSE(lclNum))
     {
-        return nullptr;
+        // Ignore the CSE flag in Global Assertion Prop for checked bound as those usually
+        // unlock more opportunities for BCE.
+        if (optLocalAssertionProp || !vnStore->IsVNCheckedBound(optConservativeNormalVN(tree)))
+        {
+            return nullptr;
+        }
     }
 
-    GenTree* newTree       = tree;
-    bool     propagateType = false;
+    GenTree* newTree = tree;
 
     // Update 'newTree' with the new value from our table
     // Typically newTree == tree and we are updating the node in place
@@ -3212,14 +3219,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_INT:
 
-            // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
+            // Don't propagate non-nulll non-static handles if we need to report relocs.
+            if (opts.compReloc && curAssertion->op2.HasIconFlag() && (curAssertion->op2.u1.iconVal != 0))
             {
-                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL)
-                {
-                    propagateType = true;
-                }
-                else
+                if (curAssertion->op2.GetIconFlag() != GTF_ICON_STATIC_HDL)
                 {
                     return nullptr;
                 }
@@ -3239,20 +3242,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
+
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL) && !tree->TypeIs(TYP_REF))
                 {
-                    if (tree->TypeIs(TYP_BYREF))
-                    {
-                        // Conservatively don't allow propagation of ICON TYP_REF into BYREF
-                        return nullptr;
-                    }
-                    propagateType = true;
+                    // If the tree is not a TYP_REF, we should not propagate an ICON TYP_REF
+                    // into it, as it may lead to incorrect code generation.
+                    return nullptr;
                 }
 
-                if (propagateType)
-                {
-                    newTree->ChangeType(tree->TypeGet());
-                }
+                newTree->ChangeType(tree->TypeGet());
             }
             else
             {

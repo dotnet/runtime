@@ -69,10 +69,13 @@ namespace System.Net.Http
             // However, we can only do such optimizations if we're not also tracking
             // connections per server, as we use data in the associated data structures
             // to do that tracking.
+            // Additionally, we should not avoid storing connections if keep-alive ping is configured,
+            // as the heartbeat timer is needed for ping functionality.
             bool avoidStoringConnections =
                 settings._maxConnectionsPerServer == int.MaxValue &&
                 (settings._pooledConnectionIdleTimeout == TimeSpan.Zero ||
-                 settings._pooledConnectionLifetime == TimeSpan.Zero);
+                 settings._pooledConnectionLifetime == TimeSpan.Zero) &&
+                settings._keepAlivePingDelay == Timeout.InfiniteTimeSpan;
 
             // Start out with the timer not running, since we have no pools.
             // When it does run, run it with a frequency based on the idle timeout.

@@ -1580,15 +1580,13 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1624,8 +1622,7 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else
@@ -1655,15 +1652,13 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1699,8 +1694,7 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else

@@ -61,6 +61,11 @@ bool CodeGen::genInstrWithConstant(
     {
         case INS_add:
         case INS_sub:
+            if (imm < 0)
+            {
+                imm = -imm;
+                ins = (ins == INS_add) ? INS_sub : INS_add;
+            }
             immFitsInIns = validImmForInstr(ins, (target_ssize_t)imm, flags);
             break;
 
@@ -1616,7 +1621,16 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     else
 #endif
     {
-        addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, (void**)&pAddr);
+        CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+        if (helperFunction.accessType == IAT_VALUE)
+        {
+            addr = helperFunction.addr;
+        }
+        else
+        {
+            assert(helperFunction.accessType == IAT_PVALUE);
+            pAddr = (void**)helperFunction.addr;
+        }
     }
 
     EmitCallParams params;

@@ -19,6 +19,11 @@ extern "C" void Store_Stack_2B();
 extern "C" void Store_Stack_4B();
 #endif // TARGET_APPLE && TARGET_ARM64
 
+#ifndef UNIX_AMD64_ABI
+extern "C" void Load_Stack_Ref();
+extern "C" void Store_Stack_Ref();
+#endif // !UNIX_AMD64_ABI
+
 #ifdef TARGET_AMD64
 
 #ifdef TARGET_WINDOWS
@@ -974,30 +979,48 @@ PCODE FPRegsRoutines[] =
 
 #endif // TARGET_ARM64
 
+#define LOG_COMPUTE_CALL_STUB 0
+
 PCODE CallStubGenerator::GetStackRoutine()
 {
+#if LOG_COMPUTE_CALL_STUB
+    printf("Load_Stack\n");
+#endif
     return m_interpreterToNative ? (PCODE)Load_Stack : (PCODE)Store_Stack;
 }
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
 PCODE CallStubGenerator::GetStackRoutine_1B()
 {
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetStackRoutine_1B\n");
+#endif
     return m_interpreterToNative ? (PCODE)Load_Stack_1B : (PCODE)Store_Stack_1B;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_2B()
 {
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetStackRoutine_2B\n");
+#endif
     return m_interpreterToNative ? (PCODE)Load_Stack_2B : (PCODE)Store_Stack_2B;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_4B()
 {
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetStackRoutine_4B\n");
+#endif
     return m_interpreterToNative ? (PCODE)Load_Stack_4B : (PCODE)Store_Stack_4B;
 }
 #endif // TARGET_APPLE && TARGET_ARM64
 
 PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
 {
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetGPRegRangeRoutine %d %d\n", r1, r2);
+#endif
+
     int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
     return m_interpreterToNative ? GPRegsRoutines[index] : GPRegsStoreRoutines[index];
 }
@@ -1005,13 +1028,27 @@ PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
 #ifndef UNIX_AMD64_ABI
 PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
 {
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetGPRegRefRoutine %d\n", r);
+#endif
     return m_interpreterToNative ? GPRegsRefRoutines[r] : GPRegsRefStoreRoutines[r];
+}
+
+PCODE CallStubGenerator::GetStackRefRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetStackRefRoutine\n");
+#endif
+    return m_interpreterToNative ? (PCODE)Load_Stack_Ref : (PCODE)Store_Stack_Ref;
 }
 
 #endif // UNIX_AMD64_ABI
 
 PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 {
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetFPRegRangeRoutine %d %d\n", x1, x2);
+#endif
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
     return m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
 }
@@ -1063,6 +1100,12 @@ extern "C" void InterpreterStubRet3Float();
 extern "C" void InterpreterStubRet4Float();
 #endif // TARGET_ARM64
 
+#if LOG_COMPUTE_CALL_STUB
+#define INVOKE_FUNCTION_PTR(functionPtrName) printf(#functionPtrName "\n"); return functionPtrName
+#else
+#define INVOKE_FUNCTION_PTR(functionPtrName) return functionPtrName
+#endif
+
 CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallStubGenerator::ReturnType returnType)
 {
     STANDARD_VM_CONTRACT;
@@ -1070,53 +1113,59 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
     switch (returnType)
     {
         case ReturnTypeVoid:
-            return CallJittedMethodRetVoid;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetVoid);
         case ReturnTypeDouble:
-            return CallJittedMethodRetDouble;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetDouble);
         case ReturnTypeI8:
-            return CallJittedMethodRetI8;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
-            return CallJittedMethodRetBuffRCX;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRCX);
         case ReturnTypeBuffArg2:
-            return CallJittedMethodRetBuffRDX;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRDX);
 #else // TARGET_WINDOWS && TARGET_AMD64
         case ReturnTypeBuff:
-            return CallJittedMethodRetBuff;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
 #endif // TARGET_WINDOWS && TARGET_AMD64
 #ifdef UNIX_AMD64_ABI
         case ReturnTypeI8I8:
-            return CallJittedMethodRetI8I8;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI8I8);
         case ReturnTypeI8Double:
-            return CallJittedMethodRetI8Double;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI8Double);
         case ReturnTypeDoubleI8:
-            return CallJittedMethodRetDoubleI8;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetDoubleI8);
         case ReturnTypeDoubleDouble:
-            return CallJittedMethodRetDoubleDouble;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetDoubleDouble);
 #endif // UNIX_AMD64_ABI
 #ifdef TARGET_ARM64
         case ReturnType2I8:
-            return CallJittedMethodRet2I8;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2I8);
         case ReturnType2Double:
-            return CallJittedMethodRet2Double;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Double);
         case ReturnType3Double:
-            return CallJittedMethodRet3Double;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Double);
         case ReturnType4Double:
-            return CallJittedMethodRet4Double;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Double);
         case ReturnTypeFloat:
-            return CallJittedMethodRetFloat;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
         case ReturnType2Float:
-            return CallJittedMethodRet2Float;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Float);
         case ReturnType3Float:
-            return CallJittedMethodRet3Float;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Float);
         case ReturnType4Float:
-            return CallJittedMethodRet4Float;
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Float);
 #endif // TARGET_ARM64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return NULL; // This should never happen, but just in case.
     }
 }
+
+#if LOG_COMPUTE_CALL_STUB
+#define RETURN_TYPE_HANDLER(returnType) printf(#returnType "\n"); return (PCODE)returnType
+#else
+#define RETURN_TYPE_HANDLER(returnType) return (PCODE)returnType
+#endif
 
 PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::ReturnType returnType)
 {
@@ -1125,47 +1174,47 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
     switch (returnType)
     {
         case ReturnTypeVoid:
-            return (PCODE)InterpreterStubRetVoid;
+            RETURN_TYPE_HANDLER(InterpreterStubRetVoid);
         case ReturnTypeDouble:
-            return (PCODE)InterpreterStubRetDouble;
+            RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
         case ReturnTypeI8:
-            return (PCODE)InterpreterStubRetI8;
+            RETURN_TYPE_HANDLER(InterpreterStubRetI8);
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
-            return (PCODE)InterpreterStubRetBuffRCX;
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffRCX);
         case ReturnTypeBuffArg2:
-            return (PCODE)InterpreterStubRetBuffRDX;
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffRDX);
 #else // TARGET_WINDOWS && TARGET_AMD64
         case ReturnTypeBuff:
-            return (PCODE)InterpreterStubRetBuff;
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
 #endif // TARGET_WINDOWS && TARGET_AMD64
 #ifdef UNIX_AMD64_ABI
         case ReturnTypeI8I8:
-            return (PCODE)InterpreterStubRetI8I8;
+            RETURN_TYPE_HANDLER(InterpreterStubRetI8I8);
         case ReturnTypeI8Double:
-            return (PCODE)InterpreterStubRetI8Double;
+            RETURN_TYPE_HANDLER(InterpreterStubRetI8Double);
         case ReturnTypeDoubleI8:
-            return (PCODE)InterpreterStubRetDoubleI8;
+            RETURN_TYPE_HANDLER(InterpreterStubRetDoubleI8);
         case ReturnTypeDoubleDouble:
-            return (PCODE)InterpreterStubRetDoubleDouble;
+            RETURN_TYPE_HANDLER(InterpreterStubRetDoubleDouble);
 #endif // UNIX_AMD64_ABI
 #ifdef TARGET_ARM64
         case ReturnType2I8:
-            return (PCODE)InterpreterStubRet2I8;
+            RETURN_TYPE_HANDLER(InterpreterStubRet2I8);
         case ReturnType2Double:
-            return (PCODE)InterpreterStubRet2Double;
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Double);
         case ReturnType3Double:
-            return (PCODE)InterpreterStubRet3Double;
+            RETURN_TYPE_HANDLER(InterpreterStubRet3Double);
         case ReturnType4Double:
-            return (PCODE)InterpreterStubRet4Double;
+            RETURN_TYPE_HANDLER(InterpreterStubRet4Double);
         case ReturnTypeFloat:
-            return (PCODE)InterpreterStubRetFloat;
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
         case ReturnType2Float:
-            return (PCODE)InterpreterStubRet2Float;
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Float);
         case ReturnType3Float:
-            return (PCODE)InterpreterStubRet3Float;
+            RETURN_TYPE_HANDLER(InterpreterStubRet3Float);
         case ReturnType4Float:
-            return (PCODE)InterpreterStubRet4Float;
+            RETURN_TYPE_HANDLER(InterpreterStubRet4Float);
 #endif // TARGET_ARM64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
@@ -1190,9 +1239,162 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 
     _ASSERTE(pMD != NULL);
 
+#if LOG_COMPUTE_CALL_STUB
+    printf("GenerateCallStub interpreterToNative=%d\n", interpreterToNative ? 1 : 0);
+#endif // LOG_COMPUTE_CALL_STUB
     m_interpreterToNative = interpreterToNative;
 
     MetaSig sig(pMD);
+    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
+    // plus one slot for the target pointer and reallocated to the real size at the end.
+    size_t tempStorageSize = ComputeTempStorageSize(sig);
+    PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
+    memset(pRoutines, 0, tempStorageSize);
+
+    ComputeCallStub(sig, pRoutines);
+
+    LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
+    S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
+    void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
+
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+
+    return pHeader;
+}
+
+struct CachedCallStubKey
+{
+    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
+     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), Invoke(pInvokeFunction), Routines(pRoutines)
+    {
+    }
+
+    bool operator==(const CachedCallStubKey& other) const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke)
+            return false;
+
+        for (int i = 0; i < NumRoutines; i++)
+        {
+            if (Routines[i] != other.Routines[i])
+                return false;
+        }
+        return true;
+    }
+
+    const int32_t HashCode = 0;
+    const int NumRoutines = 0;
+    const int TotalStackSize = 0;
+    const CallStubHeader::InvokeFunctionPtr Invoke = NULL; // Pointer to the invoke function
+    const PCODE *Routines;
+};
+
+struct CachedCallStub
+{
+    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+        HashCode(hashCode),
+        Header(numRoutines, pRoutines, totalStackSize, pInvokeFunction)
+    {
+    }
+
+    int32_t HashCode;
+    CallStubHeader Header;
+
+    CachedCallStubKey GetKey()
+    {
+        return CachedCallStubKey(
+            HashCode,
+            Header.NumRoutines,
+            &Header.Routines[0],
+            Header.TotalStackSize,
+            Header.Invoke);
+    }
+
+    static COUNT_T Hash(const CachedCallStubKey& key)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return key.HashCode;
+    }
+};
+
+static CrstStatic s_callStubCrst;
+
+typedef  PtrSHashTraits<CachedCallStub, CachedCallStubKey> CallStubCacheTraits;
+
+typedef SHash<CallStubCacheTraits> CallStubCacheHash;
+static CallStubCacheHash* s_callStubCache;
+
+void InitCallStubGenerator()
+{
+    STANDARD_VM_CONTRACT;
+
+    s_callStubCrst.Init(CrstCallStubCache);
+    s_callStubCache = new CallStubCacheHash;
+}
+
+CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
+    // plus one slot for the target pointer and reallocated to the real size at the end.
+    size_t tempStorageSize = ComputeTempStorageSize(sig);
+    PCODE *pRoutines = (PCODE*)alloca(ComputeTempStorageSize(sig));
+    memset(pRoutines, 0, tempStorageSize);
+
+    m_interpreterToNative = true; // We always generate the interpreter to native call stub here
+
+    ComputeCallStub(sig, pRoutines);
+
+    xxHash hashState;
+    for (int i = 0; i < m_routineIndex; i++)
+    {
+        hashState.AddPointer((void*)pRoutines[i]);
+    }
+    hashState.Add(m_totalStackSize);
+    hashState.AddPointer((void*)m_pInvokeFunction);
+
+    CachedCallStubKey cachedHeaderKey(
+        hashState.ToHashCode(),
+        m_routineIndex,
+        pRoutines,
+        ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
+        m_pInvokeFunction);
+
+    CrstHolder lockHolder(&s_callStubCrst);
+    CachedCallStub *pCachedHeader = s_callStubCache->Lookup(cachedHeaderKey);
+    if (pCachedHeader != NULL)
+    {
+        // The stub is already cached, return the cached header
+#if LOG_COMPUTE_CALL_STUB
+        printf("CallStubHeader at %p\n", &pCachedHeader->Header);
+#endif // LOG_COMPUTE_CALL_STUB
+        return &pCachedHeader->Header;
+    }
+    else
+    {
+        AllocMemTracker amTracker;
+        // The stub is not cached, create a new header and add it to the cache
+        // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
+        size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
+        void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+        s_callStubCache->Add(pHeader);
+        amTracker.SuppressRelease();
+
+        _ASSERTE(s_callStubCache->Lookup(cachedHeaderKey) == pHeader);
+#if LOG_COMPUTE_CALL_STUB
+        printf("CallStubHeader at %p\n", &pHeader->Header);
+#endif // LOG_COMPUTE_CALL_STUB
+        return &pHeader->Header;
+    }
+};
+
+void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
+{
+
     ArgIterator argIt(&sig);
 
     m_r1 = NoRange; // indicates that there is no active range of general purpose registers
@@ -1203,19 +1405,28 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     m_s2 = 0;
     m_routineIndex = 0;
     m_totalStackSize = 0;
-
+#if LOG_COMPUTE_CALL_STUB
+    printf("ComputeCallStub\n");
+#endif
     int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
 
     if (argIt.HasThis())
     {
+#if LOG_COMPUTE_CALL_STUB
+        printf("HasThis\n");
+#endif
         // The "this" argument register is not enumerated by the arg iterator, so
         // we need to "inject" it here.
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         if (argIt.HasRetBuffArg())
         {
+#if LOG_COMPUTE_CALL_STUB
+            printf("argIt.HasRetBuffArg() on WINDOWS AMD64\n");
+#endif
             // The return buffer on Windows AMD64 is passed in the first argument register, so the
             // "this" argument is be passed in the second argument register.
             m_r1 = 1;
+            m_r2 = 1;
         }
         else
 #endif // TARGET_WINDOWS && TARGET_AMD64
@@ -1225,12 +1436,11 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
         }
     }
 
-    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
-    // plus one slot for the target pointer and reallocated to the real size at the end.
-    PCODE *pRoutines = (PCODE*)alloca(sizeof(CallStubHeader) + ((numArgs + 1) * 2 + 1) * sizeof(PCODE));
-
     if (argIt.HasParamType())
     {
+#if LOG_COMPUTE_CALL_STUB
+            printf("argIt.HasParamType\n");
+#endif
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
@@ -1240,6 +1450,9 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     int ofs;
     while ((ofs = argIt.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
+#if LOG_COMPUTE_CALL_STUB
+        printf("Next argument\n");
+#endif
         ArgLocDesc argLocDesc;
         argIt.GetArgLoc(ofs, &argLocDesc);
 
@@ -1322,26 +1535,17 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
     }
 
-    CallStubHeader::InvokeFunctionPtr pInvokeFunction = NULL;
     ReturnType returnType = GetReturnType(&argIt);
 
     if (m_interpreterToNative)
     {
-        pInvokeFunction = GetInvokeFunctionPtr(returnType);
+        m_pInvokeFunction = GetInvokeFunctionPtr(returnType);
         m_routineIndex++; // Reserve one extra slot for the target method pointer
     }
     else
     {
         pRoutines[m_routineIndex++] = GetInterpreterReturnTypeHandler(returnType);
     }
-    
-    LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
-    S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
-    void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
-
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), pInvokeFunction);
-
-    return pHeader;
 }
 
 // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
@@ -1378,6 +1582,9 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
 
     if (argLocDesc.m_cGenReg != 0)
     {
+#if LOG_COMPUTE_CALL_STUB
+        printf("m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg);
+#endif // LOG_COMPUTE_CALL_STUB
         if (m_r1 == NoRange) // No active range yet
         {
             // Start a new range
@@ -1401,6 +1608,9 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
 
     if (argLocDesc.m_cFloatReg != 0)
     {
+#if LOG_COMPUTE_CALL_STUB
+        printf("m_cFloatReg=%d\n", (int)argLocDesc.m_cFloatReg);
+#endif // LOG_COMPUTE_CALL_STUB
         if (m_x1 == NoRange) // No active range yet
         {
             // Start a new range
@@ -1423,13 +1633,16 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
 
     if (argLocDesc.m_byteStackSize != 0)
     {
+#if LOG_COMPUTE_CALL_STUB
+        printf("m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize);
+#endif // LOG_COMPUTE_CALL_STUB
         if (m_s1 == NoRange) // No active range yet
         {
             // Start a new range
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8))
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
         {
             // Extend an existing range, but only if the argument is at least pointer size large.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
@@ -1478,10 +1691,20 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     // we always process single argument passed by reference using single routine.
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
-        _ASSERTE(argLocDesc.m_cGenReg == 1);
-        pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
-        pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
-        m_r1 = NoRange;
+        if (argLocDesc.m_cGenReg == 1)
+        {
+            pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
+            pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
+            m_r1 = NoRange;
+        }
+        else
+        {
+            _ASSERTE(argLocDesc.m_byteStackIndex != -1);
+            pRoutines[m_routineIndex++] = GetStackRefRoutine();
+            pRoutines[m_routineIndex++] = ((int64_t)pArgIt->GetArgSize() << 32) | argLocDesc.m_byteStackIndex;
+            m_totalStackSize += argLocDesc.m_byteStackSize;
+            m_s1 = NoRange;
+        }
     }
 #endif // UNIX_AMD64_ABI
 }

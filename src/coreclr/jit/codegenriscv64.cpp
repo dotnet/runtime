@@ -981,7 +981,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
 
             // Compute the address of the FP constant and load the data.
-            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
+            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd);
         }
         break;
 
@@ -1344,7 +1344,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         }
         else
         {
-            GetEmitter()->emitIns_R_R_I(attr == EA_4BYTE ? INS_addiw : INS_addi, attr, retReg, op1->GetRegNum(), 0);
+            GetEmitter()->emitIns_R_R(attr == EA_4BYTE ? INS_sext_w : INS_mov, attr, retReg, op1->GetRegNum());
         }
     }
 }
@@ -1418,7 +1418,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             regCnt = internalRegisters.Extract(tree);
             if (regCnt != targetReg)
             {
-                emit->emitIns_R_R_I(INS_ori, easz, regCnt, targetReg, 0);
+                emit->emitIns_R_R(INS_mov, easz, regCnt, targetReg);
             }
         }
 
@@ -1592,7 +1592,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Overflow, set regCnt to lowest possible value
         emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, regCnt, REG_R0);
 
         regNumber rPageSize = internalRegisters.GetSingle(tree);
 
@@ -1600,7 +1600,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
         regSet.verifyRegUsed(rPageSize);
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_SPBASE, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, tempReg, REG_SPBASE);
 
         // tickle the page - this triggers a page fault when on the guard page
         emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, tempReg, 0);
@@ -1611,7 +1611,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
         // we're going to assume the worst and probe.
         // Move the final value to SP
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, regCnt, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
     }
 
 ALLOC_DONE:
@@ -1639,7 +1639,7 @@ ALLOC_DONE:
     else // stackAdjustment == 0
     {
         // Move the final value of SP to targetReg
-        emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, targetReg, REG_SPBASE, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_SPBASE);
     }
 
 BAILOUT:
@@ -2209,8 +2209,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    GetEmitter()->emitIns_R_C(INS_jal, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
-                              compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              compiler->eeFindJitDataOffs(jmpTabBase));
     genProduceReg(treeNode);
 }
 
@@ -2712,29 +2712,30 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
     EmitCallParams params;
 
-    void* pAddr = nullptr;
-    params.addr = compiler->compGetHelperFtn(CORINFO_HELP_STOP_FOR_GC, &pAddr);
-
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn(CORINFO_HELP_STOP_FOR_GC);
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        // If the helper is a value, we need to use the address of the helper.
+        params.addr     = helperFunction.addr;
+        params.callType = EC_FUNC_TOKEN;
+    }
+    else
+    {
+        params.addr     = nullptr;
         params.callType = EC_INDIR_R;
         params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
 
         if (compiler->opts.compReloc)
         {
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)pAddr);
+            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)helperFunction.addr);
         }
         else
         {
             // TODO-RISCV64: maybe optimize further.
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, (ssize_t)pAddr);
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, (ssize_t)helperFunction.addr);
             GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, 0);
         }
         regSet.verifyRegUsed(params.ireg);
-    }
-    else
-    {
-        params.callType = EC_FUNC_TOKEN;
     }
 
     // TODO-RISCV64: can optimize further !!!
@@ -3128,65 +3129,38 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     if (varTypeIsFloating(op1Type))
     {
-        bool      isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-        regNumber regOp1      = op1->GetRegNum();
-        regNumber regOp2      = op2->GetRegNum();
+        assert(!op2->isContainedIntOrIImmed());
+        assert(op1Type == op2Type);
+        genTreeOps oper = tree->OperGet();
 
+        bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
         if (isUnordered)
         {
-            if (tree->OperIs(GT_LT))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
-            }
-            else if (tree->OperIs(GT_LE))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
-            }
-            else if (tree->OperIs(GT_NE))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-            }
-            else if (tree->OperIs(GT_GT))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1, regOp2);
-            }
-            else if (tree->OperIs(GT_GE))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1, regOp2);
-            }
-            else
-            {
-                unreached();
-            }
-            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
+            oper = GenTree::ReverseRelop(oper);
         }
-        else
+        if (oper == GT_GT || oper == GT_GE)
         {
-            if (tree->OperIs(GT_LT))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1, regOp2);
-            }
-            else if (tree->OperIs(GT_LE))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1, regOp2);
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-            }
-            else if (tree->OperIs(GT_GT))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
-            }
-            else if (tree->OperIs(GT_GE))
-            {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
-            }
-            else
-            {
-                unreached();
-            }
+            oper = GenTree::SwapRelop(oper);
+            std::swap(op1, op2);
         }
+        instruction instr = INS_none;
+        switch (oper)
+        {
+            case GT_LT:
+                instr = (cmpSize == EA_4BYTE) ? INS_flt_s : INS_flt_d;
+                break;
+            case GT_LE:
+                instr = (cmpSize == EA_4BYTE) ? INS_fle_s : INS_fle_d;
+                break;
+            case GT_EQ:
+                instr = (cmpSize == EA_4BYTE) ? INS_feq_s : INS_feq_d;
+                break;
+            default:
+                unreached();
+        }
+        emit->emitIns_R_R_R(instr, cmpSize, targetReg, op1->GetRegNum(), op2->GetRegNum());
+        if (isUnordered)
+            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
     }
     else
     {
@@ -3614,15 +3588,23 @@ static void emitLoadConstAtAddr(emitter* emit, regNumber dstRegister, ssize_t im
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    void* pAddr = nullptr;
-
     EmitCallParams params;
-    params.callType   = EC_FUNC_TOKEN;
-    params.addr       = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+    params.callType = EC_FUNC_TOKEN;
+
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        params.addr = (void*)helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         // This is call to a runtime helper.
         // lui reg, pAddr     #NOTE: this maybe multi-instructions.
         // ld reg, reg
@@ -5872,9 +5854,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                    void* pAddr = nullptr;
-                    params.addr = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-                    assert(pAddr == nullptr);
+                    CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                    params.addr                       = helperLookup.addr;
+                    assert(helperLookup.accessType == IAT_VALUE);
                 }
                 else
                 {
@@ -6062,18 +6044,18 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 }
                 break;
             case GenIntCastDesc::SIGN_EXTEND_INT:
-                emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
+                emit->emitIns_R_R(INS_sext_w, EA_4BYTE, dstReg, srcReg);
                 break;
 
             default:
                 assert(desc.ExtendKind() == GenIntCastDesc::COPY);
                 if (srcType == TYP_INT)
                 {
-                    emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
+                    emit->emitIns_R_R(INS_sext_w, EA_4BYTE, dstReg, srcReg);
                 }
                 else
                 {
-                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstReg, srcReg, 0);
+                    emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dstReg, srcReg);
                 }
                 break;
         }
@@ -6318,7 +6300,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             {
                 if (lea->GetRegNum() != memBase->GetRegNum())
                 {
-                    emit->emitIns_R_R_I(INS_ori, size, lea->GetRegNum(), memBase->GetRegNum(), 0);
+                    emit->emitIns_R_R(INS_mov, size, lea->GetRegNum(), memBase->GetRegNum());
                 }
             }
         }
@@ -6495,9 +6477,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         // The code to throw the exception will be generated inline, and
         //  we will jump around it in the normal non-exception case.
 
-        void*          pAddr = nullptr;
         EmitCallParams params;
-        params.addr = compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)), &pAddr);
 
         // maybe optimize
         // ins = (instruction)(ins^((ins != INS_beq)+(ins != INS_bne)));
@@ -6522,8 +6502,29 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             ins = ins == INS_beq ? INS_bne : INS_beq;
         }
 
-        if (params.addr == nullptr)
+        CORINFO_CONST_LOOKUP helperFunction =
+            compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
+        if (helperFunction.accessType == IAT_VALUE)
         {
+            // INS_OPTS_C
+            // If the helper is a value, we need to use the address of the helper.
+            params.addr     = helperFunction.addr;
+            params.callType = EC_FUNC_TOKEN;
+
+            ssize_t imm = 9 << 2;
+            if (compiler->opts.compReloc)
+            {
+                imm = 3 << 2;
+            }
+
+            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+        }
+        else
+        {
+            params.addr = nullptr;
+            assert(helperFunction.accessType == IAT_PVALUE);
+            void* pAddr = helperFunction.addr;
+
             params.callType = EC_INDIR_R;
             params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
             if (compiler->opts.compReloc)
@@ -6541,18 +6542,6 @@ void CodeGen::genJumpToThrowHlpBlk_la(
                 emitLoadConstAtAddr(GetEmitter(), params.ireg, (ssize_t)pAddr);
             }
             regSet.verifyRegUsed(params.ireg);
-        }
-        else
-        { // INS_OPTS_C
-            params.callType = EC_FUNC_TOKEN;
-
-            ssize_t imm = 9 << 2;
-            if (compiler->opts.compReloc)
-            {
-                imm = 3 << 2;
-            }
-
-            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
 
         BasicBlock* skipLabel = genCreateTempLabel();

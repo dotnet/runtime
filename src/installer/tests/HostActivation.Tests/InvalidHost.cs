@@ -27,7 +27,7 @@ namespace HostActivation.Tests
             CommandResult result = Command.Create(sharedTestState.UnboundAppHost)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(expectedToFail: true);
+                .Execute();
 
             result.Should().Fail()
                 .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.")
@@ -70,7 +70,7 @@ namespace HostActivation.Tests
             CommandResult result = Command.Create(sharedTestState.RenamedDotNet)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(expectedToFail: true);
+                .Execute();
 
             result.Should().Fail()
                 .And.HaveStdErrContaining($"Error: cannot execute dotnet when renamed to {Path.GetFileNameWithoutExtension(sharedTestState.RenamedDotNet)}")

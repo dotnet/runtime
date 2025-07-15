@@ -197,7 +197,7 @@ namespace System.Collections.Generic
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="collection"/> is <see langword="null"/>.</exception>
         public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer) :
-            this((collection as IReadOnlyCollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
+            this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
         {
             ArgumentNullException.ThrowIfNull(collection);
 

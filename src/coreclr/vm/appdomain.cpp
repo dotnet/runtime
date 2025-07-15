@@ -1675,12 +1675,12 @@ void AppDomain::Init()
     //   involves other locks that arent part of this special deadlock-breaking semantics, then
     //   we continue to block.
     //
-    m_JITLock.Init(CrstJit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
-    m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
-    m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
-    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_JITLock.Init(CrstJit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL));
+    m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL));
+    m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY));
+    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY));
     m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
-    m_FileLoadLock.Init(CrstAssemblyLoader, CrstFlags(CRST_HOST_BREAKABLE), TRUE);
+    m_FileLoadLock.Init(CrstAssemblyLoader, CrstFlags(CRST_DEFAULT));
     m_DomainCacheCrst.Init(CrstAppDomainCache);
 
     // Has to switch thread to GC_NOTRIGGER while being held
@@ -2868,7 +2868,7 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
         {
             // Gobble all exceptions.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         if (!fSuccess)
         {
@@ -3286,8 +3286,9 @@ PEAssembly * AppDomain::BindAssemblySpec(
                 }
             }
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     // Now, if it's a cacheable bind we need to re-fetch the result from the cache, as we may have been racing with another
     // thread to store our result.  Note that we may throw from here, if there is a cached exception.
@@ -3390,7 +3391,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
@@ -3416,7 +3417,7 @@ void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
+    EX_END_CATCH  // Swallow any errors.
 }
 
 void AppDomain::RaiseExitProcessEvent()
@@ -3429,7 +3430,7 @@ void AppDomain::RaiseExitProcessEvent()
     STATIC_CONTRACT_GC_TRIGGERS;
 
     // Only finalizer thread during shutdown can call this function.
-    _ASSERTE ((g_fEEShutDown&ShutDown_Finalize1) && GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE (g_fEEShutDown && FinalizerThread::IsCurrentThreadFinalizer());
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 

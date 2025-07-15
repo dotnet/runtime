@@ -42,7 +42,7 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        private static readonly SearchValues<char> s_reservedToNameChars = SearchValues.Create("\t\r\n=;,");
+        private static readonly SearchValues<char> s_reservedToNameChars = SearchValues.Create("\t\0\r\n=;,");
 
         private static readonly SearchValues<char> s_domainChars =
             SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
@@ -384,7 +384,7 @@ namespace System.Net
             }
 
             // Check the value
-            if (m_value == null ||
+            if (m_value == null || m_value.ContainsAny('\r', '\n', '\0') ||
                 (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().ContainsAny(';', ',')))
             {
                 throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value ?? "<null>"));

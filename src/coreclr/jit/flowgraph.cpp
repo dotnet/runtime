@@ -582,7 +582,7 @@ PhaseStatus Compiler::fgImport()
     }
 
     // Now that we've made it through the importer, we know the IL was valid.
-    // If we synthesized profile data and though it should be consistent,
+    // If we synthesized profile data and thought it should be consistent,
     // but it wasn't, assert now.
     //
     if (fgPgoSynthesized && fgPgoConsistent)
@@ -2997,7 +2997,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 case BBJ_CALLFINALLY:
                 {
                     noway_assert(predBlock->TargetIs(block));
-                    fgRedirectTargetEdge(predBlock, newHead);
+                    fgRedirectEdge(predBlock->TargetEdgeRef(), newHead);
                     incomingWeight += predBlock->bbWeight;
                     break;
                 }
@@ -3005,8 +3005,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 default:
                     // The only way into the handler is via a BBJ_CALLFINALLY (to a finally handler), or
                     // via exception handling.
-                    noway_assert(false);
-                    break;
+                    unreached();
             }
         }
     }

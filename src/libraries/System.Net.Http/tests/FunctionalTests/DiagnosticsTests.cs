@@ -831,6 +831,62 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo()
+        {
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync)
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                var cts = new CancellationTokenSource();
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        Version version = Version.Parse(useVersion);
+                        if (version != HttpVersion30)
+                        {
+                            uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        }
+
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+
+                        Assert.NotNull(activity);
+                        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+                        ActivityAssert.HasTag(activity, "error.type", (string errorType) => errorType == typeof(TaskCanceledException).FullName || errorType == typeof(OperationCanceledException).FullName);
+                        ActivityEvent evt = activity.Events.Single(e => e.Name == "exception");
+                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                        Assert.Contains("exception.type", tags.Keys);
+                        Assert.Contains("exception.message", tags.Keys);
+                        Assert.Contains("exception.stacktrace", tags.Keys);
+                        Assert.True((string)tags["exception.type"] == typeof(TaskCanceledException).FullName || (string)tags["exception.type"] == typeof(OperationCanceledException).FullName);
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            cts.Cancel();
+                            await activityStopTcs.Task;
+                        });
+                    });
+
+                Assert.NotNull(activity);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage()
         {
             await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
@@ -1534,7 +1590,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task Http3_WaitForConnection_RecordedWhenWaitingForStream()
         {
             if (UseVersion != HttpVersion30 || !TestAsync)
@@ -1542,67 +1598,71 @@ namespace System.Net.Http.Functional.Tests
                 throw new SkipTestException("This test is specific to async HTTP/3 runs.");
             }
 
-            using Http3LoopbackServer server =  CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = 1 });
-
-            TaskCompletionSource stream1Created = new();
-            TaskCompletionSource allRequestsWaiting = new();
-
-            Task serverTask = Task.Run(async () =>
+            await RemoteExecutor.Invoke(RunTest).DisposeAsync();
+            static async Task RunTest()
             {
-                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                Http3LoopbackStream stream1 = await connection.AcceptRequestStreamAsync();
-                stream1Created.SetResult();
+                using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = 1 });
 
-                await allRequestsWaiting.Task;
-                await stream1.HandleRequestAsync();
-                await stream1.DisposeAsync();
+                TaskCompletionSource stream1Created = new();
+                TaskCompletionSource allRequestsWaiting = new();
 
-                Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
-                await stream2.HandleRequestAsync();
-                await stream2.DisposeAsync();
-
-                Http3LoopbackStream stream3 = await connection.AcceptRequestStreamAsync();
-                await stream3.HandleRequestAsync();
-                await stream3.DisposeAsync();
-            });
-
-            Task clientTask = Task.Run(async () =>
-            {
-                using Activity parentActivity = new Activity("parent").Start();
-                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                Task serverTask = Task.Run(async () =>
                 {
-                    ExpectedParent = parentActivity
-                };
-                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                    await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                    Http3LoopbackStream stream1 = await connection.AcceptRequestStreamAsync();
+                    stream1Created.SetResult();
+
+                    await allRequestsWaiting.Task;
+                    await stream1.HandleRequestAsync();
+                    await stream1.DisposeAsync();
+
+                    Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                    await stream2.HandleRequestAsync();
+                    await stream2.DisposeAsync();
+
+                    Http3LoopbackStream stream3 = await connection.AcceptRequestStreamAsync();
+                    await stream3.HandleRequestAsync();
+                    await stream3.DisposeAsync();
+                });
+
+                Task clientTask = Task.Run(async () =>
                 {
-                    VerifyParent = false
-                };
-                waitForConnectionRecorder.OnStarted = a =>
-                {
-                    if (waitForConnectionRecorder.Started == 3)
+                    using Activity parentActivity = new Activity("parent").Start();
+                    using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
                     {
-                        allRequestsWaiting.SetResult();
-                    }
-                };
+                        ExpectedParent = parentActivity
+                    };
+                    using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                    {
+                        VerifyParent = false
+                    };
+                    waitForConnectionRecorder.OnStarted = a =>
+                    {
+                        if (waitForConnectionRecorder.Started == 3)
+                        {
+                            allRequestsWaiting.SetResult();
+                        }
+                    };
 
-                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
-                using HttpClient client = new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true))
-                {
-                    DefaultRequestVersion = HttpVersion30,
-                    DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
-                };
+                    SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                    using HttpClient client = new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true))
+                    {
+                        DefaultRequestVersion = HttpVersion30,
+                        DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
 
-                Task<HttpResponseMessage> request1Task = client.GetAsync(server.Address);
-                await stream1Created.Task;
+                    Task<HttpResponseMessage> request1Task = client.GetAsync(server.Address);
+                    await stream1Created.Task;
 
-                Task<HttpResponseMessage> request2Task = client.GetAsync(server.Address);
-                Task<HttpResponseMessage> request3Task = client.GetAsync(server.Address);
+                    Task<HttpResponseMessage> request2Task = client.GetAsync(server.Address);
+                    Task<HttpResponseMessage> request3Task = client.GetAsync(server.Address);
 
-                await new Task[] { request1Task, request2Task, request3Task }.WhenAllOrAnyFailed(30_000);
-                Assert.Equal(3, waitForConnectionRecorder.Stopped);
-            });
+                    await new Task[] { request1Task, request2Task, request3Task }.WhenAllOrAnyFailed(30_000);
+                    Assert.Equal(3, waitForConnectionRecorder.Stopped);
+                });
 
-            await new Task[] { serverTask, clientTask }.WhenAllOrAnyFailed(30_000);
+                await new Task[] { serverTask, clientTask }.WhenAllOrAnyFailed(30_000);
+            }
         }
 
         private static T GetProperty<T>(object obj, string propertyName)
