@@ -4963,7 +4963,7 @@ void DacDbiInterfaceImpl::Hijack(
     // Setup context for hijack
     //
     T_CONTEXT ctx;
-#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS)
+#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS) && (defined(DTCONTEXT_IS_AMD64) || defined(DTCONTEXT_IS_ARM64))
     // If the host or target is not Windows, then we can assume that the DT_CONTEXT
     // is the same as the T_CONTEXT, except for the XSTATE registers.
     static_assert(sizeof(DT_CONTEXT) == offsetof(T_CONTEXT, XStateFeaturesMask), "DT_CONTEXT does not include the XSTATE registers");
