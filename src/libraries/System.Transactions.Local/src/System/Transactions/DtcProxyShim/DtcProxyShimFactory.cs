@@ -56,7 +56,8 @@ internal sealed partial class DtcProxyShimFactory
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
     [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
-    private static unsafe void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser) => Marshal.ThrowExceptionForHR(DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser));
+    private static unsafe void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser)
+        => Marshal.ThrowExceptionForHR(Interop.Xolehlp.DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser));
 
     public void ConnectToProxy(
         string? nodeName,
@@ -169,7 +170,7 @@ internal sealed partial class DtcProxyShimFactory
 
     public void BeginTransaction(
         uint timeout,
-        OletxTransactionIsolationLevel isolationLevel,
+        Interop.Xolehlp.OletxTransactionIsolationLevel isolationLevel,
         object? managedIdentifier,
         out Guid transactionIdentifier,
         out TransactionShim transactionShim)
@@ -181,9 +182,9 @@ internal sealed partial class DtcProxyShimFactory
             var xactopt = new Xactopt(timeout, string.Empty);
             options.SetOptions(xactopt);
 
-            _transactionDispenser.BeginTransaction(IntPtr.Zero, isolationLevel, OletxTransactionIsoFlags.ISOFLAG_NONE, options, out ITransaction? pTx);
+            _transactionDispenser.BeginTransaction(IntPtr.Zero, isolationLevel, Interop.Xolehlp.OletxTransactionIsoFlags.ISOFLAG_NONE, options, out ITransaction? pTx);
 
-            SetupTransaction(pTx, managedIdentifier, out transactionIdentifier, out OletxTransactionIsolationLevel localIsoLevel, out transactionShim);
+            SetupTransaction(pTx, managedIdentifier, out transactionIdentifier, out Interop.Xolehlp.OletxTransactionIsolationLevel localIsoLevel, out transactionShim);
         }
         finally
         {
@@ -220,7 +221,7 @@ internal sealed partial class DtcProxyShimFactory
         byte[] cookie,
         OutcomeEnlistment managedIdentifier,
         out Guid transactionIdentifier,
-        out OletxTransactionIsolationLevel isolationLevel,
+        out Interop.Xolehlp.OletxTransactionIsolationLevel isolationLevel,
         out TransactionShim transactionShim)
     {
         var txImport = (ITransactionImport)_transactionDispenser;
@@ -233,7 +234,7 @@ internal sealed partial class DtcProxyShimFactory
         byte[] propagationToken,
         OutcomeEnlistment managedIdentifier,
         out Guid transactionIdentifier,
-        out OletxTransactionIsolationLevel isolationLevel,
+        out Interop.Xolehlp.OletxTransactionIsolationLevel isolationLevel,
         out TransactionShim transactionShim)
     {
         ITransactionReceiver receiver = GetCachedReceiver();
@@ -257,7 +258,7 @@ internal sealed partial class DtcProxyShimFactory
         IDtcTransaction transactionNative,
         OutcomeEnlistment managedIdentifier,
         out Guid transactionIdentifier,
-        out OletxTransactionIsolationLevel isolationLevel,
+        out Interop.Xolehlp.OletxTransactionIsolationLevel isolationLevel,
         out TransactionShim transactionShim)
     {
         var cloner = (ITransactionCloner)TransactionInterop.GetITransactionFromIDtcTransaction(transactionNative);
@@ -274,14 +275,14 @@ internal sealed partial class DtcProxyShimFactory
 
     public void GetNotification(
         out object? managedIdentifier,
-        out ShimNotificationType shimNotificationType,
+        out Interop.Xolehlp.ShimNotificationType shimNotificationType,
         out bool isSinglePhase,
         out bool abortingHint,
         out bool releaseLock,
         out byte[]? prepareInfo)
     {
         managedIdentifier = null;
-        shimNotificationType = ShimNotificationType.None;
+        shimNotificationType = Interop.Xolehlp.ShimNotificationType.None;
         isSinglePhase = false;
         abortingHint = false;
         releaseLock = false;
@@ -305,7 +306,7 @@ internal sealed partial class DtcProxyShimFactory
         // other notifications from being processed while we are processing TMDown.  But we don't want
         // to force 3 roundtrips to this NotificationShimFactory for all notifications ( 1 to grab the lock,
         // one to get the notification, and one to release the lock).
-        if (!entryRemoved || shimNotificationType != ShimNotificationType.ResourceManagerTmDownNotify)
+        if (!entryRemoved || shimNotificationType != Interop.Xolehlp.ShimNotificationType.ResourceManagerTmDownNotify)
         {
             Monitor.Exit(_notificationLock);
         }
@@ -319,7 +320,7 @@ internal sealed partial class DtcProxyShimFactory
         ITransaction transaction,
         object? managedIdentifier,
         out Guid pTransactionIdentifier,
-        out OletxTransactionIsolationLevel pIsolationLevel,
+        out Interop.Xolehlp.OletxTransactionIsolationLevel pIsolationLevel,
         out TransactionShim ppTransactionShim)
     {
         var transactionNotifyShim = new TransactionNotifyShim(this, managedIdentifier);
