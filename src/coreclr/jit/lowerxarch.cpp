@@ -9262,8 +9262,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
             // requirement.
 
-            return (supportsSIMDLoad && ((!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16)) ||
-                                         comp->opts.Tier0OptimizationEnabled()));
+            return (supportsSIMDLoad && (comp->opts.OptimizationEnabled() ||
+                                         (!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16))));
         }
 
         case NI_X86Base_LoadScalarVector128:
@@ -9436,7 +9436,7 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
     GenTreeHWIntrinsic* broadcastNode =
         comp->gtNewSimdHWIntrinsicNode(simdType, constScalar, broadcastName, simdBaseJitType, genTypeSize(simdType));
 
-    BlockRange().InsertBefore(childNode, constScalar, broadcastNode);
+    BlockRange().InsertBefore(parentNode, constScalar, broadcastNode);
     BlockRange().Remove(childNode);
 
     GenTree** use      = nullptr;
