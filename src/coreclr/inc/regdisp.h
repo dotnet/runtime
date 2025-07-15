@@ -698,7 +698,7 @@ inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
     };
 
     return (PTR_size_t)(PTR_BYTE(regs) + OFFSET_OF_REGISTERS[regNum]);
-#elif defined(TARGET_AMD64) && defined(TARGET_UNIX)
+#elif defined(TARGET_AMD64) && defined(TARGET_UNIX) && defined(HOST_UNIX)
     _ASSERTE(regNum < 32);
     if (regNum < 16)
     {
