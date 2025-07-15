@@ -704,7 +704,7 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
         *(ppCurrentRax + iReg) = &regdisp.pCurrentContext->Rax + iReg;
         *(ppCallerRax  + iReg) = &regdisp.pCallerContext ->Rax + iReg;
     }
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) && defined(HOST_UNIX)
     ULONG64 **ppVolatileReg = &regdisp.volatileCurrContextPointers.R16;
     for (iReg = 0; iReg < 16; iReg++)
     {
