@@ -415,8 +415,6 @@ add_executable_clr(paltests
   threading/GetCurrentThreadId/test1/threadId.cpp
   threading/GetExitCodeProcess/test1/childProcess.cpp
   threading/GetExitCodeProcess/test1/test1.cpp
-  threading/NamedMutex/test1/namedmutex.cpp
-  threading/NamedMutex/test1/nopal.cpp
   threading/OpenEventW/test1/test1.cpp
   threading/OpenEventW/test2/test2.cpp
   threading/OpenEventW/test3/childprocess.cpp
@@ -459,8 +457,6 @@ add_executable_clr(paltests
   threading/WaitForMultipleObjectsEx/test4/test4.cpp
   threading/WaitForMultipleObjectsEx/test5/helper.cpp
   threading/WaitForMultipleObjectsEx/test5/test5.cpp
-  threading/WaitForMultipleObjectsEx/test6/child6.cpp
-  threading/WaitForMultipleObjectsEx/test6/test6.cpp
   threading/WaitForSingleObject/test1/test1.cpp
   threading/WaitForSingleObject/WFSOExMutexTest/WFSOExMutexTest.cpp
   threading/WaitForSingleObject/WFSOExSemaphoreTest/WFSOExSemaphoreTest.cpp

@@ -23,6 +23,7 @@ Abstract:
 #include "pal/cruntime.h"
 #include "pal/file.h"
 #include "pal/environ.h"
+#include <static_assert.h>
 
 /* standard headers */
 
