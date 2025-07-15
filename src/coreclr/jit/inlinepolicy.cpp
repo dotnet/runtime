@@ -1377,8 +1377,16 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             }
             else if (m_RootCompiler->fgHaveSufficientProfileWeights())
             {
-                JITDUMP("Root has sufficient profile\n");
-                maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILRoot());
+                // For now we want to inline somewhat less aggressively in Tier1+Instr. We can reconsider
+                // when we have inlinee instrumentation. Otherwise we may lose profile data for key inlinees.
+                //
+                const bool isTier1Instr = m_RootCompiler->opts.IsInstrumentedAndOptimized();
+                JITDUMP("Root has sufficient profile%s\n",
+                        isTier1Instr ? "; but we are not boosting max IL size for Tier1+Instr" : "");
+                if (!isTier1Instr)
+                {
+                    maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILRoot());
+                }
             }
             else
             {

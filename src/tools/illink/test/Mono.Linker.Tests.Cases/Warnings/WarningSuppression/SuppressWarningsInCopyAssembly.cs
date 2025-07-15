@@ -8,7 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 #if !NET
-	[Reference ("System.Core.dll")]
+    [Reference("System.Core.dll")]
 #endif
     [SetupLinkerAction("copy", "test")]
     [SkipKeptItemsValidation]

@@ -670,38 +670,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand..
                         switch (intrinEmbMask.id)
                         {
-                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
-                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
-                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
-                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
-                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
-                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
-                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
-                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
-                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
-                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
-                            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
-                            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
-                            case NI_Sve_LoadVectorNonFaulting:
-                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
-                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
-                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
-                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
-                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
-                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
-                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
-                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
-                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
-                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
-                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
-                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
-                            {
-
-                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                            opt);
-                                break;
-                            }
-
                             case NI_Sve_And_Predicates:
                             case NI_Sve_BitwiseClear_Predicates:
                             case NI_Sve_Or_Predicates:
@@ -2175,14 +2143,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
             {
-                if (intrin.numOperands == 2)
+                if (intrin.numOperands == 3)
                 {
-                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR
-                    // register.
-                    assert(op2Reg != REG_NA);
-                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op2Reg, opt);
+                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR register.
+                    assert(op3Reg != REG_NA);
+                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
                 }
-                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
+
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                 break;
             }
 
@@ -2743,6 +2711,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Always use the lane size D. It's a bitwise operation so this is fine for all integer vector types.
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
+
+            case NI_Sve2_SubtractWideningEven:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublb : INS_sve_ssublb;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve2_SubtractWideningOdd:
+            {
+                var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();
+                var_types op1Type    = node->AsHWIntrinsic()->GetAuxiliaryType();
+                if (returnType != op1Type)
+                {
+                    ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublt : INS_sve_ssublt;
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
 
             default:
                 unreached();
