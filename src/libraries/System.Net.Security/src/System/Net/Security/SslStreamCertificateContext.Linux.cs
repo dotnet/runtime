@@ -417,7 +417,7 @@ namespace System.Net.Security
             return uriString;
         }
 
-        private partial void ReleasePlatformSpecificResources()
+        partial void ReleasePlatformSpecificResources()
         {
             Debug.Assert(_staplingForbidden, "Shouldn't release resources while OCSP stapling may be happening on the background.");
 

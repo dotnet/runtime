@@ -184,6 +184,6 @@ namespace System.Net.Security
             ReleasePlatformSpecificResources();
         }
 
-        private partial void ReleasePlatformSpecificResources();
+        partial void ReleasePlatformSpecificResources();
     }
 }
