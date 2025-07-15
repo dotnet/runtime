@@ -653,6 +653,64 @@ namespace System.Runtime.InteropServices
             return GetExceptionForHRInternal(errorCode, errorInfo);
         }
 
+        private static readonly Guid IID_ISupportErrorInfo = new Guid([
+                    0x60, 0x3D, 0x0B, 0xDF, // Data1: 0xDF0B3D60 (little-endian)
+                    0x8F, 0x54,             // Data2: 0x548F (little-endian)
+                    0x1B, 0x10,             // Data3: 0x101B (little-endian)
+                    0x8E, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19 // Data4: 8 bytes
+                ]);
+
+        public static unsafe Exception? GetExceptionForHR(int errorCode, in Guid iid, IntPtr pUnk)
+        {
+            if (errorCode >= 0)
+            {
+                return null;
+            }
+
+            const IntPtr NoErrorInfo = -1; // Use -1 to indicate no error info available
+
+            // Normally, we would check if the interface supports IErrorInfo first. However,
+            // built-in COM calls GetErrorInfo first to clear the error info, so we follow
+            // that pattern here.
+            IntPtr errorInfo = NoErrorInfo;
+
+#if TARGET_WINDOWS
+            Interop.OleAut32.GetErrorInfo(0, out errorInfo);
+            if (errorInfo == IntPtr.Zero)
+            {
+                errorInfo = NoErrorInfo;
+            }
+
+            // If there is error info and we have a pointer to the interface,
+            // we check if it supports ISupportErrorInfo.
+            if (errorInfo != NoErrorInfo && pUnk != IntPtr.Zero)
+            {
+                int hr = QueryInterface(pUnk, in IID_ISupportErrorInfo, out IntPtr supportErrorInfo);
+                if (hr == 0)
+                {
+                    // Check if the target interface is supported.
+                    // ISupportErrorInfo.InterfaceSupportsErrorInfo slot
+                    fixed (Guid* piid = &iid)
+                    {
+                        hr = ((delegate* unmanaged<IntPtr, Guid*, int>)(*(*(void***)supportErrorInfo + 3)))(supportErrorInfo, piid);
+                    }
+                    Release(supportErrorInfo);
+                }
+
+                // If ISupportErrorInfo isn't supported or the target interface doesn't support IErrorInfo,
+                // release the error info and mark it as NoErrorInfo to avoid querying for IErrorInfo again.
+                if (hr != 0)
+                {
+                    Release(errorInfo);
+                    errorInfo = NoErrorInfo;
+                }
+            }
+#endif
+
+            // If the error info is valid, its lifetime will be handled by GetExceptionForHR().
+            return GetExceptionForHR(errorCode, errorInfo);
+        }
+
 #if !CORECLR
 #pragma warning disable IDE0060
         private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
@@ -862,6 +920,14 @@ namespace System.Runtime.InteropServices
             if (errorCode < 0)
             {
                 throw GetExceptionForHR(errorCode, errorInfo)!;
+            }
+        }
+
+        public static void ThrowExceptionForHR(int errorCode, in Guid iid, IntPtr pUnk)
+        {
+            if (errorCode < 0)
+            {
+                throw GetExceptionForHR(errorCode, in iid, pUnk)!;
             }
         }
 
