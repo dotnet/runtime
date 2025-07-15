@@ -17,6 +17,7 @@ using System.Runtime.Versioning;
 using nint_t = System.Int64;
 #else
 using nint_t = System.Int32;
+#error TARGET_64BIT is not defined
 #endif
 
 namespace System
