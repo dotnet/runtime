@@ -594,11 +594,11 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     // Fill volatile context pointers. They can be used by GC in the case of the leaf frame
     for (int i=0; i < 18; i++)
         pRD->volatileCurrContextPointers.X[i] = &pctx->X[i];
-#elif defined(TARGET_AMD64) && defined(TARGET_UNIX) // TARGET_ARM64
+#elif defined(TARGET_AMD64) && defined(TARGET_UNIX) && defined(HOST_UNIX) // TARGET_ARM64
     // Fill volatile context pointers. They can be used by GC in the case of the leaf frame
     for (int i=0; i < 16; i++)
         pRD->volatileCurrContextPointers.R[i] = &pctx->R[i];
-#elif defined(TARGET_LOONGARCH64) // TARGET_ADM64 && TARGET_UNIX
+#elif defined(TARGET_LOONGARCH64) // TARGET_ADM64 && TARGET_UNIX && HOST_UNIX
     pRD->volatileCurrContextPointers.A0 = &pctx->A0;
     pRD->volatileCurrContextPointers.A1 = &pctx->A1;
     pRD->volatileCurrContextPointers.A2 = &pctx->A2;
