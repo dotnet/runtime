@@ -107,7 +107,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     for (; ; )
                     {
                         PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
-                        if (propertyInfo != null)
+                        if (propertyInfo?.SetMethod is not null)
                         {
                             propertyInfo.SetValue(newAttribute, argumentValue);
                             break;
