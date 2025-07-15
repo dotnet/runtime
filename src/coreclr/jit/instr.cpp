@@ -675,22 +675,22 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOption
     // If using ZU feature, we need to promote the SETcc to the new instruction.
     if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
     {
-        assert(INS_setzuo == (INS_seto + 16));
-        assert(INS_setzuno == (INS_setno + 16));
-        assert(INS_setzub == (INS_setb + 16));
-        assert(INS_setzuae == (INS_setae + 16));
-        assert(INS_setzue == (INS_sete + 16));
-        assert(INS_setzune == (INS_setne + 16));
-        assert(INS_setzube == (INS_setbe + 16));
-        assert(INS_setzua == (INS_seta + 16));
-        assert(INS_setzus == (INS_sets + 16));
-        assert(INS_setzuns == (INS_setns + 16));
-        assert(INS_setzup == (INS_setp + 16));
-        assert(INS_setzunp == (INS_setnp + 16));
-        assert(INS_setzul == (INS_setl + 16));
-        assert(INS_setzuge == (INS_setge + 16));
-        assert(INS_setzule == (INS_setle + 16));
-        assert(INS_setzug == (INS_setg + 16));
+        assert(INS_seto_apx == (INS_seto + 16));
+        assert(INS_setno_apx == (INS_setno + 16));
+        assert(INS_setb_apx == (INS_setb + 16));
+        assert(INS_setae_apx == (INS_setae + 16));
+        assert(INS_sete_apx == (INS_sete + 16));
+        assert(INS_setne_apx == (INS_setne + 16));
+        assert(INS_setbe_apx == (INS_setbe + 16));
+        assert(INS_seta_apx == (INS_seta + 16));
+        assert(INS_sets_apx == (INS_sets + 16));
+        assert(INS_setns_apx == (INS_setns + 16));
+        assert(INS_setp_apx == (INS_setp + 16));
+        assert(INS_setnp_apx == (INS_setnp + 16));
+        assert(INS_setl_apx == (INS_setl + 16));
+        assert(INS_setge_apx == (INS_setge + 16));
+        assert(INS_setle_apx == (INS_setle + 16));
+        assert(INS_setg_apx == (INS_setg + 16));
         ins = (instruction)(ins + 16);
     }
 #endif

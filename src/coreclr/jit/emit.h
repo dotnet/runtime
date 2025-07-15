@@ -1800,7 +1800,7 @@ protected:
 
         bool idIsEvexZuContextSet() const
         {
-            return _idEvexZuContext != 0;
+            return (_idEvexZuContext != 0) && (IsSETZUccInstruction(_idIns));
         }
 
         void idSetEvexNdContext()

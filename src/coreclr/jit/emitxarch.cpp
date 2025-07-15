@@ -179,7 +179,7 @@ bool emitter::IsKMOVInstruction(instruction ins)
 bool emitter::IsSETZUccInstruction(instruction ins)
 {
 #ifdef TARGET_AMD64
-    return ((ins >= INS_setzuo) && (ins <= INS_setzug));
+    return ((ins >= INS_seto_apx) && (ins <= INS_setg_apx));
 #else
     return false;
 #endif
@@ -2027,7 +2027,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     if (IsSETZUccInstruction(ins))
     {
         // These are promoted forms of SETcc instruction with EVEX.ZU.
-        // TODO-XArch-APX: maybe consider return true as we may only use those instructions with ZU set.
         return id->idIsEvexZuContextSet();
     }
 
@@ -2171,13 +2170,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code &= 0xFFFF87F0FFFFFFFF;
             code |= ((size_t)id->idGetEvexDFV()) << 43;
             code |= ((size_t)GetCCFromCCMP(ins)) << 32;
-        }
-
-        if (IsSETZUccInstruction(ins))
-        {
-            // SETcc in EVEX space are assigned with new opcode: EVEX.LLZ.F2.MAP4.IGNORED 4x.
-            // Here we need to hard code the EVEX.pp for F2 prefix.
-            code |= 0x30000000000ULL;
         }
 #endif
 
@@ -3081,8 +3073,8 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //                          1. An escape byte 0F (For isa before AVX10.2)
         //                          2. A map number from 0 to 7 (For AVX10.2 and above)
         leadingBytes = check;
-        assert(leadingBytes == 0x0F || (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) &&
-                                        leadingBytes >= 0x00 && leadingBytes <= 0x07));
+        assert((leadingBytes == 0x0F) || 
+               ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || (emitComp->compIsaSupportedDebugOnly(InstructionSet_APX) || emitComp->canUseApxEncoding())) && (leadingBytes >= 0x00) && (leadingBytes <= 0x07)));
 
         // Get rid of both sizePrefix and escape byte
         code &= 0x0000FFFFLL;
@@ -3153,6 +3145,13 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             break;
         }
 
+        case 0x04:
+        {
+            assert((emitComp->compIsaSupportedDebugOnly(InstructionSet_APX) || emitComp->canUseApxEncoding()));
+            evexPrefix |= (0x04 << 16);
+            break;
+        }
+
         case 0x05:
         {
             assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
@@ -3163,7 +3162,6 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         case 0x01:
         case 0x02:
         case 0x03:
-        case 0x04:
         case 0x06:
         case 0x07:
         default:
@@ -5160,7 +5158,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
 
     dspIsZero = (dsp == 0);
-
+    
+    // APX extended EVEX instructions have constant disp8 displacement, no need to compress.
     bool tryCompress = true;
 
     if (EBPbased)
@@ -5192,7 +5191,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
         {
             ssize_t compressedDsp;
 
-            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
+            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
             {
                 SetEvexCompressedDisplacement(id);
             }
@@ -5365,7 +5364,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     {
         ssize_t compressedDsp;
 
-        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
+        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
         {
             SetEvexCompressedDisplacement(id);
         }
@@ -14669,10 +14668,22 @@ GOT_DSP:
             assert(isCompressed && dspInByte);
             dsp = compressedDsp;
         }
-        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        else if (TakesEvexPrefix(id))
         {
-            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
-            dspInByte = false;
+            assert(!(TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins)));
+            if (IsBMIInstruction(ins))
+            {
+                dspInByte = ((signed char)dsp == (ssize_t)dsp);
+            }
+            else
+            {
+                dspInByte = false;
+            }
+        }
+        else if (TakesApxExtendedEvexPrefix(id))
+        {
+            // the scaling factor of extended EVEX instructions is always 1.
+            dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
         else
         {
@@ -15553,7 +15564,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             assert(isCompressed && dspInByte);
             dsp = (int)compressedDsp;
         }
-        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        else if (TakesEvexPrefix(id))
         {
 #if FEATURE_FIXED_OUT_ARGS
             // TODO-AMD64-CQ: We should be able to accurately predict this when FEATURE_FIXED_OUT_ARGS
@@ -15563,7 +15574,19 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             // assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
 #endif
 
-            dspInByte = false;
+            if (IsBMIInstruction(ins))
+            {
+                dspInByte = ((signed char)dsp == (ssize_t)dsp);
+            }
+            else
+            {
+                dspInByte = false;
+            }
+        }
+        else if (TakesApxExtendedEvexPrefix(id))
+        {
+            // Apx extended EVEX instructions do not support compressed displacement.
+            dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
         else
         {
@@ -16496,22 +16519,22 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         }
 
 #ifdef TARGET_AMD64
-        case INS_setzuo:
-        case INS_setzuno:
-        case INS_setzub:
-        case INS_setzuae:
-        case INS_setzue:
-        case INS_setzune:
-        case INS_setzube:
-        case INS_setzua:
-        case INS_setzus:
-        case INS_setzuns:
-        case INS_setzup:
-        case INS_setzunp:
-        case INS_setzul:
-        case INS_setzuge:
-        case INS_setzule:
-        case INS_setzug:
+        case INS_seto_apx:
+        case INS_setno_apx:
+        case INS_setb_apx:
+        case INS_setae_apx:
+        case INS_sete_apx:
+        case INS_setne_apx:
+        case INS_setbe_apx:
+        case INS_seta_apx:
+        case INS_sets_apx:
+        case INS_setns_apx:
+        case INS_setp_apx:
+        case INS_setnp_apx:
+        case INS_setl_apx:
+        case INS_setge_apx:
+        case INS_setle_apx:
+        case INS_setg_apx:
         {
             assert(TakesApxExtendedEvexPrefix(id));
             assert(size == EA_1BYTE);
@@ -20734,22 +20757,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_setle:
         case INS_setg:
 #ifdef TARGET_AMD64
-        case INS_setzuo:
-        case INS_setzuno:
-        case INS_setzub:
-        case INS_setzuae:
-        case INS_setzue:
-        case INS_setzune:
-        case INS_setzube:
-        case INS_setzua:
-        case INS_setzus:
-        case INS_setzuns:
-        case INS_setzup:
-        case INS_setzunp:
-        case INS_setzul:
-        case INS_setzuge:
-        case INS_setzule:
-        case INS_setzug:
+        case INS_seto_apx:
+        case INS_setno_apx:
+        case INS_setb_apx:
+        case INS_setae_apx:
+        case INS_sete_apx:
+        case INS_setne_apx:
+        case INS_setbe_apx:
+        case INS_seta_apx:
+        case INS_sets_apx:
+        case INS_setns_apx:
+        case INS_setp_apx:
+        case INS_setnp_apx:
+        case INS_setl_apx:
+        case INS_setge_apx:
+        case INS_setle_apx:
+        case INS_setg_apx:
 #endif
         {
             result.insLatency += PERFSCORE_LATENCY_1C;
