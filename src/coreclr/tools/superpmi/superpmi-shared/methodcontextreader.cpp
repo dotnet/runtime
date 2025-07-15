@@ -94,7 +94,7 @@ MethodContextReader::MethodContextReader(
     , Offset(offset)
     , Increment(increment)
 {
-    this->mutex = CreateMutexW(NULL, FALSE, nullptr);
+    minipal_mutex_init(&this->mutex);
 
     std::string tocFileName, mchFileName;
 
@@ -140,20 +140,19 @@ MethodContextReader::~MethodContextReader()
         CloseHandle(this->fileHandle);
     }
 
-    CloseHandle(this->mutex);
-
+    minipal_mutex_destroy(&this->mutex);
     CleanExcludedMethods();
 }
 
 bool MethodContextReader::AcquireLock()
 {
-    DWORD res = WaitForSingleObject(this->mutex, INFINITE);
-    return (res == WAIT_OBJECT_0);
+    minipal_mutex_enter(&this->mutex);
+    return true;
 }
 
 void MethodContextReader::ReleaseLock()
 {
-    ReleaseMutex(this->mutex);
+    minipal_mutex_leave(&this->mutex);
 }
 
 bool MethodContextReader::atEof()
@@ -640,7 +639,7 @@ void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
     int64_t pos    = 0;
     BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
     assert(result);
-    
+
     Indexes     = newIndexes;
     IndexCount  = newIndexCount;
     curIndexPos = 0;
