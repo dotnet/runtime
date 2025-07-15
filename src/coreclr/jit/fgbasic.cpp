@@ -4171,7 +4171,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 break;
 
             case BBJ_SWITCH: // block ends with a switch statement
-                for (BasicBlock* const bTarget : blk->SwitchCases())
+                for (BasicBlock* const bTarget : blk->SwitchSuccs())
                 {
                     fgControlFlowPermitted(blk, bTarget);
                 }
