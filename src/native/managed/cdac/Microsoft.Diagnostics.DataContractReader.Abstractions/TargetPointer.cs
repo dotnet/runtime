@@ -18,6 +18,8 @@ public readonly struct TargetPointer : IEquatable<TargetPointer>
 
     public static bool operator ==(TargetPointer left, TargetPointer right) => left.Value == right.Value;
     public static bool operator !=(TargetPointer left, TargetPointer right) => left.Value != right.Value;
+    public static TargetPointer operator +(TargetPointer pointer, ulong offset) => new(pointer.Value + offset);
+    public static TargetPointer operator -(TargetPointer pointer, ulong offset) => new(pointer.Value - offset);
 
     public override bool Equals(object? obj) => obj is TargetPointer pointer && Equals(pointer);
     public bool Equals(TargetPointer other) => Value == other.Value;
