@@ -33,17 +33,17 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.False:
                 case JsonTokenType.True:
                 case JsonTokenType.Number:
-                    return ReadNonNullPrimitiveValue(ref reader, options.GetNodeOptions());
+                    return ReadNonNullPrimitiveValue(ref reader, options);
                 default:
                     JsonElement element = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
                     return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
             }
         }
 
-        internal static JsonValue ReadNonNullPrimitiveValue(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonValue ReadNonNullPrimitiveValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.False or JsonTokenType.True or JsonTokenType.Number);
-            return new JsonValueOfJsonPrimitive(ref reader, options);
+            return JsonValueOfJsonPrimitive.CreatePrimitiveValue(ref reader, options);
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();

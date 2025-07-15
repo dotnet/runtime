@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.StartArray:
                     return options.AllowDuplicateProperties
                         ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
-                        : ReadAsJsonNode(ref reader, options.GetNodeOptions());
+                        : ReadAsJsonNode(ref reader, options);
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -41,11 +41,11 @@ namespace System.Text.Json.Serialization.Converters
             return new JsonArray(jElement, options);
         }
 
-        internal static JsonArray ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonArray ReadAsJsonNode(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
 
-            JsonArray jArray = new JsonArray(options);
+            JsonArray jArray = new JsonArray(options.GetNodeOptions());
 
             while (reader.Read())
             {
