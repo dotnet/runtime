@@ -32625,12 +32625,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             EvaluateExtractMSB<simd32_t>(simdBaseType, &simdMaskVal, cnsNode->AsVecCon()->gtSimd32Val);
                             break;
                         }
-
-                        case 64:
-                        {
-                            EvaluateExtractMSB<simd64_t>(simdBaseType, &simdMaskVal, cnsNode->AsVecCon()->gtSimd64Val);
-                            break;
-                        }
 #endif // TARGET_XARCH
 
                         default:
@@ -32639,12 +32633,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         }
                     }
 
-                    uint64_t mask;
-                    memcpy(&mask, &simdMaskVal.u64[0], sizeof(uint64_t));
+                    uint32_t mask;
+                    memcpy(&mask, &simdMaskVal.u32[0], sizeof(uint32_t));
 
                     uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
-                    uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
+                    uint32_t bitMask   = static_cast<uint32_t>((1 << elemCount) - 1);
 
+                    assert(elemCount <= 32);
                     resultNode = gtNewIconNode(static_cast<int32_t>(mask & bitMask), retType);
                     break;
                 }
@@ -32658,7 +32653,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
                     uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
 
-                    resultNode = gtNewIconNode(static_cast<int32_t>(mask & bitMask), retType);
+                    if (elemCount <= 32)
+                    {
+                        resultNode = gtNewIconNode(static_cast<int32_t>(mask & bitMask), retType);
+                    }
+                    else
+                    {
+                        resultNode = gtNewLconNode(static_cast<int64_t>(mask & bitMask));
+                    }
                     break;
                 }
 #endif // TARGET_XARCH

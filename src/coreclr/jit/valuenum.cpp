@@ -7942,13 +7942,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                         EvaluateExtractMSB<simd32_t>(baseType, &simdMaskVal, arg0);
                         break;
                     }
-
-                    case 64:
-                    {
-                        simd64_t arg0 = GetConstantSimd64(arg0VN);
-                        EvaluateExtractMSB<simd64_t>(baseType, &simdMaskVal, arg0);
-                        break;
-                    }
 #endif // TARGET_XARCH
 
                     default:
@@ -7957,12 +7950,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                     }
                 }
 
-                uint64_t mask;
-                memcpy(&mask, &simdMaskVal.u64[0], sizeof(uint64_t));
+                uint32_t mask;
+                memcpy(&mask, &simdMaskVal.u32[0], sizeof(uint32_t));
 
                 uint32_t elemCount = simdSize / genTypeSize(baseType);
-                uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
+                uint32_t bitMask   = static_cast<uint32_t>((1 << elemCount) - 1);
 
+                assert(elemCount <= 32);
                 return VNForIntCon(static_cast<int32_t>(mask & bitMask));
             }
 
@@ -7977,7 +7971,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 uint32_t elemCount = simdSize / genTypeSize(baseType);
                 uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
 
-                return VNForIntCon(static_cast<int32_t>(mask & bitMask));
+                if (elemCount <= 32)
+                {
+                    return VNForIntCon(static_cast<int32_t>(mask & bitMask));
+                }
+                else
+                {
+                    return VNForLongCon(static_cast<int64_t>(mask & bitMask));
+                }
             }
 #endif // TARGET_XARCH
 
