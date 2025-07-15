@@ -20,7 +20,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// COM methods that require shadowing declarations on the derived interface.
         /// </summary>
-        public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.IsInheritedMethod && !m.IsHiddenOnDerivedInterface);
+        public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.IsInheritedMethod && !m.IsHiddenOnDerivedInterface && !m.IsExternallyDefined);
 
         /// <summary>
         /// COM methods that are declared on an interface the interface inherits from.

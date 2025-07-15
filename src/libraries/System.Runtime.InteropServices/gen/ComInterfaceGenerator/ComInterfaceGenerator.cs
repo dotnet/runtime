@@ -107,30 +107,16 @@ namespace Microsoft.Interop
                     return new ComMethodContext(
                         data.Method,
                         data.OwningInterface,
-                        data.Method.OriginalDeclaringInterface.IsExternallyDefined
-                            ? CalculateSourcelessStubInformation(
-                                symbolMap[data.Method.MethodInfo],
-                                data.Method.Index,
-                                env,
-                                data.OwningInterface.Info.Type,
-                                ct)
-                            : CalculateStubInformation(
-                                data.Method.MethodInfo.Syntax,
-                                symbolMap[data.Method.MethodInfo],
-                                data.Method.Index,
-                                env,
-                                data.OwningInterface.Info.Type,
-                                ct));
+                        CalculateStubInformation(
+                            data.Method.MethodInfo.Syntax,
+                            symbolMap[data.Method.MethodInfo],
+                            data.Method.Index,
+                            env,
+                            data.OwningInterface.Info.Type,
+                            ct));
                 }).WithTrackingName(StepNames.CalculateStubInformation);
 
             var interfaceAndMethodsContexts = comMethodContexts
-                .Where(m => !m.IsExternallyDefined)
-                .Collect()
-                .Combine(interfaceContextsToGenerate.Collect())
-                .SelectMany((data, ct) =>
-                    GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
-
-            var interfaceAndExternalMethodsContexts = comMethodContexts
                 .Collect()
                 .Combine(interfaceContextsToGenerate.Collect())
                 .SelectMany((data, ct) =>
@@ -144,7 +130,7 @@ namespace Microsoft.Interop
                 .SelectNormalized();
 
             // Generate the code for the unmanaged-to-managed stubs.
-            var nativeToManagedVtableStructs = interfaceAndExternalMethodsContexts
+            var nativeToManagedVtableStructs = interfaceAndMethodsContexts
                 .Select(GenerateInterfaceImplementationVtable)
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTableStruct)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
@@ -186,7 +172,7 @@ namespace Microsoft.Interop
 
             // Generate a method named CreateManagedVirtualFunctionTable on the native interface implementation
             // that allocates and fills in the memory for the vtable.
-            var nativeToManagedVtables = interfaceAndExternalMethodsContexts
+            var nativeToManagedVtables = interfaceAndMethodsContexts
                 .Select(GenerateImplementationVTable)
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTable)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
@@ -277,12 +263,22 @@ namespace Microsoft.Interop
                 || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateSourcelessStubInformation(IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
+        /// <summary>
+        /// Calculates the shared information needed for both source-available and sourceless stub generation.
+        /// </summary>
+        private static IncrementalMethodStubGenerationContext CalculateSharedStubInformation(
+            IMethodSymbol symbol,
+            int index,
+            StubEnvironment environment,
+            ISignatureDiagnosticLocations diagnosticLocations,
+            ManagedTypeInfo owningInterface,
+            CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.SuppressGCTransitionAttrType;
             INamedTypeSymbol? unmanagedCallConvAttrType = environment.UnmanagedCallConvAttrType;
+
             // Get any attributes of interest on the method
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
@@ -303,7 +299,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), NoneSignatureDiagnosticLocations.Instance, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), diagnosticLocations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             if (lcidConversionAttr is not null)
             {
@@ -313,8 +309,8 @@ namespace Microsoft.Interop
 
             GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
             var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
-            // Create the stub.
 
+            // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(
@@ -407,7 +403,6 @@ namespace Microsoft.Interop
                     GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue);
             }
 
-
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VirtualMethodPointerStubGenerator.GenerateCallConvSyntaxFromAttributes(
                 suppressGCTransitionAttribute,
                 unmanagedCallConvAttribute,
@@ -415,10 +410,7 @@ namespace Microsoft.Interop
 
             var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
-
             MarshallingInfo exceptionMarshallingInfo;
-
             if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is null)
             {
                 exceptionMarshallingInfo = new ComExceptionMarshalling();
@@ -432,191 +424,66 @@ namespace Microsoft.Interop
                     environment.Compilation,
                     generatorDiagnostics);
             }
+
+            var sharedData =new
+            {
+                SignatureContext = signatureContext,
+                CallConv = callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
+                Direction = direction,
+                ExceptionMarshallingInfo = exceptionMarshallingInfo,
+                DeclaringType = declaringType,
+                Diagnostics = generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray()
+            };
 
             return new IncrementalMethodStubGenerationContext(
-                signatureContext,
+                sharedData.SignatureContext,
                 NoneSignatureDiagnosticLocations.Instance,
-                callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
-                virtualMethodIndexData,
-                exceptionMarshallingInfo,
+                sharedData.CallConv,
+                new VirtualMethodIndexData(index, ImplicitThisParameter: true, sharedData.Direction, true, ExceptionMarshalling.Com),
+                sharedData.ExceptionMarshallingInfo,
                 environment.EnvironmentFlags,
                 owningInterface,
-                declaringType,
-                generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
+                sharedData.DeclaringType,
+                sharedData.Diagnostics,
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
-        private static SourceAvailableIncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
+
+        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
         {
-            ct.ThrowIfCancellationRequested();
-            INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
-            INamedTypeSymbol? suppressGCTransitionAttrType = environment.SuppressGCTransitionAttrType;
-            INamedTypeSymbol? unmanagedCallConvAttrType = environment.UnmanagedCallConvAttrType;
-            // Get any attributes of interest on the method
-            AttributeData? lcidConversionAttr = null;
-            AttributeData? suppressGCTransitionAttribute = null;
-            AttributeData? unmanagedCallConvAttribute = null;
-            foreach (AttributeData attr in symbol.GetAttributes())
-            {
-                if (lcidConversionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
-                {
-                    lcidConversionAttr = attr;
-                }
-                else if (suppressGCTransitionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, suppressGCTransitionAttrType))
-                {
-                    suppressGCTransitionAttribute = attr;
-                }
-                else if (unmanagedCallConvAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, unmanagedCallConvAttrType))
-                {
-                    unmanagedCallConvAttribute = attr;
-                }
-            }
+            ISignatureDiagnosticLocations locations = syntax is null
+                ? NoneSignatureDiagnosticLocations.Instance
+                : new MethodSignatureDiagnosticLocations(syntax);
 
-            var locations = new MethodSignatureDiagnosticLocations(syntax);
-            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
-
-            if (lcidConversionAttr is not null)
-            {
-                // Using LCIDConversion with source-generated interop is not supported
-                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
-            }
-
-            GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
-            var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
-            // Create the stub.
-
-            var signatureContext = SignatureContext.Create(
+            var sourcelessStubInformation = CalculateSharedStubInformation(
                 symbol,
-                DefaultMarshallingInfoParser.Create(
-                    environment,
-                    generatorDiagnostics,
-                    symbol,
-                    generatedComInterfaceAttributeData,
-                    generatedComAttribute),
+                index,
                 environment,
-                new CodeEmitOptions(SkipInit: true),
-                typeof(VtableIndexStubGenerator).Assembly);
+                locations,
+                owningInterface,
+                ct);
 
-            if (!symbol.MethodImplementationFlags.HasFlag(MethodImplAttributes.PreserveSig))
-            {
-                // Search for the element information for the managed return value.
-                // We need to transform it such that any return type is converted to an out parameter at the end of the parameter list.
-                ImmutableArray<TypePositionInfo> returnSwappedSignatureElements = signatureContext.ElementTypeInformation;
-                for (int i = 0; i < returnSwappedSignatureElements.Length; ++i)
-                {
-                    if (returnSwappedSignatureElements[i].IsManagedReturnPosition)
-                    {
-                        if (returnSwappedSignatureElements[i].ManagedType == SpecialTypeInfo.Void)
-                        {
-                            // Return type is void, just remove the element from the signature list.
-                            // We don't introduce an out parameter.
-                            returnSwappedSignatureElements = returnSwappedSignatureElements.RemoveAt(i);
-                        }
-                        else
-                        {
-                            if ((returnSwappedSignatureElements[i].ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
-                                    && returnSwappedSignatureElements[i].MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
-                                || (IsHResultLikeType(returnSwappedSignatureElements[i].ManagedType)))
-                            {
-                                generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable, symbol.Locations[0]));
-                            }
-                            // Convert the current element into an out parameter on the native signature
-                            // while keeping it at the return position in the managed signature.
-                            var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
-                            {
-                                RefKind = RefKind.Out,
-                                ManagedIndex = TypePositionInfo.ReturnIndex,
-                                NativeIndex = symbol.Parameters.Length
-                            };
-                            returnSwappedSignatureElements = returnSwappedSignatureElements.SetItem(i, managedSignatureAsNativeOut);
-                        }
-                        break;
-                    }
-                }
-
-                signatureContext = signatureContext with
-                {
-                    // Add the HRESULT return value in the native signature.
-                    // This element does not have any influence on the managed signature, so don't assign a managed index.
-                    ElementTypeInformation = returnSwappedSignatureElements.Add(
-                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
-                        {
-                            NativeIndex = TypePositionInfo.ReturnIndex
-                        })
-                };
-            }
-            else
-            {
-                // If our method is PreserveSig, we will notify the user if they are returning a type that may be an HRESULT type
-                // that is defined as a structure. These types used to work with built-in COM interop, but they do not work with
-                // source-generated interop as we now use the MemberFunction calling convention, which is more correct.
-                TypePositionInfo? managedReturnInfo = signatureContext.ElementTypeInformation.FirstOrDefault(e => e.IsManagedReturnPosition);
-                if (managedReturnInfo is { MarshallingAttributeInfo: UnmanagedBlittableMarshallingInfo, ManagedType: ValueTypeInfo valueType }
-                    && IsHResultLikeType(valueType))
-                {
-                    generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(
-                        GeneratorDiagnostics.HResultTypeWillBeTreatedAsStruct,
-                        symbol.Locations[0],
-                        ImmutableDictionary<string, string>.Empty.Add(GeneratorDiagnosticProperties.AddMarshalAsAttribute, "Error"),
-                        valueType.DiagnosticFormattedName));
-                }
-            }
-
-            var direction = GetDirectionFromOptions(generatedComInterfaceAttributeData.Options);
-
-            // Ensure the size of collections are known at marshal / unmarshal in time.
-            // A collection that is marshalled in cannot have a size that is an 'out' parameter.
-            foreach (TypePositionInfo parameter in signatureContext.ManagedParameters)
-            {
-                MarshallerHelpers.ValidateCountInfoAvailableAtCall(
-                    direction,
-                    parameter,
-                    generatorDiagnostics,
-                    symbol,
-                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
-                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue);
-            }
+            if (syntax is null)
+                return sourcelessStubInformation;
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
-
-            var methodSyntaxTemplate = new ContainingSyntax(new SyntaxTokenList(syntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword))).StripAccessibilityModifiers(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
-
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VirtualMethodPointerStubGenerator.GenerateCallConvSyntaxFromAttributes(
-                suppressGCTransitionAttribute,
-                unmanagedCallConvAttribute,
-                ImmutableArray.Create(FunctionPointerUnmanagedCallingConvention(Identifier("MemberFunction"))));
-
-            var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
-
-            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
-
-            MarshallingInfo exceptionMarshallingInfo;
-
-            if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is null)
-            {
-                exceptionMarshallingInfo = new ComExceptionMarshalling();
-            }
-            else
-            {
-                exceptionMarshallingInfo = CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
-                    environment.Compilation.GetTypeByMetadataName(TypeNames.System_Exception),
-                    (INamedTypeSymbol)generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller,
-                    generatedComAttribute,
-                    environment.Compilation,
-                    generatorDiagnostics);
-            }
+            var methodSyntaxTemplate = new ContainingSyntax(
+                new SyntaxTokenList(syntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword))).StripAccessibilityModifiers(),
+                SyntaxKind.MethodDeclaration,
+                syntax.Identifier,
+                syntax.TypeParameterList);
 
             return new SourceAvailableIncrementalMethodStubGenerationContext(
-                signatureContext,
+                sourcelessStubInformation.SignatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                locations,
-                callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
-                virtualMethodIndexData,
-                exceptionMarshallingInfo,
-                environment.EnvironmentFlags,
-                owningInterface,
-                declaringType,
-                generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
+                sourcelessStubInformation.DiagnosticLocation,
+                sourcelessStubInformation.CallingConvention,
+                sourcelessStubInformation.VtableIndexData,
+                sourcelessStubInformation.ExceptionMarshallingInfo,
+                sourcelessStubInformation.EnvironmentFlags,
+                sourcelessStubInformation.TypeKeyOwner,
+                sourcelessStubInformation.DeclaringType,
+                sourcelessStubInformation.Diagnostics,
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
@@ -709,12 +576,12 @@ namespace Microsoft.Interop
         private static InterfaceDeclarationSyntax GenerateImplementationInterface(ComInterfaceAndMethodsContext interfaceGroup, CancellationToken _)
         {
             var definingType = interfaceGroup.Interface.Info.Type;
-            var shadowImplementations = interfaceGroup.InheritedMethods.Select(m => (Method: m, ManagedToUnmanagedStub: m.ManagedToUnmanagedStub))
+            var shadowImplementations = interfaceGroup.InheritedMethods.Where(m => !m.IsExternallyDefined).Select(m => (Method: m, ManagedToUnmanagedStub: m.ManagedToUnmanagedStub))
                 .Where(p => p.ManagedToUnmanagedStub is GeneratedStubCodeContext)
                 .Select(ctx => ((GeneratedStubCodeContext)ctx.ManagedToUnmanagedStub).Stub.Node
                 .WithExplicitInterfaceSpecifier(
                     ExplicitInterfaceSpecifier(ParseName(definingType.FullTypeName))));
-            var inheritedStubs = interfaceGroup.InheritedMethods.Select(m => m.UnreachableExceptionStub);
+            var inheritedStubs = interfaceGroup.InheritedMethods.Where(m => !m.IsExternallyDefined).Select(m => m.UnreachableExceptionStub);
             return ImplementationInterfaceTemplate
                 .AddBaseListTypes(SimpleBaseType(definingType.Syntax))
                 .WithMembers(
