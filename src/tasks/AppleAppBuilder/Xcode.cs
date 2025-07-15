@@ -182,6 +182,7 @@ internal sealed class Xcode
         bool useConsoleUiTemplate,
         bool forceAOT,
         bool forceInterpreter,
+        string? interpreterMethods,
         bool invariantGlobalization,
         bool hybridGlobalization,
         bool optimized,
@@ -193,7 +194,7 @@ internal sealed class Xcode
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
         bool isLibraryMode = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, targetRuntime, isLibraryMode);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, interpreterMethods, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, targetRuntime, isLibraryMode);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -255,6 +256,7 @@ internal sealed class Xcode
         bool useConsoleUiTemplate,
         bool forceAOT,
         bool forceInterpreter,
+        string? interpreterMethods,
         bool invariantGlobalization,
         bool hybridGlobalization,
         bool optimized,
@@ -516,6 +518,11 @@ internal sealed class Xcode
         if (!string.IsNullOrEmpty(diagnosticPorts))
         {
             defines.AppendLine($"\nadd_definitions(-DDIAGNOSTIC_PORTS=\"{diagnosticPorts}\")");
+        }
+
+        if (!string.IsNullOrEmpty(interpreterMethods))
+        {
+            defines.AppendLine($"\nadd_definitions(-DINTERPRETER_METHODS=\"{interpreterMethods}\")");
         }
 
         if (targetRuntime == TargetRuntime.NativeAOT)
