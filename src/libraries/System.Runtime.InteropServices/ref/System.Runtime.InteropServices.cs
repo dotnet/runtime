@@ -1209,7 +1209,7 @@ namespace System.Runtime.InteropServices
         public static void StructureToPtr<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure, System.IntPtr ptr, bool fDeleteOld) { }
         public static void ThrowExceptionForHR(int errorCode) { }
         public static void ThrowExceptionForHR(int errorCode, System.IntPtr errorInfo) { }
-        public static void ThrowExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { throw null; }
+        public static void ThrowExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement(System.Array arr, int index) { throw null; }
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index) { throw null; }

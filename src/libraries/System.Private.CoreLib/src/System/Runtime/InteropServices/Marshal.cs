@@ -710,7 +710,7 @@ namespace System.Runtime.InteropServices
 #endif
 
             // If the error info is valid, its lifetime will be handled by GetExceptionForHR().
-            return GetExceptionForHR(errorCode, errorInfo);
+            return GetExceptionForHRInternal(errorCode, errorInfo);
         }
 
 #if !CORECLR
