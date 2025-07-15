@@ -2,10 +2,14 @@
   <Import Project="..\Directory.Build.targets" />
 
   <PropertyGroup>
-    <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">$(ProductVersion)</PackageVersion>
-    <StableVersion Condition="'$(DotNetFinalVersionKind)' != '' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+    <StableVersion Condition="'$(DotNetFinalVersionKind)' == 'release'">$(ProductVersion)</StableVersion>
     <StableVersion Condition="'$(IsShippingPackage)' != 'true' and '$(MSBuildProjectExtension)' == '.pkgproj'"></StableVersion>
+
+    <!-- SharedFramework runtime version. This package is non shipping but we need to know the shared framework version
+         to populate some metadata used later. This cannot be done in a target, since we need this info for PackageDownload. -->
+    <NetCoreRuntimeVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(Version)</NetCoreRuntimeVersion>
+    <NetCoreRuntimeVersion Condition="'$(DotNetFinalVersionKind)' == 'release'">$(ProductVersion)</NetCoreRuntimeVersion>
+    <NetCoreRuntimeVersion Condition="'$(DotNetFinalVersionKind)' == 'prerelease'">$(VersionPrefix)-$(_PreReleaseLabel).final</NetCoreRuntimeVersion>
   </PropertyGroup>
 
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />

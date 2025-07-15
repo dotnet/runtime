@@ -2310,11 +2310,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // generate for this ldfld, and we require that we
                     // won't need the address of this local at all
 
-                    const bool notStruct    = !varTypeIsStruct(lvaGetDesc(varNum));
                     const bool notLastInstr = (codeAddr < codeEndp - sz);
                     const bool notDebugCode = !opts.compDbgCode;
 
-                    if (notStruct && notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz))
+                    if (notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz, codeEndp))
                     {
                         // We can skip the addrtaken, as next IL instruction consumes
                         // the address.
@@ -3171,6 +3170,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_CALLVIRT:
             case CEE_CALLI:
             {
+                opts.callInstrCount++;
                 if (compIsForInlining() ||               // Ignore tail call in the inlinee. Period.
                     (!tailCall && !compTailCallStress()) // A new BB with BBJ_RETURN would have been created
 
@@ -3289,6 +3289,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             // These ctrl-flow opcodes don't need any special handling
             case CEE_NEWOBJ: // CTRL_CALL
+                opts.callInstrCount++;
                 break;
 
             // what's left are forgotten instructions
@@ -5306,18 +5307,6 @@ bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBloc
     }
 
     return result;
-}
-
-/*****************************************************************************
- *
- *  Returns true if it is allowable (based upon the EH regions)
- *  to place block bAfter immediately after bBefore. It is allowable
- *  if the 'bBefore' and 'bAfter' blocks are in the exact same EH region.
- */
-
-bool Compiler::fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter)
-{
-    return BasicBlock::sameEHRegion(bBefore, bAfter);
 }
 
 /*****************************************************************************

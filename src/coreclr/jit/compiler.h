@@ -3481,13 +3481,13 @@ public:
 
     GenTreeIndir* gtNewIndexIndir(GenTreeIndexAddr* indexAddr);
 
-    void gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block);
+    void gtAnnotateNewArrLen(GenTree* arrLen);
 
-    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
+    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset);
 
-    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank);
 
-    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank);
 
     void gtInitializeStoreNode(GenTree* store, GenTree* value);
 
@@ -3530,10 +3530,10 @@ public:
         return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags);
     }
 
-    GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
+    GenTree* gtNewNullCheck(GenTree* addr);
 
     var_types gtTypeForNullCheck(GenTree* tree);
-    void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
+    void gtChangeOperToNullCheck(GenTree* tree);
 
     GenTree* gtNewAtomicNode(
         genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand = nullptr);
@@ -4430,6 +4430,7 @@ private:
 #endif
         // This call is a task await
         PREFIX_IS_TASK_AWAIT = 0x00000080,
+        PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -4516,7 +4517,7 @@ protected:
     };
 
     bool impIsPrimitive(CorInfoType type);
-    bool impILConsumesAddr(const BYTE* codeAddr);
+    bool impILConsumesAddr(const BYTE* codeAddr, const BYTE* codeEndp);
 
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
@@ -6152,8 +6153,6 @@ public:
 
     bool fgExpandRarelyRunBlocks();
 
-    bool fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter);
-
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
     PhaseStatus fgHeadTailMerge(bool early);
@@ -7645,14 +7644,6 @@ public:
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
     bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
-#if DEBUG
-    void optCheckFlagsAreSet(unsigned    methodFlag,
-                             const char* methodFlagStr,
-                             unsigned    bbFlag,
-                             const char* bbFlagStr,
-                             GenTree*    tree,
-                             BasicBlock* basicBlock);
-#endif
 
     PhaseStatus optInductionVariables();
 
@@ -9604,6 +9595,13 @@ private:
         return false;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
+    CORINFO_InstructionSet lookupInstructionSet(const char* className);
+    CORINFO_InstructionSet lookupIsa(const char* className,
+                                     const char* innerEnclosingClassName,
+                                     const char* outerEnclosingClassName);
+#endif // FEATURE_HW_INTRINSICS
+
 #ifdef DEBUG
     // Answer the question: Is a particular ISA supported?
     // Use this api when asking the question so that future
@@ -9906,8 +9904,9 @@ public:
             compSupportsISA = isas;
         }
 
-        unsigned compFlags; // method attributes
-        unsigned instrCount = 0;
+        unsigned compFlags;          // method attributes
+        unsigned instrCount     = 0; // number of IL opcodes
+        unsigned callInstrCount = 0; // number of IL opcodes (calls only).
         unsigned lvRefCount;
 
         codeOptimize compCodeOpt; // what type of code optimizations
