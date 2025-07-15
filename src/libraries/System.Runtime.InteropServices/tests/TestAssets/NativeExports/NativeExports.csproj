@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <Compile Include="..\..\Common\ComInterfaces\**\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
-    <Compile Remove="..\..\Common\ComInterfaces\IGetAndSetInt.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 

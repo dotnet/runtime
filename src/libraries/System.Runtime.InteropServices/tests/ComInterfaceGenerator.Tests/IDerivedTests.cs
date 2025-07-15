@@ -87,16 +87,16 @@ namespace ComInterfaceGenerator.Tests
         public unsafe void CallBaseInterfaceMethod_EnsureQiCalledOnce()
         {
             var cw = new SingleQIComWrapper();
-            var derivedImpl = new DerivedImpl();
+            var derivedImpl = new Derived();
             var nativeObj = cw.GetOrCreateComInterfaceForObject(derivedImpl, CreateComInterfaceFlags.None);
             var obj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
             IDerived iface = (IDerived)obj;
 
-            Assert.Equal(3, iface.GetInt());
+            Assert.Equal(0, iface.GetInt());
             iface.SetInt(5);
             Assert.Equal(5, iface.GetInt());
 
-            Assert.Equal("myName", iface.GetName());
+            Assert.Equal("hello", iface.GetName());
             iface.SetName("updated");
             Assert.Equal("updated", iface.GetName());
 
@@ -107,22 +107,6 @@ namespace ComInterfaceGenerator.Tests
             var qiCallCountObj = iUnknownStrategyProperty!.GetValue(obj);
             var countQi = (SingleQIComWrapper.CountQI)qiCallCountObj;
             Assert.Equal(1, countQi.QiCallCount);
-        }
-
-        [GeneratedComClass]
-        partial class DerivedImpl : IDerived
-        {
-            int data = 3;
-            string myName = "myName";
-            public void DoThingWithString(string name) => throw new NotImplementedException();
-
-            public int GetInt() => data;
-
-            public string GetName() => myName;
-
-            public void SetInt(int n) => data = n;
-
-            public void SetName(string name) => myName = name;
         }
 
         /// <summary>

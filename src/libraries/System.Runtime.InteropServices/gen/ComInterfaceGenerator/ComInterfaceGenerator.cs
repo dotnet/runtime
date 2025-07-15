@@ -186,7 +186,7 @@ namespace Microsoft.Interop
 
             // Generate a method named CreateManagedVirtualFunctionTable on the native interface implementation
             // that allocates and fills in the memory for the vtable.
-            var nativeToManagedVtables = interfaceAndMethodsContexts
+            var nativeToManagedVtables = interfaceAndExternalMethodsContexts
                 .Select(GenerateImplementationVTable)
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTable)
                 .WithComparer(SyntaxEquivalentComparer.Instance)

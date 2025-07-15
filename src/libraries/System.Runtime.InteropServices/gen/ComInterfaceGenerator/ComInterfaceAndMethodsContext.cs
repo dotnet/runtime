@@ -37,6 +37,6 @@ namespace Microsoft.Interop
         /// <summary>
         /// The size of the vtable for the base interface, including it's base interface methods and IUnknown methods.
         /// </summary>
-        public int BaseVTableSize => VTableSize - Methods.Length;
+        public int BaseVTableSize => VTableSize - DeclaredMethods.Count();
     }
 }

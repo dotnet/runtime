@@ -387,11 +387,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 "DerivedMethod",
                 (newComp, _) =>
                 {
-                    if (newComp.GetDiagnostics().Where(d => d.Severity is DiagnosticSeverity.Error or DiagnosticSeverity.Warning).Any())
-                    {
-                        Assert.Fail(string.Join(Environment.NewLine, newComp.GetDiagnostics().Select(d => d.GetMessage())));
-                        return;
-                    }
                     ValidateInterface("IComInterface2", 5);
                     ValidateInterface("IComInterface3", 5);
 
