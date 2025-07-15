@@ -174,7 +174,16 @@ namespace pal
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
 
-    inline bool mkdir(const char_t* dir, int mode) { return CreateDirectoryW(dir, NULL) != 0; }
+    inline bool mkdir(const char_t* dir, int mode, int& error_code)
+    {
+        BOOL result = ::CreateDirectoryW(dir, NULL);
+        if (result != FALSE)
+            return true;
+
+        error_code = ::GetLastError();
+        return false;
+    }
+
     inline bool rmdir(const char_t* path) { return RemoveDirectoryW(path) != 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::_wremove(path); }
@@ -237,7 +246,16 @@ namespace pal
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
 
-    inline bool mkdir(const char_t* dir, int mode) { return ::mkdir(dir, mode) == 0; }
+    inline bool mkdir(const char_t* dir, int mode, int& error_code)
+    {
+        int ret = ::mkdir(dir, mode);
+        if (ret == 0)
+            return true;
+
+        error_code = errno;
+        return false;
+    }
+
     inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::remove(path); }
@@ -324,6 +342,7 @@ namespace pal
 
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
+    bool is_path_fully_qualified(const string_t& path);
 
     // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.

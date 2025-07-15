@@ -469,6 +469,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - thaystg
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -492,7 +493,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -986,7 +988,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1060,6 +1063,7 @@ configuration:
             mentionees:
             - tarekgh
             - tommcdon
+            - steveisok
             - pjanotti
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1674,11 +1678,26 @@ configuration:
       description: Add breaking change doc label to PR
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: src/coreclr/inc/jiteeversionguid.h
+          matchAny: true
+      - isPullRequest
+      - isOpen
+      - isAction:
+          action: Opened
+      then:
+      - mentionUsers:
+          mentionees:
+          - dotnet/jit-contrib
+          replyTemplate: >-
+            Tagging @dotnet/jit-contrib for JIT-EE GUID update
+          assignMentionees: False
+      description: '@Mention for JIT-EE GUID update'
+    - if:
+      - payloadType: Pull_Request
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1690,11 +1709,9 @@ configuration:
       description: '[Linkable-framework workgroup] Add linkable-framework label to new Prs that touch files with *ILLink* that not have it already'
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework

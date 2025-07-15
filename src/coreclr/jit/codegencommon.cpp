@@ -613,7 +613,7 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 // inline
 regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
 {
-    assert(tree->gtOper == GT_LCL_VAR);
+    assert(tree->OperIs(GT_LCL_VAR));
 
     regMaskTP        regMask = RBM_NONE;
     const LclVarDsc* varDsc  = compiler->lvaGetDesc(tree->AsLclVarCommon());
@@ -805,8 +805,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     {
         unsigned   varNum     = lvaTrackedIndexToLclNum(deadVarIndex);
         LclVarDsc* varDsc     = lvaGetDesc(varNum);
-        bool       isGCRef    = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef    = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isGCRef    = varDsc->TypeIs(TYP_REF);
+        bool       isByRef    = varDsc->TypeIs(TYP_BYREF);
         bool       isInReg    = varDsc->lvIsInReg();
         bool       isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
 
@@ -841,8 +841,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     {
         unsigned   varNum  = lvaTrackedIndexToLclNum(bornVarIndex);
         LclVarDsc* varDsc  = lvaGetDesc(varNum);
-        bool       isGCRef = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isGCRef = varDsc->TypeIs(TYP_REF);
+        bool       isByRef = varDsc->TypeIs(TYP_BYREF);
 
         if (varDsc->lvIsInReg())
         {
@@ -1204,7 +1204,7 @@ AGAIN:
     /* Check for an addition of a constant */
 
     if (op2->IsIntCnsFitsInI32() && op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()) &&
-        (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
+        !op2->TypeIs(TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
         /* We're adding a constant */
 
@@ -1319,7 +1319,7 @@ AGAIN:
                 rv2 = op1->AsOp()->gtOp1;
 
                 int argScale;
-                while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
+                while ((rv2->OperIs(GT_MUL) || rv2->OperIs(GT_LSH)) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
                     if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
@@ -1395,7 +1395,7 @@ AGAIN:
                 // 'op2' is a scaled value...is it's argument also scaled?
                 int argScale;
                 rv2 = op2->AsOp()->gtOp1;
-                while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
+                while ((rv2->OperIs(GT_MUL) || rv2->OperIs(GT_LSH)) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
                     if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
@@ -1674,7 +1674,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
     emitJumpKind jumpKind;
 
 #ifdef TARGET_ARM64
-    if (tree->OperGet() == GT_MUL)
+    if (tree->OperIs(GT_MUL))
     {
         jumpKind = EJ_ne;
     }
@@ -1693,7 +1693,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
         if (jumpKind == EJ_lo)
         {
-            if (tree->OperGet() != GT_SUB)
+            if (!tree->OperIs(GT_SUB))
             {
                 jumpKind = EJ_hs;
             }
@@ -1764,10 +1764,9 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->IsAot())
     {
-        void* ignored;
         for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER; i++)
         {
-            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
     }
 #endif
@@ -1826,91 +1825,40 @@ void CodeGen::genGenerateMachineCode()
 
         printf(" for ");
 
-#if defined(TARGET_X86)
+#if defined(TARGET_XARCH)
+#if defined(TARGET_64BIT)
+        printf("generic X64");
+#else
+        printf("generic X86");
+#endif
+
         // Check ISA directly here instead of using
         // compOpportunisticallyDependsOn to avoid JIT-EE calls that could make
         // us miss in SPMI
-        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
-            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
-                {
-                    printf("X86 with AVX10.2/512");
-                }
-                else
-                {
-                    printf("X86 with AVX10.2/256");
-                }
-            }
-            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
-                {
-                    printf("X86 with AVX10.1/512");
-                }
-                else
-                {
-                    printf("X86 with AVX10.1/256");
-                }
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X86 with AVX512");
-            }
+            printf(" + VEX");
         }
-        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX512))
         {
-            printf("X86 with AVX");
+            printf(" + EVEX");
         }
-        else
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_APX))
         {
-            printf("generic X86");
-        }
-#elif defined(TARGET_AMD64)
-        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
-        {
-            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
-                {
-                    printf("X64 with AVX10.2/512");
-                }
-                else
-                {
-                    printf("X64 with AVX10.2/256");
-                }
-            }
-            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
-                {
-                    printf("X64 with AVX10.1/512");
-                }
-                else
-                {
-                    printf("X64 with AVX10.1/256");
-                }
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X64 with AVX512");
-            }
-        }
-        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
-        {
-            printf("X64 with AVX");
-        }
-        else
-        {
-            printf("generic X64");
+            printf(" + APX");
         }
 #elif defined(TARGET_ARM)
         printf("generic ARM");
 #elif defined(TARGET_ARM64)
         printf("generic ARM64");
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
+        {
+            printf(" + SVE");
+        }
 #elif defined(TARGET_LOONGARCH64)
         printf("generic LOONGARCH64");
 #elif defined(TARGET_RISCV64)
@@ -1921,15 +1869,15 @@ void CodeGen::genGenerateMachineCode()
 
         if (TargetOS::IsWindows)
         {
-            printf(" - Windows");
+            printf(" on Windows");
         }
         else if (TargetOS::IsApplePlatform)
         {
-            printf(" - Apple");
+            printf(" on Apple");
         }
         else if (TargetOS::IsUnix)
         {
-            printf(" - Unix");
+            printf(" on Unix");
         }
 
         printf("\n");
@@ -2585,7 +2533,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
             {
                 wbKind = CWBKind_RetBuf
             }
-            else if (varDsc->TypeGet() == TYP_BYREF)
+            else if (varDsc->TypeIs(TYP_BYREF))
             {
                 wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
             }
@@ -2967,7 +2915,7 @@ void CodeGen::genSpillOrAddRegisterParam(
         LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
 
         var_types storeType = genParamStackType(paramVarDsc, segment);
-        if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
+        if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
         {
             // Can happen for struct fields due to padding.
             storeType = genActualType(varDsc);
@@ -3818,10 +3766,10 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // or when compInitMem is true
             // or when in debug code
 
-            noway_assert(varTypeIsGC(varDsc->TypeGet()) || (varDsc->TypeGet() == TYP_STRUCT) ||
-                         compiler->info.compInitMem || compiler->opts.compDbgCode);
+            noway_assert(varTypeIsGC(varDsc->TypeGet()) || varDsc->TypeIs(TYP_STRUCT) || compiler->info.compInitMem ||
+                         compiler->opts.compDbgCode);
 
-            if ((varDsc->TypeGet() == TYP_STRUCT) && !compiler->info.compInitMem &&
+            if (varDsc->TypeIs(TYP_STRUCT) && !compiler->info.compInitMem &&
                 (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
@@ -4140,7 +4088,7 @@ void CodeGen::genHomeSwiftStructStackParameters()
         }
 
         LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
-        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
+        if (!dsc->TypeIs(TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
         {
             continue;
         }
@@ -4949,7 +4897,7 @@ void CodeGen::genFnProlog()
                     }
                 }
             }
-            else if (varDsc->TypeGet() == TYP_DOUBLE)
+            else if (varDsc->TypeIs(TYP_DOUBLE))
             {
                 initDblRegs |= regMask;
             }
@@ -5044,8 +4992,11 @@ void CodeGen::genFnProlog()
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
 #if defined(TARGET_AMD64)
-    // TODO-Xarch-apx : Revert. Excluding eGPR so that it's not used for non REX2 supported movs.
-    excludeMask = excludeMask | RBM_HIGHINT;
+    // we'd require eEVEX present to enable EGPRs in HWIntrinsics.
+    if (!compiler->canUseEvexEncoding())
+    {
+        excludeMask = excludeMask | RBM_HIGHINT;
+    }
 #endif // !defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM
@@ -5611,7 +5562,7 @@ void CodeGen::genFnProlog()
 unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
 {
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
+    assert(treeNode->OperIs(GT_JMPTABLE));
 
     emitter*       emit       = GetEmitter();
     const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
@@ -6766,7 +6717,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
     var_types targetType = treeNode->TypeGet();
 
     assert(op1 != nullptr);
-    assert(op1->OperGet() == GT_LONG);
+    assert(op1->OperIs(GT_LONG));
     GenTree* loRetVal = op1->gtGetOp1();
     GenTree* hiRetVal = op1->gtGetOp2();
     assert((loRetVal->GetRegNum() != REG_NA) && (hiRetVal->GetRegNum() != REG_NA));
@@ -7266,36 +7217,6 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
         }
 #endif
 
-#if FEATURE_ARG_SPLIT
-        if (argNode->OperIs(GT_PUTARG_SPLIT))
-        {
-            assert(compFeatureArgSplit());
-            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            unsigned regIndex = 0;
-            for (const ABIPassingSegment& seg : abiInfo.Segments())
-            {
-                if (!seg.IsPassedInRegister())
-                {
-                    continue;
-                }
-
-                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
-                var_types type     = argNode->AsPutArgSplit()->GetRegType(regIndex);
-                inst_Mov(genActualType(type), seg.GetRegister(), allocReg, /* canSkip */ true);
-
-                if (call->IsFastTailCall())
-                {
-                    // We won't actually consume the register here -- keep it alive into the epilog.
-                    gcInfo.gcMarkRegPtrVal(seg.GetRegister(), type);
-                }
-
-                regIndex++;
-            }
-
-            continue;
-        }
-#endif
-
         if (abiInfo.HasExactlyOneRegisterSegment())
         {
             regNumber argReg = abiInfo.Segment(0).GetRegister();
@@ -7615,7 +7536,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
-                assert(varDsc->TypeGet() == TYP_LONG);
+                assert(varDsc->TypeIs(TYP_LONG));
                 assert(offset <= genTypeSize(TYP_LONG));
             }
 #endif // !TARGET_64BIT
@@ -7659,7 +7580,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 //
 void CodeGen::genRegCopy(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_COPY);
+    assert(treeNode->OperIs(GT_COPY));
     GenTree* op1 = treeNode->AsOp()->gtOp1;
 
     if (op1->IsMultiRegNode())
@@ -7779,7 +7700,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 //
 regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
 {
-    assert(treeNode->OperGet() == GT_COPY);
+    assert(treeNode->OperIs(GT_COPY));
     GenTree* op1 = treeNode->gtGetOp1();
     assert(op1->IsMultiRegNode());
 

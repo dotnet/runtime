@@ -6,12 +6,41 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class RangeTests : EnumerableTests
+    public class RangeTests : RangeTestsBase
     {
+        protected override IEnumerable<int> GetRange(int start, int count) => Enumerable.Range(start, count);
+
+        [Fact]
+        public void Range_ThrowExceptionOnNegativeCount()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => GetRange(1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => GetRange(1, int.MinValue));
+        }
+
+        [Fact]
+        public void Range_ThrowExceptionOnOverflow()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => GetRange(1000, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => GetRange(int.MaxValue, 1000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => GetRange(int.MaxValue - 10, 20));
+        }
+    }
+
+    public class SequenceAsRangeTests : RangeTestsBase
+    {
+        protected override IEnumerable<int> GetRange(int start, int count) =>
+            count == 0 ? Enumerable.Range(start, count) :
+            Enumerable.Sequence(start, start + count - 1, 1);
+    }
+
+    public abstract class RangeTestsBase : EnumerableTests
+    {
+        protected abstract IEnumerable<int> GetRange(int start, int count);
+
         [Fact]
         public void Range_ProduceCorrectSequence()
         {
-            var rangeSequence = Enumerable.Range(1, 100);
+            var rangeSequence = GetRange(1, 100);
             int expected = 0;
             foreach (var val in rangeSequence)
             {
@@ -34,7 +63,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(Range_ToArray_ProduceCorrectResult_MemberData))]
         public void Range_ToArray_ProduceCorrectResult(int length)
         {
-            var array = Enumerable.Range(1, length).ToArray();
+            var array = GetRange(1, length).ToArray();
             Assert.Equal(length, array.Length);
             for (var i = 0; i < array.Length; i++)
                 Assert.Equal(i + 1, array[i]);
@@ -43,7 +72,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Range_ToList_ProduceCorrectResult()
         {
-            var list = Enumerable.Range(1, 100).ToList();
+            var list = GetRange(1, 100).ToList();
             Assert.Equal(100, list.Count);
             for (var i = 0; i < list.Count; i++)
                 Assert.Equal(i + 1, list[i]);
@@ -52,33 +81,18 @@ namespace System.Linq.Tests
         [Fact]
         public void Range_ZeroCountLeadToEmptySequence()
         {
-            var array = Enumerable.Range(1, 0).ToArray();
-            var array2 = Enumerable.Range(int.MinValue, 0).ToArray();
-            var array3 = Enumerable.Range(int.MaxValue, 0).ToArray();
+            var array = GetRange(1, 0).ToArray();
+            var array2 = GetRange(int.MinValue, 0).ToArray();
+            var array3 = GetRange(int.MaxValue, 0).ToArray();
             Assert.Equal(0, array.Length);
             Assert.Equal(0, array2.Length);
             Assert.Equal(0, array3.Length);
         }
 
         [Fact]
-        public void Range_ThrowExceptionOnNegativeCount()
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(1, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(1, int.MinValue));
-        }
-
-        [Fact]
-        public void Range_ThrowExceptionOnOverflow()
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(1000, int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(int.MaxValue, 1000));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(int.MaxValue - 10, 20));
-        }
-
-        [Fact]
         public void Range_NotEnumerateAfterEnd()
         {
-            using var rangeEnum = Enumerable.Range(1, 1).GetEnumerator();
+            using var rangeEnum = GetRange(1, 1).GetEnumerator();
             Assert.True(rangeEnum.MoveNext());
             Assert.False(rangeEnum.MoveNext());
             Assert.False(rangeEnum.MoveNext());
@@ -87,7 +101,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Range_EnumerableAndEnumeratorAreSame()
         {
-            var rangeEnumerable = Enumerable.Range(1, 1);
+            var rangeEnumerable = GetRange(1, 1);
             using var rangeEnumerator = rangeEnumerable.GetEnumerator();
             Assert.Same(rangeEnumerable, rangeEnumerator);
         }
@@ -95,7 +109,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Range_GetEnumeratorReturnUniqueInstances()
         {
-            var rangeEnumerable = Enumerable.Range(1, 1);
+            var rangeEnumerable = GetRange(1, 1);
             using var enum1 = rangeEnumerable.GetEnumerator();
             using var enum2 = rangeEnumerable.GetEnumerator();
             Assert.NotSame(enum1, enum2);
@@ -106,7 +120,7 @@ namespace System.Linq.Tests
         {
             int from = int.MaxValue - 3;
             int count = 4;
-            var rangeEnumerable = Enumerable.Range(from, count);
+            var rangeEnumerable = GetRange(from, count);
 
             Assert.Equal(count, rangeEnumerable.Count());
 
@@ -117,8 +131,8 @@ namespace System.Linq.Tests
         [Fact]
         public void RepeatedCallsSameResults()
         {
-            Assert.Equal(Enumerable.Range(-1, 2), Enumerable.Range(-1, 2));
-            Assert.Equal(Enumerable.Range(0, 0), Enumerable.Range(0, 0));
+            Assert.Equal(GetRange(-1, 2), GetRange(-1, 2));
+            Assert.Equal(GetRange(0, 0), GetRange(0, 0));
         }
 
         [Fact]
@@ -128,7 +142,7 @@ namespace System.Linq.Tests
             int count = 1;
             int[] expected = [-5];
 
-            Assert.Equal(expected, Enumerable.Range(start, count));
+            Assert.Equal(expected, GetRange(start, count));
         }
 
         [Fact]
@@ -138,95 +152,95 @@ namespace System.Linq.Tests
             int count = 6;
             int[] expected = [12, 13, 14, 15, 16, 17];
 
-            Assert.Equal(expected, Enumerable.Range(start, count));
+            Assert.Equal(expected, GetRange(start, count));
         }
 
         [Fact]
         public void Take()
         {
-            Assert.Equal(Enumerable.Range(0, 10), Enumerable.Range(0, 20).Take(10));
+            Assert.Equal(GetRange(0, 10), GetRange(0, 20).Take(10));
         }
 
         [Fact]
         public void TakeExcessive()
         {
-            Assert.Equal(Enumerable.Range(0, 10), Enumerable.Range(0, 10).Take(int.MaxValue));
+            Assert.Equal(GetRange(0, 10), GetRange(0, 10).Take(int.MaxValue));
         }
 
         [Fact]
         public void Skip()
         {
-            Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).Skip(10));
+            Assert.Equal(GetRange(10, 10), GetRange(0, 20).Skip(10));
         }
 
         [Fact]
         public void SkipExcessive()
         {
-            Assert.Empty(Enumerable.Range(10, 10).Skip(20));
+            Assert.Empty(GetRange(10, 10).Skip(20));
         }
 
         [Fact]
         public void SkipTakeCanOnlyBeOne()
         {
-            Assert.Equal([1], Enumerable.Range(1, 10).Take(1));
-            Assert.Equal([2], Enumerable.Range(1, 10).Skip(1).Take(1));
-            Assert.Equal([3], Enumerable.Range(1, 10).Take(3).Skip(2));
-            Assert.Equal([1], Enumerable.Range(1, 10).Take(3).Take(1));
+            Assert.Equal([1], GetRange(1, 10).Take(1));
+            Assert.Equal([2], GetRange(1, 10).Skip(1).Take(1));
+            Assert.Equal([3], GetRange(1, 10).Take(3).Skip(2));
+            Assert.Equal([1], GetRange(1, 10).Take(3).Take(1));
         }
 
         [Fact]
         public void ElementAt()
         {
-            Assert.Equal(4, Enumerable.Range(0, 10).ElementAt(4));
+            Assert.Equal(4, GetRange(0, 10).ElementAt(4));
         }
 
         [Fact]
         public void ElementAtExcessiveThrows()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Enumerable.Range(0, 10).ElementAt(100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => GetRange(0, 10).ElementAt(100));
         }
 
         [Fact]
         public void ElementAtOrDefault()
         {
-            Assert.Equal(4, Enumerable.Range(0, 10).ElementAtOrDefault(4));
+            Assert.Equal(4, GetRange(0, 10).ElementAtOrDefault(4));
         }
 
         [Fact]
         public void ElementAtOrDefaultExcessiveIsDefault()
         {
-            Assert.Equal(0, Enumerable.Range(52, 10).ElementAtOrDefault(100));
+            Assert.Equal(0, GetRange(52, 10).ElementAtOrDefault(100));
         }
 
         [Fact]
         public void First()
         {
-            Assert.Equal(57, Enumerable.Range(57, 1000000000).First());
+            Assert.Equal(57, GetRange(57, 1000000000).First());
         }
 
         [Fact]
         public void FirstOrDefault()
         {
-            Assert.Equal(-100, Enumerable.Range(-100, int.MaxValue).FirstOrDefault());
+            Assert.Equal(-100, GetRange(-100, int.MaxValue).FirstOrDefault());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void Last()
         {
-            Assert.Equal(1000000056, Enumerable.Range(57, 1000000000).Last());
+            Assert.Equal(1000000056, GetRange(57, 1000000000).Last());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void LastOrDefault()
         {
-            Assert.Equal(int.MaxValue - 101, Enumerable.Range(-100, int.MaxValue).LastOrDefault());
+            Assert.Equal(int.MaxValue - 101, GetRange(-100, int.MaxValue).LastOrDefault());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void IListImplementationIsValid()
         {
-            Validate(Enumerable.Range(42, 10), [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);
-            Validate(Enumerable.Range(42, 10).Skip(3).Take(4), [45, 46, 47, 48]);
+            Validate(GetRange(42, 10), [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);
+            Validate(GetRange(42, 10).Skip(3).Take(4), [45, 46, 47, 48]);
 
             static void Validate(IEnumerable<int> e, int[] expected)
             {

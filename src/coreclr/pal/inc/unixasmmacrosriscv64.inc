@@ -299,7 +299,6 @@ C_FUNC(\Name):
 .endm
 
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
     RESTORE_CALLEESAVED_REGISTERS sp, __PWTB_CalleeSavedRegisters
 
     EPILOG_RESTORE_REG_PAIR       fp, ra, __PWTB_CalleeSavedRegisters
@@ -326,6 +325,28 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR fp, ra, __PWTB_CalleeSavedRegisters
 
     EPILOG_STACK_FREE                 __PWTB_StackAlloc
+.endm
+
+// Inlined version of GetThreadEEAllocContext
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+    call    C_FUNC(GetThreadEEAllocContext)
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+    // Including fp, ra, s1-s11, tp, gp, padding and (a0-a7)arguments. (1+1+11+1+1)*8 + 8 + 8*8.
+    PROLOG_STACK_ALLOC          192
+    PROLOG_SAVE_REG_PAIR        fp, ra, 0, 1
+    // Spill callee saved registers.  sp=r2.
+    SAVE_CALLEESAVED_REGISTERS  sp, 0
+    mv    \target, sp
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+    RESTORE_CALLEESAVED_REGISTERS sp, 0
+    EPILOG_RESTORE_REG_PAIR       fp, ra, 0
+    EPILOG_STACK_FREE             192
 .endm
 
 // ------------------------------------------------------------------

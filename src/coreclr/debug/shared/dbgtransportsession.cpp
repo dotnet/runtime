@@ -80,7 +80,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     // the two way pipe; it expects the in/out handles to be -1 instead of 0.
     m_ref = 1;
     m_pipe = TwoWayPipe();
-    m_sStateLock = DbgTransportLock();
+    m_sStateLock = {};
 
     // Initialize all per-session state variables.
     InitSessionState();
@@ -187,7 +187,7 @@ void DbgTransportSession::Shutdown()
 
         // Must take the state lock to make a state transition.
         {
-            TransportLockHolder sLockHolder(&m_sStateLock);
+            TransportLockHolder sLockHolder(m_sStateLock);
 
             // Remember previous state and transition to SS_Closed.
             SessionState ePreviousState = m_eState;
@@ -271,7 +271,7 @@ bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
 
 bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 {
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
     if (m_fDebuggerAttached)
     {
         if (pTicket->IsValid())
@@ -309,7 +309,7 @@ bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 
 bool DbgTransportSession::StopUsingAsDebugger(DebugTicket * pTicket)
 {
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
     if (m_fDebuggerAttached && pTicket->IsValid())
     {
         // The caller is indeed the owner of the debug ticket.
@@ -365,7 +365,7 @@ void DbgTransportSession::GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent)
 
     // Must acquire the state lock to synchronize us wrt to the transport thread (clients already guarantee
     // they serialize calls to this and waiting on m_rghEventReadyEvent).
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
 
     // There must be at least one valid event waiting (this call does not block).
     _ASSERTE(m_cValidEventBuffers);
@@ -526,16 +526,6 @@ HRESULT DbgTransportSession::WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, 
     return sMessage.m_sHeader.TypeSpecificData.MemoryAccess.m_hrResult;
 }
 
-HRESULT DbgTransportSession::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
-{
-    DbgTransportLog(LC_Requests, "Sending 'VirtualUnwind'");
-    DBG_TRANSPORT_INC_STAT(SentVirtualUnwind);
-
-    Message sMessage;
-    sMessage.Init(MT_VirtualUnwind, context, contextSize, context, contextSize);
-    return SendRequestMessageAndWait(&sMessage);
-}
-
 // Read and write the debugger control block on the LS from the RS.
 HRESULT DbgTransportSession::GetDCB(DebuggerIPCControlBlock *pDCB)
 {
@@ -607,7 +597,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
     // and while determining whether to send immediately or not depending on the session state (to avoid
     // posting a send on a closed and possibly recycled socket).
     {
-        TransportLockHolder sLockHolder(&m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         // Perform any last updates to the header or data block here since we might be about to encrypt them.
 
@@ -939,7 +929,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
 void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
 {
     // Must access the send queue under the state lock.
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
 
     // Note that message headers (and data blocks) may be encrypted. Use the cached fields in the Message
     // structure to compare message IDs and types.
@@ -957,7 +947,6 @@ void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
             MessageType eType = pMsg->m_sHeader.m_eType;
             if (eType != MT_ReadMemory &&
                 eType != MT_WriteMemory &&
-                eType != MT_VirtualUnwind &&
                 eType != MT_GetDCB &&
                 eType != MT_SetDCB &&
                 eType != MT_GetAppDomainCB)
@@ -1030,7 +1019,7 @@ bool DbgTransportSession::ProcessReply(MessageHeader *pHeader)
             // we don't need to put it on the queue in order (it will never be resent). Easiest just to put it
             // on the head.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 pMsg->m_pNext = m_pSendQueueFirst;
                 m_pSendQueueFirst = pMsg;
                 if (m_pSendQueueLast == NULL)
@@ -1101,7 +1090,7 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
     // Locate original message on the send queue.
     Message *pMsg = NULL;
     {
-        TransportLockHolder sLockHolder(&m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         pMsg = m_pSendQueueFirst;
         Message *pLastMsg = NULL;
@@ -1340,7 +1329,7 @@ void DbgTransportSession::TransportWorker()
         // blocked on a Receive() on the newly formed connection (important if they want to transition the state
         // to SS_Closed).
         {
-            TransportLockHolder sLockHolder(&m_sStateLock);
+            TransportLockHolder sLockHolder(m_sStateLock);
 
             if (m_eState == SS_Closed)
                 break;
@@ -1481,7 +1470,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
                 {
@@ -1500,7 +1489,7 @@ void DbgTransportSession::TransportWorker()
 
             // Finally we can transition to SS_Open.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 if (m_eState == SS_Closed)
                     break;
                 else if (m_eState == SS_Opening)
@@ -1617,7 +1606,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
 
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
@@ -1766,7 +1755,7 @@ void DbgTransportSession::TransportWorker()
                 // We need to do some state cleanup here, since when we reform a connection (if ever, it will
                 // be with a new session).
                 {
-                    TransportLockHolder sLockHolder(&m_sStateLock);
+                    TransportLockHolder sLockHolder(m_sStateLock);
 
                     // Check we're still in a good state before a clean restart.
                     if (m_eState != SS_Open)
@@ -1815,7 +1804,7 @@ void DbgTransportSession::TransportWorker()
                     // that can expand the array, a client thread may be in GetNextEvent() reading from the
                     // old version.
                     {
-                        TransportLockHolder sLockHolder(&m_sStateLock);
+                        TransportLockHolder sLockHolder(m_sStateLock);
 
                         // When we copy old array contents over we place the head of the list at the start of
                         // the new array for simplicity. If the head happened to be at the start of the old
@@ -1868,7 +1857,7 @@ void DbgTransportSession::TransportWorker()
 
                     // We must take the lock to update the count of valid entries though, since clients can
                     // touch this field as well.
-                    TransportLockHolder sLockHolder(&m_sStateLock);
+                    TransportLockHolder sLockHolder(m_sStateLock);
 
                     m_cValidEventBuffers++;
                     DWORD idxCurrentEvent = m_idxEventBufferTail;
@@ -1950,33 +1939,6 @@ void DbgTransportSession::TransportWorker()
                         cbBytesToRead -= cbTransfer;
                     }
                 }
-#endif // RIGHT_SIDE_COMPILE
-                break;
-
-            case MT_VirtualUnwind:
-#ifdef RIGHT_SIDE_COMPILE
-                if (!ProcessReply(&sReceiveHeader))
-                    HANDLE_TRANSIENT_ERROR();
-#else // RIGHT_SIDE_COMPILE
-                if (sReceiveHeader.m_cbDataBlock != (DWORD)sizeof(frameContext))
-                {
-                    _ASSERTE(!"Inconsistent VirtualUnwind request");
-                    HANDLE_CRITICAL_ERROR();
-                }
-
-                if (!ReceiveBlock((PBYTE)&frameContext, sizeof(frameContext)))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                if (!PAL_VirtualUnwind(&frameContext, NULL))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                fReplyRequired = true;
-                pbOptReplyData = (PBYTE)&frameContext;
-                cbOptReplyData = sizeof(frameContext);
 #endif // RIGHT_SIDE_COMPILE
                 break;
 
@@ -2091,7 +2053,7 @@ void DbgTransportSession::TransportWorker()
 
     // Drain any remaining entries in the send queue (aborting them when they need completions).
     {
-        TransportLockHolder sLockHolder(&m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         Message *pMsg;
         while ((pMsg = m_pSendQueueFirst) != NULL)
@@ -2125,7 +2087,6 @@ void DbgTransportSession::TransportWorker()
 #ifdef RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
             case MT_GetAppDomainCB:
@@ -2135,7 +2096,6 @@ void DbgTransportSession::TransportWorker()
 #else // RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
             case MT_GetAppDomainCB:
@@ -2537,8 +2497,6 @@ const char *DbgTransportSession::MessageName(MessageType eType)
         return "ReadMemory";
     case MT_WriteMemory:
         return "WriteMemory";
-    case MT_VirtualUnwind:
-        return "VirtualUnwind";
     case MT_GetDCB:
         return "GetDCB";
     case MT_SetDCB:
@@ -2595,10 +2553,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
         return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind' reply");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
-        return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB' reply");
         DBG_TRANSPORT_INC_STAT(ReceivedGetDCB);
@@ -2623,10 +2577,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (PBYTE)pHeader->TypeSpecificData.MemoryAccess.m_pbLeftSideBuffer,
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
-        return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind'");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
         return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB'");
@@ -2710,27 +2660,28 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
 // Lock abstraction code (hides difference in lock implementation between left and right side).
 #ifdef RIGHT_SIDE_COMPILE
 
-// On the right side we use a CRITICAL_SECTION.
+// On the right side we use a minipal_mutex.
 
 void DbgTransportLock::Init()
 {
-    InitializeCriticalSection(&m_sLock);
+    minipal_mutex_init(&m_sLock);
 }
 
 void DbgTransportLock::Destroy()
 {
-    DeleteCriticalSection(&m_sLock);
+    minipal_mutex_destroy(&m_sLock);
 }
 
 void DbgTransportLock::Enter()
 {
-    EnterCriticalSection(&m_sLock);
+    minipal_mutex_enter(&m_sLock);
 }
 
 void DbgTransportLock::Leave()
 {
-    LeaveCriticalSection(&m_sLock);
+    minipal_mutex_leave(&m_sLock);
 }
+
 #else // RIGHT_SIDE_COMPILE
 
 // On the left side we use a Crst.

@@ -173,10 +173,6 @@ HRESULT EEConfig::Init()
     fConditionalContracts = false;
 #endif
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = 1000;
-#endif
-
 #ifdef _DEBUG
     // interop logging
     m_TraceWrapper = 0;
@@ -467,10 +463,6 @@ HRESULT EEConfig::sync()
             pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
     }
 #endif // defined(FEATURE_READYTORUN)
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
-#endif
 
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));

@@ -317,7 +317,7 @@ GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP
 // Suspend an async method, returning a continuation.
 // Before lowering this is a seemingly normal TYP_VOID node with a lot of side effects (GTF_CALL | GTF_GLOB_REF | GTF_ORDER_SIDEEFF).
 // Lowering then removes all successor nodes and leaves it as the terminator node.
-GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // Return a continuation in an async method
+GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
@@ -354,9 +354,6 @@ GTNODE(PINVOKE_EPILOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack
-#if FEATURE_ARG_SPLIT
-GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in registers with stack (split struct in ARM32)
-#endif // FEATURE_ARG_SPLIT
 GTNODE(SWAP             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR) // op1 and op2 swap (registers)
 GTNODE(COPY             , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // Copies a variable from its current location to a register that satisfies
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // code generation constraints. The operand is the actual lclVar node.

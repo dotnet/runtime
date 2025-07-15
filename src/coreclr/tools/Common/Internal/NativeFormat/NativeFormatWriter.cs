@@ -2041,15 +2041,5 @@ namespace Internal.NativeFormat
                 }
             }
         }
-
-        public override bool Equals(object obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

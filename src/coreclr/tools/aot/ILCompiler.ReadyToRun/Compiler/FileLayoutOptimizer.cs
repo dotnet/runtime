@@ -29,6 +29,7 @@ namespace ILCompiler
         DefaultSort,
         ExclusiveWeight,
         HotCold,
+        InstrumentedHotCold,
         HotWarmCold,
 #if READYTORUN
         CallFrequency,
@@ -151,6 +152,10 @@ namespace ILCompiler
                     {
                         return MethodWithGCInfoToWeight(method) > 0 ? 0 : 1;
                     }
+                    break;
+
+                case MethodLayoutAlgorithm.InstrumentedHotCold:
+                    methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => (_profileData[left.Method] != null).CompareTo(_profileData[right.Method] != null));
                     break;
 
                 case MethodLayoutAlgorithm.HotWarmCold:

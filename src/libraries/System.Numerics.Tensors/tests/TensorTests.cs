@@ -104,7 +104,7 @@ namespace System.Numerics.Tensors.Tests
 
                 FillTensor<T>(data);
                 Tensor<T> x = Tensor.Create<T>(data, tensorLength, []);
-                
+
                 Tensor<T> results = tensorOperation(x);
 
                 Assert.Equal(tensorLength, results.Lengths);
@@ -616,7 +616,7 @@ namespace System.Numerics.Tensors.Tests
                 var t1 = Tensor.Create<int>((Span<nint>)[2, 2], [1, 1], false);
             });
         }
-        
+
         [Fact]
         public static void TensorCosineSimilarityTests()
         {
@@ -1116,19 +1116,19 @@ namespace System.Numerics.Tensors.Tests
             // stacking 2x2 tensors along dimension 1
             Tensor<int> v1 = Tensor.Create([1, 2, 3, 4], lengths: [2, 2]);
             Tensor<int> v2 = Tensor.Create([10, 20, 30, 40], lengths: [2, 2]);
-            
+
             resultTensor = Tensor.StackAlongDimension(1, [v1, v2]);
-            
+
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
             Assert.Equal(2, resultTensor.Lengths[1]);
             Assert.Equal(2, resultTensor.Lengths[2]);
-            
+
             Assert.Equal(1, resultTensor[0, 0, 0]);
             Assert.Equal(2, resultTensor[0, 0, 1]);
             Assert.Equal(10, resultTensor[0, 1, 0]);
             Assert.Equal(20, resultTensor[0, 1, 1]);
-            
+
             Assert.Equal(3, resultTensor[1, 0, 0]);
             Assert.Equal(4, resultTensor[1, 0, 1]);
             Assert.Equal(30, resultTensor[1, 1, 0]);
@@ -2723,7 +2723,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void TensorObjectFillTests()
         {
-            ITensor tensor = (ITensor)new Tensor<int>(new int[4], new nint[] { 2, 2 });
+            ITensor tensor = Tensor.Create<int>(new int[4], new nint[] { 2, 2 });
             tensor.Fill(5);
 
             Assert.Equal(5, tensor[0, 0]);
@@ -2744,7 +2744,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void TensorObjectIndexerTests()
         {
-            ITensor tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
+            ITensor tensor = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
 
             Assert.Equal(1, tensor[new nint[] { 0, 0 }]);
             Assert.Equal(2, tensor[new nint[] { 0, 1 }]);
@@ -2775,7 +2775,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void TensorGetPinnedHandleTests()
         {
-            Tensor<int> tensor = new Tensor<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
+            Tensor<int> tensor = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, new nint[] { 2, 2 });
 
             using MemoryHandle handle = tensor.GetPinnedHandle();
             unsafe

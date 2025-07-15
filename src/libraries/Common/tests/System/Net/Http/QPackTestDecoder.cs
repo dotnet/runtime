@@ -42,7 +42,7 @@ namespace System.Net.Test.Common
                     (int valueLength, string value) = DecodeString(buffer.Slice(nameLength), 0b0111_1111);
 
                     int headerLength = nameLength + valueLength;
-                    var header = new HttpHeaderData(s_staticTable[staticIndex].Name, value, raw: buffer.Slice(0, headerLength).ToArray());
+                    var header = new HttpHeaderData(s_staticTable[staticIndex].Name, value, raw: buffer.Slice(0, headerLength).ToArray(), rawValueStart: nameLength);
 
                     return (headerLength, header);
                 }
@@ -52,7 +52,7 @@ namespace System.Net.Test.Common
                     (int valueLength, string value) = DecodeString(buffer.Slice(nameLength), 0b0111_1111);
 
                     int headerLength = nameLength + valueLength;
-                    var header = new HttpHeaderData(name, value, raw: buffer.Slice(0, headerLength).ToArray());
+                    var header = new HttpHeaderData(name, value, raw: buffer.Slice(0, headerLength).ToArray(), rawValueStart: nameLength);
 
                     return (headerLength, header);
                 }

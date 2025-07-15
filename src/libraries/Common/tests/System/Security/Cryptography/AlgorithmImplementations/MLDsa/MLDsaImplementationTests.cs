@@ -20,9 +20,21 @@ namespace System.Security.Cryptography.Tests
         public static void GenerateImport_NullAlgorithm()
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.GenerateKey(null));
-            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaPrivateSeed(null, default));
-            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaPublicKey(null, default));
-            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaSecretKey(null, default));
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaPrivateSeed(null, default(ReadOnlySpan<byte>)));
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaPublicKey(null, default(ReadOnlySpan<byte>)));
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaSecretKey(null, default(ReadOnlySpan<byte>)));
+
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaPrivateSeed(null, (byte[]?)null));
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaPublicKey(null, (byte[]?)null));
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLDsa.ImportMLDsaSecretKey(null, (byte[]?)null));
+        }
+
+        [Fact]
+        public static void Import_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => MLDsa.ImportMLDsaPrivateSeed(MLDsaAlgorithm.MLDsa44, (byte[]?)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => MLDsa.ImportMLDsaPublicKey(MLDsaAlgorithm.MLDsa44, (byte[]?)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => MLDsa.ImportMLDsaSecretKey(MLDsaAlgorithm.MLDsa44, (byte[]?)null));
         }
 
         [Theory]
@@ -517,8 +529,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportFromPem(import =>
                 MLDsaTestHelpers.AssertExportToPrivateKeyPem(export =>
-                    WithDispose(import(info.PrivateKeyPem), mldsa =>
-                        Assert.Equal(info.PrivateKeyPem, export(mldsa)))));
+                    WithDispose(import(info.PrivateKeyPem_Seed), mldsa =>
+                        Assert.Equal(info.PrivateKeyPem_Seed, export(mldsa)))));
         }
 
         [Theory]
@@ -526,7 +538,7 @@ namespace System.Security.Cryptography.Tests
         public void RoundTrip_EncryptedPrivateKey(MLDsaKeyInfo info)
         {
             // Load key
-            using MLDsa mldsa = MLDsa.ImportEncryptedPkcs8PrivateKey(info.EncryptionPassword, info.Pkcs8EncryptedPrivateKey);
+            using MLDsa mldsa = MLDsa.ImportEncryptedPkcs8PrivateKey(info.EncryptionPassword, info.Pkcs8EncryptedPrivateKey_Seed);
 
             byte[] secretKey = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
             mldsa.ExportMLDsaSecretKey(secretKey);

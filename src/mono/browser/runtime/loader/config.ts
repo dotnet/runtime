@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode } from "../types/internal";
-import type { BootModule, DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
+import type { AssemblyAsset, Assets, BootModule, DotnetModuleConfig, IcuAsset, JsAsset, MonoConfig, PdbAsset, SymbolsAsset, VfsAsset, WasmAsset } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
@@ -24,10 +24,10 @@ export function deep_merge_config (target: MonoConfigInternal, source: MonoConfi
     }
     if (providedConfig.resources !== undefined) {
         providedConfig.resources = deep_merge_resources(target.resources || {
-            assembly: {},
-            jsModuleNative: {},
-            jsModuleRuntime: {},
-            wasmNative: {}
+            assembly: [],
+            jsModuleNative: [],
+            jsModuleRuntime: [],
+            wasmNative: []
         }, providedConfig.resources);
     }
     if (providedConfig.environmentVariables !== undefined) {
@@ -51,65 +51,65 @@ export function deep_merge_module (target: DotnetModuleInternal, source: DotnetM
     return Object.assign(target, providedConfig);
 }
 
-function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): ResourceGroups {
+function deep_merge_resources (target: Assets, source: Assets): Assets {
     // no need to merge the same object
     if (target === source) return target;
 
-    const providedResources: ResourceGroups = { ...source };
+    const providedResources: Assets = { ...source };
     if (providedResources.assembly !== undefined) {
-        providedResources.assembly = { ...(target.assembly || {}), ...(providedResources.assembly || {}) };
+        providedResources.assembly = [...(target.assembly || []), ...(providedResources.assembly || [])];
     }
     if (providedResources.lazyAssembly !== undefined) {
-        providedResources.lazyAssembly = { ...(target.lazyAssembly || {}), ...(providedResources.lazyAssembly || {}) };
+        providedResources.lazyAssembly = [...(target.lazyAssembly || []), ...(providedResources.lazyAssembly || [])];
     }
     if (providedResources.pdb !== undefined) {
-        providedResources.pdb = { ...(target.pdb || {}), ...(providedResources.pdb || {}) };
+        providedResources.pdb = [...(target.pdb || []), ...(providedResources.pdb || [])];
     }
     if (providedResources.jsModuleWorker !== undefined) {
-        providedResources.jsModuleWorker = { ...(target.jsModuleWorker || {}), ...(providedResources.jsModuleWorker || {}) };
+        providedResources.jsModuleWorker = [...(target.jsModuleWorker || []), ...(providedResources.jsModuleWorker || [])];
     }
     if (providedResources.jsModuleNative !== undefined) {
-        providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
+        providedResources.jsModuleNative = [...(target.jsModuleNative || []), ...(providedResources.jsModuleNative || [])];
     }
     if (providedResources.jsModuleDiagnostics !== undefined) {
-        providedResources.jsModuleDiagnostics = { ...(target.jsModuleDiagnostics || {}), ...(providedResources.jsModuleDiagnostics || {}) };
+        providedResources.jsModuleDiagnostics = [...(target.jsModuleDiagnostics || []), ...(providedResources.jsModuleDiagnostics || [])];
     }
     if (providedResources.jsModuleRuntime !== undefined) {
-        providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
+        providedResources.jsModuleRuntime = [...(target.jsModuleRuntime || []), ...(providedResources.jsModuleRuntime || [])];
     }
     if (providedResources.wasmSymbols !== undefined) {
-        providedResources.wasmSymbols = { ...(target.wasmSymbols || {}), ...(providedResources.wasmSymbols || {}) };
+        providedResources.wasmSymbols = [...(target.wasmSymbols || []), ...(providedResources.wasmSymbols || [])];
     }
     if (providedResources.wasmNative !== undefined) {
-        providedResources.wasmNative = { ...(target.wasmNative || {}), ...(providedResources.wasmNative || {}) };
+        providedResources.wasmNative = [...(target.wasmNative || []), ...(providedResources.wasmNative || [])];
     }
     if (providedResources.icu !== undefined) {
-        providedResources.icu = { ...(target.icu || {}), ...(providedResources.icu || {}) };
+        providedResources.icu = [...(target.icu || []), ...(providedResources.icu || [])];
     }
     if (providedResources.satelliteResources !== undefined) {
-        providedResources.satelliteResources = deep_merge_dict(target.satelliteResources || {}, providedResources.satelliteResources || {});
+        providedResources.satelliteResources = deepMergeSatelliteResources(target.satelliteResources || {}, providedResources.satelliteResources || {});
     }
     if (providedResources.modulesAfterConfigLoaded !== undefined) {
-        providedResources.modulesAfterConfigLoaded = { ...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {}) };
+        providedResources.modulesAfterConfigLoaded = [...(target.modulesAfterConfigLoaded || []), ...(providedResources.modulesAfterConfigLoaded || [])];
     }
     if (providedResources.modulesAfterRuntimeReady !== undefined) {
-        providedResources.modulesAfterRuntimeReady = { ...(target.modulesAfterRuntimeReady || {}), ...(providedResources.modulesAfterRuntimeReady || {}) };
+        providedResources.modulesAfterRuntimeReady = [...(target.modulesAfterRuntimeReady || []), ...(providedResources.modulesAfterRuntimeReady || [])];
     }
     if (providedResources.extensions !== undefined) {
         providedResources.extensions = { ...(target.extensions || {}), ...(providedResources.extensions || {}) };
     }
     if (providedResources.vfs !== undefined) {
-        providedResources.vfs = deep_merge_dict(target.vfs || {}, providedResources.vfs || {});
+        providedResources.vfs = [...(target.vfs || []), ...(providedResources.vfs || [])];
     }
     return Object.assign(target, providedResources);
 }
 
-function deep_merge_dict (target: { [key: string]: ResourceList }, source: { [key: string]: ResourceList }) {
+function deepMergeSatelliteResources (target: { [key: string]: AssemblyAsset[] }, source: { [key: string]: AssemblyAsset[] }) {
     // no need to merge the same object
     if (target === source) return target;
 
     for (const key in source) {
-        target[key] = { ...target[key], ...source[key] };
+        target[key] = [...target[key] || [], ...source[key] || []];
     }
     return target;
 }
@@ -122,56 +122,53 @@ export function normalizeConfig () {
     config.environmentVariables = config.environmentVariables || {};
     config.runtimeOptions = config.runtimeOptions || [];
     config.resources = config.resources || {
-        assembly: {},
-        jsModuleNative: {},
-        jsModuleWorker: {},
-        jsModuleRuntime: {},
-        wasmNative: {},
-        vfs: {},
-        satelliteResources: {},
+        assembly: [],
+        jsModuleNative: [],
+        jsModuleWorker: [],
+        jsModuleRuntime: [],
+        wasmNative: [],
+        vfs: [],
+        satelliteResources: {}
     };
 
     if (config.assets) {
         mono_log_debug("config.assets is deprecated, use config.resources instead");
         for (const asset of config.assets) {
-            const resource = {} as ResourceList;
-            resource[asset.name] = asset.hash || "";
-            const toMerge = {} as ResourceGroups;
+            const toMerge = {} as Assets;
             switch (asset.behavior as string) {
                 case "assembly":
-                    toMerge.assembly = resource;
+                    toMerge.assembly = [asset as AssemblyAsset];
                     break;
                 case "pdb":
-                    toMerge.pdb = resource;
+                    toMerge.pdb = [asset as PdbAsset];
                     break;
                 case "resource":
                     toMerge.satelliteResources = {};
-                    toMerge.satelliteResources[asset.culture!] = resource;
+                    toMerge.satelliteResources[asset.culture!] = [asset as AssemblyAsset];
                     break;
                 case "icu":
-                    toMerge.icu = resource;
+                    toMerge.icu = [asset as IcuAsset];
                     break;
                 case "symbols":
-                    toMerge.wasmSymbols = resource;
+                    toMerge.wasmSymbols = [asset as SymbolsAsset];
                     break;
                 case "vfs":
-                    toMerge.vfs = {};
-                    toMerge.vfs[asset.virtualPath!] = resource;
+                    toMerge.vfs = [asset as VfsAsset];
                     break;
                 case "dotnetwasm":
-                    toMerge.wasmNative = resource;
+                    toMerge.wasmNative = [asset as WasmAsset];
                     break;
                 case "js-module-threads":
-                    toMerge.jsModuleWorker = resource;
+                    toMerge.jsModuleWorker = [asset as JsAsset];
                     break;
                 case "js-module-runtime":
-                    toMerge.jsModuleRuntime = resource;
+                    toMerge.jsModuleRuntime = [asset as JsAsset];
                     break;
                 case "js-module-native":
-                    toMerge.jsModuleNative = resource;
+                    toMerge.jsModuleNative = [asset as JsAsset];
                     break;
                 case "js-module-diagnostics":
-                    toMerge.jsModuleDiagnostics = resource;
+                    toMerge.jsModuleDiagnostics = [asset as JsAsset];
                     break;
                 case "js-module-dotnet":
                     // don't merge loader
@@ -185,10 +182,6 @@ export function normalizeConfig () {
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
-    }
-
-    if (config.cachedResourcesPurgeDelay === undefined) {
-        config.cachedResourcesPurgeDelay = 10000;
     }
 
     if (!config.applicationEnvironment) {

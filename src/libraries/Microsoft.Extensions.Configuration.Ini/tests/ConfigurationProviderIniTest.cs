@@ -26,6 +26,8 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
             return (provider, () => provider.Load(TestStreamHelpers.StringToStream(ini)));
         }
 
+        protected override bool SupportNullValues => false;
+
         private void SectionToIni(StringBuilder iniBuilder, string sectionName, TestSection section)
         {
             foreach (var tuple in section.Values.SelectMany(e => e.Value.Expand(e.Key)))

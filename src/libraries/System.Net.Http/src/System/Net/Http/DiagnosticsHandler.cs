@@ -165,9 +165,10 @@ namespace System.Net.Http
                     _innerHandler.Send(request, cancellationToken);
                 return response;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
                 taskStatus = TaskStatus.Canceled;
+                exception = ex;
 
                 // we'll report task status in HttpRequestOut.Stop
                 throw;
@@ -207,8 +208,16 @@ namespace System.Net.Http
                             activity.SetTag("error.type", errorType);
 
                             // The presence of error.type indicates that the conditions for setting Error status are also met.
-                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/http/http-spans.md#status
+                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/http/http-spans.md#status
                             activity.SetStatus(ActivityStatusCode.Error);
+
+                            if (exception is not null)
+                            {
+                                // Records the exception as per https://github.com/open-telemetry/opentelemetry-specification/blob/v1.45.0/specification/trace/exceptions.md.
+                                // Add the exception event with a timestamp matching the activity's end time
+                                // to ensure it falls within the activity's duration.
+                                activity.AddException(exception, timestamp: activity.StartTimeUtc + activity.Duration);
+                            }
                         }
                     }
 

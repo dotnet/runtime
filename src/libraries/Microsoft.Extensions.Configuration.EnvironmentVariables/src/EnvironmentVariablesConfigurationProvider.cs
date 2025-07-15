@@ -12,10 +12,20 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
     /// </summary>
     public class EnvironmentVariablesConfigurationProvider : ConfigurationProvider
     {
+        // Connection string prefixes for various services. These prefixes are used to identify connection strings in environment variables.
+        // az webapp config connection-string set: https://learn.microsoft.com/en-us/cli/azure/webapp/config/connection-string?view=azure-cli-latest#az-webapp-config-connection-string-set
+        // Environment variables and app settings in Azure App Service: https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#variable-prefixes
         private const string MySqlServerPrefix = "MYSQLCONNSTR_";
         private const string SqlAzureServerPrefix = "SQLAZURECONNSTR_";
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomConnectionStringPrefix = "CUSTOMCONNSTR_";
+        private const string PostgreSqlServerPrefix = "POSTGRESQLCONNSTR_";
+        private const string ApiHubPrefix = "APIHUBCONNSTR_";
+        private const string DocDbPrefix = "DOCDBCONNSTR_";
+        private const string EventHubPrefix = "EVENTHUBCONNSTR_";
+        private const string NotificationHubPrefix = "NOTIFICATIONHUBCONNSTR_";
+        private const string RedisCachePrefix = "REDISCACHECONNSTR_";
+        private const string ServiceBusPrefix = "SERVICEBUSCONNSTR_";
 
         private readonly string _prefix;
         private readonly string _normalizedPrefix;
@@ -82,6 +92,34 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                     else if (key.StartsWith(SqlServerPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         HandleMatchedConnectionStringPrefix(data, SqlServerPrefix, "System.Data.SqlClient", key, value);
+                    }
+                    else if (key.StartsWith(PostgreSqlServerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, PostgreSqlServerPrefix, "Npgsql", key, value);
+                    }
+                    else if (key.StartsWith(ApiHubPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, ApiHubPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(DocDbPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, DocDbPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(EventHubPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, EventHubPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(NotificationHubPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, NotificationHubPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(RedisCachePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, RedisCachePrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(ServiceBusPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, ServiceBusPrefix, null, key, value);
                     }
                     else if (key.StartsWith(CustomConnectionStringPrefix, StringComparison.OrdinalIgnoreCase))
                     {

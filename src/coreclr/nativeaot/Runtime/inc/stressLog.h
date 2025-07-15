@@ -289,7 +289,7 @@ public:
         UNREFERENCED_PARAMETER(level);
         return FALSE;
     #else
-        // In Redhawk we have rationalized facility codes and have much
+        // In NativeAOT, we have rationalized facility codes and have much
         // fewer compared to desktop, as such we'll log all facilities and
         // limit the filtering to the log level...
         return

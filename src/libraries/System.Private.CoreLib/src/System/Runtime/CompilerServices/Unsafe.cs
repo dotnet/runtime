@@ -255,7 +255,7 @@ namespace System.Runtime.CompilerServices
             where TFrom : allows ref struct
             where TTo : allows ref struct
         {
-            if (sizeof(TFrom) != sizeof(TTo) || default(TFrom) is null || default(TTo) is null)
+            if (sizeof(TFrom) != sizeof(TTo) || !typeof(TFrom).IsValueType || !typeof(TTo).IsValueType)
             {
                 ThrowHelper.ThrowNotSupportedException();
             }

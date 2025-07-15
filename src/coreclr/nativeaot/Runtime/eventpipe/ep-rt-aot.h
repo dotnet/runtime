@@ -346,6 +346,8 @@ void
 ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
     STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_aot_provider_config_init (EventPipeProviderConfiguration *provider_config);
+    ep_rt_aot_provider_config_init(provider_config);
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -707,7 +709,9 @@ ep_rt_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // NativeAOT does not currently support rundown
+    extern void
+    ep_rt_aot_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
+    ep_rt_aot_execute_rundown (execution_checkpoints);
 }
 
 /*
@@ -830,7 +834,7 @@ uint32_t
 ep_rt_processors_get_count (void)
 {
     STATIC_CONTRACT_NOTHROW;
-#ifdef _INC_WINDOWS
+#ifdef HOST_WINDOWS
     SYSTEM_INFO sys_info = {};
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
@@ -882,7 +886,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifdef _INC_WINDOWS
+#ifdef HOST_WINDOWS
     SYSTEMTIME value;
     GetSystemTime (&value);
 
@@ -897,7 +901,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
         value.wMinute,
         value.wSecond,
         value.wMilliseconds);
-#elif TARGET_UNIX
+#else
     time_t tt;
     struct tm *ut_ptr;
     struct timeval time_val;
@@ -1445,8 +1449,8 @@ void
 ep_rt_thread_setup (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    // Likely not needed and do nothing until testing shows to be required
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    ep_rt_aot_setup_thread ();
 }
 
 static

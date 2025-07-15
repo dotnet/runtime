@@ -547,13 +547,7 @@ extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
 struct HijackArgs
 {
-#ifndef FEATURE_MULTIREG_RETURN
-    union
-    {
-        ULONG64 Rax;
-        ULONG64 ReturnValue[1];
-    };
-#else // !FEATURE_MULTIREG_RETURN
+#ifdef UNIX_AMD64_ABI
     union
     {
         struct
@@ -563,7 +557,13 @@ struct HijackArgs
         };
         ULONG64 ReturnValue[2];
     };
-#endif // !FEATURE_MULTIREG_RETURN
+#else // UNIX_AMD64_ABI
+    union
+    {
+        ULONG64 Rax;
+        ULONG64 ReturnValue[1];
+    };
+#endif // UNIX_AMD64_ABI
     union
     {
         ULONG64 Rcx;

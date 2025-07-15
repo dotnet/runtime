@@ -28,10 +28,9 @@ HRESULT Assembler::InitMetaData()
 
     if(m_fInitialisedMetaData) return S_OK;
 
-    if(bClock) bClock->cMDInitBegin = GetTickCount();
+    if(bClock) bClock->cMDInitBegin = minipal_lowres_ticks();
 
-    hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-        IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
+    hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
     if (FAILED(hr))
         goto exit;
 
@@ -93,7 +92,7 @@ HRESULT Assembler::InitMetaData()
     hr = S_OK;
 
 exit:
-    if(bClock) bClock->cMDInitEnd = GetTickCount();
+    if(bClock) bClock->cMDInitEnd = minipal_lowres_ticks();
     return hr;
 }
 /*********************************************************************************/
@@ -1172,7 +1171,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     GUID                deterministicGuid = GUID();
     ULONG               deterministicTimestamp = 0;
 
-    if(bClock) bClock->cMDEmitBegin = GetTickCount();
+    if(bClock) bClock->cMDEmitBegin = minipal_lowres_ticks();
     if(m_fReportProgress) printf("Creating PE file\n");
     if (!m_pEmitter)
     {
@@ -1185,7 +1184,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if(!OnErrGo) return E_FAIL;
     }
 
-    if(bClock) bClock->cMDEmit1 = GetTickCount();
+    if(bClock) bClock->cMDEmit1 = minipal_lowres_ticks();
 
     // Allocate space for a strong name signature if we're delay or full
     // signing the assembly.
@@ -1200,7 +1199,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         m_dwComImageFlags |= COMIMAGE_FLAGS_STRONGNAMESIGNED;
     }
 
-    if(bClock) bClock->cMDEmit2 = GetTickCount();
+    if(bClock) bClock->cMDEmit2 = minipal_lowres_ticks();
 
     if(m_VTFList.COUNT()==0)
     {
@@ -1327,9 +1326,9 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     }
 
     // All ref'ed items def'ed in this file are emitted, resolve member refs to member defs:
-    if(bClock) bClock->cRef2DefBegin = GetTickCount();
+    if(bClock) bClock->cRef2DefBegin = minipal_lowres_ticks();
     hr = ResolveLocalMemberRefs();
-    if(bClock) bClock->cRef2DefEnd = GetTickCount();
+    if(bClock) bClock->cRef2DefEnd = minipal_lowres_ticks();
     if(FAILED(hr) &&(!OnErrGo)) goto exit;
 
     // Local member refs resolved, emit events, props and method impls
@@ -1352,7 +1351,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             pSearch->m_fNewMembers = FALSE;
         }
     }
-    if(bClock) bClock->cMDEmit3 = GetTickCount();
+    if(bClock) bClock->cMDEmit3 = minipal_lowres_ticks();
     if(m_MethodImplDList.COUNT())
     {
         if(m_fReportProgress) report->msg("Method Implementations (total): %d\n",m_MethodImplDList.COUNT());
@@ -1362,7 +1361,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         }
     }
     // Emit the rest of the metadata
-    if(bClock) bClock->cMDEmit4 = GetTickCount();
+    if(bClock) bClock->cMDEmit4 = minipal_lowres_ticks();
     hr = S_OK;
     if(m_pManifest)
     {
@@ -1400,7 +1399,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             delete pTDD;
         }
     }
-    if(bClock) bClock->cMDEmitEnd = GetTickCount();
+    if(bClock) bClock->cMDEmitEnd = minipal_lowres_ticks();
 
     hr = DoLocalMemberRefFixups();
     if(FAILED(hr) &&(!OnErrGo)) goto exit;
@@ -1709,7 +1708,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if (FAILED(hr)) goto exit;
     }
 
-    if(bClock) bClock->cFilegenBegin = GetTickCount();
+    if(bClock) bClock->cFilegenBegin = minipal_lowres_ticks();
     // actually output the meta-data
     if (FAILED(hr=m_pCeeFileGen->EmitMetaDataAt(m_pCeeFile, m_pEmitter, m_pILSection, metaDataOffset, metaData, metaDataSize))) goto exit;
 

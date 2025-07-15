@@ -357,7 +357,7 @@ FASTCALL_FUNC  RhpCallCatchFunclet, 16
         mov         ebp, [ecx]
 
         ;; It was the ThreadAbortException, so rethrow it
-        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        mov         ecx, STATUS_NATIVEAOT_THREAD_ABORT
         mov         edx, [esp + esp_offsetof_ResumeIP]
         mov         esp, eax                                        ;; reset the SP to resume SP value
         jmp         RhpThrowHwEx                                    ;; Throw the ThreadAbortException as a special kind of hardware exception

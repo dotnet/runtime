@@ -244,12 +244,20 @@ namespace HttpStress
             }
 
             // return nonzero status code if there are stress errors
-            return client?.TotalErrorCount == 0 ? ExitCode.Success : ExitCode.StressError;
+            return client?.TotalErrorCount == 0 && s_unobservedExceptions.Count == 0 ? ExitCode.Success : ExitCode.StressError;
         }
 
         private static void PrintUnobservedExceptions()
         {
+            if (s_unobservedExceptions.Count == 0)
+            {
+                Console.WriteLine("No unobserved exceptions detected.");
+                return;
+            }
+
+            Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine($"Detected {s_unobservedExceptions.Count} unobserved exceptions:");
+            Console.ResetColor();
 
             int i = 1;
             foreach (KeyValuePair<string, int> kv in s_unobservedExceptions.OrderByDescending(p => p.Value))

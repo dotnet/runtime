@@ -289,9 +289,9 @@ void PEAssembly::OpenImporter()
     ConvertMDInternalToReadWrite();
 
     IMetaDataImport2 *pIMDImport = NULL;
-    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetMDImport(),
-                                                       IID_IMetaDataImport2,
-                                                       (void **)&pIMDImport));
+    IfFailThrow(GetMDPublicInterfaceFromInternal((void*)GetMDImport(),
+                                                 IID_IMetaDataImport2,
+                                                 (void **)&pIMDImport));
 
     // Atomically swap it into the field (release it if we lose the race)
     if (InterlockedCompareExchangeT(&m_pImporter, pIMDImport, NULL) != NULL)
@@ -319,7 +319,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     IMetaDataImport *pIMDImport = m_pImporter;
     if (pIMDImport != NULL)
     {
-        HRESULT hr = GetMetaDataInternalInterfaceFromPublic(pIMDImport, IID_IMDInternalImport, (void **)&pNew);
+        HRESULT hr = GetMDInternalInterfaceFromPublic(pIMDImport, IID_IMDInternalImport, (void **)&pNew);
         if (FAILED(hr))
         {
             EX_THROW(EEMessageException, (hr));
@@ -410,9 +410,9 @@ void PEAssembly::OpenEmitter()
     ConvertMDInternalToReadWrite();
 
     IMetaDataEmit *pIMDEmit = NULL;
-    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetMDImport(),
-                                                       IID_IMetaDataEmit,
-                                                       (void **)&pIMDEmit));
+    IfFailThrow(GetMDPublicInterfaceFromInternal((void*)GetMDImport(),
+                                                 IID_IMetaDataEmit,
+                                                 (void **)&pIMDEmit));
 
     // Atomically swap it into the field (release it if we lose the race)
     if (InterlockedCompareExchangeT(&m_pEmitter, pIMDEmit, NULL) != NULL)
@@ -682,8 +682,8 @@ PEAssembly::PEAssembly(
         OpenMDImport(); //constructor, cannot race with anything
     else
     {
-        IfFailThrow(GetMetaDataInternalInterfaceFromPublic(pEmit, IID_IMDInternalImport,
-                                                           (void **)&m_pMDImport));
+        IfFailThrow(GetMDInternalInterfaceFromPublic(pEmit, IID_IMDInternalImport,
+                                                     (void **)&m_pMDImport));
         m_pEmitter = pEmit;
         pEmit->AddRef();
         m_MDImportIsRW_Debugger_Use_Only = TRUE;

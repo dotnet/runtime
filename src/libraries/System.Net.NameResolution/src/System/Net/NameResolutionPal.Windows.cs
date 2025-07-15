@@ -357,13 +357,13 @@ namespace System.Net
             return addresses;
         }
 
-        private static unsafe IPAddress CreateIPv4Address(ReadOnlySpan<byte> socketAddress)
+        private static IPAddress CreateIPv4Address(ReadOnlySpan<byte> socketAddress)
         {
             long address = (long)SocketAddressPal.GetIPv4Address(socketAddress) & 0x0FFFFFFFF;
             return new IPAddress(address);
         }
 
-        private static unsafe IPAddress CreateIPv6Address(ReadOnlySpan<byte> socketAddress)
+        private static IPAddress CreateIPv6Address(ReadOnlySpan<byte> socketAddress)
         {
             Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
             SocketAddressPal.GetIPv6Address(socketAddress, address, out uint scope);
@@ -453,6 +453,11 @@ namespace System.Net
                         {
                             NetEventSource.Info(@this, $"GetAddrInfoExCancel returned error {cancelResult}");
                         }
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // There is a race between checking @this._completed and @this.DangerousAddRef and disposing from another thread.
+                        // We lost the race. No further action needed.
                     }
                     finally
                     {

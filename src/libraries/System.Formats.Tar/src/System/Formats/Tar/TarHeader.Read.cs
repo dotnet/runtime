@@ -15,8 +15,6 @@ namespace System.Formats.Tar
     // Reads the header attributes from a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private readonly byte[] ArrayOf12NullBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
@@ -106,7 +104,7 @@ namespace System.Formats.Tar
                 return;
             }
 
-            InitializeExtendedAttributesWithExisting(dictionaryFromExtendedAttributesHeader);
+            AddExtendedAttributes(dictionaryFromExtendedAttributesHeader);
 
             // Find all the extended attributes with known names and save them in the expected standard attribute.
 
@@ -388,7 +386,7 @@ namespace System.Formats.Tar
             TarHeader header = new(initialFormat,
                 name: TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
                 mode: TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode)),
-                mTime: TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime))),
+                mTime: ParseAsTimestamp(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime)),
                 typeFlag: (TarEntryType)buffer[FieldLocations.TypeFlag])
             {
                 _checksum = checksum,
@@ -538,21 +536,24 @@ namespace System.Formats.Tar
         // Throws if any conversion fails.
         private void ReadGnuAttributes(ReadOnlySpan<byte> buffer)
         {
-            // Convert byte arrays
-            ReadOnlySpan<byte> aTimeBuffer = buffer.Slice(FieldLocations.ATime, FieldLengths.ATime);
-            if (!aTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // null values are ignored
-            {
-                long aTime = TarHelpers.ParseNumeric<long>(aTimeBuffer);
-                _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
-            }
-            ReadOnlySpan<byte> cTimeBuffer = buffer.Slice(FieldLocations.CTime, FieldLengths.CTime);
-            if (!cTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // An all nulls buffer is interpreted as MinValue
-            {
-                long cTime = TarHelpers.ParseNumeric<long>(cTimeBuffer);
-                _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
-            }
+            _aTime = ParseAsTimestamp(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+
+            _cTime = ParseAsTimestamp(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
+        }
+
+        private static DateTimeOffset ParseAsTimestamp(ReadOnlySpan<byte> buffer)
+        {
+            // When all bytes are zero, the timestamp is not initialized, and we map it to default.
+            bool allZeros = !buffer.ContainsAnyExcept((byte)0);
+            if (allZeros)
+            {
+                return default(DateTimeOffset);
+            }
+
+            long time = TarHelpers.ParseNumeric<long>(buffer);
+            return TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(time);
         }
 
         // Reads the ustar prefix attribute.
