@@ -39,6 +39,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
     <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
+    <Http3Support Condition="'$(Http3Support)' == ''">false</Http3Support>
   </PropertyGroup>
 
   <!-- Configure LINQ expressions -->
