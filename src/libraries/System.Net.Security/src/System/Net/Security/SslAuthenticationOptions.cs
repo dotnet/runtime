@@ -153,7 +153,7 @@ namespace System.Net.Security
                     bool ocspFetch = false;
                     _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    SetCertificateContextFromCert(certificateWithKey);
+                    SetCertificateContextFromCert(certificateWithKey, !ocspFetch);
                 }
                 else
                 {
@@ -195,9 +195,11 @@ namespace System.Net.Security
             return protocols;
         }
 
-        internal void SetCertificateContextFromCert(X509Certificate2 certificate)
+        internal void SetCertificateContextFromCert(X509Certificate2 certificate, bool? noOcspFetch = null)
         {
-            CertificateContext = SslStreamCertificateContext.Create(certificate);
+            Debug.Assert(CertificateContext == null, "CertificateContext should be null when setting it from certificate");
+
+            CertificateContext = SslStreamCertificateContext.Create(certificate, null, offline: false, null, noOcspFetch ?? true);
             OwnsCertificateContext = true;
         }
 

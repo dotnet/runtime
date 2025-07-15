@@ -1041,6 +1041,13 @@ namespace System.Net.Security
             bool success = false;
             X509Chain? chain = null;
 
+            // We need to note the number of certs in ExtraStore that were
+            // provided (by the user), we will add more from the received peer
+            // chain and we want to dispose only these after we perform the
+            // validation.
+            // TODO: this forces allocation of X509Certificate2Collection
+            int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
+
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
@@ -1145,6 +1152,12 @@ namespace System.Net.Security
 
                 if (chain != null)
                 {
+                    // Dispose only the certificates that were added by GetRemoteCertificate
+                    for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                    {
+                        chain.ChainPolicy.ExtraStore[i].Dispose();
+                    }
+
                     int elementsCount = chain.ChainElements.Count;
                     for (int i = 0; i < elementsCount; i++)
                     {
