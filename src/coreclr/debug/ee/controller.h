@@ -312,7 +312,11 @@ public:
     UINT_PTR                RipTargetFixup;
 #endif
 
+    const InstructionAttribute& GetInstructionAttrib() { return m_instrAttrib; }
+    void SetInstructionAttrib(const InstructionAttribute& instrAttrib) { m_instrAttrib = instrAttrib; }
+
 private:
+    InstructionAttribute   m_instrAttrib;      // info about the instruction being skipped over
     const static DWORD SentinelValue = 0xffffffff;
     LONG    m_refCount;
 };
@@ -553,17 +557,7 @@ public:
 #ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // gets a pointer to the shared buffer
-    SharedPatchBypassBuffer* CreateSharedPatchBypassBuffer(DebuggerControllerPatch *patch, InstructionAttribute *pInstrAttrib);
-    SharedPatchBypassBuffer* GetSharedPatchBypassBuffer()
-    {
-        SharedPatchBypassBuffer *pRet = m_pSharedPatchBypassBuffer;
-        if (pRet != NULL)
-        {
-            // AddRef the buffer so that it doesn't go away while we're using it.
-            pRet->AddRef();
-        }
-        return pRet;
-    }
+    SharedPatchBypassBuffer* GetOrCreateSharedPatchBypassBuffer();
 
     void CopyInstructionBlock(BYTE *to, const BYTE* from);
 

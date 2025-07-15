@@ -140,7 +140,7 @@ void DebuggerControllerPatch::CopyInstructionBlock(BYTE *to, const BYTE* from)
 
 // Creates a new shared patch bypass buffer
 // AddRef() before returning it so callers need to Release() when they're finished with it.
-SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer(DebuggerControllerPatch *patch, InstructionAttribute * pInstrAttrib)
+SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBuffer()
 {
     CONTRACTL
     {
@@ -149,16 +149,16 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer(
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_pSharedPatchBypassBuffer == NULL);
     if (m_pSharedPatchBypassBuffer != NULL)
     {
-        _ASSERTE(!"DCP::CSPBB: Shared patch buffer already exists!!");
         m_pSharedPatchBypassBuffer->AddRef();
         return m_pSharedPatchBypassBuffer;
     }
 
-    // create the shared patch bypass buffer
-    // we do not write to the shared patch buffer if we are not creating it
+    // NOTE: in order to correctly single-step RIP-relative writes on multiple threads we need to set up
+    // a shared buffer with the instruction and a buffer for the RIP-relative value so that all threads
+    // are working on the same copy.  as the single-steps complete the modified data in the buffer is
+    // copied back to the real address to ensure proper execution of the program.
 
     SharedPatchBypassBuffer *pSharedPatchBypassBufferRX = (SharedPatchBypassBuffer*)g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(SharedPatchBypassBuffer));
 #if defined(HOST_OSX) && defined(HOST_ARM64)
@@ -177,32 +177,33 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer(
     BYTE* patchBypassRW = pSharedPatchBypassBufferRW->PatchBypass;
     BYTE* patchBypassRX = m_pSharedPatchBypassBuffer->PatchBypass;
 
-    LOG((LF_CORDB, LL_INFO10000, "DCP::CSPBB: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", patch->opcode, patch->address, m_pSharedPatchBypassBuffer));
+    LOG((LF_CORDB, LL_INFO10000, "DCP::CSPBB: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", this->opcode, this->address, m_pSharedPatchBypassBuffer));
 
     // CopyInstructionBlock copies all the code bytes except the breakpoint byte(s).
-    _ASSERTE( patch->IsBound() );
-    CopyInstructionBlock(patchBypassRW, (const BYTE *)patch->address);
+    _ASSERTE( this->IsBound() );
+    CopyInstructionBlock(patchBypassRW, (const BYTE *)this->address);
 
     // Technically, we could create a patch skipper for an inactive patch, but we rely on the opcode being
     // set here.
-    _ASSERTE( patch->IsActivated() );
-    CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypassRW, patch->opcode);
+    _ASSERTE( this->IsActivated() );
+    CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypassRW, this->opcode);
 
     LOG((LF_CORDB, LL_EVERYTHING, "DCP::CSPBB: SetInstruction was called\n"));
 
     //
     // Look at instruction to get some attributes
     //
-    NativeWalker::DecodeInstructionForPatchSkip(patchBypassRX, pInstrAttrib);
+    InstructionAttribute instrAttrib = { 0 };
+    NativeWalker::DecodeInstructionForPatchSkip(patchBypassRX, &instrAttrib);
 
 #if defined(TARGET_AMD64)
     // The code below handles RIP-relative addressing on AMD64. The original implementation made the assumption that
     // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
     // has since been expanded to handle RIP-relative writes as well.
-    if (pInstrAttrib->m_dwOffsetToDisp != 0)
+    if (instrAttrib.m_dwOffsetToDisp != 0)
     {
         _ASSERTE(pSharedPatchBypassBufferRW != NULL);
-        _ASSERTE(pInstrAttrib->m_cbInstr != 0);
+        _ASSERTE(instrAttrib.m_cbInstr != 0);
 
         //
         // Populate the RIP-relative buffer with the current value if needed
@@ -211,34 +212,36 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::CreateSharedPatchBypassBuffer(
         BYTE* bufferBypassRW = pSharedPatchBypassBufferRW->BypassBuffer;
         
         // Overwrite the *signed* displacement.
-        int dwOldDisp = *(int*)(&patchBypassRX[pInstrAttrib->m_dwOffsetToDisp]);
+        int dwOldDisp = *(int*)(&patchBypassRX[instrAttrib.m_dwOffsetToDisp]);
         int dwNewDisp = offsetof(SharedPatchBypassBuffer, BypassBuffer) -
-        (offsetof(SharedPatchBypassBuffer, PatchBypass) + pInstrAttrib->m_cbInstr);
-        *(int*)(&patchBypassRW[pInstrAttrib->m_dwOffsetToDisp]) = dwNewDisp;
+        (offsetof(SharedPatchBypassBuffer, PatchBypass) + instrAttrib.m_cbInstr);
+        *(int*)(&patchBypassRW[instrAttrib.m_dwOffsetToDisp]) = dwNewDisp;
         
         // This could be an LEA, which we'll just have to change into a MOV and copy the original address.
         if (((patchBypassRX[0] == 0x4C) || (patchBypassRX[0] == 0x48)) && (patchBypassRX[1] == 0x8d))
         {
             patchBypassRW[1] = 0x8b; // MOV reg, mem
             _ASSERTE((int)sizeof(void*) <= SharedPatchBypassBuffer::cbBufferBypass);
-            *(void**)bufferBypassRW = (void*)(patch->address + pInstrAttrib->m_cbInstr + dwOldDisp);
+            *(void**)bufferBypassRW = (void*)(this->address + instrAttrib.m_cbInstr + dwOldDisp);
         }
         else
         {
-            _ASSERTE(pInstrAttrib->m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
+            _ASSERTE(instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
-            memcpy(bufferBypassRW, patch->address + pInstrAttrib->m_cbInstr + dwOldDisp, pInstrAttrib->m_cOperandSize);
+            memcpy(bufferBypassRW, this->address + instrAttrib.m_cbInstr + dwOldDisp, instrAttrib.m_cOperandSize);
             
-            if (pInstrAttrib->m_fIsWrite)
+            if (instrAttrib.m_fIsWrite)
             {
                 // save the actual destination address and size so when we TriggerSingleStep() we can update the value
-                pSharedPatchBypassBufferRW->RipTargetFixup = (UINT_PTR)(patch->address + pInstrAttrib->m_cbInstr + dwOldDisp);
-                pSharedPatchBypassBufferRW->RipTargetFixupSize = pInstrAttrib->m_cOperandSize;
+                pSharedPatchBypassBufferRW->RipTargetFixup = (UINT_PTR)(this->address + instrAttrib.m_cbInstr + dwOldDisp);
+                pSharedPatchBypassBufferRW->RipTargetFixupSize = instrAttrib.m_cOperandSize;
             }
         }
     }
     
     #endif // TARGET_AMD64
+
+    m_pSharedPatchBypassBuffer->SetInstructionAttrib(instrAttrib);
     
     // Since we just created a new buffer of code, but the CPU caches code and may
     // not be aware of our changes. This should force the CPU to dump any cached
@@ -4659,27 +4662,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     // the single-step emulation itself.
 #ifndef FEATURE_EMULATE_SINGLESTEP
 
-    // NOTE: in order to correctly single-step RIP-relative writes on multiple threads we need to set up
-    // a shared buffer with the instruction and a buffer for the RIP-relative value so that all threads
-    // are working on the same copy.  as the single-steps complete the modified data in the buffer is
-    // copied back to the real address to ensure proper execution of the program.
-
-    //
-    // Create the shared instruction block. this will also create the shared RIP-relative buffer
-    //
-
     _ASSERTE(DebuggerController::HasLock());
-    m_pSharedPatchBypassBuffer = patch->GetSharedPatchBypassBuffer();
-
-    if (m_pSharedPatchBypassBuffer == NULL)
-    {
-        // If we don't have a shared patch buffer, create one
-        m_pSharedPatchBypassBuffer = patch->CreateSharedPatchBypassBuffer(patch, &m_instrAttrib);
-    }
-    else
-    {
-        NativeWalker::DecodeInstructionForPatchSkip(m_pSharedPatchBypassBuffer->PatchBypass, &m_instrAttrib);
-    }
+    m_pSharedPatchBypassBuffer = patch->GetOrCreateSharedPatchBypassBuffer();
+    m_instrAttrib = m_pSharedPatchBypassBuffer->GetInstructionAttrib();
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (g_pDebugInterface->IsOutOfProcessSetContextEnabled() && m_instrAttrib.m_fIsCall)
