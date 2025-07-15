@@ -32639,7 +32639,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
                     uint32_t bitMask   = static_cast<uint32_t>((1 << elemCount) - 1);
 
+                    assert(varTypeIsInt(retType));
                     assert(elemCount <= 32);
+
                     resultNode = gtNewIconNode(static_cast<int32_t>(mask & bitMask), retType);
                     break;
                 }
@@ -32653,12 +32655,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
                     uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
 
-                    if (elemCount <= 32)
+                    if (varTypeIsInt(retType))
                     {
+                        assert(elemCount <= 32);
                         resultNode = gtNewIconNode(static_cast<int32_t>(mask & bitMask), retType);
                     }
                     else
                     {
+                        assert(varTypeIsLong(retType));
                         resultNode = gtNewLconNode(static_cast<int64_t>(mask & bitMask));
                     }
                     break;

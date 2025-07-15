@@ -7956,7 +7956,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 uint32_t elemCount = simdSize / genTypeSize(baseType);
                 uint32_t bitMask   = static_cast<uint32_t>((1 << elemCount) - 1);
 
+                assert(varTypeIsInt(type));
                 assert(elemCount <= 32);
+
                 return VNForIntCon(static_cast<int32_t>(mask & bitMask));
             }
 
@@ -7971,12 +7973,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 uint32_t elemCount = simdSize / genTypeSize(baseType);
                 uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
 
-                if (elemCount <= 32)
+                if (varTypeIsInt(type))
                 {
+                    assert(elemCount <= 32);
                     return VNForIntCon(static_cast<int32_t>(mask & bitMask));
                 }
                 else
                 {
+                    assert(varTypeIsLong(type));
                     return VNForLongCon(static_cast<int64_t>(mask & bitMask));
                 }
             }
