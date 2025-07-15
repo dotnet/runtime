@@ -1362,11 +1362,6 @@ part2:
             {
                 g_fEEShutDown |= ShutDown_Phase2;
 
-                // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
-                // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
-                // RemoveAppDomainFromIPC.
-                //
-                // (If we move those things to earlier, this can be called only if fShouldWeCleanup.)</TODO>
                 if (!g_fFastExitProcess)
                 {
                     SystemDomain::DetachBegin();
