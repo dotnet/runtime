@@ -500,7 +500,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
     // Create a tree representing string's Length:
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
-    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset, compCurBB);
+    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset);
     varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
     GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, kind, (WCHAR*)str, cnsLength,

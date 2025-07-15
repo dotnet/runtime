@@ -4517,8 +4517,10 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                     {
                         // In the join free case, we also need to move bDest right after bNext
                         // to create same flow as in the isJumpAroundEmpty case.
+                        // However, we cannot move bDest if it will break EH invariants.
                         //
-                        if (!fgEhAllowsMoveBlock(bNext, bDest) || bDest->isBBCallFinallyPair())
+                        if (!BasicBlock::sameEHRegion(bNext, bDest) || bbIsTryBeg(bDest) || bbIsHandlerBeg(bDest) ||
+                            bDest->isBBCallFinallyPair())
                         {
                             optimizeJump = false;
                         }

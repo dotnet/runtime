@@ -1006,6 +1006,170 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        // Halving add
+
+        /// <summary>
+        /// svuint8_t svhadd[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svhadd[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svhadd[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UHADD Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static Vector<byte> FusedAddHalving(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svhadd[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svhadd[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svhadd[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SHADD Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static Vector<short> FusedAddHalving(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svhadd[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svhadd[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svhadd[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SHADD Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static Vector<int> FusedAddHalving(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svhadd[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svhadd[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svhadd[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SHADD Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static Vector<long> FusedAddHalving(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svhadd[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svhadd[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svhadd[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SHADD Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static Vector<sbyte> FusedAddHalving(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svhadd[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svhadd[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svhadd[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UHADD Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static Vector<ushort> FusedAddHalving(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svhadd[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svhadd[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svhadd[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UHADD Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static Vector<uint> FusedAddHalving(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svhadd[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svhadd[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svhadd[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UHADD Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static Vector<ulong> FusedAddHalving(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Halving subtract
+
+        /// <summary>
+        /// svuint8_t svhsub[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svhsub[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svhsub[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UHSUBR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static Vector<byte> FusedSubtractHalving(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svhsub[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svhsub[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svhsub[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SHSUBR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static Vector<short> FusedSubtractHalving(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svhsub[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svhsub[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svhsub[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SHSUBR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static Vector<int> FusedSubtractHalving(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svhsub[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svhsub[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svhsub[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SHSUBR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static Vector<long> FusedSubtractHalving(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svhsub[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svhsub[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svhsub[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SHSUBR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static Vector<sbyte> FusedSubtractHalving(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svhsub[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svhsub[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svhsub[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UHSUBR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static Vector<ushort> FusedSubtractHalving(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svhsub[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svhsub[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svhsub[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UHSUBR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static Vector<uint> FusedSubtractHalving(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svhsub[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svhsub[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svhsub[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UHSUBR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static Vector<ulong> FusedSubtractHalving(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
         /// Interleaving Xor
 
         /// <summary>

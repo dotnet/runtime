@@ -4328,10 +4328,21 @@ enum class ExecutionContextHandling
     AsyncSaveAndRestore,
 };
 
+enum class ContinuationContextHandling
+{
+    // No special handling of SynchronizationContext/TaskScheduler is required.
+    None,
+    // Continue on SynchronizationContext/TaskScheduler
+    ContinueOnCapturedContext,
+    // Continue on thread pool thread
+    ContinueOnThreadPool,
+};
+
 // Additional async call info.
 struct AsyncCallInfo
 {
-    ExecutionContextHandling ExecutionContextHandling = ExecutionContextHandling::None;
+    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 };
 
 // Return type descriptor of a GT_CALL node.
