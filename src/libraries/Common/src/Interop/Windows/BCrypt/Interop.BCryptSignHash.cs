@@ -123,7 +123,7 @@ internal static partial class Interop
             int bytesWritten;
 
             fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
-            fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
             fixed (byte* pContext = &MemoryMarshal.GetReference(context))
             fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
             {

@@ -125,7 +125,7 @@ internal static partial class Interop
         {
             NTSTATUS status;
 
-            fixed (byte* pHash = &Helpers.GetNonNullPinnableReference(hash))
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
             fixed (byte* pSignature = &MemoryMarshal.GetReference(signature))
             fixed (byte* pContext = &MemoryMarshal.GetReference(context))
             fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
