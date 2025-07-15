@@ -3898,9 +3898,7 @@ private:
         UNION_EECLASS      = 0,    //  0 - pointer to EEClass. This MethodTable is the canonical method table.
         UNION_METHODTABLE  = 1,    //  1 - pointer to canonical MethodTable.
     };
-public:
     static const TADDR UNION_MASK = 1;
-private:
     union {
         DPTR(EEClass) m_pEEClass;
         TADDR m_pCanonMT;

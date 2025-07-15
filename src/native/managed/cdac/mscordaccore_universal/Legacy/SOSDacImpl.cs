@@ -955,26 +955,13 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            Target.TypeInfo EEType = _target.GetTypeInfo(DataType.EEClass);
-            Target.TypeInfo MTType = _target.GetTypeInfo(DataType.MethodTable);
             TargetPointer MTAddress = mt.ToTargetPointer(_target);
-            TargetPointer EEClassOrCanonMTAddress = _target.ReadPointer(MTAddress + (ulong)MTType.Fields["EEClassOrCanonMT"].Offset);
-            TargetPointer EEClassAddress;
-            ushort UnionMask = _target.ReadGlobal<ushort>(Constants.Globals.UnionMask);
-            if ((EEClassOrCanonMTAddress & UnionMask) != 0)
-            {
-                // If the union mask is set, we have a canonical method table
-                // and we need to read the EEClass from the canonical method table.
-                EEClassAddress = _target.ReadPointer(EEClassOrCanonMTAddress + (ulong)MTType.Fields["EEClassOrCanonMT"].Offset);
-            }
-            else
-            {
-                EEClassAddress = EEClassOrCanonMTAddress;
-            }
-            mtFieldData->FirstField = _target.ReadPointer(EEClassAddress + (ulong)EEType.Fields["FieldDescList"].Offset).ToClrDataAddress(_target);
-            mtFieldData->wNumInstanceFields = _target.Read<ushort>(EEClassAddress + (ulong)EEType.Fields["NumInstanceFields"].Offset);
-            mtFieldData->wNumStaticFields = _target.Read<ushort>(EEClassAddress + (ulong)EEType.Fields["NumStaticFields"].Offset);
-            mtFieldData->wNumThreadStaticFields = _target.Read<ushort>(EEClassAddress + (ulong)EEType.Fields["NumThreadStaticFields"].Offset);
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle typeHandle = rtsContract.GetTypeHandle(MTAddress);
+            mtFieldData->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
+            mtFieldData->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
+            mtFieldData->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
+            mtFieldData->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
             mtFieldData->wContextStaticsSize = 0;
             mtFieldData->wContextStaticOffset = 0;
         }

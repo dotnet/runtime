@@ -314,6 +314,35 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTableF);
         return new TypeHandle(methodTablePointer);
     }
+    public TargetPointer GetModule(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable())
+        {
+            return _methodTables[typeHandle.Address].Module;
+        }
+        else if (typeHandle.IsTypeDesc())
+        {
+            if (HasTypeParam(typeHandle))
+            {
+                return GetModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+            else
+            {
+                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                return TargetPointer.Null;
+            }
+        }
+        else
+        {
+            return TargetPointer.Null;
+        }
+    }
+    public TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).MethodTable;
+    public TargetPointer GetParentMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[typeHandle.Address].ParentMethodTable;
 
     public uint GetBaseSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize;
 
@@ -343,42 +372,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
     }
 
-    public TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).MethodTable;
-
-    public TargetPointer GetModule(TypeHandle typeHandle)
-    {
-        if (typeHandle.IsMethodTable())
-        {
-            return _methodTables[typeHandle.Address].Module;
-        }
-        else if (typeHandle.IsTypeDesc())
-        {
-            if (HasTypeParam(typeHandle))
-            {
-                return GetModule(GetTypeParam(typeHandle));
-            }
-            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
-            {
-                return genericParamModule;
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
-                return TargetPointer.Null;
-            }
-        }
-        else
-        {
-            return TargetPointer.Null;
-        }
-    }
-
-    public TargetPointer GetParentMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[typeHandle.Address].ParentMethodTable;
 
     public bool IsFreeObjectMethodTable(TypeHandle typeHandle) => FreeObjectMethodTablePointer == typeHandle.Address;
 
     public bool IsString(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsString;
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
+    public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
+    public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
 
     public uint GetTypeDefToken(TypeHandle typeHandle)
     {
@@ -387,14 +387,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodTable methodTable = _methodTables[typeHandle.Address];
         return (uint)(methodTable.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
     }
-
     public ushort GetNumMethods(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumMethods;
-
-    public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
-
     public uint GetTypeDefTypeAttributes(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : GetClassData(typeHandle).CorTypeAttr;
+    public ushort GetNumInstanceFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumInstanceFields;
+    public ushort GetNumStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumStaticFields;
+    public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
+    public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
 
-    public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
 
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle)
     {
