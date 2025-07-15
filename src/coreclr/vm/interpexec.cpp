@@ -7,11 +7,12 @@
 #include "gcenv.h"
 #include "interpexec.h"
 #include "callstubgenerator.h"
+#include "frames.h"
 
 // for numeric_limits
 #include <limits>
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     CONTRACTL
     {
@@ -44,7 +45,8 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
+    // Interpreter-FIXME: Potential race condition if a single CallStubHeader is reused for multiple targets.
+    pHeader->SetTarget(target); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -163,10 +165,11 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
 {
     size_t helperDirectOrIndirect = (size_t)dataItem;
-    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-        return *(THelper *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+    if (helperDirectOrIndirect & INTERP_DIRECT_HELPER_TAG)
+        // Clear the direct flag and then raise the thumb bit as needed
+        return (THelper)PINSTRToPCODE((TADDR)(helperDirectOrIndirect & ~INTERP_DIRECT_HELPER_TAG));
     else
-        return (THelper)helperDirectOrIndirect;
+        return *(THelper *)helperDirectOrIndirect;
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
@@ -329,7 +332,7 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
     // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
-    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only 
+    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only
     // if check to figure out which one to use, and then have the rest of the logic be straight-line code.
     MethodTable *pMT = nullptr;
     MethodDesc* pMD = nullptr;
@@ -505,6 +508,10 @@ MAIN_LOOP:
                 case INTOP_LDPTR_DEREF:
                     LOCAL_VAR(ip[1], void*) = *(void**)pMethod->pDataItems[ip[2]];
                     ip += 3;
+                    break;
+                case INTOP_NULLCHECK:
+                    NULL_CHECK(LOCAL_VAR(ip[1], void*));
+                    ip += 2;
                     break;
                 case INTOP_RET:
                     // Return stack slot sized value
@@ -1823,6 +1830,41 @@ MAIN_LOOP:
                     break;
                 }
 
+                case INTOP_CALL_PINVOKE:
+                {
+                    // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
+                    //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
+
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    int32_t targetAddrSlot = ip[4];
+                    int32_t indirectFlag = ip[5];
+
+                    ip += 6;
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    PCODE callTarget = indirectFlag
+                        ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
+                        : (PCODE)pMethod->pDataItems[targetAddrSlot];
+
+                    InlinedCallFrame inlinedCallFrame;
+                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
+                    inlinedCallFrame.m_pCallSiteSP = pFrame;
+                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+                    inlinedCallFrame.m_pThread = GetThread();
+                    inlinedCallFrame.m_Datum = NULL;
+                    inlinedCallFrame.Push();
+
+                    {
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
+
+                    inlinedCallFrame.Pop();
+
+                    break;
+                }
+
                 case INTOP_CALL:
                 {
                     returnOffset = ip[1];
@@ -1856,7 +1898,7 @@ CALL_INTERP_METHOD:
                         if (targetIp == NULL)
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
-                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
                             break;
                         }
                     }
@@ -1946,6 +1988,7 @@ CALL_INTERP_METHOD:
 
                     // clear the valuetype
                     memset(vtThis, 0, vtSize);
+
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
 
@@ -2357,6 +2400,29 @@ do {                                                                           \
                     void* result = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     LOCAL_VAR(dreg, void*) = result;
                     ip += 4;
+                    break;
+                }
+
+#define COMPARE_EXCHANGE(type)                                          \
+do                                                                      \
+{                                                                       \
+    type* dst = (type*)LOCAL_VAR(ip[2], void*);                         \
+    NULL_CHECK(dst);                                                    \
+    type newValue = LOCAL_VAR(ip[3], type);                             \
+    type comparand = LOCAL_VAR(ip[4], type);                            \
+    type old = InterlockedCompareExchangeT(dst, newValue, comparand);   \
+    LOCAL_VAR(ip[1], type) = old;                                       \
+    ip += 5;                                                            \
+} while (0)
+                case INTOP_COMPARE_EXCHANGE_I4:
+                {
+                    COMPARE_EXCHANGE(int32_t);
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_I8:
+                {
+                    COMPARE_EXCHANGE(int64_t);
                     break;
                 }
 

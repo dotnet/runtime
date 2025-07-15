@@ -9094,7 +9094,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     bool isAwait   = false;
                     int  configVal = -1; // -1 not configured, 0/1 configured to false/true
+#ifdef DEBUG
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
+#else
+                    if (compIsAsync())
+#endif
                     {
                         if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
                         {
