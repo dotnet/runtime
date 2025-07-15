@@ -100,6 +100,9 @@ mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 #endif
 #endif
 
+// Comment out FOR COMPILE:
+//#define LINK_ICALLS 
+
 #ifdef LINK_ICALLS
 
 #include "icall-table.h"
@@ -126,9 +129,10 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	*out_flags = 0;
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
-
+    
 #if defined(ICALL_TABLE_corlib)
-	if (!strcmp (image_name, "System.Private.CoreLib")) {
+    MH_LOG("Looking for %s with ICALL_TABLE_corlib in %s", methodname, image_name);
+	if (!strcmp (image_name, "System.Private.CoreLib") || !strcmp (image_name, "Wasm.Advanced.Sample")) {
 		indexes = corlib_icall_indexes;
 		indexes_size = sizeof (corlib_icall_indexes) / 4;
 		flags = corlib_icall_flags;
@@ -137,6 +141,7 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	}
 #endif
 #ifdef ICALL_TABLE_System
+    MH_LOG("Looking for %s with ICALL_TABLE_System in %s", methodname, image_name);
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
 		indexes_size = sizeof (System_icall_indexes) / 4;

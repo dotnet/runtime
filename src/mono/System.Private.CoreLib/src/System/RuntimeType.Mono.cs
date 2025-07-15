@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
+using Mono;
 namespace System
 {
     // Keep this in sync with FormatFlags defined in typestring.h
@@ -2189,7 +2190,7 @@ namespace System
         private static extern IntPtr GetConstructors_native(QCallTypeHandle type, BindingFlags bindingAttr);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr TestArray_native();
+        internal static extern unsafe IntPtr TestArray_native();        
 
         public static IntPtr TestArray()
         {
@@ -2197,11 +2198,28 @@ namespace System
             // It is not used in production code and is only for testing purposes.
             IntPtr result = TestArray_native();
 
-            var h = new Mono.SafeGPtrArrayHandle(result);
-            var a = h[0];
-            var b = h[1];
-            var c = h[2];
-            var sum = a + b + c;
+            //var h = new Mono.SafeGPtrArrayHandle(result);
+            //var h = new Mono.RuntimeGPtrArrayHandle(result);
+            RuntimeStructs.GPtrArray* myData = (RuntimeStructs.GPtrArray*)result;
+
+            IntPtr* data = myData->data;
+            long idx = 0x1;
+            var a = data[idx];
+            var b = data[idx];
+            var c = data[idx];
+                        
+            var sum = c + a;
+
+            IntPtr[] array = new IntPtr[6];
+            array[0] = 0x555;
+            array[1] = 0x666;
+            array[2] = 0x777;
+
+            var d = array[0];
+            var e = array[1];
+            var f = array[2];
+
+            sum = f - d + e;
             return sum;
         }
 
