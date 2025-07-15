@@ -174,6 +174,8 @@ void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* 
         return;
     }
 
+    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
     OBJECTREF* alc = reinterpret_cast<OBJECTREF*>(managedALC);
 
     GCX_COOP();

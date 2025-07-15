@@ -1752,9 +1752,8 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 //
 // Arguments:
 //    arrLen    - The new GT_ARR_LENGTH or GT_MDARR_LENGTH node
-//    block     - Basic block that will contain the new length node
 //
-inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block)
+inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
     static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
@@ -1769,19 +1768,14 @@ inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block)
 //    typ       - Type of the node
 //    arrayOp   - Array node
 //    lenOffset - Offset of the length field
-//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_ARR_LENGTH node
 //
-inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset)
 {
     GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
-    gtAnnotateNewArrLen(arrLen, block);
-    if (block != nullptr)
-    {
-        block->SetFlags(BBF_HAS_IDX_LEN);
-    }
+    gtAnnotateNewArrLen(arrLen);
     optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
 }
@@ -1793,19 +1787,14 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 //    arrayOp   - Array node
 //    dim       - MD array dimension of interest
 //    rank      - MD array rank
-//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_MDARR_LENGTH node
 //
-inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
+inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank)
 {
     GenTreeMDArr* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArr(GT_MDARR_LENGTH, arrayOp, dim, rank);
-    gtAnnotateNewArrLen(arrLen, block);
-    if (block != nullptr)
-    {
-        block->SetFlags(BBF_HAS_MD_IDX_LEN);
-    }
+    gtAnnotateNewArrLen(arrLen);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrLen;
 }
@@ -1817,21 +1806,16 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, uns
 //    arrayOp   - Array node
 //    dim       - MD array dimension of interest
 //    rank      - MD array rank
-//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_MDARR_LOWER_BOUND node
 //
-inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
+inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank)
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
     static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
-    if (block != nullptr)
-    {
-        block->SetFlags(BBF_HAS_MD_IDX_LEN);
-    }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
 }
@@ -1841,17 +1825,15 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 //
 // Arguments:
 //    addr        -  Address to null check
-//    basicBlock  -  Basic block of the node
 //
 // Return Value:
 //    New GT_NULLCHECK node
 
-inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
+inline GenTree* Compiler::gtNewNullCheck(GenTree* addr)
 {
     assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
-    basicBlock->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
     return nullCheck;
 }
@@ -4503,8 +4485,15 @@ inline bool Compiler::PreciseRefCountsRequired()
     return opts.OptimizationEnabled();
 }
 
+#define RETURN_IF_ABORT(expr)                                                                                          \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (expr == VisitResult::Abort)                                                                                \
+            return VisitResult::Abort;                                                                                 \
+    } while (0)
+
 template <typename TVisitor>
-void GenTree::VisitOperands(TVisitor visitor)
+GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 {
     switch (OperGet())
     {
@@ -4548,7 +4537,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
-            return;
+            return VisitResult::Continue;
 
         // Unary operators with an optional operand
         case GT_FIELD_ADDR:
@@ -4556,7 +4545,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETFILT:
             if (this->AsUnOp()->gtOp1 == nullptr)
             {
-                return;
+                return VisitResult::Continue;
             }
             FALLTHROUGH;
 
@@ -4592,73 +4581,50 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
-            visitor(this->AsUnOp()->gtOp1);
-            return;
+            return visitor(this->AsUnOp()->gtOp1);
 
 // Variadic nodes
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             for (GenTree* operand : this->AsMultiOp()->Operands())
             {
-                if (visitor(operand) == VisitResult::Abort)
-                {
-                    break;
-                }
+                RETURN_IF_ABORT(visitor(operand));
             }
-            return;
+            return VisitResult::Continue;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
         // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
-                {
-                    break;
-                }
+                RETURN_IF_ABORT(visitor(use.GetNode()));
             }
-            return;
+            return VisitResult::Continue;
 
         case GT_FIELD_LIST:
             for (GenTreeFieldList::Use& field : AsFieldList()->Uses())
             {
-                if (visitor(field.GetNode()) == VisitResult::Abort)
-                {
-                    break;
-                }
+                RETURN_IF_ABORT(visitor(field.GetNode()));
             }
-            return;
+            return VisitResult::Continue;
 
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (visitor(cmpXchg->Addr()) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(cmpXchg->Data()) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(cmpXchg->Comparand());
-            return;
+            RETURN_IF_ABORT(visitor(cmpXchg->Addr()));
+            RETURN_IF_ABORT(visitor(cmpXchg->Data()));
+            return visitor(cmpXchg->Comparand());
         }
 
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* const arrElem = this->AsArrElem();
-            if (visitor(arrElem->gtArrObj) == VisitResult::Abort)
-            {
-                return;
-            }
+            RETURN_IF_ABORT(visitor(arrElem->gtArrObj));
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                if (visitor(arrElem->gtArrInds[i]) == VisitResult::Abort)
-                {
-                    return;
-                }
+                RETURN_IF_ABORT(visitor(arrElem->gtArrInds[i]));
             }
-            return;
+            return VisitResult::Continue;
         }
 
         case GT_CALL:
@@ -4667,79 +4633,55 @@ void GenTree::VisitOperands(TVisitor visitor)
 
             for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
-                if (visitor(arg.GetEarlyNode()) == VisitResult::Abort)
-                {
-                    return;
-                }
+                RETURN_IF_ABORT(visitor(arg.GetEarlyNode()));
             }
 
             for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                if (visitor(arg.GetLateNode()) == VisitResult::Abort)
-                {
-                    return;
-                }
+                RETURN_IF_ABORT(visitor(arg.GetLateNode()));
             }
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr) &&
-                    (visitor(call->gtCallCookie) == VisitResult::Abort))
+                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
                 {
-                    return;
+                    RETURN_IF_ABORT(visitor(call->gtCallCookie));
                 }
-                if ((call->gtCallAddr != nullptr) && (visitor(call->gtCallAddr) == VisitResult::Abort))
+                if (call->gtCallAddr != nullptr)
                 {
-                    return;
+                    RETURN_IF_ABORT(visitor(call->gtCallAddr));
                 }
             }
-            if ((call->gtControlExpr != nullptr))
+            if (call->gtControlExpr != nullptr)
             {
-                visitor(call->gtControlExpr);
+                return visitor(call->gtControlExpr);
             }
-            return;
+            return VisitResult::Continue;
         }
 
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
-            if (visitor(cond->gtCond) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(cond->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(cond->gtOp2);
-            return;
+            RETURN_IF_ABORT(visitor(cond->gtCond));
+            RETURN_IF_ABORT(visitor(cond->gtOp1));
+            return visitor(cond->gtOp2);
         }
 
         // Binary nodes
         default:
             assert(this->OperIsBinary());
-            VisitBinOpOperands<TVisitor>(visitor);
-            return;
-    }
-}
+            GenTree* op1 = gtGetOp1();
+            if (op1 != nullptr)
+            {
+                RETURN_IF_ABORT(visitor(op1));
+            }
 
-template <typename TVisitor>
-void GenTree::VisitBinOpOperands(TVisitor visitor)
-{
-    assert(this->OperIsBinary());
-
-    GenTreeOp* const op = this->AsOp();
-
-    GenTree* const op1 = op->gtOp1;
-    if ((op1 != nullptr) && (visitor(op1) == VisitResult::Abort))
-    {
-        return;
-    }
-
-    GenTree* const op2 = op->gtOp2;
-    if (op2 != nullptr)
-    {
-        visitor(op2);
+            GenTree* op2 = gtGetOp2();
+            if (op2 != nullptr)
+            {
+                return visitor(op2);
+            }
+            return VisitResult::Continue;
     }
 }
 

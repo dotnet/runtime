@@ -18,7 +18,6 @@ namespace System.Security.Cryptography.Pkcs
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.SlhDsa? privateKey) { }
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.RSA? privateKey, System.Security.Cryptography.RSASignaturePadding? signaturePadding) { }
-        public bool HasPrivateKey { get { throw null; } }
         public System.Security.Cryptography.AsymmetricAlgorithm? PrivateKey { get { throw null; } set { } }
         public System.Security.Cryptography.RSASignaturePadding? SignaturePadding { get { throw null; } set { } }
     }

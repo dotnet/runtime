@@ -502,11 +502,8 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_CALL, "hascall"},
         {BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY, "xentry"},
         {BBF_GC_SAFE_POINT, "gcsafe"},
-        {BBF_HAS_IDX_LEN, "idxlen"},
-        {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
         {BBF_HAS_NEWOBJ, "newobj"},
         {BBF_HAS_NEWARR, "newarr"},
-        {BBF_HAS_NULLCHECK, "nullcheck"},
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
         {BBF_BACKWARD_JUMP_SOURCE, "bwd-src"},
@@ -755,7 +752,7 @@ void BasicBlock::dspKind() const
                 const bool isDominant = bbSwtTargets->bbsHasDominantCase && (i == bbSwtTargets->bbsDominantCase);
                 if (isDominant)
                 {
-                    printf("[dom(" FMT_WT ")]", bbSwtTargets->bbsDominantFraction);
+                    printf("[dom]");
                 }
             }
 
@@ -1771,7 +1768,6 @@ BBswtDesc::BBswtDesc(const BBswtDesc* other)
     : bbsDstTab(nullptr)
     , bbsCount(other->bbsCount)
     , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {
@@ -1788,7 +1784,6 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
     : bbsDstTab(nullptr)
     , bbsCount(other->bbsCount)
     , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {

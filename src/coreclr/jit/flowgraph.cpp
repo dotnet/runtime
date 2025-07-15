@@ -2997,7 +2997,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 case BBJ_CALLFINALLY:
                 {
                     noway_assert(predBlock->TargetIs(block));
-                    fgRedirectTargetEdge(predBlock, newHead);
+                    fgRedirectEdge(predBlock->TargetEdgeRef(), newHead);
                     incomingWeight += predBlock->bbWeight;
                     break;
                 }
@@ -3005,8 +3005,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 default:
                     // The only way into the handler is via a BBJ_CALLFINALLY (to a finally handler), or
                     // via exception handling.
-                    noway_assert(false);
-                    break;
+                    unreached();
             }
         }
     }

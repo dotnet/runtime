@@ -6,32 +6,32 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class SubstitutionInfo
-	{
-		public Dictionary<MethodDefinition, MethodAction> MethodActions { get; }
-		public Dictionary<MethodDefinition, object?> MethodStubValues { get; }
-		public Dictionary<FieldDefinition, object?> FieldValues { get; }
+    public class SubstitutionInfo
+    {
+        public Dictionary<MethodDefinition, MethodAction> MethodActions { get; }
+        public Dictionary<MethodDefinition, object?> MethodStubValues { get; }
+        public Dictionary<FieldDefinition, object?> FieldValues { get; }
 
-		public SubstitutionInfo ()
-		{
-			MethodActions = new Dictionary<MethodDefinition, MethodAction> ();
-			MethodStubValues = new Dictionary<MethodDefinition, object?> ();
-			FieldValues = new Dictionary<FieldDefinition, object?> ();
-		}
+        public SubstitutionInfo()
+        {
+            MethodActions = new Dictionary<MethodDefinition, MethodAction>();
+            MethodStubValues = new Dictionary<MethodDefinition, object?>();
+            FieldValues = new Dictionary<FieldDefinition, object?>();
+        }
 
-		public void SetMethodAction (MethodDefinition method, MethodAction action)
-		{
-			MethodActions[method] = action;
-		}
+        public void SetMethodAction(MethodDefinition method, MethodAction action)
+        {
+            MethodActions[method] = action;
+        }
 
-		public void SetMethodStubValue (MethodDefinition method, object? value)
-		{
-			MethodStubValues[method] = value;
-		}
+        public void SetMethodStubValue(MethodDefinition method, object? value)
+        {
+            MethodStubValues[method] = value;
+        }
 
-		public void SetFieldValue (FieldDefinition field, object? value)
-		{
-			FieldValues[field] = value;
-		}
-	}
+        public void SetFieldValue(FieldDefinition field, object? value)
+        {
+            FieldValues[field] = value;
+        }
+    }
 }

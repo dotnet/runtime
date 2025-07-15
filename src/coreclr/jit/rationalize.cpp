@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "sideeffects.h"
+
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -21,7 +23,6 @@
 // Return Value:
 //    None.
 //
-
 void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                                      CORINFO_SIG_INFO*     sig,
                                      ArrayStack<GenTree*>& parents,
@@ -262,8 +263,8 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 // RewriteIntrinsicAsUserCall : Rewrite an intrinsic operator as a GT_CALL to the original method.
 //
 // Arguments:
-//    ppTree      - A pointer-to-a-pointer for the intrinsic node
-//    fgWalkData  - A pointer to tree walk data providing the context
+//    use     - A pointer-to-a-pointer for the intrinsic node
+//    parents - A pointer to tree walk data providing the context
 //
 // Return Value:
 //    None.
@@ -272,7 +273,6 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 // The ones that are not being rewritten here must be handled in Codegen.
 // Conceptually, the lower is the right place to do the rewrite. Keeping it in rationalization is
 // mainly for throughput issue.
-
 void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents)
 {
     GenTreeIntrinsic* intrinsic = (*use)->AsIntrinsic();
@@ -310,12 +310,15 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
                       operands, operandCount, isSpecialIntrinsic);
 }
 
+//
+// Pre-order rewriting for HW Intrinsics
+//
 #if defined(FEATURE_HW_INTRINSICS)
 // RewriteHWIntrinsicAsUserCall : Rewrite a hwintrinsic node as a GT_CALL to the original method.
 //
 // Arguments:
-//    ppTree      - A pointer-to-a-pointer for the intrinsic node
-//    fgWalkData  - A pointer to tree walk data providing the context
+//    use     - A pointer-to-a-pointer for the intrinsic node
+//    parents - A pointer to tree walk data providing the context
 //
 // Return Value:
 //    None.
@@ -340,6 +343,36 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
     switch (intrinsicId)
     {
+#if defined(TARGET_XARCH)
+        case NI_AVX_Compare:
+        case NI_AVX_CompareScalar:
+        case NI_AVX512_CompareMask:
+        {
+            assert(operandCount == 3);
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+            GenTree* op3 = operands[2];
+
+            if (!op3->IsCnsIntOrI())
+            {
+                break;
+            }
+
+            FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+            NamedIntrinsic      id =
+                HWIntrinsicInfo::lookupIdForFloatComparisonMode(intrinsicId, mode, simdBaseType, simdSize);
+
+            if (id == intrinsicId)
+            {
+                break;
+            }
+
+            result = comp->gtNewSimdHWIntrinsicNode(retType, op1, op2, id, simdBaseJitType, simdSize);
+            break;
+        }
+#endif // TARGET_XARCH
+
         case NI_Vector128_Shuffle:
         case NI_Vector128_ShuffleNative:
         case NI_Vector128_ShuffleNativeFallback:
@@ -541,6 +574,737 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #endif // FEATURE_READYTORUN
                       operands, operandCount, isSpecialIntrinsic);
 }
+#endif // FEATURE_HW_INTRINSICS
+
+//
+// Post-order rewriting for HW Intrinsics
+//
+#if defined(FEATURE_HW_INTRINSICS)
+// RewriteHWIntrinsic: Rewrite a hwintrinsic node
+//
+// Arguments:
+//    use     - A pointer to the hwintrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+void Rationalizer::RewriteHWIntrinsic(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+
+    // Intrinsics should have already been rewritten back into user calls.
+    assert(!node->IsUserCall());
+
+    NamedIntrinsic intrinsic = node->GetHWIntrinsicId();
+
+    switch (intrinsic)
+    {
+#if defined(TARGET_XARCH)
+        case NI_AVX512_BlendVariableMask:
+        {
+            RewriteHWIntrinsicBlendv(use, parents);
+            break;
+        }
+
+        case NI_AVX512_ConvertMaskToVector:
+        case NI_AVX512_MoveMask:
+        {
+            RewriteHWIntrinsicMaskOp(use, parents);
+            break;
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            break;
+        }
+    }
+}
+
+#if defined(TARGET_XARCH)
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicBlendv: Rewrites a hwintrinsic blendv operation
+//
+// Arguments:
+//    use     - A pointer to the hwintrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+
+    // We normalize all comparisons to be of TYP_MASK on import. However, if we
+    // get to rationalization and we cannot take advantage of embedded masking
+    // then we want to rewrite things to just directly produce TYP_SIMD instead.
+
+    NamedIntrinsic intrinsic       = node->GetHWIntrinsicId();
+    var_types      retType         = node->TypeGet();
+    CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+    var_types      simdBaseType    = node->GetSimdBaseType();
+    unsigned       simdSize        = node->GetSimdSize();
+
+    if (simdSize == 64)
+    {
+        return;
+    }
+
+    GenTree* op2 = node->Op(2);
+
+    // We're in the post-order visit and are traversing in execution order, so
+    // everything between op2 and node will have already been rewritten to LIR
+    // form and doing the IsInvariantInRange check is safe. This allows us to
+    // catch cases where something is embedded masking compatible but where we
+    // could never actually contain it and so we want to rewrite it to the non-mask
+    // variant
+    SideEffectSet scratchSideEffects;
+
+    if (scratchSideEffects.IsLirInvariantInRange(comp, op2, node))
+    {
+        unsigned    tgtMaskSize        = simdSize / genTypeSize(simdBaseType);
+        CorInfoType tgtSimdBaseJitType = CORINFO_TYPE_UNDEF;
+
+        if (op2->isEmbeddedMaskingCompatible(comp, tgtMaskSize, tgtSimdBaseJitType))
+        {
+            // We are going to utilize the embedded mask, so we don't need to rewrite. However,
+            // we want to fixup the simdBaseJitType here since it simplifies lowering and allows
+            // both embedded broadcast and the mask to be live simultaneously.
+
+            if (tgtSimdBaseJitType != CORINFO_TYPE_UNDEF)
+            {
+                op2->AsHWIntrinsic()->SetSimdBaseJitType(tgtSimdBaseJitType);
+            }
+            return;
+        }
+    }
+
+    GenTree*& op3 = node->Op(3);
+
+    if (!ShouldRewriteToNonMaskHWIntrinsic(op3))
+    {
+        return;
+    }
+
+    parents.Push(op3);
+    RewriteHWIntrinsicToNonMask(&op3, parents);
+    (void)parents.Pop();
+
+    if (simdSize == 32)
+    {
+        if (varTypeIsIntegral(simdBaseType))
+        {
+            intrinsic = NI_AVX2_BlendVariable;
+        }
+        else
+        {
+            intrinsic = NI_AVX_BlendVariable;
+        }
+    }
+    else
+    {
+        intrinsic = NI_SSE42_BlendVariable;
+    }
+
+    if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
+    {
+        node->SetSimdBaseJitType(varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT);
+    }
+    node->ChangeHWIntrinsicId(intrinsic);
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicMaskOp: Rewrites a hwintrinsic mask operation
+//
+// Arguments:
+//    use     - A pointer to the hwintrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+void Rationalizer::RewriteHWIntrinsicMaskOp(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+
+    // We normalize all comparisons to be of TYP_MASK on import. However, if we
+    // get to rationalization and we're just converting that back to TYP_SIMD,
+    // then we want to rewrite things to just directly produce TYP_SIMD instead.
+
+    NamedIntrinsic intrinsic       = node->GetHWIntrinsicId();
+    var_types      retType         = node->TypeGet();
+    CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+    var_types      simdBaseType    = node->GetSimdBaseType();
+    unsigned       simdSize        = node->GetSimdSize();
+
+    if (simdSize == 64)
+    {
+        // we must always use the evex encoding
+        return;
+    }
+
+    if ((intrinsic == NI_AVX512_MoveMask) && varTypeIsShort(simdBaseType))
+    {
+        // we need to keep the evex form as it's more efficient
+        return;
+    }
+
+    GenTree*& op1 = node->Op(1);
+
+    if (!ShouldRewriteToNonMaskHWIntrinsic(op1))
+    {
+        return;
+    }
+
+    parents.Push(op1);
+    RewriteHWIntrinsicToNonMask(&op1, parents);
+    (void)parents.Pop();
+
+    if (intrinsic == NI_AVX512_ConvertMaskToVector)
+    {
+        if (parents.Height() > 1)
+        {
+            parents.Top(1)->ReplaceOperand(use, op1);
+        }
+        else
+        {
+            *use = op1;
+        }
+        BlockRange().Remove(node);
+
+        // Adjust the parent stack
+        assert(parents.Top() == node);
+        (void)parents.Pop();
+        parents.Push(op1);
+    }
+    else
+    {
+        assert(intrinsic == NI_AVX512_MoveMask);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                intrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_X86Base_MoveMask;
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+            {
+                simdBaseJitType = CORINFO_TYPE_FLOAT;
+                intrinsic       = (simdSize == 32) ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+            {
+                simdBaseJitType = CORINFO_TYPE_DOUBLE;
+                intrinsic       = (simdSize == 32) ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        node->SetSimdBaseJitType(simdBaseJitType);
+        node->ChangeHWIntrinsicId(intrinsic);
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicToNonMask: Rewrites a hwintrinsic to its non-mask form
+//
+//  Arguments:
+//    use     - A pointer to the hwintrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+void Rationalizer::RewriteHWIntrinsicToNonMask(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+
+    assert(node->TypeIs(TYP_MASK));
+    assert(ShouldRewriteToNonMaskHWIntrinsic(node));
+
+    NamedIntrinsic intrinsic = node->GetHWIntrinsicId();
+
+    switch (intrinsic)
+    {
+        case NI_AVX512_AndMask:
+        {
+            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_AND);
+            break;
+        }
+
+        case NI_AVX512_AndNotMask:
+        {
+            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_AND_NOT);
+            break;
+        }
+
+        case NI_AVX512_NotMask:
+        {
+            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_NOT);
+            break;
+        }
+
+        case NI_AVX512_OrMask:
+        {
+            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_OR);
+            break;
+        }
+
+        case NI_AVX512_XorMask:
+        {
+            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_XOR);
+            break;
+        }
+
+        case NI_AVX512_XnorMask:
+        {
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            unsigned    simdSize        = node->GetSimdSize();
+            var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
+
+            GenTree* op1 =
+                comp->gtNewSimdBinOpNode(GT_XOR, simdType, node->Op(1), node->Op(2), simdBaseJitType, simdSize);
+            BlockRange().InsertBefore(node, op1);
+            node->Op(1) = op1;
+
+            GenTree* op2 = comp->gtNewAllBitsSetConNode(simdType);
+            BlockRange().InsertBefore(node, op2);
+            node->Op(2) = op2;
+
+            RewriteHWIntrinsicBitwiseOpToNonMask(use, parents, GT_XOR);
+            break;
+        }
+
+        case NI_AVX512_CompareMask:
+        case NI_AVX512_CompareEqualMask:
+        case NI_AVX512_CompareGreaterThanMask:
+        case NI_AVX512_CompareGreaterThanOrEqualMask:
+        case NI_AVX512_CompareLessThanMask:
+        case NI_AVX512_CompareLessThanOrEqualMask:
+        case NI_AVX512_CompareNotEqualMask:
+        case NI_AVX512_CompareNotGreaterThanMask:
+        case NI_AVX512_CompareNotGreaterThanOrEqualMask:
+        case NI_AVX512_CompareNotLessThanMask:
+        case NI_AVX512_CompareNotLessThanOrEqualMask:
+        case NI_AVX512_CompareOrderedMask:
+        case NI_AVX512_CompareUnorderedMask:
+        {
+            var_types simdBaseType = node->GetSimdBaseType();
+            unsigned  simdSize     = node->GetSimdSize();
+            var_types simdType     = Compiler::getSIMDTypeForSize(simdSize);
+
+            switch (intrinsic)
+            {
+                case NI_AVX512_CompareMask:
+                {
+                    intrinsic = NI_AVX_Compare;
+                    break;
+                }
+
+                case NI_AVX512_CompareEqualMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            intrinsic = NI_AVX2_CompareEqual;
+                        }
+                        else
+                        {
+                            intrinsic = NI_AVX_CompareEqual;
+                        }
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        intrinsic = NI_SSE42_CompareEqual;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareEqual;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareGreaterThanMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            intrinsic = NI_AVX2_CompareGreaterThan;
+                        }
+                        else
+                        {
+                            intrinsic = NI_AVX_CompareGreaterThan;
+                        }
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        intrinsic = NI_SSE42_CompareGreaterThan;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareGreaterThan;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareGreaterThanOrEqualMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareGreaterThanOrEqual;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareGreaterThanOrEqual;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareLessThanMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            intrinsic = NI_AVX2_CompareLessThan;
+                        }
+                        else
+                        {
+                            intrinsic = NI_AVX_CompareLessThan;
+                        }
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        intrinsic = NI_SSE42_CompareLessThan;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareLessThan;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareLessThanOrEqualMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareLessThanOrEqual;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareLessThanOrEqual;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareNotEqualMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareNotEqual;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareNotEqual;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareNotGreaterThanMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareNotGreaterThan;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareNotGreaterThan;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareNotGreaterThanOrEqualMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareNotGreaterThanOrEqual;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareNotGreaterThanOrEqual;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareNotLessThanMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareNotLessThan;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareNotLessThan;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareNotLessThanOrEqualMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareNotLessThanOrEqual;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareNotLessThanOrEqual;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareOrderedMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareOrdered;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareOrdered;
+                    }
+                    break;
+                }
+
+                case NI_AVX512_CompareUnorderedMask:
+                {
+                    if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX_CompareUnordered;
+                    }
+                    else
+                    {
+                        intrinsic = NI_X86Base_CompareUnordered;
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            node->gtType = simdType;
+            node->ChangeHWIntrinsicId(intrinsic);
+
+            break;
+        }
+
+        case NI_AVX512_ConvertVectorToMask:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (parents.Height() > 1)
+            {
+                parents.Top(1)->ReplaceOperand(use, op1);
+            }
+            else
+            {
+                *use = op1;
+            }
+            BlockRange().Remove(node);
+
+            // Adjust the parent stack
+            assert(parents.Top() == node);
+            (void)parents.Pop();
+            parents.Push(op1);
+
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicBitwiseOpToNonMask: Rewrites hwintrinsic bitwise operation to its non-mask form
+//
+//  Arguments:
+//    use     - A pointer to the hwintrinsic node
+//    parents - A reference to tree walk data providing the context
+//    oper    - The operation represented by the hwintrinsic
+//
+void Rationalizer::RewriteHWIntrinsicBitwiseOpToNonMask(GenTree** use, Compiler::GenTreeStack& parents, genTreeOps oper)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+    assert((node->GetOperandCount() == 1) || (node->GetOperandCount() == 2));
+
+    assert(node->TypeIs(TYP_MASK));
+    assert(oper != GT_NONE);
+
+    NamedIntrinsic intrinsic    = NI_Illegal;
+    var_types      simdBaseType = node->GetSimdBaseType();
+    unsigned       simdSize     = node->GetSimdSize();
+    var_types      simdType     = Compiler::getSIMDTypeForSize(simdSize);
+    const bool     isScalar     = false;
+
+    GenTree*& op1 = node->Op(1);
+
+    parents.Push(op1);
+    RewriteHWIntrinsicToNonMask(&op1, parents);
+    (void)parents.Pop();
+
+    if (node->GetOperandCount() == 1)
+    {
+        assert(oper == GT_NOT);
+
+        GenTree* op2 = comp->gtNewAllBitsSetConNode(simdType);
+        BlockRange().InsertBefore(node, op2);
+
+        intrinsic =
+            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_XOR, op1, op2, simdBaseType, simdSize, isScalar);
+
+        node->gtType = simdType;
+        node->ResetHWIntrinsicId(intrinsic, comp, op1, op2);
+    }
+    else
+    {
+        GenTree*& op2 = node->Op(2);
+
+        parents.Push(op2);
+        RewriteHWIntrinsicToNonMask(&op2, parents);
+        (void)parents.Pop();
+
+        intrinsic =
+            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, oper, op1, op2, simdBaseType, simdSize, isScalar);
+
+        node->gtType = simdType;
+        node->ChangeHWIntrinsicId(intrinsic);
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// ShouldRewriteToNonMaskHWIntrinsic: Determines if a node is a hwintrinsic that should be rewritten
+//                                    to its non-mask form
+//
+//  Arguments:
+//     node - The node to check
+//
+// Returns:
+//     true if node is a hardware intrinsic node and should be converted to its non-mask form; otherwise false
+//
+bool Rationalizer::ShouldRewriteToNonMaskHWIntrinsic(GenTree* node)
+{
+    assert(node->TypeIs(TYP_MASK));
+
+    if (!node->OperIsHWIntrinsic())
+    {
+        // Nothing to optimize if we don't have a hwintrinsic
+        return false;
+    }
+
+    GenTreeHWIntrinsic* hwNode    = node->AsHWIntrinsic();
+    NamedIntrinsic      intrinsic = hwNode->GetHWIntrinsicId();
+
+    if (hwNode->GetSimdSize() == 64)
+    {
+        // TYP_SIMD64 comparisons always produce a TYP_MASK
+        return false;
+    }
+
+    switch (intrinsic)
+    {
+        case NI_AVX512_AndMask:
+        case NI_AVX512_AndNotMask:
+        case NI_AVX512_OrMask:
+        case NI_AVX512_XorMask:
+        case NI_AVX512_XnorMask:
+        {
+            // binary bitwise operations should be optimized if both inputs can
+            assert(hwNode->GetOperandCount() == 2);
+            return ShouldRewriteToNonMaskHWIntrinsic(hwNode->Op(1)) && ShouldRewriteToNonMaskHWIntrinsic(hwNode->Op(2));
+        }
+
+        case NI_AVX512_NotMask:
+        {
+            // unary bitwise operations should be optimized if the input can
+            assert(hwNode->GetOperandCount() == 1);
+            return ShouldRewriteToNonMaskHWIntrinsic(hwNode->Op(1));
+        }
+
+        case NI_AVX512_CompareMask:
+        case NI_AVX512_CompareEqualMask:
+        case NI_AVX512_CompareGreaterThanMask:
+        case NI_AVX512_CompareGreaterThanOrEqualMask:
+        case NI_AVX512_CompareLessThanMask:
+        case NI_AVX512_CompareLessThanOrEqualMask:
+        case NI_AVX512_CompareNotEqualMask:
+        case NI_AVX512_CompareNotGreaterThanMask:
+        case NI_AVX512_CompareNotGreaterThanOrEqualMask:
+        case NI_AVX512_CompareNotLessThanMask:
+        case NI_AVX512_CompareNotLessThanOrEqualMask:
+        case NI_AVX512_CompareOrderedMask:
+        case NI_AVX512_CompareUnorderedMask:
+        {
+            assert((hwNode->GetOperandCount() == 2) || (hwNode->GetOperandCount() == 3));
+            var_types simdBaseType = hwNode->GetSimdBaseType();
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // floating-point comparisons can always be optimized
+                return true;
+            }
+
+            if (intrinsic == NI_AVX512_CompareEqualMask)
+            {
+                // equals comparisons can always be optimized
+                return true;
+            }
+
+            if (varTypeIsUnsigned(simdBaseType))
+            {
+                // unsigned integer relational comparisons cannot be optimized
+                return false;
+            }
+
+            if (intrinsic == NI_AVX512_CompareGreaterThanMask)
+            {
+                // signed integer greater-than comparisons can always be optimized
+                return true;
+            }
+
+            if (intrinsic == NI_AVX512_CompareLessThanMask)
+            {
+                // signed integer less-than comparisons can always be optimized
+                return true;
+            }
+            break;
+        }
+
+        case NI_AVX512_ConvertVectorToMask:
+        {
+            return true;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    // Other cases cannot be optimized
+    return false;
+}
+#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_ARM64
@@ -754,8 +1518,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            // Intrinsics should have already been rewritten back into user calls.
-            assert(!node->AsHWIntrinsic()->IsUserCall());
+            RewriteHWIntrinsic(useEdge, parentStack);
             break;
 #endif // FEATURE_HW_INTRINSICS
 
