@@ -14,11 +14,16 @@ internal sealed class EEClass : IData<EEClass>
         NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
         CorTypeAttr = target.Read<uint>(address + (ulong)type.Fields[nameof(CorTypeAttr)].Offset);
         InternalCorElementType = target.Read<byte>(address + (ulong)type.Fields[nameof(InternalCorElementType)].Offset);
+        NumInstanceFields = target.Read<short>(address + (ulong)type.Fields[nameof(NumInstanceFields)].Offset);
+        NumStaticFields = target.Read<short>(address + (ulong)type.Fields[nameof(NumStaticFields)].Offset);
+        NumThreadStaticFields = target.Read<short>(address + (ulong)type.Fields[nameof(NumThreadStaticFields)].Offset);
+        FieldDescList = target.Read<ulong>(address + (ulong)type.Fields[nameof(FieldDescList)].Offset);
         NumNonVirtualSlots = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumNonVirtualSlots)].Offset);
     }
 
     public TargetPointer MethodTable { get; init; }
     public ushort NumMethods { get; init; }
+    public TargetPointer FieldDescList { get; init; }
     public uint CorTypeAttr { get; init; }
 
     // An InternalCorElementType uses the enum values of a CorElementType to
@@ -29,7 +34,9 @@ internal sealed class EEClass : IData<EEClass>
     // Enums are the element type of their underlying type
     // ValueTypes which can exactly be represented as an element type are represented as such
     public byte InternalCorElementType { get; init; }
-
+    public short NumInstanceFields { get; init; }
+    public short NumStaticFields { get; init; }
+    public short NumThreadStaticFields { get; init; }
     public ushort NumNonVirtualSlots { get; init; }
 }
 

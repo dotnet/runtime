@@ -950,7 +950,55 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetMethodTableFieldData(ClrDataAddress mt, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodTableFieldData(mt, data) : HResults.E_NOTIMPL;
+    {
+        DacpMethodTableFieldData* mtFieldData = (DacpMethodTableFieldData*)data;
+        int hr = HResults.S_OK;
+        try
+        {
+            Target.TypeInfo EEType = _target.GetTypeInfo(DataType.EEClass);
+            Target.TypeInfo MTType = _target.GetTypeInfo(DataType.MethodTable);
+            TargetPointer MTAddress = mt.ToTargetPointer(_target);
+            TargetPointer EEClassOrCanonMTAddress = _target.ReadPointer(MTAddress + (ulong)MTType.Fields["EEClassOrCanonMT"].Offset);
+            TargetPointer EEClassAddress;
+            ushort UnionMask = _target.ReadGlobal<ushort>(Constants.Globals.UnionMask);
+            if ((EEClassOrCanonMTAddress & UnionMask) != 0)
+            {
+                // If the union mask is set, we have a canonical method table
+                // and we need to read the EEClass from the canonical method table.
+                EEClassAddress = _target.ReadPointer(EEClassOrCanonMTAddress + (ulong)MTType.Fields["EEClassOrCanonMT"].Offset);
+            }
+            else
+            {
+                EEClassAddress = EEClassOrCanonMTAddress;
+            }
+            mtFieldData->FirstField = _target.ReadPointer(EEClassAddress + (ulong)EEType.Fields["FieldDescList"].Offset).ToClrDataAddress(_target);
+            mtFieldData->wNumInstanceFields = _target.Read<ushort>(EEClassAddress + (ulong)EEType.Fields["NumInstanceFields"].Offset);
+            mtFieldData->wNumStaticFields = _target.Read<ushort>(EEClassAddress + (ulong)EEType.Fields["NumStaticFields"].Offset);
+            mtFieldData->wNumThreadStaticFields = _target.Read<ushort>(EEClassAddress + (ulong)EEType.Fields["NumThreadStaticFields"].Offset);
+            mtFieldData->wContextStaticsSize = 0;
+            mtFieldData->wContextStaticOffset = 0;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+#if DEBUG
+        {
+            if (_legacyImpl is not null)
+            {
+                DacpMethodTableFieldData mtFieldDataLocal = default;
+                int hrLocal = _legacyImpl.GetMethodTableFieldData(mt, &mtFieldDataLocal);
+                Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
+                Debug.Assert(mtFieldData->wNumInstanceFields == mtFieldDataLocal.wNumInstanceFields);
+                Debug.Assert(mtFieldData->wNumStaticFields == mtFieldDataLocal.wNumStaticFields);
+                Debug.Assert(mtFieldData->wNumThreadStaticFields == mtFieldDataLocal.wNumThreadStaticFields);
+                Debug.Assert(mtFieldData->wContextStaticOffset == mtFieldDataLocal.wContextStaticOffset);
+                Debug.Assert(mtFieldData->wContextStaticsSize == mtFieldDataLocal.wContextStaticsSize);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetMethodTableForEEClass(ClrDataAddress eeClassReallyCanonMT, ClrDataAddress* value)
     {
         if (eeClassReallyCanonMT == 0 || value == null)

@@ -128,6 +128,16 @@ internal struct DacpUsefulGlobalsData
 }
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
+internal struct DacpMethodTableFieldData
+{
+    public ushort wNumInstanceFields;
+    public ushort wNumStaticFields;
+    public ushort wNumThreadStaticFields;
+    public ClrDataAddress FirstField;
+    public ushort wContextStaticOffset;
+    public ushort wContextStaticsSize;
+};
+
 internal struct DacpReJitData
 {
     // FIXME[cdac]: the C++ definition enum doesn't have an explicit underlying type or constant values for the flags
