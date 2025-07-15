@@ -193,7 +193,7 @@ namespace R2RDump
                     Machine.LoongArch64 => 4 * 2 + 1,
 
                     // Instructions are dumped as 4-byte hexadecimal integers
-                    // TODO-RISCV64-CEXT: update once RISC-V runtime supports "C" extension (compressed instructions)
+                    // TODO-RISCV64-RVC: update once RISC-V runtime supports "C" extension (compressed instructions)
                     Machine.RiscV64 => 4 * 2 + 1,
 
                     _ => throw new NotImplementedException()

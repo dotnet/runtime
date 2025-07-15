@@ -995,7 +995,7 @@ void emitter::emitIns_R_R_R(
 bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
-    // TODO: Disable this early return once compresed instructions are allowed in prolog / epilog
+    // TODO-RISCV64-RVC: Disable this early return once compresed instructions are allowed in prolog / epilog
     if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
     {
         return false;
