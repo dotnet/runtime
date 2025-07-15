@@ -329,7 +329,7 @@ namespace System.Runtime.InteropServices
                             }
                             catch (Exception ex)
                             {
-                                return ex.HResult;
+                                return Marshal.GetHRForException(ex);
                             }
                         }
                     }
