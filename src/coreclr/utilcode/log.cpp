@@ -156,7 +156,7 @@ VOID EnterLogLock()
     // rather hard to care about this, as we LOG all over the place.
     CONTRACT_VIOLATION(TakesLockViolation);
 
-    if(LogFileMutex != nullptr)
+    if (LogFileMutex != nullptr)
     {
         minipal_mutex_enter(LogFileMutex);
     }
@@ -167,7 +167,7 @@ VOID LeaveLogLock()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if(LogFileMutex != nullptr)
+    if (LogFileMutex != nullptr)
     {
         minipal_mutex_leave(LogFileMutex);
     }
