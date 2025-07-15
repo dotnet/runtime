@@ -815,20 +815,22 @@ session_tracepoint_write_event (
 	// Extension
 	uint32_t extension_len = 0;
 
-	// Extension Event Metadata
-	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
-	uint8_t extension_metadata[1 + sizeof(uint32_t)];
-	extension_metadata[0] = 0x01; // label
-	*(uint32_t*)&extension_metadata[1] = metadata_len;
-	io[io_index].iov_base = extension_metadata;
-	io[io_index].iov_len = sizeof(extension_metadata);
-	io_index++;
-	extension_len += sizeof(extension_metadata);
+	bool should_write_metadata = ep_event_update_metadata_written_mask (ep_event, ep_session_get_mask (session), true);
+	if (should_write_metadata) {
+		uint8_t extension_metadata[1 + sizeof(uint32_t)];
+		uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
+		extension_metadata[0] = 0x01; // label
+		*(uint32_t*)&extension_metadata[1] = metadata_len;
+		io[io_index].iov_base = extension_metadata;
+		io[io_index].iov_len = sizeof(extension_metadata);
+		io_index++;
+		extension_len += sizeof(extension_metadata);
 
-	io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
-	io[io_index].iov_len = metadata_len;
-	io_index++;
-	extension_len += metadata_len;
+		io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
+		io[io_index].iov_len = metadata_len;
+		io_index++;
+		extension_len += metadata_len;
+	}
 
 	// Extension Activity IDs
 	const int extension_activity_ids_max_len = 2 * (1 + EP_ACTIVITY_ID_SIZE);

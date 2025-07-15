@@ -26,6 +26,9 @@ struct _EventPipeEvent_Internal {
 	uint64_t keywords;
 	// The ith bit is 1 iff the event is enabled for the ith session.
 	volatile int64_t enabled_mask;
+	// The ith bit is 1 iff the event metadata has been written for the ith session.
+	// Currently, bits are only enabled in user_events sessions.
+	volatile int64_t metadata_written_mask;
 	// Metadata
 	uint8_t *metadata;
 	// The provider that contains the event.
@@ -91,6 +94,12 @@ ep_event_alloc (
 
 void
 ep_event_free (EventPipeEvent * ep_event);
+
+bool
+ep_event_update_metadata_written_mask (
+	EventPipeEvent *ep_event,
+	uint64_t session_mask,
+	bool enable);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_EVENT_H__ */
