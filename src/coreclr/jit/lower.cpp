@@ -11511,6 +11511,7 @@ bool Lowering::CanConvertOpToCCMP(GenTree* operand, GenTree* tree)
            IsInvariantInRange(operand, tree);
 }
 
+#if defined(TARGET_AMD64)
 //------------------------------------------------------------------------
 // IsOpPreferredForCCMP : Checks if operand is preferred for conversion to CCMP
 //
@@ -11527,6 +11528,7 @@ bool Lowering::IsOpPreferredForCCMP(GenTree* operand)
            (operand->gtGetOp2() == nullptr || operand->gtGetOp2()->IsIntegralConst() ||
             !operand->gtGetOp2()->isContained());
 }
+#endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
@@ -11576,12 +11578,23 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     bool         canConvertOp2ToCCMP = CanConvertOpToCCMP(op2, tree);
     bool         canConvertOp1ToCCMP = CanConvertOpToCCMP(op1, tree);
 
-    if (canConvertOp2ToCCMP && (!canConvertOp1ToCCMP || IsOpPreferredForCCMP(op2)) &&
+    if (canConvertOp2ToCCMP && 
+#if defined(TARGET_AMD64)
+        (!canConvertOp1ToCCMP || IsOpPreferredForCCMP(op2)) &&
+#elif defined(TARGET_ARM64) // TARGET_AMD64
+        (op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
+        (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()) &&
+#endif //TARGET_ARM64
         TryLowerConditionToFlagsNode(tree, op1, &cond1, false))
     {
         // Fall through, converting op2 to the CCMP
     }
-    else if (canConvertOp1ToCCMP && TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
+    else if (canConvertOp1ToCCMP && 
+#if defined(TARGET_ARM64)
+        (op1->gtGetOp1()->IsIntegralConst() || !op1->gtGetOp1()->isContained()) &&
+             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || !op1->gtGetOp2()->isContained()) &&
+#endif // TARGET_ARM64
+        TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
     {
         std::swap(op1, op2);
     }
