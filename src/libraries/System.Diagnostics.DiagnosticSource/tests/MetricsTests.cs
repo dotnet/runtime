@@ -14,7 +14,7 @@ namespace System.Diagnostics.Metrics.Tests
     public class MetricsTests
     {
         // We increase the timeout for remote execution to allow for longer-running tests.
-        private static readonly RemoteInvokeOptions s_remoteExecutionOptions = new RemoteInvokeOptions { TimeOut = TimeSpan.FromMinutes(10) };
+        private static RemoteInvokeOptions s_remoteExecutionOptions = new RemoteInvokeOptions { TimeOut = 600_000 };
 
         [Fact]
         public void MeasurementConstructionTest()
