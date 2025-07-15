@@ -382,7 +382,6 @@ extends:
                 parameters:
                   name: MonoRuntimePacks
 
-
       # Build Mono AOT offset headers once, for consumption elsewhere
       #
       - template: /eng/pipelines/common/platform-matrix.yml
