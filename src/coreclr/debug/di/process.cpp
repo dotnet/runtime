@@ -5062,7 +5062,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_LOAD_MODULE:
         {
             LOG((LF_CORDB, LL_INFO100,
-                "RCET::HRCE: load assembly on thread %#x Asm:0x%08x AD:0x%08x \n",
+                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08x AD:0x%08x \n",
                 dwVolatileThreadId,
                 VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
                 VmPtrToCookie(pEvent->vmAppDomain)));
