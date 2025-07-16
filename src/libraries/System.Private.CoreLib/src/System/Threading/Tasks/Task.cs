@@ -6032,7 +6032,7 @@ namespace System.Threading.Tasks
                     return Task.CompletedTask;
             
                 case 1:
-                    if (task[0] is not Task t)
+                    if (tasks[0] is not Task t)
                     {
                         ThrowHelper.ThrowArgumentNullException(ExceptionArgument.task);
                     }
