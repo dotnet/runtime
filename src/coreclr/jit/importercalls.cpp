@@ -7744,9 +7744,6 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
         hCallInfo.methodFlags       = info.compCompHnd->getMethodAttribs(hCallInfo.hMethod);
         impMarkInlineCandidate(call, nullptr, false, &hCallInfo, compInlineContext);
 
-        if (ISMETHOD("Test"))
-            printf("");
-
         impInlineRoot()->GetHelperToManagedMap()->Set(helperCallHnd, managedCallHnd, HelperToManagedMap::Overwrite);
         JITDUMP("Converting helperCall [%06u] to user call [%s] and marking for inlining\n", dspTreeID(call),
                 eeGetMethodFullName(managedCallHnd));
