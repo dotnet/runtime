@@ -967,7 +967,7 @@ internal sealed unsafe partial class SOSDacImpl
         }
         catch (System.Exception ex)
         {
-            return ex.HResult;
+            hr = ex.HResult;
         }
 #if DEBUG
         {

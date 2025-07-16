@@ -59,6 +59,10 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefTypeAttributes(TypeHandle typeHandle);
+    public ushort GetNumInstanceFields(TypeHandle typeHandle);
+    public ushort GetNumStaticFields(TypeHandle typeHandle);
+    public ushort GetNumThreadStaticFields(TypeHandle typeHandle);
+    public TargetPointer GetFieldDescList(TypeHandle typeHandle);
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
@@ -377,6 +381,7 @@ The contract additionally depends on these data descriptors
         ... //     create a MethodTable_1 and add it to _methodTables.
         return TypeHandle { Address = typeHandlePointer }
     }
+
     public TargetPointer GetModule(TypeHandle TypeHandle)
     {
         if (typeHandle.IsMethodTable())
@@ -396,10 +401,12 @@ The contract additionally depends on these data descriptors
         }
         return TargetPointer.Null;
     }
+
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
     {
         return (EEClassOrCanonMTBits)(eeClassOrCanonMTPtr & (ulong)EEClassOrCanonMTBits.Mask);
     }
+
     public TargetPointer GetCanonicalMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(TypeHandle).MethodTable;
 
     public TargetPointer GetParentMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[TypeHandle.Address].ParentMethodTable;
@@ -425,9 +432,13 @@ The contract additionally depends on these data descriptors
     public bool IsFreeObjectMethodTable(TypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
+
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
+
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
+
     public ushort GetNumInterfaces(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : _methodTables[TypeHandle.Address].NumInterfaces;
+
     public uint GetTypeDefToken(TypeHandle TypeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -440,10 +451,15 @@ The contract additionally depends on these data descriptors
     public ushort GetNumMethods(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).NumMethods;
 
     public uint GetTypeDefTypeAttributes(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).CorTypeAttr;
+
     public ushort GetNumInstanceFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumInstanceFields;
+
     public ushort GetNumStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumStaticFields;
+
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
+
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle TypeHandle)
     {
         if (!typeHandle.IsMethodTable())

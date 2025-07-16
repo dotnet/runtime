@@ -23,7 +23,6 @@ internal sealed class EEClass : IData<EEClass>
 
     public TargetPointer MethodTable { get; init; }
     public ushort NumMethods { get; init; }
-    public TargetPointer FieldDescList { get; init; }
     public uint CorTypeAttr { get; init; }
 
     // An InternalCorElementType uses the enum values of a CorElementType to
@@ -37,6 +36,7 @@ internal sealed class EEClass : IData<EEClass>
     public ushort NumInstanceFields { get; init; }
     public ushort NumStaticFields { get; init; }
     public ushort NumThreadStaticFields { get; init; }
+    public TargetPointer FieldDescList { get; init; }
     public ushort NumNonVirtualSlots { get; init; }
 }
 

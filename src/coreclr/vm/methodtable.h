@@ -3899,6 +3899,7 @@ private:
         UNION_METHODTABLE  = 1,    //  1 - pointer to canonical MethodTable.
     };
     static const TADDR UNION_MASK = 1;
+    
     union {
         DPTR(EEClass) m_pEEClass;
         TADDR m_pCanonMT;
