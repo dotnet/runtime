@@ -1091,7 +1091,13 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static List<PropertyInfo> GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllProperties)] Type type)
+        private static List<PropertyInfo> GetAllProperties(
+#if NET10_0_OR_GREATER
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllProperties)]
+#else
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+#endif
+            Type type)
         {
             var allProperties = new List<PropertyInfo>();
 
