@@ -6028,7 +6028,7 @@ namespace System.Threading.Tasks
             tasks.Length switch
             {
                 0 => Task.CompletedTask,
-                1 => tasks[0],
+                1 => tasks[0] ?? ThrowHelper.ThrowArgumentNullException(ExceptionArgument.task),
                 _ => new WhenAllPromise(tasks)
             };
 
