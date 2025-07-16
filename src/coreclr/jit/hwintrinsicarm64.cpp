@@ -485,7 +485,7 @@ void HWIntrinsicInfo::lookupImmBounds(
                 break;
 
             case NI_Sve_MultiplyAddRotateComplex:
-            case NI_Sve2_DotProductComplex:
+            case NI_Sve2_DotProductRotateComplex:
                 immLowerBound = 0;
                 immUpperBound = 3;
                 break;
@@ -511,7 +511,7 @@ void HWIntrinsicInfo::lookupImmBounds(
                 }
                 break;
 
-            case NI_Sve2_DotProductComplexBySelectedIndex:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                 if (immNumber == 1)
                 {
                     // Bounds for rotation
@@ -3215,7 +3215,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
-        case NI_Sve2_DotProductComplexBySelectedIndex:
+        case NI_Sve2_DotProductRotateComplexBySelectedIndex:
         {
             assert(sig->numArgs == 5);
             assert(!isScalar);

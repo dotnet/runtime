@@ -8100,7 +8100,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        public static int DotProductComplex(int op1, sbyte[] op2, int s, sbyte[] op3, byte rotation)
+        public static int DotProductRotateComplex(int op1, sbyte[] op2, int s, sbyte[] op3, byte rotation)
         {
             int result = op1;
 
@@ -8130,7 +8130,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        public static int DotProductComplexBySelectedIndex(int op1, sbyte[] op2, int s, sbyte[] op3, int immIndex, byte rotation)
+        public static int DotProductRotateComplexBySelectedIndex(int op1, sbyte[] op2, int s, sbyte[] op3, int immIndex, byte rotation)
         {
             int result = op1;
             int r1 = s;
@@ -8160,7 +8160,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-        public static long DotProductComplex(long op1, short[] op2, int s, short[] op3, byte rotation)
+        public static long DotProductRotateComplex(long op1, short[] op2, int s, short[] op3, byte rotation)
         {
             long result = op1;
 
@@ -8190,7 +8190,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        public static long DotProductComplexBySelectedIndex(long op1, short[] op2, int s, short[] op3, int immIndex, byte rotation)
+        public static long DotProductRotateComplexBySelectedIndex(long op1, short[] op2, int s, short[] op3, int immIndex, byte rotation)
         {
             long result = op1;
             int r1 = s;

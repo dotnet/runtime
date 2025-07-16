@@ -2737,7 +2737,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
 
-            case NI_Sve2_DotProductComplex:
+            case NI_Sve2_DotProductRotateComplex:
             {
                 assert(isRMW);
                 assert(hasImmediateOperand);
@@ -2758,7 +2758,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve2_DotProductComplexBySelectedIndex:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
             {
                 assert(isRMW);
                 assert(hasImmediateOperand);

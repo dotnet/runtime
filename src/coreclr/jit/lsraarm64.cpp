@@ -1710,7 +1710,7 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
-                case NI_Sve2_DotProductComplexBySelectedIndex:
+                case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                     // This API has two immediates, one of which is used to index pairs of floats in a vector.
                     // For a vector width of 128 bits, this means the index's range is [0, 1],
                     // which means we will skip the above jump table register check,
@@ -1735,7 +1735,7 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
-                case NI_Sve2_DotProductComplex:
+                case NI_Sve2_DotProductRotateComplex:
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     break;
 
@@ -2166,7 +2166,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
-            case NI_Sve2_DotProductComplexBySelectedIndex:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
             case NI_Sve2_MultiplyAddBySelectedScalar:
             case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
@@ -2188,7 +2188,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
         if (isLowVectorOpNum)
         {
             unsigned baseElementSize = genTypeSize(intrin.baseType);
-            if (intrin.id == NI_Sve2_DotProductComplexBySelectedIndex)
+            if (intrin.id == NI_Sve2_DotProductRotateComplexBySelectedIndex)
             {
                 baseElementSize = intrin.baseType == TYP_BYTE ? 4 : 8;
             }
