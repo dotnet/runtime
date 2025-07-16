@@ -30,18 +30,12 @@ namespace System.Net.Http.Functional.Tests
 
         protected static bool IsWinHttpHandler => false;
 
-        public static bool IsQuicSupported
+        public static bool IsHttp3Supported
         {
             get
             {
-                try
-                {
-                    return QuicConnection.IsSupported;
-                }
-                catch (System.PlatformNotSupportedException)
-                {
-                    return false;
-                }
+                var pi = Type.GetType("System.Net.Http.GlobalHttpSettings+SocketsHttpHandler, System.Net.Http").GetProperty("AllowHttp3");
+                return (bool)pi.GetValue(null);
             }
         }
 
