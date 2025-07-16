@@ -6030,15 +6030,15 @@ namespace System.Threading.Tasks
             {
                 case 0:
                     return Task.CompletedTask;
-            
+
                 case 1:
-                    Task t = task[0];
+                    Task t = tasks[0];
                     if (t is null)
                     {
                         ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     }
                     return t;
-            
+
                 default:
                     return new WhenAllPromise(tasks);
             }
