@@ -22,6 +22,14 @@ namespace System.Threading
         }
 
         /// <summary>
+        /// Returns <see cref="Environment.TickCount64"/> as a start time in milliseconds.
+        /// </summary>
+        public static long GetTime64()
+        {
+            return Environment.TickCount64;
+        }
+
+        /// <summary>
         /// Helper function to measure and update the elapsed time
         /// </summary>
         /// <param name="startTime"> The first time (in milliseconds) observed when the wait started</param>
@@ -56,12 +64,12 @@ namespace System.Threading
         /// <param name="startTime"> The first time (in milliseconds) observed when the wait started</param>
         /// <param name="originalWaitMillisecondsTimeout">The original wait timeout in milliseconds</param>
         /// <returns>The new wait time in milliseconds</returns>
-        public static uint UpdateTimeOut(uint startTime, uint originalWaitMillisecondsTimeout)
+        public static long UpdateTimeOut(long startTime, uint originalWaitMillisecondsTimeout)
         {
             // The function must be called in case the time out is not infinite
             Debug.Assert(originalWaitMillisecondsTimeout != Timeout.UnsignedInfinite);
 
-            uint elapsedMilliseconds = GetTime() - startTime;
+            long elapsedMilliseconds = GetTime64() - startTime;
 
             if (originalWaitMillisecondsTimeout <= elapsedMilliseconds)
             {
