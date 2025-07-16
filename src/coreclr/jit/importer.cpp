@@ -8056,8 +8056,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     // Find the jump target
                     size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
-                    FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+                    unsigned   jumpCnt   = block->GetSwitchTargets()->GetCaseCount();
+                    FlowEdge** jumpTab   = block->GetSwitchTargets()->GetCases();
                     bool       foundVal  = false;
                     Metrics.ImporterSwitchFold++;
 
@@ -8084,15 +8084,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     assert(foundVal);
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nSwitch folded at " FMT_BB "\n", block->bbNum);
-                        printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
-                        printf(" to " FMT_BB, block->GetTarget()->bbNum);
-                        printf("\n");
-                    }
-#endif
+                    JITDUMP("\nSwitch folded at " FMT_BB "\n", block->bbNum);
+                    JITDUMP(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                    JITDUMP(" to " FMT_BB, block->GetTarget()->bbNum);
+                    JITDUMP("\n");
+
                     if (block->hasProfileWeight())
                     {
                         // We are unlikely to be able to repair the profile.
@@ -11841,7 +11837,7 @@ SPILLSTACK:
                 addStmt = impExtractLastStmt();
                 assert(addStmt->GetRootNode()->OperIs(GT_SWITCH));
 
-                for (BasicBlock* const tgtBlock : block->SwitchTargets())
+                for (BasicBlock* const tgtBlock : block->SwitchSuccs())
                 {
                     multRef |= tgtBlock->bbRefs;
 
@@ -12758,19 +12754,13 @@ void Compiler::impFixPredLists()
                     }
                 }
 
-                BBehfDesc* jumpEhf = new (this, CMK_BasicBlock) BBehfDesc;
+                BBJumpTable* jumpEhf;
 
-                // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
-                // has an unconditional `throw` (the finally will still be invoked in the exceptional
-                // case via the runtime). In that case, jumpEhf->bbeCount remains the default, zero,
-                // and jumpEhf->bbeSuccs remains the default, nullptr.
                 if (predCount > 0)
                 {
-                    jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
-
-                    unsigned predNum             = 0;
-                    weight_t remainingLikelihood = 1.0;
+                    FlowEdge** const succTab             = new (this, CMK_FlowEdge) FlowEdge*[predCount];
+                    unsigned         predNum             = 0;
+                    weight_t         remainingLikelihood = 1.0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
                     {
                         // We only care about preds that are callfinallies.
@@ -12799,8 +12789,7 @@ void Compiler::impFixPredLists()
                             newEdge->setLikelihood(1.0 / predCount);
                         }
 
-                        jumpEhf->bbeSuccs[predNum] = newEdge;
-                        ++predNum;
+                        succTab[predNum++] = newEdge;
 
                         if (!added)
                         {
@@ -12808,7 +12797,17 @@ void Compiler::impFixPredLists()
                             added = true;
                         }
                     }
+
                     assert(predNum == predCount);
+                    jumpEhf = new (this, CMK_FlowEdge) BBJumpTable(succTab, predCount);
+                }
+                else
+                {
+                    // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
+                    // has an unconditional `throw` (the finally will still be invoked in the exceptional
+                    // case via the runtime). In that case, jumpEhf->succCount remains the default, zero,
+                    // and jumpEhf->succs remains the default, nullptr.
+                    jumpEhf = new (this, CMK_FlowEdge) BBJumpTable();
                 }
 
                 finallyBlock->SetEhfTargets(jumpEhf);
