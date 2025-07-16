@@ -2361,9 +2361,14 @@ bool GenTreeCall::IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned help
         return helperCallHnd == gtCallMethHnd;
     }
 
-    CORINFO_METHOD_HANDLE userCallHnd = NO_METHOD_HANDLE;
-    return (gtCallType == CT_USER_FUNC) &&
-           compiler->impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &userCallHnd);
+    if (gtCallType == CT_USER_FUNC)
+    {
+        CORINFO_METHOD_HANDLE userCallHnd = NO_METHOD_HANDLE;
+        return compiler->impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &userCallHnd) &&
+               (userCallHnd == gtCallMethHnd);
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------------------
