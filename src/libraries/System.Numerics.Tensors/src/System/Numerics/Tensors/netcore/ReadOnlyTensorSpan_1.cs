@@ -465,7 +465,7 @@ namespace System.Numerics.Tensors
 
             if (!IsDense)
             {
-                Tensor<T> tmp = Tensor.Create<T>(Lengths, IsPinned);
+                Tensor<T> tmp = Tensor.CreateFromShape<T>(Lengths, IsPinned);
                 CopyTo(tmp);
                 result = tmp;
             }

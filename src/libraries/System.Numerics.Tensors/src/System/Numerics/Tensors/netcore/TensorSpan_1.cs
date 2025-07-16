@@ -344,7 +344,7 @@ namespace System.Numerics.Tensors
 
             if (!IsDense)
             {
-                result = Tensor.Create<T>(Lengths, IsPinned);
+                result = Tensor.CreateFromShape<T>(Lengths, IsPinned);
                 CopyTo(result);
             }
 
@@ -383,13 +383,13 @@ namespace System.Numerics.Tensors
         // ITensor<TSelf, T>
         //
 
-        static TensorSpan<T> ITensor<TensorSpan<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.Create<T>(lengths, pinned);
+        static TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShape(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.CreateFromShape<T>(lengths, pinned);
 
-        static TensorSpan<T> ITensor<TensorSpan<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.Create<T>(lengths, strides, pinned);
+        static TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShape(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.CreateFromShape<T>(lengths, strides, pinned);
 
-        static TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.CreateUninitialized<T>(lengths, pinned);
+        static TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.CreateFromShapeUninitialized<T>(lengths, pinned);
 
-        static TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.CreateUninitialized<T>(lengths, strides, pinned);
+        static TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.CreateFromShapeUninitialized<T>(lengths, strides, pinned);
 
         TensorSpan<T> ITensor<TensorSpan<T>, T>.AsTensorSpan() => this;
 

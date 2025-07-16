@@ -55,10 +55,10 @@ namespace System.Numerics.Tensors
         object? System.Numerics.Tensors.ITensor.this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get { throw null; } set { } }
         object? System.Numerics.Tensors.ITensor.this[params scoped System.ReadOnlySpan<nint> indexes] { get { throw null; } set { } }
         void System.Numerics.Tensors.ITensor.Fill(object value) { }
-        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
-        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.TensorSpan<T> ITensor<TensorSpan<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
         System.Numerics.Tensors.TensorSpan<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.TensorSpan<T>, T>.AsTensorSpan() { throw null; }
         System.Numerics.Tensors.TensorSpan<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.TensorSpan<T>, T>.AsTensorSpan(params scoped System.ReadOnlySpan<nint> startIndexes) { throw null; }
         System.Numerics.Tensors.TensorSpan<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.TensorSpan<T>, T>.AsTensorSpan(params scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes) { throw null; }

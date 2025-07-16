@@ -114,10 +114,10 @@ namespace System.Numerics.Tensors
         System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes);
         System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges);
         System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<nint> startIndexes);
-        static abstract TSelf Create(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
-        static abstract TSelf Create(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
-        static abstract TSelf CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
-        static abstract TSelf CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
         void Fill(T value);
         new System.Numerics.Tensors.TensorDimensionSpan<T> GetDimensionSpan(int dimension);
         new ref T GetPinnableReference();
@@ -295,21 +295,14 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> CosPi<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Cos<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Cos<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillGaussianNormalDistribution<T>(System.Random random, scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillGaussianNormalDistribution<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillUniformDistribution<T>(System.Random random, scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillUniformDistribution<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array, int start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array, scoped System.ReadOnlySpan<nint> lengths) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShape<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShape<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShapeUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShapeUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> DegreesToRadians<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> DegreesToRadians<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static T Distance<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IRootFunctions<T> { throw null; }
@@ -955,10 +948,10 @@ namespace System.Numerics.Tensors
         ref readonly T System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.GetPinnableReference() { throw null; }
         bool System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         void System.Numerics.Tensors.ITensor.Fill(object value) { }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
         public System.Numerics.Tensors.Tensor<T> ToDenseTensor() { throw null; }
         public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
