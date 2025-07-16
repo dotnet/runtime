@@ -11428,5 +11428,85 @@ namespace JIT.HardwareIntrinsics.Arm
             W r = (W)(op1 - product);
             return r;
         }
+
+        public static N AddRoundedHighNarrowing<W, N>(W op1, W op2)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            int halfsize = default(N).GetByteCount() * 8;
+            dynamic a = op1;
+            dynamic b = op2;
+            ulong sum = (ulong)a + (ulong)b;
+            ulong bias = 1UL << (halfsize - 1);
+            dynamic result = sum + bias;
+            return (N)(result >> halfsize);
+        }
+
+        public static N AddRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>, new()
+        {
+            return Even<N>(AddRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N AddRoundedHighNarrowingOdd<W, N>(N even, W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            return Odd<N>(even, AddRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N SubtractRoundedHighNarrowing<W, N>(W op1, W op2)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            int halfsize = default(N).GetByteCount() * 8;
+            dynamic a = op1;
+            dynamic b = op2;
+            ulong sum = (ulong)a - (ulong)b;
+            ulong bias = 1UL << (halfsize - 1);
+            dynamic result = sum + bias;
+            return (N)(result >> halfsize);
+        }
+
+        public static N SubtractRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>, new()
+        {
+            return Even<N>(SubtractRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N SubtractRoundedHighNarrowingOdd<W, N>(N even, W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            return Odd<N>(even, SubtractRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static long FusedAddRoundedHalving(long op1, long op2) => (long)((ulong)(op1 + op2 + 1) >> 1);
+
+        public static ulong FusedAddRoundedHalving(ulong op1, ulong op2)
+        {
+            bool overflow = false;
+            ulong sum = 0;
+            try
+            {
+                sum = checked(op1 + op2 + 1);
+            }
+            catch (OverflowException)
+            {
+                overflow = true;
+                sum = op1 + op2 + 1;
+            }
+
+            sum >>>= 1;
+
+            if (overflow)
+            {
+                sum |= (ulong)(1UL << 63);
+            }
+
+            return sum;
+        }
     }
 }
