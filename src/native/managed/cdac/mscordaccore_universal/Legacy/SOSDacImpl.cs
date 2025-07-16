@@ -1856,20 +1856,20 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             *pNeeded = _target.ReadGlobal<int>(Constants.Globals.MaxClrNotificationArgs);
-            TargetPointer basePtr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments));
+            TargetPointer basePtr = _target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments);
             if (_target.Read<ulong>(basePtr) == 0)
             {
                 hr = HResults.E_FAIL;
             }
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count && i < *pNeeded; i++)
             {
-                arguments[i] = _target.Read<ulong>(basePtr + (ulong)(i * sizeof(ClrDataAddress)));
+                arguments[i] = _target.Read<ulong>(basePtr.Value + (ulong)(i * sizeof(ClrDataAddress)));
             }
         }
         catch (System.Exception ex)
         {
-            return ex.HResult;
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl4 is not null)
@@ -1887,6 +1887,7 @@ internal sealed unsafe partial class SOSDacImpl
                 }
             }
         }
+#endif
         return hr;
     }
     #endregion ISOSDacInterface4
