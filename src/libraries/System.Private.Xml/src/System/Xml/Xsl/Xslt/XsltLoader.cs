@@ -1309,7 +1309,9 @@ namespace System.Xml.Xsl.Xslt
             scriptNs ??= _compiler.CreatePhantomNamespace();
             ParseStringAttribute(1, "language");
 
+#pragma warning disable SYSLIB0062 // XsltSettings.EnableScript is obsolete
             if (!_compiler.Settings.EnableScript)
+#pragma warning restore SYSLIB0062
             {
                 _compiler.Scripts.ScriptClasses[scriptNs] = null;
                 _input.SkipNode();
