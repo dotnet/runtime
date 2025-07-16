@@ -904,9 +904,9 @@ namespace System.Numerics.Tensors
             return default;
         }
 
-        public static TensorShape Create<T>(ref T reference, nint linearLength, bool pinned)
+        public static TensorShape Create<T>(ref readonly T reference, nint linearLength, bool pinned)
         {
-            if (!Unsafe.IsNullRef(ref reference))
+            if (!Unsafe.IsNullRef(in reference))
             {
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
                 flags |= TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
@@ -926,9 +926,9 @@ namespace System.Numerics.Tensors
             return default;
         }
 
-        public static TensorShape Create<T>(ref T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
+        public static TensorShape Create<T>(ref readonly T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            if (!Unsafe.IsNullRef(ref reference))
+            if (!Unsafe.IsNullRef(in reference))
             {
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
                 return new TensorShape(linearLength, lengths, strides, flags);

@@ -976,3 +976,13 @@ namespace System.Numerics.Tensors
         }
     }
 }
+namespace System.Runtime.InteropServices
+{
+    public static class TensorMarshal
+    {
+        public static System.Numerics.Tensors.TensorSpan<T> CreateTensorSpan<T>(ref T data, nint dataLength, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> CreateReadOnlyTensorSpan<T>(ref readonly T data, nint dataLength, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        public static ref T GetReference<T>(in System.Numerics.Tensors.TensorSpan<T> tensorSpan) { throw null; }
+        public static ref readonly T GetReference<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensorSpan) { throw null; }
+    }
+}
