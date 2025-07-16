@@ -30,24 +30,24 @@ static nw_endpoint_t _endpoint;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
-#define LOG_IMPL_(state, isError, ...) \
+#define LOG_IMPL_(context, isError, ...) \
     do { \
         char buff[256]; \
         snprintf(buff, sizeof(buff), __VA_ARGS__); \
-        _statusFunc(state, PAL_NwStatusUpdates_DebugLog, (size_t)(buff), (size_t)(isError), NULL); \
+        _statusFunc(context, PAL_NwStatusUpdates_DebugLog, (size_t)(buff), (size_t)(isError), NULL); \
     } while (0)
 
 #if DEBUG
-#define LOG_INFO(state, ...) LOG_IMPL_(state, 0, __VA_ARGS__)
+#define LOG_INFO(context, ...) LOG_IMPL_(context, 0, __VA_ARGS__)
 #else
-#define LOG_INFO(state, ...) do { (void)state; } while (0)
+#define LOG_INFO(context, ...) do { (void)context; } while (0)
 #endif
 
-#define LOG_ERROR(state, ...) LOG_IMPL_(state, 1, __VA_ARGS__)
+#define LOG_ERROR(context, ...) LOG_IMPL_(context, 1, __VA_ARGS__)
 
-#define MANAGED_STATE_KEY "GCHANDLE"
+#define MANAGED_CONTEXT_KEY "GCHANDLE"
 
-static void* FramerGetManagedState(nw_framer_t framer)
+static void* FramerGetManagedContext(nw_framer_t framer)
 {
     void* ptr = NULL;
 
@@ -56,7 +56,7 @@ static void* FramerGetManagedState(nw_framer_t framer)
         nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
         assert(framer_options != NULL);
 
-        NSNumber* num = nw_framer_options_copy_object_value(framer_options, MANAGED_STATE_KEY);
+        NSNumber* num = nw_framer_options_copy_object_value(framer_options, MANAGED_CONTEXT_KEY);
         assert(num != NULL);
         [num getValue:&ptr];
         [num release];
@@ -67,12 +67,12 @@ static void* FramerGetManagedState(nw_framer_t framer)
     return ptr;
 }
 
-static void FramerOptionsSetManagedState(nw_protocol_options_t framer_options, void* state)
+static void FramerOptionsSetManagedContext(nw_protocol_options_t framer_options, void* context)
 {
     if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
     {
-        NSNumber *ref = [NSNumber numberWithLong:(long)state];
-        nw_framer_options_set_object_value(framer_options, MANAGED_STATE_KEY, ref);
+        NSNumber *ref = [NSNumber numberWithLong:(long)context];
+        nw_framer_options_set_object_value(framer_options, MANAGED_CONTEXT_KEY, ref);
         [ref release];
     }
 }
@@ -156,7 +156,7 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
     return descriptionToRelease;
 }
 
-PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
+PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
 {
     if (isServer != 0)  // the current implementation only supports client
         return NULL;
@@ -177,14 +177,14 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     tls_protocol_version_t version = PalSslProtocolToTlsProtocolVersion(minTlsProtocol);
     if ((int)version != 0)
     {
-        LOG_INFO(state, "Min TLS version: %d", version);
+        LOG_INFO(context, "Min TLS version: %d", version);
         sec_protocol_options_set_min_tls_protocol_version(sec_options, version);
     }
 
     version = PalSslProtocolToTlsProtocolVersion(maxTlsProtocol);
     if ((int)version != 0)
     {
-        LOG_INFO(state, "Max TLS version: %d", version);
+        LOG_INFO(context, "Max TLS version: %d", version);
         sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
     }
 
@@ -195,7 +195,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         {
             uint8_t length = alpnBuffer[offset];
             const char* alpn = (const char*) &alpnBuffer[offset + 1];
-            LOG_INFO(state, "Appending ALPN: %s", alpn);
+            LOG_INFO(context, "Appending ALPN: %s", alpn);
             sec_protocol_options_add_tls_application_protocol(sec_options, alpn);
             offset += length + 2;
         }
@@ -206,7 +206,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         for (int i = 0; i < cipherSuitesLength; i++)
         {
             uint16_t cipherSuite = (uint16_t)cipherSuites[i];
-            LOG_INFO(state, "Appending cipher suite: 0x%04x", cipherSuite);
+            LOG_INFO(context, "Appending cipher suite: 0x%04x", cipherSuite);
             sec_protocol_options_append_tls_ciphersuite(sec_options, cipherSuite);
         }
     }
@@ -248,7 +248,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         }
         
         // Call the managed callback to get the client identity
-        void* identity = _challengeFunc(state, acceptableIssuers);
+        void* identity = _challengeFunc(context, acceptableIssuers);
         
         // Clean up
         CFRelease(acceptableIssuers);
@@ -273,11 +273,11 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete)
     {
-        LOG_INFO(state, "Cert validation callback called");
+        LOG_INFO(context, "Cert validation callback called");
 
         SecTrustRef chain = sec_trust_copy_ref(trust_ref);
 
-        _statusFunc(state, PAL_NwStatusUpdates_CertificateAvailable, (size_t)chain, 0, NULL);
+        _statusFunc(context, PAL_NwStatusUpdates_CertificateAvailable, (size_t)chain, 0, NULL);
 
         (void)metadata;
         (void)trust_ref;
@@ -287,7 +287,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     nw_release(sec_options);
 
     nw_protocol_options_t framer_options = nw_framer_create_options(_framerDefinition);
-    FramerOptionsSetManagedState(framer_options, state);
+    FramerOptionsSetManagedContext(framer_options, context);
 
     nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(parameters);
     nw_protocol_stack_prepend_application_protocol(protocol_stack, framer_options);
@@ -303,7 +303,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
 
     if (connection == NULL)
     {
-        LOG_ERROR(state, "Failed to create Network Framework connection");
+        LOG_ERROR(context, "Failed to create Network Framework connection");
         return NULL;
     }
 
@@ -315,12 +315,12 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
 {
     if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 2.0, *))
     {
-        void* state = FramerGetManagedState(framer);
+        void* context = FramerGetManagedContext(framer);
         size_t size = message_length;
 
         nw_framer_parse_output(framer, 1, message_length, NULL, ^size_t(uint8_t *buffer, size_t buffer_length, bool is_complete2)
         {
-            (_writeFunc)(state, buffer, buffer_length);
+            (_writeFunc)(context, buffer, buffer_length);
             (void)is_complete2;
             (void)message;
             return buffer_length;
@@ -349,10 +349,10 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 {
     assert(_statusFunc != NULL);
 
-    void* state = FramerGetManagedState(framer);
+    void* context = FramerGetManagedContext(framer);
 
     // Notify managed code with framer reference so we can submit to it directly.
-    (_statusFunc)(state, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0, NULL);
+    (_statusFunc)(context, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0, NULL);
 
     nw_framer_set_output_handler(framer, framer_output_handler);
 
@@ -364,12 +364,12 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
 
 // this takes encrypted input from underlying stream and feeds it to nw_connection.
-PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, const uint8_t* buffer, int bufferLength, void* context, CompletionCallback completionCallback)
+PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, void* context, const uint8_t* buffer, int bufferLength, CompletionCallback completionCallback)
 {
     assert(framer != NULL);
     if (framer == NULL)
     {
-        LOG_ERROR(NULL, "NwFramerDeliverInput called with NULL framer");
+        LOG_ERROR(context, "NwFramerDeliverInput called with NULL framer");
         return -1;
     }
 
@@ -378,7 +378,7 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, con
     // There is a race condition when connection can fail or be canceled and if it does we fail to create the message here.
     if (message == NULL)
     {
-        LOG_ERROR(FramerGetManagedState(framer), "NwFramerDeliverInput failed to create message");
+        LOG_ERROR(context, "NwFramerDeliverInput failed to create message");
         return -1;
     }
 
@@ -393,12 +393,12 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, con
 }
 
 // This starts TLS handshake. For client, it will produce ClientHello and call output handler (on thread pool)
-// important part here is the state handler that will get asynchronous notifications about progress.
-PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, void* state)
+// important part here is the context handler that will get asynchronous notifications about progress.
+PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, void* context)
 {
     if (connection == NULL)
     {
-        LOG_ERROR(state, "NwConnectionStart called with NULL connection");
+        LOG_ERROR(context, "NwConnectionStart called with NULL connection");
         return -1;
     }
 
@@ -406,7 +406,7 @@ PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, vo
     {
         PAL_NetworkFrameworkError errorInfo;
         CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
-        LOG_INFO(state, "Connection state changed: %d, errorCode: %d", (int)status, errorInfo.errorCode);
+        LOG_INFO(context, "Connection context changed: %d, errorCode: %d", (int)status, errorInfo.errorCode);
         switch (status)
         {
             case nw_connection_state_preparing:
@@ -415,23 +415,23 @@ PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, vo
             {
                 if (errorInfo.errorCode != 0 || status == nw_connection_state_failed)
                 {
-                    (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionFailed, 0, 0, &errorInfo);
+                    (_statusFunc)(context, PAL_NwStatusUpdates_ConnectionFailed, 0, 0, &errorInfo);
                 }
             }
             break;
             case nw_connection_state_ready:
             {
-                (_statusFunc)(state, PAL_NwStatusUpdates_HandshakeFinished, 0, 0, NULL);
+                (_statusFunc)(context, PAL_NwStatusUpdates_HandshakeFinished, 0, 0, NULL);
             }
             break;
             case nw_connection_state_cancelled:
             {
-                (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0, NULL);
+                (_statusFunc)(context, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0, NULL);
             }
             break;
             case nw_connection_state_invalid:
             {
-                (_statusFunc)(state, PAL_NwStatusUpdates_UnknownError, 0, 0, NULL);
+                (_statusFunc)(context, PAL_NwStatusUpdates_UnknownError, 0, 0, NULL);
             }
             break;
         }
@@ -456,15 +456,13 @@ PALEXPORT void AppleCryptoNative_NwConnectionCancel(nw_connection_t connection)
 }
 
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
-PALEXPORT void AppleCryptoNative_NwConnectionSend(nw_connection_t connection, void* state, uint8_t* buffer, int length, void* context, CompletionCallback completionCallback)
+PALEXPORT void AppleCryptoNative_NwConnectionSend(nw_connection_t connection, void* context, uint8_t* buffer, int length, CompletionCallback completionCallback)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^()
     {
         // we specify empty destructor instead of DISPATCH_DATA_DESTRUCTOR_DEFAULT to avoid creating
         // an internal copy of the data. The caller ensures the buffer is valid until we call completionCallback.
     });
-
-    (void)state;
 
     nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t error)
     {
@@ -484,7 +482,7 @@ PALEXPORT void AppleCryptoNative_NwConnectionSend(nw_connection_t connection, vo
 }
 
 // This is used by decrypt. We feed data in via AppleCryptoNative_NwProcessInputData and we try to read from the connection.
-PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection, void* state, uint32_t length, void* context, ReadCompletionCallback readCompletionCallback)
+PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection, void* context, uint32_t length, ReadCompletionCallback readCompletionCallback)
 {
     nw_connection_receive(connection, 0, length, ^(dispatch_data_t content, nw_content_context_t ctx, bool is_complete, nw_error_t error)
     {
@@ -494,7 +492,7 @@ PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection,
         {
             CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
             readCompletionCallback(context, &errorInfo, NULL, 0);
-            
+
             // Release CFString if we created one
             if (cfStringToRelease != NULL)
             {
@@ -519,19 +517,18 @@ PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection,
             return;
          }
 
-        (void)state;
         (void)ctx;
     });
 }
 
 // This wil get TLS details after handshake is finished
-PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* state, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength)
+PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
 
     if (meta == NULL)
     {
-        LOG_ERROR(state, "nw_connection_copy_protocol_metadata returned null");
+        LOG_ERROR(context, "nw_connection_copy_protocol_metadata returned null");
         return -1;
     }
 

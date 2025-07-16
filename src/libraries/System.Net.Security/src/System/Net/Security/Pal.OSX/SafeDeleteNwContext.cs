@@ -86,6 +86,17 @@ namespace System.Net.Security
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
 
+        private ResettableValueTaskSource _appWriteTcs = new ResettableValueTaskSource()
+        {
+            CancellationAction = target =>
+            {
+                if (target is SafeDeleteNwContext nwContext)
+                {
+                    nwContext._appWriteTcs.TrySetException(new OperationCanceledException());
+                }
+            }
+        };
+
         private TaskCompletionSource? _currentWriteCompletionSource;
 
         public SafeDeleteNwContext(SslStream stream) : base(IntPtr.Zero)
@@ -174,24 +185,17 @@ namespace System.Net.Security
             TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _currentWriteCompletionSource = transportWriteCompletion;
 
-            TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (state, token) =>
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Cancellation requested for WriteAsync");
-                ((TaskCompletionSource)state!).TrySetCanceled(token);
-            }, tcs);
-
-            GCHandle handle = GCHandle.Alloc(tcs, GCHandleType.Normal);
+            bool success = _appWriteTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
+            Debug.Assert(success, "Concurrent WriteAsync detected");
 
             using MemoryHandle memoryHandle = buffer.Pin();
             unsafe
             {
-                Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, GCHandle.ToIntPtr(handle), &CompletionCallback);
+                Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, &CompletionCallback);
             }
             try
             {
-                await tcs.Task.ConfigureAwait(false);
+                await valueTask.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -205,22 +209,17 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
             {
-                GCHandle handle = GCHandle.FromIntPtr(context);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Completing WriteAsync", nameof(WriteAsync));
-
-                Debug.Assert(handle.Target is TaskCompletionSource, "Expected handle to target a TaskCompletionSource");
-                TaskCompletionSource tcs = (TaskCompletionSource)handle.Target;
+                SafeDeleteNwContext thisContext = ResolveThisHandle(context);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, $"Completing WriteAsync", nameof(WriteAsync));
 
                 if (error != null)
                 {
-                    tcs.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
+                    thisContext._appWriteTcs.TrySetException(Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in *error));
                 }
                 else
                 {
-                    tcs.TrySetResult();
+                    thisContext._appWriteTcs.TrySetResult();
                 }
-
-                handle.Free();
             }
         }
 
@@ -300,7 +299,7 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Waiting for read from connection");
             unsafe
             {
-                Interop.NetworkFramework.Tls.NwConnectionReceive(ConnectionHandle, StateHandle, 16 * 1024, StateHandle, &CompletionCallback);
+                Interop.NetworkFramework.Tls.NwConnectionReceive(ConnectionHandle, StateHandle, 16 * 1024, &CompletionCallback);
             }
 
             return _pendingAppReceiveBufferFillTask = valueTask.AsTask();
@@ -638,7 +637,7 @@ namespace System.Net.Security
 
                 unsafe
                 {
-                    Interop.NetworkFramework.Tls.NwFramerDeliverInput(_framerHandle, (byte*)memoryHandle.Pointer, buf.Length, StateHandle, &CompletionCallback);
+                    Interop.NetworkFramework.Tls.NwFramerDeliverInput(_framerHandle, StateHandle, (byte*)memoryHandle.Pointer, buf.Length, &CompletionCallback);
                 }
 
                 await valueTask.ConfigureAwait(false);

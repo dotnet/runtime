@@ -28,23 +28,23 @@ internal static partial class Interop
 
             // Create a new connection context
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionCreate", StringMarshalling = StringMarshalling.Utf8)]
-            internal static unsafe partial SafeNwHandle NwConnectionCreate([MarshalAs(UnmanagedType.I4)] bool isServer, IntPtr state, string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength);
+            internal static unsafe partial SafeNwHandle NwConnectionCreate([MarshalAs(UnmanagedType.I4)] bool isServer, IntPtr context, string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength);
 
             // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionStart")]
-            internal static partial int NwConnectionStart(SafeNwHandle connection, IntPtr state);
+            internal static partial int NwConnectionStart(SafeNwHandle connection, IntPtr context);
 
             // takes encrypted input from underlying stream and feed it to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwFramerDeliverInput")]
-            internal static unsafe partial int NwFramerDeliverInput(SafeNwHandle framer, byte* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
+            internal static unsafe partial int NwFramerDeliverInput(SafeNwHandle framer, IntPtr context, byte* buffer, int bufferLength, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
 
             // sends plaintext data to the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionSend")]
-            internal static unsafe partial void NwConnectionSend(SafeNwHandle connection, IntPtr state, void* buffer, int bufferLength, IntPtr context, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
+            internal static unsafe partial void NwConnectionSend(SafeNwHandle connection, IntPtr context, void* buffer, int bufferLength, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
 
             // read plaintext data from the connection.
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionReceive")]
-            internal static unsafe partial void NwConnectionReceive(SafeNwHandle connection, IntPtr state, int length, IntPtr context, delegate* unmanaged<IntPtr, NetworkFrameworkError*, byte*, int, void> readCompletionCallback);
+            internal static unsafe partial void NwConnectionReceive(SafeNwHandle connection, IntPtr context, int length, delegate* unmanaged<IntPtr, NetworkFrameworkError*, byte*, int, void> readCompletionCallback);
 
             // starts connection cleanup
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionCancel")]
@@ -52,7 +52,7 @@ internal static partial class Interop
 
             // gets TLS connection information
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_GetConnectionInfo")]
-            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr state, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
+            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr context, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
         }
 
         // Status enumeration for Network Framework TLS operations
