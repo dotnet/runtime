@@ -197,8 +197,6 @@ namespace System.Net.Security
 
         internal void SetCertificateContextFromCert(X509Certificate2 certificate, bool? noOcspFetch = null)
         {
-            Debug.Assert(CertificateContext == null, "CertificateContext should be null when setting it from certificate");
-
             CertificateContext = SslStreamCertificateContext.Create(certificate, null, offline: false, null, noOcspFetch ?? true);
             OwnsCertificateContext = true;
         }
