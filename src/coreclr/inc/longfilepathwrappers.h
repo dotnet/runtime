@@ -25,6 +25,8 @@ CreateFileWrapper(
     _In_opt_ HANDLE hTemplateFile
     );
 
+int fopen_u16_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode);
+
 BOOL
 CopyFileExWrapper(
     _In_        LPCWSTR lpExistingFileName,
