@@ -323,6 +323,7 @@
       ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
+      InterpreterMethods="$(InterpreterMethods)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
       GenerateXcodeProject="$(GenerateXcodeProject)"
       HybridGlobalization="$(HybridGlobalization)"

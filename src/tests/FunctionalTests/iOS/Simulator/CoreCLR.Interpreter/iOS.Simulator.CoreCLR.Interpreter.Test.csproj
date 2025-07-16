@@ -10,7 +10,7 @@
     <MainLibraryFileName>iOS.Simulator.CoreCLR.Interpreter.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <DOTNET_Interpreter>RunInterpreter</DOTNET_Interpreter>
+    <InterpreterMethods>RunInterpreter</InterpreterMethods>
   </PropertyGroup>
 
   <ItemGroup>
