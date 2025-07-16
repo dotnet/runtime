@@ -2206,25 +2206,6 @@ static int32_t GetLdindForType(InterpType interpType)
     return -1;
 }
 
-static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE clsHnd)
-{
-    unsigned size = compHnd->getClassSize(clsHnd);
-    // getClassGClayout assumes it's given a buffer of exactly this size
-    unsigned maxGcPtrs = (size + sizeof(void *) - 1) / sizeof(void *);
-    BYTE *gcLayout = (BYTE *)alloca(maxGcPtrs + 1);
-    uint32_t numSlots = compHnd->getClassGClayout(clsHnd, gcLayout);
-
-    for (uint32_t i = 0; i < numSlots; ++i)
-    {
-        if (gcLayout[i] != TYPE_GC_NONE)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     bool mustExpand = (method == m_methodHnd);
@@ -2320,13 +2301,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
         {
             CORINFO_CLASS_HANDLE clsHnd = sig.sigInst.methInst[0];
-            bool isValueType = (m_compHnd->getClassAttribs(clsHnd) & CORINFO_FLG_VALUECLASS) != 0;
-            bool hasGCRefs = false;
-
-            if (isValueType)
-            {
-                hasGCRefs = DoesValueTypeContainGCRefs(m_compHnd, clsHnd);
-            }
+            uint32_t clsAttribs = m_compHnd->getClassAttribs(clsHnd);
+            bool isValueType = (clsAttribs & CORINFO_FLG_VALUECLASS) != 0;
+            bool hasGCRefs = (clsAttribs & CORINFO_FLG_CONTAINS_GC_PTR) != 0;
 
             int32_t result = (!isValueType || hasGCRefs) ? 1 : 0;
 
