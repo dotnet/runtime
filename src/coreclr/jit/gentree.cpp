@@ -32428,7 +32428,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             tree->SetMorphed(this);
         }
     }
-#endif // TARGET_XARCH
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     switch (ni)
