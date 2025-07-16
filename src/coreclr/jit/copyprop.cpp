@@ -51,26 +51,26 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
                 continue;
             }
 
-            auto visitDef = [=](const LocalDef& def) {
-                if (def.Def->HasCompositeSsaName())
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                if (lcl->HasCompositeSsaName())
                 {
-                    LclVarDsc* varDsc = lvaGetDesc(def.Def);
+                    LclVarDsc* varDsc = lvaGetDesc(lcl);
                     assert(varDsc->lvPromoted);
 
                     for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
                     {
-                        popDef(varDsc->lvFieldLclStart + index, def.Def->GetSsaNum(this, index));
+                        popDef(varDsc->lvFieldLclStart + index, lcl->GetSsaNum(this, index));
                     }
                 }
                 else
                 {
-                    popDef(def.Def->GetLclNum(), def.Def->GetSsaNum());
+                    popDef(lcl->GetLclNum(), lcl->GetSsaNum());
                 }
 
                 return GenTree::VisitResult::Continue;
             };
 
-            tree->VisitLocalDefs(this, visitDef);
+            tree->VisitLocalDefNodes(this, visitDef);
         }
     }
 }
@@ -406,15 +406,14 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
         {
             treeLifeUpdater.UpdateLife(tree);
 
-            GenTreeLclVarCommon* lclDefNode = nullptr;
             if (tree->OperIsSsaDef())
             {
-                auto visitDef = [=](const LocalDef& def) {
-                    optCopyPropPushDef(def.Def, curSsaName);
+                auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                    optCopyPropPushDef(lcl, curSsaName);
                     return GenTree::VisitResult::Continue;
                 };
 
-                tree->VisitLocalDefs(this, visitDef);
+                tree->VisitLocalDefNodes(this, visitDef);
             }
             else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {

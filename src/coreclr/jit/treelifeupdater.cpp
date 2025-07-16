@@ -305,11 +305,11 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
     }
     else if (tree->IsCall())
     {
-        auto visitDef = [=](const LocalDef& def) {
-            UpdateLifeVar(tree, def.Def);
+        auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+            UpdateLifeVar(tree, lcl);
             return GenTree::VisitResult::Continue;
         };
-        tree->VisitLocalDefs(compiler, visitDef);
+        tree->VisitLocalDefNodes(compiler, visitDef);
     }
 }
 

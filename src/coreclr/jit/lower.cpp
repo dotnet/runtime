@@ -8636,12 +8636,12 @@ void Lowering::FindInducedParameterRegisterLocals()
     {
         hasRegisterKill |= node->IsCall();
 
-        auto visitDefs = [&](const LocalDef& def) {
-            storedToLocals.Emplace(def.Def->GetLclNum(), true);
+        auto visitDefs = [&](GenTreeLclVarCommon* lcl) {
+            storedToLocals.Emplace(lcl->GetLclNum(), true);
             return GenTree::VisitResult::Continue;
         };
 
-        node->VisitLocalDefs(comp, visitDefs);
+        node->VisitLocalDefNodes(comp, visitDefs);
 
         if (node->OperIs(GT_LCL_ADDR))
         {

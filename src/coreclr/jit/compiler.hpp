@@ -4751,6 +4751,44 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 }
 
 //------------------------------------------------------------------------
+// VisitLocalDefNodes: Visit GenTreeLclVarCommon nodes representing definitions in the specified node.
+//
+// Arguments:
+//   comp    - the compiler instance
+//   visitor - Functor of type GenTree::VisitResult(GenTreeLclVarCommon*)
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Notes:
+//   This function is contractually bound to recognize a superset of stores
+//   that "LocalAddressVisitor" recognizes and transforms, as it is used to
+//   detect which trees can define tracked locals.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visitor)
+{
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        return visitor(AsLclVarCommon());
+    }
+    if (OperIs(GT_STORE_LCL_FLD))
+    {
+        return visitor(AsLclFld());
+    }
+    if (OperIs(GT_CALL))
+    {
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
+        if (lclAddr != nullptr)
+        {
+            return visitor(lclAddr);
+        }
+    }
+
+    return VisitResult::Continue;
+}
+
+//------------------------------------------------------------------------
 // HasAnyLocalDefs:
 //   Check if a tree is considered as defining any locals.
 //
@@ -4762,7 +4800,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 //
 inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
 {
-    return VisitLocalDefs(comp, [](const LocalDef& def) {
+    return VisitLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
 }

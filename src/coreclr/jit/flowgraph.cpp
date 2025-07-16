@@ -5391,11 +5391,11 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
                 return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            auto visitDef = [=](const LocalDef& def) {
-                return m_func(def.Def) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                return m_func(lcl) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
             };
 
-            if (tree->VisitLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            if (tree->VisitLocalDefNodes(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return Compiler::WALK_ABORT;
             }

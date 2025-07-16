@@ -342,11 +342,11 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 }
             }
 
-            auto visitDef = [=](const LocalDef& def) {
-                fgMarkUseDef<!lowered>(def.Def);
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                fgMarkUseDef<!lowered>(lcl);
                 return GenTree::VisitResult::Continue;
             };
-            call->VisitLocalDefs(this, visitDef);
+            call->VisitLocalDefNodes(this, visitDef);
             break;
         }
 

@@ -2048,6 +2048,9 @@ public:
     template <typename TVisitor>
     VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
 
+    template <typename TVisitor>
+    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+
     bool HasAnyLocalDefs(Compiler* comp);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);

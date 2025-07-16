@@ -12635,15 +12635,14 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
 
     // Kill active assertions
     //
-    GenTreeLclVarCommon* lclVarTree = nullptr;
-    if ((optAssertionCount > 0))
+    if (optAssertionCount > 0)
     {
-        auto visitDef = [=](const LocalDef& def) {
-            fgKillDependentAssertions(def.Def->GetLclNum() DEBUGARG(tree));
+        auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+            fgKillDependentAssertions(lcl->GetLclNum() DEBUGARG(tree));
             return GenTree::VisitResult::Continue;
         };
 
-        tree->VisitLocalDefs(this, visitDef);
+        tree->VisitLocalDefNodes(this, visitDef);
     }
 
     // Generate assertions
