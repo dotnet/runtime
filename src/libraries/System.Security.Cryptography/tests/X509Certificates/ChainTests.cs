@@ -364,14 +364,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
                         chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
                         chainTest.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                        allowedFlags |= X509ChainStatusFlags.PartialChain;
+                        cahinTest.ChainPolicy.ExtraStore.Add(rootCert);
                         break;
                     default:
                         throw new InvalidDataException();
                 }
 
                 Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
-                Assert.InRange(chainTest.ChainElements.Count, 2, 3);
+                Assert.Equal(3, chainTest.ChainElements.Count);
 
                 X509ChainStatusFlags actualFlags = chainTest.AllStatusFlags();
                 actualFlags &= ~allowedFlags;
