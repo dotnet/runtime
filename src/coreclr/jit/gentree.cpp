@@ -12246,15 +12246,10 @@ void Compiler::gtDispConst(GenTree* tree)
             {
                 printf("<unknown string literal>");
             }
-            else if (len >= maxLiteralLength)
-            {
-                printf("<long string literal>");
-            }
             else
             {
                 char dst[maxLiteralLength];
                 convertUtf16ToUtf8ForPrinting(str, len, dst, maxLiteralLength);
-                // Trim the string to 50 characters for printing
                 printf("\"%.50s%s\"", dst, len > 50 ? "..." : "");
             }
         }
