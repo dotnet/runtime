@@ -183,6 +183,12 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Update jump kind after the scrub.
     block->SetKindAndTargetEdge(BBJ_THROW);
     block->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
+
+    // Heuristic: Throw blocks without profile-derived weights are presumed to be rare.
+    if (!block->hasProfileWeight())
+    {
+        block->bbSetRunRarely();
+    }
 }
 
 /*****************************************************************************
