@@ -219,14 +219,14 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         }
         catch (System.Exception ex)
         {
-            return ex.HResult;
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyProcess is not null)
         {
             uint flagsLocal;
             int hrLocal = _legacyProcess.GetOtherNotificationFlags(&flagsLocal);
-            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             Debug.Assert(*flags == flagsLocal);
         }
 #endif
