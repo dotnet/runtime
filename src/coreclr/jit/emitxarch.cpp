@@ -5159,7 +5159,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 
     dspIsZero = (dsp == 0);
     
-    // APX extended EVEX instructions have constant disp8 displacement, no need to compress.
     bool tryCompress = true;
 
     if (EBPbased)
@@ -5191,7 +5190,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
         {
             ssize_t compressedDsp;
 
-            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
+            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
             {
                 SetEvexCompressedDisplacement(id);
             }
@@ -5364,7 +5363,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     {
         ssize_t compressedDsp;
 
-        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
+        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
         {
             SetEvexCompressedDisplacement(id);
         }
@@ -14668,22 +14667,10 @@ GOT_DSP:
             assert(isCompressed && dspInByte);
             dsp = compressedDsp;
         }
-        else if (TakesEvexPrefix(id))
+        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
-            assert(!(TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins)));
-            if (IsBMIInstruction(ins))
-            {
-                dspInByte = ((signed char)dsp == (ssize_t)dsp);
-            }
-            else
-            {
-                dspInByte = false;
-            }
-        }
-        else if (TakesApxExtendedEvexPrefix(id))
-        {
-            // the scaling factor of extended EVEX instructions is always 1.
-            dspInByte = ((signed char)dsp == (ssize_t)dsp);
+            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
+            dspInByte = false;
         }
         else
         {
@@ -15564,7 +15551,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             assert(isCompressed && dspInByte);
             dsp = (int)compressedDsp;
         }
-        else if (TakesEvexPrefix(id))
+        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
 #if FEATURE_FIXED_OUT_ARGS
             // TODO-AMD64-CQ: We should be able to accurately predict this when FEATURE_FIXED_OUT_ARGS
@@ -15573,20 +15560,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             //
             // assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
 #endif
-
-            if (IsBMIInstruction(ins))
-            {
-                dspInByte = ((signed char)dsp == (ssize_t)dsp);
-            }
-            else
-            {
-                dspInByte = false;
-            }
-        }
-        else if (TakesApxExtendedEvexPrefix(id))
-        {
-            // Apx extended EVEX instructions do not support compressed displacement.
-            dspInByte = ((signed char)dsp == (ssize_t)dsp);
+            dspInByte = false;
         }
         else
         {
