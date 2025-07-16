@@ -2208,6 +2208,25 @@ static int32_t GetLdindForType(InterpType interpType)
     return -1;
 }
 
+static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE clsHnd)
+{
+    unsigned size = compHnd->getClassSize(clsHnd);
+    // getClassGClayout assumes it's given a buffer of exactly this size
+    unsigned maxGcPtrs = (size + sizeof(void *) - 1) / sizeof(void *);
+    BYTE *gcLayout = (BYTE *)alloca(maxGcPtrs + 1);
+    uint32_t numSlots = compHnd->getClassGClayout(clsHnd, gcLayout);
+
+    for (uint32_t i = 0; i < numSlots; ++i)
+    {
+        if (gcLayout[i] != TYPE_GC_NONE)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     bool mustExpand = (method == m_methodHnd);
@@ -2308,19 +2327,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
             if (isValueType)
             {
-                // Walk the layout to see if any field is a GC pointer
-                const uint32_t maxSlots = 256;
-                BYTE gcLayout[maxSlots];
-                uint32_t numSlots = m_compHnd->getClassGClayout(clsHnd, gcLayout);
-
-                for (uint32_t i = 0; i < numSlots; ++i)
-                {
-                    if (gcLayout[i] != TYPE_GC_NONE)
-                    {
-                        hasGCRefs = true;
-                        break;
-                    }
-                }
+                hasGCRefs = DoesValueTypeContainGCRefs(m_compHnd, clsHnd);
             }
 
             int32_t result = (!isValueType || hasGCRefs) ? 1 : 0;
@@ -2732,12 +2739,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
-        flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
+            flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
-            if (InterpConfig.InterpMode() >= 3)
+            // If we are being asked explicitly to compile an intrinsic for interpreting, we need to forcibly enable
+            //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
+            bool isMustExpand = (callInfo.hMethod == m_methodHnd);
+            if ((InterpConfig.InterpMode() >= 3) || isMustExpand)
             {
                 NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
                 if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))

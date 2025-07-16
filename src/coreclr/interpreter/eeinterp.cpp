@@ -94,7 +94,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         if (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args))
         {
             doInterpret = true;
-            g_interpModule = methodInfo->scope;
+            // g_interpModule = methodInfo->scope;
         }
 #endif
     }
