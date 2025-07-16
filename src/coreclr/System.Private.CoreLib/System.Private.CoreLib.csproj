@@ -312,12 +312,6 @@
     <CompilerVisibleProperty Include="InformationalVersion" />
   </ItemGroup>
 
-  <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
-
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile" />
-
-  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
-
   <!-- Setup eventing file generation -->
   <ItemGroup Condition="'$(FeaturePerfTracing)' == 'true'">
     <AdditionalFiles Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />

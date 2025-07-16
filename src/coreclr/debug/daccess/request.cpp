@@ -362,7 +362,7 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             currentPtr->codeType = managerPtr->GetCodeType();
 
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
-            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
+            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pAllCodeHeaps);
         }
     }
     else if (pNeeded)
@@ -528,7 +528,7 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
     SOSDacEnter();
 
     EEJitManager *pJitManager = PTR_EEJitManager(TO_TADDR(jitManager));
-    HeapList *heapList = pJitManager->m_pCodeHeap;
+    HeapList *heapList = pJitManager->m_pAllCodeHeaps;
 
     if (codeHeaps)
     {
@@ -888,11 +888,11 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 #ifdef FEATURE_EH_FUNCLETS
     if (thread->m_ExceptionState.m_pCurrentTracker)
     {
-        threadData->firstNestedException = PTR_HOST_TO_TADDR(
+        threadData->firstNestedException = HOST_CDADDR(
             thread->m_ExceptionState.m_pCurrentTracker->m_pPrevNestedInfo);
     }
 #else
-    threadData->firstNestedException = PTR_HOST_TO_TADDR(
+    threadData->firstNestedException = HOST_CDADDR(
         thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1488,7 +1488,16 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
                     nChars > 0 && nChars <= ARRAY_SIZE(path))
                 {
                     WCHAR* pFile = path + nChars - 1;
-                    while ((pFile >= path) && (*pFile != DIRECTORY_SEPARATOR_CHAR_W))
+
+                    // PAL DIRECTORY_SEPARATOR_CHAR_W defines are based on the host platform.
+                    // Here, the directory separator depends on the target platform, not the host platform
+                    // in order to accommodate cross dac scenarios.
+#ifdef TARGET_WINDOWS
+                    WCHAR directorySeparatorChar = W('\\');
+#else
+                    WCHAR directorySeparatorChar = W('/');
+#endif // TARGET_WINDOWS
+                    while ((pFile >= path) && (*pFile != directorySeparatorChar))
                     {
                         pFile--;
                     }
@@ -3338,6 +3347,9 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+#if defined(FEATURE_JAVAMARSHAL)
+                            HNDTYPE_CROSSREFERENCE,
+#endif // FEATURE_JAVAMARSHAL
                             };
 
     return GetHandleEnumForTypes(types, ARRAY_SIZE(types), ppHandleEnum);

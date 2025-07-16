@@ -755,6 +755,8 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 
+        UnwindInfoTable::Initialize();
+
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -804,6 +806,7 @@ void EEStartupHelper()
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
+        CDacPlatformMetadata::InitPrecodes();
 
         InitializeGarbageCollector();
 
@@ -1236,8 +1239,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
-            g_fEEShutDown |= ShutDown_Finalize1;
-
             // Wait for the finalizer thread to deliver process exit event
             GCX_PREEMP();
             FinalizerThread::RaiseShutdownEvents();
@@ -1263,9 +1264,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             {
                 g_pDebugInterface->LockDebuggerForShutdown();
             }
-
-            // This call will convert the ThreadStoreLock into "shutdown" mode, just like the debugger lock above.
-            g_fEEShutDown |= ShutDown_Finalize2;
         }
 
 #ifdef FEATURE_EVENT_TRACE
@@ -1308,15 +1306,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
                 (&g_profControlBlock)->Shutdown();
                 END_PROFILER_CALLBACK();
             }
-
-            g_fEEShutDown |= ShutDown_Profiler;
         }
 #endif // PROFILING_SUPPORTED
 
 
-#ifdef _DEBUG
-        g_fEEShutDown |= ShutDown_SyncBlock;
-#endif
         {
             // From here on out we might call stuff that violates mode requirements, but we ignore these
             // because we are shutting down.

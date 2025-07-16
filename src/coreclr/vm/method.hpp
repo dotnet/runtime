@@ -2077,7 +2077,7 @@ private:
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     PCODE JitCompileCode(PrepareCodeConfig* pConfig);
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, bool *pIsInterpreterCode);
 
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
@@ -2268,20 +2268,6 @@ public:
         m_jitSwitchedToMinOpt = true;
     }
 
-#ifdef FEATURE_INTERPRETER
-    void SetIsInterpreterCode()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_isInterpreterCode = true;
-    }
-
-    bool IsInterpreterCode() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_isInterpreterCode;
-    }
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_TIERED_COMPILATION
 public:
     bool JitSwitchedToOptimized() const
@@ -2350,9 +2336,6 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
-#ifdef FEATURE_INTERPRETER
-    bool m_isInterpreterCode; // The generated code is interpreter IR
-#endif // FEATURE_INTERPRETER
     PrepareCodeConfig *m_nextInSameThread;
 };
 
@@ -2793,7 +2776,7 @@ public:
     bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsILStub); }
     bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsLCGMethod); }
 
-	inline PTR_DynamicResolver    GetResolver();
+    inline PTR_DynamicResolver    GetResolver();
     inline PTR_LCGMethodResolver  GetLCGMethodResolver();
     inline PTR_ILStubResolver     GetILStubResolver();
 
@@ -2923,7 +2906,7 @@ public:
     //
     // following implementations defined in DynamicMethod.cpp
     //
-    void Destroy();
+    bool TryDestroy();
     friend struct ::cdac_data<DynamicMethodDesc>;
 };
 
@@ -3197,7 +3180,7 @@ public:
     BOOL IsPopulated()
     {
         LIMITED_METHOD_CONTRACT;
-        return (ndirect.m_wFlags & kNDirectPopulated) != 0;
+        return (VolatileLoad(&ndirect.m_wFlags) & kNDirectPopulated) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()

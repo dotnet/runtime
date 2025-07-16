@@ -7,7 +7,7 @@
 #include "eventtrace_etw.h"
 #include "rhbinder.h"
 #include "slist.h"
-#include "runtimeinstance.h"
+#include "RuntimeInstance.h"
 #include "shash.h"
 #include "eventtracebase.h"
 #include "eventtracepriv.h"
@@ -216,8 +216,9 @@ static CorElementType ElementTypeToCorElementType(EETypeElementType elementType)
         return CorElementType::ELEMENT_TYPE_I;
     case EETypeElementType::ElementType_UIntPtr:
         return CorElementType::ELEMENT_TYPE_U;
+    default:
+        return CorElementType::ELEMENT_TYPE_END;
     }
-    return CorElementType::ELEMENT_TYPE_END;
 }
 
 // Avoid reporting the same type twice by keeping a hash of logged types.
@@ -243,7 +244,11 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 #endif
     //Avoid logging the same type twice, but using the hash of loggged types.
     if (s_loggedTypesHash == NULL)
-        s_loggedTypesHash = new SHash<LoggedTypesTraits>();
+        s_loggedTypesHash = new (nothrow) SHash<LoggedTypesTraits>();
+
+    if (s_loggedTypesHash == NULL)
+        return -1;
+
     MethodTable* preexistingType = s_loggedTypesHash->Lookup(pEEType);
     if (preexistingType != NULL)
     {
@@ -260,7 +265,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         FireBulkTypeEvent();
     }
 
-    _ASSERTE(m_nBulkTypeValueCount < _countof(m_rgBulkTypeValues));
+    _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
 
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 

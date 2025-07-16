@@ -95,7 +95,7 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
     {
         case 0x01:
         {
-            result |= INS_OPTS_EVEX_eb_er_rd;
+            result |= INS_OPTS_EVEX_er_rd;
             break;
         }
 
@@ -427,6 +427,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
+                    // Make sure we consume the registers that are getting specially handled
+                    genConsumeReg(op1);
+
                     // We're merging with a non-zero value, so the target register is RMW
                     emitAttr attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
                     GetEmitter()->emitIns_Mov(INS_movaps, attr, targetReg, mergeReg, /* canSkip */ true);
@@ -451,12 +454,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 // We don't need to genProduceReg(node) since that will be handled by processing op2
                 // likewise, processing op2 will ensure its own registers are consumed
-
-                if (!mergeWithZero)
-                {
-                    // Make sure we consume the registers that are getting specially handled
-                    genConsumeReg(op1);
-                }
                 embMaskOp = op3;
             }
         }
@@ -1021,6 +1018,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
         case InstructionSet_AVX512v2:
+        case InstructionSet_AVXVNNIINT:
+        case InstructionSet_AVXVNNIINT_V512:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;
@@ -2056,6 +2055,14 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                         offset += op1->AsLclFld()->GetLclOffs();
                     }
                     baseReg = (isEBPbased) ? REG_EBP : REG_ESP;
+                }
+                else if (op1->IsCnsVec())
+                {
+                    CORINFO_FIELD_HANDLE hnd =
+                        GetEmitter()->emitSimdConst(&op1->AsVecCon()->gtSimdVal, emitTypeSize(op1));
+
+                    baseReg = internalRegisters.GetSingle(node);
+                    GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), baseReg, hnd, 0, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -3485,6 +3492,176 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
+            break;
+        }
+
+        case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
+        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate:
+        {
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+            assert(targetReg != REG_NA);
+            assert(op1Reg != REG_NA);
+            assert(op2Reg != REG_NA);
+
+            var_types op3Type = node->GetAuxiliaryType();
+            switch (baseType)
+            {
+                case TYP_UBYTE:
+                {
+                    ins = INS_vpdpbuuds;
+                    break;
+                }
+
+                case TYP_BYTE:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_UBYTE:
+                        {
+                            ins = INS_vpdpbsuds;
+                            break;
+                        }
+
+                        case TYP_BYTE:
+                        {
+                            ins = INS_vpdpbssds;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    ins = INS_vpdpwsuds;
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_USHORT:
+                        {
+                            ins = INS_vpdpwuuds;
+                            break;
+                        }
+
+                        case TYP_SHORT:
+                        {
+                            ins = INS_vpdpwusds;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, instOptions);
+            break;
+        }
+
+        case NI_AVXVNNIINT_MultiplyWideningAndAdd:
+        case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
+        {
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+            assert(targetReg != REG_NA);
+            assert(op1Reg != REG_NA);
+            assert(op2Reg != REG_NA);
+
+            var_types op3Type = node->GetAuxiliaryType();
+            switch (baseType)
+            {
+                case TYP_UBYTE:
+                {
+                    ins = INS_vpdpbuud;
+                    break;
+                }
+
+                case TYP_BYTE:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_UBYTE:
+                        {
+                            ins = INS_vpdpbsud;
+                            break;
+                        }
+
+                        case TYP_BYTE:
+                        {
+                            ins = INS_vpdpbssd;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    ins = INS_vpdpwsud;
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_USHORT:
+                        {
+                            ins = INS_vpdpwuud;
+                            break;
+                        }
+
+                        case TYP_SHORT:
+                        {
+                            ins = INS_vpdpwusd;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, instOptions);
             break;
         }
 

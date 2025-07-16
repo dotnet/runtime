@@ -1290,11 +1290,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         }
         else
         {
-            void *critSect = nullptr, **pCrit = nullptr;
-            critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
-            noway_assert((!critSect) != (!pCrit));
-
-            tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            tree = gtNewIconEmbClsHndNode(info.compClassHnd);
 
             // Given the class handle, get the pointer to the Monitor.
             tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
@@ -2997,7 +2993,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 case BBJ_CALLFINALLY:
                 {
                     noway_assert(predBlock->TargetIs(block));
-                    fgRedirectTargetEdge(predBlock, newHead);
+                    fgRedirectEdge(predBlock->TargetEdgeRef(), newHead);
                     incomingWeight += predBlock->bbWeight;
                     break;
                 }
@@ -3005,8 +3001,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 default:
                     // The only way into the handler is via a BBJ_CALLFINALLY (to a finally handler), or
                     // via exception handling.
-                    noway_assert(false);
-                    break;
+                    unreached();
             }
         }
     }

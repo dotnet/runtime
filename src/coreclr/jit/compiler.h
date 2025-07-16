@@ -3328,29 +3328,21 @@ public:
     GenTree* gtNewSimdLoadNonTemporalNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
-    GenTree* gtNewSimdMaxNode(var_types   type,
-                              GenTree*    op1,
-                              GenTree*    op2,
-                              CorInfoType simdBaseJitType,
-                              unsigned    simdSize);
+    GenTree* gtNewSimdMinMaxNode(var_types   type,
+                                 GenTree*    op1,
+                                 GenTree*    op2,
+                                 CorInfoType simdBaseJitType,
+                                 unsigned    simdSize,
+                                 bool        isMax,
+                                 bool        isMagnitude,
+                                 bool        isNumber);
 
-    GenTree* gtNewSimdMaxNativeNode(var_types   type,
-                                    GenTree*    op1,
-                                    GenTree*    op2,
-                                    CorInfoType simdBaseJitType,
-                                    unsigned    simdSize);
-
-    GenTree* gtNewSimdMinNode(var_types   type,
-                              GenTree*    op1,
-                              GenTree*    op2,
-                              CorInfoType simdBaseJitType,
-                              unsigned    simdSize);
-
-    GenTree* gtNewSimdMinNativeNode(var_types   type,
-                                    GenTree*    op1,
-                                    GenTree*    op2,
-                                    CorInfoType simdBaseJitType,
-                                    unsigned    simdSize);
+    GenTree* gtNewSimdMinMaxNativeNode(var_types   type,
+                                       GenTree*    op1,
+                                       GenTree*    op2,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize,
+                                       bool        isMax);
 
     GenTree* gtNewSimdNarrowNode(var_types   type,
                                  GenTree*    op1,
@@ -3489,13 +3481,13 @@ public:
 
     GenTreeIndir* gtNewIndexIndir(GenTreeIndexAddr* indexAddr);
 
-    void gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block);
+    void gtAnnotateNewArrLen(GenTree* arrLen);
 
-    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
+    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset);
 
-    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank);
 
-    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank);
 
     void gtInitializeStoreNode(GenTree* store, GenTree* value);
 
@@ -3538,10 +3530,10 @@ public:
         return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags);
     }
 
-    GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
+    GenTree* gtNewNullCheck(GenTree* addr);
 
     var_types gtTypeForNullCheck(GenTree* tree);
-    void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
+    void gtChangeOperToNullCheck(GenTree* tree);
 
     GenTree* gtNewAtomicNode(
         genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand = nullptr);
@@ -4436,6 +4428,9 @@ private:
 #ifdef DEBUG
         PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
 #endif
+        // This call is a task await
+        PREFIX_IS_TASK_AWAIT = 0x00000080,
+        PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -4511,6 +4506,8 @@ protected:
         return compiler->impEnumeratorGdvLocalMap;
     }
 
+    bool hasUpdatedTypeLocals = false;
+
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
 
     struct SavedStack // used to save/restore stack contents.
@@ -4520,7 +4517,7 @@ protected:
     };
 
     bool impIsPrimitive(CorInfoType type);
-    bool impILConsumesAddr(const BYTE* codeAddr);
+    bool impILConsumesAddr(const BYTE* codeAddr, const BYTE* codeEndp);
 
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
@@ -4672,14 +4669,6 @@ protected:
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall,
                               bool*                 isSpecial);
-    GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
-                                CORINFO_SIG_INFO*     sig,
-                                CorInfoType           callJitType,
-                                NamedIntrinsic        intrinsicName,
-                                bool                  tailCall,
-                                bool                  isMax,
-                                bool                  isMagnitude,
-                                bool                  isNumber);
 
     NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
@@ -4858,7 +4847,7 @@ public:
 
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
-    bool impMatchAwaitPattern(const BYTE * codeAddr, const BYTE * codeEndp, int* configVal);
+    bool impMatchTaskAwaitPattern(const BYTE * codeAddr, const BYTE * codeEndp, int* configVal);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
@@ -5355,6 +5344,8 @@ public:
 
     PhaseStatus fgInline();
 
+    PhaseStatus fgResolveGDVs();
+
     PhaseStatus fgRemoveEmptyTry();
 
     PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
@@ -5537,6 +5528,10 @@ public:
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
+    PhaseStatus SaveAsyncContexts();
+    BasicBlock* InsertTryFinallyForContextRestore(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
+    void ValidateNoAsyncSavesNecessary();
+    void ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt);
     PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor
@@ -5597,6 +5592,8 @@ public:
     bool fgIsTrackedRetBufferAddress(LIR::Range& range, GenTree* node);
 
     bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
+
+    bool fgCanUncontainOrRemoveOperands(GenTree* node);
 
     bool fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
 
@@ -6031,52 +6028,6 @@ public:
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
-public:
-    // For many purposes, it is desirable to be able to enumerate the *distinct* targets of a switch statement,
-    // skipping duplicate targets.  (E.g., in flow analyses that are only interested in the set of possible targets.)
-    // SwitchUniqueSuccSet contains the non-duplicated switch successor edges.
-    // Code that modifies the flowgraph (such as by renumbering blocks) must call Compiler::InvalidateUniqueSwitchSuccMap,
-    // and code that modifies the targets of a switch block must call Compiler::fgInvalidateSwitchDescMapEntry.
-    // If the unique targets of a switch block are needed later, they will be recomputed, ensuring they're up-to-date.
-    struct SwitchUniqueSuccSet
-    {
-        unsigned   numDistinctSuccs; // Number of distinct targets of the switch.
-        FlowEdge** nonDuplicates;    // Array of "numDistinctSuccs", containing all the distinct switch target
-                                     // successor edges.
-    };
-
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet> BlockToSwitchDescMap;
-
-private:
-    // Maps BasicBlock*'s that end in switch statements to SwitchUniqueSuccSets that allow
-    // iteration over only the distinct successors.
-    BlockToSwitchDescMap* m_switchDescMap = nullptr;
-
-public:
-    BlockToSwitchDescMap* GetSwitchDescMap(bool createIfNull = true)
-    {
-        if ((m_switchDescMap == nullptr) && createIfNull)
-        {
-            m_switchDescMap = new (getAllocator()) BlockToSwitchDescMap(getAllocator());
-        }
-        return m_switchDescMap;
-    }
-
-    // Invalidate the map of unique switch block successors. For example, since the hash key of the map
-    // depends on block numbers, we must invalidate the map when the blocks are renumbered, to ensure that
-    // we don't accidentally look up and return the wrong switch data.
-    void InvalidateUniqueSwitchSuccMap()
-    {
-        m_switchDescMap = nullptr;
-    }
-
-    // Requires "switchBlock" to be a block that ends in a switch.  Returns
-    // the corresponding SwitchUniqueSuccSet.
-    SwitchUniqueSuccSet GetDescriptorForSwitch(BasicBlock* switchBlk);
-
-    // Remove the "SwitchUniqueSuccSet" of "switchBlk" in the BlockToSwitchDescMap.
-    void fgInvalidateSwitchDescMapEntry(BasicBlock* switchBlk);
-
     BasicBlock* fgFirstBlockOfHandler(BasicBlock* block);
 
     FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred);
@@ -6095,7 +6046,7 @@ public:
 
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
-    void fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex);
+    void fgRemoveEhfSuccFromTable(BasicBlock* block, const unsigned succIndex);
 
     void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
@@ -6111,11 +6062,7 @@ private:
     FlowEdge** fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget);
 
 public:
-    void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
-
-    void fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget);
-
-    void fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget);
+    void fgRedirectEdge(FlowEdge*& edgeRef, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();
 
@@ -6166,8 +6113,6 @@ public:
     void fgCompactBlock(BasicBlock* block);
 
     bool fgExpandRarelyRunBlocks();
-
-    bool fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter);
 
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
@@ -6707,17 +6652,10 @@ private:
     GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
+    GenTree* fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree);
+    GenTree* fgMorphHWIntrinsicOptional(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-#ifdef TARGET_ARM64
-    bool canMorphVectorOperandToMask(GenTree* node);
-    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
-    GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
-    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
-#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
@@ -7073,7 +7011,7 @@ public:
 
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
-    
+
     bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit);
 
     PhaseStatus optCloneLoops();
@@ -7563,6 +7501,7 @@ public:
                                              unsigned               likelihood,
                                              bool                   arrayInterface,
                                              bool                   instantiatingStub,
+                                             CORINFO_METHOD_HANDLE  originalMethodHandle,
                                              CORINFO_CONTEXT_HANDLE originalContextHandle);
 
     int getGDVMaxTypeChecks()
@@ -7666,14 +7605,6 @@ public:
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
     bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
-#if DEBUG
-    void optCheckFlagsAreSet(unsigned    methodFlag,
-                             const char* methodFlagStr,
-                             unsigned    bbFlag,
-                             const char* bbFlagStr,
-                             GenTree*    tree,
-                             BasicBlock* basicBlock);
-#endif
 
     PhaseStatus optInductionVariables();
 
@@ -8384,6 +8315,11 @@ public:
 
     CORINFO_EE_INFO* eeGetEEInfo();
 
+    CORINFO_ASYNC_INFO asyncInfo;
+    bool               asyncInfoInitialized = false;
+
+    CORINFO_ASYNC_INFO* eeGetAsyncInfo();
+
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
 
@@ -8806,6 +8742,9 @@ public:
     //
 
     void unwindPush(regNumber reg);
+#if defined(TARGET_AMD64)
+    void unwindPush2(regNumber reg1, regNumber reg2);
+#endif // TARGET_AMD64
     void unwindAllocStack(unsigned size);
     void unwindSetFrameReg(regNumber reg, unsigned offset);
     void unwindSaveReg(regNumber reg, unsigned offset);
@@ -8878,6 +8817,7 @@ private:
 
     void unwindBegPrologWindows();
     void unwindPushWindows(regNumber reg);
+    void unwindPush2Windows(regNumber reg1, regNumber reg2);
     void unwindAllocStackWindows(unsigned size);
     void unwindSetFrameRegWindows(regNumber reg, unsigned offset);
     void unwindSaveRegWindows(regNumber reg, unsigned offset);
@@ -8896,6 +8836,7 @@ private:
     short mapRegNumToDwarfReg(regNumber reg);
     void  createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR opcode, short dwarfReg, INT offset = 0);
     void  unwindPushPopCFI(regNumber reg);
+    void  unwindPush2Pop2CFI(regNumber reg1, regNumber reg2);
     void  unwindBegPrologCFI();
     void  unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat);
     void  unwindAllocStackCFI(unsigned size);
@@ -9615,6 +9556,13 @@ private:
         return false;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
+    CORINFO_InstructionSet lookupInstructionSet(const char* className);
+    CORINFO_InstructionSet lookupIsa(const char* className,
+                                     const char* innerEnclosingClassName,
+                                     const char* outerEnclosingClassName);
+#endif // FEATURE_HW_INTRINSICS
+
 #ifdef DEBUG
     // Answer the question: Is a particular ISA supported?
     // Use this api when asking the question so that future
@@ -9837,6 +9785,8 @@ public:
     bool compSwitchedToMinOpts        = false; // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
     bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
+    bool compUsesThrowHelper          = false; // There is a call to a THROW_HELPER for the compiled method.
+    bool compMustSaveAsyncContexts    = false; // There is an async call that needs capture/restore of async contexts.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
@@ -9862,8 +9812,6 @@ public:
     bool compPostImportationCleanupDone = false;
     bool compLSRADone                   = false;
     bool compRationalIRForm             = false;
-
-    bool compUsesThrowHelper = false; // There is a call to a THROW_HELPER for the compiled method.
 
     bool compGeneratingProlog       = false;
     bool compGeneratingEpilog       = false;
@@ -9917,8 +9865,9 @@ public:
             compSupportsISA = isas;
         }
 
-        unsigned compFlags; // method attributes
-        unsigned instrCount = 0;
+        unsigned compFlags;          // method attributes
+        unsigned instrCount     = 0; // number of IL opcodes
+        unsigned callInstrCount = 0; // number of IL opcodes (calls only).
         unsigned lvRefCount;
 
         codeOptimize compCodeOpt; // what type of code optimizations

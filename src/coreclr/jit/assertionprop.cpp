@@ -2665,7 +2665,10 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 if (castFrom != NO_CLASS_HANDLE)
                 {
                     CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
-                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    // Constant prop may fail to propagate compile time class handles, so verify we have
+                    // a handle before invoking the runtime.
+                    if ((castTo != NO_CLASS_HANDLE) &&
+                        info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
                     {
                         // if castObjArg is not simple, we replace the arg with a temp assignment and
                         // continue using that temp - it allows us reliably extract all side effects
@@ -3199,8 +3202,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         }
     }
 
-    GenTree* newTree       = tree;
-    bool     propagateType = false;
+    GenTree* newTree = tree;
 
     // Update 'newTree' with the new value from our table
     // Typically newTree == tree and we are updating the node in place
@@ -3217,14 +3219,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_INT:
 
-            // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
+            // Don't propagate non-nulll non-static handles if we need to report relocs.
+            if (opts.compReloc && curAssertion->op2.HasIconFlag() && (curAssertion->op2.u1.iconVal != 0))
             {
-                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL)
-                {
-                    propagateType = true;
-                }
-                else
+                if (curAssertion->op2.GetIconFlag() != GTF_ICON_STATIC_HDL)
                 {
                     return nullptr;
                 }
@@ -3244,20 +3242,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
+
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL) && !tree->TypeIs(TYP_REF))
                 {
-                    if (tree->TypeIs(TYP_BYREF))
-                    {
-                        // Conservatively don't allow propagation of ICON TYP_REF into BYREF
-                        return nullptr;
-                    }
-                    propagateType = true;
+                    // If the tree is not a TYP_REF, we should not propagate an ICON TYP_REF
+                    // into it, as it may lead to incorrect code generation.
+                    return nullptr;
                 }
 
-                if (propagateType)
-                {
-                    newTree->ChangeType(tree->TypeGet());
-                }
+                newTree->ChangeType(tree->TypeGet());
             }
             else
             {
@@ -5640,8 +5633,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     GenTree* switchTree = switchBb->lastStmt()->GetRootNode()->gtEffectiveVal();
     assert(switchTree->OperIs(GT_SWITCH));
 
-    // bbsCount is uint32_t, but it's unlikely to be more than INT32_MAX.
-    noway_assert(switchBb->GetSwitchTargets()->bbsCount <= INT32_MAX);
+    // Case count is uint32_t, but it's unlikely to be more than INT32_MAX.
+    noway_assert(switchBb->GetSwitchTargets()->GetCaseCount() <= INT32_MAX);
 
     ValueNum opVN = optConservativeNormalVN(switchTree->gtGetOp1());
     if (opVN == ValueNumStore::NoVN)
@@ -5659,9 +5652,9 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     int offset = 0;
     vnStore->PeelOffsetsI32(&opVN, &offset);
 
-    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->bbsCount);
-    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->bbsDstTab;
-    bool       hasDefault = switchBb->GetSwitchTargets()->bbsHasDefault;
+    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->GetCaseCount());
+    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->GetCases();
+    bool       hasDefault = switchBb->GetSwitchTargets()->HasDefaultCase();
 
     for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
     {
@@ -5673,14 +5666,15 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
         int value = jmpTargetIdx - offset;
 
         // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
-        BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
+        FlowEdge* const   edge   = jumpTable[jmpTargetIdx];
+        BasicBlock* const target = edge->getDestinationBlock();
         if (target->GetUniquePred(this) != switchBb)
         {
             // Target block is potentially reachable from multiple blocks (outside the switch).
             continue;
         }
 
-        if (fgGetPredForBlock(target, switchBb)->getDupCount() > 1)
+        if (edge->getDupCount() > 1)
         {
             // We have just one predecessor (BBJ_SWITCH), but there may be multiple edges (cases) per target.
             continue;
