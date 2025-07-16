@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "fgprofilesynthesis.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 extern ICorJitHost* g_jitHost;
 
@@ -10612,26 +10613,31 @@ const char* Compiler::printfAlloc(const char* format, ...)
 //   Convert a string from UTF16 to UTF8 to be printed to output.
 //
 // Arguments:
-//    utf16String - The string
+//    utf16Src     - source string in UTF16 encoding
+//    utf16SrcLen  - length of the source string in UTF16 encoding
+//    utf8Dst      - destination buffer for the UTF8 string
+//    utf8DstLen   - length of the destination buffer in bytes
 //
-// Returns:
-//    Converted string, or a marker string if conversion failed.
+// Notes:
+//     "<string is too long>" is written to the destination buffer if the
+//     converted string exceeds the buffer size.
 //
-const char* Compiler::convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String)
+void Compiler::convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src,
+                                             size_t          utf16SrcLen,
+                                             char*           utf8Dst,
+                                             size_t          utf8DstLen)
 {
-    const char* utf8Str = "<utf8 conversion failure>";
-    int         utf8Len = WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, nullptr, 0, nullptr, nullptr);
-    if (utf8Len > 0)
+    const char* utf16src      = reinterpret_cast<const char*>(utf16Src);
+    size_t      actualUtf8Len = minipal_get_length_utf8_to_utf16(utf16src, utf16SrcLen, 0);
+    if (actualUtf8Len >= utf8DstLen)
     {
-        char* allocated = new (this, CMK_DebugOnly) char[utf8Len];
-
-        if (WideCharToMultiByte(CP_UTF8, 0, (WCHAR*)utf16String, -1, allocated, utf8Len, nullptr, nullptr) != 0)
-        {
-            utf8Str = allocated;
-        }
+        strcpy_s(utf8Dst, utf8DstLen, "<string is too long>");
+        return;
     }
-
-    return utf8Str;
+    size_t written =
+        minipal_convert_utf16_to_utf8(reinterpret_cast<const CHAR16_T*>(utf16Src), utf16SrcLen, utf8Dst, utf8DstLen, 0);
+    assert(written < utf8DstLen);
+    utf8Dst[written] = '\0';
 }
 
 #endif // defined(DEBUG)

@@ -12252,9 +12252,10 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else
             {
+                char dst[maxLiteralLength];
+                convertUtf16ToUtf8ForPrinting(str, len, dst, maxLiteralLength);
                 // Trim the string to 50 characters for printing
-                printf("\"%.50s%s\"", convertUtf16ToUtf8ForPrinting(reinterpret_cast<WCHAR*>(str)),
-                       len > 50 ? "..." : "");
+                printf("\"%.50s%s\"", dst, len > 50 ? "..." : "");
             }
         }
         break;
