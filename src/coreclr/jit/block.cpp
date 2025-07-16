@@ -1067,41 +1067,6 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
 }
 
 //------------------------------------------------------------------------
-// bbFallsThrough: Check if inserting a BasicBlock after this one will alter
-// the flowgraph.
-//
-// Returns:
-//    True if so.
-//
-bool BasicBlock::bbFallsThrough() const
-{
-    switch (bbKind)
-    {
-        case BBJ_THROW:
-        case BBJ_EHFINALLYRET:
-        case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_EHCATCHRET:
-        case BBJ_RETURN:
-        case BBJ_ALWAYS:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_LEAVE:
-        case BBJ_SWITCH:
-            return false;
-
-        case BBJ_COND:
-            return true;
-
-        case BBJ_CALLFINALLY:
-            return !HasFlag(BBF_RETLESS_CALL);
-
-        default:
-            assert(!"Unknown bbKind in bbFallsThrough()");
-            return true;
-    }
-}
-
-//------------------------------------------------------------------------
 // NumSucc: Returns the count of block successors. See the declaration comment for details.
 //
 // Arguments:

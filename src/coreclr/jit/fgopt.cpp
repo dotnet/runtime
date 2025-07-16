@@ -491,9 +491,6 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // this would be problematic as we don't have enough context to redirect
                         // all the incoming edges, but we know oldTryEntry is unreachable.
                         // So there are no incoming edges to worry about.
-                        //
-                        assert(!tryEntryPrev->bbFallsThrough());
-
                         // What follows is similar to fgNewBBInRegion, but we can't call that
                         // here as the oldTryEntry is no longer in the main bb list.
                         newTryEntry = BasicBlock::New(this);

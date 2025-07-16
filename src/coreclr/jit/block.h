@@ -1732,8 +1732,6 @@ public:
     static size_t s_Count;
 #endif // MEASURE_BLOCK_SIZE
 
-    bool bbFallsThrough() const;
-
 #ifdef DEBUG
     unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
     static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
