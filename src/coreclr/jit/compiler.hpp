@@ -4740,10 +4740,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 
             bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
 
-            if (visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), storeSize)) == VisitResult::Abort)
-            {
-                return VisitResult::Abort;
-            }
+            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), storeSize));
         }
     }
 
