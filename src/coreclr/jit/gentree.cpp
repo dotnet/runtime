@@ -32633,37 +32633,33 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         }
                     }
 
-                    uint32_t mask;
-                    memcpy(&mask, &simdMaskVal.u32[0], sizeof(uint32_t));
-
                     uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
-                    uint32_t bitMask   = static_cast<uint32_t>((1 << elemCount) - 1);
+                    uint64_t mask      = simdMaskVal.GetRawBits() & simdmask_t::GetBitMask(elemCount);
 
                     assert(varTypeIsInt(retType));
                     assert(elemCount <= 32);
 
-                    resultNode = gtNewIconNode(static_cast<int32_t>(mask & bitMask), retType);
+                    resultNode = gtNewIconNode(static_cast<int32_t>(mask));
                     break;
                 }
 
 #ifdef TARGET_XARCH
                 case NI_AVX512_MoveMask:
                 {
-                    uint64_t mask;
-                    memcpy(&mask, &cnsNode->AsMskCon()->gtSimdMaskVal.u64[0], sizeof(uint64_t));
+                    GenTreeMskCon* mskCns = cnsNode->AsMskCon();
 
                     uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
-                    uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
+                    uint64_t mask      = mskCns->gtSimdMaskVal.GetRawBits() & simdmask_t::GetBitMask(elemCount);
 
                     if (varTypeIsInt(retType))
                     {
                         assert(elemCount <= 32);
-                        resultNode = gtNewIconNode(static_cast<int32_t>(mask & bitMask), retType);
+                        resultNode = gtNewIconNode(static_cast<int32_t>(mask));
                     }
                     else
                     {
                         assert(varTypeIsLong(retType));
-                        resultNode = gtNewLconNode(static_cast<int64_t>(mask & bitMask));
+                        resultNode = gtNewLconNode(static_cast<int64_t>(mask));
                     }
                     break;
                 }

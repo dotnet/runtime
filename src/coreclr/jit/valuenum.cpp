@@ -7950,16 +7950,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                     }
                 }
 
-                uint32_t mask;
-                memcpy(&mask, &simdMaskVal.u32[0], sizeof(uint32_t));
-
                 uint32_t elemCount = simdSize / genTypeSize(baseType);
-                uint32_t bitMask   = static_cast<uint32_t>((1 << elemCount) - 1);
+                uint64_t mask      = simdMaskVal.GetRawBits() & simdmask_t::GetBitMask(elemCount);
 
                 assert(varTypeIsInt(type));
                 assert(elemCount <= 32);
 
-                return VNForIntCon(static_cast<int32_t>(mask & bitMask));
+                return VNForIntCon(static_cast<int32_t>(mask));
             }
 
 #ifdef TARGET_XARCH
@@ -7967,21 +7964,18 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             {
                 simdmask_t arg0 = GetConstantSimdMask(arg0VN);
 
-                uint64_t mask;
-                memcpy(&mask, &arg0, sizeof(uint64_t));
-
                 uint32_t elemCount = simdSize / genTypeSize(baseType);
-                uint64_t bitMask   = static_cast<uint64_t>((static_cast<int64_t>(1) << elemCount) - 1);
+                uint64_t mask      = arg0.GetRawBits() & simdmask_t::GetBitMask(elemCount);
 
                 if (varTypeIsInt(type))
                 {
                     assert(elemCount <= 32);
-                    return VNForIntCon(static_cast<int32_t>(mask & bitMask));
+                    return VNForIntCon(static_cast<int32_t>(mask));
                 }
                 else
                 {
                     assert(varTypeIsLong(type));
-                    return VNForLongCon(static_cast<int64_t>(mask & bitMask));
+                    return VNForLongCon(static_cast<int64_t>(mask));
                 }
             }
 #endif // TARGET_XARCH
