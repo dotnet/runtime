@@ -23,18 +23,41 @@ public unsafe class Validate
     }
 
     [Fact]
-    public static void ExplicitSize_Fails()
+    public static void ExplicitSize_FailsInSequential()
     {
-        Console.WriteLine($"{nameof(ExplicitSize_Fails)}...");
-
-        // .size is ignored for auto layout
-        Assert.True(sizeof(ExplicitSizeAuto) > 0);
+        Console.WriteLine($"{nameof(ExplicitSize_FailsInSequential)}...");
 
         Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSize); });
 
         Assert.Throws<TypeLoadException>(() =>
         {
-            return sizeof(ExplicitSize);
+            return new ExplicitSize();
+        });
+    }
+
+    [Fact]
+    public static void ExplicitSize_FailsInAuto()
+    {
+        Console.WriteLine($"{nameof(ExplicitSize_FailsInAuto)}...");
+
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSizeAuto); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            return sizeof(ExplicitSizeAuto);
+        });
+    }
+
+    [Fact]
+    public static void ExplicitSize_FailsInGeneric()
+    {
+        Console.WriteLine($"{nameof(ExplicitSize_FailsInGeneric)}...");
+
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSizeGeneric<long>); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            return new ExplicitSizeGeneric<int>();
         });
     }
 

@@ -1771,6 +1771,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT);
                 }
+
+                ULONG classSize;
+                if (SUCCEEDED(GetMDImport()->GetClassTotalSize(cl, &classSize)) && classSize != 0)
+                {
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT_SIZE);
+                }
             }
         }
     }
@@ -1793,13 +1799,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
-
-        if (HasExplicitSize() &&
-            bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Sequential &&
-            GetHalfBakedClass()->IsInlineArray())
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT_SIZE);
-        }
     }
 
     if (CheckIfSIMDAndUpdateSize())

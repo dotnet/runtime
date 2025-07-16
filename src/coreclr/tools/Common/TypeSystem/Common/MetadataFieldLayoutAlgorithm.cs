@@ -473,12 +473,6 @@ namespace Internal.TypeSystem
 
             if (type.IsInlineArray)
             {
-                // inline array cannot have explicit instance size
-                if (layoutMetadata.Size != 0)
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicitSize, type);
-                }
-
                 AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
@@ -514,6 +508,12 @@ namespace Internal.TypeSystem
             if (instanceFieldCount != 1)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayFieldCount, type);
+            }
+
+            var layoutMetadata = type.GetClassLayout();
+            if (layoutMetadata.Size != 0)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicitSize, type);
             }
 
             if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
