@@ -70,6 +70,9 @@ Abstract:
 #ifdef TARGET_X86
 #include "gc_unwind_x86.h"
 #endif
+#ifdef TARGET_AMD64
+#include <minipal/cpufeatures.h>
+#endif
 
 class MethodDesc;
 class ICorJitCompiler;
@@ -2197,6 +2200,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_CPUCompileFlags;
     }
+
+#if defined(TARGET_AMD64)
+    inline bool IsAPXSupported()
+    {
+        return m_CPUCompileFlags.IsSet(InstructionSet_APX);
+    }
+#endif // TARGET_AMD64
 
 private :
     Crst                m_JitLoadLock;

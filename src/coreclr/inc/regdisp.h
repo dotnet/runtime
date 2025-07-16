@@ -197,7 +197,7 @@ typedef struct _Arm64VolatileContextPointer
 } Arm64VolatileContextPointer;
 #endif //TARGET_ARM64
 
-#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
+#if defined(TARGET_AMD64)
 typedef struct _Amd64VolatileContextPointer
 {
     union {
@@ -222,7 +222,7 @@ typedef struct _Amd64VolatileContextPointer
         PDWORD64 R[16];
     };
 } Amd64VolatileContextPointer;
-#endif //TARGET_AMD64 && TARGET_UNIX
+#endif //TARGET_AMD64
 
 #if defined(TARGET_LOONGARCH64)
 typedef struct _LoongArch64VolatileContextPointer
@@ -280,7 +280,7 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     LoongArch64VolatileContextPointer    volatileCurrContextPointers;
 #endif
 
-#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
+#if defined(TARGET_AMD64)
     Amd64VolatileContextPointer    volatileCurrContextPointers;
 #endif
 

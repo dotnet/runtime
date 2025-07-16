@@ -20,7 +20,7 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0x1b78;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x1b80;
 #else // TARGET_UNIX
-    public const int SIZEOF__REGDISPLAY = 0xbf0;
+    public const int SIZEOF__REGDISPLAY = 0xc70;
     public const int OFFSETOF__REGDISPLAY__SP = 0xbd8;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbe0;
 #endif // TARGET_UNIX
