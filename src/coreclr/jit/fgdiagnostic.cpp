@@ -3450,6 +3450,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     case NI_X86Base_Prefetch1:
                     case NI_X86Base_Prefetch2:
                     case NI_X86Base_PrefetchNonTemporal:
+                    case NI_WAITPKG_SetUpUserLevelMonitor:
+                    case NI_WAITPKG_TimedPause:
+                    case NI_WAITPKG_WaitForUserLevelMonitor:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
