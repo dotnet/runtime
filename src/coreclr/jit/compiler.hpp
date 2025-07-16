@@ -4745,16 +4745,6 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
                     return VisitResult::Abort;
                 }
             }
-
-            GenTreeLclVarCommon* currentThreadArg = comp->gtCallGetDefinedAsyncCurrentThreadLclAddr(call);
-            if (currentThreadArg != nullptr)
-            {
-                bool isEntire = comp->lvaLclExactSize(currentThreadArg->GetLclNum()) == TARGET_POINTER_SIZE;
-                if (visitor(LocalDef(currentThreadArg, isEntire, currentThreadArg->GetLclOffs(), TARGET_POINTER_SIZE)) == VisitResult::Abort)
-                {
-                    return VisitResult::Abort;
-                }
-            }
         }
 
         GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
@@ -4804,12 +4794,6 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
         {
             GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
             if ((suspendedArg != nullptr) && (visitor(suspendedArg) == VisitResult::Abort))
-            {
-                return VisitResult::Abort;
-            }
-
-            GenTreeLclVarCommon* currentThreadArg = comp->gtCallGetDefinedAsyncCurrentThreadLclAddr(call);
-            if ((currentThreadArg != nullptr) && (visitor(currentThreadArg) == VisitResult::Abort))
             {
                 return VisitResult::Abort;
             }

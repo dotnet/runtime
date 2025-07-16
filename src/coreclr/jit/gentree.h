@@ -4638,8 +4638,6 @@ enum class WellKnownArg : unsigned
     StackArrayLocal,
     RuntimeMethodHandle,
     AsyncSuspendedIndicator,
-    AsyncCurrentThread,
-    AsyncCurrentThreadDef,
 };
 
 #ifdef DEBUG

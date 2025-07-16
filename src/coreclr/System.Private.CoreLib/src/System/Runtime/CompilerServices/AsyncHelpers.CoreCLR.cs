@@ -602,17 +602,17 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CaptureContexts(out Thread currentThread, out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
+        private static void CaptureContexts(out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
         {
             Thread thread = Thread.CurrentThreadAssumedInitialized;
-            currentThread = thread;
             execCtx = thread._executionContext;
             syncCtx = thread._synchronizationContext;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreContexts(bool suspended, Thread thread, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        private static void RestoreContexts(bool suspended, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
             if (!suspended && previousSyncCtx != thread._synchronizationContext)
             {
                 thread._synchronizationContext = previousSyncCtx;

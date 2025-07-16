@@ -106,17 +106,12 @@ PhaseStatus Compiler::SaveAsyncContexts()
             }
 
             unsigned suspendedLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Suspended indicator for [%06u]", dspTreeID(call))));
-            unsigned threadLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Thread for [%06u]", dspTreeID(call))));
             unsigned execCtxLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("ExecutionContext for [%06u]", dspTreeID(call))));
             unsigned syncCtxLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("SynchronizationContext for [%06u]", dspTreeID(call))));
 
             LclVarDsc* suspendedLclDsc = lvaGetDesc(suspendedLclNum);
             suspendedLclDsc->lvType = TYP_UBYTE;
             suspendedLclDsc->lvHasLdAddrOp = true;
-
-            LclVarDsc* threadLclDsc = lvaGetDesc(threadLclNum);
-            threadLclDsc->lvType = TYP_REF;
-            threadLclDsc->lvHasLdAddrOp = true;
 
             LclVarDsc* execCtxLclDsc = lvaGetDesc(execCtxLclNum);
             execCtxLclDsc->lvType = TYP_REF;
@@ -129,17 +124,14 @@ PhaseStatus Compiler::SaveAsyncContexts()
             call->asyncInfo->SynchronizationContextLclNum = syncCtxLclNum;
 
             call->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclAddrNode(suspendedLclNum, 0)).WellKnown(WellKnownArg::AsyncSuspendedIndicator));
-            call->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclVarNode(threadLclNum)).WellKnown(WellKnownArg::AsyncCurrentThread));
-            call->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclAddrNode(threadLclNum, 0)).WellKnown(WellKnownArg::AsyncCurrentThreadDef));
 
-            JITDUMP("Saving contexts around [%06u], thread = V%02u, ExecutionContext = V%02u, SynchronizationContext = V%02u\n", call->gtTreeID, threadLclNum, execCtxLclNum, syncCtxLclNum);
+            JITDUMP("Saving contexts around [%06u], ExecutionContext = V%02u, SynchronizationContext = V%02u\n", call->gtTreeID, execCtxLclNum, syncCtxLclNum);
 
             CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
             GenTreeCall*      capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
             capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(syncCtxLclNum, 0)));
             capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(execCtxLclNum, 0)));
-            capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(threadLclNum, 0)));
 
             CORINFO_CALL_INFO callInfo = {};
             callInfo.hMethod           = capture->gtCallMethHnd;
@@ -177,7 +169,6 @@ PhaseStatus Compiler::SaveAsyncContexts()
             GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
             restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncCtxLclNum)));
             restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(execCtxLclNum)));
-            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(threadLclNum)));
             restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(suspendedLclNum)));
 
             callInfo             = {};
@@ -1165,54 +1156,6 @@ void AsyncTransformation::SetSuspendedIndicator(BasicBlock* block, BasicBlock* c
     }
 }
 
-void AsyncTransformation::UpdateThreadObject(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call)
-{
-    CallArg* currentThreadUse = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncCurrentThread);
-    if (currentThreadUse != nullptr)
-    {
-        call->gtArgs.RemoveUnsafe(currentThreadUse);
-        currentThreadUse->GetNode()->SetUnusedValue();
-    }
-
-    CallArg* currentThreadArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncCurrentThreadDef);
-    if (currentThreadArg == nullptr)
-    {
-        return;
-    }
-
-    GenTree* currentThread = currentThreadArg->GetNode();
-
-    if (!currentThread->IsLclVarAddr() && (!currentThread->OperIs(GT_LCL_VAR) || m_comp->lvaVarAddrExposed(currentThread->AsLclVarCommon()->GetLclNum())))
-    {
-        // We will need to sequence and insert this, so we need to be able to clone it without duplicating side effects.
-        LIR::Use use(LIR::AsRange(block), &currentThreadArg->NodeRef(), call);
-        use.ReplaceWithLclVar(m_comp);
-        currentThread = use.Def();
-    }
-
-    GenTreeCall* getCurrentThread =
-        m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->getCurrentThreadMethHnd, TYP_REF);
-
-    m_comp->compCurBB = block;
-    m_comp->fgMorphTree(getCurrentThread);
-
-    GenTree* storeCurrentThread = m_comp->gtNewStoreValueNode(TYP_UBYTE, m_comp->gtCloneExpr(currentThread), getCurrentThread, GTF_IND_NONFAULTING);
-
-    LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, storeCurrentThread));
-
-    call->gtArgs.RemoveUnsafe(currentThreadArg);
-
-    // Avoid leaving LCL_ADDR around which will DNER the local.
-    if (currentThread->IsLclVarAddr())
-    {
-        LIR::AsRange(callBlock).Remove(currentThread);
-    }
-    else
-    {
-        currentThread->SetUnusedValue();
-    }
-}
-
 //------------------------------------------------------------------------
 // AsyncTransformation::CanonicalizeCallDefinition:
 //   Put the call definition in a canonical form. This ensures that either the
@@ -1705,78 +1648,6 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
 
     block->GetTrueEdge()->setLikelihood(0);
     block->GetFalseEdge()->setLikelihood(1);
-
-    JumpThreadSuspensionCheck(block->GetFalseEdge(), call, 0);
-}
-
-void AsyncTransformation::JumpThreadSuspensionCheck(FlowEdge* edge, GenTreeCall* call, uint8_t suspendedValue)
-{
-    JITDUMP("  Seeing if we can jump thread a check for suspension in " FMT_BB " -> " FMT_BB " with known value %d\n", edge->getSourceBlock()->bbNum, edge->getDestinationBlock()->bbNum, suspendedValue);
-
-    CallArg* suspendedArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-    if (suspendedArg == nullptr)
-    {
-        JITDUMP("    No async suspension indicator argument found\n");
-        return;
-    }
-
-    GenTree* suspended = suspendedArg->GetNode();
-    if (!suspended->IsLclVarAddr() || (suspended->AsLclVarCommon()->GetLclOffs() != 0) || (m_comp->lvaGetDesc(suspended->AsLclVarCommon())->lvExactSize() != 1))
-    {
-        JITDUMP("    Async suspension indicator is not of right shape\n");
-        return;
-    }
-
-    unsigned suspendedLclNum = suspended->AsLclVarCommon()->GetLclNum();
-    BasicBlock* blockTarget = edge->getDestinationBlock();
-    if (!blockTarget->KindIs(BBJ_COND))
-    {
-        JITDUMP("    Block target is not BBJ_COND\n");
-        return;
-    }
-
-    GenTree* lastNode = LIR::AsRange(blockTarget).LastNode();
-    assert(lastNode->OperIs(GT_JTRUE));
-
-    bool isClosed = false;
-    LIR::ReadOnlyRange jtrueRange = LIR::AsRange(blockTarget).GetTreeRange(lastNode, &isClosed);
-
-    if (!isClosed || (jtrueRange.FirstNode() != LIR::AsRange(blockTarget).FirstNonNopNode()))
-    {
-        JITDUMP("    Block target has other IR\n");
-        return;
-    }
-
-    GenTree* cmp = lastNode->gtGetOp1();
-    if (!cmp->OperIs(GT_EQ, GT_NE))
-    {
-        JITDUMP("    Block target is not JTRUE(EQ/NE)\n");
-        return;
-    }
-
-    GenTree* op1 = cmp->gtGetOp1();
-    GenTree* op2 = cmp->gtGetOp2();
-    if (!op2->IsCnsIntOrI())
-    {
-        std::swap(op1, op2);
-    }
-
-    if (!op1->OperIs(GT_LCL_VAR) || (op1->AsLclVar()->GetLclNum() != suspendedLclNum))
-    {
-        JITDUMP("    Op1 is not suspended indicator\n");
-        return;
-    }
-
-    if (!op2->IsIntegralConst(0))
-    {
-        JITDUMP("    Op2 is not constant 0\n");
-        return;
-    }
-
-    BasicBlock* actualTarget = (cmp->OperIs(GT_EQ) == (suspendedValue == 0)) ? blockTarget->GetTrueTarget() : blockTarget->GetFalseTarget();
-    JITDUMP("    We can jump thread " FMT_BB " -> " FMT_BB " into " FMT_BB " -> " FMT_BB "\n", edge->getSourceBlock()->bbNum, edge->getDestinationBlock()->bbNum, edge->getSourceBlock()->bbNum, actualTarget->bbNum);
-
-    m_comp->fgRedirectEdge(edge, actualTarget);
 }
 
 //------------------------------------------------------------------------
@@ -1822,19 +1693,7 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
 
     JITDUMP("  Creating resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
 
-    // See if we can optimize based on the fact that the suspended indicator
-    // will be 1 when we rejoin. Usually we can because the resumption path
-    // will start out with "if (!suspended)".
-    assert(resumeBB->KindIs(BBJ_ALWAYS));
-    JumpThreadSuspensionCheck(resumeBB->GetTargetEdge(), call, 1);
-
-    // Now generate the IR to set the suspension indicator, if necessary. This
-    // will usually be optimized by liveness because of the jump threading that
-    // happened above.
     SetSuspendedIndicator(resumeBB, block, call);
-
-    // Also the thread object needs to be updated to the current thread.
-    UpdateThreadObject(resumeBB, block, call);
 
     // We need to restore data before we restore GC pointers, since restoring
     // the data may also write the GC pointer fields with nulls.

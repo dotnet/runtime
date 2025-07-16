@@ -1499,7 +1499,6 @@ private:
         if ((callUser != nullptr) && callUser->IsAsync() && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
             CallArg* suspendedArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-            CallArg* currentThreadArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncCurrentThreadDef);
             if ((suspendedArg != nullptr) && (val.Node() == suspendedArg->GetNode()))
             {
                 varDsc->SetDefinedViaAddress(true);
@@ -1512,19 +1511,6 @@ private:
                 }
 
                 callUser->asyncInfo->HasSuspensionIndicatorDef = true;
-            }
-            else if ((currentThreadArg != nullptr) && (val.Node() == currentThreadArg->GetNode()))
-            {
-                varDsc->SetDefinedViaAddress(true);
-                escapeAddr = false;
-                defFlag = GTF_VAR_DEF;
-
-                if ((val.Offset() != 0) || (varDsc->lvExactSize() != TARGET_POINTER_SIZE))
-                {
-                    defFlag |= GTF_VAR_USEASG;
-                }
-
-                callUser->asyncInfo->HasCurrentThreadDef = true;
             }
         }
 
