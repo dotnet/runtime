@@ -9951,7 +9951,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     }
     else if (tree->IsAsync())
     {
-        copy->asyncInfo = tree->asyncInfo;
+        copy->asyncInfo = new (this, CMK_Async) AsyncCallInfo(*tree->asyncInfo);
     }
     else if (tree->IsTailPrefixedCall())
     {
@@ -13222,6 +13222,10 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "meth hnd";
         case WellKnownArg::AsyncSuspendedIndicator:
             return "async susp";
+        case WellKnownArg::AsyncCurrentThread:
+            return "async thread";
+        case WellKnownArg::AsyncCurrentThreadDef:
+            return "async thread =";
         default:
             return nullptr;
     }
@@ -19607,7 +19611,7 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 
 GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
 {
-    if (!call->IsAsync())
+    if (!call->IsAsync() || !call->GetAsyncInfo().HasSuspensionIndicatorDef)
     {
         return nullptr;
     }
@@ -19619,6 +19623,26 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(Ge
     }
 
     GenTree* node = asyncSuspensionIndicatorArg->GetNode();
+
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
+
+    return node->AsLclVarCommon();
+}
+
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncCurrentThreadLclAddr(GenTreeCall* call)
+{
+    if (!call->IsAsync() || !call->GetAsyncInfo().HasCurrentThreadDef)
+    {
+        return nullptr;
+    }
+
+    CallArg* currentThreadArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncCurrentThreadDef);
+    if (currentThreadArg == nullptr)
+    {
+        return nullptr;
+    }
+
+    GenTree* node = currentThreadArg->GetNode();
 
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 

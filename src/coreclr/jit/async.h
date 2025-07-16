@@ -111,7 +111,7 @@ class AsyncTransformation
                                  unsigned                  stateNum,
                                  const ContinuationLayout& layout);
     void        SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call);
-    void        UpdateThreadObject(BasicBlock* block, GenTreeCall* call);
+    void        UpdateThreadObject(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call);
     void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
                                             const jitstd::vector<LiveLocalInfo>& liveLocals,
                                             BasicBlock*                          resumeBB);
@@ -119,7 +119,6 @@ class AsyncTransformation
                                                   const ContinuationLayout& layout,
                                                   BasicBlock*               resumeBB);
     BasicBlock* RethrowExceptionOnResumption(BasicBlock*               block,
-                                             BasicBlock*               remainder,
                                              unsigned                  resumeObjectArrLclNum,
                                              const ContinuationLayout& layout,
                                              BasicBlock*               resumeBB);

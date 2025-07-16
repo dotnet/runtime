@@ -680,6 +680,10 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "RuntimeMethodHandle";
         case WellKnownArg::AsyncSuspendedIndicator:
             return "AsyncSuspendedIndicator";
+        case WellKnownArg::AsyncCurrentThread:
+            return "AsyncCurrentThread";
+        case WellKnownArg::AsyncCurrentThreadDef:
+            return "AsyncCurrentThreadDef";
     }
 
     return "N/A";
@@ -1921,10 +1925,10 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
-        if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
+        if ((arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator) || (arg.GetWellKnownArg() == WellKnownArg::AsyncCurrentThread) ||
+            (arg.GetWellKnownArg() == WellKnownArg::AsyncCurrentThreadDef))
         {
-            // Represents a definition of a local indicating whether the call
-            // suspended or not. Removed by async transformation.
+            // Represents definitions of locals. Expanded out by async transformation.
             arg.AbiInfo = ABIPassingInformation(comp, 0);
             continue;
         }

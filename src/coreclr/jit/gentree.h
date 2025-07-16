@@ -4362,16 +4362,9 @@ struct AsyncCallInfo
     ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
     bool SaveAndRestoreSynchronizationContextField = false;
-    unsigned ThreadObjectLclNum = BAD_VAR_NUM;
+    bool HasSuspensionIndicatorDef = false;
+    bool HasCurrentThreadDef = false;
     unsigned SynchronizationContextLclNum = BAD_VAR_NUM;
-
-    AsyncCallInfo WithLocals(unsigned threadObjectLclNum, unsigned synchronizationContextLclNum) const
-    {
-        AsyncCallInfo value = *this;
-        value.ThreadObjectLclNum = threadObjectLclNum;
-        value.SynchronizationContextLclNum = synchronizationContextLclNum;
-        return value;
-    }
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4645,6 +4638,8 @@ enum class WellKnownArg : unsigned
     StackArrayLocal,
     RuntimeMethodHandle,
     AsyncSuspendedIndicator,
+    AsyncCurrentThread,
+    AsyncCurrentThreadDef,
 };
 
 #ifdef DEBUG
@@ -5033,7 +5028,7 @@ struct GenTreeCall final : public GenTree
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
         // Used for async calls
-        const AsyncCallInfo* asyncInfo;
+        AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5091,7 +5086,7 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync(const AsyncCallInfo* info)
+    void SetIsAsync(AsyncCallInfo* info)
     {
         assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;

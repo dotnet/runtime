@@ -212,6 +212,7 @@ public:
 
         GenTree* FirstNode() const;
         GenTree* LastNode() const;
+        GenTree* FirstNonNopNode() const;
 
         bool IsEmpty() const;
 
