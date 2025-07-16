@@ -9416,12 +9416,14 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
             constScalar  = comp->gtNewDconNodeF(scalar);
             break;
         }
+
         case TYP_DOUBLE:
         {
             double scalar = cnsVec->gtSimdVal.f64[0];
             constScalar   = comp->gtNewDconNodeD(scalar);
             break;
         }
+
         case TYP_INT:
         case TYP_UINT:
         {
@@ -9429,6 +9431,7 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
             constScalar    = comp->gtNewIconNode(scalar);
             break;
         }
+
         case TYP_LONG:
         case TYP_ULONG:
         {
@@ -9436,8 +9439,11 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
             constScalar    = comp->gtNewLconNode(scalar);
             break;
         }
+
         default:
+        {
             unreached();
+        }
     }
 
     GenTreeHWIntrinsic* broadcastNode =
