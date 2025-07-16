@@ -6032,7 +6032,8 @@ namespace System.Threading.Tasks
                     return Task.CompletedTask;
             
                 case 1:
-                    if (tasks[0] is not Task t)
+                    Task t = task[0];
+                    if (t is null)
                     {
                         ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     }
