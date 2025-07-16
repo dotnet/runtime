@@ -204,7 +204,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
             }
             else
             {
-                *ccmpVec = BitVecOps::MakeEmpty(&ccmpTraits);
+                BitVecOps::ClearD(&ccmpTraits, *ccmpVec);
             }
         }
 
