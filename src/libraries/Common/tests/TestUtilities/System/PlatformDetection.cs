@@ -689,17 +689,6 @@ namespace System
             return false;
         }
 
-        /// <summary>
-        /// Determines if TLS 1.3 is supported for client-only scenarios on the current platform.
-        /// On OSX with Network Framework, TLS 1.3 is only supported for client connections.
-        /// </summary>
-        public static bool SupportsTls13Client => IsOSX && IsNetworkFrameworkEnabled() || SupportsTls13;
-
-        /// <summary>
-        /// Determines if TLS 1.3 server functionality is supported on the current platform.
-        /// Network Framework on OSX currently only supports client-side TLS 1.3.
-        /// </summary>
-        public static bool SupportsTls13Server => SupportsTls13 && !(IsOSX && IsNetworkFrameworkEnabled());
 
         private static bool GetSendsCAListByDefault()
         {
