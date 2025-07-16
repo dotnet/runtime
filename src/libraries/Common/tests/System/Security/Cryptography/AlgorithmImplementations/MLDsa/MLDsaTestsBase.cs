@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Tests
         public void GenerateSignVerifyNoContext(MLDsaAlgorithm algorithm)
         {
             using MLDsa mldsa = GenerateKey(algorithm);
-            byte[] data = [ 1, 2, 3, 4, 5 ];
+            byte[] data = [1, 2, 3, 4, 5];
             byte[] signature = mldsa.SignData(data);
             ExerciseSuccessfulVerify(mldsa, data, signature, []);
         }
@@ -40,9 +40,9 @@ namespace System.Security.Cryptography.Tests
         {
             using MLDsa mldsa = GenerateKey(algorithm);
             byte[] data = [1, 2, 3, 4, 5];
-            byte[] hash = HashInfo.Sha256.GetHash(data);
-            byte[] signature = mldsa.SignPreHash(hash, HashInfo.Sha256.Oid, []);
-            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, []);
+            byte[] hash = HashInfo.Sha512.GetHash(data);
+            byte[] signature = mldsa.SignPreHash(hash, HashInfo.Sha512.Oid, []);
+            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha512.Oid, hash, signature, []);
         }
 
         [Theory]
@@ -50,8 +50,8 @@ namespace System.Security.Cryptography.Tests
         public void GenerateSignVerifyWithContext(MLDsaAlgorithm algorithm)
         {
             using MLDsa mldsa = GenerateKey(algorithm);
-            byte[] context = [ 1, 1, 3, 5, 6 ];
-            byte[] data = [ 1, 2, 3, 4, 5 ];
+            byte[] context = [1, 1, 3, 5, 6];
+            byte[] data = [1, 2, 3, 4, 5];
             byte[] signature = mldsa.SignData(data, context);
 
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
@@ -64,10 +64,10 @@ namespace System.Security.Cryptography.Tests
             using MLDsa mldsa = GenerateKey(algorithm);
             byte[] context = [1, 1, 3, 5, 6];
             byte[] data = [1, 2, 3, 4, 5];
-            byte[] hash = HashInfo.Sha256.GetHash(data);
-            byte[] signature = mldsa.SignPreHash(hash, HashInfo.Sha256.Oid, context);
+            byte[] hash = HashInfo.Sha512.GetHash(data);
+            byte[] signature = mldsa.SignPreHash(hash, HashInfo.Sha512.Oid, context);
 
-            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, context);
+            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha512.Oid, hash, signature, context);
         }
 
         [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
@@ -96,9 +96,9 @@ namespace System.Security.Cryptography.Tests
         public void GenerateSignExportPublicVerifyWithPublicOnly(MLDsaAlgorithm algorithm)
         {
             byte[] publicKey;
-            byte[] data = [ 1, 2, 3, 4, 5 ];
+            byte[] data = [1, 2, 3, 4, 5];
             byte[] signature;
-            byte[] hash = HashInfo.Sha256.GetHash(data);
+            byte[] hash = HashInfo.Sha512.GetHash(data);
             byte[] signaturePreHash;
 
             using (MLDsa mldsa = GenerateKey(algorithm))
@@ -106,8 +106,8 @@ namespace System.Security.Cryptography.Tests
                 signature = mldsa.SignData(data);
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
-                signaturePreHash = mldsa.SignPreHash(hash, HashInfo.Sha256.Oid);
-                AssertExtensions.TrueExpression(mldsa.VerifyPreHash(hash, signaturePreHash, HashInfo.Sha256.Oid));
+                signaturePreHash = mldsa.SignPreHash(hash, HashInfo.Sha512.Oid);
+                AssertExtensions.TrueExpression(mldsa.VerifyPreHash(hash, signaturePreHash, HashInfo.Sha512.Oid));
 
                 publicKey = mldsa.ExportMLDsaPublicKey();
             }
@@ -115,8 +115,8 @@ namespace System.Security.Cryptography.Tests
             using (MLDsa mldsaPub = ImportPublicKey(algorithm, publicKey))
             {
                 ExerciseSuccessfulVerify(mldsaPub, data, signature, []);
-                ExerciseSuccessfulVerifyPreHash(mldsaPub, HashInfo.Sha256.Oid, hash, signaturePreHash, []);
-                AssertExtensions.FalseExpression(mldsaPub.VerifyPreHash(hash, signature, HashInfo.Sha256.Oid));
+                ExerciseSuccessfulVerifyPreHash(mldsaPub, HashInfo.Sha512.Oid, hash, signaturePreHash, []);
+                AssertExtensions.FalseExpression(mldsaPub.VerifyPreHash(hash, signature, HashInfo.Sha512.Oid));
             }
         }
 
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Tests
         public void GenerateExportSecretKeySignAndVerify(MLDsaAlgorithm algorithm)
         {
             byte[] secretKey;
-            byte[] data = [ 1, 2, 3, 4, 5 ];
+            byte[] data = [1, 2, 3, 4, 5];
             byte[] signature;
 
             using (MLDsa mldsaTmp = GenerateKey(algorithm))
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Tests
         public void GenerateExportPrivateSeedSignAndVerify(MLDsaAlgorithm algorithm)
         {
             byte[] privateSeed;
-            byte[] data = [ 1, 2, 3, 4, 5 ];
+            byte[] data = [1, 2, 3, 4, 5];
             byte[] signature;
 
             using (MLDsa mldsaTmp = GenerateKey(algorithm))
@@ -312,6 +312,18 @@ namespace System.Security.Cryptography.Tests
             Assert.DoesNotContain("unknown", ce.Message, StringComparison.OrdinalIgnoreCase);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [MemberData(nameof(UnsupportedWindowsPreHashCombinations))]
+        public void SignPreHash_ThrowsForUnsupportedAlgorithmCombinations(MLDsaAlgorithm algorithm, HashInfo hashInfo)
+        {
+            using MLDsa mldsa = GenerateKey(algorithm);
+            byte[] hash = hashInfo.GetHash([1, 2, 3, 4]);
+
+            CryptographicException ce = Assert.Throws<CryptographicException>(() => mldsa.SignPreHash(hash, hashInfo.Oid));
+            Assert.Contains(algorithm.Name, ce.Message);
+            Assert.Contains(hashInfo.Name.Name, ce.Message);
+        }
+
         protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context)
         {
             ReadOnlySpan<byte> buffer = [0, 1, 2, 3];
@@ -406,6 +418,26 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FalseExpression(mldsa.VerifyPreHash(hash, signature, "1." + hashAlgorithmOid, context));
 
             AssertExtensions.TrueExpression(mldsa.VerifyPreHash(hash, signature, hashAlgorithmOid, context));
+        }
+
+        public static IEnumerable<object[]> UnsupportedWindowsPreHashCombinations()
+        {
+            yield return new object[] { MLDsaAlgorithm.MLDsa44, HashInfo.Md5 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa44, HashInfo.Sha1 };
+
+            yield return new object[] { MLDsaAlgorithm.MLDsa65, HashInfo.Md5 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa65, HashInfo.Sha1 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa65, HashInfo.Sha256 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa65, HashInfo.Sha3_256 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa65, HashInfo.Shake128 };
+
+            yield return new object[] { MLDsaAlgorithm.MLDsa87, HashInfo.Md5 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa87, HashInfo.Sha1 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa87, HashInfo.Sha256 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa87, HashInfo.Sha3_256 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa87, HashInfo.Sha384 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa87, HashInfo.Sha3_384 };
+            yield return new object[] { MLDsaAlgorithm.MLDsa87, HashInfo.Shake128 };
         }
     }
 }

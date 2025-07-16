@@ -1875,7 +1875,46 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface7
     int ISOSDacInterface7.GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetPendingReJITID(methodDesc, pRejitId) : HResults.E_NOTIMPL;
+    {
+        if (methodDesc == 0 || pRejitId == null)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
+            Contracts.ICodeVersions codeVersionsContract = _target.Contracts.CodeVersions;
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            Contracts.ILCodeVersionHandle activeILCodeVersion = codeVersionsContract.GetActiveILCodeVersion(methodDescPtr);
+
+            if (rejitContract.GetRejitState(activeILCodeVersion) == Contracts.RejitState.Requested)
+            {
+                *pRejitId = (int)rejitContract.GetRejitId(activeILCodeVersion).Value;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl7 is not null)
+        {
+            int rejitIdLocal;
+            int hrLocal = _legacyImpl7.GetPendingReJITID(methodDesc, &rejitIdLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pRejitId == rejitIdLocal);
+            }
+        }
+
+#endif
+        return hr;
+    }
     int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData)
         => _legacyImpl7 is not null ? _legacyImpl7.GetReJITInformation(methodDesc, rejitId, pRejitData) : HResults.E_NOTIMPL;
     int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData)
