@@ -82,15 +82,12 @@ namespace System.Text.Json.Nodes
 
             public override T GetValue<T>()
             {
-                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                if (!TryGetValue(out T? value))
                 {
                     ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind.String, typeof(T));
                 }
 
-                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
-
-                // TODO how do we handle null?
-                return JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value), typeInfo)!;
+                return value;
             }
 
             public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
@@ -106,7 +103,7 @@ namespace System.Text.Json.Nodes
 
                 try
                 {
-                    // TODO how do we handle null?
+                    // JsonValue should not represent a null value, so we treat it the same as a deserialization failure.
                     value = JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value), typeInfo)!;
                     return value != null;
                 }
@@ -138,15 +135,12 @@ namespace System.Text.Json.Nodes
 
             public override T GetValue<T>()
             {
-                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                if (!TryGetValue(out T? value))
                 {
                     ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(_value ? JsonValueKind.True : JsonValueKind.False, typeof(T));
                 }
 
-                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
-
-                // TODO how do we handle null?
-                return JsonSerializer.Deserialize(_value ? JsonConstants.TrueValue : JsonConstants.FalseValue, typeInfo)!;
+                return value;
             }
 
             public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
@@ -162,7 +156,7 @@ namespace System.Text.Json.Nodes
 
                 try
                 {
-                    // TODO how do we handle null?
+                    // JsonValue should not represent a null value, so we treat it the same as a deserialization failure.
                     value = JsonSerializer.Deserialize(_value ? JsonConstants.TrueValue : JsonConstants.FalseValue, typeInfo)!;
                     return value != null;
                 }
@@ -191,15 +185,12 @@ namespace System.Text.Json.Nodes
 
             public override T GetValue<T>()
             {
-                if (!_serializerOptions.TryGetTypeInfo(typeof(T), out JsonTypeInfo? ti))
+                if (!TryGetValue(out T? value))
                 {
                     ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind.Number, typeof(T));
                 }
 
-                JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)ti;
-
-                // TODO how do we handle null?
-                return JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value.Bytes), typeInfo)!;
+                return value;
             }
 
             public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
@@ -215,7 +206,7 @@ namespace System.Text.Json.Nodes
 
                 try
                 {
-                    // TODO how do we handle null?
+                    // JsonValue should not represent a null value, so we treat it the same as a deserialization failure.
                     value = JsonSerializer.Deserialize(new ReadOnlySpan<byte>(_value.Bytes), typeInfo)!;
                     return value != null;
                 }
