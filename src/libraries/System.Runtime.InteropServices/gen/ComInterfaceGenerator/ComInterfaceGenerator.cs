@@ -421,26 +421,16 @@ namespace Microsoft.Interop
                     generatorDiagnostics);
             }
 
-            var sharedData = new
-            {
-                SignatureContext = signatureContext,
-                CallConv = callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
-                Direction = direction,
-                ExceptionMarshallingInfo = exceptionMarshallingInfo,
-                DeclaringType = declaringType,
-                Diagnostics = generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray()
-            };
-
             return new IncrementalMethodStubGenerationContext(
-                sharedData.SignatureContext,
+                signatureContext,
                 diagnosticLocations,
-                sharedData.CallConv,
-                new VirtualMethodIndexData(index, ImplicitThisParameter: true, sharedData.Direction, true, ExceptionMarshalling.Com),
-                sharedData.ExceptionMarshallingInfo,
+                callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
+                new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com),
+                exceptionMarshallingInfo,
                 environment.EnvironmentFlags,
                 owningInterface,
-                sharedData.DeclaringType,
-                sharedData.Diagnostics,
+                declaringType,
+                generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
@@ -672,7 +662,7 @@ namespace Microsoft.Interop
             {
                 foreach (ComMethodContext inheritedMethod in interfaceMethods.InheritedMethods)
                 {
-                    TypeSyntax functionPointerType = VirtualMethodPointerStubGenerator.GenerateUnmanagedFunctionPointerTypeForMethod(
+                    FunctionPointerTypeSyntax functionPointerType = VirtualMethodPointerStubGenerator.GenerateUnmanagedFunctionPointerTypeForMethod(
                         inheritedMethod.GenerationContext,
                         ComInterfaceGeneratorHelpers.GetGeneratorResolver);
 
