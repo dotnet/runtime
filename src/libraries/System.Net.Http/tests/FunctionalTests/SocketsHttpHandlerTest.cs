@@ -1709,7 +1709,7 @@ namespace System.Net.Http.Functional.Tests
             if (PlatformDetection.IsAndroid && !(PlatformDetection.IsArm64Process || PlatformDetection.IsX64Process))
             {
                 // https://github.com/dotnet/runtime/issues/77474
-                throw new SkipTestException("This test is runs out of memory on 32-bit Android devices");
+                throw new SkipTestException("This test runs out of memory on 32-bit Android devices");
             }
 
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
