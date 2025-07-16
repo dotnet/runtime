@@ -16,6 +16,8 @@ namespace System.Security.Cryptography
 {
     public sealed class AesCng : Aes, ICngSymmetricAlgorithm
     {
+        private CngKey? _key;
+
         [SupportedOSPlatform("windows")]
         public AesCng()
         {
@@ -38,6 +40,37 @@ namespace System.Security.Cryptography
         public AesCng(string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
             _core = new CngSymmetricAlgorithmCore(this, keyName, provider, openOptions);
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="AesCng"/> class with the specified <see cref="CngKey"/>.
+        /// </summary>
+        /// <param name="key">
+        ///   The key that will be used as input to the cryptographic operations performed by the current object.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="key"/> does not represent an AES key.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     An error occured while performing a cryptographic operation.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Cryptography Next Generation (CNG) is not supported on this system.
+        /// </exception>
+        [SupportedOSPlatform("windows")]
+        public AesCng(CngKey key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            CngKey duplicate = CngHelpers.Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
+            _core = new CngSymmetricAlgorithmCore(this, duplicate);
+            _key = duplicate;
         }
 
         public override byte[] Key
@@ -213,6 +246,12 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
+            if (disposing && _key is not null)
+            {
+                _key.Dispose();
+                _key = null;
+            }
+
             base.Dispose(disposing);
         }
 

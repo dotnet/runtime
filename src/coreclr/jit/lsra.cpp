@@ -138,20 +138,13 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
     }
 #endif // TARGET_64BIT
 #if FEATURE_MULTIREG_RET
-    else if (tree->OperGet() == GT_COPY)
+    else if (tree->OperIs(GT_COPY))
     {
         assert(regIdx == 1);
         GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
         copy->gtOtherRegs[0]      = (regNumberSmall)reg;
     }
 #endif // FEATURE_MULTIREG_RET
-#if FEATURE_ARG_SPLIT
-    else if (tree->OperIsPutArgSplit())
-    {
-        GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
-        putArg->SetRegNumByIdx(reg, regIdx);
-    }
-#endif // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HW_INTRINSICS
     else if (tree->OperIs(GT_HWINTRINSIC))
     {
@@ -7675,8 +7668,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
             noway_assert(!blockRange.IsEmpty());
 
             GenTree* branch = blockRange.LastNode();
-            assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
-                   branch->OperGet() == GT_SWITCH);
+            assert(branch->OperIsConditionalJump() || branch->OperIs(GT_SWITCH_TABLE) || branch->OperIs(GT_SWITCH));
 
             blockRange.InsertBefore(branch, LIR::SeqTree(compiler, simdUpperRestore));
         }
@@ -8647,8 +8639,7 @@ void LinearScan::insertSwap(
             noway_assert(!blockRange.IsEmpty());
 
             GenTree* branch = blockRange.LastNode();
-            assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
-                   branch->OperGet() == GT_SWITCH);
+            assert(branch->OperIsConditionalJump() || branch->OperIs(GT_SWITCH_TABLE) || branch->OperIs(GT_SWITCH));
 
             blockRange.InsertBefore(branch, std::move(swapRange));
         }
@@ -8994,7 +8985,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         // At this point, Lowering has transformed any non-switch-table blocks into
         // cascading ifs.
         GenTree* switchTable = LIR::AsRange(block).LastNode();
-        assert(switchTable != nullptr && switchTable->OperGet() == GT_SWITCH_TABLE);
+        assert(switchTable != nullptr && switchTable->OperIs(GT_SWITCH_TABLE));
 
         consumedRegs = compiler->codeGen->internalRegisters.GetAll(switchTable).GetRegSetForType(IntRegisterType);
         GenTree* op1 = switchTable->gtGetOp1();
@@ -11808,7 +11799,7 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
             return true;
         }
 
-        if (!IsLsraAdded(node) || (node->OperGet() != GT_LCL_VAR))
+        if (!IsLsraAdded(node) || !node->OperIs(GT_LCL_VAR))
         {
             return false;
         }
@@ -12467,7 +12458,7 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
     GenTree* dst = resolutionMove;
     assert(IsResolutionMove(dst));
 
-    if (dst->OperGet() == GT_SWAP)
+    if (dst->OperIs(GT_SWAP))
     {
         GenTreeLclVarCommon* left          = dst->gtGetOp1()->AsLclVarCommon();
         GenTreeLclVarCommon* right         = dst->gtGetOp2()->AsLclVarCommon();
@@ -12502,7 +12493,7 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
     regNumber            dstRegNum = dst->GetRegNum();
     regNumber            srcRegNum;
     GenTreeLclVarCommon* lcl;
-    if (dst->OperGet() == GT_COPY)
+    if (dst->OperIs(GT_COPY))
     {
         lcl       = dst->gtGetOp1()->AsLclVarCommon();
         srcRegNum = lcl->GetRegNum();

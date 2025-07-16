@@ -22,7 +22,7 @@ namespace System.Threading
             SafeWaitHandle = handle;
         }
 
-        private unsafe void CreateEventCore(bool initialState, EventResetMode mode)
+        private void CreateEventCore(bool initialState, EventResetMode mode)
         {
             ValidateMode(mode);
 

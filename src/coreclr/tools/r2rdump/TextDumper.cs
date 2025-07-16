@@ -346,8 +346,8 @@ namespace R2RDump
                     if (!_model.Naked)
                     {
                         uint availableTypesSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
-                        NativeParser availableTypesParser = new NativeParser(_r2r.Image, availableTypesSectionOffset);
-                        NativeHashtable availableTypes = new NativeHashtable(_r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
+                        NativeParser availableTypesParser = new NativeParser(_r2r.ImageReader, availableTypesSectionOffset);
+                        NativeHashtable availableTypes = new NativeHashtable(_r2r.ImageReader, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
                         _writer.WriteLine(availableTypes.ToString());
                     }
 
@@ -364,7 +364,7 @@ namespace R2RDump
                 case ReadyToRunSectionType.MethodDefEntryPoints:
                     if (!_model.Naked)
                     {
-                        NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
+                        NativeArray methodEntryPoints = new NativeArray(_r2r.ImageReader, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
                         _writer.Write(methodEntryPoints.ToString());
                     }
 
@@ -382,8 +382,8 @@ namespace R2RDump
                     if (!_model.Naked)
                     {
                         uint instanceSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
-                        NativeParser instanceParser = new NativeParser(_r2r.Image, instanceSectionOffset);
-                        NativeHashtable instMethodEntryPoints = new NativeHashtable(_r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
+                        NativeParser instanceParser = new NativeParser(_r2r.ImageReader, instanceSectionOffset);
+                        NativeHashtable instMethodEntryPoints = new NativeHashtable(_r2r.ImageReader, instanceParser, (uint)(instanceSectionOffset + section.Size));
                         _writer.Write(instMethodEntryPoints.ToString());
                         _writer.WriteLine();
                     }
@@ -400,13 +400,13 @@ namespace R2RDump
                     _writer.WriteLine("-----------------------------------------");
                     while (rtfOffset < rtfEndOffset)
                     {
-                        int startRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
+                        int startRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
                         int endRva = -1;
                         if (_r2r.Machine == Machine.Amd64)
                         {
-                            endRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
+                            endRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
                         }
-                        int unwindRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
+                        int unwindRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
                         string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
                         _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
                         rtfIndex++;
@@ -488,7 +488,7 @@ namespace R2RDump
                 case ReadyToRunSectionType.AttributePresence:
                     int attributesStartOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int attributesEndOffset = attributesStartOffset + section.Size;
-                    NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.Image, attributesStartOffset, attributesEndOffset);
+                    NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.ImageReader, attributesStartOffset, attributesEndOffset);
                     _writer.WriteLine("Attribute presence filter");
                     _writer.WriteLine(attributes.ToString());
                     break;
@@ -524,80 +524,80 @@ namespace R2RDump
                     int hotColdMapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     for (int i = 0; i < count; i++)
                     {
-                        _writer.Write(NativeReader.ReadInt32(_r2r.Image, ref hotColdMapOffset));
+                        _writer.Write(_r2r.ImageReader.ReadInt32(ref hotColdMapOffset));
                         _writer.Write(",");
-                        _writer.WriteLine(NativeReader.ReadInt32(_r2r.Image, ref hotColdMapOffset));
+                        _writer.WriteLine(_r2r.ImageReader.ReadInt32(ref hotColdMapOffset));
                     }
                     break;
                 case ReadyToRunSectionType.MethodIsGenericMap:
+                {
+                    int mapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int mapDone = section.Size + mapOffset;
+                    int countMethods = _r2r.ImageReader.ReadInt32(ref mapOffset);
+                    int curMethod = 1;
+                    while ((curMethod <= countMethods) && mapDone > mapOffset)
                     {
-                        int mapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
-                        int mapDone = section.Size + mapOffset;
-                        int countMethods = NativeReader.ReadInt32(_r2r.Image, ref mapOffset);
-                        int curMethod = 1;
-                        while ((curMethod <= countMethods) && mapDone > mapOffset)
+                        byte curByte = _r2r.ImageReader.ReadByte(ref mapOffset);
+                        for (int i = 0; i < 8 && (curMethod <= countMethods); i++)
                         {
-                            byte curByte = NativeReader.ReadByte(_r2r.Image, ref mapOffset);
-                            for (int i = 0; i < 8 && (curMethod <= countMethods); i++)
-                            {
-                                bool isGeneric = (curByte & 0x80) == 0x80;
-                                _writer.WriteLine($"{curMethod | 0x06000000:x8} : {isGeneric}");
-                                curByte <<= 1;
-                                curMethod++;
-                            }
+                            bool isGeneric = (curByte & 0x80) == 0x80;
+                            _writer.WriteLine($"{curMethod | 0x06000000:x8} : {isGeneric}");
+                            curByte <<= 1;
+                            curMethod++;
                         }
-                        if (curMethod != (countMethods + 1))
-                        {
-                            Program.WriteWarning("MethodIsGenericMap malformed");
-                            System.Diagnostics.Debug.Fail("MethodIsGenericMap malformed");
-                        }
-                        break;
                     }
-                case ReadyToRunSectionType.EnclosingTypeMap:
+                    if (curMethod != (countMethods + 1))
                     {
-                        int mapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
-                        int mapDone = section.Size + mapOffset;
-                        uint countTypes = checked((uint)((section.Size / 2 - 1))); // 2 bytes per nested type. This data structure is only used for IL images where there are <= 0xFFFE types.
-                        if (countTypes != NativeReader.ReadUInt16(_r2r.Image, ref mapOffset))
+                        Program.WriteWarning("MethodIsGenericMap malformed");
+                        System.Diagnostics.Debug.Fail("MethodIsGenericMap malformed");
+                    }
+                    break;
+                }
+                case ReadyToRunSectionType.EnclosingTypeMap:
+                {
+                    int mapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int mapDone = section.Size + mapOffset;
+                    uint countTypes = checked((uint)((section.Size / 2 - 1))); // 2 bytes per nested type. This data structure is only used for IL images where there are <= 0xFFFE types.
+                    if (countTypes != _r2r.ImageReader.ReadUInt16(ref mapOffset))
+                    {
+                        Program.WriteWarning("EnclosingTypeMap malformed");
+                        System.Diagnostics.Debug.Fail("EnclosingTypeMap malformed");
+                    }
+                    int curType = 1;
+                    while (curType <= (countTypes + 1))
+                    {
+                        _writer.WriteLine($"{curType | 0x02000000:x8} : {_r2r.ImageReader.ReadUInt16(ref mapOffset) | 0x02000000:x8}");
+                        curType++;
+                    }
+                    break;
+                }
+                case ReadyToRunSectionType.TypeGenericInfoMap:
+                {
+                    int mapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int mapDone = section.Size + mapOffset;
+                    int countTypes = _r2r.ImageReader.ReadInt32(ref mapOffset);
+                    int curType = 1;
+                    while ((curType <= countTypes) && mapDone > mapOffset)
+                    {
+                        byte curByte = _r2r.ImageReader.ReadByte(ref mapOffset);
+                        for (int i = 0; i < 2 && (curType <= countTypes); i++)
                         {
-                            Program.WriteWarning("EnclosingTypeMap malformed");
-                            System.Diagnostics.Debug.Fail("EnclosingTypeMap malformed");
-                        }
-                        int curType = 1;
-                        while (curType <= (countTypes + 1))
-                        {
-                            _writer.WriteLine($"{curType | 0x02000000:x8} : {NativeReader.ReadUInt16(_r2r.Image, ref mapOffset) | 0x02000000:x8}");
+                            var genericInfo = (ReadyToRunTypeGenericInfo)((curByte & 0xF0) >> 4);
+                            bool hasConstraints = genericInfo.HasFlag(ReadyToRunTypeGenericInfo.HasConstraints);
+                            bool hasVariance = genericInfo.HasFlag(ReadyToRunTypeGenericInfo.HasVariance);
+                            var genericCount = (ReadyToRunGenericInfoGenericCount)(genericInfo & ReadyToRunTypeGenericInfo.GenericCountMask);
+                            _writer.WriteLine($"{curType | 0x06000000:x8} : GenericArgumentCount: {genericCount} HasVariance {hasVariance} HasConstraints {hasConstraints}");
+                            curByte <<= 4;
                             curType++;
                         }
-                        break;
                     }
-                case ReadyToRunSectionType.TypeGenericInfoMap:
+                    if (curType != (countTypes + 1))
                     {
-                        int mapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
-                        int mapDone = section.Size + mapOffset;
-                        int countTypes = NativeReader.ReadInt32(_r2r.Image, ref mapOffset);
-                        int curType = 1;
-                        while ((curType <= countTypes) && mapDone > mapOffset)
-                        {
-                            byte curByte = NativeReader.ReadByte(_r2r.Image, ref mapOffset);
-                            for (int i = 0; i < 2 && (curType <= countTypes); i++)
-                            {
-                                var genericInfo = (ReadyToRunTypeGenericInfo)((curByte & 0xF0) >> 4);
-                                bool hasConstraints = genericInfo.HasFlag(ReadyToRunTypeGenericInfo.HasConstraints);
-                                bool hasVariance = genericInfo.HasFlag(ReadyToRunTypeGenericInfo.HasVariance);
-                                var genericCount = (ReadyToRunGenericInfoGenericCount)(genericInfo & ReadyToRunTypeGenericInfo.GenericCountMask);
-                                _writer.WriteLine($"{curType | 0x06000000:x8} : GenericArgumentCount: {genericCount} HasVariance {hasVariance} HasConstraints {hasConstraints}");
-                                curByte <<= 4;
-                                curType++;
-                            }
-                        }
-                        if (curType != (countTypes + 1))
-                        {
-                            Program.WriteWarning("TypeGenericInfoMap malformed");
-                            System.Diagnostics.Debug.Fail("TypeGenericInfoMap malformed");
-                        }
-                        break;
+                        Program.WriteWarning("TypeGenericInfoMap malformed");
+                        System.Diagnostics.Debug.Fail("TypeGenericInfoMap malformed");
                     }
+                    break;
+                }
 
                 default:
                     _writer.WriteLine("Unsupported section type {0}", section.Type);
@@ -619,7 +619,8 @@ namespace R2RDump
             var sortedFixupCounts = _r2r.Methods.Where(m => m.Fixups != null)
                 .SelectMany(m => m.Fixups)
                 .GroupBy(f => f.Signature.FixupKind)
-                .Select(group => new {
+                .Select(group => new
+                {
                     FixupKind = group.Key,
                     Count = group.Count()
                 }).OrderByDescending(x => x.Count);

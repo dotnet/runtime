@@ -128,7 +128,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     // Use realpath to find the path of the host, resolving any symlinks.
     // hostfxr (for dotnet) and the app dll (for apphost) are found relative to the host.
     pal::string_t host_path;
-    if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
+    if (!pal::get_own_executable_path(&host_path) || !pal::fullpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path.c_str());
         return StatusCode::CurrentHostFindFailure;
@@ -187,17 +187,17 @@ int exe_start(const int argc, const pal::char_t* argv[])
     if (argc <= 1)
     {
         trace::println();
-        trace::println(_X("Usage: dotnet [options]"));
         trace::println(_X("Usage: dotnet [path-to-application]"));
-        trace::println();
-        trace::println(_X("Options:"));
-        trace::println(_X("  -h|--help         Display help."));
-        trace::println(_X("  --info            Display .NET information."));
-        trace::println(_X("  --list-sdks       Display the installed SDKs."));
-        trace::println(_X("  --list-runtimes   Display the installed runtimes."));
+        trace::println(_X("Usage: dotnet [commands]"));
         trace::println();
         trace::println(_X("path-to-application:"));
         trace::println(_X("  The path to an application .dll file to execute."));
+        trace::println();
+        trace::println(_X("commands:"));
+        trace::println(_X("  -h|--help                         Display help."));
+        trace::println(_X("  --info                            Display .NET information."));
+        trace::println(_X("  --list-runtimes [--arch <arch>]   Display the installed runtimes matching the host or specified architecture. Example architectures: arm64, x64, x86."));
+        trace::println(_X("  --list-sdks [--arch <arch>]       Display the installed SDKs matching the host or specified architecture. Example architectures: arm64, x64, x86."));
         return StatusCode::InvalidArgFailure;
     }
 
@@ -213,6 +213,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     int rc = fxr.status_code();
     if (rc != StatusCode::Success)
     {
+        trace::error(_X("Failed to resolve %s [%s]. Error code: 0x%x"), LIBFXR_NAME, fxr.fxr_path().empty() ? _X("not found") : fxr.fxr_path().c_str(), rc);
         return rc;
     }
 

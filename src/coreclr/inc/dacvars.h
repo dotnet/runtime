@@ -180,7 +180,7 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 
 DEFINE_DACVAR(bool, dac__g_fProcessDetach, ::g_fProcessDetach)
-DEFINE_DACVAR(DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
+DEFINE_DACVAR_VOLATILE(DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
 
 DEFINE_DACVAR(ULONG, dac__g_CORDebuggerControlFlags, ::g_CORDebuggerControlFlags)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pDebugger, ::g_pDebugger)
@@ -235,6 +235,8 @@ DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 
 DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
+
+DEFINE_DACVAR(CDacPlatformMetadata, dac__g_cdacPlatformMetadata, ::g_cdacPlatformMetadata)
 
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_NO_DUMP

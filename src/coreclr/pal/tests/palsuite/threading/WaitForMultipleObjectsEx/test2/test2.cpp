@@ -176,7 +176,7 @@ DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFMO_test2 = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+    ThreadWaitDelta_WFMO_test2 = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     ret = CloseHandle(Semaphore);
     if (!ret)

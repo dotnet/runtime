@@ -526,16 +526,6 @@ HRESULT DbgTransportSession::WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, 
     return sMessage.m_sHeader.TypeSpecificData.MemoryAccess.m_hrResult;
 }
 
-HRESULT DbgTransportSession::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
-{
-    DbgTransportLog(LC_Requests, "Sending 'VirtualUnwind'");
-    DBG_TRANSPORT_INC_STAT(SentVirtualUnwind);
-
-    Message sMessage;
-    sMessage.Init(MT_VirtualUnwind, context, contextSize, context, contextSize);
-    return SendRequestMessageAndWait(&sMessage);
-}
-
 // Read and write the debugger control block on the LS from the RS.
 HRESULT DbgTransportSession::GetDCB(DebuggerIPCControlBlock *pDCB)
 {
@@ -957,7 +947,6 @@ void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
             MessageType eType = pMsg->m_sHeader.m_eType;
             if (eType != MT_ReadMemory &&
                 eType != MT_WriteMemory &&
-                eType != MT_VirtualUnwind &&
                 eType != MT_GetDCB &&
                 eType != MT_SetDCB &&
                 eType != MT_GetAppDomainCB)
@@ -1953,33 +1942,6 @@ void DbgTransportSession::TransportWorker()
 #endif // RIGHT_SIDE_COMPILE
                 break;
 
-            case MT_VirtualUnwind:
-#ifdef RIGHT_SIDE_COMPILE
-                if (!ProcessReply(&sReceiveHeader))
-                    HANDLE_TRANSIENT_ERROR();
-#else // RIGHT_SIDE_COMPILE
-                if (sReceiveHeader.m_cbDataBlock != (DWORD)sizeof(frameContext))
-                {
-                    _ASSERTE(!"Inconsistent VirtualUnwind request");
-                    HANDLE_CRITICAL_ERROR();
-                }
-
-                if (!ReceiveBlock((PBYTE)&frameContext, sizeof(frameContext)))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                if (!PAL_VirtualUnwind(&frameContext, NULL))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                fReplyRequired = true;
-                pbOptReplyData = (PBYTE)&frameContext;
-                cbOptReplyData = sizeof(frameContext);
-#endif // RIGHT_SIDE_COMPILE
-                break;
-
             case MT_GetDCB:
 #ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
@@ -2125,7 +2087,6 @@ void DbgTransportSession::TransportWorker()
 #ifdef RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
             case MT_GetAppDomainCB:
@@ -2135,7 +2096,6 @@ void DbgTransportSession::TransportWorker()
 #else // RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
             case MT_GetAppDomainCB:
@@ -2537,8 +2497,6 @@ const char *DbgTransportSession::MessageName(MessageType eType)
         return "ReadMemory";
     case MT_WriteMemory:
         return "WriteMemory";
-    case MT_VirtualUnwind:
-        return "VirtualUnwind";
     case MT_GetDCB:
         return "GetDCB";
     case MT_SetDCB:
@@ -2595,10 +2553,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
         return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind' reply");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
-        return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB' reply");
         DBG_TRANSPORT_INC_STAT(ReceivedGetDCB);
@@ -2623,10 +2577,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (PBYTE)pHeader->TypeSpecificData.MemoryAccess.m_pbLeftSideBuffer,
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
-        return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind'");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
         return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB'");

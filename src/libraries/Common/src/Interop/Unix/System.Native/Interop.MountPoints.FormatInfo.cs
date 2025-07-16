@@ -33,44 +33,56 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
         internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out MountPointInformation mpi);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
-        internal static unsafe partial int GetFormatInfoForMountPoint(
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
-            byte* formatNameBuffer,
-            int bufferLength,
-            long* formatType);
-
-        internal static int GetFormatInfoForMountPoint(string name, out string format)
+        internal static unsafe Error GetFileSystemTypeNameForMountPoint(string name, out string format)
         {
-            return GetFormatInfoForMountPoint(name, out format, out _);
-        }
+            if (OperatingSystem.IsLinux())
+            {
+                // Canonicalize and resolve symbolic links.
+                string? path = Sys.RealPath(name);
+                if (path is null)
+                {
+                    format = "";
+                    return GetLastError();
+                }
 
-        internal static int GetFormatInfoForMountPoint(string name, out DriveType type)
-        {
-            return GetFormatInfoForMountPoint(name, out _, out type);
-        }
+                Error error = procfs.GetFileSystemTypeForRealPath(path, out format);
 
-        private static unsafe int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
-        {
+                // When there is no procfs mountinfo fall through.
+                if (error != Error.ENOTSUP)
+                {
+                    return error;
+                }
+            }
+
+            long formatType;
             byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
-            long numericFormat;
-            int result = GetFormatInfoForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
+            int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &formatType);
             if (result == 0)
             {
-                // Check if we have a numeric answer or string
-                format = numericFormat != -1 ?
-                    Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) ?? string.Empty :
-                    Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!;
-                type = GetDriveType(format);
+                format = formatType == -1 ? Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!
+                                          : (Enum.GetName(typeof(UnixFileSystemTypes), formatType) ?? "");
+                return Error.SUCCESS;
             }
             else
             {
                 format = string.Empty;
-                type = DriveType.Unknown;
+                return GetLastError();
             }
-
-            return result;
         }
+
+        internal static Error GetDriveTypeForMountPoint(string name, out DriveType type)
+        {
+            Error error = GetFileSystemTypeNameForMountPoint(name, out string format);
+            type = error == Error.SUCCESS ? GetDriveType(format) : DriveType.Unknown;
+            return error;
+        }
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFileSystemTypeNameForMountPoint", SetLastError = true)]
+        private static unsafe partial int GetFileSystemTypeNameForMountPoint(
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
+            byte* formatNameBuffer,
+            int bufferLength,
+            long* formatType);
 
         /// <summary>Categorizes a file system name into a drive type.</summary>
         /// <param name="fileSystemName">The name to categorize.</param>
@@ -261,8 +273,10 @@ internal static partial class Interop
                 case "aptfs":
                 case "avfs":
                 case "bdev":
+                case "bpf":
                 case "binfmt_misc":
                 case "cgroup":
+                case "cgroup2":
                 case "cgroupfs":
                 case "cgroup2fs":
                 case "configfs":
@@ -280,6 +294,7 @@ internal static partial class Interop
                 case "fd":
                 case "fdesc":
                 case "fuse.gvfsd-fuse":
+                case "fuse.portal":
                 case "fusectl":
                 case "futexfs":
                 case "hugetlbfs":

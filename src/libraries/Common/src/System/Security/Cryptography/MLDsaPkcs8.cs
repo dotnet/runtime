@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
@@ -66,6 +69,75 @@ namespace System.Security.Cryptography
                 if (rented is not null)
                 {
                     CryptoPool.Return(rented, written);
+                }
+            }
+        }
+
+        // TODO: Remove this once Windows moves to the new format.
+        internal static unsafe byte[] ConvertToOldChoicelessFormat(ReadOnlySpan<byte> pkcs8WithChoice)
+        {
+            fixed (byte* ptr = &MemoryMarshal.GetReference(pkcs8WithChoice))
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, pkcs8WithChoice.Length))
+                {
+                    PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                    AlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
+
+                    if (privateAlgorithm.Algorithm is not (Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87))
+                    {
+                        Debug.Fail("Unexpected algorithm");
+                        throw new CryptographicException();
+                    }
+
+                    MLDsaPrivateKeyAsn mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
+                    privateKeyInfo.PrivateKey = mldsaPrivateKeyAsn.Seed
+                        ?? mldsaPrivateKeyAsn.ExpandedKey.GetValueOrDefault(); // Old format does not support having both
+
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                    privateKeyInfo.Encode(writer);
+                    return writer.Encode();
+                }
+            }
+        }
+
+        // TODO: Remove this once Windows moves to the new format.
+        internal static unsafe byte[] ConvertFromOldChoicelessFormat(ReadOnlySpan<byte> pkcs8WithoutChoice)
+        {
+            fixed (byte* ptr = &MemoryMarshal.GetReference(pkcs8WithoutChoice))
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, pkcs8WithoutChoice.Length))
+                {
+                    PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                    AlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
+
+                    int seedSize = privateAlgorithm.Algorithm switch
+                    {
+                        Oids.MLDsa44 => MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes,
+                        Oids.MLDsa65 => MLDsaAlgorithm.MLDsa65.PrivateSeedSizeInBytes,
+                        Oids.MLDsa87 => MLDsaAlgorithm.MLDsa87.PrivateSeedSizeInBytes,
+                        _ => throw new CryptographicException(),
+                    };
+
+                    ReadOnlyMemory<byte> key = privateKeyInfo.PrivateKey;
+
+                    MLDsaPrivateKeyAsn mldsaPrivateKeyAsn = default;
+
+                    if (key.Length == seedSize)
+                    {
+                        mldsaPrivateKeyAsn.Seed = key;
+                    }
+                    else
+                    {
+                        mldsaPrivateKeyAsn.ExpandedKey = key;
+                    }
+
+                    AsnWriter writer = new(AsnEncodingRules.DER);
+                    mldsaPrivateKeyAsn.Encode(writer);
+                    privateKeyInfo.PrivateKey = writer.Encode();
+
+                    writer = new AsnWriter(AsnEncodingRules.DER);
+                    privateKeyInfo.Encode(writer);
+                    return writer.Encode();
                 }
             }
         }

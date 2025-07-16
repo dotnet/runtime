@@ -171,7 +171,7 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
     }
 
 
-    ThreadWaitDelta_WFSOExSemaphoreTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+    ThreadWaitDelta_WFSOExSemaphoreTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     ret = CloseHandle(hSemaphore);
     if (!ret)

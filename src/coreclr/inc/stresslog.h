@@ -75,7 +75,7 @@
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
-                StressLog::LogMsg(facility, level, 0, msg);                         \
+                StressLog::LogMsg(level, facility, 0, msg);                         \
             } while(0)
 
 #define STRESS_LOG1(facility, level, msg, data1) \

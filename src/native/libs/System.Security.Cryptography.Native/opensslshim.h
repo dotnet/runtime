@@ -132,6 +132,10 @@ c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_ONLY == 1);
 c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 #endif
 
+#ifndef OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING
+#define OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING "message-encoding"
+#endif
+
 #ifndef OSSL_PKEY_PARAM_ML_DSA_SEED
 #define OSSL_PKEY_PARAM_ML_DSA_SEED "seed"
 #endif
@@ -718,6 +722,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_do_handshake) \
     REQUIRED_FUNCTION(SSL_free) \
     REQUIRED_FUNCTION(SSL_get_ciphers) \
+    REQUIRED_FUNCTION(SSL_get_sigalgs) \
     REQUIRED_FUNCTION(SSL_get_client_CA_list) \
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
@@ -1293,6 +1298,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_do_handshake SSL_do_handshake_ptr
 #define SSL_free SSL_free_ptr
 #define SSL_get_ciphers SSL_get_ciphers_ptr
+#define SSL_get_sigalgs SSL_get_sigalgs_ptr
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
 #define SSL_get_certificate SSL_get_certificate_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr

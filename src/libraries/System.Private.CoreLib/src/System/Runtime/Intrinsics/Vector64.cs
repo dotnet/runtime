@@ -170,11 +170,7 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<TTo>();
 
-#if MONO
-            return Unsafe.As<Vector64<TFrom>, Vector64<TTo>>(ref vector);
-#else
             return Unsafe.BitCast<Vector64<TFrom>, Vector64<TTo>>(vector);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see langword="Vector64&lt;Byte&gt;" />.</summary>

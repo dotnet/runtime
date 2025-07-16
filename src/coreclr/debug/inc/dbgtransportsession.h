@@ -421,7 +421,6 @@ public:
     // Read and write memory on the LS from the RS.
     HRESULT ReadMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
     HRESULT WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
-    HRESULT VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context);
 
     // Read and write the debugger control block on the LS from the RS.
     HRESULT GetDCB(DebuggerIPCControlBlock *pDCB);
@@ -468,7 +467,6 @@ private:
         // Misc management operations.
         MT_ReadMemory,      // RS <-> LS : RS wants to read LS memory block (or LS is replying to such a request)
         MT_WriteMemory,     // RS <-> LS : RS wants to write LS memory block (or LS is replying to such a request)
-        MT_VirtualUnwind,   // RS <-> LS : RS wants to LS unwind a stack frame (or LS is replying to such a request)
         MT_GetDCB,          // RS <-> LS : RS wants to read LS DCB (or LS is replying to such a request)
         MT_SetDCB,          // RS <-> LS : RS wants to write LS DCB (or LS is replying to such a request)
         MT_GetAppDomainCB,  // RS <-> LS : RS wants to read LS AppDomainCB (or LS is replying to such a request)
@@ -589,7 +587,6 @@ private:
         LONG        m_cSentEvent;
         LONG        m_cSentReadMemory;
         LONG        m_cSentWriteMemory;
-        LONG        m_cSentVirtualUnwind;
         LONG        m_cSentGetDCB;
         LONG        m_cSentSetDCB;
         LONG        m_cSentGetAppDomainCB;
@@ -604,7 +601,6 @@ private:
         LONG        m_cReceivedEvent;
         LONG        m_cReceivedReadMemory;
         LONG        m_cReceivedWriteMemory;
-        LONG        m_cReceivedVirtualUnwind;
         LONG        m_cReceivedGetDCB;
         LONG        m_cReceivedSetDCB;
         LONG        m_cReceivedGetAppDomainCB;
