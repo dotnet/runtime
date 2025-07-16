@@ -12,56 +12,14 @@ namespace System.Net
     internal static partial class CertificateValidationPal
     {
         internal static SslPolicyErrors VerifyCertificateProperties(
-            SafeDeleteContext securityContext,
+            SafeDeleteContext? _ /*securityContext*/,
             X509Chain chain,
-            X509Certificate2? remoteCertificate,
+            X509Certificate2 remoteCertificate,
             bool checkCertName,
             bool isServer,
             string? hostName)
         {
-            SslPolicyErrors errors = SslPolicyErrors.None;
-
-            if (remoteCertificate == null)
-            {
-                errors |= SslPolicyErrors.RemoteCertificateNotAvailable;
-            }
-            else
-            {
-                if (!chain.Build(remoteCertificate))
-                {
-                    errors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                }
-
-                if (!isServer && checkCertName)
-                {
-                    SafeX509ChainHandle chainHandle = securityContext switch
-                    {
-                        SafeDeleteNwContext nwContext => nwContext.PeerX509ChainHandle!,
-                        SafeDeleteSslContext sslContext => Interop.AppleCrypto.SslCopyCertChain(sslContext.SslContext),
-                        _ => throw new ArgumentException("Invalid context type", nameof(securityContext))
-                    };
-
-                    try
-                    {
-                        if (!Interop.AppleCrypto.SslCheckHostnameMatch(chainHandle, hostName!, remoteCertificate.NotBefore, out int osStatus))
-                        {
-                            errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
-
-                            if (NetEventSource.Log.IsEnabled())
-                                NetEventSource.Error(securityContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
-                        }
-                    }
-                    finally
-                    {
-                        if (securityContext is SafeDeleteSslContext)
-                        {
-                            chainHandle.Dispose();
-                        }
-                    }
-                }
-            }
-
-            return errors;
+            return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName, Span<byte>.Empty);
         }
 
         private static X509Certificate2? GetRemoteCertificate(

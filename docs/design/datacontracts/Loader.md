@@ -52,9 +52,11 @@ record struct ModuleLookupTables(
 ```
 
 ``` csharp
-ModuleHandle GetModuleHandle(TargetPointer module);
-IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
+ModuleHandle GetModuleHandleFromModulePtr(TargetPointer module);
+ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
+IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
+TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
@@ -146,12 +148,18 @@ private enum ModuleFlags_1 : uint
 
 ### Method Implementations
 ``` csharp
-ModuleHandle GetModuleHandle(TargetPointer modulePointer)
+ModuleHandle GetModuleHandleFromModulePtr(TargetPointer modulePointer)
 {
     return new ModuleHandle(modulePointer);
 }
 
-IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer)
+{
+    Data.Assembly assembly = // read Assembly object at assemblyPointer
+    return new ModuleHandle(assembly.Module);
+}
+
+IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
 {
     if (appDomain == TargetPointer.Null) throw new ArgumentException("appDomain must not be null");
 
@@ -253,6 +261,11 @@ TargetPointer GetRootAssembly()
     TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
     AppDomain appDomain = // read AppDomain object starting at appDomainPointer
     return appDomain.RootAssembly;
+}
+
+TargetPointer ILoader.GetModule(ModuleHandle handle)
+{
+    return handle.Address;
 }
 
 TargetPointer GetAssembly(ModuleHandle handle)

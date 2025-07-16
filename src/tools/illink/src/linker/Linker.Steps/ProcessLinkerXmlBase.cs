@@ -215,7 +215,7 @@ namespace Mono.Linker.Steps
 
         void MatchType(TypeDefinition type, Regex regex, XPathNavigator nav)
         {
-            if (regex.Match(type.FullName).Success)
+            if (regex.IsMatch(type.FullName))
                 ProcessType(type, nav);
 
             if (!type.HasNestedTypes)
@@ -238,7 +238,7 @@ namespace Mono.Linker.Steps
             {
                 foreach (var exported in assembly.MainModule.ExportedTypes)
                 {
-                    if (regex.Match(exported.FullName).Success)
+                    if (regex.IsMatch(exported.FullName))
                     {
                         var type = ProcessExportedType(exported, assembly, nav);
                         if (type != null)

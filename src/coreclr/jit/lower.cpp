@@ -150,34 +150,7 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 {
-    assert((node != nullptr) && (endExclusive != nullptr));
-
-    // Quick early-out for unary cases
-    //
-    if (node->gtNext == endExclusive)
-    {
-        return true;
-    }
-
-    if (node->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, node);
-
-    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirInvariantInRange(comp, node, endExclusive);
 }
 
 //------------------------------------------------------------------------
@@ -196,42 +169,7 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
 {
-    assert((node != nullptr) && (endExclusive != nullptr));
-
-    if (ignoreNode == nullptr)
-    {
-        return IsInvariantInRange(node, endExclusive);
-    }
-
-    if ((node->gtNext == endExclusive) || ((node->gtNext == ignoreNode) && (node->gtNext->gtNext == endExclusive)))
-    {
-        return true;
-    }
-
-    if (node->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, node);
-
-    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        if (cur == ignoreNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirInvariantInRange(comp, node, endExclusive, ignoreNode);
 }
 
 //------------------------------------------------------------------------
@@ -258,50 +196,7 @@ bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart,
                                        GenTree* endExclusive,
                                        GenTree* ignoreNode) const
 {
-    assert((rangeStart != nullptr) && (rangeEnd != nullptr));
-
-    if ((rangeEnd->gtNext == endExclusive) ||
-        ((ignoreNode != nullptr) && (rangeEnd->gtNext == ignoreNode) && (rangeEnd->gtNext->gtNext == endExclusive)))
-    {
-        return true;
-    }
-
-    if (rangeStart->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    GenTree* cur = rangeStart;
-    while (true)
-    {
-        m_scratchSideEffects.AddNode(comp, cur);
-
-        if (cur == rangeEnd)
-        {
-            break;
-        }
-
-        cur = cur->gtNext;
-        assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
-    }
-
-    for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        if (cur == ignoreNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirRangeInvariantInRange(comp, rangeStart, rangeEnd, endExclusive, ignoreNode);
 }
 
 //------------------------------------------------------------------------
@@ -788,6 +683,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_RETURN_SUSPEND:
             LowerReturnSuspend(node);
             break;
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+        case GT_CNS_MSK:
+            return LowerCnsMask(node->AsMskCon());
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
 
         default:
             break;
@@ -1333,10 +1233,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         LIR::Range& switchBlockRange = LIR::AsRange(afterDefaultCondBlock);
         switchBlockRange.InsertAtEnd(switchValue);
 
-        // We are going to modify the switch, invalidate any desc map.
-        //
-        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
-
         // Try generating a bit test based switch first,
         // if that's not possible a jump table based switch will be generated.
         if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue,
@@ -1358,7 +1254,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             GenTree* switchJump  = comp->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, switchValue, switchTable);
             switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
 
-            // this block no longer branches to the default block
+            // This block no longer has a default switch case.
+            // If no other cases branch to this successor, remove it from the switch map entry.
+            if (defaultEdge->getDupCount() == 0)
+            {
+                comp->fgRemoveSuccFromSwitchDescMapEntry(afterDefaultCondBlock, defaultEdge);
+            }
+
             afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
 
             // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
@@ -1419,6 +1321,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                     edge->setLikelihood(newLikelihood);
                 }
             }
+        }
+        else
+        {
+            // 'afterDefaultCondBlock' is no longer a switch block. Remove its switch map entry.
+            comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
         }
     }
 
@@ -5874,7 +5781,7 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
             {
                 JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
                         Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
-                node->AsCall()->SetIsAsync();
+                node->AsCall()->SetIsAsync(new (comp, CMK_Async) AsyncCallInfo);
             }
 
             BlockRange().Remove(asyncCont);
@@ -9797,7 +9704,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             LIR::Use nodeUse;
             BlockRange().TryGetUse(node, &nodeUse);
             GenTree* nodeClone = comp->gtNewLclvNode(nodeUse.ReplaceWithLclVar(comp), genActualType(node));
-            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone, comp->compCurBB);
+            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone);
             BlockRange().InsertAfter(nodeUse.Def(), nodeClone, nullcheck);
             LowerNode(nullcheck);
         }
@@ -11250,7 +11157,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
     {
-        comp->gtChangeOperToNullCheck(ind, block);
+        comp->gtChangeOperToNullCheck(ind);
         ind->ClearUnusedValue();
     }
     else if (!useNullCheck && !ind->OperIs(GT_IND))

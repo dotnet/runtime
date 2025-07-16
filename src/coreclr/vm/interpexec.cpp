@@ -7,11 +7,12 @@
 #include "gcenv.h"
 #include "interpexec.h"
 #include "callstubgenerator.h"
+#include "frames.h"
 
 // for numeric_limits
 #include <limits>
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     CONTRACTL
     {
@@ -44,7 +45,8 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
+    // Interpreter-FIXME: Potential race condition if a single CallStubHeader is reused for multiple targets.
+    pHeader->SetTarget(target); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -163,21 +165,26 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
 {
     size_t helperDirectOrIndirect = (size_t)dataItem;
-    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-        return *(THelper *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+    if (helperDirectOrIndirect & INTERP_DIRECT_HELPER_TAG)
+        // Clear the direct flag and then raise the thumb bit as needed
+        return (THelper)PINSTRToPCODE((TADDR)(helperDirectOrIndirect & ~INTERP_DIRECT_HELPER_TAG));
     else
-        return (THelper)helperDirectOrIndirect;
+        return *(THelper *)helperDirectOrIndirect;
 }
 
-template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)
+// At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
+//  and then perform an unchecked truncation from that intermediate size down to the actual result size.
+// See https://github.com/dotnet/runtime/issues/116823
+template <typename TResult, typename TIntermediate, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvFpHelper is only for use on floats and doubles");
+    static_assert(sizeof(TIntermediate) >= sizeof(TResult), "Intermediate type must not be smaller than result type");
     static_assert(std::numeric_limits<TResult>::is_integer, "ConvFpHelper is only for use on floats and doubles to be converted to integers");
 
     // First, promote the source value to double
     double src = LOCAL_VAR(ip[2], TSource),
-        minValue = (double)std::numeric_limits<TResult>::lowest(),
-        maxValue = (double)std::numeric_limits<TResult>::max();
+        minValue = (double)std::numeric_limits<TIntermediate>::lowest(),
+        maxValue = (double)std::numeric_limits<TIntermediate>::max();
 
     // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
     //  properly bound the source value so that when it is truncated it will be in range
@@ -186,13 +193,13 @@ template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *s
     if (src != src)
         result = 0;
     else if (src >= maxValue)
-        result = std::numeric_limits<TResult>::max();
-    else if (!std::numeric_limits<TResult>::is_signed && (src <= -1))
+        result = (TResult)std::numeric_limits<TIntermediate>::max();
+    else if (!std::numeric_limits<TIntermediate>::is_signed && (src <= -1))
         result = 0;
-    else if (std::numeric_limits<TResult>::is_signed && (src < minValue))
-        result = std::numeric_limits<TResult>::lowest();
+    else if (std::numeric_limits<TIntermediate>::is_signed && (src < minValue))
+        result = (TResult)std::numeric_limits<TIntermediate>::lowest();
     else
-        result = (TResult)src;
+        result = (TResult)(TIntermediate)src;
 
     // According to spec, for result types smaller than int32, we store them on the stack as int32
     if (sizeof(TResult) >= 4)
@@ -264,18 +271,44 @@ template <typename TSource> static void ConvOvfFpHelperU64(int8_t *stack, const 
 
 template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
 {
-    static_assert(sizeof(TResult) < sizeof(TSource), "ConvOvfHelper only can convert to results smaller than the source value");
     static_assert(std::numeric_limits<TSource>::is_integer, "ConvOvfHelper is only for use on integers");
+    constexpr bool shrinking = sizeof(TResult) < sizeof(TSource);
 
     TSource src = LOCAL_VAR(ip[2], TSource);
     bool inRange;
-    if (std::numeric_limits<TSource>::is_signed)
+    if (shrinking)
     {
-        inRange = (src >= (TSource)std::numeric_limits<TResult>::lowest()) && (src <= (TSource)std::numeric_limits<TResult>::max());
+        if (std::numeric_limits<TSource>::is_signed)
+            inRange = (src >= (TSource)std::numeric_limits<TResult>::lowest()) && (src <= (TSource)std::numeric_limits<TResult>::max());
+        else
+            inRange = (src <= (TSource)std::numeric_limits<TResult>::max());
     }
     else
     {
-        inRange = (src <= (TSource)std::numeric_limits<TResult>::max());
+        // Growing conversions with the same signedness shouldn't use an ovf opcode.
+        static_assert(
+            shrinking || (std::numeric_limits<TResult>::is_signed != std::numeric_limits<TSource>::is_signed),
+            "ConvOvfHelper only does growing conversions with sign changes"
+        );
+
+        if (std::numeric_limits<TResult>::is_signed)
+        {
+            if (sizeof(TSource) == sizeof(TResult))
+            {
+                // unsigned -> signed conv with same size. check to make sure the source value isn't too big.
+                inRange = src <= (TSource)std::numeric_limits<TResult>::max();
+            }
+            else
+            {
+                // growing unsigned -> signed conversion. this can never fail.
+                inRange = true;
+            }
+        }
+        else
+        {
+            // signed -> unsigned conv. check to make sure the source value isn't negative.
+            inRange = src >= 0;
+        }
     }
 
     if (inRange)
@@ -285,7 +318,10 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
         // The spec says that conversion results are stored on the evaluation stack as signed, so we always want to convert
         //  the final truncated result into int32_t before storing it on the stack, even if the truncated result is unsigned.
         TResult result = (TResult)src;
-        LOCAL_VAR(ip[1], int32_t) = (int32_t)result;
+        if (sizeof (TResult) < 4)
+            LOCAL_VAR(ip[1], int32_t) = (int32_t)result;
+        else
+            LOCAL_VAR(ip[1], TResult) = result;
     }
     else
     {
@@ -296,7 +332,7 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
     // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
-    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only 
+    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only
     // if check to figure out which one to use, and then have the rest of the logic be straight-line code.
     MethodTable *pMT = nullptr;
     MethodDesc* pMD = nullptr;
@@ -473,6 +509,10 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], void*) = *(void**)pMethod->pDataItems[ip[2]];
                     ip += 3;
                     break;
+                case INTOP_NULLCHECK:
+                    NULL_CHECK(LOCAL_VAR(ip[1], void*));
+                    ip += 2;
+                    break;
                 case INTOP_RET:
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
@@ -530,11 +570,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R4:
-                    ConvFpHelper<int8_t, float>(stack, ip);
+                    ConvFpHelper<int8_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R8:
-                    ConvFpHelper<int8_t, double>(stack, ip);
+                    ConvFpHelper<int8_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_I4:
@@ -546,11 +586,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    ConvFpHelper<uint8_t, float>(stack, ip);
+                    ConvFpHelper<uint8_t, uint32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    ConvFpHelper<uint8_t, double>(stack, ip);
+                    ConvFpHelper<uint8_t, uint32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -562,11 +602,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R4:
-                    ConvFpHelper<int16_t, float>(stack, ip);
+                    ConvFpHelper<int16_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R8:
-                    ConvFpHelper<int16_t, double>(stack, ip);
+                    ConvFpHelper<int16_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_I4:
@@ -578,27 +618,27 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    ConvFpHelper<uint16_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    ConvFpHelper<uint16_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
-                    ConvFpHelper<int32_t, float>(stack, ip);
+                    ConvFpHelper<int32_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;;
                 case INTOP_CONV_I4_R8:
-                    ConvFpHelper<int32_t, double>(stack, ip);
+                    ConvFpHelper<int32_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;;
                 case INTOP_CONV_U4_R4:
-                    ConvFpHelper<uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint32_t, uint32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U4_R8:
-                    ConvFpHelper<uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint32_t, uint32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_I4:
@@ -610,11 +650,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;;
                 case INTOP_CONV_I8_R4:
-                    ConvFpHelper<int64_t, float>(stack, ip);
+                    ConvFpHelper<int64_t, int64_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_R8:
-                    ConvFpHelper<int64_t, double>(stack, ip);
+                    ConvFpHelper<int64_t, int64_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
@@ -641,12 +681,16 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], float);
                     ip += 3;
                     break;
+                case INTOP_CONV_U8_U4:
+                    LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint32_t);
+                    ip += 3;
+                    break;
                 case INTOP_CONV_U8_R4:
-                    ConvFpHelper<uint64_t, float>(stack, ip);
+                    ConvFpHelper<uint64_t, uint64_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U8_R8:
-                    ConvFpHelper<uint64_t, double>(stack, ip);
+                    ConvFpHelper<uint64_t, uint64_t, double>(stack, ip);
                     ip += 3;
                     break;
 
@@ -718,6 +762,10 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_I4_U4:
+                    ConvOvfHelper<int32_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
                 case INTOP_CONV_OVF_I4_I8:
                     ConvOvfHelper<int32_t, int64_t>(stack, ip);
                     ip += 3;
@@ -731,6 +779,10 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_U4_I4:
+                    ConvOvfHelper<uint32_t, int32_t>(stack, ip);
+                    ip += 3;
+                    break;
                 case INTOP_CONV_OVF_U4_I8:
                     ConvOvfHelper<uint32_t, int64_t>(stack, ip);
                     ip += 3;
@@ -744,6 +796,10 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_I8_U8:
+                    ConvOvfHelper<int64_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
                 case INTOP_CONV_OVF_I8_R4:
                     ConvOvfFpHelperI64<float>(stack, ip);
                     ip += 3;
@@ -753,12 +809,66 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_U8_I4:
+                    ConvOvfHelper<uint64_t, int32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U8_I8:
+                    ConvOvfHelper<uint64_t, int64_t>(stack, ip);
+                    ip += 3;
+                    break;
                 case INTOP_CONV_OVF_U8_R4:
                     ConvOvfFpHelperU64<float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_U8_R8:
                     ConvOvfFpHelperU64<double>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_I1_U4:
+                    ConvOvfHelper<int8_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I1_U8:
+                    ConvOvfHelper<int8_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_U1_U4:
+                    ConvOvfHelper<uint8_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U1_U8:
+                    ConvOvfHelper<uint8_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_I2_U4:
+                    ConvOvfHelper<int16_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I2_U8:
+                    ConvOvfHelper<int16_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_U2_U4:
+                    ConvOvfHelper<uint16_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U2_U8:
+                    ConvOvfHelper<uint16_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_I4_U8:
+                    ConvOvfHelper<int32_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_U4_U8:
+                    ConvOvfHelper<uint32_t, uint64_t>(stack, ip);
                     ip += 3;
                     break;
 
@@ -1592,12 +1702,33 @@ MAIN_LOOP:
                     ip += 4;
                     break;
                 }
-                case INTOP_CALL_HELPER_P_PP:
+
+                case INTOP_CALL_HELPER_P_S:
+                {
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod->pDataItems[ip[2]]);
+                    void* helperArg = LOCAL_VAR(ip[3], void*);
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_CALL_HELPER_P_PS:
                 {
                     HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[2], void*));
+                    ip += 5;
+                    break;
+                }
+
+                case INTOP_CALL_HELPER_P_SP:
+                {
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
+                    void* helperArg = pMethod->pDataItems[ip[4]];
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(LOCAL_VAR(ip[2], void*), helperArg);
                     ip += 5;
                     break;
                 }
@@ -1614,7 +1745,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_P_GP:
+                case INTOP_CALL_HELPER_P_GS:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -1646,7 +1777,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_V_AGP:
+                case INTOP_CALL_HELPER_V_AGS:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -1657,7 +1788,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_V_APP:
+                case INTOP_CALL_HELPER_V_APS:
                 {
                     HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod->pDataItems[ip[3]]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
@@ -1699,6 +1830,41 @@ MAIN_LOOP:
                     break;
                 }
 
+                case INTOP_CALL_PINVOKE:
+                {
+                    // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
+                    //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
+
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    int32_t targetAddrSlot = ip[4];
+                    int32_t indirectFlag = ip[5];
+
+                    ip += 6;
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    PCODE callTarget = indirectFlag
+                        ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
+                        : (PCODE)pMethod->pDataItems[targetAddrSlot];
+
+                    InlinedCallFrame inlinedCallFrame;
+                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
+                    inlinedCallFrame.m_pCallSiteSP = pFrame;
+                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+                    inlinedCallFrame.m_pThread = GetThread();
+                    inlinedCallFrame.m_Datum = NULL;
+                    inlinedCallFrame.Push();
+
+                    {
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
+
+                    inlinedCallFrame.Pop();
+
+                    break;
+                }
+
                 case INTOP_CALL:
                 {
                     returnOffset = ip[1];
@@ -1732,7 +1898,7 @@ CALL_INTERP_METHOD:
                         if (targetIp == NULL)
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
-                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
                             break;
                         }
                     }
@@ -1822,6 +1988,7 @@ CALL_INTERP_METHOD:
 
                     // clear the valuetype
                     memset(vtThis, 0, vtSize);
+
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
 
@@ -1878,12 +2045,14 @@ CALL_INTERP_METHOD:
                     {
                         throwable = LOCAL_VAR(ip[1], OBJECTREF);
                     }
+                    pInterpreterFrame->SetIsFaulting(true);
                     DispatchManagedException(throwable);
                     UNREACHABLE();
                     break;
                 }
                 case INTOP_RETHROW:
                 {
+                    pInterpreterFrame->SetIsFaulting(true);
                     DispatchRethrownManagedException();
                     UNREACHABLE();
                     break;
@@ -2234,6 +2403,29 @@ do {                                                                           \
                     break;
                 }
 
+#define COMPARE_EXCHANGE(type)                                          \
+do                                                                      \
+{                                                                       \
+    type* dst = (type*)LOCAL_VAR(ip[2], void*);                         \
+    NULL_CHECK(dst);                                                    \
+    type newValue = LOCAL_VAR(ip[3], type);                             \
+    type comparand = LOCAL_VAR(ip[4], type);                            \
+    type old = InterlockedCompareExchangeT(dst, newValue, comparand);   \
+    LOCAL_VAR(ip[1], type) = old;                                       \
+    ip += 5;                                                            \
+} while (0)
+                case INTOP_COMPARE_EXCHANGE_I4:
+                {
+                    COMPARE_EXCHANGE(int32_t);
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_I8:
+                {
+                    COMPARE_EXCHANGE(int64_t);
+                    break;
+                }
+
                 case INTOP_CALL_FINALLY:
                 {
                     const int32_t* targetIp = ip + ip[1];
@@ -2265,6 +2457,9 @@ do {                                                                           \
                 case INTOP_LEAVE_CATCH:
                     *(const int32_t**)pFrame->pRetVal = ip + ip[1];
                     goto EXIT_FRAME;
+                case INTOP_THROW_PNSE:
+                    COMPlusThrow(kPlatformNotSupportedException);
+                    break;
                 case INTOP_FAILFAST:
                     assert(0);
                     break;
@@ -2300,6 +2495,8 @@ do {                                                                           \
         pMethod = pFrame->startIp->Method;
         assert(pMethod->CheckIntegrity());
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+
+        pInterpreterFrame->SetIsFaulting(false);
         goto MAIN_LOOP;
     }
 

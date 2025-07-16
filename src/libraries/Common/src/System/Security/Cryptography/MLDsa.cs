@@ -14,10 +14,15 @@ namespace System.Security.Cryptography
     ///   Represents an ML-DSA key.
     /// </summary>
     /// <remarks>
-    ///   Developers are encouraged to program against the <see cref="MLDsa"/> base class,
-    ///   rather than any specific derived class.
-    ///   The derived classes are intended for interop with the underlying system
-    ///   cryptographic libraries.
+    ///   <para>
+    ///     This algorithm is specified by FIPS-204.
+    ///   </para>
+    ///   <para>
+    ///     Developers are encouraged to program against the <see cref="MLDsa"/> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class MLDsa : IDisposable
@@ -39,6 +44,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Gets the specific ML-DSA algorithm for this key.
         /// </summary>
+        /// <value>
+        ///   The specific ML-DSA algorithm for this key.
+        /// </value>
         public MLDsaAlgorithm Algorithm { get; }
         private bool _disposed;
 
@@ -48,6 +56,9 @@ namespace System.Security.Cryptography
         /// <param name="algorithm">
         ///   The specific ML-DSA algorithm for this key.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
+        /// </exception>
         protected MLDsa(MLDsaAlgorithm algorithm)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
@@ -79,23 +90,21 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Sign the specified data, writing the signature into the provided buffer.
+        ///   Signs the specified data, writing the signature into the provided buffer.
         /// </summary>
         /// <param name="data">
         ///   The data to sign.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature.
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.SignatureSizeInBytes"/>.
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to the <paramref name="destination" /> buffer.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
+        ///   The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
@@ -109,8 +118,17 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
-        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
+        public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
+            int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
+
+            if (destination.Length != signatureSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, signatureSizeInBytes),
+                    nameof(destination));
+            }
+
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -119,17 +137,48 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            if (destination.Length < Algorithm.SignatureSizeInBytes)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
             ThrowIfDisposed();
-            SignDataCore(data, context, destination.Slice(0, Algorithm.SignatureSizeInBytes));
-            return Algorithm.SignatureSizeInBytes;
+            SignDataCore(data, context, destination);
         }
 
-        // TODO: SignPreHash
+        /// <summary>
+        ///   Signs the specified data.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to sign.
+        /// </param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <returns>
+        ///   ML-DSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the data.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public byte[] SignData(byte[] data, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+
+            byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
+            SignData(new ReadOnlySpan<byte>(data), destination.AsSpan(), new ReadOnlySpan<byte>(context));
+            return destination;
+        }
 
         /// <summary>
         ///   Verifies that the specified signature is valid for this key and the provided data.
@@ -157,7 +206,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   <para>The instance represents only a public key.</para>
         ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the data.</para>
+        ///   <para>An error occurred while verifying the data.</para>
         /// </exception>
         public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context = default)
         {
@@ -179,7 +228,252 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, context, signature);
         }
 
-        // TODO: VerifyPreHash
+        /// <summary>
+        ///   Verifies that the specified signature is valid for this key and the provided data.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while verifying the data.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public bool VerifyData(byte[] data, byte[] signature, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
+
+            return VerifyData(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(signature), new ReadOnlySpan<byte>(context));
+        }
+
+        /// <summary>
+        ///   Signs the specified hash using the FIPS 204 pre-hash signing algorithm, writing the signature into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.SignatureSizeInBytes"/>.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is an empty buffer.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
+        ///   255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
+        {
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            if (destination.Length != Algorithm.SignatureSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SignatureSizeInBytes),
+                    nameof(destination));
+            }
+
+            if (context.Length > MaxContextLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(context),
+                    context.Length,
+                    SR.Argument_SignatureContextTooLong255);
+            }
+
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
+            ThrowIfDisposed();
+
+            SignPreHashCore(hash, context, hashAlgorithmOid, destination);
+        }
+
+        /// <summary>
+        ///   Signs the specified hash using the FIPS 204 pre-hash signing algorithm.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> or <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        ///   <para>An error occurred while verifying the data.</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        public byte[] SignPreHash(byte[] hash, string hashAlgorithmOid, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
+            SignPreHash(new ReadOnlySpan<byte>(hash), destination.AsSpan(), hashAlgorithmOid, new ReadOnlySpan<byte>(context));
+            return destination;
+        }
+
+        /// <summary>
+        ///   Verifies that the specified FIPS 204 pre-hash signature is valid for this key and the provided hash.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is an empty buffer.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
+        ///   255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while verifying the hash.</para>
+        /// </exception>
+        public bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
+        {
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            if (context.Length > MaxContextLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(context),
+                    context.Length,
+                    SR.Argument_SignatureContextTooLong255);
+            }
+
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
+            ThrowIfDisposed();
+
+            if (signature.Length != Algorithm.SignatureSizeInBytes)
+            {
+                return false;
+            }
+
+            return VerifyPreHashCore(hash, context, hashAlgorithmOid, signature);
+        }
+
+        /// <summary>
+        ///   Verifies that the specified FIPS 204 pre-hash signature is valid for this key and the provided hash.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> or <paramref name="signature"/> or <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while verifying the hash.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public bool VerifyPreHash(byte[] hash, byte[] signature, string hashAlgorithmOid, byte[]? context = null)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            return VerifyPreHash(
+                new ReadOnlySpan<byte>(hash),
+                new ReadOnlySpan<byte>(signature),
+                hashAlgorithmOid,
+                new ReadOnlySpan<byte>(context));
+        }
 
         /// <summary>
         ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
@@ -701,79 +995,151 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Exports the public-key portion of the current key in the FIPS 204 public key format.
         /// </summary>
-        /// <param name="destination">
-        ///   The buffer to receive the public key.
-        /// </param>
         /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
+        ///   The FIPS 204 public key.
         /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the public key.
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        public int ExportMLDsaPublicKey(Span<byte> destination)
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportMLDsaPublicKey()
         {
-            if (destination.Length < Algorithm.PublicKeySizeInBytes)
+            ThrowIfDisposed();
+
+            byte[] destination = new byte[Algorithm.PublicKeySizeInBytes];
+            ExportMLDsaPublicKeyCore(destination);
+            return destination;
+        }
+
+        /// <summary>
+        ///   Exports the public-key portion of the current key in the FIPS 204 public key format.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the public key. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.PublicKeySizeInBytes"/>.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is the incorrect length to receive the public key.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   <paramref name="destination"/> is required to be exactly
+        ///   <see cref="MLDsaAlgorithm.PublicKeySizeInBytes"/> in length.
+        /// </remarks>
+        public void ExportMLDsaPublicKey(Span<byte> destination)
+        {
+            int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
+
+            if (destination.Length != publicKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, publicKeySizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
-            ExportMLDsaPublicKeyCore(destination.Slice(0, Algorithm.PublicKeySizeInBytes));
-            return Algorithm.PublicKeySizeInBytes;
+
+            ExportMLDsaPublicKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   Exports the current key in the FIPS 204 secret key format.
+        /// </summary>
+        /// <returns>
+        ///   The FIPS 204 secret key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance cannot export a secret key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportMLDsaSecretKey()
+        {
+            ThrowIfDisposed();
+
+            byte[] destination = new byte[Algorithm.SecretKeySizeInBytes];
+            ExportMLDsaSecretKeyCore(destination);
+            return destination;
         }
 
         /// <summary>
         ///   Exports the current key in the FIPS 204 secret key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key.
+        ///   The buffer to receive the secret key. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.SecretKeySizeInBytes"/>.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the secret key.
+        ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public int ExportMLDsaSecretKey(Span<byte> destination)
+        public void ExportMLDsaSecretKey(Span<byte> destination)
         {
-            if (destination.Length < Algorithm.SecretKeySizeInBytes)
+            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
+
+            if (destination.Length != secretKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, secretKeySizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
-            ExportMLDsaSecretKeyCore(destination.Slice(0, Algorithm.SecretKeySizeInBytes));
-            return Algorithm.SecretKeySizeInBytes;
+
+            ExportMLDsaSecretKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   Exports the private seed in the FIPS 204 private seed format.
+        /// </summary>
+        /// <returns>
+        ///   The FIPS 204 private seed.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportMLDsaPrivateSeed()
+        {
+            ThrowIfDisposed();
+
+            byte[] destination = new byte[Algorithm.PrivateSeedSizeInBytes];
+            ExportMLDsaPrivateSeedCore(destination);
+            return destination;
         }
 
         /// <summary>
         ///   Exports the private seed of the current key.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the private seed.
+        ///   The buffer to receive the private seed. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.PrivateSeedSizeInBytes"/>.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the private seed.
+        ///   <paramref name="destination"/> is the incorrect length to receive the private seed.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the private seed.
         /// </exception>
-        public int ExportMLDsaPrivateSeed(Span<byte> destination)
+        public void ExportMLDsaPrivateSeed(Span<byte> destination)
         {
-            if (destination.Length < Algorithm.PrivateSeedSizeInBytes)
+            int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
+            if (destination.Length != privateSeedSizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, privateSeedSizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
-            ExportMLDsaPrivateSeedCore(destination.Slice(0, Algorithm.PrivateSeedSizeInBytes));
-            return Algorithm.PrivateSeedSizeInBytes;
+
+            ExportMLDsaPrivateSeedCore(destination);
         }
 
         /// <summary>
@@ -912,7 +1278,7 @@ namespace System.Security.Cryptography
             return dsa;
         }
 
-        /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />>
+        /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
@@ -1296,6 +1662,18 @@ namespace System.Security.Cryptography
             return MLDsaImplementation.ImportPublicKey(algorithm, source);
         }
 
+        /// <inheritdoc cref="ImportMLDsaPublicKey(MLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static MLDsa ImportMLDsaPublicKey(MLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportMLDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
+        }
+
         /// <summary>
         ///   Imports an ML-DSA private key in the FIPS 204 secret key format.
         /// </summary>
@@ -1334,6 +1712,18 @@ namespace System.Security.Cryptography
             return MLDsaImplementation.ImportSecretKey(algorithm, source);
         }
 
+        /// <inheritdoc cref="ImportMLDsaSecretKey(MLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportMLDsaSecretKey(algorithm, new ReadOnlySpan<byte>(source));
+        }
+
         /// <summary>
         ///   Imports an ML-DSA private key from its private seed value.
         /// </summary>
@@ -1370,6 +1760,18 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
             return MLDsaImplementation.ImportSeed(algorithm, source);
+        }
+
+        /// <inheritdoc cref="ImportMLDsaPrivateSeed(MLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static MLDsa ImportMLDsaPrivateSeed(MLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportMLDsaPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -1418,9 +1820,53 @@ namespace System.Security.Cryptography
         ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while signing the data.
+        ///   An error occurred while verifying the data.
         /// </exception>
         protected abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
+
+        /// <summary>
+        ///   When overridden in a derived class, computes the pre-hash signature of the specified hash and context,
+        ///   writing it into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while signing the hash.
+        /// </exception>
+        protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, verifies the pre-hash signature of the specified hash and context.
+        /// </summary>
+        /// <param name="hash">
+        ///   The data to verify.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///  The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while verifying the hash.
+        /// </exception>
+        protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature);
 
         /// <summary>
         ///   When overridden in a derived class, exports the FIPS 204 public key to the specified buffer.

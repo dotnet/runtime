@@ -405,6 +405,16 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
     assert(newTarget->checkPredListOrder());
 }
 
+//------------------------------------------------------------------------
+// GetDescriptorForSwitch: Returns the SwitchUniqueSuccSet corresponding to 'switchBlk'.
+// If it does not exist in the map yet, we build and insert the entry.
+//
+// Arguments:
+//    switchBlk -- The switch block
+//
+// Returns:
+//    The SwitchUniqueSuccSet corresponding to 'switchBlk'
+//
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
     assert(switchBlk->KindIs(BBJ_SWITCH));
@@ -457,12 +467,74 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
     }
 }
 
-/*****************************************************************************
- *
- *  Simple utility function to remove an entry for a block in the switch desc
- *  map. So it can be called from other phases.
- *
- */
+//------------------------------------------------------------------------
+// GetDescriptorForSwitchIfAvailable: Gets the SwitchUniqueSuccSet corresponding to 'switchBlk',
+// if it exists. Unlike Compiler::GetDescriptorForSwitch, this will not modify the map.
+//
+// Arguments:
+//    switchBlk -- The switch block
+//    res [out] -- Pointer to the SwitchUniqueSuccSet to populate
+//
+// Returns:
+//    True if the map exists, and contains an entry for 'switchBlk'
+//
+bool Compiler::GetDescriptorForSwitchIfAvailable(BasicBlock* switchBlk, SwitchUniqueSuccSet* res)
+{
+    assert(switchBlk->KindIs(BBJ_SWITCH));
+    return (m_switchDescMap != nullptr) && m_switchDescMap->Lookup(switchBlk, res);
+}
+
+//------------------------------------------------------------------------
+// fgRemoveSuccFromSwitchDescMapEntry: Removes a successor edge from the map entry
+// for 'switchBlk', if the entry exists.
+//
+// Arguments:
+//    switchBlk -- The switch block
+//    edge      -- The successor edge to remove
+//
+void Compiler::fgRemoveSuccFromSwitchDescMapEntry(BasicBlock* switchBlk, FlowEdge* edge)
+{
+    assert(switchBlk->KindIs(BBJ_SWITCH));
+
+    SwitchUniqueSuccSet uniqueSuccSet;
+    if (!GetDescriptorForSwitchIfAvailable(switchBlk, &uniqueSuccSet))
+    {
+        return;
+    }
+
+    const unsigned   succCount = uniqueSuccSet.numDistinctSuccs;
+    FlowEdge** const succTab   = uniqueSuccSet.nonDuplicates;
+    bool             found     = false;
+    assert(succCount > 0);
+    assert(succTab != nullptr);
+
+    for (unsigned i = 0; !found && (i < succCount); i++)
+    {
+        if (succTab[i] == edge)
+        {
+            // If 'edge' is not the last entry, move everything after in the table down one slot.
+            if ((i + 1) < succCount)
+            {
+                memmove_s(&succTab[i], (succCount - i) * sizeof(FlowEdge*), &succTab[i + 1],
+                          (succCount - i - 1) * sizeof(FlowEdge*));
+            }
+
+            found = true;
+        }
+    }
+
+    assert(found);
+    uniqueSuccSet.numDistinctSuccs--;
+    m_switchDescMap->Set(switchBlk, uniqueSuccSet, BlockToSwitchDescMap::SetKind::Overwrite);
+}
+
+//------------------------------------------------------------------------
+// fgInvalidateSwitchDescMapEntry: Removes the entry for 'block' from the
+// switch map, if the map exists.
+//
+// Arguments:
+//    block -- The switch block
+//
 void Compiler::fgInvalidateSwitchDescMapEntry(BasicBlock* block)
 {
     // Check if map has no entries yet.

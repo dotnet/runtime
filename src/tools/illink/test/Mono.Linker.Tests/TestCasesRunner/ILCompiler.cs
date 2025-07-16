@@ -54,8 +54,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
             args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
             args.Append($" -out:{options.OutputPath.InQuotes()}");
 #else
-			args.Append (options.OutputPath.ExtensionWithDot == ".dll" ? "/dll" : "/exe");
-			args.Append ($" /out:{options.OutputPath.InQuotes ()}");
+            args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "/dll" : "/exe");
+            args.Append($" /out:{options.OutputPath.InQuotes()}");
 #endif
             args.Append($" {options.SourceFiles.Aggregate(string.Empty, (buff, file) => $"{buff} {file.InQuotes()}")}");
             return args.ToString();
@@ -74,7 +74,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             throw new InvalidOperationException("ilasm not found at " + ilasmPath);
 #else
-			return Environment.OSVersion.Platform == PlatformID.Win32NT ? LocateIlasmOnWindows () : "ilasm".ToNPath ();
+            return Environment.OSVersion.Platform == PlatformID.Win32NT ? LocateIlasmOnWindows() : "ilasm".ToNPath();
 #endif
         }
 
