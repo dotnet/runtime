@@ -4958,6 +4958,7 @@ void emitter::emitDispInsName(
             unsigned funct4 = (code >> 12) & 0xf;
             unsigned rdRs1  = (code >> 7) & 0x1f;
             unsigned rs2    = (code >> 2) & 0x1f;
+            // TODO-RISCV64-RVC: Introduce a switch in jitconfigvalues.h to show c.* prefix.
             if (funct4 == 0b1001 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
                 printf("add            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
@@ -4978,6 +4979,7 @@ void emitter::emitDispInsName(
             unsigned funct2 = (code >> 5) & 0x3;
             unsigned rdRs1  = getRegNumberFromRvcReg(((code >> 7) & 0x7));
             unsigned rs2    = getRegNumberFromRvcReg(((code >> 2) & 0x7));
+            // TODO-RISCV64-RVC: Introduce a switch in jitconfigvalues.h to show c.* prefix.
             if (funct6 == 0b100011 && funct2 == 0b00)
             {
                 printf("sub            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
