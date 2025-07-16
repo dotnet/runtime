@@ -2075,6 +2075,11 @@ public class InterpreterTest
     struct GenericStruct<T>
     {
         public T Value;
+
+        public override string ToString()
+        {
+            return "GenericStruct<T>: " + (Value?.ToString() ?? "<null>");
+        }
     }
 
     public static int preciseInitCctorsRun = 0;
