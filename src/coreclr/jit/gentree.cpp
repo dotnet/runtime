@@ -2362,13 +2362,8 @@ bool GenTreeCall::IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned help
     }
 
     CORINFO_METHOD_HANDLE userCallHnd = NO_METHOD_HANDLE;
-
-    auto mmap = compiler->impInlineRoot()->m_helperToManagedMap;
-    auto cc   = mmap != nullptr ? mmap->GetCount() : -1;
-    if (ISMETHOD("Test"))
-        printf("1");
-
-    return compiler->impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &userCallHnd);
+    return (gtCallType == CT_USER_FUNC) &&
+           compiler->impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &userCallHnd);
 }
 
 //-------------------------------------------------------------------------
