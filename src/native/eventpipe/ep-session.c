@@ -815,6 +815,13 @@ session_tracepoint_write_event (
 	// Extension
 	uint32_t extension_len = 0;
 
+	// We make a best-effort to write out metadata on the first instance of each event in
+	// the trace. Even though the atomic InterlockedExchange will detect the first event
+	// writing thread to race to this point there is no guarantee that same thread will
+	// be the first one to invoke writev and place its data into the kernel buffers. This
+	// means it is still possible that the metadata isn't on the first event in the
+	// trace. If the trace ended fast enough there is even a tiny chance that it stops
+	// recording events before the event with the metadata ever gets recorded.
 	bool should_write_metadata = ep_event_update_metadata_written_mask (ep_event, ep_session_get_mask (session), true);
 	if (should_write_metadata) {
 		uint8_t extension_metadata[1 + sizeof(uint32_t)];
