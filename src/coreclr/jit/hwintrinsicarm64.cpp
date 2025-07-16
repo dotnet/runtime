@@ -299,6 +299,18 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
             }
         }
 
+        if (intrinsic == NI_Sve2_MultiplyBySelectedScalar ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEven ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOdd ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract ||
+            intrinsic == NI_Sve2_MultiplySubtractBySelectedScalar)
+        {
+            indexedElementBaseType = simdBaseType;
+        }
+
         assert(indexedElementBaseType == simdBaseType);
     }
     else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
@@ -362,14 +374,24 @@ void HWIntrinsicInfo::lookupImmBounds(
     }
     else if (category == HW_Category_SIMDByIndexedElement)
     {
-        if (intrinsic == NI_Sve_DuplicateSelectedScalarToVector)
+        switch (intrinsic)
         {
-            // For SVE_DUP, the upper bound on index does not depend on the vector length.
-            immUpperBound = (512 / (BITS_PER_BYTE * genTypeSize(baseType))) - 1;
-        }
-        else
-        {
-            immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+            case NI_Sve_DuplicateSelectedScalarToVector:
+                // For SVE_DUP, the upper bound on index does not depend on the vector length.
+                immUpperBound = (512 / (BITS_PER_BYTE * genTypeSize(baseType))) - 1;
+                break;
+            case NI_Sve2_MultiplyBySelectedScalarWideningEven:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
+                // Index is on the half-width vector, hence double the maximum index.
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) * 2 - 1;
+                break;
+            default:
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+                break;
         }
     }
     else
