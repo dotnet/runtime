@@ -23043,21 +23043,9 @@ void gc_heap::gc1()
             for (int i = 0; i < gc_heap::n_heaps; i++)
             {
                 g_heaps[i]->descr_generations ("END");
-#ifdef USE_REGIONS
-                if (settings.condemned_generation == max_generation)
-                {
-                    // age and print all kinds of free regions
-                    region_free_list::age_free_regions (g_heaps[i]->free_regions);
-                    region_free_list::print (g_heaps[i]->free_regions, i, "END");
-                }
-                else
-                {
-                    // age and print only basic free regions
-                    g_heaps[i]->free_regions[basic_free_region].age_free_regions();
-                    g_heaps[i]->free_regions[basic_free_region].print (i, "END");
-                }
-#endif //USE_REGIONS
             }
+
+            age_free_regions ("END");
 
             fire_pevents();
             update_end_ngc_time();
@@ -23092,18 +23080,7 @@ void gc_heap::gc1()
         compute_gc_and_ephemeral_range (settings.condemned_generation, true);
         stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
                                         map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
-        if (settings.condemned_generation == max_generation)
-        {
-            // age and print all kinds of free regions
-            region_free_list::age_free_regions(free_regions);
-            region_free_list::print(free_regions, 0, "END");
-        }
-        else
-        {
-            // age and print only basic free regions
-            free_regions[basic_free_region].age_free_regions();
-            free_regions[basic_free_region].print (0, "END");
-        }
+        age_free_regions ("END");
 #endif //USE_REGIONS
 
         update_end_ngc_time();
