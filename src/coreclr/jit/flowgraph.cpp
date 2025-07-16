@@ -1290,11 +1290,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         }
         else
         {
-            void *critSect = nullptr, **pCrit = nullptr;
-            critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
-            noway_assert((!critSect) != (!pCrit));
-
-            tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            tree = gtNewIconEmbClsHndNode(info.compClassHnd);
 
             // Given the class handle, get the pointer to the Monitor.
             tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
