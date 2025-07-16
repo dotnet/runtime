@@ -98,38 +98,44 @@ PhaseStatus Compiler::SaveAsyncContexts()
             // Currently we always expect that ExecutionContext and
             // SynchronizationContext correlate about their save/restore
             // behavior.
-            assert((asyncCallInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore) == asyncCallInfo.SaveAndRestoreSynchronizationContextField);
+            assert((asyncCallInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore) ==
+                   asyncCallInfo.SaveAndRestoreSynchronizationContextField);
 
             if (asyncCallInfo.ExecutionContextHandling != ExecutionContextHandling::SaveAndRestore)
             {
                 continue;
             }
 
-            unsigned suspendedLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Suspended indicator for [%06u]", dspTreeID(call))));
-            unsigned execCtxLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("ExecutionContext for [%06u]", dspTreeID(call))));
-            unsigned syncCtxLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("SynchronizationContext for [%06u]", dspTreeID(call))));
+            unsigned suspendedLclNum =
+                lvaGrabTemp(false DEBUGARG(printfAlloc("Suspended indicator for [%06u]", dspTreeID(call))));
+            unsigned execCtxLclNum =
+                lvaGrabTemp(false DEBUGARG(printfAlloc("ExecutionContext for [%06u]", dspTreeID(call))));
+            unsigned syncCtxLclNum =
+                lvaGrabTemp(false DEBUGARG(printfAlloc("SynchronizationContext for [%06u]", dspTreeID(call))));
 
-            LclVarDsc* suspendedLclDsc = lvaGetDesc(suspendedLclNum);
-            suspendedLclDsc->lvType = TYP_UBYTE;
+            LclVarDsc* suspendedLclDsc     = lvaGetDesc(suspendedLclNum);
+            suspendedLclDsc->lvType        = TYP_UBYTE;
             suspendedLclDsc->lvHasLdAddrOp = true;
 
-            LclVarDsc* execCtxLclDsc = lvaGetDesc(execCtxLclNum);
-            execCtxLclDsc->lvType = TYP_REF;
+            LclVarDsc* execCtxLclDsc     = lvaGetDesc(execCtxLclNum);
+            execCtxLclDsc->lvType        = TYP_REF;
             execCtxLclDsc->lvHasLdAddrOp = true;
 
-            LclVarDsc* syncCtxLclDsc = lvaGetDesc(syncCtxLclNum);
-            syncCtxLclDsc->lvType = TYP_REF;
+            LclVarDsc* syncCtxLclDsc     = lvaGetDesc(syncCtxLclNum);
+            syncCtxLclDsc->lvType        = TYP_REF;
             syncCtxLclDsc->lvHasLdAddrOp = true;
 
             call->asyncInfo->SynchronizationContextLclNum = syncCtxLclNum;
 
-            call->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclAddrNode(suspendedLclNum, 0)).WellKnown(WellKnownArg::AsyncSuspendedIndicator));
+            call->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclAddrNode(suspendedLclNum, 0))
+                                            .WellKnown(WellKnownArg::AsyncSuspendedIndicator));
 
-            JITDUMP("Saving contexts around [%06u], ExecutionContext = V%02u, SynchronizationContext = V%02u\n", call->gtTreeID, execCtxLclNum, syncCtxLclNum);
+            JITDUMP("Saving contexts around [%06u], ExecutionContext = V%02u, SynchronizationContext = V%02u\n",
+                    call->gtTreeID, execCtxLclNum, syncCtxLclNum);
 
             CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
-            GenTreeCall*      capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+            GenTreeCall* capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
             capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(syncCtxLclNum, 0)));
             capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(execCtxLclNum, 0)));
 
@@ -840,7 +846,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
             excludedLocals.AddOrUpdate(def.Def->GetLclNum(), true);
         }
         return GenTree::VisitResult::Continue;
-        };
+    };
 
     call->VisitLocalDefs(m_comp, visitDef);
 
@@ -852,7 +858,9 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         excludedLocals.AddOrUpdate(asyncInfo.SynchronizationContextLclNum, true);
     }
 
-    life.GetLiveLocals(liveLocals, [&](unsigned lclNum) { return !excludedLocals.Contains(lclNum); });
+    life.GetLiveLocals(liveLocals, [&](unsigned lclNum) {
+        return !excludedLocals.Contains(lclNum);
+    });
     LiftLIREdges(block, defs, liveLocals);
 
 #ifdef DEBUG
@@ -1113,7 +1121,8 @@ void AsyncTransformation::ClearSuspendedIndicator(BasicBlock* block, GenTreeCall
     }
 
     GenTree* suspended = suspendedArg->GetNode();
-    if (!suspended->IsLclVarAddr() && (!suspended->OperIs(GT_LCL_VAR) || m_comp->lvaVarAddrExposed(suspended->AsLclVarCommon()->GetLclNum())))
+    if (!suspended->IsLclVarAddr() &&
+        (!suspended->OperIs(GT_LCL_VAR) || m_comp->lvaVarAddrExposed(suspended->AsLclVarCommon()->GetLclNum())))
     {
         // We will need a second use of this, so spill to a local
         LIR::Use use(LIR::AsRange(block), &suspendedArg->NodeRef(), call);
@@ -1122,7 +1131,8 @@ void AsyncTransformation::ClearSuspendedIndicator(BasicBlock* block, GenTreeCall
     }
 
     GenTree* value = m_comp->gtNewIconNode(0);
-    GenTree* storeSuspended = m_comp->gtNewStoreValueNode(TYP_UBYTE, m_comp->gtCloneExpr(suspended), value, GTF_IND_NONFAULTING);
+    GenTree* storeSuspended =
+        m_comp->gtNewStoreValueNode(TYP_UBYTE, m_comp->gtCloneExpr(suspended), value, GTF_IND_NONFAULTING);
 
     LIR::AsRange(block).InsertBefore(call, LIR::SeqTree(m_comp, storeSuspended));
 }
@@ -1139,7 +1149,8 @@ void AsyncTransformation::SetSuspendedIndicator(BasicBlock* block, BasicBlock* c
     assert(suspended->IsLclVarAddr() || suspended->OperIs(GT_LCL_VAR)); // Ensured by ClearSuspendedIndicator
 
     GenTree* value = m_comp->gtNewIconNode(1);
-    GenTree* storeSuspended = m_comp->gtNewStoreValueNode(TYP_UBYTE, m_comp->gtCloneExpr(suspended), value, GTF_IND_NONFAULTING);
+    GenTree* storeSuspended =
+        m_comp->gtNewStoreValueNode(TYP_UBYTE, m_comp->gtCloneExpr(suspended), value, GTF_IND_NONFAULTING);
 
     LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, storeSuspended));
 

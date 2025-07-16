@@ -705,7 +705,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             JITDUMP("Call is an async task await\n");
 
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
             asyncInfo.SaveAndRestoreSynchronizationContextField = true;
 
             if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
@@ -739,7 +739,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // context. We do not do that optimization yet.
         if (tailCallFlags != 0)
         {
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::None;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
             asyncInfo.SaveAndRestoreSynchronizationContextField = false;
         }
 

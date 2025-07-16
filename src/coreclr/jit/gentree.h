@@ -4359,12 +4359,12 @@ enum class ContinuationContextHandling
 // Additional async call info.
 struct AsyncCallInfo
 {
-    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
-    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
-    bool SaveAndRestoreSynchronizationContextField = false;
-    bool HasSuspensionIndicatorDef = false;
-    bool HasCurrentThreadDef = false;
-    unsigned SynchronizationContextLclNum = BAD_VAR_NUM;
+    ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
+    bool                        SaveAndRestoreSynchronizationContextField = false;
+    bool                        HasSuspensionIndicatorDef                 = false;
+    bool                        HasCurrentThreadDef                       = false;
+    unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
 };
 
 // Return type descriptor of a GT_CALL node.

@@ -1462,8 +1462,8 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        GenTreeFlags defFlag            = GTF_EMPTY;
-        GenTreeCall* callUser           = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
+        GenTreeFlags defFlag    = GTF_EMPTY;
+        GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
         bool         escapeAddr = true;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             m_compiler->IsValidLclAddr(lclNum, val.Offset()))
@@ -1503,7 +1503,7 @@ private:
             {
                 varDsc->SetDefinedViaAddress(true);
                 escapeAddr = false;
-                defFlag = GTF_VAR_DEF;
+                defFlag    = GTF_VAR_DEF;
 
                 if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
                 {
@@ -1534,7 +1534,8 @@ private:
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
         // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
-        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc) && escapeAddr)
+        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc) &&
+            escapeAddr)
         {
             varDsc->lvQuirkToLong = true;
             JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
