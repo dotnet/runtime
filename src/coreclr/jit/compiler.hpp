@@ -663,9 +663,9 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
             // LEAVE into callfinally yet, and haven't added return successors.
             if (bbEhfTargets != nullptr)
             {
-                for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
+                for (unsigned i = 0; i < bbEhfTargets->GetSuccCount(); i++)
                 {
-                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]->getDestinationBlock()));
+                    RETURN_ON_ABORT(func(bbEhfTargets->GetSucc(i)->getDestinationBlock()));
                 }
             }
 
@@ -711,10 +711,9 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
 
         case BBJ_SWITCH:
         {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            for (unsigned i = 0; i < bbSwtTargets->GetSuccCount(); i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
+                RETURN_ON_ABORT(func(bbSwtTargets->GetSucc(i)->getDestinationBlock()));
             }
 
             return VisitEHSuccs(comp, func);
@@ -750,9 +749,9 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             // LEAVE into callfinally yet, and haven't added return successors.
             if (bbEhfTargets != nullptr)
             {
-                for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
+                for (unsigned i = 0; i < bbEhfTargets->GetSuccCount(); i++)
                 {
-                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]->getDestinationBlock()));
+                    RETURN_ON_ABORT(func(bbEhfTargets->GetSucc(i)->getDestinationBlock()));
                 }
             }
 
@@ -778,10 +777,9 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
         case BBJ_SWITCH:
         {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            for (unsigned i = 0; i < bbSwtTargets->GetSuccCount(); i++)
             {
-                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
+                RETURN_ON_ABORT(func(bbSwtTargets->GetSucc(i)->getDestinationBlock()));
             }
 
             return BasicBlockVisit::Continue;
