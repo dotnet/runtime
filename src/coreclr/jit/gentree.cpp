@@ -1829,6 +1829,46 @@ void CallArgs::Remove(CallArg* arg)
     assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
+//---------------------------------------------------------------
+// RemoveUnsafe: Remove an argument from the argument list, without validation.
+//
+// Parameters:
+//   arg - The arg to remove.
+//
+// Remarks:
+//   This function will break ABI information of other arguments. The caller
+//   needs to know what they are doing.
+//
+void CallArgs::RemoveUnsafe(CallArg* arg)
+{
+    CallArg** slot = &m_lateHead;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetLateNext();
+            break;
+        }
+
+        slot = &(*slot)->LateNextRef();
+    }
+
+    slot = &m_head;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetNext();
+            RemovedWellKnownArg(arg->GetWellKnownArg());
+            return;
+        }
+
+        slot = &(*slot)->NextRef();
+    }
+
+    assert(!"Did not find arg to remove in CallArgs::Remove");
+}
+
 #ifdef TARGET_XARCH
 //---------------------------------------------------------------
 // NeedsVzeroupper: Determines if the call needs a vzeroupper emitted before it is invoked
@@ -13180,6 +13220,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "&lcl arr";
         case WellKnownArg::RuntimeMethodHandle:
             return "meth hnd";
+        case WellKnownArg::AsyncSuspendedIndicator:
+            return "async susp";
         default:
             return nullptr;
     }
@@ -19563,7 +19605,7 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     return node->AsLclVarCommon();
 }
 
-GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspensionIndicatorLclAddr(GenTreeCall* call)
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
 {
     if (!call->IsAsync())
     {

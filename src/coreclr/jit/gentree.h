@@ -4362,7 +4362,16 @@ struct AsyncCallInfo
     ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
     bool SaveAndRestoreSynchronizationContextField = false;
+    unsigned ThreadObjectLclNum = BAD_VAR_NUM;
     unsigned SynchronizationContextLclNum = BAD_VAR_NUM;
+
+    AsyncCallInfo WithLocals(unsigned threadObjectLclNum, unsigned synchronizationContextLclNum) const
+    {
+        AsyncCallInfo value = *this;
+        value.ThreadObjectLclNum = threadObjectLclNum;
+        value.SynchronizationContextLclNum = synchronizationContextLclNum;
+        return value;
+    }
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4850,6 +4859,7 @@ public:
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
+    void     RemoveUnsafe(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);

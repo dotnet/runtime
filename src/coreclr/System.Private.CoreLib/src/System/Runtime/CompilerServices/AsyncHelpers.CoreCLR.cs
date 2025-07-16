@@ -611,8 +611,13 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreExecutionContextWithThread(Thread thread, ExecutionContext? previousExecCtx)
+        private static void RestoreContexts(bool suspended, Thread thread, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
+            if (!suspended && previousSyncCtx != thread._synchronizationContext)
+            {
+                thread._synchronizationContext = previousSyncCtx;
+            }
+
             ExecutionContext? currentExecCtx = thread._executionContext;
             if (previousExecCtx != currentExecCtx)
             {
@@ -640,5 +645,7 @@ namespace System.Runtime.CompilerServices
 
             flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
         }
+
+        private static Thread GetCurrentThread() => Thread.CurrentThreadAssumedInitialized;
     }
 }

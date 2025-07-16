@@ -1496,9 +1496,20 @@ private:
             }
         }
 
-        if ((callUser != nullptr) && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
+        if ((callUser != nullptr) && callUser->IsAsync() && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
+            CallArg* suspendedArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
+            if ((suspendedArg != nullptr) && (val.Node() == suspendedArg->GetNode()))
+            {
+                varDsc->SetDefinedViaAddress(true);
+                escapeAddr = false;
+                defFlag = GTF_VAR_DEF;
 
+                if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
+                {
+                    defFlag |= GTF_VAR_USEASG;
+                }
+            }
         }
 
         if (escapeAddr)
@@ -1521,7 +1532,7 @@ private:
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
         // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
-        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc))
+        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc) && escapeAddr)
         {
             varDsc->lvQuirkToLong = true;
             JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),

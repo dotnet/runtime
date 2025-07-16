@@ -84,6 +84,8 @@ class AsyncTransformation
                                           GenTreeCall*                   call,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
+    void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
+
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
 
     BasicBlock* CreateSuspension(
@@ -95,10 +97,12 @@ class AsyncTransformation
     void         FillInGCPointersOnSuspension(const ContinuationLayout& layout, BasicBlock* suspendBB);
     void         FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
+                                                GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,
                                                 AsyncLiveness&            life,
                                                 BasicBlock*               suspendBB,
                                                 BasicBlock**              remainder);
+    void JumpThreadSuspensionCheck(FlowEdge* edge, GenTreeCall* call, uint8_t suspendedValue);
 
     BasicBlock* CreateResumption(BasicBlock*               block,
                                  BasicBlock*               remainder,
@@ -106,6 +110,8 @@ class AsyncTransformation
                                  const CallDefinitionInfo& callDefInfo,
                                  unsigned                  stateNum,
                                  const ContinuationLayout& layout);
+    void        SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call);
+    void        UpdateThreadObject(BasicBlock* block, GenTreeCall* call);
     void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
                                             const jitstd::vector<LiveLocalInfo>& liveLocals,
                                             BasicBlock*                          resumeBB);

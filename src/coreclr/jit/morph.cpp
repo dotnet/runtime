@@ -678,6 +678,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "StackArrayLocal";
         case WellKnownArg::RuntimeMethodHandle:
             return "RuntimeMethodHandle";
+        case WellKnownArg::AsyncSuspendedIndicator:
+            return "AsyncSuspendedIndicator";
     }
 
     return "N/A";
