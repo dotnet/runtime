@@ -1854,6 +1854,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                     break;
                             }
                                 break;
+#ifdef FEATURE_SIMD
                             case CORINFO_HFA_ELEM_VECTOR64:
                                 switch (thReturnValueType.GetSize())
                                 {
@@ -1874,7 +1875,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                         break;
                                 }
                                 break;
-
+#endif
                         default:
                             _ASSERTE(!"HFA type is not supported");
                             break;
