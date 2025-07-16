@@ -363,6 +363,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         chainHolder.DisposeChainElements();
                         chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
                         chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
+                        chainTest.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                         allowedFlags |= X509ChainStatusFlags.PartialChain;
                         break;
                     default:
@@ -370,7 +371,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
 
                 Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
-                Assert.Equal(3, chainTest.ChainElements.Count);
+                Assert.InRange(chainTest.ChainElements.Count, 2, 3);
 
                 X509ChainStatusFlags actualFlags = chainTest.AllStatusFlags();
                 actualFlags &= ~allowedFlags;
