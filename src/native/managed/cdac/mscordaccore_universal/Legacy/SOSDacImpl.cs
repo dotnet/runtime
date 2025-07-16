@@ -1855,16 +1855,19 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            *pNeeded = _target.ReadGlobal<int>(Constants.Globals.MaxClrNotificationArgs);
+            uint MaxClrNotificationArgs = _target.ReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs);
+            *pNeeded = (int)MaxClrNotificationArgs;
             TargetPointer basePtr = _target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments);
             if (_target.Read<ulong>(basePtr) == 0)
             {
                 hr = HResults.E_FAIL;
             }
-
-            for (int i = 0; i < count && i < *pNeeded; i++)
+            else
             {
-                arguments[i] = _target.Read<ulong>(basePtr.Value + (ulong)(i * sizeof(ClrDataAddress)));
+                for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
+                {
+                    arguments[i] = _target.Read<ulong>(basePtr.Value + (ulong)(i * sizeof(ClrDataAddress)));
+                }
             }
         }
         catch (System.Exception ex)
