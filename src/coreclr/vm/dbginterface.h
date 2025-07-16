@@ -291,13 +291,6 @@ public:
 
     virtual DWORD GetHelperThreadID(void ) = 0;
 
-    // Called when an assembly is being loaded into an AppDomain.
-    // This includes when a domain neutral assembly is loaded into a new AppDomain.
-    // This is called only when a debugger is attached, and will occur before any LoadModule or
-    // LoadClass calls for this assembly.
-    virtual void LoadAssembly(DomainAssembly * pDomainAssembly) = 0; // the assembly being loaded
-
-
     // Called for all assemblies in an AppDomain when the AppDomain is unloaded.
     // This includes domain neutral assemblies that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass

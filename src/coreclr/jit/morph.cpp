@@ -12888,8 +12888,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             // Find the actual jump target
             size_t     switchVal           = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned   jumpCnt             = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** jumpTab             = block->GetSwitchTargets()->bbsDstTab;
+            unsigned   jumpCnt             = block->GetSwitchTargets()->GetCaseCount();
+            FlowEdge** jumpTab             = block->GetSwitchTargets()->GetCases();
             bool       foundVal            = false;
             bool       profileInconsistent = false;
 

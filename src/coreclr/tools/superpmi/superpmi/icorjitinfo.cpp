@@ -1299,13 +1299,6 @@ void MyICJI::getFunctionFixedEntryPoint(
     jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
-// get the synchronization handle that is passed to monXstatic function
-void* MyICJI::getMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getMethodSync");
-    return jitInstance->mc->repGetMethodSync(ftn, ppIndirection);
-}
-
 // These entry points must be called if a handle is being embedded in
 // the code to be passed to a JIT helper function. (as opposed to just
 // being passed back into the ICorInfo interface.)

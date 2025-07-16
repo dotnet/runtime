@@ -107,7 +107,7 @@ struct BasicBlockList;
 struct FlowEdge;
 struct EHblkDsc;
 struct BBswtDesc;
-struct BBehfDesc;
+struct BBJumpTable;
 
 struct StackEntry
 {
@@ -346,7 +346,7 @@ public:
     }
 };
 
-// FlowEdgeArrayIterator: forward iterator for an array of FlowEdge*, such as the BBswtDesc->bbsDstTab.
+// FlowEdgeArrayIterator: forward iterator for an array of FlowEdge*, such as BBJumpTable::succs.
 // It is an error (with assert) to yield a nullptr FlowEdge* in this array.
 // `m_edgeEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
 // (meaning, no actual iteration will happen).
@@ -382,30 +382,16 @@ public:
     }
 };
 
-// BBSwitchTargetList: adapter class for forward iteration of switch targets, using range-based `for`,
-// normally used via BasicBlock::SwitchTargets(), e.g.:
-//    for (BasicBlock* const target : block->SwitchTargets()) ...
-//
-class BBSwitchTargetList
-{
-    BBswtDesc* m_bbsDesc;
-
-public:
-    BBSwitchTargetList(BBswtDesc* bbsDesc);
-    BBArrayIterator begin() const;
-    BBArrayIterator end() const;
-};
-
-// BBEhfSuccList: adapter class for forward iteration of BBJ_EHFINALLYRET blocks, using range-based `for`,
-// normally used via BasicBlock::EHFinallyRetSuccs(), e.g.:
+// BBJumpTableList: adapter class for forward iteration of blocks with N successors, using range-based `for`,
+// normally used via BasicBlock::EHFinallyRetSuccs() or BasicBlock::SwitchSuccs(), e.g.:
 //    for (BasicBlock* const succ : block->EHFinallyRetSuccs()) ...
 //
-class BBEhfSuccList
+class BBJumpTableList
 {
-    BBehfDesc* m_bbeDesc;
+    BBJumpTable* m_bbJumpTable;
 
 public:
-    BBEhfSuccList(BBehfDesc* bbeDesc);
+    BBJumpTableList(BBJumpTable* bbJumpTable);
     BBArrayIterator begin() const;
     BBArrayIterator end() const;
 };
@@ -740,11 +726,11 @@ private:
     /* The following union describes the jump target(s) of this block */
     union
     {
-        unsigned   bbTargetOffs; // PC offset (temporary only)
-        FlowEdge*  bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
-        FlowEdge*  bbTrueEdge;   // BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)
-        BBswtDesc* bbSwtTargets; // switch descriptor
-        BBehfDesc* bbEhfTargets; // BBJ_EHFINALLYRET descriptor
+        unsigned     bbTargetOffs; // PC offset (temporary only)
+        FlowEdge*    bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
+        FlowEdge*    bbTrueEdge;   // BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)
+        BBswtDesc*   bbSwtTargets; // switch descriptor
+        BBJumpTable* bbEhfTargets; // BBJ_EHFINALLYRET descriptor
     };
 
     // Successor edge of a BBJ_COND block if bbTrueEdge is not taken
@@ -753,7 +739,7 @@ private:
 public:
     static BasicBlock* New(Compiler* compiler);
     static BasicBlock* New(Compiler* compiler, BBKinds kind);
-    static BasicBlock* New(Compiler* compiler, BBehfDesc* ehfTargets);
+    static BasicBlock* New(Compiler* compiler, BBJumpTable* ehfTargets);
     static BasicBlock* New(Compiler* compiler, BBswtDesc* swtTargets);
     static BasicBlock* New(Compiler* compiler, BBKinds kind, unsigned targetOffs);
 
@@ -1029,19 +1015,19 @@ public:
         bbSwtTargets = swtTarget;
     }
 
-    BBehfDesc* GetEhfTargets() const
+    BBJumpTable* GetEhfTargets() const
     {
         assert(KindIs(BBJ_EHFINALLYRET));
         return bbEhfTargets;
     }
 
-    void SetEhfTargets(BBehfDesc* ehfTarget)
+    void SetEhfTargets(BBJumpTable* ehfTarget)
     {
         assert(KindIs(BBJ_EHFINALLYRET));
         bbEhfTargets = ehfTarget;
     }
 
-    void SetEhf(BBehfDesc* ehfTarget)
+    void SetEhf(BBJumpTable* ehfTarget)
     {
         assert(ehfTarget != nullptr);
         bbKind       = BBJ_EHFINALLYRET;
@@ -1405,23 +1391,24 @@ public:
     BasicBlock* GetSucc(unsigned i) const;
     BasicBlock* GetSucc(unsigned i, Compiler* comp);
 
-    // SwitchTargets: convenience method for enabling range-based `for` iteration over a switch block's targets, e.g.:
-    //    for (BasicBlock* const bTarget : block->SwitchTargets()) ...
+    // SwitchSuccs: convenience method for enabling range-based `for` iteration over a switch block's unique successors,
+    // e.g.:
+    //    for (BasicBlock* const bTarget : block->SwitchSuccs()) ...
     //
-    BBSwitchTargetList SwitchTargets() const
+    BBJumpTableList SwitchSuccs() const
     {
         assert(bbKind == BBJ_SWITCH);
-        return BBSwitchTargetList(bbSwtTargets);
+        return BBJumpTableList((BBJumpTable*)bbSwtTargets);
     }
 
     // EHFinallyRetSuccs: convenience method for enabling range-based `for` iteration over BBJ_EHFINALLYRET block
     // successors, e.g.:
     //    for (BasicBlock* const succ : block->EHFinallyRetSuccs()) ...
     //
-    BBEhfSuccList EHFinallyRetSuccs() const
+    BBJumpTableList EHFinallyRetSuccs() const
     {
         assert(bbKind == BBJ_EHFINALLYRET);
-        return BBEhfSuccList(bbEhfTargets);
+        return BBJumpTableList(bbEhfTargets);
     }
 
     BasicBlock* GetUniquePred(Compiler* comp) const;
@@ -2280,6 +2267,70 @@ public:
     bool ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count = nullptr);
 };
 
+// BBJumpTable -- descriptor blocks with N successors
+//
+struct BBJumpTable
+{
+protected:
+    FlowEdge** succs;     // array of unique `FlowEdge*` pointing to the block's successors
+    unsigned   succCount; // Number of unique successors
+
+public:
+    BBJumpTable()
+        : succs(nullptr)
+        , succCount(0)
+    {
+    }
+
+    BBJumpTable(FlowEdge** succs, unsigned succCount)
+        : succs(succs)
+        , succCount(succCount)
+    {
+    }
+
+    BBJumpTable(Compiler* comp, const BBJumpTable* other);
+
+    FlowEdge** GetSuccs() const
+    {
+        return succs;
+    }
+
+    FlowEdge* GetSucc(unsigned index) const
+    {
+        assert(index < succCount);
+        assert(succs != nullptr);
+        return succs[index];
+    }
+
+    unsigned GetSuccCount() const
+    {
+        return succCount;
+    }
+
+    void SetSuccs(FlowEdge** newSuccs, unsigned newSuccCount)
+    {
+        assert((newSuccs != nullptr) || (newSuccCount == 0));
+
+        succs     = newSuccs;
+        succCount = newSuccCount;
+    }
+
+    void RemoveSucc(unsigned index)
+    {
+        assert(index < succCount);
+        assert(succs != nullptr);
+
+        // If succEdge is not the last entry, move everything after in the table down one slot.
+        if ((index + 1) < succCount)
+        {
+            memmove_s(succs + index, (succCount - index) * sizeof(FlowEdge*), succs + index + 1,
+                      (succCount - index - 1) * sizeof(FlowEdge*));
+        }
+
+        succCount--;
+    }
+};
+
 // BBswtDesc -- descriptor for a switch block
 //
 //  Things to know:
@@ -2289,11 +2340,20 @@ public:
 //     allows for a degenerate switch with zero cases. Normally, the optimizer will optimize degenerate
 //     switches with just a default case to a BBJ_ALWAYS branch, and a switch with just two cases to a BBJ_COND.
 //     However, in debuggable code, we might not do that, so bbsCount might be 1.
+//  3. BBswtDesc makes no promises about the relative positions of the 'succs' and 'cases' arrays.
+//     Callers are responsible for allocating these arrays during BBswtDesc creation.
+//     A potential optimization is to allocate one array large enough for the two;
+//     this is safe, because BBswtDesc does not support adding new cases/successors.
 //
-struct BBswtDesc
+struct BBswtDesc : public BBJumpTable
 {
-    FlowEdge** bbsDstTab; // case label table address
-    unsigned   bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
+private:
+    // Inherited from BBJumpTable:
+    // FlowEdge** succs;   // array of unique `FlowEdge*` pointing to the block's successors
+    // unsigned succCount; // Number of unique successors
+
+    unsigned   caseCount; // count of cases (includes 'default' if bbsHasDefault)
+    FlowEdge** cases;     // array of non-unique FlowEdge* pointing to the switch cases
 
     // Case number of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
@@ -2302,86 +2362,114 @@ struct BBswtDesc
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
 
-    BBswtDesc()
-        : bbsHasDefault(true)
+public:
+    BBswtDesc(FlowEdge** succs, unsigned succCount, FlowEdge** cases, unsigned caseCount, bool hasDefault)
+        : BBJumpTable(succs, succCount)
+        , caseCount(caseCount)
+        , cases(cases)
+        , bbsDominantCase(0)
+        , bbsHasDefault(hasDefault)
         , bbsHasDominantCase(false)
     {
     }
 
-    BBswtDesc(const BBswtDesc* other);
+    BBswtDesc(FlowEdge** succs,
+              unsigned   succCount,
+              FlowEdge** cases,
+              unsigned   caseCount,
+              bool       hasDefault,
+              unsigned   dominantCase)
+        : BBJumpTable(succs, succCount)
+        , caseCount(caseCount)
+        , cases(cases)
+        , bbsDominantCase(dominantCase)
+        , bbsHasDefault(hasDefault)
+        , bbsHasDominantCase(true)
+    {
+    }
 
     BBswtDesc(Compiler* comp, const BBswtDesc* other);
 
-    void removeDefault()
+    FlowEdge** GetCases() const
+    {
+        assert((cases != nullptr) || (caseCount == 0));
+        return cases;
+    }
+
+    FlowEdge* GetCase(unsigned index) const
+    {
+        assert(index < caseCount);
+        return cases[index];
+    }
+
+    unsigned GetCaseCount() const
+    {
+        return caseCount;
+    }
+
+    void RemoveDefaultCase()
     {
         assert(bbsHasDefault);
-        assert(bbsCount > 0);
+        assert(caseCount > 0);
         bbsHasDefault = false;
-        bbsCount--;
+        caseCount--;
     }
 
-    FlowEdge* getDefault()
+    bool HasDefaultCase() const
+    {
+        return bbsHasDefault;
+    }
+
+    FlowEdge* GetDefaultCase() const
     {
         assert(bbsHasDefault);
-        assert(bbsCount > 0);
-        return bbsDstTab[bbsCount - 1];
+        assert(caseCount > 0);
+        return cases[caseCount - 1];
     }
-};
 
-// BBSwitchTargetList out-of-class-declaration implementations (here due to C++ ordering requirements).
-//
-
-inline BBSwitchTargetList::BBSwitchTargetList(BBswtDesc* bbsDesc)
-    : m_bbsDesc(bbsDesc)
-{
-    assert(m_bbsDesc != nullptr);
-    assert(m_bbsDesc->bbsDstTab != nullptr);
-}
-
-inline BBArrayIterator BBSwitchTargetList::begin() const
-{
-    return BBArrayIterator(m_bbsDesc->bbsDstTab);
-}
-
-inline BBArrayIterator BBSwitchTargetList::end() const
-{
-    return BBArrayIterator(m_bbsDesc->bbsDstTab + m_bbsDesc->bbsCount);
-}
-
-// BBehfDesc -- descriptor for a BBJ_EHFINALLYRET block
-//
-struct BBehfDesc
-{
-    FlowEdge** bbeSuccs; // array of `FlowEdge*` pointing to BBJ_EHFINALLYRET block successors
-    unsigned   bbeCount; // size of `bbeSuccs` array
-
-    BBehfDesc()
-        : bbeSuccs(nullptr)
-        , bbeCount(0)
+    void SetDominantCase(unsigned dominantCase)
     {
+        assert(!bbsHasDominantCase);
+        bbsDominantCase    = dominantCase;
+        bbsHasDominantCase = true;
     }
 
-    BBehfDesc(Compiler* comp, const BBehfDesc* other);
+    void RemoveDominantCase()
+    {
+        assert(bbsHasDominantCase);
+        bbsHasDominantCase = false;
+    }
+
+    bool HasDominantCase() const
+    {
+        return bbsHasDominantCase;
+    }
+
+    unsigned GetDominantCase() const
+    {
+        assert(bbsHasDominantCase);
+        return bbsDominantCase;
+    }
 };
 
-// BBEhfSuccList out-of-class-declaration implementations (here due to C++ ordering requirements).
+// BBJumpTableList out-of-class-declaration implementations (here due to C++ ordering requirements).
 //
 
-inline BBEhfSuccList::BBEhfSuccList(BBehfDesc* bbeDesc)
-    : m_bbeDesc(bbeDesc)
+inline BBJumpTableList::BBJumpTableList(BBJumpTable* bbJumpTable)
+    : m_bbJumpTable(bbJumpTable)
 {
-    assert(m_bbeDesc != nullptr);
-    assert((m_bbeDesc->bbeSuccs != nullptr) || (m_bbeDesc->bbeCount == 0));
+    assert(m_bbJumpTable != nullptr);
+    assert((m_bbJumpTable->GetSuccs() != nullptr) || (m_bbJumpTable->GetSuccCount() == 0));
 }
 
-inline BBArrayIterator BBEhfSuccList::begin() const
+inline BBArrayIterator BBJumpTableList::begin() const
 {
-    return BBArrayIterator(m_bbeDesc->bbeSuccs);
+    return BBArrayIterator(m_bbJumpTable->GetSuccs());
 }
 
-inline BBArrayIterator BBEhfSuccList::end() const
+inline BBArrayIterator BBJumpTableList::end() const
 {
-    return BBArrayIterator(m_bbeDesc->bbeSuccs + m_bbeDesc->bbeCount);
+    return BBArrayIterator(m_bbJumpTable->GetSuccs() + m_bbJumpTable->GetSuccCount());
 }
 
 // SuccList out-of-class-declaration implementations
@@ -2439,17 +2527,17 @@ inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
             }
             else
             {
-                m_begin = block->GetEhfTargets()->bbeSuccs;
-                m_end   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
+                m_begin = block->GetEhfTargets()->GetSuccs();
+                m_end   = block->GetEhfTargets()->GetSuccs() + block->GetEhfTargets()->GetSuccCount();
             }
             break;
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
             assert(block->bbSwtTargets != nullptr);
-            assert(block->bbSwtTargets->bbsDstTab != nullptr);
-            m_begin = block->bbSwtTargets->bbsDstTab;
-            m_end   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
+            assert(block->bbSwtTargets->GetCases() != nullptr);
+            m_begin = block->bbSwtTargets->GetCases();
+            m_end   = block->bbSwtTargets->GetCases() + block->bbSwtTargets->GetCaseCount();
             break;
 
         default:
