@@ -34,8 +34,15 @@ namespace System.Net.Http.Functional.Tests
         {
             get
             {
-                var pi = Type.GetType("System.Net.Http.GlobalHttpSettings+SocketsHttpHandler, System.Net.Http").GetProperty("AllowHttp3");
-                return (bool)pi.GetValue(null);
+                try
+                {
+                    return QuicConnection.IsSupported
+                        && (bool)Type.GetType("System.Net.Http.GlobalHttpSettings+SocketsHttpHandler, System.Net.Http").GetProperty("AllowHttp3").GetValue(null);
+                }
+                catch (System.PlatformNotSupportedException)
+                {
+                    return false;
+                }
             }
         }
 
