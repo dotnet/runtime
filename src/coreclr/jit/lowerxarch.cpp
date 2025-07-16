@@ -9369,84 +9369,113 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         return;
     }
 
+    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
+    // The containment check has already validated that the child is sufficiently large.
+    //
     // We use the parent node's base type, because we must ensure that the constant repeats correctly for that size,
     // regardless of how the constant vector was created.
 
-    var_types   simdBaseType    = parentNode->GetSimdBaseType();
-    CorInfoType simdBaseJitType = parentNode->GetSimdBaseJitType();
+    var_types   simdType            = childNode->TypeGet();
+    var_types   simdBaseType        = parentNode->GetSimdBaseType();
+    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
+    bool        isCreatedFromScalar = true;
 
-    if (varTypeIsSmall(simdBaseType) || !childNode->IsBroadcast(simdBaseType))
+    if (varTypeIsSmall(simdBaseType))
     {
-        MakeSrcContained(parentNode, childNode);
-        return;
-    }
-
-    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
-    // The containment check has already validated that the child is sufficiently large.
-
-    var_types      simdType      = childNode->TypeGet();
-    NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
-    GenTree*       constScalar   = nullptr;
-
-    if (simdType == TYP_SIMD32)
-    {
-        broadcastName = NI_AVX2_BroadcastScalarToVector256;
-    }
-    else if (simdType == TYP_SIMD64)
-    {
-        broadcastName = NI_AVX512_BroadcastScalarToVector512;
+        isCreatedFromScalar = false;
     }
     else
     {
-        assert(simdType == TYP_SIMD16);
+        isCreatedFromScalar = childNode->IsBroadcast(simdBaseType);
     }
 
-    switch (simdBaseType)
+    if (isCreatedFromScalar)
     {
-        case TYP_FLOAT:
+        NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
+        if (simdType == TYP_SIMD32)
         {
-            float scalar = childNode->gtSimdVal.f32[0];
-            constScalar  = comp->gtNewDconNodeF(scalar);
-            break;
+            broadcastName = NI_AVX2_BroadcastScalarToVector256;
         }
-        case TYP_DOUBLE:
+        else if (simdType == TYP_SIMD64)
         {
-            double scalar = childNode->gtSimdVal.f64[0];
-            constScalar   = comp->gtNewDconNodeD(scalar);
-            break;
+            broadcastName = NI_AVX512_BroadcastScalarToVector512;
         }
-        case TYP_INT:
-        case TYP_UINT:
+        else
         {
-            int32_t scalar = childNode->gtSimdVal.i32[0];
-            constScalar    = comp->gtNewIconNode(scalar);
-            break;
+            assert(simdType == TYP_SIMD16);
         }
-        case TYP_LONG:
-        case TYP_ULONG:
+
+        GenTree* constScalar = nullptr;
+        switch (simdBaseType)
         {
-            int64_t scalar = childNode->gtSimdVal.i64[0];
-            constScalar    = comp->gtNewLconNode(scalar);
-            break;
+            case TYP_FLOAT:
+            {
+                float scalar = childNode->gtSimdVal.f32[0];
+                constScalar  = comp->gtNewDconNodeF(scalar);
+                break;
+            }
+            case TYP_DOUBLE:
+            {
+                double scalar = childNode->gtSimdVal.f64[0];
+                constScalar   = comp->gtNewDconNodeD(scalar);
+                break;
+            }
+            case TYP_INT:
+            {
+                int32_t scalar = childNode->gtSimdVal.i32[0];
+                constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
+                break;
+            }
+            case TYP_UINT:
+            {
+                uint32_t scalar = childNode->gtSimdVal.u32[0];
+                constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
+                break;
+            }
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                int64_t scalar = childNode->gtSimdVal.i64[0];
+                constScalar    = comp->gtNewLconNode(scalar);
+                break;
+            }
+            default:
+                unreached();
         }
-        default:
-            unreached();
+
+        GenTreeHWIntrinsic* createScalar =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe, simdBaseJitType,
+                                           16);
+        GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName,
+                                                                           simdBaseJitType, genTypeSize(simdType));
+        BlockRange().InsertBefore(childNode, broadcastNode);
+        BlockRange().InsertBefore(broadcastNode, createScalar);
+        BlockRange().InsertBefore(createScalar, constScalar);
+        LIR::Use use;
+        if (BlockRange().TryGetUse(childNode, &use))
+        {
+            use.ReplaceWith(broadcastNode);
+        }
+        else
+        {
+            broadcastNode->SetUnusedValue();
+        }
+
+        BlockRange().Remove(childNode);
+        LowerNode(createScalar);
+        LowerNode(broadcastNode);
+        if (varTypeIsFloating(simdBaseType))
+        {
+            MakeSrcContained(broadcastNode, createScalar);
+        }
+        else if (constScalar->TypeIs(TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG))
+        {
+            MakeSrcContained(broadcastNode, constScalar);
+        }
+        MakeSrcContained(parentNode, broadcastNode);
+        return;
     }
-
-    GenTreeHWIntrinsic* broadcastNode =
-        comp->gtNewSimdHWIntrinsicNode(simdType, constScalar, broadcastName, simdBaseJitType, genTypeSize(simdType));
-
-    BlockRange().InsertBefore(parentNode, constScalar, broadcastNode);
-    BlockRange().Remove(childNode);
-
-    GenTree** use      = nullptr;
-    bool      useFound = parentNode->TryGetUse(childNode, &use);
-    assert(useFound);
-
-    parentNode->ReplaceOperand(use, broadcastNode);
-
-    MakeSrcContained(broadcastNode, constScalar);
-    MakeSrcContained(parentNode, broadcastNode);
+    MakeSrcContained(parentNode, childNode);
 }
 
 //------------------------------------------------------------------------
