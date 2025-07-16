@@ -1188,7 +1188,7 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: false, cancellationToken))
+                    if (socket.ConnectAsync(this, userSocket: true, saeaMultiConnectCancelable: false, cancellationToken))
                     {
                         _cancellationToken = cancellationToken;
                         return new ValueTask(this, _mrvtsc.Version);

@@ -780,7 +780,7 @@ namespace System.Net.Sockets
                         }
 
                         // Issue the connect.  If it pends, wait for it to complete.
-                        if (attemptSocket.ConnectAsync(internalArgs, userSocket: true, saeaCancelable: false, cancellationToken))
+                        if (attemptSocket.ConnectAsync(internalArgs, userSocket: true, saeaMultiConnectCancelable: false, cancellationToken))
                         {
                             await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
                         }
