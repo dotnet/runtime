@@ -378,7 +378,7 @@ namespace System.Net.Security.Tests
             yield return new object[] { "test" };
             // max allowed hostname length is 63
             yield return new object[] { new string('a', 63) };
-            yield return new object[] { "\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144. \u7EA2\u70E7. \u7167\u308A\u713C\u304D" };
+            yield return new object[] { "\u017C\u00F3\u0142\u0107g\u0119\u015Bl\u0105ja\u017A\u0144.\u7EA2\u70E7.\u7167\u308A\u713C\u304D" };
         }
     }
 }
