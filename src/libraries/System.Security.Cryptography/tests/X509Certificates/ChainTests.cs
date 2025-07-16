@@ -365,6 +365,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
                         chainTest.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                         chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                        allowedFlags |= X509ChainStatusFlags.UntrustedRoot;
                         break;
                     default:
                         throw new InvalidDataException();
