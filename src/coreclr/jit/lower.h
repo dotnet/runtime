@@ -156,9 +156,12 @@ private:
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
-    GenTree*   OptimizeConstCompare(GenTree* cmp);
-    GenTree*   LowerCompare(GenTree* cmp);
-    GenTree*   LowerJTrue(GenTreeOp* jtrue);
+    GenTree* OptimizeConstCompare(GenTree* cmp);
+    GenTree* LowerCompare(GenTree* cmp);
+    GenTree* LowerJTrue(GenTreeOp* jtrue);
+#ifdef TARGET_RISCV64
+    bool LowerAndReverseFloatingCompare(GenTree* cmp);
+#endif
     GenTree*   LowerSelect(GenTreeConditional* cond);
     bool       TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenTree*      condition,

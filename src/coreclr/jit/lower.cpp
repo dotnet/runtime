@@ -4448,32 +4448,79 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #elif defined(TARGET_RISCV64)
-    GenTree*& left  = cmp->AsOp()->gtOp1;
-    GenTree*& right = cmp->AsOp()->gtOp2;
-
+    // Note: branch instructions are fused with a full range of integer comparisons. However, comparisons which save the
+    // result to a register are covered with fewer instructions:
+    //  * for integer: "<" (with unsigned and immediate variants),
+    //  * for floating: "<", "<=", "==" (ordered only, register only),
+    // so the rest is achieved through various transformations.
     LIR::Use cmpUse;
     if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
     {
+        GenTree*& left  = cmp->AsOp()->gtOp1;
+        GenTree*& right = cmp->AsOp()->gtOp2;
+
+        bool isReversed = false;
         if (varTypeIsFloating(left))
         {
-            assert(left->TypeIs(right->TypeGet()));
-            if ((cmp->gtFlags & GTF_RELOP_NAN_UN) != 0)
-            {
-                comp->gtReverseCond(cmp);
-                GenTree* notOp = comp->gtNewOperNode(GT_NOT, cmp->gtType, cmp);
-                BlockRange().InsertAfter(cmp, notOp);
-                cmpUse.ReplaceWith(notOp);
-            }
+            // a CMP b (unordered) --->   !(a reversedCMP b (ordered))
+            isReversed = LowerAndReverseFloatingCompare(cmp);
         }
-    }
-
-    if (varTypeIsFloating(left))
-    {
-        bool isUnordered = (cmp->gtFlags & GTF_RELOP_NAN_UN) != 0;
-        if ((!isUnordered && cmp->OperIs(GT_GT, GT_GE)) || (isUnordered && cmp->OperIs(GT_LE, GT_LT)))
+        else
         {
-            cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
-            std::swap(left, right);
+            assert(varTypeUsesIntReg(left));
+            if (cmp->OperIs(GT_EQ, GT_NE))
+            {
+                if (!right->IsIntegralConst(0))
+                {
+                    // a == b  --->  (a - b) == 0
+
+                    // We may be comparing GC types, the type of the operands is GC but the type of the difference is
+                    // not. The objects may be relocated but it's OK as the diff is used to only check against zero.
+                    var_types type = genActualTypeIsInt(left) ? TYP_INT : TYP_LONG;
+                    left           = comp->gtNewOperNode(GT_SUB, type, left, right);
+                    right          = comp->gtNewZeroConNode(type);
+                    BlockRange().InsertBefore(cmp, left);
+                    BlockRange().InsertBefore(cmp, right);
+                    ContainCheckBinary(left->AsOp());
+                }
+                // a == 0  --->  a <= 0 (unsigned)
+                cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_LE : GT_GT);
+                cmp->SetUnsigned();
+            }
+            assert(!cmp->OperIs(GT_EQ, GT_NE));
+
+            if (right->IsIntegralConst() && cmp->OperIs(GT_LE, GT_GT))
+            {
+                // a <= C  --->  a < C+1
+                if (cmp->IsUnsigned() && right->IsIntegralConst(SIZE_T_MAX))
+                {
+                    // (max+1) wraps to 0 so unsigned (a < max+1) would be always false instead of true
+                    BlockRange().Remove(left);
+                    BlockRange().Remove(right);
+                    cmp->BashToConst(cmp->OperIs(GT_LE) ? 1 : 0);
+                    return cmp->gtNext;
+                }
+                INT64 value = right->AsIntConCommon()->IntegralValue();
+                right->AsIntConCommon()->SetIntegralValue(value + 1);
+                cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GE);
+            }
+            // a <= b  --->  !(a > b)
+            isReversed = cmp->OperIs(GT_LE, GT_GE);
+            if (isReversed)
+                cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+
+            if (cmp->OperIs(GT_GT))
+            {
+                cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
+                std::swap(cmp->AsOp()->gtOp1, cmp->AsOp()->gtOp2);
+            }
+            assert(cmp->OperIs(GT_LT));
+        }
+        if (isReversed)
+        {
+            GenTree* notOp = comp->gtNewOperNode(GT_NOT, cmp->gtType, cmp);
+            BlockRange().InsertAfter(cmp, notOp);
+            cmpUse.ReplaceWith(notOp);
         }
     }
 #endif // TARGET_RISCV64
