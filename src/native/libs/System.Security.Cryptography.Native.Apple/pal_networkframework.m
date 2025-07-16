@@ -261,7 +261,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
             if (sec_identity != NULL)
             {
                 complete(sec_identity);
-                nw_release(sec_identity);
+                sec_release(sec_identity);
             }
 
             return;
