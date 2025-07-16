@@ -338,10 +338,10 @@ namespace System.Threading
                 return false;
             }
 
-            uint startTime = 0;
+            long startTime = 0;
             if (millisecondsTimeout != Timeout.UnsignedInfinite && millisecondsTimeout > 0)
             {
-                startTime = TimeoutHelper.GetTime();
+                startTime = TimeoutHelper.GetTime64();
             }
 
             bool waitSuccessful = false;
@@ -465,7 +465,7 @@ namespace System.Threading
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
         /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
         [UnsupportedOSPlatform("browser")]
-        private bool WaitUntilCountOrTimeout(uint millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
+        private bool WaitUntilCountOrTimeout(uint millisecondsTimeout, long startTime, CancellationToken cancellationToken)
         {
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
@@ -483,7 +483,7 @@ namespace System.Threading
                 bool timeoutIsCapped = false;
                 if (millisecondsTimeout != Timeout.UnsignedInfinite)
                 {
-                    uint remainingWaitMilliseconds = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
+                    long remainingWaitMilliseconds = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
                     if (remainingWaitMilliseconds <= 0)
                     {
                         // The thread has expires its timeout

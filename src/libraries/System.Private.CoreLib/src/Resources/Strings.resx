@@ -3411,7 +3411,7 @@
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
   </data>
   <data name="SemaphoreSlim_Wait_TimeSpanTimeoutWrong" xml:space="preserve">
-    <value>The timeout must represent a value between -1 and Timer.MaxSupportedTimeout, inclusive.</value>
+    <value>The timeout must represent a value between -1 and the maximum allowed timer duration.</value>
   </data>
   <data name="Serialization_BadParameterInfo" xml:space="preserve">
     <value>Non existent ParameterInfo. Position bigger than member's parameters length.</value>
