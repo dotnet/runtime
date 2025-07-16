@@ -2164,9 +2164,18 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
+            case NI_Sve2_MultiplySubtractBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
                 isLowVectorOpNum = (opNum == 3);
                 break;
             case NI_Sve_MultiplyBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEven:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
                 isLowVectorOpNum = (opNum == 2);
                 break;
             default:
@@ -2183,7 +2192,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             }
             else
             {
-                assert(baseElementSize == 4);
+                assert(baseElementSize <= 4);
                 opCandidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
             }
         }

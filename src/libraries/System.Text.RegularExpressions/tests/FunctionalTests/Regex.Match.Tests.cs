@@ -1238,7 +1238,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             string input = new string(chars);
 
-            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}^", RegexOptions.None, TimeSpan.FromMilliseconds(10));
+            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}^", RegexOptions.None, TimeSpan.FromMilliseconds(1));
             Assert.Throws<RegexMatchTimeoutException>(() => { re.Match(input); });
         }
 

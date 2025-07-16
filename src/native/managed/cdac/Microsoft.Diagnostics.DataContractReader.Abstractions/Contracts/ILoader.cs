@@ -75,10 +75,11 @@ public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
-    ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
-
-    IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandleFromModulePtr(TargetPointer modulePointer) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer) => throw new NotImplementedException();
+    IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
+    TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();

@@ -1984,17 +1984,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (node->GetOperandCount() == 3)
                 {
-                    assert(node->GetAuxiliaryType() != TYP_UNKNOWN);
                     node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), node->Op(3), lclVar);
-                }
-                else if (node->GetOperandCount() == 2)
-                {
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
                 else
                 {
-                    assert(node->GetOperandCount() == 1);
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), lclVar);
+                    assert(node->GetOperandCount() == 2);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
             }
 
@@ -4026,7 +4021,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     const GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
-                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
+                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatible())
                     {
                         bool     contain  = false;
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());

@@ -755,6 +755,8 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 
+        UnwindInfoTable::Initialize();
+
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -804,6 +806,7 @@ void EEStartupHelper()
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
+        CDacPlatformMetadata::InitPrecodes();
 
         InitializeGarbageCollector();
 
