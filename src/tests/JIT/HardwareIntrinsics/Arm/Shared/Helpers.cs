@@ -10951,11 +10951,45 @@ namespace JIT.HardwareIntrinsics.Arm
             return even;
         }
 
+        public static T[] SubtractBorrowWideningEven<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
+        public static T[] SubtractBorrowWideningOdd<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i+1];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
         public static sbyte SubtractHighNarrowingEven(short[] left, short[] right, int i)
         {
             if (i % 2 == 0)
             {
-                return (sbyte) ((left[i / 2] - right[i / 2]) >> 8);
+                return (sbyte)((left[i / 2] - right[i / 2]) >> 8);
             }
 
             return 0;
@@ -11079,40 +11113,6 @@ namespace JIT.HardwareIntrinsics.Arm
             T zero = T.Zero;
             T carryOut = (sum < a || (sum == a && carryIn == one)) ? one : zero;
             return (sum, carryOut);
-        }
-
-        public static T[] SubtractWithBorrowWideningLower<T>(T[] op1, T[] op2, T[] op3)
-            where T : unmanaged, IBinaryInteger<T>
-        {
-            T[] result = new T[op1.Length];
-            for (int i = 0; i < op1.Length; i += 2)
-            {
-                T a = op1[i];
-                T b = ~op2[i];
-                T carryIn = op3[i + 1] & T.One;
-                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
-                result[i] = sum;
-                result[i + 1] = carryOut;
-            }
-
-            return result;
-        }
-
-        public static T[] SubtractWithBorrowWideningUpper<T>(T[] op1, T[] op2, T[] op3)
-            where T : unmanaged, IBinaryInteger<T>
-        {
-            T[] result = new T[op1.Length];
-            for (int i = 0; i < op1.Length; i += 2)
-            {
-                T a = op1[i];
-                T b = ~op2[i+1];
-                T carryIn = op3[i + 1] & T.One;
-                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
-                result[i] = sum;
-                result[i + 1] = carryOut;
-            }
-
-            return result;
         }
 
         public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>

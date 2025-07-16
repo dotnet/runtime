@@ -6425,6 +6425,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<byte> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<ushort> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractBorrowWideningEven(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractBorrowWideningEven(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractBorrowWideningOdd(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractBorrowWideningOdd(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
         public static System.Numerics.Vector<sbyte> SubtractHighNarrowingEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<short> SubtractHighNarrowingEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
         public static System.Numerics.Vector<int> SubtractHighNarrowingEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
@@ -6437,14 +6441,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<byte> SubtractHighNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<ushort> SubtractHighNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<uint> SubtractHighNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
-        public static System.Numerics.Vector<byte> SubtractSaturateReversed(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<short> SubtractSaturateReversed(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
-        public static System.Numerics.Vector<int> SubtractSaturateReversed(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<long> SubtractSaturateReversed(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
-        public static System.Numerics.Vector<sbyte> SubtractSaturateReversed(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<ushort> SubtractSaturateReversed(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
-        public static System.Numerics.Vector<uint> SubtractSaturateReversed(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
-        public static System.Numerics.Vector<ulong> SubtractSaturateReversed(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static new System.Numerics.Vector<byte> SubtractSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static new System.Numerics.Vector<short> SubtractSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static new System.Numerics.Vector<int> SubtractSaturate(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -6483,10 +6479,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<short> SubtractWideningOddEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<int> SubtractWideningOddEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<long> SubtractWideningOddEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<uint> SubtractWithBorrowWideningLower(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
-        public static System.Numerics.Vector<ulong> SubtractWithBorrowWideningLower(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
-        public static System.Numerics.Vector<uint> SubtractWithBorrowWideningUpper(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
-        public static System.Numerics.Vector<ulong> SubtractWithBorrowWideningUpper(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
         public static System.Numerics.Vector<byte> VectorTableLookup((System.Numerics.Vector<byte> data1, System.Numerics.Vector<byte> data2) table, System.Numerics.Vector<byte> indices) { throw null; }
         public static  System.Numerics.Vector<ushort> VectorTableLookup((System.Numerics.Vector<ushort> data1, System.Numerics.Vector<ushort> data2) table, System.Numerics.Vector<ushort> indices) { throw null; }
         public static  System.Numerics.Vector<uint> VectorTableLookup((System.Numerics.Vector<uint> data1, System.Numerics.Vector<uint> data2) table, System.Numerics.Vector<uint> indices) { throw null; }

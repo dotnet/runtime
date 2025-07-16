@@ -2198,6 +2198,36 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateOdd(Vector<uint> even, Vector<ulong> value, [ConstantExpected] byte count) => ShiftRightLogicalRoundedNarrowingSaturateOdd(even, value, count);
 
 
+        // Subtract with borrow long (bottom)
+
+        /// <summary>
+        /// svuint32_t svsbclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   SBCLB Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<uint> SubtractBorrowWideningEven(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => SubtractBorrowWideningEven(op1, op2, op3);
+
+        /// <summary>
+        /// svuint64_t svsbclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   SBCLB Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<ulong> SubtractBorrowWideningEven(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => SubtractBorrowWideningEven(op1, op2, op3);
+
+
+        // Subtract with borrow long (top)
+
+        /// <summary>
+        /// svuint32_t svsbclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   SBCLT Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<uint> SubtractBorrowWideningOdd(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => SubtractBorrowWideningOdd(op1, op2, op3);
+
+        /// <summary>
+        /// svuint64_t svsbclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   SBCLT Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<ulong> SubtractBorrowWideningOdd(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => SubtractBorrowWideningOdd(op1, op2, op3);
+
+
         // Subtract narrow high part (bottom)
 
         /// <summary>
@@ -2365,97 +2395,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UQSUB Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static new Vector<ulong> SubtractSaturate(Vector<ulong> left, Vector<ulong> right) => SubtractSaturate(left, right);
-
-
-        // Saturating subtract reversed
-
-        /// <summary>
-        /// svuint8_t svqsubr[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        /// svuint8_t svqsubr[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        /// svuint8_t svqsubr[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
-        ///   UQSUBR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   UQSUBR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   UQSUB Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   UQSUB Zresult.B, Zop2.B, Zop1.B
-        /// </summary>
-        public static Vector<byte> SubtractSaturateReversed(Vector<byte> left, Vector<byte> right) => SubtractSaturateReversed(left, right);
-
-        /// <summary>
-        /// svint16_t svqsubr[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
-        /// svint16_t svqsubr[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
-        /// svint16_t svqsubr[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   SQSUBR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   SQSUBR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   SQSUB Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   SQSUB Zresult.H, Zop2.H, Zop1.H
-        /// </summary>
-        public static Vector<short> SubtractSaturateReversed(Vector<short> left, Vector<short> right) => SubtractSaturateReversed(left, right);
-
-        /// <summary>
-        /// svint32_t svqsubr[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
-        /// svint32_t svqsubr[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
-        /// svint32_t svqsubr[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   SQSUBR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   SQSUBR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   SQSUB Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   SQSUB Zresult.S, Zop2.S, Zop1.S
-        /// </summary>
-        public static Vector<int> SubtractSaturateReversed(Vector<int> left, Vector<int> right) => SubtractSaturateReversed(left, right);
-
-        /// <summary>
-        /// svint64_t svqsubr[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
-        /// svint64_t svqsubr[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
-        /// svint64_t svqsubr[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   SQSUBR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   SQSUBR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   SQSUB Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   SQSUB Zresult.D, Zop2.D, Zop1.D
-        /// </summary>
-        public static Vector<long> SubtractSaturateReversed(Vector<long> left, Vector<long> right) => SubtractSaturateReversed(left, right);
-
-        /// <summary>
-        /// svint8_t svqsubr[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
-        /// svint8_t svqsubr[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
-        /// svint8_t svqsubr[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   SQSUBR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   SQSUBR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   SQSUB Ztied2.B, Pg/M, Ztied2.B, Zop1.B
-        ///   SQSUB Zresult.B, Zop2.B, Zop1.B
-        /// </summary>
-        public static Vector<sbyte> SubtractSaturateReversed(Vector<sbyte> left, Vector<sbyte> right) => SubtractSaturateReversed(left, right);
-
-        /// <summary>
-        /// svuint16_t svqsubr[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        /// svuint16_t svqsubr[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        /// svuint16_t svqsubr[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   UQSUBR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   UQSUBR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   UQSUB Ztied2.H, Pg/M, Ztied2.H, Zop1.H
-        ///   UQSUB Zresult.H, Zop2.H, Zop1.H
-        /// </summary>
-        public static Vector<ushort> SubtractSaturateReversed(Vector<ushort> left, Vector<ushort> right) => SubtractSaturateReversed(left, right);
-
-        /// <summary>
-        /// svuint32_t svqsubr[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        /// svuint32_t svqsubr[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        /// svuint32_t svqsubr[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
-        ///   UQSUBR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   UQSUBR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   UQSUB Ztied2.S, Pg/M, Ztied2.S, Zop1.S
-        ///   UQSUB Zresult.S, Zop2.S, Zop1.S
-        /// </summary>
-        public static Vector<uint> SubtractSaturateReversed(Vector<uint> left, Vector<uint> right) => SubtractSaturateReversed(left, right);
-
-        /// <summary>
-        /// svuint64_t svqsubr[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        /// svuint64_t svqsubr[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        /// svuint64_t svqsubr[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   UQSUBR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   UQSUBR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   UQSUB Ztied2.D, Pg/M, Ztied2.D, Zop1.D
-        ///   UQSUB Zresult.D, Zop2.D, Zop1.D
-        /// </summary>
-        public static Vector<ulong> SubtractSaturateReversed(Vector<ulong> left, Vector<ulong> right) => SubtractSaturateReversed(left, right);
 
 
         // Subtract wide (bottom)
@@ -2654,36 +2593,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SSUBLTB Zresult.D, Zop1.S, Zop2.S
         /// </summary>
         public static Vector<long> SubtractWideningOddEven(Vector<int> left, Vector<int> right) => SubtractWideningOddEven(left, right);
-
-
-        // Subtract with borrow long (bottom)
-
-        /// <summary>
-        /// svuint32_t svsbclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
-        ///   SBCLB Ztied1.S, Zop2.S, Zop3.S
-        /// </summary>
-        public static Vector<uint> SubtractWithBorrowWideningLower(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => SubtractWithBorrowWideningLower(op1, op2, op3);
-
-        /// <summary>
-        /// svuint64_t svsbclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
-        ///   SBCLB Ztied1.D, Zop2.D, Zop3.D
-        /// </summary>
-        public static Vector<ulong> SubtractWithBorrowWideningLower(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => SubtractWithBorrowWideningLower(op1, op2, op3);
-
-
-        // Subtract with borrow long (top)
-
-        /// <summary>
-        /// svuint32_t svsbclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
-        ///   SBCLT Ztied1.S, Zop2.S, Zop3.S
-        /// </summary>
-        public static Vector<uint> SubtractWithBorrowWideningUpper(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => SubtractWithBorrowWideningUpper(op1, op2, op3);
-
-        /// <summary>
-        /// svuint64_t svsbclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
-        ///   SBCLT Ztied1.D, Zop2.D, Zop3.D
-        /// </summary>
-        public static Vector<ulong> SubtractWithBorrowWideningUpper(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => SubtractWithBorrowWideningUpper(op1, op2, op3);
 
 
         // Bit vector table lookups
