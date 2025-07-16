@@ -6024,13 +6024,20 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
-            tasks.Length switch
+        public static Task WhenAll(params ReadOnlySpan<Task> tasks)
+        {
+            static Task Throw()
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.task);
+                throw null!;
+            }
+            return tasks.Length switch
             {
                 0 => Task.CompletedTask,
-                1 => tasks[0] ?? ThrowHelper.ThrowArgumentNullException(ExceptionArgument.task),
+                1 => tasks[0] ?? Throw(),
                 _ => new WhenAllPromise(tasks)
             };
+        }
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
