@@ -371,7 +371,7 @@ namespace IDynamicInterfaceCastableTests
 
             Console.WriteLine(" -- Validate method call");
             Assert.Same(castableObj, testObj.ReturnThis());
-            Assert.Equal(typeof(DynamicInterfaceCastable), testObj.GetMyType());
+            Assert.Equal(typeof(DynamicInterfaceCastable_ValidateBasicInterface), testObj.GetMyType());
 
             Console.WriteLine(" -- Validate method call which calls methods using 'this'");
             Assert.Equal(DynamicInterfaceCastable.ImplementedMethodReturnValue, testObj.CallImplemented(ImplementationToCall.Class));
