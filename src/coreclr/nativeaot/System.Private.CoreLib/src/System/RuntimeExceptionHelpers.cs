@@ -192,6 +192,37 @@ namespace System
         }
 
         private static ulong s_crashingThreadId;
+        private static CrashInfo? s_crashInfo;
+        private static object s_crashLockObject = new object();
+
+        internal static CrashInfo SerializeCrashInfo(RhFailFastReason reason, string? message, Exception? exception)
+        {
+            if (s_crashInfo != null)
+            {
+                // If we have already reported a crash, return the existing crash info.
+                return s_crashInfo.Value;
+            }
+
+            lock (s_crashLockObject)
+            {
+                if (s_crashInfo != null)
+                {
+                    return s_crashInfo.Value;
+                }
+                CrashInfo crashInfo = new();
+
+                crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
+                if (exception != null)
+                {
+                    crashInfo.WriteException(exception);
+                }
+                crashInfo.Close();
+                s_crashInfo = crashInfo;
+
+                return crashInfo;
+            }
+
+        }
 
         [DoesNotReturn]
         internal static unsafe void FailFast(string? message = null, Exception? exception = null, string? errorSource = null,
@@ -206,9 +237,6 @@ namespace System
             ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousThreadId == 0)
             {
-                CrashInfo crashInfo = new();
-                crashInfo.Open(reason, s_crashingThreadId, message ?? GetStringForFailFastReason(reason));
-
                 bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
                 if (!minimalFailFast)
                 {
@@ -264,14 +292,9 @@ namespace System
                         reporter.Report();
                     }
 #endif
+                } // !minimalFailFast
 
-                    if (exception != null)
-                    {
-                        crashInfo.WriteException(exception);
-                    }
-                }
-
-                crashInfo.Close();
+                CrashInfo crashInfo = SerializeCrashInfo(reason, message, minimalFailFast ? null : exception);
 
                 triageBufferAddress = crashInfo.TriageBufferAddress;
                 triageBufferSize = crashInfo.TriageBufferSize;
