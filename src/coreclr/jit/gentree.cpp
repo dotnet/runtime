@@ -2344,6 +2344,34 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 }
 
 //-------------------------------------------------------------------------
+// IsHelperCallOrUserEquivalent: Determine if this GT_CALL node is a specific helper call
+//     or its CT_USER equivalent.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeFindHelper
+//
+// Return Value:
+//     Returns true if this GT_CALL node is a call to the specified helper.
+//
+bool GenTreeCall::IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned helper) const
+{
+    CORINFO_METHOD_HANDLE helperCallHnd = Compiler::eeFindHelper(helper);
+    if (IsHelperCall())
+    {
+        return helperCallHnd == gtCallMethHnd;
+    }
+
+    CORINFO_METHOD_HANDLE userCallHnd = NO_METHOD_HANDLE;
+
+    auto mmap = compiler->impInlineRoot()->m_helperToManagedMap;
+    auto cc   = mmap != nullptr ? mmap->GetCount() : -1;
+    if (ISMETHOD("Test"))
+        printf("1");
+
+    return compiler->impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &userCallHnd);
+}
+
+//-------------------------------------------------------------------------
 // IsRuntimeLookupHelperCall: Determine if this GT_CALL node represents a runtime lookup helper call.
 //
 // Arguments:
@@ -12845,6 +12873,9 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     break;
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                     printf(" isKnownConst");
+                    break;
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrierUnchecked:
+                    printf(" writeBarrierUnchecked");
                     break;
 #if defined(FEATURE_SIMD)
                 case NI_SIMD_UpperRestore:
