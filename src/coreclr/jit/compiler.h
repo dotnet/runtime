@@ -3694,13 +3694,14 @@ public:
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
+    GenTree* gtFoldExprOp(GenTreeOp* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldExprSpecialFloating(GenTree* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
-    GenTree* gtFoldExprCompare(GenTree* tree);
-    GenTree* gtFoldExprConditional(GenTree* tree);
+    GenTree* gtFoldExprCompare(GenTreeOp* tree);
+    GenTree* gtFoldExprConditional(GenTreeConditional* tree);
     GenTree* gtFoldExprCall(GenTreeCall* call);
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);

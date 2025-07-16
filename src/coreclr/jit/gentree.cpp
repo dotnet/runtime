@@ -13585,8 +13585,6 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
 
 GenTree* Compiler::gtFoldExpr(GenTree* tree)
 {
-    unsigned kind = tree->OperKind();
-
     /* We must have a simple operation to fold */
 
     // If we're in CSE, it's not safe to perform tree
@@ -13602,11 +13600,18 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
-    if (!(kind & GTK_SMPOP))
+    unsigned kind = tree->OperKind();
+
+    if ((kind & GTK_LEAF) != 0)
+    {
+        return tree;
+    }
+
+    if ((kind & GTK_SMPOP) == 0)
     {
         if (tree->OperIsConditional())
         {
-            return gtFoldExprConditional(tree);
+            return gtFoldExprConditional(tree->AsConditional());
         }
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -13619,11 +13624,40 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
-    GenTree* op1 = tree->AsOp()->gtOp1;
+    return gtFoldExprOp(tree->AsOp());
+}
+
+//------------------------------------------------------------------------------
+// gtFoldExprOp: Folds an op node if possible
+//
+// Arguments:
+//    tree   -  The tree to fold
+//
+// Return Value:
+//    The folded expression if folding was possible; otherwise, tree
+//
+GenTree* Compiler::gtFoldExprOp(GenTreeOp* tree)
+{
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
+
+    GenTree* op1 = tree->gtOp1;
+
+    if (op1 == nullptr)
+    {
+        return tree;
+    }
+
+    op1         = gtFoldExpr(op1);
+    tree->gtOp1 = op1;
+
+    bool op1IsConst = op1->OperIsConst();
 
     /* Filter out non-foldable trees that can have constant children */
 
+    unsigned kind = tree->OperKind();
     assert(kind & (GTK_UNOP | GTK_BINOP));
+
     switch (tree->gtOper)
     {
         case GT_RETFILT:
@@ -13636,25 +13670,35 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
     /* try to fold the current node */
 
-    if ((kind & GTK_UNOP) && op1)
+    if ((kind & GTK_UNOP) != 0)
     {
-        if (op1->OperIsConst())
+        if (op1IsConst)
         {
             return gtFoldExprConst(tree);
         }
     }
-    else if ((kind & GTK_BINOP) && op1 && tree->AsOp()->gtOp2)
+    else if ((kind & GTK_BINOP) != 0)
     {
-        GenTree* op2 = tree->AsOp()->gtOp2;
+        GenTree* op2 = tree->gtOp2;
+
+        if (op2 == nullptr)
+        {
+            return tree;
+        }
+
+        op2         = gtFoldExpr(op2);
+        tree->gtOp2 = op2;
+
+        bool op2IsConst = op2->OperIsConst();
 
         // The atomic operations are exempted here because they are never computable statically;
         // one of their arguments is an address.
-        if (op1->OperIsConst() && op2->OperIsConst() && !tree->OperIsAtomicOp())
+        if (op1IsConst && op2IsConst && !tree->OperIsAtomicOp())
         {
             /* both nodes are constants - fold the expression */
             return gtFoldExprConst(tree);
         }
-        else if (op1->OperIsConst() || op2->OperIsConst())
+        else if (op1IsConst || op2IsConst)
         {
             // At least one is a constant - see if we have a
             // special operator that can use only one constant
@@ -13671,13 +13715,11 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         else if (tree->OperIsCompare())
         {
             /* comparisons of two local variables can sometimes be folded */
-
             return gtFoldExprCompare(tree);
         }
     }
 
     /* Return the original node (folded/bashed or not) */
-
     return tree;
 }
 
@@ -13800,10 +13842,13 @@ GenTree* Compiler::gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2)
  *
  */
 
-GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
+GenTree* Compiler::gtFoldExprCompare(GenTreeOp* tree)
 {
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->AsOp()->gtOp2;
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
+
+    GenTree* op1 = tree->gtOp1;
+    GenTree* op2 = tree->gtOp2;
 
     assert(tree->OperIsCompare());
 
@@ -13904,13 +13949,18 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
 //      SELECT FALSE X Y  ->  Y
 //      SELECT COND  X X  ->  X
 //
-GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
+GenTree* Compiler::gtFoldExprConditional(GenTreeConditional* tree)
 {
-    GenTree* cond = tree->AsConditional()->gtCond;
-    GenTree* op1  = tree->AsConditional()->gtOp1;
-    GenTree* op2  = tree->AsConditional()->gtOp2;
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
 
-    assert(tree->OperIsConditional());
+    GenTree* cond = gtFoldExpr(tree->gtCond);
+    GenTree* op1  = gtFoldExpr(tree->gtOp1);
+    GenTree* op2  = gtFoldExpr(tree->gtOp2);
+
+    tree->gtCond = cond;
+    tree->gtOp1  = op1;
+    tree->gtOp2  = op2;
 
     // Check for a constant conditional
     if (cond->OperIsConst())
@@ -13945,14 +13995,9 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
             replacement->gtNext = tree->gtNext;
             replacement->gtPrev = tree->gtPrev;
         }
+
         DISPTREE(replacement);
         JITDUMP("\n");
-
-        // If we bashed to a compare, try to fold that.
-        if (replacement->OperIsCompare())
-        {
-            return gtFoldExprCompare(replacement);
-        }
 
         return replacement;
     }
@@ -32295,6 +32340,15 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 }
 
 #if defined(FEATURE_HW_INTRINSICS)
+//------------------------------------------------------------------------------
+// gtFoldExprHWIntrinsic: Folds a hwintrinsic node if possible
+//
+// Arguments:
+//    tree   -  The tree to fold
+//
+// Return Value:
+//    The folded expression if folding was possible; otherwise, tree
+//
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(!optValnumCSE_phase);
@@ -32305,6 +32359,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     var_types      simdBaseType    = tree->GetSimdBaseType();
     CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
     unsigned int   simdSize        = tree->GetSimdSize();
+    size_t         opCount         = tree->GetOperandCount();
+
+    for (size_t index = 1; index <= opCount; index++)
+    {
+        GenTree* op     = tree->Op(index);
+        tree->Op(index) = gtFoldExpr(op);
+    }
 
     simd_t simdVal = {};
 
@@ -32323,10 +32384,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         return vecCon;
     }
 
-    GenTree* op1     = nullptr;
-    GenTree* op2     = nullptr;
-    GenTree* op3     = nullptr;
-    size_t   opCount = tree->GetOperandCount();
+    GenTree* op1 = nullptr;
+    GenTree* op2 = nullptr;
+    GenTree* op3 = nullptr;
 
     switch (opCount)
     {
@@ -34118,7 +34178,6 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
 
     return mskCon;
 }
-
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
