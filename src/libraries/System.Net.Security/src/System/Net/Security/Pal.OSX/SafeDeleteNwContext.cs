@@ -86,7 +86,6 @@ namespace System.Net.Security
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
 
-        // TODO: Bind every tcs to the message, so we can complete it when the specific message is sent (avoiding wrong completions by post-handshake message etc.).
         private TaskCompletionSource? _currentWriteCompletionSource;
 
         public SafeDeleteNwContext(SslStream stream) : base(IntPtr.Zero)
