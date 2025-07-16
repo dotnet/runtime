@@ -95,6 +95,18 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task CompilerGeneratedTypesNet90()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task CompilerGeneratedTypesReleaseNet90()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task CompilerGeneratedTypesRelease()
         {
             return RunTest();
