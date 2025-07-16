@@ -113,6 +113,9 @@ namespace System.Runtime.InteropServices.Tests
                 // The HResult from the IErrorInfo is used because the ISupportErrorInfo interface returned S_OK for the provided iid.
                 Assert.IsType<InvalidOperationException>(Marshal.GetExceptionForHR(new ArgumentException().HResult, iid, pUnk));
 
+                // Set the error info for the current thread to the exception.
+                _ = Marshal.GetHRForException(exception);
+
                 var otherIid = new Guid("65af44f4-fd4f-4a35-a6f5-a0c66878fa75");
 
                 // The HResult from the IErrorInfo is ignored because the ISupportErrorInfo interface returned S_FALSE for the provided otherIid.

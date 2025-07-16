@@ -694,7 +694,7 @@ namespace System.Runtime.InteropServices
                     // ISupportErrorInfo.InterfaceSupportsErrorInfo slot
                     fixed (Guid* piid = &iid)
                     {
-                        hr = ((delegate* unmanaged<IntPtr, Guid*, int>)(*(*(void***)supportErrorInfo + 3)))(supportErrorInfo, piid);
+                        hr = ((delegate* unmanaged[MemberFunction]<IntPtr, Guid*, int>)(*(*(void***)supportErrorInfo + 3)))(supportErrorInfo, piid);
                     }
                     Release(supportErrorInfo);
                 }
@@ -709,7 +709,7 @@ namespace System.Runtime.InteropServices
             }
 #endif
 
-            // If the error info is valid, its lifetime will be handled by GetExceptionForHR().
+            // If the error info is valid, its lifetime will be handled by GetExceptionForHRInternal().
             return GetExceptionForHRInternal(errorCode, errorInfo);
         }
 

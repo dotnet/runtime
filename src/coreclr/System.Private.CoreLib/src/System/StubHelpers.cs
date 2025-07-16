@@ -1351,9 +1351,9 @@ namespace System.StubHelpers
 
         internal static Exception GetHRExceptionObject(int hr)
         {
-            Exception? ex = Marshal.GetExceptionForHR(hr);
-            ex!.InternalPreserveStackTrace();
-            return ex!;
+            Exception ex = Marshal.GetExceptionForHR(hr)!;
+            ex.InternalPreserveStackTrace();
+            return ex;
         }
 
 #if FEATURE_COMINTEROP
@@ -1361,9 +1361,9 @@ namespace System.StubHelpers
         {
             RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr(pCPCMD);
             RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(handle.GetMethodInfo());
-            Exception? ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk);
-            ex!.InternalPreserveStackTrace();
-            return ex!;
+            Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
+            ex.InternalPreserveStackTrace();
+            return ex;
         }
 #endif // FEATURE_COMINTEROP
 
