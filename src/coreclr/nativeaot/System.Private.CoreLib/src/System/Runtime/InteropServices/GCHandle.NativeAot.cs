@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices.Java;
+
 namespace System.Runtime.InteropServices
 {
     public partial struct GCHandle
@@ -14,9 +16,14 @@ namespace System.Runtime.InteropServices
         internal static void InternalSet(IntPtr handle, object? value) => RuntimeImports.RhHandleSet(handle, value);
 
 #if FEATURE_JAVAMARSHAL
-        // FIXME implement waiting for bridge processing
         internal static object? InternalGetBridgeWait(IntPtr handle)
         {
+            if (RuntimeImports.RhIsGCBridgeActive())
+            {
+#pragma warning disable CA1416 // Validate platform compatibility
+                JavaMarshal.WaitForGCBridgeFinish();
+#pragma warning restore CA1416 // Validate platform compatibility
+            }
             return InternalGet(handle);
         }
 #endif
