@@ -6025,7 +6025,12 @@ namespace System.Threading.Tasks
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
         public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
-            tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
+            tasks.Length switch
+            {
+                0 => Task.CompletedTask,
+                1 => tasks[0],
+                _ => new WhenAllPromise(tasks)
+            };
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
