@@ -242,7 +242,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     }
 
     GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
 
     // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
     GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
@@ -440,6 +439,23 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
         // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
+    }
+
+    if (!prevBb->HasFlag(BBF_INTERNAL))
+    {
+        nullcheckBb->RemoveFlags(BBF_INTERNAL);
+        nullcheckBb->SetFlags(BBF_IMPORTED);
+
+        fastPathBb->RemoveFlags(BBF_INTERNAL);
+        fastPathBb->SetFlags(BBF_IMPORTED);
+
+        if (needsSizeCheck)
+        {
+            sizeCheckBb->RemoveFlags(BBF_INTERNAL);
+            sizeCheckBb->SetFlags(BBF_IMPORTED);
+        }
+
+        assert(!block->HasFlag(BBF_INTERNAL));
     }
 
     // All blocks are expected to be in the same EH region
@@ -1545,6 +1561,14 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->inheritWeightPercentage(isInitedBb, 0);
+
+    if (!prevBb->HasFlag(BBF_INTERNAL))
+    {
+        isInitedBb->RemoveFlags(BBF_INTERNAL);
+        isInitedBb->SetFlags(BBF_IMPORTED);
+
+        assert(!block->HasFlag(BBF_INTERNAL));
+    }
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
