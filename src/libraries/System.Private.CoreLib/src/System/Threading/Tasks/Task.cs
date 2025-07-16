@@ -6026,7 +6026,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
         public static Task WhenAll(params ReadOnlySpan<Task> tasks)
         {
-            switch (task.Length)
+            switch (tasks.Length)
             {
                 case 0:
                     return Task.CompletedTask;
