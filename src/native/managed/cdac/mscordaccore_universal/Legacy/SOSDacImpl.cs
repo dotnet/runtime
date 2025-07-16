@@ -120,12 +120,9 @@ internal sealed unsafe partial class SOSDacImpl
             TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
             TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
 
-            if (appDomain != TargetPointer.Null && i < count)
+            if (appDomain != TargetPointer.Null)
             {
-                if (values is not null && values.Length > 0)
-                {
-                    values[0] = appDomain.ToClrDataAddress(_target);
-                }
+                values[0] = appDomain.ToClrDataAddress(_target);
                 i = 1;
             }
 
@@ -148,8 +145,6 @@ internal sealed unsafe partial class SOSDacImpl
             Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
             if (values is not null && values.Length > 0 && valuesLocal.Length > 0)
             {
-                // in theory, these don't need to be in the same order, but for consistency it is
-                // easiest for consumers and verification if the DAC and cDAC return the same order
                 Debug.Assert(values[0] == valuesLocal[0], $"cDAC: {values[0]:x}, DAC: {valuesLocal[0]:x}");
             }
         }
