@@ -49,6 +49,8 @@ namespace System.Numerics.Tensors
         System.Numerics.Tensors.ReadOnlyTensorSpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.TensorSpan<T>, T>.AsReadOnlyTensorSpan(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         System.Numerics.Tensors.ReadOnlyTensorDimensionSpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.TensorSpan<T>, T>.GetDimensionSpan(int dimension) { throw null; }
         ref readonly T System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.TensorSpan<T>, T>.GetPinnableReference() { throw null; }
+        System.ReadOnlySpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.TensorSpan<T>, T>.GetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length) { throw null; }
+        System.ReadOnlySpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.TensorSpan<T>, T>.GetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length) { throw null; }
         System.Numerics.Tensors.TensorSpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.TensorSpan<T>, T>.ToDenseTensor() { throw null; }
 
         bool System.Numerics.Tensors.ITensor.IsReadOnly { get { throw null; } }

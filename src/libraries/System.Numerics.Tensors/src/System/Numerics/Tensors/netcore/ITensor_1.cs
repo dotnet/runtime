@@ -93,5 +93,17 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetPinnableReference" />
         new ref T GetPinnableReference();
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{nint}, int)" />
+        new Span<T> GetSpan(scoped ReadOnlySpan<nint> startIndexes, int length);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{NIndex}, int)" />
+        new Span<T> GetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{nint}, int, out ReadOnlySpan{T})" />
+        bool TryGetSpan(scoped ReadOnlySpan<nint> startIndexes, int length, out Span<T> span);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out ReadOnlySpan{T})" />
+        bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out Span<T> span);
     }
 }
