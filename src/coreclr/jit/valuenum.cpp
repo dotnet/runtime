@@ -7907,6 +7907,79 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
         switch (ni)
         {
+#if defined(TARGET_ARM64)
+            case NI_Vector64_ExtractMostSignificantBits:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_ExtractMostSignificantBits:
+            case NI_X86Base_MoveMask:
+            case NI_AVX_MoveMask:
+            case NI_AVX2_MoveMask:
+#endif
+            case NI_Vector128_ExtractMostSignificantBits:
+            {
+                simdmask_t simdMaskVal;
+
+                switch (simdSize)
+                {
+                    case 8:
+                    {
+                        simd8_t arg0 = GetConstantSimd8(arg0VN);
+                        EvaluateExtractMSB<simd8_t>(baseType, &simdMaskVal, arg0);
+                        break;
+                    }
+
+                    case 16:
+                    {
+                        simd16_t arg0 = GetConstantSimd16(arg0VN);
+                        EvaluateExtractMSB<simd16_t>(baseType, &simdMaskVal, arg0);
+                        break;
+                    }
+
+#if defined(TARGET_XARCH)
+                    case 32:
+                    {
+                        simd32_t arg0 = GetConstantSimd32(arg0VN);
+                        EvaluateExtractMSB<simd32_t>(baseType, &simdMaskVal, arg0);
+                        break;
+                    }
+#endif // TARGET_XARCH
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                uint32_t elemCount = simdSize / genTypeSize(baseType);
+                uint64_t mask      = simdMaskVal.GetRawBits() & simdmask_t::GetBitMask(elemCount);
+
+                assert(varTypeIsInt(type));
+                assert(elemCount <= 32);
+
+                return VNForIntCon(static_cast<int32_t>(mask));
+            }
+
+#ifdef TARGET_XARCH
+            case NI_AVX512_MoveMask:
+            {
+                simdmask_t arg0 = GetConstantSimdMask(arg0VN);
+
+                uint32_t elemCount = simdSize / genTypeSize(baseType);
+                uint64_t mask      = arg0.GetRawBits() & simdmask_t::GetBitMask(elemCount);
+
+                if (varTypeIsInt(type))
+                {
+                    assert(elemCount <= 32);
+                    return VNForIntCon(static_cast<int32_t>(mask));
+                }
+                else
+                {
+                    assert(varTypeIsLong(type));
+                    return VNForLongCon(static_cast<int64_t>(mask));
+                }
+            }
+#endif // TARGET_XARCH
+
 #ifdef TARGET_ARM64
             case NI_ArmBase_LeadingZeroCount:
 #else

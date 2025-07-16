@@ -8894,6 +8894,7 @@ namespace System.Diagnostics.CodeAnalysis
     [System.FlagsAttribute]
     public enum DynamicallyAccessedMemberTypes
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         All = -1,
         None = 0,
         PublicParameterlessConstructor = 1,

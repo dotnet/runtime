@@ -400,8 +400,6 @@ OPDEF(INTOP_LEAVE_CATCH, "leavecatch", 2, 0, 0, InterpOpBranch)
 OPDEF(INTOP_LOAD_EXCEPTION, "load.exception", 2, 1, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_THROW_PNSE, "throw.pnse", 1, 0, 0, InterpOpNoArgs)
-OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
-OPDEF(INTOP_GC_COLLECT, "gc.collect", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
 
