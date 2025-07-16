@@ -119,31 +119,33 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
     {
         DacpAppDomainStoreData* appDomainStoreData = (DacpAppDomainStoreData*)data;
+        int hr = HResults.S_OK;
         try
         {
             appDomainStoreData->sharedDomain = 0;
             TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
             appDomainStoreData->systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
-            appDomainStoreData->DomainCount = (ulong)(_target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain)) != 0 ? 1 : 0);
+            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            appDomainStoreData->DomainCount = _target.ReadPointer(appDomainPtr) != 0 ? 1 : 0;
         }
         catch (System.Exception ex)
         {
-            return ex.HResult;
+            hr = ex.HResult;
         }
 #if DEBUG
         {
             if (_legacyImpl is not null)
             {
-                DacpAppDomainStoreData legacyData = default;
-                int hrLocal = _legacyImpl.GetAppDomainStoreData(&legacyData);
+                DacpAppDomainStoreData dataLocal = default;
+                int hrLocal = _legacyImpl.GetAppDomainStoreData(&dataLocal);
                 Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
-                Debug.Assert(appDomainStoreData->sharedDomain == legacyData.sharedDomain, $"cDAC: {appDomainStoreData->sharedDomain:x}, DAC: {legacyData.sharedDomain:x}");
-                Debug.Assert(appDomainStoreData->systemDomain == legacyData.systemDomain, $"cDAC: {appDomainStoreData->systemDomain:x}, DAC: {legacyData.systemDomain:x}");
-                Debug.Assert(appDomainStoreData->DomainCount == legacyData.DomainCount, $"cDAC: {appDomainStoreData->DomainCount}, DAC: {legacyData.DomainCount}");
+                Debug.Assert(appDomainStoreData->sharedDomain == dataLocal.sharedDomain, $"cDAC: {appDomainStoreData->sharedDomain:x}, DAC: {dataLocal.sharedDomain:x}");
+                Debug.Assert(appDomainStoreData->systemDomain == dataLocal.systemDomain, $"cDAC: {appDomainStoreData->systemDomain:x}, DAC: {dataLocal.systemDomain:x}");
+                Debug.Assert(appDomainStoreData->DomainCount == dataLocal.DomainCount, $"cDAC: {appDomainStoreData->DomainCount}, DAC: {dataLocal.DomainCount}");
             }
         }
 #endif
-        return HResults.S_OK;
+        return hr;
     }
     int ISOSDacInterface.GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded)
     {

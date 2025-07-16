@@ -28,7 +28,7 @@ internal struct DacpAppDomainStoreData
 {
     public ClrDataAddress sharedDomain;
     public ClrDataAddress systemDomain;
-    public ulong DomainCount;
+    public int DomainCount;
 };
 internal struct DacpThreadData
 {
