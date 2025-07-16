@@ -169,7 +169,15 @@ namespace System.Net.Security
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(TargetCertificate), IntermediateCertificates, Trust);
+            // Create will internally clone any certificates that it will
+            // retain, so we don't have to duplicate any of the instances here
+            X509Certificate2Collection intermediates = new X509Certificate2Collection();
+            foreach (X509Certificate2 cert in IntermediateCertificates)
+            {
+                intermediates.Add(cert);
+            }
+
+            return Create(new X509Certificate2(TargetCertificate), intermediates, trust: Trust);
         }
 
         internal void ReleaseResources()
