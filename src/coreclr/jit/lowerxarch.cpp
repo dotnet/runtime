@@ -5212,7 +5212,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             if (indir->OperMayThrow(comp))
             {
                 GenTree* addrClone = comp->gtCloneExpr(addr);
-                GenTree* nullcheck = comp->gtNewNullCheck(addrClone, comp->compCurBB);
+                GenTree* nullcheck = comp->gtNewNullCheck(addrClone);
                 BlockRange().InsertBefore(indir, addrClone, nullcheck);
                 LowerNode(nullcheck);
 
@@ -10121,7 +10121,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 MakeSrcContained(node, op2);
                             }
 
-                            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
+                            if (op1->IsCnsVec() || (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)))
                             {
                                 MakeSrcContained(node, op1);
                             }

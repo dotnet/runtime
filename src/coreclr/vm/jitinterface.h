@@ -149,7 +149,7 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicSta
 EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
+EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
@@ -161,16 +161,13 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, 
 EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
+EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength);
 #endif
 
 EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-
-EXTERN_C FCDECL1(Object*, AllocateStringFast, DWORD stringLength);
-EXTERN_C FCDECL1(Object*, AllocateStringSlow, DWORD stringLength);
 
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
@@ -541,8 +538,6 @@ public:
         m_numRichOffsetMappings = 0;
     }
 
-    virtual void BackoutJitData(EECodeGenManager * jitMgr) = 0;
-
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
@@ -619,9 +614,6 @@ protected:
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
 #endif
-
-    size_t                  m_GCinfo_len;   // Cached copy of GCinfo_len so we can backout in BackoutJitData()
-    size_t                  m_EHinfo_len;   // Cached copy of EHinfo_len so we can backout in BackoutJitData()
 
     ULONG32                 m_iOffsetMapping;
     ICorDebugInfo::OffsetMapping * m_pOffsetMapping;
@@ -717,7 +709,6 @@ public:
 
     uint32_t getExpectedTargetArchitecture() override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     void ResetForJitRetry() override
@@ -974,7 +965,6 @@ public:
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;

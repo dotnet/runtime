@@ -3405,6 +3405,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve2_AddWideningEven:
+        case NI_Sve2_AddWideningOdd:
         case NI_Sve2_SubtractWideningEven:
         case NI_Sve2_SubtractWideningOdd:
         {
