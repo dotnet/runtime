@@ -10627,15 +10627,14 @@ void Compiler::convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src,
                                              char*           utf8Dst,
                                              size_t          utf8DstLen)
 {
-    const CHAR16_T* utf16src      = reinterpret_cast<const CHAR16_T*>(utf16Src);
+    const CHAR16_T* utf16src  = reinterpret_cast<const CHAR16_T*>(utf16Src);
     size_t      actualUtf8Len = minipal_get_length_utf16_to_utf8(utf16src, utf16SrcLen, 0);
     if (actualUtf8Len >= utf8DstLen)
     {
         strcpy_s(utf8Dst, utf8DstLen, "<string is too long>");
         return;
     }
-    size_t written =
-        minipal_convert_utf16_to_utf8(reinterpret_cast<const CHAR16_T*>(utf16Src), utf16SrcLen, utf8Dst, utf8DstLen, 0);
+    size_t written = minipal_convert_utf16_to_utf8(utf16src, utf16SrcLen, utf8Dst, utf8DstLen, 0);
     assert(written < utf8DstLen);
     utf8Dst[written] = '\0';
 }
