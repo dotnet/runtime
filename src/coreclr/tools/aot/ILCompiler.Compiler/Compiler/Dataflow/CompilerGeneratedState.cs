@@ -667,6 +667,8 @@ namespace ILCompiler.Dataflow
             if (_disableGeneratedCodeHeuristics &&
                 generatedType.Module.Assembly is EcmaAssembly asm && asm.GetTargetFrameworkVersion() >= new Version(10, 0))
             {
+                // Still run the logic for coverage to help us find bugs, but don't use the result.
+                GetCompilerGeneratedStateForType(generatedType);
                 return null;
             }
 

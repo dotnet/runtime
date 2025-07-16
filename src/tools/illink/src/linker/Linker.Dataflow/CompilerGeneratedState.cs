@@ -526,6 +526,8 @@ namespace Mono.Linker.Dataflow
             // because it is annotated with CompilerLoweringPreserveAttribute.
             if (_context.DisableGeneratedCodeHeuristics && generatedType.Module.Assembly.GetTargetFrameworkVersion() >= new Version(10, 0))
             {
+                // Still run the logic for coverage to help us find bugs, but don't use the result.
+                GetCompilerGeneratedStateForType(generatedType);
                 return null;
             }
 
