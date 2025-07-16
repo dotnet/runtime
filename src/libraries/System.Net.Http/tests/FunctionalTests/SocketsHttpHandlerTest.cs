@@ -1706,7 +1706,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TripleBoolValues))]
         public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {
-            if (PlatformDetection.IsAndroid && !(PlatformDetection.IsArm64Process || PlatformDetection.IsX64Process))
+            if (PlatformDetection.IsAndroid && PlatformDetection.Is32BitProcess)
             {
                 // https://github.com/dotnet/runtime/issues/77474
                 throw new SkipTestException("This test runs out of memory on 32-bit Android devices");
