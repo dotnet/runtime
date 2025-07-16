@@ -1889,11 +1889,14 @@ public:
 
     bool HasPotentialEHSuccs(Compiler* comp);
 
-    // Base class for Successor block/edge iterators.
+    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs()) ...
     //
-    class SuccList
+    template <typename IteratorType>
+    class BBSuccList
     {
-    protected:
+    private:
         // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
         // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
         // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
@@ -1902,52 +1905,17 @@ public:
         FlowEdge* const* m_begin;
         FlowEdge* const* m_end;
 
-        SuccList(const BasicBlock* block);
-    };
-
-    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
-    // normally used via BasicBlock::Succs(), e.g.:
-    //    for (BasicBlock* const target : block->Succs()) ...
-    //
-    class BBSuccList : private SuccList
-    {
     public:
-        BBSuccList(const BasicBlock* block)
-            : SuccList(block)
+        BBSuccList(const BasicBlock* block);
+
+        IteratorType begin() const
         {
+            return IteratorType(m_begin);
         }
 
-        BBArrayIterator begin() const
+        IteratorType end() const
         {
-            return BBArrayIterator(m_begin);
-        }
-
-        BBArrayIterator end() const
-        {
-            return BBArrayIterator(m_end);
-        }
-    };
-
-    // BBSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
-    // normally used via BasicBlock::SuccEdges(), e.g.:
-    //    for (FlowEdge* const succEdge : block->SuccEdges()) ...
-    //
-    class BBSuccEdgeList : private SuccList
-    {
-    public:
-        BBSuccEdgeList(const BasicBlock* block)
-            : SuccList(block)
-        {
-        }
-
-        FlowEdgeArrayIterator begin() const
-        {
-            return FlowEdgeArrayIterator(m_begin);
-        }
-
-        FlowEdgeArrayIterator end() const
-        {
-            return FlowEdgeArrayIterator(m_end);
+            return IteratorType(m_end);
         }
     };
 
@@ -2087,9 +2055,9 @@ public:
     // There are two options: one that takes a Compiler* and one that doesn't. These correspond to the
     // NumSucc()/GetSucc() functions that do or do not take a Compiler*. See the comment for NumSucc()/GetSucc()
     // for the distinction.
-    BBSuccList Succs() const
+    BBSuccList<BBArrayIterator> Succs() const
     {
-        return BBSuccList(this);
+        return BBSuccList<BBArrayIterator>(this);
     }
 
     BBCompilerSuccList Succs(Compiler* comp)
@@ -2097,9 +2065,9 @@ public:
         return BBCompilerSuccList(comp, this);
     }
 
-    BBSuccEdgeList SuccEdges()
+    BBSuccList<FlowEdgeArrayIterator> SuccEdges()
     {
-        return BBSuccEdgeList(this);
+        return BBSuccList<FlowEdgeArrayIterator>(this);
     }
 
     BBCompilerSuccEdgeList SuccEdges(Compiler* comp)
@@ -2470,9 +2438,10 @@ inline BBArrayIterator BBJumpTableList::end() const
     return BBArrayIterator(m_bbJumpTable->GetSuccs() + m_bbJumpTable->GetSuccCount());
 }
 
-// SuccList out-of-class-declaration implementations
+// BBSuccList out-of-class-declaration implementations
 //
-inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
+template <typename IteratorType>
+inline BasicBlock::BBSuccList<IteratorType>::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
 
@@ -2532,10 +2501,9 @@ inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->bbSwtTargets != nullptr);
-            assert(block->bbSwtTargets->GetCases() != nullptr);
-            m_begin = block->bbSwtTargets->GetCases();
-            m_end   = block->bbSwtTargets->GetCases() + block->bbSwtTargets->GetCaseCount();
+            assert(block->GetSwitchTargets() != nullptr);
+            m_begin = block->GetSwitchTargets()->GetCases();
+            m_end   = block->GetSwitchTargets()->GetCases() + block->GetSwitchTargets()->GetCaseCount();
             break;
 
         default:
