@@ -1156,5 +1156,153 @@ namespace System.Numerics.Tensors.Tests
             ReadOnlyTensorSpan<int> d = default;
             Assert.True(span == d);
         }
+
+        [Fact]
+        public static void GetSpanTest()
+        {
+            ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+
+            ReadOnlySpan<int> span = ReadOnlyTensorSpan.GetSpan([0, 0], 16);
+            Assert.Equal(16, span.Length);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
+
+            span = ReadOnlyTensorSpan.GetSpan([1, 1], 3);
+            Assert.Equal(16, span.Length);
+            Assert.Equal([1, 2, 3], span);
+
+            span = ReadOnlyTensorSpan.GetSpan([3, 0], 4);
+            Assert.Equal(4, span.Length);
+            Assert.Equal([0, 1, 2, 3], span);
+
+            span = ReadOnlyTensorSpan.GetSpan([0, 3], 1);
+            Assert.Equal(1, span.Length);
+            Assert.Equal([3], span);
+
+            span = ReadOnlyTensorSpan.GetSpan([3, 3], 1);
+            Assert.Equal(1, span.Length);
+            Assert.Equal([3], span);
+        }
+
+        [Fact]
+        public static void GetSpanThrowsForInvalidIndexesTest()
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([4, 0], 17);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([0, 4], 17);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([4, 4], 17);
+            });
+        }
+
+        [Fact]
+        public static void GetSpanThrowsForInvalidLengthsTest()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([0, 0], -1);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([0, 0], 17);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([1, 1], 4);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([3, 0], 5);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([0, 3], 2);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([3, 3], 2);
+            });
+        }
+
+        [Fact]
+        public static void TryGetSpanTest()
+        {
+            ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+
+            Assert.True(ReadOnlyTensorSpan.TryGetSpan([0, 0], 16, out ReadOnlySpan<int> span));
+            Assert.Equal(16, span.Length);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
+
+            Assert.True(ReadOnlyTensorSpan.TryGetSpan([1, 1], 3, out span));
+            Assert.Equal(16, span.Length);
+            Assert.Equal([1, 2, 3], span);
+
+            Assert.True(ReadOnlyTensorSpan.TryGetSpan([3, 0], 4, out span));
+            Assert.Equal(4, span.Length);
+            Assert.Equal([0, 1, 2, 3], span);
+
+            Assert.True(ReadOnlyTensorSpan.TryGetSpan([0, 3], 1, out span));
+            Assert.Equal(1, span.Length);
+            Assert.Equal([3], span);
+
+            Assert.True(ReadOnlyTensorSpan.TryGetSpan([3, 3], 1, out span));
+            Assert.Equal(1, span.Length);
+            Assert.Equal([3], span);
+        }
+
+        [Fact]
+        public static void TryGetSpanThrowsForInvalidIndexesTest()
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([4, 0], 17);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([0, 4], 17);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = ReadOnlyTensorSpan.GetSpan([4, 4], 17);
+            });
+        }
+
+        [Fact]
+        public static void TryGetSpanFailsForInvalidLengthsTest()
+        {
+            ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+
+            Assert.False(ReadOnlyTensorSpan.TryGetSpan([0, 0], -1, out ReadOnlySpan<int> span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(ReadOnlyTensorSpan.TryGetSpan([0, 0], 17, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(ReadOnlyTensorSpan.TryGetSpan([1, 1], 4, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(ReadOnlyTensorSpan.TryGetSpan([3, 0], 5, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(ReadOnlyTensorSpan.TryGetSpan([0, 3], 2, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(ReadOnlyTensorSpan.TryGetSpan([3, 3], 2, out span));
+            Assert.Equal(0, span.Length);
+        }
     }
 }
