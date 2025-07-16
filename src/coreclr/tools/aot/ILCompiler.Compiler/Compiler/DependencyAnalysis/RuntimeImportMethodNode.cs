@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a method that is imported from the runtime library.
     /// </summary>
-    public class RuntimeImportMethodNode : ExternSymbolNode, IMethodNode, ISymbolDefinitionNode
+    public class RuntimeImportMethodNode : ExternFunctionSymbolNode, IMethodNode, ISymbolDefinitionNode
     {
         private MethodDesc _method;
 
