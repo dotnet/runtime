@@ -311,14 +311,15 @@ namespace System.Net.Http
                 Uri? uri = request.RequestUri;
                 Debug.Assert(uri is not null);
 
-                if (key.ProxyUri is not null)
-                {
-                    return uri.IdnHost;
-                }
-
                 if (key.SslHostName is not null)
                 {
                     return key.SslHostName;
+                }
+
+                if (key.ProxyUri is not null && key.Kind == HttpConnectionKind.Proxy)
+                {
+                    // In case there is no tunnel, return the proxy address since the connection is shared.
+                    return key.ProxyUri.IdnHost;
                 }
 
                 string? hostHeader = request.Headers.Host;

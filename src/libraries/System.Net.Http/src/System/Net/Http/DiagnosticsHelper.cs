@@ -38,6 +38,7 @@ namespace System.Net.Http
         // Picks the value of the 'server.address' tag following rules specified in
         // https://github.com/open-telemetry/semantic-conventions/blob/728e5d1/docs/http/http-spans.md#http-client-span
         // When there is no proxy, we need to prioritize the contents of the Host header.
+        // Note that this is a best-effort guess, e.g. we are not checking if proxy.GetProxy(uri) returns null.
         public static string GetServerAddress(HttpRequestMessage request, IWebProxy? proxy)
         {
             Debug.Assert(request.RequestUri is not null);

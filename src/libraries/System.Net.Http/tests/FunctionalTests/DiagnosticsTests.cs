@@ -1718,7 +1718,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task UseIPAddressInTargetUri_UseProxy_RecordsUriHostAsServerAddress()
+        public async Task UseIPAddressInTargetUri_ProxyTunnel()
         {
             if (UseVersion != HttpVersion.Version11)
             {
@@ -1728,7 +1728,6 @@ namespace System.Net.Http.Functional.Tests
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
             static async Task RunTest(string useVersion, string testAsync)
             {
-                const string IpString = "1.2.3.4";
                 Activity parentActivity = new Activity("parent").Start();
 
                 using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
@@ -1738,32 +1737,36 @@ namespace System.Net.Http.Functional.Tests
 
                 using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
 
+                using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
                 await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
                     async uri =>
                     {
+                        uri = new Uri($"{uri.Scheme}://{IPAddress.Loopback}:{uri.Port}");
+
                         Version version = Version.Parse(useVersion);
 
                         HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
-                        handler.Proxy = new UseSpecifiedUriWebProxy(uri);
+                        handler.Proxy = new WebProxy(proxyServer.Uri);
                         using HttpClient client = new HttpClient(handler);
 
-                        uri = new Uri($"{uri.Scheme}://{IpString}:4242");
                         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, version, exactVersion: true);
                         request.Headers.Host = "localhost";
 
                         await client.SendAsync(bool.Parse(testAsync), request);
 
-                        Activity req = requestRecorder.VerifyActivityRecordedOnce();
-                        Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
-                        ActivityAssert.HasTag(req, "server.address", IpString);
-                        ActivityAssert.HasTag(conn, "server.address", IpString);
+                        // There should be only one Activity for the request. Server address should match the Uri host.
+                        // https://github.com/open-telemetry/semantic-conventions/blob/728e5d1/docs/http/http-spans.md#http-client-span
+                        ActivityAssert.HasTag(requestRecorder.FinishedActivities.Single(), "server.address", IPAddress.Loopback.ToString());
+
+                        // Check the SslProxyTunnel connection only, it should use the host header.
+                        Assert.Contains(connectionSetupRecorder.FinishedActivities, a => a.TagObjects.Any(t => t.Key == "server.port" && t.Value.Equals(uri.Port)));
                     },
                     async server =>
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync();
                     }, options: new GenericLoopbackOptions()
                     {
-                        UseSsl = false,
+                        UseSsl = true,
                     });
             }
         }
