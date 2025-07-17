@@ -2216,14 +2216,13 @@ namespace System.Net.Http.Functional.Tests
                     // WinHTTP validates the input before opening connection whereas SocketsHttpHandler opens connection first and validates only when writing to the wire.
                     acceptConnection.SetResult(!IsWinHttpHandler);
                     var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                    var hrex = Assert.IsType<HttpRequestException>(ex);
                     if (IsWinHttpHandler)
                     {
-                        var fex = Assert.IsType<FormatException>(ex);
-                        Assert.Contains("Latin-1", fex.Message);
+                        Assert.Contains("Error 87", hrex.InnerException.Message);
                     }
                     else
                     {
-                        var hrex = Assert.IsType<HttpRequestException>(ex);
                         var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
                         Assert.Contains("ASCII", message);
                     }
