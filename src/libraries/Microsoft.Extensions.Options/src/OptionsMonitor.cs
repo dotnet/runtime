@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Options
             _registrations.Clear();
         }
 
-        internal sealed class ChangeTrackerDisposable : IDisposable
+        private sealed class ChangeTrackerDisposable : IDisposable
         {
             private readonly Action<TOptions, string> _listener;
             private readonly OptionsMonitor<TOptions> _monitor;
