@@ -54,31 +54,21 @@ namespace System.Security.Cryptography
         public int SignatureSizeInBytes { get; }
 
         internal string Oid { get; }
+        internal int LambdaCollisionStrength { get; }
 
-        /// <summary>
-        ///  Initializes a new instance of the <see cref="MLDsaAlgorithm" /> structure with a custom name.
-        /// </summary>
-        /// <param name="name">
-        ///   The name of the algorithm.
-        /// </param>
-        /// <param name="secretKeySizeInBytes">
-        ///   The size of the secret key in bytes.
-        /// </param>
-        /// <param name="publicKeySizeInBytes">
-        ///   The size of the public key in bytes.
-        /// </param>
-        /// <param name="signatureSizeInBytes">
-        ///   The size of the signature in bytes.
-        /// </param>
-        /// <param name="oid">
-        ///   The OID of the algorithm.
-        /// </param>
-        private MLDsaAlgorithm(string name, int secretKeySizeInBytes, int publicKeySizeInBytes, int signatureSizeInBytes, string oid)
+        private MLDsaAlgorithm(
+            string name,
+            int secretKeySizeInBytes,
+            int publicKeySizeInBytes,
+            int signatureSizeInBytes,
+            int lambdaCollisionStrength,
+            string oid)
         {
             Name = name;
             SecretKeySizeInBytes = secretKeySizeInBytes;
             PublicKeySizeInBytes = publicKeySizeInBytes;
             SignatureSizeInBytes = signatureSizeInBytes;
+            LambdaCollisionStrength = lambdaCollisionStrength;
             Oid = oid;
         }
 
@@ -91,7 +81,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An ML-DSA algorithm identifier for the ML-DSA-44 algorithm.
         /// </value>
-        public static MLDsaAlgorithm MLDsa44 { get; } = new MLDsaAlgorithm("ML-DSA-44", 2560, 1312, 2420, Oids.MLDsa44);
+        public static MLDsaAlgorithm MLDsa44 { get; } = new MLDsaAlgorithm("ML-DSA-44", 2560, 1312, 2420, 128, Oids.MLDsa44);
 
         /// <summary>
         ///   Gets an ML-DSA algorithm identifier for the ML-DSA-65 algorithm.
@@ -99,7 +89,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An ML-DSA algorithm identifier for the ML-DSA-65 algorithm.
         /// </value>
-        public static MLDsaAlgorithm MLDsa65 { get; } = new MLDsaAlgorithm("ML-DSA-65", 4032, 1952, 3309, Oids.MLDsa65);
+        public static MLDsaAlgorithm MLDsa65 { get; } = new MLDsaAlgorithm("ML-DSA-65", 4032, 1952, 3309, 192, Oids.MLDsa65);
 
         /// <summary>
         ///   Gets an ML-DSA algorithm identifier for the ML-DSA-87 algorithm.
@@ -107,7 +97,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An ML-DSA algorithm identifier for the ML-DSA-87 algorithm.
         /// </value>
-        public static MLDsaAlgorithm MLDsa87 { get; } = new MLDsaAlgorithm("ML-DSA-87", 4896, 2592, 4627, Oids.MLDsa87);
+        public static MLDsaAlgorithm MLDsa87 { get; } = new MLDsaAlgorithm("ML-DSA-87", 4896, 2592, 4627, 256, Oids.MLDsa87);
 
         internal static MLDsaAlgorithm? GetMLDsaAlgorithmFromOid(string? oid)
         {
