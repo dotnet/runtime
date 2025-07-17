@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Tests;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -714,6 +715,23 @@ namespace System.Text.Json.Nodes.Tests
             AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused));
         }
 
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_ReadOnlySequence<T>(WrappedT<T> wrapped, JsonValueKind _)
+        {
+            T value = wrapped.Value;
+
+            byte[] jsonBytes = JsonSerializer.SerializeToUtf8Bytes(value);
+            ReadOnlySequence<byte> seq = BufferFactory.Create([jsonBytes.AsMemory(0, 1), jsonBytes.AsMemory(1, jsonBytes.Length - 1)]);
+            Utf8JsonReader reader = new Utf8JsonReader(seq);
+            JsonValue jsonValueFromSequence = JsonSerializer.Deserialize<JsonValue>(ref reader)!;
+
+            string jsonString = JsonSerializer.Serialize(value);
+            JsonValue jsonValueFromString = JsonSerializer.Deserialize<JsonValue>(jsonString)!;
+
+            AssertExtensions.TrueExpression(JsonNode.DeepEquals(jsonValueFromString, jsonValueFromSequence));
+        }
+
         public static IEnumerable<object[]> GetPrimitiveTypes()
         {
             yield return Wrap(false, JsonValueKind.False);
@@ -775,5 +793,85 @@ namespace System.Text.Json.Nodes.Tests
 
             public override string ToString() => Value?.ToString();
         }
+
+        [Theory]
+        [InlineData("\"string\"")]
+        [InlineData("42.0")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void PrimitiveTypes_ConverterThrows(string json)
+        {
+            JsonSerializerOptions opts = new JsonSerializerOptions
+            {
+                Converters = { new ThrowingConverter() }
+            };
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json, opts);
+
+            Assert.False(jsonValue.TryGetValue(out DummyClass unused));
+            Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<DummyClass>());
+        }
+
+        private sealed class ThrowingConverter : JsonConverter<DummyClass>
+        {
+            public override DummyClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new JsonException();
+
+            public override void Write(Utf8JsonWriter writer, DummyClass value, JsonSerializerOptions options) => Assert.Fail();
+        }
+
+        [Theory]
+        [InlineData("\"string\"")]
+        [InlineData("42.0")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void PrimitiveTypes_ConverterReturnsNull(string json)
+        {
+            JsonSerializerOptions opts = new JsonSerializerOptions
+            {
+                Converters = { new NullConverter() }
+            };
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json, opts);
+
+            Assert.False(jsonValue.TryGetValue(out DummyClass unused));
+            Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<DummyClass>());
+        }
+
+        private sealed class NullConverter : JsonConverter<DummyClass>
+        {
+            public override DummyClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
+
+            public override void Write(Utf8JsonWriter writer, DummyClass value, JsonSerializerOptions options) => Assert.Fail();
+        }
+
+        [Theory]
+        [InlineData("\"string\"")]
+        [InlineData("42.0")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void PrimitiveTypes_NoTypeInfo(string json)
+        {
+            JsonSerializerOptions opts = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new ExcludeType_TypeInfoResolver(typeof(DummyClass))
+            };
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json, opts);
+
+            Assert.False(jsonValue.TryGetValue(out DummyClass unused));
+            Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<DummyClass>());
+        }
+
+        private class ExcludeType_TypeInfoResolver(Type excludeType) : IJsonTypeInfoResolver
+        {
+            private static readonly DefaultJsonTypeInfoResolver _defaultResolver = new DefaultJsonTypeInfoResolver();
+
+            public Type ExcludeType { get; } = excludeType;
+
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) =>
+                type == ExcludeType ? null : _defaultResolver.GetTypeInfo(type, options);
+        }
+
+        private record DummyClass;
     }
 }
