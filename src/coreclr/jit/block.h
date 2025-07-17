@@ -1895,7 +1895,7 @@ public:
     private:
         // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
         // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
-        // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
+        // points of the iteration, for use by the iterator. `m_begin` and `m_end` will either point at
         // `m_succs` or at the switch table successor array.
         FlowEdge*        m_succs[2];
         FlowEdge* const* m_begin;
