@@ -2233,13 +2233,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (await acceptConnection.Task)
                 {
-                    await IgnoreExceptions(async () =>
-                    {
-                        await server.AcceptConnectionAsync(async _ =>
-                        {
-                            await clientFinished.WaitAsync(TestHelper.PassingTestTimeout);
-                        });
-                    });
+                    await IgnoreExceptions(() => server.AcceptConnectionAsync(_ => clientFinished.WaitAsync(TestHelper.PassingTestTimeout)));
                 }
             });
         }
