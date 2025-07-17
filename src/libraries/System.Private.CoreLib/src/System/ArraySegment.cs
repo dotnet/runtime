@@ -53,10 +53,8 @@ namespace System
 
         public ArraySegment(T[] array, int offset, int count)
         {
-            // Validate arguments, check is minimal instructions with reduced branching for inlinable fast-path
-            // Negative values discovered though conversion to high values when converted to unsigned
             // Failure should be rare and location determination and message is delegated to failure functions
-            if (array == null || (uint)offset > (uint)array.Length || (uint)count > (uint)(array.Length - offset))
+            if (array == null || !MemoryExtensions.SliceArgumentsAreValid(array.Length, offset, count))
                 ThrowHelper.ThrowArraySegmentCtorValidationFailedExceptions(array, offset, count);
 
             _array = array;
@@ -144,7 +142,7 @@ namespace System
         {
             ThrowInvalidOperationIfDefault();
 
-            if ((uint)index > (uint)_count || (uint)count > (uint)(_count - index))
+            if (!MemoryExtensions.SliceArgumentsAreValid(_count, index, count))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }

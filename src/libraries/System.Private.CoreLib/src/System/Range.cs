@@ -128,7 +128,7 @@ namespace System
 
         private static void ThrowArgumentOutOfRangeException()
         {
-            throw new ArgumentOutOfRangeException("length");
+            throw new ArgumentOutOfRangeException();
         }
     }
 }
