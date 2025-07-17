@@ -1814,7 +1814,7 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     if (needsMovzx && compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU())
     {
         instOptions = INS_OPTS_EVEX_zu;
-        needsMovzx = false;
+        needsMovzx  = false;
     }
 
     inst_SET(desc.jumpKind1, dstReg, instOptions);
