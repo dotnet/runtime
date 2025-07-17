@@ -22,7 +22,7 @@ namespace Mono.Linker.Dataflow
         readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDefinition CreatingMethod,
-            /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
+            /// <summary>Generic parameters of the creator used as type arguments for the type</summary>
             IList<GenericParameter>? OriginalAttributes);
 
         readonly Dictionary<MethodDefinition, MethodDefinition> _compilerGeneratedMethodToUserCodeMethod;
