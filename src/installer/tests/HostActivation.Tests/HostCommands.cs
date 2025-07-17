@@ -84,6 +84,59 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void Info_ListEnvironment()
+        {
+            var command = TestContext.BuiltDotNet.Exec("--info")
+                .CaptureStdOut();
+
+            // Add DOTNET_ROOT environment variables
+            (string Architecture, string Path)[] dotnetRootEnvVars = [
+                ("arm64", "/arm64/dotnet/root"),
+                ("x64", "/x64/dotnet/root"),
+                ("x86", "/x86/dotnet/root"),
+                ("unknown", "/unknown/dotnet/root")
+            ];
+            foreach(var envVar in dotnetRootEnvVars)
+            {
+                command = command.DotNetRoot(envVar.Path, envVar.Architecture);
+            }
+
+            string dotnetRootNoArch = "/dotnet/root";
+            command = command.DotNetRoot(dotnetRootNoArch);
+
+            // Add additional DOTNET_* and COREHOST_* environment variables
+            (string Name, string Value)[] envVars = [
+                ("DOTNET_ROLL_FORWARD", "Major"),
+                ("DOTNET_SOME_SETTING", "/some/setting"),
+                ("COREHOST_TRACE", "1")
+            ];
+            foreach (var envVar in envVars)
+            {
+                command = command.EnvironmentVariable(envVar.Name, envVar.Value);
+            }
+
+            var otherEnvVar = "OTHER";
+            command = command.EnvironmentVariable(otherEnvVar, "value");
+
+            var result = command.Execute();
+            result.Should().Pass()
+                .And.HaveStdOutContaining("Environment variables:")
+                .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
+                .And.NotHaveStdOutContaining(otherEnvVar);
+
+            foreach ((string architecture, string path) in dotnetRootEnvVars)
+            {
+                result.Should()
+                    .HaveStdOutMatching($@"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{architecture.ToUpper()}\s*\[{path}\]");
+            }
+
+            foreach ((string name, string value) in envVars)
+            {
+                result.Should().HaveStdOutMatching($@"{name}\s*\[{value}\]");
+            }
+        }
+
+        [Fact]
         public void ListRuntimes()
         {
             // Verify exact match of command output. The output of --list-runtimes is intended to be machine-readable

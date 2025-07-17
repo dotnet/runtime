@@ -957,6 +957,23 @@ bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
     return (recv->length() > 0);
 }
 
+extern char **environ;
+void pal::enumerate_environment_variables(const std::function<void(const pal::char_t*, const pal::char_t*)> callback)
+{
+    if (environ == nullptr)
+        return;
+
+    for (char **env = environ; *env != nullptr; ++env)
+    {
+        const char* separator = ::strchr(*env, '=');
+        if (separator != nullptr && separator != *env)
+        {
+            pal::string_t name(*env, separator - *env);
+            callback(name.c_str(), separator + 1);
+        }
+    }
+}
+
 bool pal::fullpath(pal::string_t* path, bool skip_error_logging)
 {
     return realpath(path, skip_error_logging);

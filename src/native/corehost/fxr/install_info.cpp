@@ -6,29 +6,34 @@
 #include "trace.h"
 #include "utils.h"
 
+#include <algorithm>
+#include <vector>
+
 bool install_info::print_environment(const pal::char_t* leading_whitespace)
 {
-    bool found_any = false;
-
-    const pal::char_t* fmt = _X("%s%-17s [%s]");
-    pal::string_t value;
-    if (pal::getenv(DOTNET_ROOT_ENV_VAR, &value))
+    // Enumerate environment variables and filter for DOTNET_ and COREHOST_
+    std::vector<std::pair<pal::string_t, pal::string_t>> env_vars;
+    pal::enumerate_environment_variables([&](const pal::char_t* name, const pal::char_t* value)
     {
-        found_any = true;
-        trace::println(fmt, leading_whitespace, DOTNET_ROOT_ENV_VAR, value.c_str());
-    }
-
-    for (uint32_t i = 0; i < static_cast<uint32_t>(pal::architecture::__last); ++i)
-    {
-        pal::string_t env_var = get_dotnet_root_env_var_for_arch(static_cast<pal::architecture>(i));
-        if (pal::getenv(env_var.c_str(), &value))
+        // Check if the environment variable starts with DOTNET_ or COREHOST_
+        if (pal::strncmp(name, _X("DOTNET_"), STRING_LENGTH("DOTNET_")) == 0
+            || pal::strncmp(name, _X("COREHOST_"), STRING_LENGTH("COREHOST_")) == 0)
         {
-            found_any = true;
-            trace::println(fmt, leading_whitespace, env_var.c_str(), value.c_str());
+            env_vars.push_back(std::make_pair(name, value));
         }
+    });
+
+    // Sort for consistent output
+    std::sort(env_vars.begin(), env_vars.end());
+
+    // Print all relevant environment variables
+    const pal::char_t* fmt = _X("%s%-40s [%s]");
+    for (const auto& env_var : env_vars)
+    {
+        trace::println(fmt, leading_whitespace, env_var.first.c_str(), env_var.second.c_str());
     }
 
-    return found_any;
+    return env_vars.size() > 0;
 }
 
 bool install_info::try_get_install_location(pal::architecture arch, pal::string_t& out_install_location, bool* out_is_registered)
