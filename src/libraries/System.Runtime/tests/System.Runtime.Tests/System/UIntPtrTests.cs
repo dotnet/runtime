@@ -620,10 +620,10 @@ namespace System.Tests
         [InlineData(uint.MaxValue, uint.MaxValue, "FFFFFFFE00000001")]
         [InlineData(uint.MaxValue, 3U, "00000002FFFFFFFD")]
         [InlineData(0x29B46BB5U, 0x9782BA17U, "18AEB7774A612F43")]
-        public static void BigMul32x32Unsigned(uint a, uint b, string result)
+        public static void BigMul32(uint a, uint b, string result)
         {
             nuint upper = nuint.BigMul(a, b, out nuint lower);
-            Assert.Equal(result, $"{upper:X16}{lower:X16}");
+            Assert.Equal(result, $"{upper:X8}{lower:X8}");
         }
 
         [ConditionalTheory(nameof(Is64Bit))]
@@ -636,7 +636,7 @@ namespace System.Tests
         [InlineData(ulong.MaxValue, ulong.MaxValue, "FFFFFFFFFFFFFFFE0000000000000001")]
         [InlineData(ulong.MaxValue, 3, "0000000000000002FFFFFFFFFFFFFFFD")]
         [InlineData(0xE8FAF08929B46BB5, 0x26B442D59782BA17, "23394CF8915296631EB6255F4A612F43")]
-        public static void BigMul64x64Unsigned(ulong a, ulong b, string result)
+        public static void BigMul64(ulong a, ulong b, string result)
         {
             nuint upper = nuint.BigMul((nuint)a, (nuint)b, out nuint lower);
             Assert.Equal(result, $"{upper:X16}{lower:X16}");

@@ -1092,7 +1092,7 @@ namespace System.Tests
         public static void BigMul32(int a, int b, string result)
         {
             nint upper = nint.BigMul(a, b, out nint lower);
-            Assert.Equal(result, $"{upper:X16}{lower:X16}");
+            Assert.Equal(result, $"{upper:X8}{lower:X8}");
         }
 
         [ConditionalTheory(nameof(Is64Bit))]
