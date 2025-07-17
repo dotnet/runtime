@@ -6029,7 +6029,7 @@ namespace System.Threading.Tasks
             switch (tasks.Length)
             {
                 case 0:
-                    return Task.CompletedTask;
+                    return CompletedTask;
 
                 case 1:
                     Task t = tasks[0];
