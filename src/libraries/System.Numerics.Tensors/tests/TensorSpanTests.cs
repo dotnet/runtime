@@ -1907,17 +1907,17 @@ namespace System.Numerics.Tensors.Tests
         {
             Assert.Throws<IndexOutOfRangeException>(() => {
                 TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
-                _ = tensorSpan.GetSpan([4, 0], 17);
+                _ = tensorSpan.TryGetSpan([4, 0], 17, out Span<int> _);
             });
 
             Assert.Throws<IndexOutOfRangeException>(() => {
                 TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
-                _ = tensorSpan.GetSpan([0, 4], 17);
+                _ = tensorSpan.TryGetSpan([0, 4], 17, out Span<int> _);
             });
 
             Assert.Throws<IndexOutOfRangeException>(() => {
                 TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
-                _ = tensorSpan.GetSpan([4, 4], 17);
+                _ = tensorSpan.TryGetSpan([4, 4], 17, out Span<int> _);
             });
         }
 

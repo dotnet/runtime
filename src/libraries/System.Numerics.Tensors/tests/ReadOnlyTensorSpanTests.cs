@@ -1267,17 +1267,17 @@ namespace System.Numerics.Tensors.Tests
         {
             Assert.Throws<IndexOutOfRangeException>(() => {
                 ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
-                _ = ReadOnlyTensorSpan.GetSpan([4, 0], 17);
+                _ = ReadOnlyTensorSpan.TryGetSpan([4, 0], 17, out _);
             });
 
             Assert.Throws<IndexOutOfRangeException>(() => {
                 ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
-                _ = ReadOnlyTensorSpan.GetSpan([0, 4], 17);
+                _ = ReadOnlyTensorSpan.TryGetSpan([0, 4], 17, out _);
             });
 
             Assert.Throws<IndexOutOfRangeException>(() => {
                 ReadOnlyTensorSpan<int> ReadOnlyTensorSpan = new ReadOnlyTensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
-                _ = ReadOnlyTensorSpan.GetSpan([4, 4], 17);
+                _ = ReadOnlyTensorSpan.TryGetSpan([4, 4], 17, out _);
             });
         }
 
