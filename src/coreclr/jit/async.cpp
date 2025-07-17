@@ -2088,6 +2088,9 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
                 LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBase));
 
                 resultBase = m_comp->gtNewLclVarNode(resultBaseVar, TYP_REF);
+
+                // Can be reallocated by above call to GetResultBaseVar
+                resultLcl = m_comp->lvaGetDesc(callDefInfo.DefinitionNode);
             }
 
             assert(callDefInfo.DefinitionNode->OperIs(GT_STORE_LCL_VAR));
