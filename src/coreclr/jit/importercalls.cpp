@@ -7744,6 +7744,15 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
         hCallInfo.methodFlags       = info.compCompHnd->getMethodAttribs(hCallInfo.hMethod);
         impMarkInlineCandidate(call, nullptr, false, &hCallInfo, compInlineContext);
 
+#if DEBUG
+        CORINFO_METHOD_HANDLE existingValue = NO_METHOD_HANDLE;
+        if (impInlineRoot()->GetHelperToManagedMap()->Lookup(helperCallHnd, &existingValue))
+        {
+            // Let's make sure HelperToManagedMap::Overwrite behavior always overwrites the same value.
+            assert(existingValue == managedCallHnd);
+        }
+#endif
+
         impInlineRoot()->GetHelperToManagedMap()->Set(helperCallHnd, managedCallHnd, HelperToManagedMap::Overwrite);
         JITDUMP("Converting helperCall [%06u] to user call [%s] and marking for inlining\n", dspTreeID(call),
                 eeGetMethodFullName(managedCallHnd));
