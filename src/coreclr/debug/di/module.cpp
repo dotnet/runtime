@@ -4354,7 +4354,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
 
 int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 {
-#if defined(TARGET_ARM) | defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     if (Is32BitInstruction(*(WORD*)ip))
         return 4;
     else
