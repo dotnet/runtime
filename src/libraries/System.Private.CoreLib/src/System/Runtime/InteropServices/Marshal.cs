@@ -653,7 +653,7 @@ namespace System.Runtime.InteropServices
             return GetExceptionForHRInternal(errorCode, errorInfo);
         }
 
-        public static unsafe Exception? GetExceptionForHR(int errorCode, in Guid iid, IntPtr pUnk)
+        public static Exception? GetExceptionForHR(int errorCode, in Guid iid, IntPtr pUnk)
         {
             if (errorCode >= 0)
             {
