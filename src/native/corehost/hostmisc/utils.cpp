@@ -376,7 +376,11 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
     // If no architecture-specific environment variable was set
     // fallback to the default DOTNET_ROOT.
     *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
-    return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
+    if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+        return true;
+
+    dotnet_root_env_var_name->clear();
+    return false;
 }
 
 /**
