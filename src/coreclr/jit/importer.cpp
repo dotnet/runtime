@@ -7310,7 +7310,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -7416,7 +7415,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Mark the block as containing an index expression
                 if (op3->OperIs(GT_LCL_VAR) && op1->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -8058,8 +8056,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     // Find the jump target
                     size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
-                    FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+                    unsigned   jumpCnt   = block->GetSwitchTargets()->GetCaseCount();
+                    FlowEdge** jumpTab   = block->GetSwitchTargets()->GetCases();
                     bool       foundVal  = false;
                     Metrics.ImporterSwitchFold++;
 
@@ -8086,15 +8084,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     assert(foundVal);
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nSwitch folded at " FMT_BB "\n", block->bbNum);
-                        printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
-                        printf(" to " FMT_BB, block->GetTarget()->bbNum);
-                        printf("\n");
-                    }
-#endif
+                    JITDUMP("\nSwitch folded at " FMT_BB "\n", block->bbNum);
+                    JITDUMP(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                    JITDUMP(" to " FMT_BB, block->GetTarget()->bbNum);
+                    JITDUMP("\n");
+
                     if (block->hasProfileWeight())
                     {
                         // We are unlikely to be able to repair the profile.
@@ -8417,7 +8411,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // via an underlying address, just null check the address.
                         if (op1->OperIs(GT_IND, GT_BLK))
                         {
-                            gtChangeOperToNullCheck(op1, block);
+                            gtChangeOperToNullCheck(op1);
                         }
                         else
                         {
@@ -9096,7 +9090,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     bool isAwait   = false;
                     int  configVal = -1; // -1 not configured, 0/1 configured to false/true
+#ifdef DEBUG
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
+#else
+                    if (compIsAsync())
+#endif
                     {
                         if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
                         {
@@ -10382,7 +10380,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
-                                GenTree* nullcheck = gtNewNullCheck(op1, block);
+                                GenTree* nullcheck = gtNewNullCheck(op1);
                                 // Add an ordering dependency between the null
                                 // check and forming the byref; the JIT assumes
                                 // in many places that the only legal null
@@ -10964,7 +10962,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length, block);
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
 
                     op1 = arrLen;
                 }
@@ -11442,8 +11440,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             }
 
             // If gtSubstExpr is an arbitrary tree then we may need to
-            // propagate mandatory "IR presence" flags (e.g. BBF_HAS_IDX_LEN)
-            // to the BB it ends up in.
+            // propagate mandatory "IR presence" flags to the BB it ends up in.
             inlRetExpr->gtSubstBB = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
         }
     }
@@ -11840,7 +11837,7 @@ SPILLSTACK:
                 addStmt = impExtractLastStmt();
                 assert(addStmt->GetRootNode()->OperIs(GT_SWITCH));
 
-                for (BasicBlock* const tgtBlock : block->SwitchTargets())
+                for (BasicBlock* const tgtBlock : block->SwitchSuccs())
                 {
                     multRef |= tgtBlock->bbRefs;
 
@@ -12757,19 +12754,13 @@ void Compiler::impFixPredLists()
                     }
                 }
 
-                BBehfDesc* jumpEhf = new (this, CMK_BasicBlock) BBehfDesc;
+                BBJumpTable* jumpEhf;
 
-                // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
-                // has an unconditional `throw` (the finally will still be invoked in the exceptional
-                // case via the runtime). In that case, jumpEhf->bbeCount remains the default, zero,
-                // and jumpEhf->bbeSuccs remains the default, nullptr.
                 if (predCount > 0)
                 {
-                    jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
-
-                    unsigned predNum             = 0;
-                    weight_t remainingLikelihood = 1.0;
+                    FlowEdge** const succTab             = new (this, CMK_FlowEdge) FlowEdge*[predCount];
+                    unsigned         predNum             = 0;
+                    weight_t         remainingLikelihood = 1.0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
                     {
                         // We only care about preds that are callfinallies.
@@ -12798,8 +12789,7 @@ void Compiler::impFixPredLists()
                             newEdge->setLikelihood(1.0 / predCount);
                         }
 
-                        jumpEhf->bbeSuccs[predNum] = newEdge;
-                        ++predNum;
+                        succTab[predNum++] = newEdge;
 
                         if (!added)
                         {
@@ -12807,7 +12797,17 @@ void Compiler::impFixPredLists()
                             added = true;
                         }
                     }
+
                     assert(predNum == predCount);
+                    jumpEhf = new (this, CMK_FlowEdge) BBJumpTable(succTab, predCount);
+                }
+                else
+                {
+                    // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
+                    // has an unconditional `throw` (the finally will still be invoked in the exceptional
+                    // case via the runtime). In that case, jumpEhf->succCount remains the default, zero,
+                    // and jumpEhf->succs remains the default, nullptr.
+                    jumpEhf = new (this, CMK_FlowEdge) BBJumpTable();
                 }
 
                 finallyBlock->SetEhfTargets(jumpEhf);

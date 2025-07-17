@@ -1068,7 +1068,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
-                        if (bSource->GetSwitchTargets()->getDefault()->getDestinationBlock() == bTarget)
+                        if (bSource->GetSwitchTargets()->GetDefaultCase()->getDestinationBlock() == bTarget)
                         {
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
@@ -1978,7 +1978,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 printf("->");
                 printedBlockWidth = 2 + 9 /* kind */;
 
-                const BBehfDesc* const ehfDesc = block->GetEhfTargets();
+                const BBJumpTable* const ehfDesc = block->GetEhfTargets();
                 if (ehfDesc == nullptr)
                 {
                     printf(" ????");
@@ -1988,13 +1988,10 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 {
                     // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
 
-                    const unsigned   jumpCnt = ehfDesc->bbeCount;
-                    FlowEdge** const jumpTab = ehfDesc->bbeSuccs;
-
-                    for (unsigned i = 0; i < jumpCnt; i++)
+                    for (unsigned i = 0; i < ehfDesc->GetSuccCount(); i++)
                     {
                         printedBlockWidth += 1 /* space/comma */;
-                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(ehfDesc->GetSucc(i)));
                     }
                 }
 
@@ -2040,22 +2037,22 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 printedBlockWidth = 2 + 9 /* kind */;
 
                 const BBswtDesc* const jumpSwt = block->GetSwitchTargets();
-                const unsigned         jumpCnt = jumpSwt->bbsCount;
-                FlowEdge** const       jumpTab = jumpSwt->bbsDstTab;
+                const unsigned         jumpCnt = jumpSwt->GetCaseCount();
+                FlowEdge** const       jumpTab = jumpSwt->GetCases();
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
                     printedBlockWidth += 1 /* space/comma */;
                     printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
-                    const bool isDefault = jumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                    const bool isDefault = jumpSwt->HasDefaultCase() && (i == jumpCnt - 1);
                     if (isDefault)
                     {
                         printf("[def]");
                         printedBlockWidth += 5;
                     }
 
-                    const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
+                    const bool isDominant = jumpSwt->HasDominantCase() && (i == jumpSwt->GetDominantCase());
                     if (isDominant)
                     {
                         printf("[dom]");
@@ -2786,7 +2783,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-            for (BasicBlock* const bTarget : blockPred->SwitchTargets())
+            for (BasicBlock* const bTarget : blockPred->SwitchSuccs())
             {
                 if (block == bTarget)
                 {
@@ -2970,38 +2967,10 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         maxBBNum = max(maxBBNum, block->bbNum);
 
-        // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
-        // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
-        // dynamically create the unique switch list.
-        if (block->KindIs(BBJ_SWITCH))
+        // Check that all the successors have the current traversal stamp.
+        for (BasicBlock* const succBlock : block->Succs(this))
         {
-            for (BasicBlock* const succBlock : block->Succs())
-            {
-                assert(succBlock->bbTraversalStamp == curTraversalStamp);
-            }
-
-            // Also check the unique successor set, if it exists. Make sure to NOT allocate it if it doesn't exist!
-            BlockToSwitchDescMap* switchMap = GetSwitchDescMap(/* createIfNull */ false);
-            if (switchMap != nullptr)
-            {
-                SwitchUniqueSuccSet sd;
-                if (switchMap->Lookup(block, &sd))
-                {
-                    for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
-                    {
-                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i]->getDestinationBlock();
-                        assert(nonDuplicateSucc != nullptr);
-                        assert(nonDuplicateSucc->bbTraversalStamp == curTraversalStamp);
-                    }
-                }
-            }
-        }
-        else
-        {
-            for (BasicBlock* const succBlock : block->Succs(this))
-            {
-                assert(succBlock->bbTraversalStamp == curTraversalStamp);
-            }
+            assert(succBlock->bbTraversalStamp == curTraversalStamp);
         }
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
@@ -3971,31 +3940,24 @@ void Compiler::fgDebugCheckBlockLinks()
         }
 
         // If this is a switch, check that the tables are consistent.
-        // Note that we don't call GetSwitchDescMap(), because it has the side-effect
-        // of allocating it if it is not present.
-        if (block->KindIs(BBJ_SWITCH) && m_switchDescMap != nullptr)
+        if (block->KindIs(BBJ_SWITCH))
         {
-            SwitchUniqueSuccSet uniqueSuccSet;
-            if (m_switchDescMap->Lookup(block, &uniqueSuccSet))
+            // Create a set with all the successors.
+            BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
+            BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+            for (unsigned i = 0; i < block->GetSwitchTargets()->GetCaseCount(); i++)
             {
-                // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-                // about the BlockSet epoch.
-                BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
-                BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
-                }
-                // Now we should have a set of unique successors that matches what's in the switchMap.
-                // First, check the number of entries, then make sure all the blocks in uniqueSuccSet
-                // are in the BlockSet.
-                unsigned count = BitVecOps::Count(&bitVecTraits, succBlocks);
-                assert(uniqueSuccSet.numDistinctSuccs == count);
-                for (unsigned i = 0; i < uniqueSuccSet.numDistinctSuccs; i++)
-                {
-                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks,
-                                               uniqueSuccSet.nonDuplicates[i]->getDestinationBlock()->bbNum));
-                }
+                BasicBlock* const bTarget = block->GetSwitchTargets()->GetCase(i)->getDestinationBlock();
+                BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
+            }
+            // Now we should have a set of unique successors that matches what's in the switchMap.
+            // First, check the number of entries, then make sure all the blocks in the unique successor table
+            // match the blocks in the set.
+            unsigned count = BitVecOps::Count(&bitVecTraits, succBlocks);
+            assert(block->GetSwitchTargets()->GetSuccCount() == count);
+            for (BasicBlock* const bTarget : block->SwitchSuccs())
+            {
+                assert(BitVecOps::IsMember(&bitVecTraits, succBlocks, bTarget->bbNum));
             }
         }
     }

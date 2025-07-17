@@ -5436,7 +5436,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5444,7 +5444,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FE_3B;
             }
@@ -5463,7 +5463,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5471,7 +5471,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FG_3B;
             }
@@ -12999,7 +12999,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_FG_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 integer multiply-add long (indexed)
         case IF_SVE_FH_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
         case IF_SVE_FJ_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_S);
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isVectorRegister(id->idReg2()));    // nnnnn
             assert(isLowVectorRegister(id->idReg3())); // mmmm

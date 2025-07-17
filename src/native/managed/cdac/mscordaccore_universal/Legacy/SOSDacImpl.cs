@@ -157,7 +157,7 @@ internal sealed unsafe partial class SOSDacImpl
             else
             {
                 ILoader loader = _target.Contracts.Loader;
-                List<Contracts.ModuleHandle> modules = loader.GetModules(
+                List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                     appDomain,
                     AssemblyIterationFlags.IncludeLoading |
                     AssemblyIterationFlags.IncludeLoaded |
@@ -225,8 +225,54 @@ internal sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] modules, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAssemblyModuleList(assembly, count, modules, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
+    {
+        if (assembly == 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        int hr = HResults.S_OK;
+        try
+        {
+            if (modules is not null && modules.Length > 0 && count > 0)
+            {
+                TargetPointer addr = assembly.ToTargetPointer(_target);
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(addr);
+                TargetPointer modulePointer = loader.GetModule(handle);
+                modules[0] = modulePointer.ToClrDataAddress(_target);
+            }
+
+            if (pNeeded is not null)
+            {
+                *pNeeded = 1;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress[] modulesLocal = new ClrDataAddress[count];
+            uint neededLocal;
+            int hrLocal = _legacyImpl.GetAssemblyModuleList(assembly, count, modulesLocal, &neededLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                if (modules is not null && modules.Length > 0)
+                {
+                    Debug.Assert(modules[0] == modulesLocal[0], $"cDAC: {modules[0]:x}, DAC: {modulesLocal[0]:x}");
+                }
+            }
+        }
+#endif
+        return hr;
+
+    }
     int ISOSDacInterface.GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
@@ -262,7 +308,10 @@ internal sealed unsafe partial class SOSDacImpl
             ClrDataAddress domainLocal;
             int hrLocal = _legacyImpl.GetDomainFromContext(context, &domainLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            Debug.Assert(domainLocal == context, $"cDAC: {context:x}, DAC: {domainLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(domainLocal == context, $"cDAC: {context:x}, DAC: {domainLocal:x}");
+            }
         }
 #endif
         return hr;
@@ -767,7 +816,7 @@ internal sealed unsafe partial class SOSDacImpl
                     else
                     {
                         TargetPointer modulePtr = rtsContract.GetModule(rtsContract.GetTypeHandle(rtsContract.GetMethodTable(methodDescHandle)));
-                        Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
+                        Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
                         string modulePath = _target.Contracts.Loader.GetPath(module);
                         ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
                         char directorySeparator = (char)_target.ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
@@ -1076,7 +1125,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr.ToTargetPointer(_target));
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr.ToTargetPointer(_target));
 
             data->Address = moduleAddr;
             data->PEAssembly = moduleAddr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
@@ -1366,7 +1415,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr.ToTargetPointer(_target));
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(addr.ToTargetPointer(_target));
             Contracts.ModuleFlags flags = contract.GetFlags(handle);
 
             if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
@@ -1405,7 +1454,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr.ToTargetPointer(_target));
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(addr.ToTargetPointer(_target));
             string path = contract.GetPath(handle);
 
             // Return not implemented for empty paths for non-reflection emit assemblies (for example, loaded from memory)
@@ -1789,7 +1838,46 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface7
     int ISOSDacInterface7.GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetPendingReJITID(methodDesc, pRejitId) : HResults.E_NOTIMPL;
+    {
+        if (methodDesc == 0 || pRejitId == null)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
+            Contracts.ICodeVersions codeVersionsContract = _target.Contracts.CodeVersions;
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            Contracts.ILCodeVersionHandle activeILCodeVersion = codeVersionsContract.GetActiveILCodeVersion(methodDescPtr);
+
+            if (rejitContract.GetRejitState(activeILCodeVersion) == Contracts.RejitState.Requested)
+            {
+                *pRejitId = (int)rejitContract.GetRejitId(activeILCodeVersion).Value;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl7 is not null)
+        {
+            int rejitIdLocal;
+            int hrLocal = _legacyImpl7.GetPendingReJITID(methodDesc, &rejitIdLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pRejitId == rejitIdLocal);
+            }
+        }
+
+#endif
+        return hr;
+    }
     int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData)
         => _legacyImpl7 is not null ? _legacyImpl7.GetReJITInformation(methodDesc, rejitId, pRejitData) : HResults.E_NOTIMPL;
     int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData)
