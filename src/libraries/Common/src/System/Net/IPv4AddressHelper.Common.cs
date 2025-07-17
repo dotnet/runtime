@@ -263,7 +263,7 @@ namespace System.Net
                     ch = ToUShort(name[current]);
                     int digitValue = HexConverter.FromChar(ch);
 
-                    if (digitValue >= numberBase)
+                    if ((uint)digitValue >= (uint)numberBase)
                     {
                         break; // Invalid/terminator
                     }

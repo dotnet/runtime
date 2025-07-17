@@ -288,7 +288,7 @@ namespace System.Xml
 
         private static int FromHex(char digit)
         {
-            return HexConverter.FromChar(digit);
+            return (byte)HexConverter.FromChar(digit);
         }
 
         internal static byte[] FromBinHexString(ReadOnlySpan<char> s, bool allowOddCount)
