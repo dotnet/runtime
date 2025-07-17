@@ -696,7 +696,7 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
     {
         // If it doesn't depend on the dominating relop - bail out, someone else will fold
         // this always-true condition.
-        JITDUMP("Always true from both branches - bail out.")
+        JITDUMP("Always true from both branches - bail out.\n")
         return false;
     }
 
