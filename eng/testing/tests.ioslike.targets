@@ -30,7 +30,6 @@
     <_AppleBuildCommand Condition="'$(IncludesTestRunner)' != 'true'">apple run</_AppleBuildCommand>
 
     <_AppleExpectedExitCode Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</_AppleExpectedExitCode>
-
     <_AfterBuildCommands>
       mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
       $(_AppleSignCommand)
