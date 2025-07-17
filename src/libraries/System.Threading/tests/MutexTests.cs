@@ -254,6 +254,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(GetValidNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void Ctor_ValidName(string name)
         {
             bool createdNew;
@@ -335,6 +336,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(GetValidNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void OpenExisting(string name)
         {
             Mutex resultHandle;
@@ -367,6 +369,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
@@ -403,6 +406,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixes_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NameOptionsApiCompatibilityTest(string namePrefix)
         {
             string name = Guid.NewGuid().ToString("N");
@@ -464,6 +468,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixAndOptionsCompatibilityTest_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamePrefixAndOptionsCompatibilityTest(bool currentUserOnly, bool currentSessionOnly, string namePrefix)
         {
             string name = namePrefix + Guid.NewGuid().ToString("N");
@@ -495,6 +500,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Windows Nano Server and Server Core apparently use the same namespace for the Local\ and Global\ prefixes
         [MemberData(nameof(NameNamespaceTests_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NameNamespaceTest(
             bool create_currentUserOnly,
             bool create_currentSessionOnly,
@@ -609,6 +615,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void AbandonExisting(
             string name,
             WaitHandleWaitType waitType,
@@ -864,6 +871,7 @@ namespace System.Threading.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -925,6 +933,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
