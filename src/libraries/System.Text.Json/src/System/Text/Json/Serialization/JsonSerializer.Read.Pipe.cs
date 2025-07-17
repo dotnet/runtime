@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +17,7 @@ namespace System.Text.Json
     {
         /// <summary>
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
-        /// The Stream will be read to completion.
+        /// The PipeReader will be read to completion.
         /// </summary>
         /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
@@ -33,7 +32,7 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
+        /// or when there is remaining data in the PipeReader.
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
@@ -46,10 +45,7 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
@@ -57,7 +53,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
-        /// The Stream will be read to completion.
+        /// The PipeReader will be read to completion.
         /// </summary>
         /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
@@ -72,21 +68,15 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
+        /// or when there is remaining data in the PipeReader.
         /// </exception>
         public static ValueTask<TValue?> DeserializeAsync<TValue>(
                 PipeReader utf8Json,
                 JsonTypeInfo<TValue> jsonTypeInfo,
                 CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo, nameof(jsonTypeInfo));
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
@@ -94,7 +84,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Reads the UTF-8 encoded text representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
-        /// The Stream will be read to completion.
+        /// The PipeReader will be read to completion.
         /// </summary>
         /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -107,21 +97,15 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="JsonException">
         /// The JSON is invalid,
-        /// or when there is remaining data in the Stream.
+        /// or when there is remaining data in the PipeReader.
         /// </exception>
         public static ValueTask<object?> DeserializeAsync(
                 PipeReader utf8Json,
                 JsonTypeInfo jsonTypeInfo,
                 CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo, nameof(jsonTypeInfo));
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
@@ -129,7 +113,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Reads the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
-        /// The Stream will be read to completion.
+        /// The PipeReader will be read to completion.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -144,7 +128,7 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// The JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
+        /// or when there is remaining data in the PipeReader.
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
@@ -160,18 +144,9 @@ namespace System.Text.Json
                 JsonSerializerContext context,
                 CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
-            if (context is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
+            ArgumentNullException.ThrowIfNull(returnType, nameof(returnType));
+            ArgumentNullException.ThrowIfNull(context, nameof(context));
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
@@ -179,7 +154,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Reads the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
-        /// The Stream will be read to completion.
+        /// The PipeReader will be read to completion.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -194,7 +169,7 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// The JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
+        /// or when there is remaining data in the PipeReader.
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
@@ -208,14 +183,8 @@ namespace System.Text.Json
                JsonSerializerOptions? options = null,
                CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
+            ArgumentNullException.ThrowIfNull(returnType, nameof(returnType));
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
@@ -277,9 +246,9 @@ namespace System.Text.Json
         /// <paramref name="utf8Json"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
         /// <remarks>
-        /// When <paramref name="topLevelValues"/> is set to <see langword="true" />, treats the stream as a sequence of
+        /// When <paramref name="topLevelValues"/> is set to <see langword="true" />, treats the PipeReader as a sequence of
         /// whitespace separated top-level JSON values and attempts to deserialize each value into <typeparamref name="TValue"/>.
-        /// When <paramref name="topLevelValues"/> is set to <see langword="false" />, treats the stream as a JSON array and
+        /// When <paramref name="topLevelValues"/> is set to <see langword="false" />, treats the PipeReader as a JSON array and
         /// attempts to serialize each element into <typeparamref name="TValue"/>.
         /// </remarks>
         public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
@@ -288,15 +257,8 @@ namespace System.Text.Json
             bool topLevelValues,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo, nameof(jsonTypeInfo));
 
             jsonTypeInfo.EnsureConfigured();
             return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
@@ -316,9 +278,9 @@ namespace System.Text.Json
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
         /// <remarks>
-        /// When <paramref name="topLevelValues"/> is set to <see langword="true" />, treats the stream as a sequence of
+        /// When <paramref name="topLevelValues"/> is set to <see langword="true" />, treats the PipeReader as a sequence of
         /// whitespace separated top-level JSON values and attempts to deserialize each value into <typeparamref name="TValue"/>.
-        /// When <paramref name="topLevelValues"/> is set to <see langword="false" />, treats the stream as a JSON array and
+        /// When <paramref name="topLevelValues"/> is set to <see langword="false" />, treats the PipeReader as a JSON array and
         /// attempts to serialize each element into <typeparamref name="TValue"/>.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
@@ -329,10 +291,7 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
@@ -395,50 +354,12 @@ namespace System.Text.Json
 
                             list.Clear();
                         }
-
                     } while (!success);
                 }
                 finally
                 {
                     bufferState.Dispose();
                 }
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
-                }
-
-                var converter = new ListOfTConverter<List<T>, T>();
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    CreateObject = static () => new List<T?>(),
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
-                return listTypeInfo;
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
-                }
-
-                var converter = new RootLevelListConverter<T>(elementTypeInfo);
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
-                return listTypeInfo;
             }
         }
     }

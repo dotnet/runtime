@@ -38,6 +38,7 @@ namespace System.Text.Json.Serialization
                 // Cap at int.MaxValue as PipeReader.ReadAtLeastAsync uses an int as the minimum size argument.
                 _unsuccessfulReadBytes = (int)Math.Min(int.MaxValue, leftOver * 2);
             }
+
             _utf8Json.AdvanceTo(_sequence.Slice(bytesConsumed).Start, _sequence.End);
             _sequence = ReadOnlySequence<byte>.Empty;
         }
@@ -100,6 +101,7 @@ namespace System.Text.Json.Serialization
                                 }
                             }
                         }
+
                         if (matched == JsonConstants.Utf8Bom.Length)
                         {
                             _sequence = _sequence.Slice(JsonConstants.Utf8Bom.Length);
@@ -115,6 +117,7 @@ namespace System.Text.Json.Serialization
             {
                 return;
             }
+
             // If we have a sequence, that likely means an Exception was thrown during deserialization.
             // We should make sure to call AdvanceTo so that future reads on the PipeReader can be done without throwing.
             // We'll advance to the start of the sequence as we don't know how many bytes were consumed.

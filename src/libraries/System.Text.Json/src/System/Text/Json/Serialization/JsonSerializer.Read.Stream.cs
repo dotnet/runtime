@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -518,43 +517,6 @@ namespace System.Text.Json
                 {
                     bufferState.Dispose();
                 }
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
-                }
-
-                var converter = new ListOfTConverter<List<T>, T>();
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    CreateObject = static () => new List<T?>(),
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
-                return listTypeInfo;
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
-                }
-
-                var converter = new RootLevelListConverter<T>(elementTypeInfo);
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
-                return listTypeInfo;
             }
         }
     }
