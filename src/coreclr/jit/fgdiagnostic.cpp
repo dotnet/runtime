@@ -2414,7 +2414,7 @@ void Compiler::fgDumpStmtTree(const BasicBlock* block, Statement* stmt)
 void Compiler::fgDumpBlock(BasicBlock* block)
 {
     printf("\n------------ ");
-    block->dspBlockHeader(this);
+    block->dspBlockHeader();
 
     if (fgSsaValid)
     {
@@ -2968,7 +2968,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         maxBBNum = max(maxBBNum, block->bbNum);
 
         // Check that all the successors have the current traversal stamp.
-        for (BasicBlock* const succBlock : block->Succs(this))
+        for (BasicBlock* const succBlock : block->Succs())
         {
             assert(succBlock->bbTraversalStamp == curTraversalStamp);
         }

@@ -1436,7 +1436,6 @@ void Compiler::fgAddSyncMethodEnterExit()
     // Create a block for the fault.
     // It gets an artificial ref count.
 
-    assert(!tryLastBB->bbFallsThrough());
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
 
     assert(tryLastBB->NextIs(faultBB));
