@@ -11,13 +11,13 @@ using Xunit;
 public class Async2SynchronizationContext
 {
     [Fact]
-    public static void TestSyncContexts()
+    public static void TestSyncContextContinue()
     {
         SynchronizationContext prevContext = SynchronizationContext.Current;
         try
         {
             SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-            TestSyncContext().GetAwaiter().GetResult();
+            TestSyncContextContinueAsync().GetAwaiter().GetResult();
         }
         finally
         {
@@ -25,7 +25,7 @@ public class Async2SynchronizationContext
         }
     }
 
-    private static async Task TestSyncContext()
+    private static async Task TestSyncContextContinueAsync()
     {
         MySyncContext context = (MySyncContext)SynchronizationContext.Current;
         await WrappedYieldToThreadPool(suspend: false);
@@ -103,5 +103,71 @@ public class Async2SynchronizationContext
         public bool IsCompleted => false;
 
         public void GetResult() { }
+    }
+
+    [Fact]
+    public static void TestSyncContextSaveRestore()
+    {
+        SynchronizationContext prevContext = SynchronizationContext.Current;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new SyncContextWithoutRestore());
+            TestSyncContextSaveRestoreAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(prevContext);
+        }
+    }
+
+    private static async Task TestSyncContextSaveRestoreAsync()
+    {
+        Assert.True(SynchronizationContext.Current is SyncContextWithoutRestore);
+        await ClearSyncContext();
+        Assert.True(SynchronizationContext.Current is SyncContextWithoutRestore);
+    }
+
+    private static async Task ClearSyncContext()
+    {
+        SynchronizationContext.SetSynchronizationContext(null);
+    }
+
+    [Fact]
+    public static void TestSyncContextNotRestored()
+    {
+        SynchronizationContext prevContext = SynchronizationContext.Current;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new SyncContextWithoutRestore());
+            TestSyncContextNotRestoredAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(prevContext);
+        }
+    }
+
+    private static async Task TestSyncContextNotRestoredAsync()
+    {
+        Assert.True(SynchronizationContext.Current is SyncContextWithoutRestore);
+        await SuspendThenClearSyncContext();
+        Assert.Null(SynchronizationContext.Current);
+    }
+
+    private static async Task SuspendThenClearSyncContext()
+    {
+        await Task.Yield();
+        SynchronizationContext.SetSynchronizationContext(null);
+    }
+
+    private class SyncContextWithoutRestore : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object state)
+        {
+            ThreadPool.UnsafeQueueUserWorkItem(_ =>
+            {
+                d(state);
+            }, null);
+        }
     }
 }
