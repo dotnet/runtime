@@ -253,6 +253,22 @@ namespace ILCompiler
                 }
             }
 
+            Dictionary<string, AssemblyNameInfo> allAssemblyNames = new ();
+            foreach (var rModule in _referenceableModules)
+            {
+                // Check for a loose match (two assemblies with the same name, i.e. 'System.Private.CoreLib')
+                var moduleName = rModule.Assembly.GetName();
+                if (allAssemblyNames.TryGetValue(moduleName.Name, out var firstModule))
+                {
+                    // Now check whether the full name is an exact match. If it's not, this indicates that the user accidentally provided two versions of the same
+                    //  assembly during compilation, and the results will probably not be what they want, so we should generate a warning message.
+                    if (firstModule.FullName != moduleName.FullName)
+                        Console.Error.WriteLine($"warning: Two or more modules named '{moduleName.Name}' were provided for R2R compilation. First encountered: '{firstModule.FullName}'. Additional: '{moduleName.FullName}'");
+                }
+                else
+                    allAssemblyNames.Add(moduleName.Name, moduleName);
+            }
+
             string systemModuleName = Get(_command.SystemModuleName) ?? Helpers.DefaultSystemModule;
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
