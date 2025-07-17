@@ -580,13 +580,10 @@ unsigned BasicBlock::dspPreds() const
 //------------------------------------------------------------------------
 // dspSuccs: Display the basic block successors.
 //
-// Arguments:
-//    compiler - compiler instance; passed to NumSucc(Compiler*) -- see that function for implications.
-//
-void BasicBlock::dspSuccs(Compiler* compiler)
+void BasicBlock::dspSuccs() const
 {
     bool first = true;
-    for (const BasicBlock* const succ : Succs(compiler))
+    for (const BasicBlock* const succ : Succs())
     {
         printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
         first = false;
@@ -734,10 +731,7 @@ void BasicBlock::dspKind() const
     }
 }
 
-void BasicBlock::dspBlockHeader(Compiler* compiler,
-                                bool      showKind /*= true*/,
-                                bool      showFlags /*= false*/,
-                                bool      showPreds /*= true*/)
+void BasicBlock::dspBlockHeader(bool showKind /*= true*/, bool showFlags /*= false*/, bool showPreds /*= true*/) const
 {
     printf("%s ", dspToString());
     dspBlockILRange();
@@ -750,7 +744,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
         printf(", preds={");
         dspPreds();
         printf("} succs={");
-        dspSuccs(compiler);
+        dspSuccs();
         printf("}");
     }
     if (showFlags)
@@ -1120,7 +1114,7 @@ unsigned BasicBlock::NumSucc() const
             return bbEhfTargets->GetSuccCount();
 
         case BBJ_SWITCH:
-            return bbSwtTargets->GetCaseCount();
+            return bbSwtTargets->GetSuccCount();
 
         default:
             unreached();
@@ -1128,7 +1122,7 @@ unsigned BasicBlock::NumSucc() const
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested successor edge. See the declaration comment for details.
+// GetSuccEdge: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc().
@@ -1165,7 +1159,7 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
             return bbEhfTargets->GetSucc(i);
 
         case BBJ_SWITCH:
-            return bbSwtTargets->GetCase(i);
+            return bbSwtTargets->GetSucc(i);
 
         default:
             unreached();
@@ -1184,137 +1178,6 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
 BasicBlock* BasicBlock::GetSucc(unsigned i) const
 {
     return GetSuccEdge(i)->getDestinationBlock();
-}
-
-//------------------------------------------------------------------------
-// NumSucc: Returns the count of block successors. See the declaration comment for details.
-//
-// Arguments:
-//    comp - Compiler instance
-//
-// Return Value:
-//    Count of block successors.
-//
-unsigned BasicBlock::NumSucc(Compiler* comp)
-{
-    assert(comp != nullptr);
-
-    switch (bbKind)
-    {
-        case BBJ_THROW:
-        case BBJ_RETURN:
-        case BBJ_EHFAULTRET:
-            return 0;
-
-        case BBJ_EHFINALLYRET:
-            // We may call this method before we realize we have invalid IL. Tolerate.
-            //
-            if (!hasHndIndex())
-            {
-                return 0;
-            }
-
-            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
-            //
-            if (bbEhfTargets == nullptr)
-            {
-                return 0;
-            }
-
-            return bbEhfTargets->GetSuccCount();
-
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_ALWAYS:
-        case BBJ_EHCATCHRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_LEAVE:
-            return 1;
-
-        case BBJ_COND:
-            if (bbTrueEdge == bbFalseEdge)
-            {
-                return 1;
-            }
-            else
-            {
-                return 2;
-            }
-
-        case BBJ_SWITCH:
-            return bbSwtTargets->GetSuccCount();
-
-        default:
-            unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// GetSucc: Returns the requested successor edge. See the declaration comment for details.
-//
-// Arguments:
-//    i - index of successor to return. 0 <= i <= NumSucc(comp).
-//    comp - Compiler instance
-//
-// Return Value:
-//    Requested successor edge
-//
-FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
-{
-    assert(comp != nullptr);
-
-    assert(i < NumSucc(comp)); // Index bounds check.
-    switch (bbKind)
-    {
-        case BBJ_EHFILTERRET:
-            // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
-            return GetTargetEdge();
-
-        case BBJ_EHFINALLYRET:
-            assert(bbEhfTargets != nullptr);
-            return bbEhfTargets->GetSucc(i);
-
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_ALWAYS:
-        case BBJ_EHCATCHRET:
-        case BBJ_LEAVE:
-            return GetTargetEdge();
-
-        case BBJ_COND:
-            if (i == 0)
-            {
-                return GetFalseEdge();
-            }
-            else
-            {
-                assert(i == 1);
-                assert(bbTrueEdge != bbFalseEdge);
-                return GetTrueEdge();
-            }
-
-        case BBJ_SWITCH:
-            return bbSwtTargets->GetSucc(i);
-
-        default:
-            unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
-//
-// Arguments:
-//    i - index of successor to return. 0 <= i <= NumSucc(comp).
-//    comp - Compiler instance
-//
-// Return Value:
-//    Requested successor block
-//
-BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
-{
-    return GetSuccEdge(i, comp)->getDestinationBlock();
 }
 
 void BasicBlock::InitVarSets(Compiler* comp)

@@ -353,7 +353,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 // When we alter flow in the importer branch opts, we should be able to make
                 // suitable updates there for blocks that we plan to keep.
                 //
-                for (BasicBlock* succ : cur->Succs(this))
+                for (BasicBlock* succ : cur->Succs())
                 {
                     fgRemoveAllRefPreds(succ, cur);
                 }
@@ -1248,7 +1248,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 
     // Update bbRefs and bbPreds for this block's successors
     bool profileInconsistent = false;
-    for (BasicBlock* const succBlock : block->Succs(this))
+    for (BasicBlock* const succBlock : block->Succs())
     {
         FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
 
@@ -3499,7 +3499,7 @@ void Compiler::ThreeOptLayout<hasEH>::AddNonFallthroughSuccs(unsigned blockPos)
     BasicBlock* const block = blockOrder[blockPos];
     BasicBlock* const next  = ((blockPos + 1) >= numCandidateBlocks) ? nullptr : blockOrder[blockPos + 1];
 
-    for (FlowEdge* const succEdge : block->SuccEdges(compiler))
+    for (FlowEdge* const succEdge : block->SuccEdges())
     {
         if (succEdge->getDestinationBlock() != next)
         {
