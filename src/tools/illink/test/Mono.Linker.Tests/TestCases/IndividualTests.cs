@@ -288,8 +288,8 @@ namespace Mono.Linker.Tests.TestCases
             using (var peReader = new PEReader(fileStream))
             {
                 var peHeaders = peReader.PEHeaders;
-                var characteristics = peHeaders.CofHeader.Characteristics;
-                var dllCharacteristics = peHeaders.PEHeader.DllCharacteristics;
+                var characteristics = peHeaders.CoffHeader.Characteristics;
+                var dllCharacteristics = peHeaders.PEHeader!.DllCharacteristics;
                 
                 // IMAGE_DLLCHARACTERISTICS_NO_SEH = 0x0400
                 const DllCharacteristics NoSEH = (DllCharacteristics)0x0400;
