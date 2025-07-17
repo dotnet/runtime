@@ -65,15 +65,11 @@ namespace Internal.Reflection.Execution
         ///    runtimeTypeHandle is a typedef (not a constructed type such as an array or generic instance.)
         /// </summary>
         /// <param name="runtimeTypeHandle">Runtime handle of the type in question</param>
-        public sealed override QTypeDefinition GetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle)
+        /// <param name="qTypeDefinition">Metadata handle for the type</param>
+        public sealed override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
             Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
-            if (!TypeLoaderEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out QTypeDefinition qTypeDefinition))
-            {
-                // This should be unreachable unless there's a compiler bug
-                throw new InvalidOperationException();
-            }
-            return qTypeDefinition;
+            return TypeLoaderEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition);
         }
 
         /// <summary>
@@ -682,7 +678,12 @@ namespace Internal.Reflection.Execution
             }
 
             RuntimeTypeHandle declaringTypeHandleDefinition = GetTypeDefinition(declaringTypeHandle);
-            QTypeDefinition qTypeDefinition = GetMetadataForNamedType(declaringTypeHandleDefinition);
+            QTypeDefinition qTypeDefinition;
+            if (!TryGetMetadataForNamedType(declaringTypeHandleDefinition, out qTypeDefinition))
+            {
+                // We should always have metadata for the declaring type handle at this point.
+                throw new InvalidOperationException();
+            }
 
             MethodHandle nativeFormatMethodHandle =
                 (((int)HandleType.Method << 25) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
