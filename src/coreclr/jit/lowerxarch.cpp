@@ -5199,7 +5199,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             if (indir->OperMayThrow(comp))
             {
                 GenTree* addrClone = comp->gtCloneExpr(addr);
-                GenTree* nullcheck = comp->gtNewNullCheck(addrClone, comp->compCurBB);
+                GenTree* nullcheck = comp->gtNewNullCheck(addrClone);
                 BlockRange().InsertBefore(indir, addrClone, nullcheck);
                 LowerNode(nullcheck);
 
@@ -9387,8 +9387,8 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         return;
     }
 
-    // We use the original constant vector's size for the broadcast node, because the parent node may consume more
-    // than its own input size. The containment check has already validated that the constant is sufficiently
+    // We use the original constant vector's size for the broadcast node, because the parent node may consume
+    // more than its own size. The containment check has already validated that the constant is sufficiently
     // large, but that check will be asserted again at codegen, so the replacement must also satisfy.
 
     var_types      simdType      = cnsVec->TypeGet();
@@ -10105,7 +10105,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 MakeSrcContained(node, op2);
                             }
 
-                            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
+                            if (op1->IsCnsVec() || (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)))
                             {
                                 MakeSrcContained(node, op1);
                             }

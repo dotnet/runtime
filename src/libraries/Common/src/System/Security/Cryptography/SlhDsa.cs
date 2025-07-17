@@ -330,7 +330,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             SignPreHashCore(hash, context, hashAlgorithmOid, destination);
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             if (signature.Length != Algorithm.SignatureSizeInBytes)
@@ -1995,48 +1995,6 @@ namespace System.Security.Cryptography
             }
 
             return algorithm;
-        }
-
-        private static void ValidateHashAlgorithm(ReadOnlySpan<byte> hash, ReadOnlySpan<char> hashAlgorithmOid)
-        {
-            int? outputSize = hashAlgorithmOid switch
-            {
-                Oids.Md5 => 128 / 8,
-                Oids.Sha1 => 160 / 8,
-                Oids.Sha256 => 256 / 8,
-                Oids.Sha384 => 384 / 8,
-                Oids.Sha512 => 512 / 8,
-                Oids.Sha3_256 => 256 / 8,
-                Oids.Sha3_384 => 384 / 8,
-                Oids.Sha3_512 => 512 / 8,
-                Oids.Shake128 => 256 / 8,
-                Oids.Shake256 => 512 / 8,
-                _ => null,
-            };
-
-            if (outputSize is not null)
-            {
-                if (hash.Length != outputSize)
-                {
-                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
-                }
-            }
-            else
-            {
-                // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
-                const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
-
-                try
-                {
-                    // Only the format of the OID is validated here. The derived classes can decide to do more if they want to.
-                    writer.WriteObjectIdentifier(hashAlgorithmOid);
-                }
-                catch (ArgumentException ae)
-                {
-                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch, ae);
-                }
-            }
         }
 
         private static void ThrowIfNotSupported()
