@@ -688,7 +688,7 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 
     if ((ifTrueStatus == RelopResult::Unknown) && (ifFalseStatus == RelopResult::Unknown))
     {
-        JITDUMP("Can't infer from both true and false branches - bail out.")
+        JITDUMP("Can't infer from both true and false branches - bail out.\n")
         return false;
     }
 
