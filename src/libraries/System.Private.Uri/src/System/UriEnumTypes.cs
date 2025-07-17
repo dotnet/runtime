@@ -64,7 +64,7 @@ namespace System
         BadScheme,
         BadAuthority,
         EmptyUriString,
-        LastRelativeUriOkErrIndex,
+        LastErrorOkayForRelativeUris,
 
         // All higher error values are fatal, indicating that neither an absolute or relative
         // Uri could be generated.
