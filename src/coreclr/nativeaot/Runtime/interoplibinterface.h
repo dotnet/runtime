@@ -33,4 +33,4 @@ public:
     static void TriggerClientBridgeProcessing(
         MarkCrossReferencesArgs* args);
 };
-#endif
+#endif // FEATURE_JAVAMARSHAL

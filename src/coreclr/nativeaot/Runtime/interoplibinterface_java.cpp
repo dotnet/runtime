@@ -89,19 +89,16 @@ extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
     // Switch to Cooperative mode since we are setting callbacks that
     // will be used during a GC and we want to ensure a GC isn't occurring
     // while they are being set.
+    Thread* pThisThread = ThreadStore::GetCurrentThreadIfAvailable();
+    pThisThread->DeferTransitionFrame();
+    pThisThread->DisablePreemptiveMode();
+
+    if (PalInterlockedCompareExchangePointer((void* volatile*)&g_MarkCrossReferences, (void*)markCrossReferences, NULL) == NULL)
     {
-        bool wasCooperative = false;
-        Thread* pThisThread = ThreadStore::GetCurrentThreadIfAvailable();
-        pThisThread->DeferTransitionFrame();
-        pThisThread->DisablePreemptiveMode();
-
-        if (PalInterlockedCompareExchangePointer((void* volatile*)&g_MarkCrossReferences, (void*)markCrossReferences, NULL) == NULL)
-        {
-            success = g_bridgeFinished.CreateManualEventNoThrow(false);
-        }
-
-        pThisThread->EnablePreemptiveMode();
+        success = g_bridgeFinished.CreateManualEventNoThrow(false);
     }
+
+    pThisThread->EnablePreemptiveMode();
 
     return success;
 }
@@ -118,7 +115,6 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     // Mark the GCBridge as inactive.
     // This must be synchronized with the GC so switch to cooperative mode.
     {
-        bool wasCooperative = false;
         Thread* pThisThread = ThreadStore::GetCurrentThreadIfAvailable();
         pThisThread->DeferTransitionFrame();
         pThisThread->DisablePreemptiveMode();
@@ -138,20 +134,41 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     ReleaseGCBridgeArgumentsWorker(crossReferences);
 }
 
-FCIMPL0(FC_BOOL_RET, RhIsGCBridgeActive)
+FCIMPL2(FC_BOOL_RET, GCHandle_InternalTryGetBridgeWait, OBJECTHANDLE handle, OBJECTREF* pObjResult)
 {
-    FC_RETURN_BOOL(g_GCBridgeActive);
+    if (g_GCBridgeActive)
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pObjResult = ObjectFromHandle(handle);
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE JavaMarshal_WaitForGCBridgeFinish()
+extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, OBJECTREF* pObj)
 {
-    // We will transition to pre-emptive mode to wait for the bridge to finish.
+    // Transition to cooperative mode to ensure that the GC is not in progress
     Thread* pThisThread = ThreadStore::GetCurrentThreadIfAvailable();
+    pThisThread->DeferTransitionFrame();
+    pThisThread->DisablePreemptiveMode();
+
     while (g_GCBridgeActive)
     {
+        // This wait will transition to pre-emptive mode to wait for the bridge to finish.
         g_bridgeFinished.Wait(INFINITE, false, false);
     }
+
+    // If we reach here, then the bridge has finished processing and we can be sure that
+    // it isn't currently active.
+
+    // No GC can happen between the wait and obtaining of the reference, so the
+    // bridge processing status can't change, guaranteeing the nulling of weak refs
+    // took place in the bridge processing finish stage.
+    *pObj = ObjectFromHandle(handle);
+
+    // Re-enable preemptive mode before we exit the QCall to ensure we're in the right GC state.
+    pThisThread->EnablePreemptiveMode();
 }
 
 #endif // FEATURE_JAVAMARSHAL

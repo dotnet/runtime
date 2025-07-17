@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices.Java;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -16,16 +16,24 @@ namespace System.Runtime.InteropServices
         internal static void InternalSet(IntPtr handle, object? value) => RuntimeImports.RhHandleSet(handle, value);
 
 #if FEATURE_JAVAMARSHAL
-        internal static object? InternalGetBridgeWait(IntPtr handle)
+        internal static unsafe object? InternalGetBridgeWait(IntPtr handle)
         {
-            if (RuntimeImports.RhIsGCBridgeActive())
-            {
-#pragma warning disable CA1416 // Validate platform compatibility
-                JavaMarshal.WaitForGCBridgeFinish();
-#pragma warning restore CA1416 // Validate platform compatibility
-            }
-            return InternalGet(handle);
+            object? target = null;
+
+            if (InternalTryGetBridgeWait(handle, ref target))
+                return target;
+
+            InternalGetBridgeWait(handle, &target);
+
+            return target;
         }
 #endif
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeImports.RuntimeLibrary, "GCHandle_InternalTryGetBridgeWait")]
+        private static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
+        private static unsafe partial void InternalGetBridgeWait(IntPtr handle, object?* result);
     }
 }

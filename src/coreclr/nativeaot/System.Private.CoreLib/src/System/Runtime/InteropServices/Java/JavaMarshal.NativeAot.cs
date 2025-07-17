@@ -59,8 +59,5 @@ namespace System.Runtime.InteropServices.Java
             MarkCrossReferencesArgs* crossReferences,
             nuint numHandles,
             GCHandle* unreachableObjectHandles);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_WaitForGCBridgeFinish")]
-        internal static partial void WaitForGCBridgeFinish();
     }
 }
