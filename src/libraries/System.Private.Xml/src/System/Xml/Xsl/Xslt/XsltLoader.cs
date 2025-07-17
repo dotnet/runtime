@@ -1311,12 +1311,12 @@ namespace System.Xml.Xsl.Xslt
 
 #pragma warning disable SYSLIB0062 // XsltSettings.EnableScript is obsolete
             if (!_compiler.Settings.EnableScript)
-#pragma warning restore SYSLIB0062
             {
                 _compiler.Scripts.ScriptClasses[scriptNs] = null;
                 _input.SkipNode();
                 return;
             }
+#pragma warning restore SYSLIB0062
 
             throw new PlatformNotSupportedException(SR.CompilingScriptsNotSupported); // Not adding any scripts as script compilation is not available
         }

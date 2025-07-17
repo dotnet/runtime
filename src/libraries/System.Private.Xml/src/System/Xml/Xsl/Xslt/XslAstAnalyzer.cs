@@ -1175,8 +1175,8 @@ namespace System.Xml.Xsl.Xslt
                                 }
                             }
                         }
-#pragma warning restore SYSLIB0062
                         funcFlags |= XslFlags.SideEffects;
+#pragma warning restore SYSLIB0062
                     }
                 }
 

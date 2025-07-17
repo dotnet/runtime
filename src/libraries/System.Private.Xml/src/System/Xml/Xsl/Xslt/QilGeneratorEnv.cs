@@ -222,7 +222,6 @@ namespace System.Xml.Xsl.Xslt
                         return GenerateScriptCall(_f.QName(name, ns, prefix), scrFunc, args);
                     }
                 }
-#pragma warning restore SYSLIB0062
                 else
                 {
                     if (_compiler.Scripts.ScriptClasses.ContainsKey(ns))
@@ -231,6 +230,7 @@ namespace System.Xml.Xsl.Xslt
                         return _f.Error(_lastScope!.SourceLine, SR.Xslt_ScriptsProhibited);
                     }
                 }
+#pragma warning restore SYSLIB0062
 
                 return _f.XsltInvokeLateBound(_f.QName(name, ns, prefix), args);
             }
