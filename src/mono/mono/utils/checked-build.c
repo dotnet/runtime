@@ -677,7 +677,7 @@ check_image_set_may_reference_image_set (MonoImageSet *from, MonoImageSet *to)
 	return valid; // All items in "to" were found in "from"
 }
 
-// Case 4. Image FROM points to ImageSet TO: FROM transitively references *ALL* of the 鈥渋mages鈥� listed in TO
+// Case 4. Image FROM points to ImageSet TO: FROM transitively references *ALL* of the "mages" listed in TO
 static gboolean
 check_image_may_reference_image_set (MonoImage *from, MonoImageSet *to)
 {
