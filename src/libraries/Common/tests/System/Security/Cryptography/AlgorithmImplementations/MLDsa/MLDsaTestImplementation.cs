@@ -13,11 +13,17 @@ namespace System.Security.Cryptography.Tests
         internal delegate bool VerifyFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
         internal delegate void SignPreHashAction(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination);
         internal delegate bool VerifyPreHashFunc(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature);
+        internal delegate MLDsaMuHash OpenExternalMuHashFunc(ReadOnlySpan<byte> context);
+        internal delegate void SignMuAction(ReadOnlySpan<byte> mu, Span<byte> destination);
+        internal delegate bool VerifyMuFunc(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature);
 
         internal int VerifyDataCoreCallCount = 0;
         internal int SignDataCoreCallCount = 0;
         internal int SignPreHashCoreCallCount = 0;
         internal int VerifyPreHashCoreCallCount = 0;
+        internal int OpenExternalMuCallCount = 0;
+        internal int SignExternalMuCallCount = 0;
+        internal int VerifyExternalMuCallCount = 0;
         internal int ExportMLDsaPrivateSeedCoreCallCount = 0;
         internal int ExportMLDsaPublicKeyCoreCallCount = 0;
         internal int ExportMLDsaSecretKeyCoreCallCount = 0;
@@ -32,10 +38,14 @@ namespace System.Security.Cryptography.Tests
         internal VerifyFunc VerifyDataHook { get; set; }
         internal SignPreHashAction SignPreHashHook { get; set; }
         internal VerifyPreHashFunc VerifyPreHashHook { get; set; }
+        internal OpenExternalMuHashFunc OpenExternalMuHashCoreHook { get; set; }
+        internal SignMuAction SignExternalMuHook { get; set; }
+        internal VerifyMuFunc VerifyExternalMuHook { get; set; }
         internal Action<bool> DisposeHook { get; set; }
 
         private MLDsaTestImplementation(MLDsaAlgorithm algorithm) : base(algorithm)
         {
+            UseBaseExternalMuHash();
         }
 
         protected override void Dispose(bool disposing)
@@ -85,10 +95,34 @@ namespace System.Security.Cryptography.Tests
             SignPreHashCoreCallCount++;
             SignPreHashHook(hash, context, hashAlgorithmOid, destination);
         }
+
         protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature)
         {
             VerifyPreHashCoreCallCount++;
             return VerifyPreHashHook(hash, context, hashAlgorithmOid, signature);
+        }
+
+        internal void UseBaseExternalMuHash()
+        {
+            OpenExternalMuHashCoreHook = base.OpenExternalMuHashCore;
+        }
+
+        protected override MLDsaMuHash OpenExternalMuHashCore(ReadOnlySpan<byte> context)
+        {
+            OpenExternalMuCallCount++;
+            return OpenExternalMuHashCoreHook(context);
+        }
+
+        override protected void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination)
+        {
+            SignExternalMuCallCount++;
+            SignExternalMuHook(mu, destination);
+        }
+
+        protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature)
+        {
+            VerifyExternalMuCallCount++;
+            return VerifyExternalMuHook(mu, signature);
         }
 
         internal static MLDsaTestImplementation CreateOverriddenCoreMethodsFail(MLDsaAlgorithm algorithm)
@@ -100,6 +134,11 @@ namespace System.Security.Cryptography.Tests
                 ExportMLDsaSecretKeyHook = _ => Assert.Fail(),
                 SignDataHook = (_, _, _) => Assert.Fail(),
                 VerifyDataHook = (_, _, _) => { Assert.Fail(); return false; },
+                SignPreHashHook = (_, _, _, _) => Assert.Fail(),
+                VerifyPreHashHook = (_, _, _, _) => { Assert.Fail(); return false; },
+                OpenExternalMuHashCoreHook = _ => { Assert.Fail(); return null; },
+                SignExternalMuHook = (_, _) => Assert.Fail(),
+                VerifyExternalMuHook = (_, _) => { Assert.Fail(); return false; },
                 DisposeHook = _ => { },
 
                 TryExportPkcs8PrivateKeyHook = (_, out bytesWritten) =>
@@ -120,6 +159,10 @@ namespace System.Security.Cryptography.Tests
                 ExportMLDsaSecretKeyHook = d => d.Clear(),
                 SignDataHook = (data, context, destination) => destination.Clear(),
                 VerifyDataHook = (data, context, signature) => false,
+                SignPreHashHook = (hash, context, hashAlgorithmOid, destination) => destination.Clear(),
+                VerifyPreHashHook = (hash, context, hashAlgorithmOid, signature) => false,
+                SignExternalMuHook = (mu, destination) => destination.Clear(),
+                VerifyExternalMuHook = (mu, signature) => false,
                 DisposeHook = _ => { },
 
                 TryExportPkcs8PrivateKeyHook = (Span<byte> destination, out int bytesWritten) =>

@@ -53,6 +53,14 @@ namespace System.Security.Cryptography
         /// </value>
         public int SignatureSizeInBytes { get; }
 
+        // In the current (initial) version of FIPS 204, the length of mu is
+        // defined to be 64 bytes.
+        // There's always a possibility that a future version moves it to a parameter-set
+        // value, so we'll treat it as such for now.
+#pragma warning disable CA1822 // Mark members as static
+        internal int MuSizeInBytes => 64;
+#pragma warning restore CA1822 // Mark members as static
+
         internal string Oid { get; }
 
         /// <summary>

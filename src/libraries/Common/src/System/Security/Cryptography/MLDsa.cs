@@ -120,14 +120,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
-            int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
-
-            if (destination.Length != signatureSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, signatureSizeInBytes),
-                    nameof(destination));
-            }
+            Helpers.ThrowIfWrongLength(destination, Algorithm.SignatureSizeInBytes);
 
             if (context.Length > MaxContextLength)
             {
@@ -309,13 +302,7 @@ namespace System.Security.Cryptography
         public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
             ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
-
-            if (destination.Length != Algorithm.SignatureSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SignatureSizeInBytes),
-                    nameof(destination));
-            }
+            Helpers.ThrowIfWrongLength(destination, Algorithm.SignatureSizeInBytes);
 
             if (context.Length > MaxContextLength)
             {
@@ -474,6 +461,202 @@ namespace System.Security.Cryptography
                 hashAlgorithmOid,
                 new ReadOnlySpan<byte>(context));
         }
+
+        /// <inheritdoc cref="OpenExternalMuHash(ReadOnlySpan{byte})"/>
+        public MLDsaMuHash OpenExternalMuHash(byte[]? context = null)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            return OpenExternalMuHash(new ReadOnlySpan<byte>(context));
+        }
+
+        /// <summary>
+        ///   Opens an <see cref="MLDsaMuHash"/> instance to accumulate data for the computation of
+        ///   the signature mu (&#x3BC;) value for use with the <c>SignExternalMu</c> method group.
+        /// </summary>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is the empty buffer.
+        /// </param>
+        /// <returns>
+        ///   A hash accumulator instance that is associated with the current key, and the specified context.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        public MLDsaMuHash OpenExternalMuHash(ReadOnlySpan<byte> context = default)
+        {
+            if (context.Length > MaxContextLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(context),
+                    context.Length,
+                    SR.Argument_SignatureContextTooLong255);
+            }
+
+            ThrowIfDisposed();
+
+            return OpenExternalMuHashCore(context);
+        }
+
+        /// <summary>
+        ///   Opens an <see cref="MLDsaMuHash"/> instance to accumulate data for the computation of
+        ///   the signature mu (&#x3BC;) value for use with the <c>SignExternalMu</c> method group.
+        /// </summary>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <returns>
+        ///   A hash accumulator instance that is associated with the current key, and the specified context.
+        /// </returns>
+        /// <remarks>
+        ///   The default implementation of this method computes mu using the platform implementation
+        ///   of SHAKE-256.
+        ///   Derived types should override this method if they have a more direct way of computing mu,
+        ///   or need independence from the platform implementation of SHAKE-256.
+        /// </remarks>
+        protected virtual MLDsaMuHash OpenExternalMuHashCore(ReadOnlySpan<byte> context)
+        {
+            return new DefaultMLDsaMuHash(this, context);
+        }
+
+        /// <inheritdoc cref="SignExternalMu(ReadOnlySpan{byte})"/>
+        /// <exception cref="ArgumentNullException"><paramref name="mu"/> is <see langword="null"/>.</exception>
+        public byte[] SignExternalMu(byte[] mu)
+        {
+            ArgumentNullException.ThrowIfNull(mu);
+
+            return SignExternalMu(new ReadOnlySpan<byte>(mu));
+        }
+
+        /// <summary>
+        ///   Signs the specified externally computed signature mu (&#x3BC;) value,
+        ///   writing the signature into the provided buffer.
+        /// </summary>
+        /// <param name="mu">
+        ///   The signature mu value to sign.
+        /// </param>
+        /// <returns>
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="mu"/> is the incorrect length for the signature mu value.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        /// <seealso cref="OpenExternalMuHash(byte[])"/>
+        /// <seealso cref="VerifyExternalMu(byte[], byte[])"/>
+        public byte[] SignExternalMu(ReadOnlySpan<byte> mu)
+        {
+            byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
+            SignExternalMu(mu, destination.AsSpan());
+            return destination;
+        }
+
+        /// <summary>
+        ///   Signs the specified externally computed signature mu (&#x3BC;) value,
+        ///   writing the signature into the provided buffer.
+        /// </summary>
+        /// <param name="mu">
+        ///   The signature mu value to sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.SignatureSizeInBytes"/>.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The buffer in <paramref name="mu"/> is the incorrect length for the signature mu value.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        /// <seealso cref="OpenExternalMuHash(ReadOnlySpan{byte})"/>
+        /// <seealso cref="VerifyExternalMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        public void SignExternalMu(ReadOnlySpan<byte> mu, Span<byte> destination)
+        {
+            Helpers.ThrowIfWrongLength(mu, Algorithm.MuSizeInBytes);
+            Helpers.ThrowIfWrongLength(destination, Algorithm.SignatureSizeInBytes);
+            ThrowIfDisposed();
+
+            SignExternalMuCore(mu, destination);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, computes the remainder of the signature from the
+        ///   precomputed mu (&#x3BC;) value, writing it into the provided buffer.
+        /// </summary>
+        /// <param name="mu">
+        ///   The signature mu value to sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while computing the signature.
+        /// </exception>
+        protected abstract void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination);
+
+        /// <inheritdoc cref="VerifyExternalMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        /// <exception cref="ArgumentNullException"><paramref name="mu"/> is <see langword="null"/>.</exception>
+        public bool VerifyExternalMu(byte[] mu, byte[] signature)
+        {
+            ArgumentNullException.ThrowIfNull(mu);
+            ArgumentNullException.ThrowIfNull(signature);
+
+            return VerifyExternalMu(new ReadOnlySpan<byte>(mu), new ReadOnlySpan<byte>(signature));
+        }
+
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided externally computed signature mu (&#x3BC;) value.
+        /// </summary>
+        /// <param name="mu">The signature mu value.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided mu value;
+        ///   otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred while verifying the mu value.</exception>
+        public bool VerifyExternalMu(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature)
+        {
+            if (mu.Length != Algorithm.MuSizeInBytes || signature.Length != Algorithm.SignatureSizeInBytes)
+            {
+                return false;
+            }
+
+            ThrowIfDisposed();
+
+            return VerifyExternalMuCore(mu, signature);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class,
+        ///   verifies that a digital signature is valid for the provided externally computed signature mu (&#x3BC;) value.
+        /// </summary>
+        /// <param name="mu">The signature mu value.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the mu value is valid; otherwise, <see langword="false"/>.
+        /// </returns>
+        protected abstract bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature);
 
         /// <summary>
         ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
@@ -1031,15 +1214,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public void ExportMLDsaPublicKey(Span<byte> destination)
         {
-            int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
-
-            if (destination.Length != publicKeySizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, publicKeySizeInBytes),
-                    nameof(destination));
-            }
-
+            Helpers.ThrowIfWrongLength(destination, Algorithm.PublicKeySizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaPublicKeyCore(destination);
@@ -1081,15 +1256,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportMLDsaSecretKey(Span<byte> destination)
         {
-            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
-
-            if (destination.Length != secretKeySizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, secretKeySizeInBytes),
-                    nameof(destination));
-            }
-
+            Helpers.ThrowIfWrongLength(destination, Algorithm.SecretKeySizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaSecretKeyCore(destination);
@@ -1129,14 +1296,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportMLDsaPrivateSeed(Span<byte> destination)
         {
-            int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
-            if (destination.Length != privateSeedSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, privateSeedSizeInBytes),
-                    nameof(destination));
-            }
-
+            Helpers.ThrowIfWrongLength(destination, Algorithm.PrivateSeedSizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaPrivateSeedCore(destination);
@@ -2114,8 +2274,82 @@ namespace System.Security.Cryptography
             }
         }
 
-
-
         private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
+
+        private sealed class DefaultMLDsaMuHash : MLDsaMuHash
+        {
+            private byte[] _keyState;
+            private Shake256 _shake;
+
+            // The base ctor wants an MLDsaAlgorithm in case the 64 byte mu length ever becomes a parameter set,
+            // but other than checking it's not null, it doesn't currently care what it is.
+            // Until there's a new parameter set that makes it matter, just clone with ML-DSA-87 (non-null).
+            private DefaultMLDsaMuHash(DefaultMLDsaMuHash toClone)
+                : base(toClone.Key)
+            {
+                _shake = toClone._shake.Clone();
+
+                // The key state is never update after the initial computation,
+                // so it doesn't need a full clone.
+                _keyState = toClone._keyState;
+            }
+
+            internal DefaultMLDsaMuHash(MLDsa mldsa, ReadOnlySpan<byte> context)
+                : base(mldsa)
+            {
+                // FIPS 204, 5.3, Algorithm 3:
+                // M' = BytesToBits(IntegerToBytes(0, 1) || IntegerToBytes(|ctx|, 1) || ctx) || M
+                // FIPS 204, 6.3, Algorithm 8:
+                // tr = H(pk, 64)
+                // mu = H(BytesToBits(tr) || M')
+                //
+                // So on Reset we need to know tr (64 bytes), the "pure" zero, the length of the context, and the context.
+                _keyState = new byte[64 + 1 + 1 + context.Length];
+                _shake = new Shake256();
+
+                Span<byte> tr = _keyState.AsSpan(0, 64);
+
+                using (CryptoPoolLease pk = CryptoPoolLease.Rent(mldsa.Algorithm.PublicKeySizeInBytes, skipClear: true))
+                {
+                    mldsa.ExportMLDsaPublicKey(pk.Span);
+                    _shake.AppendData(pk.Span);
+                    _shake.GetHashAndReset(tr);
+                }
+
+                // The "pure" signature marker.
+                // It's already zero (because we used new[]), but let's set it anyways.
+                _keyState[64] = 0;
+                _keyState[65] = checked((byte)context.Length);
+                context.CopyTo(_keyState.AsSpan(66));
+                _shake.AppendData(_keyState);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _shake.Dispose();
+                    _keyState = null!;
+                    _shake = null!;
+                }
+            }
+
+            protected override void AppendDataCore(ReadOnlySpan<byte> data) =>
+                _shake.AppendData(data);
+
+            protected override void GetCurrentHashCore(Span<byte> destination) =>
+                _shake.GetCurrentHash(destination);
+
+            protected override void GetHashAndResetCore(Span<byte> destination)
+            {
+                _shake.GetHashAndReset(destination);
+                _shake.AppendData(_keyState);
+            }
+
+            protected override MLDsaMuHash CloneCore()
+            {
+                return new DefaultMLDsaMuHash(this);
+            }
+        }
     }
 }

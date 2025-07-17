@@ -29,6 +29,12 @@ namespace System.Security.Cryptography
         protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
+        protected override void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 

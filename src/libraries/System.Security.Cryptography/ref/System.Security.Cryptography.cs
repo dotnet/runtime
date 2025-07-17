@@ -1959,9 +1959,16 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLDsa ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
+        public System.Security.Cryptography.MLDsaMuHash OpenExternalMuHash(byte[]? context = null) { throw null; }
+        public System.Security.Cryptography.MLDsaMuHash OpenExternalMuHash(System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected virtual System.Security.Cryptography.MLDsaMuHash OpenExternalMuHashCore(System.ReadOnlySpan<byte> context) { throw null; }
         public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
-        public void SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination);
+        public byte[] SignExternalMu(byte[] mu) { throw null; }
+        public byte[] SignExternalMu(System.ReadOnlySpan<byte> mu) { throw null; }
+        public void SignExternalMu(System.ReadOnlySpan<byte> mu, System.Span<byte> destination) { }
+        protected abstract void SignExternalMuCore(System.ReadOnlySpan<byte> mu, System.Span<byte> destination);
         public byte[] SignPreHash(byte[] hash, string hashAlgorithmOid, byte[]? context = null) { throw null; }
         public void SignPreHash(System.ReadOnlySpan<byte> hash, System.Span<byte> destination, string hashAlgorithmOid, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination);
@@ -1974,6 +1981,9 @@ namespace System.Security.Cryptography
         public bool VerifyData(byte[] data, byte[] signature, byte[]? context = null) { throw null; }
         public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature);
+        public bool VerifyExternalMu(byte[] mu, byte[] signature) { throw null; }
+        public bool VerifyExternalMu(System.ReadOnlySpan<byte> mu, System.ReadOnlySpan<byte> signature) { throw null; }
+        protected abstract bool VerifyExternalMuCore(System.ReadOnlySpan<byte> mu, System.ReadOnlySpan<byte> signature);
         public bool VerifyPreHash(byte[] hash, byte[] signature, string hashAlgorithmOid, byte[]? context = null) { throw null; }
         public bool VerifyPreHash(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> signature, string hashAlgorithmOid, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract bool VerifyPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.ReadOnlySpan<byte> signature);
@@ -2008,10 +2018,40 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPublicKeyCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaSecretKeyCore(System.Span<byte> destination) { }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
+        protected override void SignExternalMuCore(System.ReadOnlySpan<byte> mu, System.Span<byte> destination) { }
         protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
+        protected override bool VerifyExternalMuCore(System.ReadOnlySpan<byte> mu, System.ReadOnlySpan<byte> signature) { throw null; }
         protected override bool VerifyPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.ReadOnlySpan<byte> signature) { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class MLDsaMuHash : System.IDisposable
+    {
+        protected MLDsaMuHash(System.Security.Cryptography.MLDsa key) { }
+        public int HashLengthInBytes { get { throw null; } }
+        protected System.Security.Cryptography.MLDsa Key { get { throw null; } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(System.IO.Stream stream) { }
+        public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Threading.Tasks.Task AppendDataAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract void AppendDataCore(System.ReadOnlySpan<byte> data);
+        public System.Security.Cryptography.MLDsaMuHash Clone() { throw null; }
+        protected abstract System.Security.Cryptography.MLDsaMuHash CloneCore();
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] GetCurrentHash() { throw null; }
+        public void GetCurrentHash(System.Span<byte> destination) { }
+        protected abstract void GetCurrentHashCore(System.Span<byte> destination);
+        public byte[] GetHashAndReset() { throw null; }
+        public void GetHashAndReset(System.Span<byte> destination) { }
+        protected abstract void GetHashAndResetCore(System.Span<byte> destination);
+        public void Reset() { }
+        protected virtual void ResetCore() { }
+        public byte[] SignAndReset() { throw null; }
+        public void SignAndReset(System.Span<byte> destination) { }
+        public bool VerifyAndReset(byte[] signature) { throw null; }
+        public bool VerifyAndReset(System.ReadOnlySpan<byte> signature) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLDsaOpenSsl : System.Security.Cryptography.MLDsa
@@ -2029,9 +2069,11 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPublicKeyCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaSecretKeyCore(System.Span<byte> destination) { }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
+        protected override void SignExternalMuCore(System.ReadOnlySpan<byte> mu, System.Span<byte> destination) { }
         protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
+        protected override bool VerifyExternalMuCore(System.ReadOnlySpan<byte> mu, System.ReadOnlySpan<byte> signature) { throw null; }
         protected override bool VerifyPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.ReadOnlySpan<byte> signature) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -3123,6 +3165,7 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaSecretKeyCore(System.Span<byte> destination) { }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
         protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
         protected override bool VerifyPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.ReadOnlySpan<byte> signature) { throw null; }
     }

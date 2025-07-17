@@ -102,6 +102,14 @@ namespace System.Security.Cryptography
                 static (key, encodedMessage, signature) => Interop.Crypto.MLDsaVerifyPreEncoded(key, encodedMessage, signature));
 
         /// <inheritdoc />
+        protected override void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        /// <inheritdoc />
+        protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
+        /// <inheritdoc />
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.MLDsaExportPublicKey(_key, destination);
 

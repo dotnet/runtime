@@ -427,8 +427,11 @@
              Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\MLDsaImplementation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaMuHash.cs"
+             Link="Common\System\Security\Cryptography\MLDsaMuHash.cs" />
 
     <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
+    <Compile Include="System\Security\Cryptography\Shake256.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
