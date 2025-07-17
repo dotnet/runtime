@@ -17,8 +17,6 @@ using Mono.Linker.Tests.Cases.Warnings.Individual;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 
 namespace Mono.Linker.Tests.TestCases
 {
@@ -285,14 +283,14 @@ namespace Mono.Linker.Tests.TestCases
 
             // Check PE header for NoSEH flag
             using (var fileStream = new FileStream(outputPath, FileMode.Open, FileAccess.Read))
-            using (var peReader = new PEReader(fileStream))
+            using (var peReader = new System.Reflection.PortableExecutable.PEReader(fileStream))
             {
                 var peHeaders = peReader.PEHeaders;
                 var characteristics = peHeaders.CoffHeader.Characteristics;
                 var dllCharacteristics = peHeaders.PEHeader!.DllCharacteristics;
                 
                 // IMAGE_DLLCHARACTERISTICS_NO_SEH = 0x0400
-                const DllCharacteristics NoSEH = (DllCharacteristics)0x0400;
+                const System.Reflection.PortableExecutable.DllCharacteristics NoSEH = (System.Reflection.PortableExecutable.DllCharacteristics)0x0400;
                 
                 Assert.That(dllCharacteristics & NoSEH, Is.EqualTo(NoSEH), 
                     $"NoSEH flag (0x0400) is not set in PE header. DllCharacteristics: 0x{dllCharacteristics:X}");
