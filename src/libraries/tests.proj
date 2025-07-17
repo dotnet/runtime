@@ -237,12 +237,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/114951 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.Tests\System.IO.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Bcl.Cryptography\tests\Microsoft.Bcl.Cryptography.Tests.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
   </ItemGroup>
