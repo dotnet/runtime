@@ -184,7 +184,6 @@ namespace System
         /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
         /// <param name="lower">The lower half of the full product.</param>
         /// <returns>The upper half of the full product.</returns>
-        [CLSCompliant(false)]
         public static nint BigMul(nint left, nint right, out nint lower)
         {
 #if TARGET_64BIT
