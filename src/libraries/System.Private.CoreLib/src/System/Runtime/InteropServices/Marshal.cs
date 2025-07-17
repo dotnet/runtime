@@ -653,15 +653,6 @@ namespace System.Runtime.InteropServices
             return GetExceptionForHRInternal(errorCode, errorInfo);
         }
 
-#if TARGET_WINDOWS
-        private static readonly Guid IID_ISupportErrorInfo = new Guid([
-                    0x60, 0x3D, 0x0B, 0xDF, // Data1: 0xDF0B3D60 (little-endian)
-                    0x8F, 0x54,             // Data2: 0x548F (little-endian)
-                    0x1B, 0x10,             // Data3: 0x101B (little-endian)
-                    0x8E, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19 // Data4: 8 bytes
-                ]);
-#endif
-
         public static unsafe Exception? GetExceptionForHR(int errorCode, in Guid iid, IntPtr pUnk)
         {
             if (errorCode >= 0)
@@ -669,6 +660,11 @@ namespace System.Runtime.InteropServices
                 return null;
             }
 
+            return GetExceptionForHRInternal(errorCode, in iid, pUnk);
+        }
+
+        private static unsafe Exception? GetExceptionForHRInternal(int errorCode, in Guid iid, IntPtr pUnk)
+        {
             const IntPtr NoErrorInfo = -1; // Use -1 to indicate no error info available
 
             // Normally, we would check if the interface supports IErrorInfo first. However,
@@ -687,6 +683,7 @@ namespace System.Runtime.InteropServices
             // we check if it supports ISupportErrorInfo.
             if (errorInfo != NoErrorInfo && pUnk != IntPtr.Zero)
             {
+                Guid IID_ISupportErrorInfo = new(0xDF0B3D60, 0x548F, 0x101B, 0x8E, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19);
                 int hr = QueryInterface(pUnk, in IID_ISupportErrorInfo, out IntPtr supportErrorInfo);
                 if (hr == 0)
                 {
