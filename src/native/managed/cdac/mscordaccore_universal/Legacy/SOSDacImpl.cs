@@ -1651,19 +1651,10 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            uint TlsOutOfIndexes = _target.ReadGlobal<uint>(Constants.Globals.TlsOutOfIndexes);
             uint TlsIndexBase = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.TlsIndexBase));
             uint OffsetOfCurrentThreadInfo = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.OffsetOfCurrentThreadInfo));
             uint CombinedTlsIndex = TlsIndexBase + (OffsetOfCurrentThreadInfo << 16) + 0x80000000;
-            if (CombinedTlsIndex == TlsOutOfIndexes)
-            {
-                *pIndex = 0;
-                hr = HResults.S_FALSE;
-            }
-            else
-            {
-                *pIndex = CombinedTlsIndex;
-            }
+            *pIndex = CombinedTlsIndex;
         }
         catch (System.Exception ex)
         {
