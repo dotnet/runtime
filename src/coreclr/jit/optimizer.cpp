@@ -585,14 +585,12 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
 
         case BBJ_EHFINALLYRET:
         {
-            BBehfDesc* currEhfDesc = blk->GetEhfTargets();
-            BBehfDesc* newEhfDesc  = new (this, CMK_BasicBlock) BBehfDesc;
-            newEhfDesc->bbeCount   = currEhfDesc->bbeCount;
-            newEhfDesc->bbeSuccs   = new (this, CMK_FlowEdge) FlowEdge*[newEhfDesc->bbeCount];
+            BBJumpTable* currEhfDesc = blk->GetEhfTargets();
+            FlowEdge**   newSuccs    = new (this, CMK_FlowEdge) FlowEdge*[currEhfDesc->GetSuccCount()];
 
-            for (unsigned i = 0; i < newEhfDesc->bbeCount; i++)
+            for (unsigned i = 0; i < currEhfDesc->GetSuccCount(); i++)
             {
-                FlowEdge* const   inspiringEdge = currEhfDesc->bbeSuccs[i];
+                FlowEdge* const   inspiringEdge = currEhfDesc->GetSucc(i);
                 BasicBlock* const ehfTarget     = inspiringEdge->getDestinationBlock();
                 FlowEdge*         newEdge;
 
@@ -606,9 +604,10 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
                     newEdge = fgAddRefPred(ehfTarget, newBlk, inspiringEdge);
                 }
 
-                newEhfDesc->bbeSuccs[i] = newEdge;
+                newSuccs[i] = newEdge;
             }
 
+            BBJumpTable* newEhfDesc = new (this, CMK_BasicBlock) BBJumpTable(newSuccs, currEhfDesc->GetSuccCount());
             newBlk->SetEhf(newEhfDesc);
             break;
         }
@@ -616,12 +615,12 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
         case BBJ_SWITCH:
         {
             BBswtDesc* currSwtDesc = blk->GetSwitchTargets();
-            BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(currSwtDesc);
-            newSwtDesc->bbsDstTab  = new (this, CMK_FlowEdge) FlowEdge*[newSwtDesc->bbsCount];
+            BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(this, currSwtDesc);
+            FlowEdge** succPtr     = newSwtDesc->GetSuccs();
 
-            for (unsigned i = 0; i < newSwtDesc->bbsCount; i++)
+            for (unsigned i = 0; i < newSwtDesc->GetCaseCount(); i++)
             {
-                FlowEdge* const   inspiringEdge = currSwtDesc->bbsDstTab[i];
+                FlowEdge* const   inspiringEdge = currSwtDesc->GetCase(i);
                 BasicBlock* const switchTarget  = inspiringEdge->getDestinationBlock();
                 FlowEdge*         newEdge;
 
@@ -637,13 +636,16 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
 
                 // Transfer likelihood... instead of doing this gradually
                 // for dup'd edges, we set it once, when we add the last dup.
+                // Also, add the new edge to the unique successor table.
                 //
                 if (newEdge->getDupCount() == inspiringEdge->getDupCount())
                 {
                     newEdge->setLikelihood(inspiringEdge->getLikelihood());
+                    *succPtr = newEdge;
+                    succPtr++;
                 }
 
-                newSwtDesc->bbsDstTab[i] = newEdge;
+                newSwtDesc->GetCases()[i] = newEdge;
             }
 
             newBlk->SetSwitch(newSwtDesc);

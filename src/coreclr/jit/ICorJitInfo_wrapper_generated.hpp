@@ -1299,16 +1299,6 @@ void WrapICorJitInfo::getFunctionFixedEntryPoint(
     API_LEAVE(getFunctionFixedEntryPoint);
 }
 
-void* WrapICorJitInfo::getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection)
-{
-    API_ENTER(getMethodSync);
-    void* temp = wrapHnd->getMethodSync(ftn, ppIndirection);
-    API_LEAVE(getMethodSync);
-    return temp;
-}
-
 CorInfoHelpFunc WrapICorJitInfo::getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle)
 {

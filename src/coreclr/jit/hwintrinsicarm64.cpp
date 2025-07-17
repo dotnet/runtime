@@ -299,6 +299,18 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
             }
         }
 
+        if (intrinsic == NI_Sve2_MultiplyBySelectedScalar ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEven ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOdd ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd ||
+            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract ||
+            intrinsic == NI_Sve2_MultiplySubtractBySelectedScalar)
+        {
+            indexedElementBaseType = simdBaseType;
+        }
+
         assert(indexedElementBaseType == simdBaseType);
     }
     else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
@@ -362,14 +374,24 @@ void HWIntrinsicInfo::lookupImmBounds(
     }
     else if (category == HW_Category_SIMDByIndexedElement)
     {
-        if (intrinsic == NI_Sve_DuplicateSelectedScalarToVector)
+        switch (intrinsic)
         {
-            // For SVE_DUP, the upper bound on index does not depend on the vector length.
-            immUpperBound = (512 / (BITS_PER_BYTE * genTypeSize(baseType))) - 1;
-        }
-        else
-        {
-            immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+            case NI_Sve_DuplicateSelectedScalarToVector:
+                // For SVE_DUP, the upper bound on index does not depend on the vector length.
+                immUpperBound = (512 / (BITS_PER_BYTE * genTypeSize(baseType))) - 1;
+                break;
+            case NI_Sve2_MultiplyBySelectedScalarWideningEven:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
+                // Index is on the half-width vector, hence double the maximum index.
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) * 2 - 1;
+                break;
+            default:
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+                break;
         }
     }
     else
@@ -1346,166 +1368,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ExtractMostSignificantBits:
         {
             assert(sig->numArgs == 1);
-
-            // ARM64 doesn't have a single instruction that performs the behavior so we'll emulate it instead.
-            // To do this, we effectively perform the following steps:
-            // 1. tmp = input & 0x80         ; and the input to clear all but the most significant bit
-            // 2. tmp = tmp >> index         ; right shift each element by its index
-            // 3. tmp = sum(tmp)             ; sum the elements together
-
-            // For byte/sbyte, we also need to handle the fact that we can only shift by up to 8
-            // but for Vector128, we have 16 elements to handle. In that scenario, we will simply
-            // extract both scalars, and combine them via: (upper << 8) | lower
-
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            op1 = impSIMDPopStack();
-
-            GenTreeVecCon* vecCon2 = gtNewVconNode(simdType);
-            GenTreeVecCon* vecCon3 = gtNewVconNode(simdType);
-
-            switch (simdBaseType)
-            {
-                case TYP_BYTE:
-                case TYP_UBYTE:
-                {
-                    simdBaseType    = TYP_UBYTE;
-                    simdBaseJitType = CORINFO_TYPE_UBYTE;
-
-                    vecCon2->gtSimdVal.u64[0] = 0x8080808080808080;
-                    vecCon3->gtSimdVal.u64[0] = 0x00FFFEFDFCFBFAF9;
-
-                    if (simdSize == 16)
-                    {
-                        vecCon2->gtSimdVal.u64[1] = 0x8080808080808080;
-                        vecCon3->gtSimdVal.u64[1] = 0x00FFFEFDFCFBFAF9;
-                    }
-                    break;
-                }
-
-                case TYP_SHORT:
-                case TYP_USHORT:
-                {
-                    simdBaseType    = TYP_USHORT;
-                    simdBaseJitType = CORINFO_TYPE_USHORT;
-
-                    vecCon2->gtSimdVal.u64[0] = 0x8000800080008000;
-                    vecCon3->gtSimdVal.u64[0] = 0xFFF4FFF3FFF2FFF1;
-
-                    if (simdSize == 16)
-                    {
-                        vecCon2->gtSimdVal.u64[1] = 0x8000800080008000;
-                        vecCon3->gtSimdVal.u64[1] = 0xFFF8FFF7FFF6FFF5;
-                    }
-                    break;
-                }
-
-                case TYP_INT:
-                case TYP_UINT:
-                case TYP_FLOAT:
-                {
-                    simdBaseType    = TYP_INT;
-                    simdBaseJitType = CORINFO_TYPE_INT;
-
-                    vecCon2->gtSimdVal.u64[0] = 0x8000000080000000;
-                    vecCon3->gtSimdVal.u64[0] = 0xFFFFFFE2FFFFFFE1;
-
-                    if (simdSize == 16)
-                    {
-                        vecCon2->gtSimdVal.u64[1] = 0x8000000080000000;
-                        vecCon3->gtSimdVal.u64[1] = 0xFFFFFFE4FFFFFFE3;
-                    }
-                    break;
-                }
-
-                case TYP_LONG:
-                case TYP_ULONG:
-                case TYP_DOUBLE:
-                {
-                    simdBaseType    = TYP_LONG;
-                    simdBaseJitType = CORINFO_TYPE_LONG;
-
-                    vecCon2->gtSimdVal.u64[0] = 0x8000000000000000;
-                    vecCon3->gtSimdVal.u64[0] = 0xFFFFFFFFFFFFFFC1;
-
-                    if (simdSize == 16)
-                    {
-                        vecCon2->gtSimdVal.u64[1] = 0x8000000000000000;
-                        vecCon3->gtSimdVal.u64[1] = 0xFFFFFFFFFFFFFFC2;
-                    }
-                    break;
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
-            op3 = vecCon3;
-            op2 = vecCon2;
-            op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2, NI_AdvSimd_And, simdBaseJitType, simdSize);
-
-            NamedIntrinsic shiftIntrinsic = NI_AdvSimd_ShiftLogical;
-
-            if ((simdSize == 8) && varTypeIsLong(simdBaseType))
-            {
-                shiftIntrinsic = NI_AdvSimd_ShiftLogicalScalar;
-            }
-
-            op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op3, shiftIntrinsic, simdBaseJitType, simdSize);
-
-            if (varTypeIsByte(simdBaseType) && (simdSize == 16))
-            {
-                op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
-
-                op1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseJitType, simdSize);
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8);
-                op1 = gtNewSimdToScalarNode(genActualType(simdBaseType), op1, simdBaseJitType, 8);
-                op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
-
-                GenTree* zero  = gtNewZeroConNode(TYP_SIMD16);
-                ssize_t  index = 8 / genTypeSize(simdBaseType);
-
-                op2 = gtNewSimdGetUpperNode(TYP_SIMD8, op2, simdBaseJitType, simdSize);
-                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8);
-                op2 = gtNewSimdToScalarNode(genActualType(simdBaseType), op2, simdBaseJitType, 8);
-                op2 = gtNewCastNode(TYP_INT, op2, /* isUnsigned */ true, TYP_INT);
-
-                op2     = gtNewOperNode(GT_LSH, TYP_INT, op2, gtNewIconNode(8));
-                retNode = gtNewOperNode(GT_OR, TYP_INT, op1, op2);
-            }
-            else
-            {
-                if (!varTypeIsLong(simdBaseType))
-                {
-                    if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)))
-                    {
-                        op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
-                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseJitType,
-                                                       simdSize);
-                    }
-                    else
-                    {
-                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType,
-                                                       simdSize);
-                    }
-                }
-                else if (simdSize == 16)
-                {
-                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
-                                                   simdSize);
-                }
-
-                retNode = gtNewSimdToScalarNode(genActualType(simdBaseType), op1, simdBaseJitType, 8);
-
-                if ((simdBaseType != TYP_INT) && (simdBaseType != TYP_UINT))
-                {
-                    retNode = gtNewCastNode(TYP_INT, retNode, /* isUnsigned */ true, TYP_INT);
-                }
-            }
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
