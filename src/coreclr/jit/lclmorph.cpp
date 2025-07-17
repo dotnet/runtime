@@ -1501,7 +1501,7 @@ private:
             CallArg* suspendedArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
             if ((suspendedArg != nullptr) && (val.Node() == suspendedArg->GetNode()))
             {
-                varDsc->SetDefinedViaAddress(true);
+                INDEBUG(varDsc->SetDefinedViaAddress(true));
                 escapeAddr = false;
                 defFlag    = GTF_VAR_DEF;
 
