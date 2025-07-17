@@ -1167,6 +1167,9 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
+    if (cmp->gtOp1->IsIntegralConst(0))
+        cmp->gtOp1->SetContained();
+
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 

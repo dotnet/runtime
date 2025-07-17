@@ -3122,11 +3122,10 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     assert(targetReg != REG_NA);
     assert(!tree->TypeIs(TYP_VOID));
-    assert(!op1->isContainedIntOrIImmed());
 
     if (varTypeIsFloating(op1Type))
     {
-        assert(!op2->isContainedIntOrIImmed());
+        assert(!op1->isContainedIntOrIImmed() && !op2->isContainedIntOrIImmed());
         assert(op1->TypeIs(op2->TypeGet()));
         noway_assert((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
 
@@ -3150,6 +3149,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     else
     {
         assert(tree->OperIs(GT_LT));
+        assert(op1->isContainedIntOrIImmed() != op2->isContainedIntOrIImmed());
         if (op2->isContainedIntOrIImmed())
         {
             instruction slti = tree->IsUnsigned() ? INS_sltiu : INS_slti;
@@ -3157,8 +3157,9 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         }
         else
         {
-            instruction slt = tree->IsUnsigned() ? INS_sltu : INS_slt;
-            emit->emitIns_R_R_R(slt, EA_PTRSIZE, targetReg, op1->GetRegNum(), op2->GetRegNum());
+            instruction slt  = tree->IsUnsigned() ? INS_sltu : INS_slt;
+            regNumber   reg1 = op1->isContainedIntOrIImmed() ? REG_ZERO : op1->GetRegNum();
+            emit->emitIns_R_R_R(slt, EA_PTRSIZE, targetReg, reg1, op2->GetRegNum());
         }
     }
 

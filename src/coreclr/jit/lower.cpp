@@ -4472,12 +4472,16 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
                 if (!right->IsIntegralConst(0))
                 {
                     // a == b  --->  (a - b) == 0
-
-                    // We may be comparing GC types, the type of the operands is GC but the type of the difference is
-                    // not. The objects may be relocated but it's OK as the diff is used to only check against zero.
-                    var_types type = genActualTypeIsInt(left) ? TYP_INT : TYP_LONG;
-                    left           = comp->gtNewOperNode(GT_SUB, type, left, right);
-                    right          = comp->gtNewZeroConNode(type);
+                    var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
+                    genTreeOps oper = GT_SUB;
+                    if (right->IsIntegralConst() && !right->IsIntegralConst(SSIZE_T_MIN))
+                    {
+                        // a - C  --->  a + (-C)
+                        oper = GT_ADD;
+                        right->AsIntConCommon()->SetIntegralValue(-right->AsIntConCommon()->IntegralValue());
+                    }
+                    left  = comp->gtNewOperNode(oper, type, left, right);
+                    right = comp->gtNewZeroConNode(type);
                     BlockRange().InsertBefore(cmp, left);
                     BlockRange().InsertBefore(cmp, right);
                     ContainCheckBinary(left->AsOp());
@@ -4488,7 +4492,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             }
             assert(!cmp->OperIs(GT_EQ, GT_NE));
 
-            if (right->IsIntegralConst() && cmp->OperIs(GT_LE, GT_GT))
+            if (right->IsIntegralConst() && !right->IsIntegralConst(0) && cmp->OperIs(GT_LE, GT_GT))
             {
                 // a <= C  --->  a < C+1
                 if (cmp->IsUnsigned() && right->IsIntegralConst(SIZE_T_MAX))
@@ -4518,12 +4522,12 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             // Integer comparisons come only in full-register variants so sign-extend operands as needed
             if (genActualTypeIsInt(left) && !left->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
             {
-                left = comp->gtNewCastNode(TYP_INT, left, false, TYP_INT);
+                left = comp->gtNewCastNode(TYP_I_IMPL, left, false, TYP_I_IMPL);
                 BlockRange().InsertAfter(left->gtGetOp1(), left);
             }
             if (genActualTypeIsInt(right) && !right->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
             {
-                right = comp->gtNewCastNode(TYP_INT, right, false, TYP_INT);
+                right = comp->gtNewCastNode(TYP_I_IMPL, right, false, TYP_I_IMPL);
                 BlockRange().InsertAfter(right->gtGetOp1(), right);
             }
         }
