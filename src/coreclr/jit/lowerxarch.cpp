@@ -9383,45 +9383,8 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 
     if (!cnsVec->IsBroadcast(simdBaseType))
     {
-        bool canUse8ByteBroadcast = false;
-
-        if (broadcastSize == 4)
-        {
-            // Some bit-wise instructions have both 4-byte and 8-byte broadcast variants. We prefer the smallest
-            // possible broadcast because that makes the data section smaller, but if the constant isn't a match
-            // at 4 bytes, it might be at 8.
-
-            switch (ins)
-            {
-                case INS_andps:
-                case INS_andnps:
-                case INS_orps:
-                case INS_xorps:
-                case INS_pandd:
-                case INS_pandnd:
-                case INS_pord:
-                case INS_pxord:
-                case INS_vpternlogd:
-                case INS_vshuff32x4:
-                case INS_vshufi32x4:
-                    canUse8ByteBroadcast = cnsVec->IsBroadcast(TYP_LONG);
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        if (canUse8ByteBroadcast)
-        {
-            simdBaseType    = TYP_LONG;
-            simdBaseJitType = CORINFO_TYPE_LONG;
-        }
-        else
-        {
-            MakeSrcContained(parentNode, cnsVec);
-            return;
-        }
+        MakeSrcContained(parentNode, cnsVec);
+        return;
     }
 
     // We use the original constant vector's size for the broadcast node, because the parent node may consume
