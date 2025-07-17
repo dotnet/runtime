@@ -10326,7 +10326,7 @@ public:
 
     const char* printfAlloc(const char* format, ...);
 
-    const char* convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String);
+    void convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src, size_t utf16SrcLen, char* utf8Dst, size_t utf8DstLen);
 
 #endif // DEBUG
 
