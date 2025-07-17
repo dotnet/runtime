@@ -1749,7 +1749,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
     CORINFO_METHOD_HANDLE captureContextsMethHnd;
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
-    CORINFO_METHOD_HANDLE getCurrentThreadMethHnd;
 };
 
 // Flags passed from JIT to runtime.

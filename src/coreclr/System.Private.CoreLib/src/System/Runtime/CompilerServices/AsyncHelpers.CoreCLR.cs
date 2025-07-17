@@ -645,7 +645,5 @@ namespace System.Runtime.CompilerServices
 
             flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
         }
-
-        private static Thread GetCurrentThread() => Thread.CurrentThreadAssumedInitialized;
     }
 }
