@@ -1809,13 +1809,12 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
 
     const GenConditionDesc& desc        = GenConditionDesc::Get(condition);
     insOpts                 instOptions = INS_OPTS_NONE;
-    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU())
+
+    bool needsMovzx = !varTypeIsByte(type);
+    if (needsMovzx && compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU())
     {
-        instOptions = varTypeIsByte(type) ? INS_OPTS_NONE : INS_OPTS_EVEX_zu;
-    }
-    else
-    {
-        assert(instOptions == INS_OPTS_NONE);
+        instOptions = INS_OPTS_EVEX_zu;
+        needsMovzx = false;
     }
 
     inst_SET(desc.jumpKind1, dstReg, instOptions);
@@ -1828,8 +1827,9 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
         genDefineTempLabel(labelNext);
     }
 
-    // TODO-XArch-Apx: we can apply EVEX.ZU to avoid this movzx.
-    if ((instOptions == INS_OPTS_NONE) && !varTypeIsByte(type))
+    // we can apply EVEX.ZU to avoid this movzx.
+    // TODO-XArch-apx: evaluate setcc + movzx and xor + set
+    if (needsMovzx)
     {
         GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, dstReg, dstReg, /* canSkip */ false);
     }

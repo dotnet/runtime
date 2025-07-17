@@ -1795,12 +1795,13 @@ protected:
 
         bool idIsEvexNdContextSet() const
         {
+            assert(!IsApxZuCompatibleInstruction(_idIns));
             return _idEvexNdContext != 0;
         }
 
         bool idIsEvexZuContextSet() const
         {
-            return (_idEvexZuContext != 0) && (IsSETZUccInstruction(_idIns));
+            return (_idEvexZuContext != 0);
         }
 
         void idSetEvexNdContext()
