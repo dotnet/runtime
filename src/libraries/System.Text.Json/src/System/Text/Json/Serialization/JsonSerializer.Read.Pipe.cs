@@ -330,7 +330,7 @@ namespace System.Text.Json
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
-                PipeReadBufferState bufferState = default;
+                PipeReadBufferState bufferState = new(utf8Json);
 
                 try
                 {

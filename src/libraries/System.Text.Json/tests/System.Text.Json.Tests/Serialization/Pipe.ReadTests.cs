@@ -94,7 +94,8 @@ namespace System.Text.Json.Serialization.Tests
             Task readTask = Serializer.DeserializeWrapper<int>(pipe.Reader);
             pipe.Reader.CancelPendingRead();
 
-            await Assert.ThrowsAsync<JsonException>(async () => await readTask);
+            OperationCanceledException ex = await Assert.ThrowsAsync<OperationCanceledException>(async () => await readTask);
+            Assert.Equal("PipeReader.ReadAsync was canceled.", ex.Message);
 
             // Clean up
             pipe.Writer.Complete();
