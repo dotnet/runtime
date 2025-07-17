@@ -975,7 +975,7 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 DacpMethodTableFieldData mtFieldDataLocal = default;
                 int hrLocal = _legacyImpl.GetMethodTableFieldData(mt, &mtFieldDataLocal);
-                Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
                 Debug.Assert(mtFieldData->wNumInstanceFields == mtFieldDataLocal.wNumInstanceFields);
                 Debug.Assert(mtFieldData->wNumStaticFields == mtFieldDataLocal.wNumStaticFields);
                 Debug.Assert(mtFieldData->wNumThreadStaticFields == mtFieldDataLocal.wNumThreadStaticFields);
