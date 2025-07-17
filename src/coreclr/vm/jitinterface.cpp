@@ -14417,7 +14417,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
 
     auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
     {
-        _ASSERTE(!th.IsByRef());
         CorElementType ty = th.GetSignatureCorElementType();
         if (CorTypeInfo::IsObjRef(ty))
         {
