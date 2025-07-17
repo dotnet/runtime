@@ -14,7 +14,9 @@ namespace System.Text.Json.Serialization
 
         public abstract ReadOnlySequence<byte> Bytes { get; }
 
-        public abstract ValueTask<TReadBufferState> ReadAsync(TStream utf8Json, CancellationToken cancellationToken,
+        public abstract ValueTask<TReadBufferState> ReadAsync(
+            TStream utf8Json,
+            CancellationToken cancellationToken,
             bool fillBuffer = true);
 
         public abstract void Read(TStream utf8Json);

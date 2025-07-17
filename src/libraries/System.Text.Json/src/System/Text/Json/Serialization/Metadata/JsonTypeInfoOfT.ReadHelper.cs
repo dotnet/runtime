@@ -151,6 +151,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
             }
+
             try
             {
                 bool success = EffectiveConverter.ReadCore(ref reader, out value, Options, ref readStack);
