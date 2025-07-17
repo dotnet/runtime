@@ -290,12 +290,11 @@ BasicBlock* Compiler::InsertTryFinallyForContextRestore(BasicBlock* block, State
     block->SetTargetEdge(fgAddRefPred(callFinally, block));
     callFinally->SetTargetEdge(fgAddRefPred(finallyRet, callFinally));
 
-    BBehfDesc* ehfDesc = new (this, CMK_BasicBlock) BBehfDesc;
-    ehfDesc->bbeCount  = 1;
-    ehfDesc->bbeSuccs  = new (this, CMK_BasicBlock) FlowEdge* [1] {
+    FlowEdge** succs = new (this, CMK_BasicBlock) FlowEdge* [1] {
         fgAddRefPred(callFinallyRet, finallyRet)
     };
-    ehfDesc->bbeSuccs[0]->setLikelihood(1.0);
+    succs[0]->setLikelihood(1.0);
+    BBJumpTable* ehfDesc = new (this, CMK_BasicBlock) BBJumpTable(succs, 1);
     finallyRet->SetEhfTargets(ehfDesc);
 
     callFinallyRet->SetTargetEdge(fgAddRefPred(goToTailBlock, callFinallyRet));
@@ -2288,18 +2287,26 @@ void AsyncTransformation::CreateResumptionSwitch()
 
         // Default case. TODO-CQ: Support bbsHasDefault = false before lowering.
         m_resumptionBBs.push_back(m_resumptionBBs[0]);
-        BBswtDesc* swtDesc     = new (m_comp, CMK_BasicBlock) BBswtDesc;
-        swtDesc->bbsCount      = (unsigned)m_resumptionBBs.size();
-        swtDesc->bbsHasDefault = true;
-        swtDesc->bbsDstTab     = new (m_comp, CMK_Async) FlowEdge*[m_resumptionBBs.size()];
+        const size_t     numCases       = m_resumptionBBs.size();
+        FlowEdge** const cases          = new (m_comp, CMK_FlowEdge) FlowEdge*[numCases * 2];
+        FlowEdge** const succs          = cases + numCases;
+        unsigned         numUniqueSuccs = 0;
 
-        weight_t stateLikelihood = 1.0 / m_resumptionBBs.size();
-        for (size_t i = 0; i < m_resumptionBBs.size(); i++)
+        const weight_t stateLikelihood = 1.0 / m_resumptionBBs.size();
+        for (size_t i = 0; i < numCases; i++)
         {
-            swtDesc->bbsDstTab[i] = m_comp->fgAddRefPred(m_resumptionBBs[i], switchBB);
-            swtDesc->bbsDstTab[i]->setLikelihood(stateLikelihood);
+            FlowEdge* const edge = m_comp->fgAddRefPred(m_resumptionBBs[i], switchBB);
+            edge->setLikelihood(stateLikelihood);
+            cases[i] = edge;
+
+            if (edge->getDupCount() == 1)
+            {
+                succs[numUniqueSuccs++] = edge;
+            }
         }
 
+        BBswtDesc* const swtDesc =
+            new (m_comp, CMK_BasicBlock) BBswtDesc(cases, (unsigned)numCases, succs, numUniqueSuccs, true);
         switchBB->SetSwitch(swtDesc);
     }
 
