@@ -60,8 +60,13 @@ namespace System.Text.Json.Serialization
             ReadResult readResult = await _utf8Json.ReadAtLeastAsync(minBufferSize, cancellationToken).ConfigureAwait(false);
 
             bufferState._sequence = readResult.Buffer;
-            bufferState._isFinalBlock = readResult.IsCompleted || readResult.IsCanceled;
+            bufferState._isFinalBlock = readResult.IsCompleted;
             bufferState.ProcessReadBytes();
+
+            if (readResult.IsCanceled)
+            {
+                ThrowHelper.ThrowOperationCanceledException_PipeReadCanceled();
+            }
 
             return bufferState;
         }
