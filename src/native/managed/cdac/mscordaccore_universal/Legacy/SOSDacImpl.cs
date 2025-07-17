@@ -114,6 +114,7 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
     {
+        int hr = HResults.S_OK;
         try
         {
             uint i = 0;
@@ -133,7 +134,7 @@ internal sealed unsafe partial class SOSDacImpl
         }
         catch (System.Exception ex)
         {
-            return ex.HResult;
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl is not null)
@@ -149,7 +150,7 @@ internal sealed unsafe partial class SOSDacImpl
             }
         }
 #endif
-        return HResults.S_OK;
+        return hr;
     }
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainName(addr, count, name, pNeeded) : HResults.E_NOTIMPL;
