@@ -54,15 +54,17 @@ namespace System.Security.Cryptography.Tests
                 dsa.Dispose();
             }
 
+            AssertExtensions.Throws<ArgumentException>("destination", () => dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[maxSignatureSize - 1], []));
+
             // Context length must be less than 256
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.TrySignData(ReadOnlySpan<byte>.Empty, new byte[maxSignatureSize], out _, new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[maxSignatureSize], new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.SignData(Array.Empty<byte>(), new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[maxSignatureSize], new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.VerifyData(Array.Empty<byte>(), new byte[maxSignatureSize], new byte[256]));
         }
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void TryExportCompositeMLDsaPublicKey_Bounds(CompositeMLDsaAlgorithm algorithm)
+        public static void TryExportCompositeMLDsaPublicKey_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
             int lowerBound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PublicKeySizeInBytes +
@@ -72,7 +74,8 @@ namespace System.Security.Cryptography.Tests
                     ecdsa => 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
                     eddsa => eddsa.KeySizeInBits / 8);
 
-            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound - 1], out _));
+            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound - 1], out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
 
             dsa.TryExportCompositeMLDsaPublicKeyCoreHook = (destination, out bytesWritten) =>
             {
@@ -81,11 +84,11 @@ namespace System.Security.Cryptography.Tests
                 return true;
             };
 
-            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound], out int writtenBytes));
-            Assert.Equal(lowerBound, writtenBytes);
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound], out bytesWritten));
+            Assert.Equal(lowerBound, bytesWritten);
 
-            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound + 1], out writtenBytes));
-            Assert.Equal(lowerBound, writtenBytes);
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound + 1], out bytesWritten));
+            Assert.Equal(lowerBound, bytesWritten);
 
             dsa.TryExportCompositeMLDsaPublicKeyCoreHook = (destination, out bytesWritten) =>
             {
@@ -94,12 +97,59 @@ namespace System.Security.Cryptography.Tests
                 return true;
             };
 
-            Assert.Throws<CryptographicException>(() => dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound], out _));
+            Assert.Throws<CryptographicException>(() => dsa.TryExportCompositeMLDsaPublicKey(new byte[lowerBound], out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+
+            Assert.Throws<CryptographicException>(dsa.ExportCompositeMLDsaPublicKey);
         }
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void TryExportCompositeMLDsaPrivateKey_Bounds(CompositeMLDsaAlgorithm algorithm)
+        public static void TryExportCompositeMLDsaPublicKey_UpperBound(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+            int? upperBoundOrNull = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PublicKeySizeInBytes +
+                CompositeMLDsaTestHelpers.ExecuteComponentFunc(
+                    algorithm,
+                    rsa => default(int?),
+                    ecdsa => 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
+                    eddsa => eddsa.KeySizeInBits / 8);
+
+            if (upperBoundOrNull is null)
+            {
+                return;
+            }
+
+            int upperBound = upperBoundOrNull.Value;
+
+            dsa.TryExportCompositeMLDsaPublicKeyCoreHook = (destination, out bytesWritten) =>
+            {
+                bytesWritten = upperBound;
+                return true;
+            };
+
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[upperBound], out int bytesWritten));
+            Assert.Equal(upperBound, bytesWritten);
+
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[upperBound + 1], out bytesWritten));
+            Assert.Equal(upperBound, bytesWritten);
+
+            dsa.TryExportCompositeMLDsaPublicKeyCoreHook = (destination, out bytesWritten) =>
+            {
+                // Writing more than upper bound isn't allowed.
+                bytesWritten = upperBound + 1;
+                return true;
+            };
+
+            Assert.Throws<CryptographicException>(() => dsa.TryExportCompositeMLDsaPublicKey(new byte[upperBound + 1], out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+
+            Assert.Throws<CryptographicException>(dsa.ExportCompositeMLDsaPublicKey);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void TryExportCompositeMLDsaPrivateKey_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
             int lowerBound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes +
@@ -109,7 +159,8 @@ namespace System.Security.Cryptography.Tests
                     ecdsa => 1 + ((ecdsa.KeySizeInBits + 7) / 8),
                     eddsa => eddsa.KeySizeInBits / 8);
 
-            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound - 1], out _));
+            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound - 1], out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
 
             dsa.TryExportCompositeMLDsaPrivateKeyCoreHook = (destination, out bytesWritten) =>
             {
@@ -118,11 +169,11 @@ namespace System.Security.Cryptography.Tests
                 return true;
             };
 
-            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound], out int writtenBytes));
-            Assert.Equal(lowerBound, writtenBytes);
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound], out bytesWritten));
+            Assert.Equal(lowerBound, bytesWritten);
 
-            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound + 1], out writtenBytes));
-            Assert.Equal(lowerBound, writtenBytes);
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound + 1], out bytesWritten));
+            Assert.Equal(lowerBound, bytesWritten);
 
             dsa.TryExportCompositeMLDsaPrivateKeyCoreHook = (destination, out bytesWritten) =>
             {
@@ -131,12 +182,59 @@ namespace System.Security.Cryptography.Tests
                 return true;
             };
 
-            Assert.Throws<CryptographicException>(() => dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound], out _));
+            Assert.Throws<CryptographicException>(() => dsa.TryExportCompositeMLDsaPrivateKey(new byte[lowerBound], out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+
+            Assert.Throws<CryptographicException>(dsa.ExportCompositeMLDsaPrivateKey);
         }
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void TrySignData_Bounds(CompositeMLDsaAlgorithm algorithm)
+        public static void TryExportCompositeMLDsaPrivateKey_UpperBound(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+            int? upperBoundOrNull = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes +
+                CompositeMLDsaTestHelpers.ExecuteComponentFunc(
+                    algorithm,
+                    rsa => default(int?),
+                    ecdsa => default(int?),
+                    eddsa => eddsa.KeySizeInBits / 8);
+
+            if (upperBoundOrNull is null)
+            {
+                return;
+            }
+
+            int upperBound = upperBoundOrNull.Value;
+
+            dsa.TryExportCompositeMLDsaPrivateKeyCoreHook = (destination, out bytesWritten) =>
+            {
+                bytesWritten = upperBound;
+                return true;
+            };
+
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[upperBound], out int bytesWritten));
+            Assert.Equal(upperBound, bytesWritten);
+
+            AssertExtensions.TrueExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[upperBound + 1], out bytesWritten));
+            Assert.Equal(upperBound, bytesWritten);
+
+            dsa.TryExportCompositeMLDsaPrivateKeyCoreHook = (destination, out bytesWritten) =>
+            {
+                // Writing more than upper bound isn't allowed.
+                bytesWritten = upperBound + 1;
+                return true;
+            };
+
+            Assert.Throws<CryptographicException>(() => dsa.TryExportCompositeMLDsaPrivateKey(new byte[upperBound + 1], out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+
+            Assert.Throws<CryptographicException>(dsa.ExportCompositeMLDsaPrivateKey);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void SignData_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
             int lowerBound = 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes +
@@ -146,31 +244,55 @@ namespace System.Security.Cryptography.Tests
                     ecdsa => 0,
                     eddsa => 2 * eddsa.KeySizeInBits / 8);
 
-            AssertExtensions.FalseExpression(dsa.TrySignData(ReadOnlySpan<byte>.Empty, new byte[lowerBound - 1], out _));
+            Assert.Throws<ArgumentException>(() => dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[lowerBound - 1]));
+            Assert.Throws<ArgumentException>(() => dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[algorithm.MaxSignatureSizeInBytes - 1]));
 
-            dsa.TrySignDataCoreHook = (data, context, destination, out bytesWritten) =>
+            dsa.SignDataCoreHook = (data, context, destination) =>
             {
                 AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
-                bytesWritten = lowerBound;
-                return true;
+                return lowerBound;
             };
 
-            AssertExtensions.TrueExpression(dsa.TrySignData(ReadOnlySpan<byte>.Empty, new byte[lowerBound], out int writtenBytes));
-            Assert.Equal(lowerBound, writtenBytes);
-
-            AssertExtensions.TrueExpression(dsa.TrySignData(ReadOnlySpan<byte>.Empty, new byte[lowerBound + 1], out writtenBytes));
-            Assert.Equal(lowerBound, writtenBytes);
+            Assert.Equal(lowerBound, dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[algorithm.MaxSignatureSizeInBytes]));
+            Assert.Equal(lowerBound, dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[algorithm.MaxSignatureSizeInBytes + 1]));
 
             AssertExtensions.GreaterThanOrEqualTo(algorithm.MaxSignatureSizeInBytes, lowerBound);
 
-            dsa.TrySignDataCoreHook = (data, context, destination, out bytesWritten) =>
+            dsa.SignDataCoreHook = (data, context, destination) =>
             {
                 // Writing less than lower bound isn't allowed.
-                bytesWritten = lowerBound - 1;
-                return true;
+                return lowerBound - 1;
             };
 
-            Assert.Throws<CryptographicException>(() => dsa.TrySignData(ReadOnlySpan<byte>.Empty, new byte[lowerBound], out _));
+            Assert.Throws<CryptographicException>(() => dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[algorithm.MaxSignatureSizeInBytes]));
+            Assert.Throws<CryptographicException>(() => dsa.SignData([]));
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void SignData_UpperBound(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+            int upperBound = algorithm.MaxSignatureSizeInBytes;
+
+            dsa.SignDataCoreHook = (data, context, destination) =>
+            {
+                Assert.Equal(upperBound, destination.Length);
+                return upperBound;
+            };
+
+            Assert.Equal(upperBound, dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[upperBound]));
+            Assert.Equal(upperBound, dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[upperBound + 1]));
+
+            dsa.SignDataCoreHook = (data, context, destination) =>
+            {
+                // Writing more than upper bound isn't allowed.
+                return upperBound + 1;
+            };
+
+            Assert.Throws<CryptographicException>(() => dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[upperBound + 1]));
+            Assert.Throws<CryptographicException>(() => dsa.SignData([]));
         }
 
         [Theory]
@@ -213,7 +335,7 @@ namespace System.Security.Cryptography.Tests
             int expectedInitialBufferSize = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                 vector.Algorithm,
                 // RSA doesn't have an exact size, so it will use pooled buffers. Their sizes are powers of two.
-                rsa => RoundUpToPowerOfTwo(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + 16),
+                rsa => RoundUpToPowerOf2(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + 16),
                 ecdsa => mldsaKeySize + 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
                 eddsa => mldsaKeySize + eddsa.KeySizeInBits / 8);
 
@@ -230,7 +352,7 @@ namespace System.Security.Cryptography.Tests
 
             dsa.TryExportCompositeMLDsaPrivateKeyCoreHook = (destination, out bytesWritten) =>
             {
-                // Buffer is always big enough, but it may bee too big for a valid key, so bound it with an actual key.
+                // Buffer is always big enough, but it may be too big for a valid key, so bound it with an actual key.
                 bytesWritten = Math.Min(vector.SecretKey.Length, destination.Length);
                 initialBufferSize = destination.Length;
                 return true;
@@ -242,8 +364,8 @@ namespace System.Security.Cryptography.Tests
             int expectedInitialBufferSize = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                 vector.Algorithm,
                 // RSA and ECDSA don't have an exact size, so it will use pooled buffers. Their sizes are powers of two.
-                rsa => RoundUpToPowerOfTwo(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + (rsa.KeySizeInBits / 8) / 2 * 5 + 64),
-                ecdsa => RoundUpToPowerOfTwo(mldsaKeySize + 1 + ((ecdsa.KeySizeInBits + 7) / 8) + 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8) + 64),
+                rsa => RoundUpToPowerOf2(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + (rsa.KeySizeInBits / 8) / 2 * 5 + 64),
+                ecdsa => RoundUpToPowerOf2(mldsaKeySize + 1 + ((ecdsa.KeySizeInBits + 7) / 8) + 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8) + 64),
                 eddsa => mldsaKeySize + eddsa.KeySizeInBits / 8);
 
             Assert.Equal(expectedInitialBufferSize, initialBufferSize);
@@ -252,32 +374,32 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void SignData_InitialBuffer(CompositeMLDsaTestVector vector)
+        public static void SignData_BufferSize(CompositeMLDsaTestVector vector)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
-            int initialBufferSize = -1;
-
-            dsa.TrySignDataCoreHook = (data, context, destination, out bytesWritten) =>
-            {
-                // Buffer is always big enough, but it may bee too big for a valid signature, so bound it with an actual signature.
-                bytesWritten = Math.Min(vector.Signature.Length, destination.Length);
-                initialBufferSize = destination.Length;
-                return true;
-            };
-
-            _ = dsa.SignData(vector.Message);
-
-            // Pooled buffer sizes are powers of two, but RSA and EdDSA have fixed size signature,
-            // so they shouldn't pool their intermediate buffer.
-            int expectedInitialBufferSize =
+            int testSignatureSize = vector.Algorithm.MaxSignatureSizeInBytes -
+                // Test returning less than maximum size for non-fixed size signatures.
                 CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                     vector.Algorithm,
-                    _ => vector.Algorithm.MaxSignatureSizeInBytes,
-                    _ => RoundUpToPowerOfTwo(vector.Algorithm.MaxSignatureSizeInBytes),
-                    _ => vector.Algorithm.MaxSignatureSizeInBytes);
+                    rsa => 0,
+                    ecdsa => 1,
+                    eddsa => 0);
 
-            Assert.Equal(expectedInitialBufferSize, initialBufferSize);
-            AssertExtensions.Equal(1, dsa.TrySignDataCoreCallCount);
+            dsa.SignDataCoreHook = (data, context, destination) =>
+            {
+                Assert.Equal(vector.Algorithm.MaxSignatureSizeInBytes, destination.Length);
+                return testSignatureSize;
+            };
+
+            byte[] signature = dsa.SignData(vector.Message);
+            Assert.Equal(testSignatureSize, signature.Length);
+
+            signature = new byte[vector.Algorithm.MaxSignatureSizeInBytes];
+            dsa.AddSignatureBufferIsSameAssertion(signature);
+
+            Assert.Equal(testSignatureSize, dsa.SignData(vector.Message, signature, []));
+
+            AssertExtensions.Equal(2, dsa.SignDataCoreCallCount);
         }
 
         private const int PaddingSize = 10;
@@ -337,25 +459,25 @@ namespace System.Security.Cryptography.Tests
         public static void TrySignData_CallsCore(CompositeMLDsaTestVector vector)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
-            dsa.TrySignDataCoreHook = (_, _, _, out x) => { x = 42; return true; };
+            dsa.SignDataCoreHook = (_, _, _) => { return -1; };
             dsa.AddFillDestination(vector.Signature);
             dsa.AddDataBufferIsSameAssertion(vector.Message);
             dsa.AddContextBufferIsSameAssertion(Array.Empty<byte>());
 
             byte[] exported = dsa.SignData(vector.Message, Array.Empty<byte>());
-            AssertExtensions.LessThan(0, dsa.TrySignDataCoreCallCount);
+            AssertExtensions.LessThan(0, dsa.SignDataCoreCallCount);
             AssertExtensions.SequenceEqual(exported, vector.Signature);
 
             byte[] signature = CreatePaddedFilledArray(vector.Signature.Length, 42);
 
             // Extra bytes in destination buffer should not be touched
-            Memory<byte> destination = signature.AsMemory(PaddingSize, vector.Signature.Length);
+            Memory<byte> destination = signature.AsMemory(PaddingSize, vector.Algorithm.MaxSignatureSizeInBytes);
             dsa.AddDestinationBufferIsSameAssertion(destination);
-            dsa.TrySignDataCoreCallCount = 0;
+            dsa.SignDataCoreCallCount = 0;
 
-            dsa.TrySignData(vector.Message, destination.Span, out int bytesWritten, Array.Empty<byte>());
+            int bytesWritten = dsa.SignData(vector.Message, destination.Span, Array.Empty<byte>());
             Assert.Equal(vector.Signature.Length, bytesWritten);
-            Assert.Equal(1, dsa.TrySignDataCoreCallCount);
+            Assert.Equal(1, dsa.SignDataCoreCallCount);
             AssertExpectedFill(signature, vector.Signature, PaddingSize, 42);
         }
 
@@ -382,7 +504,8 @@ namespace System.Security.Cryptography.Tests
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
             dsa.TryExportCompositeMLDsaPublicKeyCoreHook = (_, out w) => { w = 0; return false; };
-            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[vector.PublicKey.Length], out _));
+            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPublicKey(new byte[vector.PublicKey.Length], out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Theory]
@@ -391,16 +514,8 @@ namespace System.Security.Cryptography.Tests
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
             dsa.TryExportCompositeMLDsaPrivateKeyCoreHook = (_, out w) => { w = 0; return false; };
-            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[vector.SecretKey.Length], out _));
-        }
-
-        [Theory]
-        [MemberData(nameof(CompositeMLDsaTestData.AllIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void TrySignData_CoreReturnsFalse(CompositeMLDsaTestVector vector)
-        {
-            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
-            dsa.TrySignDataCoreHook = (_, _, _, out w) => { w = 0; return false; };
-            AssertExtensions.FalseExpression(dsa.TrySignData(vector.Message, new byte[vector.Signature.Length], out _, Array.Empty<byte>()));
+            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPrivateKey(new byte[vector.SecretKey.Length], out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Theory]
@@ -414,52 +529,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void Sign_ExactSize_CoreError(CompositeMLDsaAlgorithm algorithm)
-        {
-            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
-
-            int? exactSignatureSize =
-                CompositeMLDsaTestHelpers.ExecuteComponentFunc(
-                    algorithm,
-                    rsa => algorithm.MaxSignatureSizeInBytes,
-                    ecdsa => default(int?),
-                    eddsa => algorithm.MaxSignatureSizeInBytes);
-
-            if (exactSignatureSize is null)
-                return;
-
-            dsa.TrySignDataCoreHook =
-                (data, context, destination, out w) =>
-                {
-                    int expectedSize = exactSignatureSize.Value;
-                    Assert.Equal(expectedSize, destination.Length);
-
-                    // Destination is exactly sized, so this should never return false.
-                    // Caller should validate and throw.
-                    w = 0;
-                    return false;
-                };
-
-            Assert.Throws<CryptographicException>(() => dsa.SignData([]));
-
-            dsa.TrySignDataCoreHook =
-                (data, context, destination, out w) =>
-                {
-                    int expectedSize = exactSignatureSize.Value;
-                    Assert.Equal(expectedSize, destination.Length);
-
-                    // Destination is exactly sized, so written bytes should be the same as the destination length.
-                    // Caller should validate and throw.
-                    w = expectedSize - 1;
-                    return true;
-                };
-
-            Assert.Throws<CryptographicException>(() => dsa.SignData([]));
-        }
-
-        [Theory]
-        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void ExportPublicKey_ExactSize_CoreError(CompositeMLDsaAlgorithm algorithm)
+        public static void TryExportPublicKeyCore_ExactSize_ReturnFalse(CompositeMLDsaAlgorithm algorithm)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
             int? exactPublicKeySize = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PublicKeySizeInBytes +
@@ -485,25 +555,11 @@ namespace System.Security.Cryptography.Tests
                 };
 
             Assert.Throws<CryptographicException>(() => dsa.ExportCompositeMLDsaPublicKey());
-
-            dsa.TryExportCompositeMLDsaPublicKeyCoreHook =
-                (destination, out w) =>
-                {
-                    int expectedSize = exactPublicKeySize.Value;
-                    Assert.Equal(expectedSize, destination.Length);
-
-                    // Destination is exactly sized, so written bytes should be the same as the destination length.
-                    // Caller should validate and throw.
-                    w = expectedSize - 1;
-                    return true;
-                };
-
-            Assert.Throws<CryptographicException>(() => dsa.ExportCompositeMLDsaPublicKey());
         }
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void ExportPrivateKey_ExactSize_CoreError(CompositeMLDsaAlgorithm algorithm)
+        public static void TryExportPrivateKeyCore_ExactSize_ReturnFalse(CompositeMLDsaAlgorithm algorithm)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
             int? exactPrivateKeySize = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes +
@@ -526,20 +582,6 @@ namespace System.Security.Cryptography.Tests
                     // Caller should validate and throw.
                     w = 0;
                     return false;
-                };
-
-            Assert.Throws<CryptographicException>(() => dsa.ExportCompositeMLDsaPrivateKey());
-
-            dsa.TryExportCompositeMLDsaPrivateKeyCoreHook =
-                (destination, out w) =>
-                {
-                    int expectedSize = exactPrivateKeySize.Value;
-                    Assert.Equal(expectedSize, destination.Length);
-
-                    // Destination is exactly sized, so written bytes should be the same as the destination length.
-                    // Caller should validate and throw.
-                    w = expectedSize - 1;
-                    return true;
                 };
 
             Assert.Throws<CryptographicException>(() => dsa.ExportCompositeMLDsaPrivateKey());
@@ -588,11 +630,11 @@ namespace System.Security.Cryptography.Tests
             return publicKey;
         }
 
-        private static int RoundUpToPowerOfTwo(int value)
+        private static int RoundUpToPowerOf2(int value)
         {
-            if (value <= 0)
+            if (value <= 0 || (value << 1) < 0)
             {
-                throw new XunitException("Value must be positive.");
+                throw new XunitException("Value must be positive and at most 2^30.");
             }
 
             int power = 1;

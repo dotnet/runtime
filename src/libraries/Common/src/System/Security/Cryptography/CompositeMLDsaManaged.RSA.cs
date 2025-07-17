@@ -30,24 +30,7 @@ namespace System.Security.Cryptography
                 _padding = padding;
             }
 
-            public static bool IsSupported => true;
-
-            private static KeySizes[]? s_supportedKeySizes;
-
-            public static bool IsAlgorithmSupported(RsaAlgorithm algorithm)
-            {
-                KeySizes[]? supportedKeySizes = s_supportedKeySizes;
-
-                if (supportedKeySizes == null)
-                {
-                    using (RSA rsa = CreateRSA())
-                    {
-                        s_supportedKeySizes = supportedKeySizes = rsa.LegalKeySizes;
-                    }
-                }
-
-                return algorithm.KeySizeInBits.IsLegalSize(supportedKeySizes);
-            }
+            public static bool IsAlgorithmSupported(RsaAlgorithm _) => true;
 
 #if NETFRAMEWORK
             // RSA-PSS requires RSACng on .NET Framework
@@ -56,32 +39,28 @@ namespace System.Security.Cryptography
             private static RSA CreateRSA() => RSA.Create();
 #endif
 
-            internal override bool TrySignData(
+            internal override int SignData(
 #if NET
                 ReadOnlySpan<byte> data,
 #else
                 byte[] data,
 #endif
-                Span<byte> destination,
-                out int bytesWritten)
+                Span<byte> destination)
             {
 #if NET
-                return _rsa.TrySignData(data, destination, _hashAlgorithmName, _padding, out bytesWritten);
+                return _rsa.SignData(data, destination, _hashAlgorithmName, _padding);
 #else
                 // Composite ML-DSA virtual methods only accept ROS<byte> so we need to allocate for signature
                 byte[] signature = _rsa.SignData(data, _hashAlgorithmName, _padding);
 
                 if (signature.AsSpan().TryCopyTo(destination))
                 {
-                    bytesWritten = signature.Length;
-                    return true;
+                    return signature.Length;
                 }
 
-                Debug.Fail("RSA signatures have known size so destination length should have been validated by caller.");
-
-                bytesWritten = 0;
                 CryptographicOperations.ZeroMemory(destination);
-                return false;
+
+                throw new CryptographicException();
 #endif
             }
 
@@ -229,6 +208,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> key,
                 ConvertRSAKeyToParametersCallback callback)
             {
+                Debug.Assert(algorithm.KeySizeInBits % 8 == 0);
                 int modulusLength = algorithm.KeySizeInBits / 8;
                 RSAParameters parameters = default;
 

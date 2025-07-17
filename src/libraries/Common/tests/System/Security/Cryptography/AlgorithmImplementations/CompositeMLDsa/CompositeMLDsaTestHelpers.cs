@@ -295,7 +295,7 @@ namespace System.Security.Cryptography.Tests
             // A signature-sized buffer can be reused for keys as well
             byte[] tempBuffer = new byte[dsa.Algorithm.MaxSignatureSizeInBytes];
 
-            Assert.Throws<ObjectDisposedException>(() => dsa.TrySignData([], [], out _));
+            Assert.Throws<ObjectDisposedException>(() => dsa.SignData([], tempBuffer, []));
             Assert.Throws<ObjectDisposedException>(() => dsa.SignData([]));
             Assert.Throws<ObjectDisposedException>(() => dsa.VerifyData(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty));
             Assert.Throws<ObjectDisposedException>(() => dsa.VerifyData(Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<byte>()));

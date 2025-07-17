@@ -5,6 +5,7 @@ namespace System.Security.Cryptography.Tests
 {
     public static partial class CompositeMLDsaTestData
     {
+        // https://github.com/lamps-wg/draft-composite-sigs/blob/656445f814e83e2d6c553f756911b9328e454d46/src/testvectors.json
         internal static partial CompositeMLDsaTestVector[] AllIetfVectors => field ??=
             [
                 new("id-MLDSA44-RSA2048-PSS-SHA256",

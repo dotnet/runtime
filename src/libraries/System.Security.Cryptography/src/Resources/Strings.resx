@@ -750,9 +750,6 @@
   <data name="Cryptography_TlsRequiresLabelAndSeed" xml:space="preserve">
     <value>The TLS key derivation function requires both the label and seed properties to be set.</value>
   </data>
-  <data name="Cryptography_UnexpectedExportBufferSize" xml:space="preserve">
-    <value>The result returned by the cryptographic provider had an unexpected length.</value>
-  </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
   </data>

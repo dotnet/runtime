@@ -225,9 +225,6 @@
   <data name="Cryptography_RSAPrivateKey_VersionTooNew" xml:space="preserve">
     <value>The provided RSAPrivateKey value has version '{0}', but version '{1}' is the maximum supported.</value>
   </data>
-  <data name="Cryptography_UnexpectedExportBufferSize" xml:space="preserve">
-    <value>The result returned by the cryptographic provider had an unexpected length.</value>
-  </data>
   <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
     <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>
   </data>

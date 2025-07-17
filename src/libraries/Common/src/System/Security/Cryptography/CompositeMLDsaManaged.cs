@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
@@ -35,7 +36,7 @@ namespace System.Security.Cryptography
             _componentAlgorithm = componentAlgorithm;
         }
 
-        internal static bool SupportsAny() => MLDsaImplementation.SupportsAny() && (RsaComponent.IsSupported || ECDsaComponent.IsSupported);
+        internal static bool SupportsAny() => MLDsaImplementation.SupportsAny();
 
         internal static bool IsAlgorithmSupportedImpl(CompositeMLDsaAlgorithm algorithm)
         {
@@ -91,6 +92,7 @@ namespace System.Security.Cryptography
             ComponentAlgorithm componentAlgorithm = metadata.TraditionalAlgorithm switch
             {
                 RsaAlgorithm rsaAlgorithm => RsaComponent.ImportPublicKey(rsaAlgorithm, tradKey),
+                ECDsaAlgorithm ecdsaAlgorithm => ECDsaComponent.ImportPublicKey(ecdsaAlgorithm, tradKey),
                 _ => throw FailAndGetException(),
             };
 
@@ -132,6 +134,7 @@ namespace System.Security.Cryptography
             ComponentAlgorithm componentAlgorithm = metadata.TraditionalAlgorithm switch
             {
                 RsaAlgorithm rsaAlgorithm => RsaComponent.ImportPrivateKey(rsaAlgorithm, tradKey),
+                ECDsaAlgorithm ecdsaAlgorithm => ECDsaComponent.ImportPrivateKey(ecdsaAlgorithm, tradKey),
                 _ => throw FailAndGetException(),
             };
 
@@ -144,7 +147,7 @@ namespace System.Security.Cryptography
             return new CompositeMLDsaManaged(algorithm, mldsa, componentAlgorithm);
         }
 
-        protected override bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten)
+        protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
         {
             // draft-ietf-lamps-pq-composite-sigs-latest (June 20, 2025), 4.2
             //  1.  If len(ctx) > 255:
@@ -204,8 +207,8 @@ namespace System.Security.Cryptography
 
             try
             {
-                tradSigned = _componentAlgorithm.TrySignData(M_prime, tradSig, out tradBytesWritten);
-                Debug.Assert(tradSigned, "Signature buffer should be exactly sized.");
+                tradBytesWritten = _componentAlgorithm.SignData(M_prime, tradSig);
+                tradSigned = true;
             }
             catch (CryptographicException)
             {
@@ -217,7 +220,10 @@ namespace System.Security.Cryptography
             //          if NOT mldsaSig or NOT tradSig:
             //              output "Signature generation error"
 
-            if (!mldsaSigned || !tradSigned)
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            static bool Or(bool x, bool y) => x | y;
+
+            if (Or(!mldsaSigned, !tradSigned))
             {
                 CryptographicOperations.ZeroMemory(destination);
                 throw new CryptographicException(SR.Cryptography_CompositeSignDataError);
@@ -229,8 +235,7 @@ namespace System.Security.Cryptography
             //          return s
 
             r.CopyTo(randomizer);
-            bytesWritten = randomizer.Length + mldsaSig.Length + tradBytesWritten;
-            return true;
+            return randomizer.Length + mldsaSig.Length + tradBytesWritten;
         }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature)
@@ -278,7 +283,11 @@ namespace System.Security.Cryptography
 
             // We don't short circuit here because we want to avoid revealing which component signature failed.
             // This is not required in the spec, but it is a good practice to avoid timing attacks.
-            return _mldsa.VerifyData(M_prime, mldsaSig, AlgorithmDetails.DomainSeparator) & _componentAlgorithm.VerifyData(M_prime, tradSig);
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            static bool And(bool x, bool y) => x & y;
+
+            return And(_mldsa.VerifyData(M_prime, mldsaSig, AlgorithmDetails.DomainSeparator), _componentAlgorithm.VerifyData(M_prime, tradSig));
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
@@ -350,63 +359,68 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> r,
             ReadOnlySpan<byte> message)
         {
-            Debug.Assert(r.Length is CompositeMLDsaAlgorithm.RandomizerSizeInBytes);
-
-            // M' = Prefix || Domain || len(ctx) || ctx || r || PH( M )
-
-            using (IncrementalHash hash = IncrementalHash.CreateHash(metadata.HashAlgorithmName))
+            checked
             {
-                int length = checked(MessageRepresentativePrefix.Length +   // Prefix
-                                     metadata.DomainSeparator.Length +      // Domain
-                                     1 +                                    // len(ctx)
-                                     context.Length +                       // ctx
-                                     r.Length +                             // r
+                Debug.Assert(r.Length is CompositeMLDsaAlgorithm.RandomizerSizeInBytes);
+
+                // M' = Prefix || Domain || len(ctx) || ctx || r || PH( M )
+
+                using (IncrementalHash hash = IncrementalHash.CreateHash(metadata.HashAlgorithmName))
+                {
 #if NET
-                                     hash.HashLengthInBytes);               // PH( M )
+                    int hashLength = hash.HashLengthInBytes;
 #else
-                                     hash.GetHashLengthInBytes());          // PH( M )
+                    int hashLength = hash.GetHashLengthInBytes();
 #endif
 
-                // The representative message will often be < 256 bytes so we can stackalloc with a callback.
-                // That gets a little messy on .NET Framework where by-ref generics aren't supported, so we just allocate.
-                byte[] M_prime = new byte[length];
+                    int length =
+                        MessageRepresentativePrefix.Length +    // Prefix
+                        metadata.DomainSeparator.Length +       // Domain
+                        1 +                                     // len(ctx)
+                        context.Length +                        // ctx
+                        r.Length +                              // r
+                        hashLength;                             // PH( M )
 
-                int offset = 0;
+                    // The representative message will often be < 256 bytes so we can stackalloc with a callback.
+                    // That gets a little messy on .NET Framework where by-ref generics aren't supported, so we just allocate.
+                    byte[] M_prime = new byte[length];
 
-                // Prefix
-                MessageRepresentativePrefix.CopyTo(M_prime.AsSpan(offset, MessageRepresentativePrefix.Length));
-                offset += MessageRepresentativePrefix.Length;
+                    int offset = 0;
 
-                // Domain
-                metadata.DomainSeparator.AsSpan().CopyTo(M_prime.AsSpan(offset, metadata.DomainSeparator.Length));
-                offset += metadata.DomainSeparator.Length;
+                    // Prefix
+                    MessageRepresentativePrefix.CopyTo(M_prime.AsSpan(offset, MessageRepresentativePrefix.Length));
+                    offset += MessageRepresentativePrefix.Length;
 
-                // len(ctx)
-                M_prime[offset] = checked((byte)context.Length);
-                offset++;
+                    // Domain
+                    metadata.DomainSeparator.AsSpan().CopyTo(M_prime.AsSpan(offset, metadata.DomainSeparator.Length));
+                    offset += metadata.DomainSeparator.Length;
 
-                // ctx
-                context.CopyTo(M_prime.AsSpan(offset, context.Length));
-                offset += context.Length;
+                    // len(ctx)
+                    M_prime[offset] = (byte)context.Length;
+                    offset++;
 
-                // r
-                r.CopyTo(M_prime.AsSpan(offset, r.Length));
-                offset += r.Length;
+                    // ctx
+                    context.CopyTo(M_prime.AsSpan(offset, context.Length));
+                    offset += context.Length;
 
-                // PH( M )
-                hash.AppendData(message);
+                    // r
+                    r.CopyTo(M_prime.AsSpan(offset, r.Length));
+                    offset += r.Length;
+
+                    // PH( M )
+                    hash.AppendData(message);
 #if NET
-                hash.GetHashAndReset(M_prime.AsSpan(offset, hash.HashLengthInBytes));
-                offset += hash.HashLengthInBytes;
+                    hash.GetHashAndReset(M_prime.AsSpan(offset, hashLength));
 #else
-                byte[] hashBytes = hash.GetHashAndReset();
-                hashBytes.CopyTo(M_prime.AsSpan(offset, hash.GetHashLengthInBytes()));
-                offset += hash.GetHashLengthInBytes();
+                    byte[] hashBytes = hash.GetHashAndReset();
+                    hashBytes.CopyTo(M_prime.AsSpan(offset, hashLength));
 #endif
+                    offset += hashLength;
 
-                Debug.Assert(offset == M_prime.Length);
+                    Debug.Assert(offset == M_prime.Length);
 
-                return M_prime;
+                    return M_prime;
+                }
             }
         }
 
@@ -414,7 +428,6 @@ namespace System.Security.Cryptography
         private interface IComponentAlgorithmFactory<TComponentAlgorithm, TAlgorithmDescriptor>
             where TComponentAlgorithm : ComponentAlgorithm, IComponentAlgorithmFactory<TComponentAlgorithm, TAlgorithmDescriptor>
         {
-            internal static abstract bool IsSupported { get; }
             internal static abstract bool IsAlgorithmSupported(TAlgorithmDescriptor algorithm);
             internal static abstract TComponentAlgorithm GenerateKey(TAlgorithmDescriptor algorithm);
             internal static abstract TComponentAlgorithm ImportPrivateKey(TAlgorithmDescriptor algorithm, ReadOnlySpan<byte> source);
@@ -429,14 +442,13 @@ namespace System.Security.Cryptography
             internal abstract bool TryExportPublicKey(Span<byte> destination, out int bytesWritten);
             internal abstract bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten);
 
-            internal abstract bool TrySignData(
+            internal abstract int SignData(
 #if NET
                 ReadOnlySpan<byte> data,
 #else
                 byte[] data,
 #endif
-                Span<byte> destination,
-                out int bytesWritten);
+                Span<byte> destination);
 
             internal abstract bool VerifyData(
 #if NET
@@ -468,7 +480,6 @@ namespace System.Security.Cryptography
 #pragma warning restore SA1001 // Commas should be spaced correctly
 #endif
         {
-            public static bool IsSupported => false;
             public static bool IsAlgorithmSupported(ECDsaAlgorithm _) => false;
             public static ECDsaComponent GenerateKey(ECDsaAlgorithm algorithm) => throw new NotImplementedException();
             public static ECDsaComponent ImportPrivateKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => throw new NotImplementedException();
@@ -485,14 +496,13 @@ namespace System.Security.Cryptography
 #endif
                 ReadOnlySpan<byte> signature) => throw new NotImplementedException();
 
-            internal override bool TrySignData(
+            internal override int SignData(
 #if NET
                 ReadOnlySpan<byte> data,
 #else
                 byte[] data,
 #endif
-                Span<byte> destination,
-                out int bytesWritten) => throw new NotImplementedException();
+                Span<byte> destination) => throw new NotImplementedException();
         }
 
         private static Dictionary<CompositeMLDsaAlgorithm, AlgorithmMetadata> CreateAlgorithmMetadata()

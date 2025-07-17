@@ -600,6 +600,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CompositeMLDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
         public static bool IsAlgorithmSupported(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm) { throw null; }
         public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
+        public int SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract int SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination);
         public bool TryExportCompositeMLDsaPrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
         public bool TryExportCompositeMLDsaPublicKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -610,8 +612,6 @@ namespace System.Security.Cryptography
         public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        public bool TrySignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract bool TrySignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination, out int bytesWritten);
         public bool VerifyData(byte[] data, byte[] signature, byte[]? context = null) { throw null; }
         public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature);

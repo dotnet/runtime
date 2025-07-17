@@ -169,7 +169,6 @@ namespace System.Security.Cryptography.Tests
                 key);
         }
 
-
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void AlgorithmMatches_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
@@ -186,7 +185,8 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void IsSupported_AgreesWithPlatform()
         {
-            Assert.Equal(PlatformDetection.IsWindows10Version27858OrGreater, CompositeMLDsa.IsSupported);
+            // Composites are supported everywhere MLDsa is supported
+            Assert.Equal(MLDsa.IsSupported, CompositeMLDsa.IsSupported);
         }
 
         [Theory]

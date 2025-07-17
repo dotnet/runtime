@@ -15,25 +15,28 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void ImportExportVerify(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            using (CompositeMLDsa key = ImportPrivateKey(vector.Algorithm, vector.SecretKey))
+            using (CompositeMLDsa privateKey = ImportPrivateKey(vector.Algorithm, vector.SecretKey))
             {
-                byte[] exportedSecretKey = key.ExportCompositeMLDsaPrivateKey();
+                byte[] exportedSecretKey = privateKey.ExportCompositeMLDsaPrivateKey();
                 CompositeMLDsaTestHelpers.AssertPrivateKeyEquals(vector.Algorithm, vector.SecretKey, exportedSecretKey);
 
-                byte[] exportedPublicKey = key.ExportCompositeMLDsaPublicKey();
+                byte[] exportedPublicKey = privateKey.ExportCompositeMLDsaPublicKey();
                 CompositeMLDsaTestHelpers.AssertPublicKeyEquals(vector.Algorithm, vector.PublicKey, exportedPublicKey);
 
-                ExerciseSuccessfulVerify(key, vector.Message, vector.Signature, []);
+                ExerciseSuccessfulVerify(privateKey, vector.Message, vector.Signature, []);
             }
 
-            using (CompositeMLDsa key = ImportPublicKey(vector.Algorithm, vector.PublicKey))
+            using (CompositeMLDsa publicKey = ImportPublicKey(vector.Algorithm, vector.PublicKey))
             {
-                Assert.Throws<CryptographicException>(key.ExportCompositeMLDsaPrivateKey);
+                Assert.Throws<CryptographicException>(publicKey.ExportCompositeMLDsaPrivateKey);
 
-                byte[] exportedPublicKey = key.ExportCompositeMLDsaPublicKey();
+                CompositeMLDsaTestHelpers.AssertExportPrivateKey(
+                    export => Assert.Throws<CryptographicException>(() => export(publicKey)));
+
+                byte[] exportedPublicKey = publicKey.ExportCompositeMLDsaPublicKey();
                 CompositeMLDsaTestHelpers.AssertPublicKeyEquals(vector.Algorithm, vector.PublicKey, exportedPublicKey);
 
-                ExerciseSuccessfulVerify(key, vector.Message, vector.Signature, []);
+                ExerciseSuccessfulVerify(publicKey, vector.Message, vector.Signature, []);
             }
         }
 
@@ -43,18 +46,18 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] signature;
 
-            using (CompositeMLDsa key = ImportPrivateKey(vector.Algorithm, vector.SecretKey))
+            using (CompositeMLDsa privateKey = ImportPrivateKey(vector.Algorithm, vector.SecretKey))
             {
-                signature = key.SignData(vector.Message, null);
+                signature = privateKey.SignData(vector.Message, null);
 
                 Assert.Equal(vector.Signature.Length, signature.Length);
 
-                ExerciseSuccessfulVerify(key, vector.Message, signature, []);
+                ExerciseSuccessfulVerify(privateKey, vector.Message, signature, []);
             }
 
-            using (CompositeMLDsa key = ImportPublicKey(vector.Algorithm, vector.PublicKey))
+            using (CompositeMLDsa publicKey = ImportPublicKey(vector.Algorithm, vector.PublicKey))
             {
-                ExerciseSuccessfulVerify(key, vector.Message, signature, []);
+                ExerciseSuccessfulVerify(publicKey, vector.Message, signature, []);
             }
         }
 
@@ -98,20 +101,12 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public void TrySignData_BufferTooSmall(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
-        {
-            using CompositeMLDsa dsa = ImportPrivateKey(vector.Algorithm, vector.SecretKey);
-            byte[] signature = new byte[32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[vector.Algorithm].SignatureSizeInBytes];
-            AssertExtensions.FalseExpression(dsa.TrySignData("hello"u8.ToArray(), signature, out _));
-        }
-
-        [Theory]
-        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void TryExportPrivateKey_BufferTooSmall(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
             using CompositeMLDsa dsa = ImportPrivateKey(vector.Algorithm, vector.SecretKey);
             byte[] key = dsa.ExportCompositeMLDsaPrivateKey();
-            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPrivateKey(key.AsSpan(0, key.Length - 1), out _));
+            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPrivateKey(key.AsSpan(0, key.Length - 1), out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Theory]
@@ -120,7 +115,8 @@ namespace System.Security.Cryptography.Tests
         {
             using CompositeMLDsa dsa = ImportPublicKey(vector.Algorithm, vector.PublicKey);
             byte[] key = dsa.ExportCompositeMLDsaPublicKey();
-            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPublicKey(key.AsSpan(0, key.Length - 1), out _));       
+            AssertExtensions.FalseExpression(dsa.TryExportCompositeMLDsaPublicKey(key.AsSpan(0, key.Length - 1), out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Theory]

@@ -15,27 +15,27 @@ namespace System.Security.Cryptography.Tests
         {
         }
 
-        internal delegate bool TrySignDataFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten);
+        internal delegate int SignDataFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination);
         internal delegate bool VerifyDataFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
         internal delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
         internal delegate void DisposeAction(bool disposing);
 
-        public int TrySignDataCoreCallCount = 0;
+        public int SignDataCoreCallCount = 0;
         public int VerifyDataCoreCallCount = 0;
         public int TryExportCompositeMLDsaPublicKeyCoreCallCount = 0;
         public int TryExportCompositeMLDsaPrivateKeyCoreCallCount = 0;
         public int DisposeCallCount = 0;
 
-        public TrySignDataFunc TrySignDataCoreHook { get; set; } = (_, _, _, out bytesWritten) => { Assert.Fail(); bytesWritten = 0; return false; };
+        public SignDataFunc SignDataCoreHook { get; set; } = (_, _, _) => { Assert.Fail(); return 0; };
         public VerifyDataFunc VerifyDataCoreHook { get; set; } = (_, _, _) => { Assert.Fail(); return false; };
         public TryExportFunc TryExportCompositeMLDsaPublicKeyCoreHook { get; set; } = (_, out bytesWritten) => { Assert.Fail(); bytesWritten = 0; return false; };
         public TryExportFunc TryExportCompositeMLDsaPrivateKeyCoreHook { get; set; } = (_, out bytesWritten) => { Assert.Fail(); bytesWritten = 0; return false; };
         public DisposeAction DisposeHook { get; set; } = _ => { };
 
-        protected override bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten)
+        protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
         {
-            TrySignDataCoreCallCount++;
-            return TrySignDataCoreHook(data, context, destination, out bytesWritten);
+            SignDataCoreCallCount++;
+            return SignDataCoreHook(data, context, destination);
         }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature)
@@ -69,10 +69,10 @@ namespace System.Security.Cryptography.Tests
 
         public void AddLengthAssertion()
         {
-            TrySignDataFunc oldTrySignDataCoreHook = TrySignDataCoreHook;
-            TrySignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
+            SignDataFunc oldTrySignDataCoreHook = SignDataCoreHook;
+            SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
-                bool ret = oldTrySignDataCoreHook(data, context, destination, out bytesWritten);
+                int ret = oldTrySignDataCoreHook(data, context, destination);
                 AssertExtensions.LessThanOrEqualTo(
                     32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // randomizer + mldsaSig
                     destination.Length);
@@ -112,10 +112,10 @@ namespace System.Security.Cryptography.Tests
 
         public void AddDestinationBufferIsSameAssertion(ReadOnlyMemory<byte> buffer)
         {
-            TrySignDataFunc oldTrySignDataCoreHook = TrySignDataCoreHook;
-            TrySignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
+            SignDataFunc oldTrySignDataCoreHook = SignDataCoreHook;
+            SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
-                bool ret = oldTrySignDataCoreHook(data, context, destination, out bytesWritten);
+                int ret = oldTrySignDataCoreHook(data, context, destination);
                 AssertExtensions.Same(buffer.Span, destination);
                 return ret;
             };
@@ -139,10 +139,10 @@ namespace System.Security.Cryptography.Tests
 
         public void AddContextBufferIsSameAssertion(ReadOnlyMemory<byte> buffer)
         {
-            TrySignDataFunc oldTrySignDataCoreHook = TrySignDataCoreHook;
-            TrySignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
+            SignDataFunc oldTrySignDataCoreHook = SignDataCoreHook;
+            SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
-                bool ret = oldTrySignDataCoreHook(data, context, destination, out bytesWritten);
+                int ret = oldTrySignDataCoreHook(data, context, destination);
                 AssertExtensions.Same(buffer.Span, context);
                 return ret;
             };
@@ -169,10 +169,10 @@ namespace System.Security.Cryptography.Tests
 
         public void AddDataBufferIsSameAssertion(ReadOnlyMemory<byte> buffer)
         {
-            TrySignDataFunc oldTrySignDataCoreHook = TrySignDataCoreHook;
-            TrySignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
+            SignDataFunc oldTrySignDataCoreHook = SignDataCoreHook;
+            SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
-                bool ret = oldTrySignDataCoreHook(data, context, destination, out bytesWritten);
+                int ret = oldTrySignDataCoreHook(data, context, destination);
                 AssertExtensions.Same(buffer.Span, data);
                 return ret;
             };
@@ -188,13 +188,12 @@ namespace System.Security.Cryptography.Tests
 
         public void AddFillDestination(byte b)
         {
-            TrySignDataFunc oldTrySignDataCoreHook = TrySignDataCoreHook;
-            TrySignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
+            SignDataFunc oldTrySignDataCoreHook = SignDataCoreHook;
+            SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
-                _ = oldTrySignDataCoreHook(data, context, destination, out _);
+                _ = oldTrySignDataCoreHook(data, context, destination);
                 destination.Fill(b);
-                bytesWritten = destination.Length;
-                return true;
+                return destination.Length;
             };
 
             TryExportFunc oldExportCompositeMLDsaPublicKeyCoreHook = TryExportCompositeMLDsaPublicKeyCoreHook;
@@ -218,19 +217,17 @@ namespace System.Security.Cryptography.Tests
 
         public void AddFillDestination(byte[] fillContents)
         {
-            TrySignDataFunc oldTrySignDataCoreHook = TrySignDataCoreHook;
-            TrySignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
+            SignDataFunc oldTrySignDataCoreHook = SignDataCoreHook;
+            SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
-                _ = oldTrySignDataCoreHook(data, context, destination, out _);
+                _ = oldTrySignDataCoreHook(data, context, destination);
 
                 if (fillContents.AsSpan().TryCopyTo(destination))
                 {
-                    bytesWritten = fillContents.Length;
-                    return true;
+                    return fillContents.Length;
                 }
 
-                bytesWritten = 0;
-                return false;
+                return 0;
             };
 
             TryExportFunc oldExportCompositeMLDsaPublicKeyCoreHook = TryExportCompositeMLDsaPublicKeyCoreHook;

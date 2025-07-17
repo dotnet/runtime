@@ -145,15 +145,37 @@ namespace System.Security.Cryptography
 
             if (Algorithm.SignatureSize.IsExact)
             {
-                return ExportExactSize(
-                    Algorithm.MaxSignatureSizeInBytes,
-                    (key, dest, out written) => key.TrySignData(new ReadOnlySpan<byte>(data), dest, out written, new ReadOnlySpan<byte>(context)));
+                byte[] signature = new byte[Algorithm.MaxSignatureSizeInBytes];
+                int bytesWritten = SignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), signature);
+
+                if (signature.Length != bytesWritten)
+                {
+                    throw new CryptographicException();
+                }
+
+                return signature;
             }
 
-            return ExportWithCallback(
-                Algorithm.MaxSignatureSizeInBytes,
-                (key, dest, out written) => key.TrySignData(new ReadOnlySpan<byte>(data), dest, out written, new ReadOnlySpan<byte>(context)),
-                key => key.ToArray());
+            byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
+
+            try
+            {
+                int bytesWritten = SignDataCore(
+                    new ReadOnlySpan<byte>(data),
+                    new ReadOnlySpan<byte>(context),
+                    rented.AsSpan(0, Algorithm.MaxSignatureSizeInBytes));
+
+                if (!Algorithm.SignatureSize.IsValidSize(bytesWritten))
+                {
+                    throw new CryptographicException();
+                }
+
+                return rented.AsSpan(0, bytesWritten).ToArray();
+            }
+            finally
+            {
+                CryptoPool.Return(rented);
+            }
         }
 
         /// <summary>
@@ -169,13 +191,8 @@ namespace System.Security.Cryptography
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        ///   This parameter is treated as uninitialized.
-        /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
@@ -192,7 +209,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The signature will be at most <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/> in length.
         /// </remarks>
-        public bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten, ReadOnlySpan<byte> context = default)
+        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
             if (context.Length > MaxContextLength)
             {
@@ -202,30 +219,24 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
+            if (destination.Length < Algorithm.MaxSignatureSizeInBytes)
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
             ThrowIfDisposed();
 
-            if (Algorithm.SignatureSize.IsAlwaysLargerThan(destination.Length))
+            int bytesWritten = SignDataCore(data, context, destination.Slice(0, Algorithm.MaxSignatureSizeInBytes));
+
+            // Make sure minimum size is also satisfied.
+            if (!Algorithm.SignatureSize.IsValidSize(bytesWritten))
             {
-                bytesWritten = 0;
-                return false;
+                CryptographicOperations.ZeroMemory(destination);
+
+                throw new CryptographicException();
             }
 
-            if (TrySignDataCore(data, context, destination, out int written))
-            {
-                if (!Algorithm.SignatureSize.IsValidSize(written))
-                {
-                    CryptographicOperations.ZeroMemory(destination);
-
-                    bytesWritten = 0;
-                    throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
-                }
-
-                bytesWritten = written;
-                return true;
-            }
-
-            bytesWritten = 0;
-            return false;
+            return bytesWritten;
         }
 
         /// <summary>
@@ -239,20 +250,15 @@ namespace System.Security.Cryptography
         ///   The signature context.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature, whose length will be at least the ML-DSA component's signature size.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        ///   This parameter is treated as uninitialized.
+        ///   The buffer to receive the signature, whose length will be exactly <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes" />.
         /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   An error occurred while signing the data.
         /// </exception>
-        protected abstract bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten);
+        protected abstract int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination);
 
         /// <summary>
         ///   Verifies that the specified signature is valid for this key and the provided data.
@@ -331,7 +337,12 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            return Algorithm.SignatureSize.IsValidSize(signature.Length) && VerifyDataCore(data, context, signature);
+            if (!Algorithm.SignatureSize.IsValidSize(signature.Length))
+            {
+                return false;
+            }
+
+            return VerifyDataCore(data, context, signature);
         }
 
         /// <summary>
@@ -1549,7 +1560,7 @@ namespace System.Security.Cryptography
                     CryptographicOperations.ZeroMemory(destination);
 
                     bytesWritten = 0;
-                    throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
+                    throw new CryptographicException();
                 }
 
                 bytesWritten = written;
@@ -1626,7 +1637,7 @@ namespace System.Security.Cryptography
                     CryptographicOperations.ZeroMemory(destination);
 
                     bytesWritten = 0;
-                    throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
+                    throw new CryptographicException();
                 }
 
                 bytesWritten = written;
@@ -1845,7 +1856,7 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(ret);
 
-                throw new CryptographicException(SR.Cryptography_UnexpectedExportBufferSize);
+                throw new CryptographicException();
             }
 
             return ret;
