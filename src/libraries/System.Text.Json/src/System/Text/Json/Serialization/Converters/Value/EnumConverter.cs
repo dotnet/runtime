@@ -676,77 +676,53 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         /// <summary>
-        /// Performs a topological sort on enum fields using Kahn's algorithm to ensure values that are supersets of other values come first.
+        /// Performs a topological sort on enum fields to ensure values that are supersets of other values come first.
         /// </summary>
         private static EnumFieldInfo[] TopologicalSortEnumFields(EnumFieldInfo[] enumFields)
         {
-            int n = enumFields.Length;
-            if (n <= 1)
+            if (enumFields.Length <= 1)
             {
                 return enumFields;
             }
 
-            // Build adjacency list and in-degree count
-            // Edge from A to B means A should come before B (B contains A's bits)
-            List<int>[] adjacencyList = new List<int>[n];
-            int[] inDegree = new int[n];
-
-            for (int i = 0; i < n; i++)
+            var indices = new int[enumFields.Length];
+            for (int i = 0; i < enumFields.Length; i++)
             {
-                adjacencyList[i] = new List<int>();
+                indices[i] = i;
             }
 
-            // Create edges: if value A is a superset of value B's bits, A should come before B
-            for (int i = 0; i < n; i++)
+            Array.Sort(indices, (i, j) => GetComparisonKey(i).CompareTo(GetComparisonKey(j)));
+
+            var sortedFields = new EnumFieldInfo[enumFields.Length];
+            for (int i = 0; i < indices.Length; i++)
             {
-                ulong iKey = enumFields[i].Key;
-                for (int j = 0; j < n; j++)
-                {
-                    if (i != j)
-                    {
-                        ulong jKey = enumFields[j].Key;
-                        // Check if i's bits are a superset of j's bits (and not equal)
-                        if (iKey != jKey && (iKey & jKey) == jKey)
-                        {
-                            adjacencyList[i].Add(j);
-                            inDegree[j]++;
-                        }
-                    }
-                }
-            }
-
-            // Kahn's algorithm
-            Queue<int> queue = new Queue<int>();
-
-            // Enqueue all nodes with in-degree 0
-            for (int i = 0; i < n; i++)
-            {
-                if (inDegree[i] == 0)
-                {
-                    queue.Enqueue(i);
-                }
-            }
-
-            EnumFieldInfo[] sortedFields = new EnumFieldInfo[n];
-            int sortedIndex = 0;
-
-            while (queue.Count > 0)
-            {
-                int current = queue.Dequeue();
-                sortedFields[sortedIndex++] = enumFields[current];
-
-                // Reduce in-degree for all neighbors
-                foreach (int neighbor in adjacencyList[current])
-                {
-                    inDegree[neighbor]--;
-                    if (inDegree[neighbor] == 0)
-                    {
-                        queue.Enqueue(neighbor);
-                    }
-                }
+                sortedFields[i] = enumFields[indices[i]];
             }
 
             return sortedFields;
+
+            (int PopCount, int Index) GetComparisonKey(int i)
+            {
+                // Sort by descending pop count of the enum value.
+                // Since Array.Sort isn't a stable algorithm
+                // append the current index to the comparison key.
+                return (-PopCount(enumFields[i].Key), i);
+            }
+
+            static int PopCount(ulong value)
+            {
+#if NET
+                return (int)ulong.PopCount(value);
+#else
+                int count = 0;
+                while (value != 0)
+                {
+                    value &= value - 1;
+                    count++;
+                }
+                return count;
+#endif
+            }
         }
 
         private enum EnumFieldNameKind
