@@ -10,41 +10,14 @@ namespace System.Net
     internal static partial class CertificateValidationPal
     {
         internal static SslPolicyErrors VerifyCertificateProperties(
-            SafeDeleteContext securityContext,
+            SafeDeleteContext? _ /*securityContext*/,
             X509Chain chain,
-            X509Certificate2? remoteCertificate,
+            X509Certificate2 remoteCertificate,
             bool checkCertName,
             bool isServer,
             string? hostName)
         {
-            SslPolicyErrors errors = SslPolicyErrors.None;
-
-            if (remoteCertificate == null)
-            {
-                errors |= SslPolicyErrors.RemoteCertificateNotAvailable;
-            }
-            else
-            {
-                if (!chain.Build(remoteCertificate))
-                {
-                    errors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                }
-
-                if (!isServer && checkCertName)
-                {
-                    SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
-
-                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName!, remoteCertificate.NotBefore, out int osStatus))
-                    {
-                        errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
-
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Error(sslContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
-                    }
-                }
-            }
-
-            return errors;
+            return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName, Span<byte>.Empty);
         }
 
         private static X509Certificate2? GetRemoteCertificate(

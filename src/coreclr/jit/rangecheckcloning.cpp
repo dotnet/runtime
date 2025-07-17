@@ -305,7 +305,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     upperBndToFallbackEdge->setLikelihood(0.0f);
 
     lowerBndBb->SetFlags(BBF_INTERNAL);
-    upperBndBb->SetFlags(BBF_INTERNAL | BBF_HAS_IDX_LEN);
+    upperBndBb->SetFlags(BBF_INTERNAL);
 
     // Now drop the bounds check from the fast path
     while (!bndChkStack->Empty())

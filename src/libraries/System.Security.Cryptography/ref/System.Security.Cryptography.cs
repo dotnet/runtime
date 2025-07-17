@@ -3386,6 +3386,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public Pkcs12LoaderLimits() { }
         public Pkcs12LoaderLimits(System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits copyFrom) { }
+        public bool AllowDuplicateAttributes { get { throw null; } set { } }
         public static System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits DangerousNoLimits { get { throw null; } }
         public static System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits Defaults { get { throw null; } }
         public bool IgnoreEncryptedAuthSafes { get { throw null; } set { } }
