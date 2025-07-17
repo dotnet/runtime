@@ -243,19 +243,34 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic    intrinsic,
                                       unsigned*         immSimdSize,
                                       var_types*        immSimdBaseType)
 {
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    HWIntrinsicCategory        category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    HWIntrinsicSignatureReader sigReader;
+    sigReader.Read(info.compCompHnd, sig);
 
     if (category == HW_Category_SIMDByIndexedElement)
     {
         assert(immNumber == 1);
         *immSimdSize = 0;
+
+        switch (sig->numArgs)
+        {
+            case 2:
+                getBaseJitTypeAndSizeOfSIMDType(sigReader.op1ClsHnd, immSimdSize);
+                break;
+            case 3:
+                getBaseJitTypeAndSizeOfSIMDType(sigReader.op2ClsHnd, immSimdSize);
+                break;
+            case 4:
+                getBaseJitTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, immSimdSize);
+                break;
+            default:
+                unreached();
+        }
     }
     else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
     {
         if (immNumber == 2)
         {
-            HWIntrinsicSignatureReader sigReader;
-            sigReader.Read(info.compCompHnd, sig);
             CorInfoType otherBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, immSimdSize);
             *immSimdBaseType             = JitType2PreciseVarType(otherBaseJitType);
         }
