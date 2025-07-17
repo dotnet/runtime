@@ -6,6 +6,8 @@
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidFeatureSwitchEnvVariables.props" />
+
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
@@ -259,15 +261,6 @@
     <Copy
         SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
-
-    <ItemGroup>
-      <AndroidEnv Condition="'$(InvariantGlobalization)' == 'true'" Include="DOTNET_SYSTEM_GLOBALIZATION_INVARIANT">
-        <Value>true</Value>
-      </AndroidEnv>
-      <AndroidEnv Condition="'$(PredefinedCulturesOnly)' == 'false'" Include="DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY">
-        <Value>false</Value>
-      </AndroidEnv>
-    </ItemGroup>
 
     <AndroidAppBuilderTask
         AppDir="$(BuildDir)"
