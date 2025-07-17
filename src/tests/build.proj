@@ -260,11 +260,17 @@
         SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
 
+    <ItemGroup>
+      <AndroidEnv Condition="'$(InvariantGlobalization)' == 'true'" Include="DOTNET_SYSTEM_GLOBALIZATION_INVARIANT">
+        <Value>true</Value>
+      </AndroidEnv>
+    </ItemGroup>
+
     <AndroidAppBuilderTask
         AppDir="$(BuildDir)"
         DiagnosticPorts="$(DiagnosticPorts)"
+        EnvironmentVariables="@(AndroidEnv)"
         ForceInterpreter="$(MonoInterp)"
-        InvariantGlobalization="$(InvariantGlobalization)"
         RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
         ProjectName="$(Category)"

@@ -241,6 +241,12 @@
       <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">CoreCLR</_RuntimeFlavor>
     </PropertyGroup>
 
+    <ItemGroup>
+      <AndroidEnv Condition="'$(InvariantGlobalization)' == 'true'" Include="DOTNET_SYSTEM_GLOBALIZATION_INVARIANT">
+        <Value>true</Value>
+      </AndroidEnv>
+    </ItemGroup>
+
     <AndroidAppBuilderTask
         RuntimeFlavor="$(_RuntimeFlavor)"
         AppDir="$(AndroidBuildDir)"
@@ -251,7 +257,6 @@
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
-        InvariantGlobalization="$(InvariantGlobalization)"
         IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
         RuntimeHeaders="@(RuntimeHeaders)"
