@@ -3114,7 +3114,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
 
-    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+    emitAttr cmpSize = EA_SIZE(genTypeSize(op1Type));
     assert(cmpSize == EA_4BYTE || cmpSize == EA_8BYTE);
 
     emitter*  emit      = GetEmitter();
@@ -3148,8 +3148,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
     else
     {
-        assert(tree->OperIs(GT_LT));
-        assert(op1->isContainedIntOrIImmed() != op2->isContainedIntOrIImmed());
+        noway_assert(tree->OperIs(GT_LT));
         if (op2->isContainedIntOrIImmed())
         {
             instruction slti = tree->IsUnsigned() ? INS_sltiu : INS_slti;

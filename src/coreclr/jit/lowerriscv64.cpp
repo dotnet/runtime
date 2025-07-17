@@ -64,16 +64,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
-            case GT_EQ:
-            case GT_NE:
-                return emitter::isValidSimm12(-immVal) || (immVal == -2048);
-
-            case GT_LE: // a <= N  ->  a < N+1
-            case GT_GT: // a > N  ->  !(a <= N)  ->  !(a < N+1)
-                immVal += 1;
-                FALLTHROUGH;
             case GT_LT:
-            case GT_GE:
             case GT_ADD:
             case GT_AND:
             case GT_OR:
