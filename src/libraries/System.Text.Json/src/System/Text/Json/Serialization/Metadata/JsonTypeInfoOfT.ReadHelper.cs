@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal ValueTask<T?> DeserializeAsync(PipeReader utf8Json, CancellationToken cancellationToken)
         {
-            PipeReadBufferState bufferState = default;
+            PipeReadBufferState bufferState = new(utf8Json);
             return DeserializeAsync(utf8Json, bufferState, cancellationToken);
         }
 
@@ -122,7 +122,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(PipeReader utf8Json, CancellationToken cancellationToken)
         {
-            T? result = await DeserializeAsync<PipeReadBufferState, PipeReader>(utf8Json, bufferState: default, cancellationToken).ConfigureAwait(false);
+            T? result = await DeserializeAsync<PipeReadBufferState, PipeReader>(utf8Json, bufferState: new PipeReadBufferState(utf8Json), cancellationToken).ConfigureAwait(false);
             return result;
         }
 
