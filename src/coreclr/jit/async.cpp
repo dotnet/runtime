@@ -1111,6 +1111,14 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     return layout;
 }
 
+//------------------------------------------------------------------------
+// AsyncTransformation::ClearSuspendedIndicator:
+//   Generate IR to clear the value of the suspended indicator local.
+//
+// Parameters:
+//   block - Block to generate IR into
+//   call  - The async call (not contained in "block")
+//
 void AsyncTransformation::ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call)
 {
     CallArg* suspendedArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
@@ -1136,6 +1144,16 @@ void AsyncTransformation::ClearSuspendedIndicator(BasicBlock* block, GenTreeCall
     LIR::AsRange(block).InsertBefore(call, LIR::SeqTree(m_comp, storeSuspended));
 }
 
+//------------------------------------------------------------------------
+// AsyncTransformation::SetSuspendedIndicator:
+//   Generate IR to set the value of the suspended indicator local, and remove
+//   the argument from the call.
+//
+// Parameters:
+//   block     - Block to generate IR into
+//   callBlock - Block containing the call
+//   call      - The async call
+//
 void AsyncTransformation::SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call)
 {
     CallArg* suspendedArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);

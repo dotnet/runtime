@@ -19602,6 +19602,16 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     return node->AsLclVarCommon();
 }
 
+//------------------------------------------------------------------------
+// gtCallGetDefinedAsyncSuspendedIndicatorLclAddr:
+//   Get the tree corresponding to the address of the indicator local that this call defines.
+//
+// Parameters:
+//   call - the Call node
+//
+// Returns:
+//   A tree representing the address of a local.
+//
 GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
 {
     if (!call->IsAsync() || !call->GetAsyncInfo().HasSuspensionIndicatorDef)

@@ -4363,7 +4363,6 @@ struct AsyncCallInfo
     ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
     bool                        SaveAndRestoreSynchronizationContextField = false;
     bool                        HasSuspensionIndicatorDef                 = false;
-    bool                        HasCurrentThreadDef                       = false;
     unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
 };
 

@@ -355,19 +355,6 @@ GenTree* LIR::ReadOnlyRange::LastNode() const
     return m_lastNode;
 }
 
-GenTree* LIR::ReadOnlyRange::FirstNonNopNode() const
-{
-    for (GenTree* cur = m_firstNode; cur != nullptr; cur = cur->gtNext)
-    {
-        if (!cur->OperIs(GT_NOP, GT_IL_OFFSET))
-        {
-            return cur;
-        }
-    }
-
-    return nullptr;
-}
-
 //------------------------------------------------------------------------
 // LIR::ReadOnlyRange::IsEmpty: Returns true if the range is empty; false
 //                              otherwise.
