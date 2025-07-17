@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
-#include "pal_mutex.h"
+#include "pal_crossprocessmutex.h"
 #include "pal_errno.h"
 
 #include <stdio.h>
