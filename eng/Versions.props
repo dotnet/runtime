@@ -165,9 +165,9 @@
     <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.25310.1</MicrosoftDotNetCilStripSourcesVersion>
     <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.25310.1</MicrosoftNETHostModelTestDataVersion>
     <!-- xharness dependencies -->
-    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.25330.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.25330.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.25330.2</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.25255.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.25255.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.25255.1</MicrosoftDotNetXHarnessCLIVersion>
     <!-- hotreload-utils dependencies -->
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25302.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-optimization dependencies -->
