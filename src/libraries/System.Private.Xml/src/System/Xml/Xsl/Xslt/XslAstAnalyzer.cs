@@ -1136,7 +1136,6 @@ namespace System.Xml.Xsl.Xslt
                         funcFlags = XslFlags.AnyType;
 #pragma warning disable SYSLIB0062 // XsltSettings.EnableScript is obsolete
                         if (_compiler.Settings.EnableScript && ns != null)
-#pragma warning restore SYSLIB0062
                         {
                             XmlExtensionFunction? scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, default(NullErrorHelper));
                             if (scrFunc != null)
@@ -1176,6 +1175,7 @@ namespace System.Xml.Xsl.Xslt
                                 }
                             }
                         }
+#pragma warning restore SYSLIB0062
                         funcFlags |= XslFlags.SideEffects;
                     }
                 }
