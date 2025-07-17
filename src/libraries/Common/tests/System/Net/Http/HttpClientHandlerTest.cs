@@ -2342,5 +2342,36 @@ namespace System.Net.Http.Functional.Tests
             Content,
             Cookie
         }
+
+        [Fact]
+        public async Task LargeUriAndHeaders_Works()
+        {
+            int length =
+                IsWinHttpHandler ? 65_000 :
+                PlatformDetection.IsBrowser ? 4_000 :
+                10_000_000;
+
+            string longPath = "/" + new string('X', length);
+            string longHeaderName = new string('Y', length);
+            string longHeaderValue = new string('Z', length);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, new UriBuilder(uri) { Path = longPath }.Uri, UseVersion);
+                    request.Headers.Add(longHeaderName, longHeaderValue);
+
+                    await client.SendAsync(request);
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+
+                    Assert.Equal(longPath, requestData.Path);
+                    Assert.Equal(longHeaderValue, requestData.GetSingleHeaderValue(longHeaderName));
+                });
+        }
     }
 }
