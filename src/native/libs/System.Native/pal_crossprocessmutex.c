@@ -3,7 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_errno.h"
-#include "pal_mutex.h"
+#include "pal_crossprocessmutex.h"
 
 #include <limits.h>
 #include <sched.h>

@@ -43,10 +43,10 @@ endif()
 
 if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
-        pal_mutex_unsupported.c)
+        pal_crossprocessmutex_unsupported.c)
 else()
     list (APPEND NATIVE_SOURCES
-        pal_mutex.c
+        pal_crossprocessmutex.c
     )
 endif()
 

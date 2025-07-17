@@ -16,7 +16,7 @@
 #include "pal_log.h"
 #include "pal_memory.h"
 #include "pal_mount.h"
-#include "pal_mutex.h"
+#include "pal_crossprocessmutex.h"
 #include "pal_networkchange.h"
 #include "pal_networking.h"
 #include "pal_networkstatistics.h"
