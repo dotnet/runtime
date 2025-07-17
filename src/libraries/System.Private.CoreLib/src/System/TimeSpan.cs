@@ -18,7 +18,6 @@ namespace System
     // can contain 365 or 366 days.  A decade can have between 1 and 3 leap years,
     // depending on when you map the TimeSpan into the calendar.  This is why
     // we do not provide Years() or Months().
-    // an appropriate custom ILMarshaler to keep WinRT interop scenarios enabled.
     //
     [Serializable]
     public readonly struct TimeSpan
