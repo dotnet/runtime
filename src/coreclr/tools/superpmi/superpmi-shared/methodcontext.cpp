@@ -4498,6 +4498,7 @@ void MethodContext::dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO
     printf("GetAsyncInfo key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
            " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64 " contsNeedMethodHandle-%d",
         key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
+        value.continuationStateFldHnd, value.continuationFlagsFldHnd, value.continuationDataFldHnd,
         value.continuationGCDataFldHnd, value.continuationsNeedMethodHandle);
 }
 void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
