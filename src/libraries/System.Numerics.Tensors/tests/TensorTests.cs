@@ -827,7 +827,7 @@ namespace System.Numerics.Tensors.Tests
             var t3 = t2.Slice(0..1, ..);
             Assert.Equal([1, 3], t3.Lengths);
 
-            t1 = Tensor.Create(Enumerable.Range(0, 3).ToArray(), default);
+            t1 = Tensor.Create(Enumerable.Range(0, 3).ToArray());
             t2 = Tensor.Broadcast<int>(t1, [3, 3]);
             Assert.Equal([3, 3], t2.Lengths);
 
@@ -2289,7 +2289,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.Unsqueeze<int>(tensor, -1));
             Assert.Throws<ArgumentException>(() => Tensor.Unsqueeze<int>(tensor, 2));
 
-            Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 2).ToArray(), default);
+            Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 2).ToArray());
             t0 = Tensor.Unsqueeze(t0, 1);
             Assert.Equal(0, t0[0, 0]);
             Assert.Equal(1, t0[1, 0]);
@@ -2919,12 +2919,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
 
             span = tensorSpan.GetSpan([1, 1], 3);
-            Assert.Equal(16, span.Length);
-            Assert.Equal([1, 2, 3], span);
+            Assert.Equal(3, span.Length);
+            Assert.Equal([5, 6, 7], span);
 
             span = tensorSpan.GetSpan([3, 0], 4);
             Assert.Equal(4, span.Length);
-            Assert.Equal([0, 1, 2, 3], span);
+            Assert.Equal([12, 13, 14, 15], span);
 
             span = tensorSpan.GetSpan([0, 3], 1);
             Assert.Equal(1, span.Length);
@@ -2932,7 +2932,7 @@ namespace System.Numerics.Tensors.Tests
 
             span = tensorSpan.GetSpan([3, 3], 1);
             Assert.Equal(1, span.Length);
-            Assert.Equal([3], span);
+            Assert.Equal([15], span);
         }
 
         [Fact]
@@ -2998,12 +2998,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
 
             Assert.True(tensorSpan.TryGetSpan([1, 1], 3, out span));
-            Assert.Equal(16, span.Length);
-            Assert.Equal([1, 2, 3], span);
+            Assert.Equal(3, span.Length);
+            Assert.Equal([5, 6, 7], span);
 
             Assert.True(tensorSpan.TryGetSpan([3, 0], 4, out span));
             Assert.Equal(4, span.Length);
-            Assert.Equal([0, 1, 2, 3], span);
+            Assert.Equal([12, 13, 14, 15], span);
 
             Assert.True(tensorSpan.TryGetSpan([0, 3], 1, out span));
             Assert.Equal(1, span.Length);
@@ -3011,7 +3011,7 @@ namespace System.Numerics.Tensors.Tests
 
             Assert.True(tensorSpan.TryGetSpan([3, 3], 1, out span));
             Assert.Equal(1, span.Length);
-            Assert.Equal([3], span);
+            Assert.Equal([15], span);
         }
 
         [Fact]

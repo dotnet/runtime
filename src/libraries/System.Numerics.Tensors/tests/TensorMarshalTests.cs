@@ -28,11 +28,7 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] data = Enumerable.Range(0, 10).ToArray();
             nint[] lengths = [3, 5];
-            TensorSpan<int> tensorSpan = TensorMarshal.CreateTensorSpan(ref data[0], data.Length, lengths, strides: [], pinned: false);
-
-            Assert.Equal(10, tensorSpan.FlattenedLength);
-            Assert.Equal(lengths, tensorSpan.Lengths.ToArray());
-            Assert.Equal([5, 1], tensorSpan.Strides.ToArray());
+            Assert.Throws<ArgumentOutOfRangeException>(() => TensorMarshal.CreateTensorSpan(ref data[0], data.Length, lengths, strides: [], pinned: false));
         }
 
         [Fact]
@@ -52,11 +48,7 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] data = Enumerable.Range(0, 10).ToArray();
             nint[] lengths = [3, 5];
-            ReadOnlyTensorSpan<int> tensorSpan = TensorMarshal.CreateReadOnlyTensorSpan(ref data[0], data.Length, lengths, strides: [], pinned: false);
-
-            Assert.Equal(10, tensorSpan.FlattenedLength);
-            Assert.Equal(lengths, tensorSpan.Lengths.ToArray());
-            Assert.Equal([5, 1], tensorSpan.Strides.ToArray());
+            Assert.Throws<ArgumentOutOfRangeException>(() => TensorMarshal.CreateReadOnlyTensorSpan(ref data[0], data.Length, lengths, strides: [], pinned: false));
         }
 
         [Fact]

@@ -1807,12 +1807,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
 
             span = tensorSpan.GetSpan([1, 1], 3);
-            Assert.Equal(16, span.Length);
-            Assert.Equal([1, 2, 3], span);
+            Assert.Equal(3, span.Length);
+            Assert.Equal([5, 6, 7], span);
 
             span = tensorSpan.GetSpan([3, 0], 4);
             Assert.Equal(4, span.Length);
-            Assert.Equal([0, 1, 2, 3], span);
+            Assert.Equal([12, 13, 14, 15], span);
 
             span = tensorSpan.GetSpan([0, 3], 1);
             Assert.Equal(1, span.Length);
@@ -1820,7 +1820,7 @@ namespace System.Numerics.Tensors.Tests
 
             span = tensorSpan.GetSpan([3, 3], 1);
             Assert.Equal(1, span.Length);
-            Assert.Equal([3], span);
+            Assert.Equal([15], span);
         }
 
         [Fact]
@@ -1886,12 +1886,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
 
             Assert.True(tensorSpan.TryGetSpan([1, 1], 3, out span));
-            Assert.Equal(16, span.Length);
-            Assert.Equal([1, 2, 3], span);
+            Assert.Equal(3, span.Length);
+            Assert.Equal([5, 6, 7], span);
 
             Assert.True(tensorSpan.TryGetSpan([3, 0], 4, out span));
             Assert.Equal(4, span.Length);
-            Assert.Equal([0, 1, 2, 3], span);
+            Assert.Equal([12, 13, 14, 15], span);
 
             Assert.True(tensorSpan.TryGetSpan([0, 3], 1, out span));
             Assert.Equal(1, span.Length);
@@ -1899,7 +1899,7 @@ namespace System.Numerics.Tensors.Tests
 
             Assert.True(tensorSpan.TryGetSpan([3, 3], 1, out span));
             Assert.Equal(1, span.Length);
-            Assert.Equal([3], span);
+            Assert.Equal([15], span);
         }
 
         [Fact]
