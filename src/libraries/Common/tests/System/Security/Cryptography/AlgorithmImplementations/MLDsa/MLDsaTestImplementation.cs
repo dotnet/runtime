@@ -99,7 +99,9 @@ namespace System.Security.Cryptography.Tests
                 ExportMLDsaPublicKeyHook = _ => Assert.Fail(),
                 ExportMLDsaSecretKeyHook = _ => Assert.Fail(),
                 SignDataHook = (_, _, _) => Assert.Fail(),
+                SignPreHashHook = delegate { Assert.Fail(); },
                 VerifyDataHook = (_, _, _) => { Assert.Fail(); return false; },
+                VerifyPreHashHook = delegate { Assert.Fail(); return false; },
                 DisposeHook = _ => { },
 
                 TryExportPkcs8PrivateKeyHook = (_, out bytesWritten) =>

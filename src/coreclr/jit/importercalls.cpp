@@ -701,17 +701,26 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         AsyncCallInfo asyncInfo;
 
-        JITDUMP("Call is an async ");
-
         if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
         {
-            JITDUMP("task await\n");
+            JITDUMP("Call is an async task await\n");
 
             asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+
+            if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+            {
+                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+                JITDUMP("  Continuation continues on captured context\n");
+            }
+            else
+            {
+                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
+                JITDUMP("  Continuation continues on thread pool\n");
+            }
         }
         else
         {
-            JITDUMP("non-task await\n");
+            JITDUMP("Call is an async non-task await\n");
             // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
             // These are awaits of custom awaitables, and they come with the behavior that the execution context
             // is captured and restored on suspension/resumption.
@@ -3626,7 +3635,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         break;
                     }
                 }
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
                 op1                   = arrLen;
 
                 // Getting the length of a null string should throw
@@ -3728,7 +3737,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     array = impCloneExpr(array, &arrayClone, CHECK_SPILL_ALL,
                                          nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
 
-                    impAppendTree(gtNewNullCheck(array, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
+                    impAppendTree(gtNewNullCheck(array), CHECK_SPILL_ALL, impCurStmtDI);
                     array = arrayClone;
                 }
 
@@ -7881,6 +7890,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
+        return;
+    }
+
+    if (call->IsAsync() && (call->GetAsyncInfo().ContinuationContextHandling != ContinuationContextHandling::None))
+    {
+        // Cannot currently handle moving to captured context/thread pool when logically returning from inlinee.
+        //
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_CONTINUATION_HANDLING);
         return;
     }
 
