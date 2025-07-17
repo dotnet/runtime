@@ -4453,12 +4453,11 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     //  * for integer: "<" (with unsigned and immediate variants),
     //  * for floating: "<", "<=", "==" (ordered only, register only),
     // so the rest is achieved through various transformations.
-    LIR::Use cmpUse;
+    GenTree*& left  = cmp->AsOp()->gtOp1;
+    GenTree*& right = cmp->AsOp()->gtOp2;
+    LIR::Use  cmpUse;
     if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
     {
-        GenTree*& left  = cmp->AsOp()->gtOp1;
-        GenTree*& right = cmp->AsOp()->gtOp2;
-
         bool isReversed = false;
         if (varTypeIsFloating(left))
         {
@@ -4512,9 +4511,21 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             if (cmp->OperIs(GT_GT))
             {
                 cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
-                std::swap(cmp->AsOp()->gtOp1, cmp->AsOp()->gtOp2);
+                std::swap(left, right);
             }
             assert(cmp->OperIs(GT_LT));
+
+            // Integer comparisons come only in full-register variants so sign-extend operands as needed
+            if (genActualTypeIsInt(left) && !left->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
+            {
+                left = comp->gtNewCastNode(TYP_INT, left, false, TYP_INT);
+                BlockRange().InsertAfter(left->gtGetOp1(), left);
+            }
+            if (genActualTypeIsInt(right) && !right->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
+            {
+                right = comp->gtNewCastNode(TYP_INT, right, false, TYP_INT);
+                BlockRange().InsertAfter(right->gtGetOp1(), right);
+            }
         }
         if (isReversed)
         {
@@ -4523,6 +4534,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             cmpUse.ReplaceWith(notOp);
         }
     }
+
 #endif // TARGET_RISCV64
 
     ContainCheckCompare(cmp->AsOp());
