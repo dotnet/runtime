@@ -4486,6 +4486,9 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.continuationsNeedMethodHandle = pAsyncInfo->continuationsNeedMethodHandle ? 1 : 0;
     value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
     value.restoreExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreExecutionContextMethHnd);
+    value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo->captureContinuationContextMethHnd);
+    value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
+    value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
 
     GetAsyncInfo->Add(0, value);
     DEBUG_REC(dmpGetAsyncInfo(0, value));
@@ -4495,7 +4498,6 @@ void MethodContext::dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO
     printf("GetAsyncInfo key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
            " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64 " contsNeedMethodHandle-%d",
         key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
-        value.continuationStateFldHnd, value.continuationFlagsFldHnd, value.continuationDataFldHnd,
         value.continuationGCDataFldHnd, value.continuationsNeedMethodHandle);
 }
 void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
@@ -4511,6 +4513,9 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationsNeedMethodHandle = value.continuationsNeedMethodHandle != 0;
     pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
     pAsyncInfoOut->restoreExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreExecutionContextMethHnd;
+    pAsyncInfoOut->captureContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureContinuationContextMethHnd;
+    pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_HANDLE)value.captureContextsMethHnd;
+    pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 
