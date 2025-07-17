@@ -169,31 +169,8 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal struct LazyDictionaryContext : IEquatable<LazyDictionaryContext>
-        {
-            public IntPtr _context;
-            public IntPtr _signature;
-
-            public override bool Equals(object obj)
-            {
-                if (!(obj is LazyDictionaryContext))
-                    return false;
-                return Equals((LazyDictionaryContext)obj);
-            }
-
-            public bool Equals(LazyDictionaryContext other)
-            {
-                return _context == other._context && _signature == other._signature;
-            }
-
-            public override int GetHashCode()
-            {
-                return _context.GetHashCode() ^ _signature.GetHashCode();
-            }
-        }
-
         private DynamicGenericTypesHashtable _dynamicGenericTypes = new DynamicGenericTypesHashtable();
-        private LowLevelDictionary<LazyDictionaryContext, IntPtr> _lazyGenericDictionaries = new LowLevelDictionary<LazyDictionaryContext, IntPtr>();
+        private Dictionary<(IntPtr Context, IntPtr Signature), IntPtr> _lazyGenericDictionaries = new Dictionary<(IntPtr, IntPtr), IntPtr>();
 
 
         //
@@ -217,7 +194,7 @@ namespace Internal.Runtime.TypeLoader
         public bool TryLookupConstructedLazyDictionaryForContext(IntPtr context, IntPtr signature, out IntPtr dictionary)
         {
             Debug.Assert(_typeLoaderLock.IsHeldByCurrentThread);
-            return _lazyGenericDictionaries.TryGetValue(new LazyDictionaryContext { _context = context, _signature = signature }, out dictionary);
+            return _lazyGenericDictionaries.TryGetValue((context, signature), out dictionary);
         }
 
         #region Privates

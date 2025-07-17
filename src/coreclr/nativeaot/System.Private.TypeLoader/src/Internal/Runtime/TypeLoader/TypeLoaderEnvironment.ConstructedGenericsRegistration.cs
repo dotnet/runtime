@@ -131,7 +131,7 @@ namespace Internal.Runtime.TypeLoader
         public void RegisterConstructedLazyDictionaryForContext(IntPtr context, IntPtr signature, IntPtr dictionary)
         {
             Debug.Assert(_typeLoaderLock.IsHeldByCurrentThread);
-            _lazyGenericDictionaries.Add(new LazyDictionaryContext { _context = context, _signature = signature }, dictionary);
+            _lazyGenericDictionaries.Add((context, signature), dictionary);
         }
     }
 }
