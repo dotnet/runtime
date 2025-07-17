@@ -9393,10 +9393,17 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 
             switch (ins)
             {
+                case INS_andps:
+                case INS_andnps:
+                case INS_orps:
+                case INS_xorps:
                 case INS_pandd:
                 case INS_pandnd:
                 case INS_pord:
                 case INS_pxord:
+                case INS_vpternlogd:
+                case INS_vshuff32x4:
+                case INS_vshufi32x4:
                     canUse8ByteBroadcast = cnsVec->IsBroadcast(TYP_LONG);
                     break;
 
