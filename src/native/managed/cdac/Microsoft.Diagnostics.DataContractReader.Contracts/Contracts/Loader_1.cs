@@ -36,6 +36,23 @@ internal readonly struct Loader_1 : ILoader
         BeingUnloaded = 0x100000,
     }
 
+    public enum DacpAppDomainDataStage : uint
+    {
+        STAGE_CREATING,
+        STAGE_READYFORMANAGEDCODE,
+        STAGE_ACTIVE,
+        STAGE_OPEN,
+        STAGE_UNLOAD_REQUESTED,
+        STAGE_EXITING,
+        STAGE_EXITED,
+        STAGE_FINALIZING,
+        STAGE_FINALIZED,
+        STAGE_HANDLETABLE_NOACCESS,
+        STAGE_CLEARED,
+        STAGE_COLLECTED,
+        STAGE_CLOSED
+    }
+
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -143,6 +160,21 @@ internal readonly struct Loader_1 : ILoader
     {
         return handle.Address;
     }
+
+    uint ILoader.GetStage()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        return appDomain.Stage;
+    }
+
+    bool ILoader.IsActive()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        return appDomain.Stage >= (uint)DacpAppDomainDataStage.STAGE_ACTIVE;
+    }
+
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -287,6 +319,31 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return module.LoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetGlobalLoaderAllocator()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.GlobalLoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer globalLoaderAllocator)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(globalLoaderAllocator);
+        return loaderAllocator.HighFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetLowFrequencyHeap(TargetPointer globalLoaderAllocator)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(globalLoaderAllocator);
+        return loaderAllocator.LowFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetStubHeap(TargetPointer globalLoaderAllocator)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(globalLoaderAllocator);
+        return loaderAllocator.StubHeap;
     }
 
     TargetPointer ILoader.GetILBase(ModuleHandle handle)

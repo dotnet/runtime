@@ -24,6 +24,24 @@ internal struct DacpThreadStoreData
     public int fHostConfig; // Uses hosting flags defined above
 };
 
+internal struct DacpAppDomainData
+{
+    // The pointer to the AppDomain or SystemDomain.
+    // It's useful to keep this around in the structure
+    public ClrDataAddress AppDomainPtr;
+    public ClrDataAddress AppSecDesc;
+    public ClrDataAddress pLowFrequencyHeap;
+    public ClrDataAddress pHighFrequencyHeap;
+    public ClrDataAddress pStubHeap;
+    public ClrDataAddress DomainLocalBlock;
+    public ClrDataAddress pDomainLocalModules;
+    // The creation sequence number of this app domain (starting from 1)
+    public int dwId;
+    public int AssemblyCount;
+    public int FailedAssemblyCount;
+    public uint appDomainStage;
+};
+
 internal struct DacpThreadData
 {
     public int corThreadId;
