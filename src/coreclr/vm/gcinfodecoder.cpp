@@ -1488,11 +1488,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
                         PREGDISPLAY     pRD
                         )
 {
-#if defined(TARGET_UNIX)
-    _ASSERTE(regNum >= 0 && regNum <= 32);
-#else // TARGET_UNIX
-    _ASSERTE(regNum >= 0 && regNum <= 16);
-#endif // TARGET_UNIX
+    _ASSERTE(regNum >= 0 && (regNum <= 16 || (IsAPXSupported() && regNum <=32)));
     _ASSERTE(regNum != 4);  // rsp
 
 #ifdef FEATURE_NATIVEAOT
@@ -1502,8 +1498,9 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
     // The fields of KNONVOLATILE_CONTEXT_POINTERS are in the same order as
     // the processor encoding numbers.
     ULONGLONG **ppRax = &pRD->pCurrentContextPointers->Rax;
-    if(ExecutionManager::GetEEJitManager()->IsAPXSupported() && regNum >= 16)
+    if(regNum >= 16)
     {
+        assert(IsAPXSupported());
         ppRax = &pRD->volatileCurrContextPointers.R16;
         return (OBJECTREF*)*(ppRax + regNum - 16);
     }

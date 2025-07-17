@@ -50,7 +50,7 @@ extern RhConfig * g_pRhConfig;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
-EXTERN_C int g_cpuFeatures;
+// EXTERN_C int g_cpuFeatures;
 int g_cpuFeatures = 0;
 
 // This field is defined in the generated code and sets the ISA expectations.

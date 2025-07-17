@@ -91,6 +91,17 @@ typedef struct
 } EH_CLAUSE_ENUMERATOR;
 class EECodeInfo;
 
+// Cache the cpufeatures for use in other parts of VM.
+// This is mainly added here to use the variable in GC 
+// APX support checks
+extern int cpuFeatures;
+#if defined(TARGET_AMD64)
+inline bool IsAPXSupported()
+{
+    return (cpuFeatures & XArchIntrinsicConstants_Apx);
+}
+#endif // TARGET_AMD64
+
 #define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
 
@@ -2200,13 +2211,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_CPUCompileFlags;
     }
-
-#if defined(TARGET_AMD64)
-    inline bool IsAPXSupported()
-    {
-        return m_CPUCompileFlags.IsSet(InstructionSet_APX);
-    }
-#endif // TARGET_AMD64
 
 private :
     Crst                m_JitLoadLock;

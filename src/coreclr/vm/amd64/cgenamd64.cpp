@@ -233,8 +233,11 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pCurrentContextPointers->R15 = &m_Regs->R15;
 
 #if defined(TARGET_UNIX)
-    for (int i = 0; i < 16; i++)
-        pRD->volatileCurrContextPointers.R[i] = &m_Regs->R[i];
+    if (IsAPXSupported())
+    {
+        for (int i = 0; i < 16; i++)
+            pRD->volatileCurrContextPointers.R[i] = &m_Regs->R[i];
+    }
 #endif // TARGET_UNIX
 
     pRD->IsCallerContextValid = FALSE;

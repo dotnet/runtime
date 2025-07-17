@@ -4,9 +4,22 @@
 #ifndef __regdisplay_h__
 #define __regdisplay_h__
 
+#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
+// This field is inspected from the generated code to determine what intrinsics are available.
+EXTERN_C int g_cpuFeatures;
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #include "PalLimitedContext.h" // Fp128
+#include <minipal/cpufeatures.h>
+
+#if defined(TARGET_AMD64)
+inline bool IsAPXSupported()
+{
+    return (g_cpuFeatures & XArchIntrinsicConstants_Apx);
+}
+#endif // TARGET_AMD64
 
 struct REGDISPLAY
 {
@@ -27,7 +40,6 @@ struct REGDISPLAY
     PTR_uintptr_t pR13;
     PTR_uintptr_t pR14;
     PTR_uintptr_t pR15;
-#if defined(TARGET_UNIX)
     PTR_uintptr_t pR16;
     PTR_uintptr_t pR17;
     PTR_uintptr_t pR18;
@@ -44,7 +56,6 @@ struct REGDISPLAY
     PTR_uintptr_t pR29;
     PTR_uintptr_t pR30;
     PTR_uintptr_t pR31;
-#endif //TARGET_UNIX
 #endif // TARGET_AMD64
 
     uintptr_t   SP;

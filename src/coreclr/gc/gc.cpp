@@ -27,6 +27,7 @@
 #include "handletable.inl"
 #include "gcenv.inl"
 #include "gceventstatus.h"
+#include <minipal/cpufeatures.h>
 
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
@@ -142,6 +143,15 @@ bool g_built_with_svr_gc = true;
 #else
 bool g_built_with_svr_gc = false;
 #endif // FEATURE_SVR_GC
+
+// Stores the ISA capability of the hardware
+int cpuFeatures = 0;
+#if defined(TARGET_AMD64)
+inline bool IsAPXSupported()
+{
+    return (cpuFeatures & XArchIntrinsicConstants_Apx);
+}
+#endif // TARGET_AMD64
 
 #if defined(BUILDENV_DEBUG)
 uint8_t g_build_variant = 0;
@@ -14698,7 +14708,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif // __linux__
 
 #ifdef USE_VXSORT
-    InitSupportedInstructionSet ((int32_t)GCConfig::GetGCEnabledInstructionSets());
+    InitSupportedInstructionSet ((int32_t)GCConfig::GetGCEnabledInstructionSets(), cpuFeatures);
 #endif
 
     if (!init_semi_shared())
@@ -49285,6 +49295,9 @@ HRESULT GCHeap::Initialize()
         log_init_error_to_host ("compute_hard_limit failed, check your heap hard limit related configs");
         return CLR_E_GC_BAD_HARD_LIMIT;
     }
+
+    // initialize the cpuFeatures from minipal
+    cpuFeatures = minipal_getcpufeatures();
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;

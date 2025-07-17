@@ -40,6 +40,11 @@ extern bool g_fFinalizerRunOnShutDown;
 extern bool g_built_with_svr_gc;
 extern uint8_t g_build_variant;
 extern VOLATILE(int32_t) g_no_gc_lock;
+// Stores the mask for supported instruction sets
+extern int cpuFeatures;
+#if defined(TARGET_AMD64)
+extern inline bool IsAPXSupported();
+#endif // TARGET_AMD64
 
 class GCHeap : public IGCHeapInternal
 {

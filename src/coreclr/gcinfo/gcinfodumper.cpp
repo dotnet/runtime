@@ -131,7 +131,6 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(r13, R13),
         REG(r14, R14),
         REG(r15, R15),
-#if defined(TARGET_UNIX)
 #undef REG
 #define REG(reg, field) { offsetof(Amd64VolatileContextPointer, field) }
         REG(r16, R16),
@@ -150,9 +149,6 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(r29, R29),
         REG(r30, R30),
         REG(r31, R31),
-        REG(r16, R16),
-        REG(r16, R16),
-#endif // TARGET_UNIX
 #elif defined(TARGET_ARM)
 #undef REG
 #define REG(reg, field) { offsetof(ArmVolatileContextPointer, field) }
@@ -412,12 +408,12 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
             {
                 continue;
             }
-#elif defined(TARGET_AMD64) && defined(TARGET_UNIX)
-            if (ctx != 0 && iEncodedReg > 15)
+#elif defined(TARGET_AMD64)
+            if ((ctx != 0 && iEncodedReg > 15) || !IsAPXSupported())
             {
                 break;
             }
-#endif // TARGET_AMD64 || TARGET_UNIX
+#endif // TARGET_AMD64
             {
                 _ASSERTE(iReg < nCONTEXTRegisters);
 #ifdef TARGET_ARM
@@ -441,7 +437,7 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 {
                     pReg = (SIZE_T*)((BYTE*)pRD->pCurrentContext + rgRegisters[iReg].cbContextOffset);
                 }
-#elif defined(TARGET_AMD64) && defined(TARGET_UNIX)
+#elif defined(TARGET_AMD64)
                 if (ctx == 0 && iReg == 16)
                 {
                     pContext = (BYTE*)&(pRD->volatileCurrContextPointers);
@@ -705,10 +701,13 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
         *(ppCallerRax  + iReg) = &regdisp.pCallerContext ->Rax + iReg;
     }
 #if defined(TARGET_UNIX) && defined(HOST_UNIX)
-    ULONG64 **ppVolatileReg = &regdisp.volatileCurrContextPointers.R16;
-    for (iReg = 0; iReg < 16; iReg++)
+    if (IsAPXSupported())
     {
-        *(ppVolatileReg+iReg) = &regdisp.pCurrentContext->R16 + iReg;
+        ULONG64 **ppVolatileReg = &regdisp.volatileCurrContextPointers.R16;
+        for (iReg = 0; iReg < 16; iReg++)
+        {
+            *(ppVolatileReg+iReg) = &regdisp.pCurrentContext->R16 + iReg;
+        }
     }
 #endif // TARGET_UNIX
 #elif defined(TARGET_ARM)
