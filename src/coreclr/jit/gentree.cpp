@@ -12874,8 +12874,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                     printf(" isKnownConst");
                     break;
-                case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrierUnchecked:
-                    printf(" writeBarrierUnchecked");
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
+                    printf(" WriteBarrier");
                     break;
 #if defined(FEATURE_SIMD)
                 case NI_SIMD_UpperRestore:

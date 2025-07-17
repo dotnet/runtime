@@ -3425,7 +3425,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrierUnchecked:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
 
             // Not expanding this can lead to noticeable allocations in T0
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
@@ -3659,7 +3659,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrierUnchecked:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
             {
                 GenTree* val = impPopStack().val;
                 GenTree* dst = impPopStack().val;
@@ -10668,9 +10668,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                     if (strcmp(className, "TypeCast") == 0)
                     {
-                        if (strcmp(methodName, "WriteBarrierUnchecked") == 0)
+                        if (strcmp(methodName, "WriteBarrier") == 0)
                         {
-                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrierUnchecked;
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
                         }
                     }
                     else if (strcmp(namespaceName, "CompilerServices") == 0)
@@ -10689,9 +10689,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
                             }
-                            else if (strcmp(methodName, "WriteBarrierUnchecked") == 0)
+                            else if (strcmp(methodName, "WriteBarrier") == 0)
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrierUnchecked;
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
                             }
                             else if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
                             {

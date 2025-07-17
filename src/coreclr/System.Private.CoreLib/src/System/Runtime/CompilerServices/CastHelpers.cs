@@ -451,7 +451,7 @@ namespace System.Runtime.CompilerServices
                 goto notExactMatch;
 
             doWrite:
-                RuntimeHelpers.WriteBarrierUnchecked(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
 
             assigningNull:
@@ -472,7 +472,7 @@ namespace System.Runtime.CompilerServices
             CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                RuntimeHelpers.WriteBarrierUnchecked(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
             }
 
@@ -490,7 +490,7 @@ namespace System.Runtime.CompilerServices
                 ThrowArrayMismatchException();
             }
 
-            RuntimeHelpers.WriteBarrierUnchecked(ref element, obj2);
+            RuntimeHelpers.WriteBarrier(ref element, obj2);
         }
 
         [DebuggerHidden]

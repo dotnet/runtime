@@ -175,6 +175,6 @@ namespace System.Runtime.CompilerServices
         public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();
 
         [Intrinsic]
-        internal static void WriteBarrierUnchecked(ref object? dst, object? obj) => dst = obj;
+        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
     }
 }
