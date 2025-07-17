@@ -769,6 +769,7 @@ session_tracepoint_write_event (
 	const int max_static_io_capacity = 30; // Should account for most events that use EventData structs
 	struct iovec static_io[max_static_io_capacity];
 	struct iovec *io = static_io;
+	ssize_t io_bytes_to_write = 0;
 
 	uint8_t *ep_event_data = ep_event_payload_get_data (ep_event_payload);
 	uint32_t ep_event_data_len = ep_event_payload_get_event_data_len (ep_event_payload);
@@ -787,12 +788,14 @@ session_tracepoint_write_event (
 	io[io_index].iov_base = (void *)&write_index;
 	io[io_index].iov_len = sizeof(write_index);
 	io_index++;
+	io_bytes_to_write += sizeof(write_index);
 
 	// Version
 	uint8_t version = 0x01; // Format V1
 	io[io_index].iov_base = &version;
 	io[io_index].iov_len = sizeof(version);
 	io_index++;
+	io_bytes_to_write += sizeof(version);
 
 	// Truncated event id
 	// For parity with EventSource, there shouldn't be any that need more than 16 bits.
@@ -800,29 +803,26 @@ session_tracepoint_write_event (
 	io[io_index].iov_base = &truncated_event_id;
 	io[io_index].iov_len = sizeof(truncated_event_id);
 	io_index++;
+	io_bytes_to_write += sizeof(truncated_event_id);
 
 	// Extension and payload relative locations (to be fixed up later)
 	uint32_t extension_rel_loc = 0;
 	io[io_index].iov_base = &extension_rel_loc;
 	io[io_index].iov_len = sizeof(extension_rel_loc);
 	io_index++;
+	io_bytes_to_write += sizeof(extension_rel_loc);
 
 	uint32_t payload_rel_loc = 0;
 	io[io_index].iov_base = &payload_rel_loc;
 	io[io_index].iov_len = sizeof(payload_rel_loc);
 	io_index++;
+	io_bytes_to_write += sizeof(payload_rel_loc);
 
 	// Extension
 	uint32_t extension_len = 0;
 
-	// We make a best-effort to write out metadata on the first instance of each event in
-	// the trace. Even though the atomic InterlockedExchange will detect the first event
-	// writing thread to race to this point there is no guarantee that same thread will
-	// be the first one to invoke writev and place its data into the kernel buffers. This
-	// means it is still possible that the metadata isn't on the first event in the
-	// trace. If the trace ended fast enough there is even a tiny chance that it stops
-	// recording events before the event with the metadata ever gets recorded.
-	bool should_write_metadata = ep_event_update_metadata_written_mask (ep_event, ep_session_get_mask (session), true);
+	uint64_t session_mask = ep_session_get_mask (session);
+	bool should_write_metadata = !ep_event_was_metadata_written (ep_event, session_mask);
 	if (should_write_metadata) {
 		uint8_t extension_metadata[1 + sizeof(uint32_t)];
 		uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
@@ -832,11 +832,13 @@ session_tracepoint_write_event (
 		io[io_index].iov_len = sizeof(extension_metadata);
 		io_index++;
 		extension_len += sizeof(extension_metadata);
+		io_bytes_to_write += sizeof(extension_metadata);
 
 		io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
 		io[io_index].iov_len = metadata_len;
 		io_index++;
 		extension_len += metadata_len;
+		io_bytes_to_write += metadata_len;
 	}
 
 	// Extension Activity IDs
@@ -848,6 +850,7 @@ session_tracepoint_write_event (
 	io[io_index].iov_len = extension_activity_ids_len;
 	io_index++;
 	extension_len += extension_activity_ids_len;
+	io_bytes_to_write += extension_activity_ids_len;
 
 	EP_ASSERT (io_index <= max_non_parameter_iov);
 
@@ -859,6 +862,7 @@ session_tracepoint_write_event (
 		io[io_index].iov_len = ep_event_payload_size;
 		io_index++;
 		ep_event_payload_total_size += ep_event_payload_size;
+		io_bytes_to_write += ep_event_payload_size;
 	} else {
 		const EventData *event_data = ep_event_payload_get_event_data (ep_event_payload);
 		for (uint32_t i = 0; i < ep_event_data_len; ++i) {
@@ -867,6 +871,7 @@ session_tracepoint_write_event (
 			io[io_index].iov_len = ep_event_data_size;
 			io_index++;
 			ep_event_payload_total_size += ep_event_data_size;
+			io_bytes_to_write += ep_event_data_size;
 		}
 	}
 
@@ -881,7 +886,9 @@ session_tracepoint_write_event (
 	payload_rel_loc = ep_event_payload_total_size << 16 | (extension_len & 0xFFFF);
 
 	ssize_t bytes_written;
-	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, io_index) < 0) && errno == EINTR);
+	while (((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, io_index)) < 0) && errno == EINTR);
+	if (should_write_metadata && (bytes_written == io_bytes_to_write))
+		ep_event_update_metadata_written_mask (ep_event, session_mask, true);
 
 	if (io != static_io)
 		free (io);

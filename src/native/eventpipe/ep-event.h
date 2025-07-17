@@ -54,6 +54,7 @@ struct _EventPipeEvent {
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint64_t, keywords)
 EP_DEFINE_GETTER_REF(EventPipeEvent *, event, volatile int64_t *, enabled_mask)
 EP_DEFINE_SETTER(EventPipeEvent *, event, int64_t, enabled_mask)
+EP_DEFINE_GETTER_REF(EventPipeEvent *, event, volatile int64_t *, metadata_written_mask)
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint8_t *, metadata)
 EP_DEFINE_GETTER(EventPipeEvent *, event, EventPipeProvider *, provider)
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, event_id)
@@ -94,6 +95,17 @@ ep_event_alloc (
 
 void
 ep_event_free (EventPipeEvent * ep_event);
+
+static
+inline
+bool
+ep_event_was_metadata_written (
+	const EventPipeEvent *ep_event,
+	uint64_t session_mask)
+{
+	EP_ASSERT (ep_event != NULL);
+	return ((ep_rt_volatile_load_int64_t (ep_event_get_metadata_written_mask_cref (ep_event)) & session_mask) != 0);
+}
 
 bool
 ep_event_update_metadata_written_mask (
