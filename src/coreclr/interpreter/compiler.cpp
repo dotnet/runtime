@@ -2722,7 +2722,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             // If we are being asked explicitly to compile an intrinsic for interpreting, we need to forcibly enable
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             bool isMustExpand = (callInfo.hMethod == m_methodHnd);
-            if ((InterpConfig.InterpMode() >= 3) || isMustExpand)
+            if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
                 if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
