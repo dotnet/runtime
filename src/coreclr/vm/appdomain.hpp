@@ -423,7 +423,6 @@ public:
 
 enum
 {
-    ATTACH_ASSEMBLY_LOAD = 0x1,
     ATTACH_MODULE_LOAD = 0x2,
     ATTACH_CLASS_LOAD = 0x4,
 
@@ -1937,7 +1936,7 @@ public:
 template<>
 struct cdac_data<SystemDomain>
 {
-    static constexpr PTR_SystemDomain* SystemDomain = &SystemDomain::m_pSystemDomain;
+    static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
 };
 #endif // DACCESS_COMPILE
 

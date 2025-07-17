@@ -500,7 +500,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
     // Create a tree representing string's Length:
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
-    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset, compCurBB);
+    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset);
     varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
     GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, kind, (WCHAR*)str, cnsLength,
@@ -657,8 +657,13 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             return nullptr;
         }
 
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n",
-                convertUtf16ToUtf8ForPrinting((WCHAR*)str));
+#if DEBUG
+        constexpr int maxLiteralLength = 256;
+        char          dst[maxLiteralLength];
+        convertUtf16ToUtf8ForPrinting(str, cnsLength, dst, maxLiteralLength);
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%.50s%s\")...\n", dst,
+                cnsLength > 50 ? "..." : "");
+#endif
     }
 
     unsigned spanLclNum;
