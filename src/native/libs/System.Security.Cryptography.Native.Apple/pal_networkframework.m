@@ -37,7 +37,7 @@ static nw_endpoint_t _endpoint;
         _statusFunc(context, PAL_NwStatusUpdates_DebugLog, (size_t)(buff), (size_t)(isError), NULL); \
     } while (0)
 
-#if DEBUG
+#ifdef DEBUG
 #define LOG_INFO(context, ...) LOG_IMPL_(context, 0, __VA_ARGS__)
 #else
 #define LOG_INFO(context, ...) do { (void)context; } while (0)
