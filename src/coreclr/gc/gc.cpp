@@ -23045,7 +23045,9 @@ void gc_heap::gc1()
                 g_heaps[i]->descr_generations ("END");
             }
 
+#ifdef USE_REGIONS
             age_free_regions ("END");
+#endif //USE_REGIONS 
 
             fire_pevents();
             update_end_ngc_time();
