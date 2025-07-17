@@ -96,12 +96,7 @@ mono_ios_runtime_init (void)
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
 
-#ifdef INTERPRETER_METHODS
-    setenv ("DOTNET_Interpreter", INTERPRETER_METHODS, true);
-    setenv ("COMPlus_InterpDump", INTERPRETER_METHODS, true);
-    setenv ("DOTNET_InterpMode", "0", true);
-    setenv ("DOTNET_ReadyToRun", "0", true);
-#endif
+%EnvVariables%
 
     char **managed_argv;
     int argi = get_managed_args (&managed_argv);

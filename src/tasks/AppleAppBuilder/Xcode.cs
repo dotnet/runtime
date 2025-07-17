@@ -182,7 +182,6 @@ internal sealed class Xcode
         bool useConsoleUiTemplate,
         bool forceAOT,
         bool forceInterpreter,
-        string? interpreterMethods,
         bool invariantGlobalization,
         bool hybridGlobalization,
         bool optimized,
@@ -190,11 +189,12 @@ internal sealed class Xcode
         bool enableAppSandbox,
         string? diagnosticPorts,
         IEnumerable<string> runtimeComponents,
+        IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
         bool isLibraryMode = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, interpreterMethods, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, targetRuntime, isLibraryMode);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -256,7 +256,6 @@ internal sealed class Xcode
         bool useConsoleUiTemplate,
         bool forceAOT,
         bool forceInterpreter,
-        string? interpreterMethods,
         bool invariantGlobalization,
         bool hybridGlobalization,
         bool optimized,
@@ -264,6 +263,7 @@ internal sealed class Xcode
         bool enableAppSandbox,
         string? diagnosticPorts,
         IEnumerable<string> runtimeComponents,
+        IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
         bool isLibraryMode = false)
@@ -520,11 +520,6 @@ internal sealed class Xcode
             defines.AppendLine($"\nadd_definitions(-DDIAGNOSTIC_PORTS=\"{diagnosticPorts}\")");
         }
 
-        if (!string.IsNullOrEmpty(interpreterMethods))
-        {
-            defines.AppendLine($"\nadd_definitions(-DINTERPRETER_METHODS=\"{interpreterMethods}\")");
-        }
-
         if (targetRuntime == TargetRuntime.NativeAOT)
         {
             defines.AppendLine("add_definitions(-DUSE_NATIVE_AOT=1)");
@@ -552,11 +547,23 @@ internal sealed class Xcode
 
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
-        if (needEntitlements) {
+        string envVariables = string.Empty;
+        foreach (var item in environmentVariables)
+        {
+            var split = item.Split('=');
+            if (split.Length == 2)
+            {
+                envVariables += $"\t\tsetenv (\"{split[0].Trim()}\", \"{split[1].Trim()}\", true);\n";
+            }
+        }
+
+        if (needEntitlements)
+        {
             var ent = new StringBuilder();
-            foreach ((var key, var value) in entitlements) {
-                ent.AppendLine ($"<key>{key}</key>");
-                ent.AppendLine (value);
+            foreach ((var key, var value) in entitlements)
+            {
+                ent.AppendLine($"<key>{key}</key>");
+                ent.AppendLine(value);
             }
             string entitlementsTemplate = Utils.GetEmbeddedResource("app.entitlements.template");
             File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlementsTemplate.Replace("%Entitlements%", ent.ToString()));
@@ -604,7 +611,8 @@ internal sealed class Xcode
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                     Utils.GetEmbeddedResource("runtime-coreclr.m")
                         .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
-                        .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+                        .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
+                        .Replace("%EnvVariables%", envVariables));
             }
         }
 
