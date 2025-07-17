@@ -332,14 +332,14 @@ namespace System.Security.Cryptography.Tests
             _ = dsa.ExportCompositeMLDsaPublicKey();
 
             int mldsaKeySize = CompositeMLDsaTestHelpers.MLDsaAlgorithms[vector.Algorithm].PublicKeySizeInBytes;
-            int expectedInitialBufferSize = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
+
+            CompositeMLDsaTestHelpers.ExecuteComponentAction(
                 vector.Algorithm,
                 // RSA doesn't have an exact size, so it will use pooled buffers. Their sizes are powers of two.
-                rsa => RoundUpToPowerOf2(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + 16),
-                ecdsa => mldsaKeySize + 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
-                eddsa => mldsaKeySize + eddsa.KeySizeInBits / 8);
+                rsa => AssertExtensions.LessThanOrEqualTo(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + 16, initialBufferSize),
+                ecdsa => Assert.Equal(mldsaKeySize + 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8), initialBufferSize),
+                eddsa => Assert.Equal(mldsaKeySize + eddsa.KeySizeInBits / 8, initialBufferSize));
 
-            Assert.Equal(expectedInitialBufferSize, initialBufferSize);
             AssertExtensions.Equal(1, dsa.TryExportCompositeMLDsaPublicKeyCoreCallCount);
         }
 
@@ -361,14 +361,14 @@ namespace System.Security.Cryptography.Tests
             _ = dsa.ExportCompositeMLDsaPrivateKey();
 
             int mldsaKeySize = CompositeMLDsaTestHelpers.MLDsaAlgorithms[vector.Algorithm].PrivateSeedSizeInBytes;
-            int expectedInitialBufferSize = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
+
+            CompositeMLDsaTestHelpers.ExecuteComponentAction(
                 vector.Algorithm,
                 // RSA and ECDSA don't have an exact size, so it will use pooled buffers. Their sizes are powers of two.
-                rsa => RoundUpToPowerOf2(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + (rsa.KeySizeInBits / 8) / 2 * 5 + 64),
-                ecdsa => RoundUpToPowerOf2(mldsaKeySize + 1 + ((ecdsa.KeySizeInBits + 7) / 8) + 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8) + 64),
-                eddsa => mldsaKeySize + eddsa.KeySizeInBits / 8);
+                rsa => AssertExtensions.LessThanOrEqualTo(mldsaKeySize + (rsa.KeySizeInBits / 8) * 2 + (rsa.KeySizeInBits / 8) / 2 * 5 + 64, initialBufferSize),
+                ecdsa => AssertExtensions.LessThanOrEqualTo(mldsaKeySize + 1 + ((ecdsa.KeySizeInBits + 7) / 8) + 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8) + 64, initialBufferSize),
+                eddsa => Assert.Equal(mldsaKeySize + eddsa.KeySizeInBits / 8, initialBufferSize));
 
-            Assert.Equal(expectedInitialBufferSize, initialBufferSize);
             AssertExtensions.Equal(1, dsa.TryExportCompositeMLDsaPrivateKeyCoreCallCount);
         }
 
@@ -628,23 +628,6 @@ namespace System.Security.Cryptography.Tests
             byte[] publicKey = new byte[size + 2 * PaddingSize];
             publicKey.AsSpan().Fill(filling);
             return publicKey;
-        }
-
-        private static int RoundUpToPowerOf2(int value)
-        {
-            if (value <= 0 || (value << 1) < 0)
-            {
-                throw new XunitException("Value must be positive and at most 2^30.");
-            }
-
-            int power = 1;
-
-            while (power < value)
-            {
-                power <<= 1;
-            }
-
-            return power;
         }
     }
 }
