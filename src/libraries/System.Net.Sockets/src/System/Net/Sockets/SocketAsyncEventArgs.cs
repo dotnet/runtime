@@ -729,11 +729,11 @@ namespace System.Net.Sockets
             }
 #pragma warning restore
 
-                // Determine whether the async operation already completed and stored the results into `this`.
-                // If we reached this point and the operation hasn't yet stored the results, then it's considered
-                // pending.  If by the time we get here it has stored the results, it's considered completed.
-                // The callback won't invoke the Completed event if it gets there first.
-                return internalArgs.ReachedCoordinationPointFirst();
+            // Determine whether the async operation already completed and stored the results into `this`.
+            // If we reached this point and the operation hasn't yet stored the results, then it's considered
+            // pending.  If by the time we get here it has stored the results, it's considered completed.
+            // The callback won't invoke the Completed event if it gets there first.
+            return internalArgs.ReachedCoordinationPointFirst();
 
             async Task Core(MultiConnectSocketAsyncEventArgs internalArgs, Task<IPAddress[]> addressesTask, int port, SocketType socketType, ProtocolType protocolType, ParallelMultiConnectSocketState? parallelState, CancellationToken cancellationToken)
             {
@@ -964,7 +964,6 @@ namespace System.Net.Sockets
                     shouldComplete = !Finished();
                     if (shouldComplete)
                     {
-                        // We ignore failures on first socket since we have one more pending.
                         _saea.SetResults(exception!, 0, SocketFlags.None);
                         _saea._currentSocket?.UpdateStatusAfterSocketError(_saea._socketError);
                     }
