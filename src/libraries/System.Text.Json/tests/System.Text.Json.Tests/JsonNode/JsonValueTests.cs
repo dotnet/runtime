@@ -271,14 +271,23 @@ namespace System.Text.Json.Nodes.Tests
         [InlineData("\"A\\u0022\"", "A\"")] // ValueEquals compares unescaped values
         public static void DeserializePrimitive_ToElement_String(string json, string expected)
         {
-            JsonValue value = JsonSerializer.Deserialize<JsonValue>(json);
-            JsonElement element = value.GetValue<JsonElement>();
+            DoTest(json, expected);
 
-            AssertExtensions.TrueExpression(element.ValueEquals(expected));
+            // Test long strings
+            string padding = new string('P', 256);
+            DoTest(json[0] + padding + json.Substring(1), padding + expected);
 
-            bool success = value.TryGetValue(out element);
-            Assert.True(success);
-            AssertExtensions.TrueExpression(element.ValueEquals(expected));
+            static void DoTest(string json, string expected)
+            {
+                JsonValue value = JsonSerializer.Deserialize<JsonValue>(json);
+                JsonElement element = value.GetValue<JsonElement>();
+
+                AssertExtensions.TrueExpression(element.ValueEquals(expected));
+
+                bool success = value.TryGetValue(out element);
+                Assert.True(success);
+                AssertExtensions.TrueExpression(element.ValueEquals(expected));
+            }
         }
 
         [Fact]
@@ -789,7 +798,8 @@ namespace System.Text.Json.Nodes.Tests
             yield return Wrap('A', JsonValueKind.String);
             yield return Wrap((char?)'A', JsonValueKind.String);
             yield return Wrap("A", JsonValueKind.String);
-            yield return Wrap("A\u0041", JsonValueKind.String);
+            yield return Wrap("A\u0041", JsonValueKind.String); // \u0041 == A
+            yield return Wrap("A\u0022", JsonValueKind.String); // \u0022 == "
             yield return Wrap(new byte[] { 1, 2, 3 }, JsonValueKind.String);
             yield return Wrap(new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
             yield return Wrap((DateTimeOffset?)new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
