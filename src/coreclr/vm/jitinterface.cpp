@@ -10257,6 +10257,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationsNeedMethodHandle = m_pMethodBeingCompiled->GetLoaderAllocator()->CanUnload();
     pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
     pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
+    pAsyncInfoOut->captureContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTINUATION_CONTEXT));
 
     EE_TO_JIT_TRANSITION();
 }
@@ -10843,7 +10844,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                     activeCodeVersion = manager->GetActiveILCodeVersion(helperMD).GetActiveNativeCodeVersion(helperMD);
                 }
 
-                if (activeCodeVersion.IsFinalTier())
+                // activeCodeVersion may be a null version if the current active ILCodeVersion
+                // does not have an associated NativeCodeVersion
+                if (!activeCodeVersion.IsNull() && activeCodeVersion.IsFinalTier())
                 {
                     finalTierAddr = (LPVOID)activeCodeVersion.GetNativeCode();
                     if (finalTierAddr != NULL)
@@ -12352,41 +12355,6 @@ CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HA
             }
         }
     }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
-static void *GetClassSync(MethodTable *pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    GCX_COOP();
-
-    OBJECTREF ref = pMT->GetManagedClassObject();
-    return (void*)ref->GetSyncBlock()->GetMonitor();
-}
-
-/*********************************************************************/
-void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                                    void **ppIndirection)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void * result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    result = GetClassSync((GetMethod(ftnHnd))->GetMethodTable());
 
     EE_TO_JIT_TRANSITION();
 
@@ -14455,7 +14423,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
 
     auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
     {
-        _ASSERTE(!th.IsByRef());
         CorElementType ty = th.GetSignatureCorElementType();
         if (CorTypeInfo::IsObjRef(ty))
         {
@@ -14848,13 +14815,6 @@ InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
 
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                          bool* pIsSpeculative)
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called on derived class.
-}
-
-void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                             void **ppIndirection)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

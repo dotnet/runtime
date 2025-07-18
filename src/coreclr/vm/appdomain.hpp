@@ -423,7 +423,6 @@ public:
 
 enum
 {
-    ATTACH_ASSEMBLY_LOAD = 0x1,
     ATTACH_MODULE_LOAD = 0x2,
     ATTACH_CLASS_LOAD = 0x4,
 

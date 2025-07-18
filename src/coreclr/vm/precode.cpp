@@ -10,6 +10,7 @@
 
 #include "common.h"
 #include "dllimportcallback.h"
+#include "../interpreter/interpretershared.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -161,7 +162,7 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
         break;
 #ifdef FEATURE_INTERPRETER
     case PRECODE_INTERPRETER:
-        return NULL;
+        pMD = AsInterpreterPrecode()->GetMethodDesc();
         break;
 #endif // FEATURE_INTERPRETER
 
@@ -183,6 +184,16 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     // Once we headers factoring of headers cleaned up, we should be able to get rid of it.
     return (PTR_MethodDesc)pMD;
 }
+
+#ifdef FEATURE_INTERPRETER
+TADDR InterpreterPrecode::GetMethodDesc()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(GetData()->ByteCodeAddr);
+    return (TADDR)pInterpreterCode->Method->methodHnd;
+}
+#endif // FEATURE_INTERPRETER
 
 BOOL Precode::IsPointingToPrestub(PCODE target)
 {

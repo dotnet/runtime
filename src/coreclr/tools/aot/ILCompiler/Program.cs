@@ -361,6 +361,7 @@ namespace ILCompiler
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
             var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
                 .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
+                .UseSymbolOrder(Get(_command.OrderFile))
                 .UseCompilationUnitPrefix(compilationUnitPrefix);
 
             string[] mibcFilePaths = Get(_command.MibcFilePaths);
@@ -603,10 +604,14 @@ namespace ILCompiler
             compilationRoots.Add(metadataManager);
             compilationRoots.Add(interopStubManager);
 
+            MethodBodyFoldingMode foldingMode = string.IsNullOrEmpty(Get(_command.MethodBodyFolding))
+                ? MethodBodyFoldingMode.None
+                : Enum.Parse<MethodBodyFoldingMode>(Get(_command.MethodBodyFolding), ignoreCase: true);
+
             builder
                 .UseInstructionSetSupport(instructionSetSupport)
                 .UseBackendOptions(Get(_command.CodegenOptions))
-                .UseMethodBodyFolding(enable: Get(_command.MethodBodyFolding))
+                .UseMethodBodyFolding(foldingMode)
                 .UseParallelism(parallelism)
                 .UseMetadataManager(metadataManager)
                 .UseInteropStubManager(interopStubManager)

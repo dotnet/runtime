@@ -337,7 +337,12 @@ struct InterpreterPrecode
         LIMITED_METHOD_CONTRACT;
         return (InterpreterPrecode*)PCODEToPINSTR(entryPoint);
     }
+
+    TADDR GetMethodDesc();
 };
+
+typedef DPTR(InterpreterPrecode) PTR_InterpreterPrecode;
+
 #endif // FEATURE_INTERPRETER
 
 #ifdef HAS_FIXUP_PRECODE
@@ -598,6 +603,16 @@ private:
         return dac_cast<PTR_ThisPtrRetBufPrecode>(this);
     }
 #endif // HAS_THISPTR_RETBUF_PRECODE
+
+#ifdef FEATURE_INTERPRETER
+    InterpreterPrecode* AsInterpreterPrecode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return dac_cast<PTR_InterpreterPrecode>(this);
+    }
+#endif // FEATURE_INTERPRETER
 
     TADDR GetStart()
     {
