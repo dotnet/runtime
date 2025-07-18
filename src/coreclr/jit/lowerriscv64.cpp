@@ -205,6 +205,26 @@ bool Lowering::LowerAndReverseFloatingCompare(GenTree* cmp)
 }
 
 //------------------------------------------------------------------------
+// SignExtendIfNecessary: inserts a 32-bit sign extension unless the argument is full-register or is known to be
+// implemented with a sign-extending instruction.
+//
+// Arguments:
+//    arg - the argument to sign-extend
+//
+void Lowering::SignExtendIfNecessary(GenTree** arg)
+{
+    assert(varTypeUsesIntReg(*arg));
+    if (!genActualTypeIsInt(*arg))
+        return;
+
+    if ((*arg)->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
+        return;
+
+    *arg = comp->gtNewCastNode(TYP_I_IMPL, *arg, false, TYP_I_IMPL);
+    BlockRange().InsertAfter((*arg)->gtGetOp1(), *arg);
+}
+
+//------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Arguments:

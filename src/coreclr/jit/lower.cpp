@@ -4523,17 +4523,8 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             }
             assert(cmp->OperIs(GT_LT));
 
-            // Integer comparisons come only in full-register variants so sign-extend operands as needed
-            if (genActualTypeIsInt(left) && !left->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
-            {
-                left = comp->gtNewCastNode(TYP_I_IMPL, left, false, TYP_I_IMPL);
-                BlockRange().InsertAfter(left->gtGetOp1(), left);
-            }
-            if (genActualTypeIsInt(right) && !right->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
-            {
-                right = comp->gtNewCastNode(TYP_I_IMPL, right, false, TYP_I_IMPL);
-                BlockRange().InsertAfter(right->gtGetOp1(), right);
-            }
+            SignExtendIfNecessary(&left);
+            SignExtendIfNecessary(&right);
         }
         if (isReversed)
         {

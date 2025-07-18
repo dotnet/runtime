@@ -161,6 +161,7 @@ private:
     GenTree* LowerJTrue(GenTreeOp* jtrue);
 #ifdef TARGET_RISCV64
     bool LowerAndReverseFloatingCompare(GenTree* cmp);
+    void SignExtendIfNecessary(GenTree** arg);
 #endif
     GenTree*   LowerSelect(GenTreeConditional* cond);
     bool       TryLowerConditionToFlagsNode(GenTree*      parent,
