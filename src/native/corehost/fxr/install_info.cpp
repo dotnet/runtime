@@ -16,8 +16,14 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
     pal::enumerate_environment_variables([&](const pal::char_t* name, const pal::char_t* value)
     {
         // Check if the environment variable starts with DOTNET_ or COREHOST_
-        if (pal::strncmp(name, _X("DOTNET_"), STRING_LENGTH("DOTNET_")) == 0
-            || pal::strncmp(name, _X("COREHOST_"), STRING_LENGTH("COREHOST_")) == 0)
+#if defined(TARGET_WINDOWS)
+        // Environment variables are case-insensitive on Windows
+        auto comp_func = pal::strncasecmp;
+#else
+        auto comp_func = pal::strncmp;
+#endif
+        if (comp_func(name, _X("DOTNET_"), STRING_LENGTH("DOTNET_")) == 0
+            || comp_func(name, _X("COREHOST_"), STRING_LENGTH("COREHOST_")) == 0)
         {
             env_vars.push_back(std::make_pair(name, value));
         }

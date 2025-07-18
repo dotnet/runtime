@@ -96,7 +96,7 @@ namespace HostActivation.Tests
                 ("x86", "/x86/dotnet/root"),
                 ("unknown", "/unknown/dotnet/root")
             ];
-            foreach(var envVar in dotnetRootEnvVars)
+            foreach (var envVar in dotnetRootEnvVars)
             {
                 command = command.DotNetRoot(envVar.Path, envVar.Architecture);
             }
@@ -110,9 +110,14 @@ namespace HostActivation.Tests
                 ("DOTNET_SOME_SETTING", "/some/setting"),
                 ("COREHOST_TRACE", "1")
             ];
-            foreach (var envVar in envVars)
+
+            (string Name, string Value)[] differentCaseEnvVars = [
+                ("dotnet_env_var", "dotnet env var value"),
+                ("corehost_env_var", "corehost env var value"),
+            ];
+            foreach ((string name, string value) in envVars.Concat(differentCaseEnvVars))
             {
-                command = command.EnvironmentVariable(envVar.Name, envVar.Value);
+                command = command.EnvironmentVariable(name, value);
             }
 
             var otherEnvVar = "OTHER";
@@ -133,6 +138,19 @@ namespace HostActivation.Tests
             foreach ((string name, string value) in envVars)
             {
                 result.Should().HaveStdOutMatching($@"{name}\s*\[{value}\]");
+            }
+
+            foreach ((string name, string value) in differentCaseEnvVars)
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    // Environment variables are case-insensitive on Windows
+                    result.Should().HaveStdOutMatching($@"{name}\s*\[{value}\]");
+                }
+                else
+                {
+                    result.Should().NotHaveStdOutContaining(name);
+                }
             }
         }
 
