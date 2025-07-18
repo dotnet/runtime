@@ -140,7 +140,7 @@ namespace System.Text.Json.Nodes
 
                     try
                     {
-                        Span<byte> quotedValue = value.Length > JsonConstants.StackallocByteThreshold
+                        Span<byte> quotedValue = quotedLength > JsonConstants.StackallocByteThreshold
                             ? (rented = ArrayPool<byte>.Shared.Rent(quotedLength)).AsSpan(0, quotedLength)
                             : stackalloc byte[JsonConstants.StackallocByteThreshold].Slice(0, quotedLength);
 
