@@ -6,6 +6,7 @@ using Xunit;
 
 public class Runtime_116657
 {
+    [Fact]
     public static void TestEntryPoint()
     {
         ulong x = 0x7ffc000000000000;
