@@ -121,7 +121,7 @@ internal sealed unsafe partial class SOSDacImpl
             TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
             TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
 
-            if (appDomain != TargetPointer.Null)
+            if (appDomain != TargetPointer.Null && values.Length > 0)
             {
                 values[0] = appDomain.ToClrDataAddress(_target);
                 i = 1;
