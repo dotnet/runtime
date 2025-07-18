@@ -437,4 +437,41 @@ namespace System.Reflection.Tests
         public void mymethod4(string x) { }
     }
 }
+    public static class InheritGetterAndSetterMethodInProperty
+    {
+        [Fact]
+        public static void GetterAndSetterAreAvailableOnSubTypeWhenOverridingOneButInheritingBothFromBaseClass()
+        {
+            object[] attributes = typeof(ClassWithDerivedAttr).GetCustomAttributes(true);
+            object attribute = Assert.Single(attributes);
+            var derivedAttributeWithGetterAttr = Assert.IsType<DerivedAttributeWithGetter>(attribute);
+            Assert.Equal(2, derivedAttributeWithGetterAttr.P);
+        }
+
+        public class BaseAttributeWithGetterSetter : Attribute
+        {
+            protected int _p;
+
+            public virtual int P
+            {
+                get => _p;
+                set
+                {
+                    _p = value;
+                }
+            }
+        }
+
+        public class DerivedAttributeWithGetter : BaseAttributeWithGetterSetter
+        {
+            public override int P
+            {
+                get => _p;
+            }
+        }
+
+        [DerivedAttributeWithGetter(P = 2)]
+        public class ClassWithDerivedAttr
+        { }
+    }
 }
