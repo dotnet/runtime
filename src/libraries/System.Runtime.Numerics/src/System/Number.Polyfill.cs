@@ -109,8 +109,8 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             return (typeof(TChar) == typeof(Utf8Char))
-                 ? Rune.DecodeFromUtf8(MemoryMarshal.Cast<TChar, byte>(span), out result, out elemsConsumed)
-                 : Rune.DecodeFromUtf16(MemoryMarshal.Cast<TChar, char>(span), out result, out elemsConsumed);
+                 ? Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed)
+                 : Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
         }
 
         internal static OperationStatus FromHexString(ReadOnlySpan<byte> utf8Text, Span<byte> destination, out int charsConsumed, out int bytesWritten)
@@ -164,16 +164,16 @@ namespace System
             if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 (utf8Text.Length >= Vector128<byte>.Count))
             {
-                return TryDecodeFromUtf16_Vector128(utf8Text, destination, out bytesProcessed);
+                return TryDecodeFromUtf8_Vector128(utf8Text, destination, out bytesProcessed);
             }
 
             return TryDecodeHexStringFromUtf8_Scalar(utf8Text, destination, out bytesProcessed);
         }
 
-        internal static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<byte> utf8Text, Span<byte> destination, out int bytesProcessed)
+        internal static bool TryDecodeFromUtf8_Vector128(ReadOnlySpan<byte> utf8Text, Span<byte> destination, out int bytesProcessed)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
-            Debug.Assert(utf8Text.Length <= destination.Length);
+            Debug.Assert(utf8Text.Length <= (destination.Length * 2));
             Debug.Assert((utf8Text.Length % 2) == 0);
             Debug.Assert(utf8Text.Length >= Vector128<byte>.Count);
 
@@ -272,8 +272,8 @@ namespace System
 
         internal static bool TryDecodeHexStringFromUtf8_Scalar(ReadOnlySpan<byte> utf8Text, Span<byte> destination, out int bytesProcessed)
         {
-            Debug.Assert(utf8Text.Length % 2 == 0, "Un-even number of characters provided");
-            Debug.Assert(utf8Text.Length / 2 == destination.Length, "Target buffer not right-sized for provided characters");
+            Debug.Assert((utf8Text.Length % 2) == 0, "Un-even number of characters provided");
+            Debug.Assert((utf8Text.Length / 2) == destination.Length, "Target buffer not right-sized for provided characters");
 
             int i = 0;
             int j = 0;

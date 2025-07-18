@@ -19,7 +19,7 @@ namespace System.Text
 
         public ValueStringBuilder(Span<TChar> initialBuffer)
         {
-            Debug.Assert((typeof(TChar) == typeof(byte)) || (typeof(TChar) == typeof(char)));
+            Debug.Assert((typeof(TChar) == typeof(Utf8Char)) || (typeof(TChar) == typeof(Utf16Char)));
 
             _arrayToReturnToPool = null;
             _chars = initialBuffer;
@@ -28,7 +28,7 @@ namespace System.Text
 
         public ValueStringBuilder(int initialCapacity)
         {
-            Debug.Assert((typeof(TChar) == typeof(byte)) || (typeof(TChar) == typeof(char)));
+            Debug.Assert((typeof(TChar) == typeof(Utf8Char)) || (typeof(TChar) == typeof(Utf16Char)));
 
             _arrayToReturnToPool = ArrayPool<TChar>.Shared.Rent(initialCapacity);
             _chars = _arrayToReturnToPool;
@@ -99,12 +99,12 @@ namespace System.Text
 
             if (typeof(TChar) == typeof(Utf8Char))
             {
-                result = Encoding.UTF8.GetString(MemoryMarshal.Cast<TChar, byte>(slice));
+                result = Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice));
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-                result = MemoryMarshal.Cast<TChar, char>(slice).ToString();
+                result = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice).ToString();
             }
 
             Dispose();

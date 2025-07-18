@@ -2136,8 +2136,8 @@ namespace System.Numerics
             ReadOnlySpan<TChar> slice = text.Slice(openBracket + 1, semicolon - openBracket - 1);
 
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(MemoryMarshal.Cast<TChar, byte>(slice), style, provider, out double real)
-                : !double.TryParse(MemoryMarshal.Cast<TChar, char>(slice), style, provider, out real))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double real)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out real))
             {
                 result = default;
                 return false;
@@ -2156,8 +2156,8 @@ namespace System.Numerics
             slice = text.Slice(semicolon + 1, closeBracket - semicolon - 1);
 
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(MemoryMarshal.Cast<TChar, byte>(slice), style, provider, out double imaginary)
-                : !double.TryParse(MemoryMarshal.Cast<TChar, char>(slice), style, provider, out imaginary))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double imaginary)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out imaginary))
             {
                 result = default;
                 return false;
@@ -2244,8 +2244,8 @@ namespace System.Numerics
             if (destination.Length >= 6)
             {
                 if ((typeof(TChar) == typeof(Utf8Char))
-                    ? m_real.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(1)), out int realChars, format, provider)
-                    : m_real.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(1)), out realChars, format, provider))
+                    ? m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(1)), out int realChars, format, provider)
+                    : m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(1)), out realChars, format, provider))
                 {
                     destination[0] = TChar.CastFrom('<');
                     destination = destination.Slice(1 + realChars); // + 1 for <
@@ -2254,8 +2254,8 @@ namespace System.Numerics
                     if (destination.Length >= 4)
                     {
                         if ((typeof(TChar) == typeof(Utf8Char))
-                            ? m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(2)), out int imaginaryChars, format, provider)
-                            : m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(2)), out imaginaryChars, format, provider))
+                            ? m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(2)), out int imaginaryChars, format, provider)
+                            : m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(2)), out imaginaryChars, format, provider))
                         {
                             // We have 1 more character for: >
                             if ((uint)(2 + imaginaryChars) < (uint)destination.Length)

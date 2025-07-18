@@ -776,12 +776,12 @@ namespace System
                 {
                     if (typeof(TChar) == typeof(Utf8Char))
                     {
-                        spanSuccess = value._sign.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination), out charsWritten, formatSpan, info);
+                        spanSuccess = value._sign.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination), out charsWritten, formatSpan, info);
                     }
                     else
                     {
                         Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-                        spanSuccess = value._sign.TryFormat(MemoryMarshal.Cast<TChar, char>(destination), out charsWritten, formatSpan, info);
+                        spanSuccess = value._sign.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination), out charsWritten, formatSpan, info);
                     }
                     return null;
                 }
@@ -873,7 +873,7 @@ namespace System
                         {
                             digits = digits,
                             base1E9Value = base1E9Value,
-                            sNegative = MemoryMarshal.Cast<TChar, char>(sNegative),
+                            sNegative = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(sNegative),
                         };
 
                         strResult = string.Create(strLength, state, static (span, state) =>
@@ -922,7 +922,16 @@ namespace System
                     {
                         charsWritten = 0;
                         spanSuccess = false;
-                        strResult = vlb.AsSpan().ToString();
+
+                        if (typeof(TChar) == typeof(Utf8Char))
+                        {
+                            strResult = Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(vlb.AsSpan()));
+                        }
+                        else
+                        {
+                            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+                            strResult = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(vlb.AsSpan()).ToString();
+                        }
                     }
 
                     vlb.Dispose();
@@ -1250,12 +1259,12 @@ namespace System
         {
             if (typeof(TChar) == typeof(Utf8Char))
             {
-                return uint.TryParse(MemoryMarshal.Cast<TChar, byte>(input), TParser.BlockNumberStyle, null, out result);
+                return uint.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(input), TParser.BlockNumberStyle, null, out result);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-                return uint.TryParse(MemoryMarshal.Cast<TChar, char>(input), TParser.BlockNumberStyle, null, out result);
+                return uint.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(input), TParser.BlockNumberStyle, null, out result);
             }
         }
 
@@ -1296,8 +1305,8 @@ namespace System
         public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destination)
         {
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? (Number.FromHexString(MemoryMarshal.Cast<TChar, byte>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
-                : (Convert.FromHexString(MemoryMarshal.Cast<TChar, char>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done))
+                ? (Number.FromHexString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
+                : (Convert.FromHexString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done))
             {
                 return false;
             }
