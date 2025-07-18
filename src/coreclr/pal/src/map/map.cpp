@@ -1506,8 +1506,11 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
 
         TRACE( "Trying the less efficient way.\n" );
 
-        CurrentPosition = lseek( UnixFD, 0, SEEK_CUR );
-        OrigSize = lseek( UnixFD, 0, SEEK_END );
+        off_t lseek_result;
+        while (-1 == (lseek_result lseek( UnixFD, 0, SEEK_CUR )) && errno == EINTR);
+        CurrentPosition = lseek_result;
+        while (-1 == (lseek_result lseek( UnixFD, 0, SEEK_END )) && errno == EINTR);
+        OrigSize = lseek_result;
         if ( OrigSize == -1 )
         {
             ERROR( "Unable to locate the EOF marker. Reason=%s\n",
@@ -1566,7 +1569,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         }
 
         /* restore the file pointer position */
-        lseek( UnixFD, CurrentPosition, SEEK_SET );
+        while (-1 == lseek( UnixFD, CurrentPosition, SEEK_SET ) && errno == EINTR);
     }
 
 done:

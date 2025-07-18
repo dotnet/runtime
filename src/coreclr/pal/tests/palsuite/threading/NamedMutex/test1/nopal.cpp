@@ -75,7 +75,9 @@ bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryTy
     while (-1 == (result = ftruncate(fd, getpagesize())) && errno == EINTR);
     if (result != 0)
         return false;
-    if (lseek(fd, 0, SEEK_SET) != 0)
+    off_t lseek_result;
+    while (-1 == (lseek_result = lseek(fd, 0, SEEK_SET)) && errno == EINTR);
+    if (lseek_result != 0)
         return false;
 
     // See SharedMemorySharedDataHeader for format

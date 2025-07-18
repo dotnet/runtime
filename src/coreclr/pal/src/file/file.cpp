@@ -1481,7 +1481,7 @@ InternalSetFilePointerForUnixFd(
 
     /* store the current position, in case the lseek moves the pointer
        before the beginning of the file */
-    old_offset = lseek(iUnixFd, 0, SEEK_CUR);
+    while (-1 == (old_offset = lseek(iUnixFd, 0, SEEK_CUR)) && errno == EINTR);
     if (old_offset == -1)
     {
         ERROR("lseek(fd,0,SEEK_CUR) failed errno:%d (%s)\n",
@@ -1525,9 +1525,11 @@ InternalSetFilePointerForUnixFd(
         }
     }
 
-    seek_res = (int64_t)lseek( iUnixFd,
-                               seek_offset,
-                               seek_whence );
+    while (-1 == (
+        seek_res = (int64_t)lseek( iUnixFd,
+                                   seek_offset,
+                                   seek_whence )
+        ) && errno == EINTR);
     if ( seek_res < 0 )
     {
         /* lseek() returns -1 on error, but also can seek to negative
@@ -1535,7 +1537,7 @@ InternalSetFilePointerForUnixFd(
            -1.  Win32 doesn't allow negative file offsets, so either case
            is an error. */
         ERROR("lseek failed errno:%d (%s)\n", errno, strerror(errno));
-        lseek(iUnixFd, old_offset, SEEK_SET);
+        while (-1 == lseek(iUnixFd, old_offset, SEEK_SET) && errno == EINTR);
         palError = ERROR_ACCESS_DENIED;
     }
     else

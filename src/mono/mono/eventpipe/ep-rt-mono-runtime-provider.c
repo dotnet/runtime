@@ -3386,7 +3386,9 @@ gc_heap_dump_mem_file_buffer_reset_func (void *context)
 	EP_ASSERT (file_buffer->fd != -1);
 
 	result &= gc_heap_dump_mem_file_buffer_flush (file_buffer);
-	result &= g_lseek (file_buffer->fd, 0, SEEK_SET) != -1;
+	off_t lseek_result;
+	while (-1 == (lseek_result = g_lseek (file_buffer->fd, 0, SEEK_SET)) && errno == EINTR);
+	result &= lseek_result != -1;
 
 	return result;
 }

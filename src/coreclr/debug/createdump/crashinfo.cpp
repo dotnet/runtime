@@ -814,8 +814,9 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         }
 
         uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
-        if (seekResult != pagemapOffset)
+        int64_t seekResult;
+        while (-1 == (seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET)) && errno == EINTR);
+        if ((uint64_t)seekResult != pagemapOffset)
         {
             int seekErrno = errno;
             TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));

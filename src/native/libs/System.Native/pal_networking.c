@@ -3629,8 +3629,16 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     char* buffer = NULL;
 
     // Save the original input file position and seek to the offset position
-    off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
-    if (inputFileOrigOffset == -1 || lseek(infd, offtOffset, SEEK_SET) == -1)
+    off_t inputFileOrigOffset;
+    while (-1 == (inputFileOrigOffset = lseek(infd, 0, SEEK_CUR)) && errno == EINTR);
+    bool condition = inputFileOrigOffset == -1;
+    if (!condition)
+    {
+        off_t lseek_result;
+        while (-1 == (lseek_result = lseek(infd, offtOffset, SEEK_SET)) && errno == EINTR);
+        if (lseek_result == -1) condition = true;
+    }
+    if (condition)
     {
         goto error;
     }
@@ -3680,7 +3688,9 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Restore the original input file position
-    if (lseek(infd, inputFileOrigOffset, SEEK_SET) == -1)
+    off_t lseek_result;
+    while (-1 == (lseek_result = lseek(infd, inputFileOrigOffset, SEEK_SET)) && errno == EINTR);
+    if (lseek_result == -1)
     {
         goto error;
     }

@@ -616,9 +616,16 @@ SIZE_T SharedMemoryHelpers::GetFileSize(SharedMemorySystemCallErrors *errors, LP
     _ASSERTE(filePath[0] != '\0');
     _ASSERTE(fileDescriptor != -1);
 
-    off_t endOffset = lseek(fileDescriptor, 0, SEEK_END);
-    if (endOffset == static_cast<off_t>(-1) ||
-        lseek(fileDescriptor, 0, SEEK_SET) == static_cast<off_t>(-1))
+    off_t endOffset;
+    while (-1 == (endOffset = lseek(fileDescriptor, 0, SEEK_END)) && errno == EINTR);
+    bool condition = endOffset == static_cast<off_t>(-1);
+    if (!condition)
+    {
+        off_t lseek_result;
+        while (-1 == (lseek_result = lseek(fileDescriptor, 0, SEEK_SET)) && errno == EINTR);
+        if (lseek_result == static_cast<off_t>(-1)) condition = true;
+    }
+    if (condition)
     {
         if (errors != nullptr)
         {
