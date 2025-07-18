@@ -4,16 +4,16 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed partial class ReproTests : LinkerTestBase
-	{
+    public sealed partial class ReproTests : LinkerTestBase
+    {
 
-		protected override string TestSuiteName => "Repro";
+        protected override string TestSuiteName => "Repro";
 
-		[Fact]
-		public Task Program ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task Program()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-	}
+    }
 }

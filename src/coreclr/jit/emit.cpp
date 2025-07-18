@@ -2865,7 +2865,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
             // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
             // notice a loop that encloses another loop, this information helps in removing the align field from
             // such loops.
-            // We need to only update emitAlignLast because we do not align intermingled or overlapping loops.
+            // We need to only update emitAlignLastGroup because we do not align intermingled or overlapping loops.
             emitAlignLastGroup->idaLoopHeadPredIG = emitCurIG;
         }
 #endif // FEATURE_LOOP_ALIGN
@@ -3783,6 +3783,31 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
     assert(!"Unsupported insFmt");
     return IS_NONE;
 }
+
+//------------------------------------------------------------------------
+// HasApxPpx: Check if the instruction has PPX feature support.
+// This helps differentiate between _idApxPpxContext and _idNoApxEvexXPromotion
+// since we use the same bit to indicate both features.
+//
+// Arguments:
+//    ins - instruction for which to check PPX support
+//
+// Return Value:
+//    true if the instruction has PPX support, false otherwise.
+//
+bool emitter::HasApxPpx(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_push:
+        case INS_pop:
+        case INS_push2:
+        case INS_pop2:
+            return true;
+        default:
+            return false;
+    }
+}
 #endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
@@ -4477,6 +4502,7 @@ void emitter::emitRecomputeIGoffsets()
         ig->igOffs = offs;
         assert(IsCodeAligned(ig->igOffs));
         offs += ig->igSize;
+        assert(offs >= ig->igOffs); // must not overflow
     }
 
     /* Set the total code size */
@@ -4498,7 +4524,7 @@ void emitter::emitRecomputeIGoffsets()
 //    cookie - the cookie stored with the handle
 //    flags  - a flag that the describes the handle
 //
-void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
+void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag) const
 {
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";

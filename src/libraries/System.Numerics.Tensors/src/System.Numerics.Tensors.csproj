@@ -7,8 +7,8 @@
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
     <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).netcore.cs'))</GenAPITargetPath>
-    <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
-    <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
+    <!-- SA1001: Commas should not be preceded by a whitespace; needed due to ifdef -->
+    <NoWarn>$(NoWarn);SA1001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +16,6 @@
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Single.cs" />
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Helpers.cs" />
     <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\System\Experimentals.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

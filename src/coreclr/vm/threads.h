@@ -837,12 +837,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    // returns if there is some extra work for the finalizer thread.
-    BOOL HaveExtraWorkForFinalizer();
-
-    // do the extra finalizer work.
-    void DoExtraWorkForFinalizer();
-
 #ifndef DACCESS_COMPILE
     DWORD CatchAtSafePoint()
     {
@@ -1395,9 +1389,8 @@ public:
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled()
-                 || CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1408,10 +1401,9 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
-        _ASSERTE(PreemptiveGCDisabled() ||
-                 CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+        _ASSERTE(PreemptiveGCDisabled()
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1570,10 +1562,6 @@ public:
 
         return PTR_ThreadExceptionState(PTR_HOST_MEMBER_TADDR(Thread, this, m_ExceptionState));
     }
-
-private:
-    // ClearContext are to be called only during shutdown
-    void ClearContext();
 
 public:
 

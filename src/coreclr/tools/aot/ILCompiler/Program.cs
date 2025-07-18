@@ -361,6 +361,7 @@ namespace ILCompiler
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
             var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
                 .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
+                .UseSymbolOrder(Get(_command.OrderFile))
                 .UseCompilationUnitPrefix(compilationUnitPrefix);
 
             string[] mibcFilePaths = Get(_command.MibcFilePaths);
@@ -529,6 +530,10 @@ namespace ILCompiler
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
+                substitutions.AppendFrom(scanResults.GetBodyAndFieldSubstitutions());
+
+                substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
+
                 ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager);
 
                 // Use a more precise IL provider that uses whole program analysis for dead branch elimination
@@ -599,10 +604,14 @@ namespace ILCompiler
             compilationRoots.Add(metadataManager);
             compilationRoots.Add(interopStubManager);
 
+            MethodBodyFoldingMode foldingMode = string.IsNullOrEmpty(Get(_command.MethodBodyFolding))
+                ? MethodBodyFoldingMode.None
+                : Enum.Parse<MethodBodyFoldingMode>(Get(_command.MethodBodyFolding), ignoreCase: true);
+
             builder
                 .UseInstructionSetSupport(instructionSetSupport)
                 .UseBackendOptions(Get(_command.CodegenOptions))
-                .UseMethodBodyFolding(enable: Get(_command.MethodBodyFolding))
+                .UseMethodBodyFolding(foldingMode)
                 .UseParallelism(parallelism)
                 .UseMetadataManager(metadataManager)
                 .UseInteropStubManager(interopStubManager)
@@ -800,12 +809,16 @@ namespace ILCompiler
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new ILCompilerRootCommand(args)
+            new ILCompilerRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

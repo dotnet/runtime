@@ -3564,7 +3564,6 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
         case INS_sve_subhnt:
         case INS_sve_rsubhnb:
         case INS_sve_rsubhnt:
-            unreached(); // TODO-SVE: Not yet supported.
             assert(insOptsScalableWide(opt));
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
@@ -5437,7 +5436,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5445,7 +5444,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FE_3B;
             }
@@ -5464,7 +5463,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5472,7 +5471,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FG_3B;
             }
@@ -7432,6 +7431,30 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
             return 0x00800000; // set the bit at location 23
 
         case EA_8BYTE:
+            return 0x00C00000; // set the bit at location 23 and 22
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 1/2/4 byte elemsize for an Arm64 Sve narrowing vector instruction
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeNarrowingSveElemsize(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_1BYTE:
+            return 0x00400000; // set the bit at location 22
+
+        case EA_2BYTE:
+            return 0x00800000; // set the bit at location 23
+
+        case EA_4BYTE:
             return 0x00C00000; // set the bit at location 23 and 22
 
         default:
@@ -10018,13 +10041,22 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
         case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
-        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
             code |= insEncodeReg_V<9, 5>(id->idReg2());                      // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg3());                    // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+            // Scalable, 3 regs, no predicates, narrowing
+        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                               // ddddd
+            code |= insEncodeReg_V<9, 5>(id->idReg2());                               // nnnnn
+            code |= insEncodeReg_V<20, 16>(id->idReg3());                             // mmmmm
+            code |= insEncodeNarrowingSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -12658,12 +12690,20 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
         case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
-        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
             assert(isVectorRegister(id->idReg2()));          // nnnnn
             assert(isVectorRegister(id->idReg3()));          // mmmmm
+            assert(isScalableVectorSize(id->idOpSize()));
+            break;
+
+        // Scalable, unpredicated, narrowing
+        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+            assert(insOptsScalableWide(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));      // ddddd
+            assert(isVectorRegister(id->idReg2()));      // nnnnn
+            assert(isVectorRegister(id->idReg3()));      // mmmmm
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
@@ -12959,7 +12999,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_FG_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 integer multiply-add long (indexed)
         case IF_SVE_FH_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
         case IF_SVE_FJ_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_S);
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isVectorRegister(id->idReg2()));    // nnnnn
             assert(isLowVectorRegister(id->idReg3())); // mmmm

@@ -780,7 +780,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
             srcCount = BuildReturn(tree);
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             BuildKills(tree, killMask);
             break;
 
@@ -789,7 +789,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR.GetIntRegSet());
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             BuildKills(tree, killMask);
             break;
 #endif // SWIFT_SUPPORT
@@ -919,21 +919,6 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             switch (tree->AsIntrinsic()->gtIntrinsicName)
             {
-                case NI_System_Math_Max:
-                case NI_System_Math_Min:
-                case NI_System_Math_MaxNumber:
-                case NI_System_Math_MinNumber:
-                {
-                    assert(varTypeIsFloating(tree->gtGetOp1()));
-                    assert(varTypeIsFloating(tree->gtGetOp2()));
-                    assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
-
-                    srcCount = BuildBinaryUses(tree->AsOp());
-                    assert(dstCount == 1);
-                    BuildDef(tree);
-                    break;
-                }
-
                 case NI_System_Math_Abs:
                 case NI_System_Math_Ceiling:
                 case NI_System_Math_Floor:
@@ -2179,9 +2164,18 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
+            case NI_Sve2_MultiplySubtractBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
                 isLowVectorOpNum = (opNum == 3);
                 break;
             case NI_Sve_MultiplyBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEven:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
                 isLowVectorOpNum = (opNum == 2);
                 break;
             default:
@@ -2198,7 +2192,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             }
             else
             {
-                assert(baseElementSize == 4);
+                assert(baseElementSize <= 4);
                 opCandidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
             }
         }
@@ -2302,8 +2296,8 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             assert(delayFreeOp != nullptr);
             break;
 
-        case NI_Sve2_AddCarryWideningLower:
-        case NI_Sve2_AddCarryWideningUpper:
+        case NI_Sve2_AddCarryWideningEven:
+        case NI_Sve2_AddCarryWideningOdd:
             // RMW operates on the third op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(3);
@@ -2415,6 +2409,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
     {
         case NI_AdvSimd_Arm64_VectorTableLookup:
         case NI_AdvSimd_VectorTableLookup:
+        case NI_Sve2_VectorTableLookup:
             consecutiveOp = intrin.op1;
             assert(consecutiveOp != nullptr);
             break;

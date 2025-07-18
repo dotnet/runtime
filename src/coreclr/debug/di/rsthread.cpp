@@ -115,8 +115,7 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
 #endif
 
     // Set AppDomain
-    VMPTR_AppDomain vmAppDomain = pProcess->GetDAC()->GetCurrentAppDomain(vmThread);
-    m_pAppDomain = pProcess->LookupOrCreateAppDomain(vmAppDomain);
+    m_pAppDomain = pProcess->GetAppDomain();
     _ASSERTE(m_pAppDomain != NULL);
 }
 
@@ -828,7 +827,7 @@ HRESULT CordbThread::GetCurrentException(ICorDebugValue ** ppExceptionObject)
 #if defined(_DEBUG)
                 // Since we know an exception is in progress on this thread, our assumption about the
                 // thread's current AppDomain should be correct
-                VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
+                VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain();
                 _ASSERTE(GetAppDomain()->GetADToken() == vmAppDomain);
 #endif // _DEBUG
 
@@ -1843,12 +1842,8 @@ HRESULT CordbThread::GetCurrentAppDomain(CordbAppDomain ** ppAppDomain)
 
         if (SUCCEEDED(hr))
         {
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
-
-            CordbAppDomain * pAppDomain = GetProcess()->LookupOrCreateAppDomain(vmAppDomain);
+            CordbAppDomain * pAppDomain = GetProcess()->GetAppDomain();
             _ASSERTE(pAppDomain != NULL);     // we should be aware of all AppDomains
-
             *ppAppDomain = pAppDomain;
         }
     }
@@ -1896,22 +1891,8 @@ HRESULT CordbThread::GetObject(ICorDebugValue ** ppThreadObject)
                 ThrowHR(E_FAIL);
             }
 
-            // We create the object relative to the current AppDomain of the thread
-            // Thread objects aren't really agile (eg. their m_Context field is domain-bound and
-            // fixed up manually during transitions).  This means that a thread object can only
-            // be used in the domain the thread was in when the object was created.
-            VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
-
-            CordbAppDomain * pThreadCurrentDomain = NULL;
-            pThreadCurrentDomain = GetProcess()->m_appDomains.GetBaseOrThrow(VmPtrToCookie(vmAppDomain));
+            CordbAppDomain * pThreadCurrentDomain = GetProcess()->GetAppDomain();
             _ASSERTE(pThreadCurrentDomain != NULL);     // we should be aware of all AppDomains
-
-            if (pThreadCurrentDomain == NULL)
-            {
-                // fall back to some domain to avoid crashes in retail -
-                // safe enough for getting the name of the thread etc.
-                pThreadCurrentDomain = GetProcess()->GetDefaultAppDomain();
-            }
 
             lockHolder.Release();
 
@@ -2442,7 +2423,7 @@ HRESULT CordbThread::GetCurrentCustomDebuggerNotification(ICorDebugValue ** ppNo
 #if defined(_DEBUG)
         // Since we know a notification has occurred on this thread, our assumption about the
         // thread's current AppDomain should be correct
-        VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
+        VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain();
 
         _ASSERTE(GetAppDomain()->GetADToken() == vmAppDomain);
 #endif // _DEBUG
@@ -3725,9 +3706,9 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     // to avoid getting incomplete information and corrupt the thread context
     DT_CONTEXT context;
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
-    context.ContextFlags = DT_CONTEXT_FULL;
+    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
 #endif
     BOOL succ = DbiGetThreadContext(m_handle, &context);
     _ASSERTE(succ);
@@ -3738,9 +3719,9 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
         LOG((LF_CORDB, LL_ERROR, "CUT::SFCHFS: DbiGetThreadContext error=0x%x\n", error));
     }
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
-    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL;
+    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
 #endif
     CORDbgCopyThreadContext(GetHijackCtx(), &context);
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Hijacking for sync. Original context is:\n", this));

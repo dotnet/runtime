@@ -134,28 +134,20 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }, SlhDsaTestHelpers.EncryptionPasswordType.Byte);
         }
 
+        public static IEnumerable<object[]> ArgumentValidation_Hash_WrongSizeInputs()
+        {
+            foreach (bool shouldDispose in new[] { true, false })
+            {
+                foreach (HashInfo hashInfo in HashInfo.AllHashInfos())
+                {
+                    yield return new object[] { shouldDispose, hashInfo };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(true, SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
-        public static void ArgumentValidation_Hash_WrongSize(bool shouldDispose, string oid, int hashLength)
+        [MemberData(nameof(ArgumentValidation_Hash_WrongSizeInputs))]
+        public static void ArgumentValidation_Hash_WrongSize(bool shouldDispose, HashInfo hashInfo)
         {
             using SlhDsa slhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f);
 
@@ -167,15 +159,15 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             byte[] signature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128f.SignatureSizeInBytes];
 
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength - 1], oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength + 1], oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength - 1], signature, oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength + 1], signature, oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize - 1], hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize + 1], hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize - 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize + 1], signature, hashInfo.Oid));
 
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength - 1], signature, oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength + 1], signature, oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength - 1], signature.AsSpan(), oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength + 1], signature.AsSpan(), oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize - 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize + 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize - 1], signature.AsSpan(), hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize + 1], signature.AsSpan(), hashInfo.Oid));
         }
 
         [Theory]
@@ -412,17 +404,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Equal(2, slhDsa.VerifyDataCoreCallCount);
         }
 
+        public static IEnumerable<object[]> AllHashesAndLengths()
+        {
+            foreach (HashInfo hashInfo in HashInfo.AllHashInfos())
+            {
+                yield return new object[] { hashInfo.Oid, hashInfo.OutputSize };
+            }
+        }
+
         [Theory]
-        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [MemberData(nameof(AllHashesAndLengths))]
         [InlineData("1.0", 0)]
         [InlineData("1.0", 1)]
         [InlineData("1.0", 2)]
@@ -462,16 +453,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [MemberData(nameof(AllHashesAndLengths))]
         [InlineData("1.0", 0)]
         [InlineData("1.0", 1)]
         [InlineData("1.0", 2)]
@@ -510,16 +492,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [MemberData(nameof(AllHashesAndLengths))]
         [InlineData("1.0", 0)]
         [InlineData("1.0", 1)]
         [InlineData("1.0", 2)]

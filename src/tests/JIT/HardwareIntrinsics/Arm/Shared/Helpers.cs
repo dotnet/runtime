@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Reflection;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -2141,9 +2142,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AbsoluteDifferenceWideningLowerAndAddOdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static short AbsoluteDifferenceWideningEven(sbyte[] op1, sbyte[] op2, int i) => (short) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static short AbsoluteDifferenceWideningEven(sbyte[] op1, sbyte[] op2, int i) => (short)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static short AbsoluteDifferenceWideningOdd(sbyte[] op1, sbyte[] op2, int i) => (short) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static short AbsoluteDifferenceWideningOdd(sbyte[] op1, sbyte[] op2, int i) => (short)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static short AddAcrossWidening(sbyte[] op1) => Reduce(AddWidening, op1);
 
@@ -2161,6 +2162,26 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (ushort)1 << (8 * sizeof(sbyte) - 1);
             }
             return (sbyte)(((ushort)op1 + roundConst) >> (8 * sizeof(sbyte)));
+        }
+
+        public static sbyte AddHighNarrowingEven(short[] op1, short[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (sbyte) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(sbyte)));
+            }
+
+            return 0;
+        }
+
+        public static sbyte AddHighNarrowingOdd(sbyte[] even, short[] op1, short[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (sbyte) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(sbyte)));
+            }
+
+            return even[i];
         }
 
         public static sbyte AddHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 + op2), round: false);
@@ -2281,9 +2302,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AbsoluteDifferenceWideningLowerAndAddOdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static int AbsoluteDifferenceWideningEven(short[] op1, short[] op2, int i) => (int) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static int AbsoluteDifferenceWideningEven(short[] op1, short[] op2, int i) => (int)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static int AbsoluteDifferenceWideningOdd(short[] op1, short[] op2, int i) => (int) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static int AbsoluteDifferenceWideningOdd(short[] op1, short[] op2, int i) => (int)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static int AddAcrossWidening(short[] op1) => Reduce(AddWidening, op1);
 
@@ -2374,6 +2395,26 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (uint)1 << (8 * sizeof(short) - 1);
             }
             return (short)(((uint)op1 + roundConst) >> (8 * sizeof(short)));
+        }
+
+        public static short AddHighNarrowingEven(int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(short)));
+            }
+
+            return 0;
+        }
+
+        public static short AddHighNarrowingOdd(short[] even, int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (short) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(short)));
+            }
+
+            return even[i];
         }
 
         public static short AddHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 + op2), round: false);
@@ -2478,9 +2519,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long AbsoluteDifferenceWideningLowerAndAddOdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static long AbsoluteDifferenceWideningEven(int[] op1, int[] op2, int i) => (long) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static long AbsoluteDifferenceWideningEven(int[] op1, int[] op2, int i) => (long)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static long AbsoluteDifferenceWideningOdd(int[] op1, int[] op2, int i) => (long) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static long AbsoluteDifferenceWideningOdd(int[] op1, int[] op2, int i) => (long)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static long AddAcrossWidening(int[] op1) => Reduce(AddWidening, op1);
 
@@ -2578,6 +2619,26 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (ulong)1 << (8 * sizeof(int) - 1);
             }
             return (int)(((ulong)op1 + roundConst) >> (8 * sizeof(int)));
+        }
+
+        public static int AddHighNarrowingEven(long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (int) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(int)));
+            }
+
+            return 0;
+        }
+
+        public static int AddHighNarrowingOdd(int[] even, long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (int) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(int)));
+            }
+
+            return even[i];
         }
 
         public static int AddHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 + op2), round: false);
@@ -2713,7 +2774,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AbsoluteDifferenceWideningLowerAndAddOdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static ushort AbsoluteDifferenceWideningEven(byte[] op1, byte[] op2, int i) =>  AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static ushort AbsoluteDifferenceWideningEven(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
         public static ushort AbsoluteDifferenceWideningOdd(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
@@ -2733,6 +2794,26 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (ushort)1 << (8 * sizeof(byte) - 1);
             }
             return (byte)(((ushort)op1 + roundConst) >> (8 * sizeof(byte)));
+        }
+
+        public static byte AddHighNarrowingEven(ushort[] op1, ushort[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (byte) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(byte)));
+            }
+
+            return 0;
+        }
+
+        public static byte AddHighNarrowingOdd(byte[] even, ushort[] op1, ushort[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (byte) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(byte)));
+            }
+
+            return even[i];
         }
 
         public static byte AddHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 + op2), round: false);
@@ -2837,9 +2918,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceWideningLowerAndAddOdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static uint AbsoluteDifferenceWideningEven(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static uint AbsoluteDifferenceWideningEven(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static uint AbsoluteDifferenceWideningOdd(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static uint AbsoluteDifferenceWideningOdd(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static uint AddAcrossWidening(ushort[] op1) => Reduce(AddWidening, op1);
 
@@ -2857,6 +2938,26 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (uint)1 << (8 * sizeof(ushort) - 1);
             }
             return (ushort)(((uint)op1 + roundConst) >> (8 * sizeof(ushort)));
+        }
+
+        public static ushort AddHighNarrowingEven(uint[] op1, uint[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ushort) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(ushort)));
+            }
+
+            return 0;
+        }
+
+        public static ushort AddHighNarrowingOdd(ushort[] even, uint[] op1, uint[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (ushort) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(ushort)));
+            }
+
+            return even[i];
         }
 
         public static ushort AddHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 + op2), round: false);
@@ -2961,9 +3062,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AbsoluteDifferenceWideningLowerAndAddOdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
-        public static ulong AbsoluteDifferenceWideningEven(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+        public static ulong AbsoluteDifferenceWideningEven(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
 
-        public static ulong AbsoluteDifferenceWideningOdd(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+        public static ulong AbsoluteDifferenceWideningOdd(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
 
         public static ulong AddAcrossWidening(uint[] op1) => Reduce(AddWidening, op1);
 
@@ -2979,6 +3080,26 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (ulong)1 << (8 * sizeof(uint) - 1);
             }
             return (uint)(((ulong)op1 + roundConst) >> (8 * sizeof(uint)));
+        }
+
+        public static uint AddHighNarrowingEven(ulong[] op1, ulong[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (uint) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(uint)));
+            }
+
+            return 0;
+        }
+
+        public static uint AddHighNarrowingOdd(uint[] even, ulong[] op1, ulong[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (uint) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(uint)));
+            }
+
+            return even[i];
         }
 
         public static uint AddHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 + op2), round: false);
@@ -3002,6 +3123,38 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint ExtractNarrowingUpper(uint[] op1, ulong[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
 
         public static uint FusedAddHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2) >> 1);
+
+        public static ulong FusedAddHalving(ulong op1, ulong op2)
+        {
+            ulong sum = op1 + op2;
+            bool carry = sum < op1;
+            return (sum >> 1) + (carry ? 1UL << 63 : 0);
+        }
+        public static long FusedAddHalving(long op1, long op2)
+        {
+            long sum = op1 + op2;
+            bool carry = sum < op1;
+            return (sum >> 1) + (carry ? 1L << 63 : 0);
+        }
+
+        public static long FusedSubtractHalving(long op1, long op2)
+        {
+            ulong uop1 = (ulong)op1;
+            ulong uop2 = (ulong)op2;
+
+            ulong udiff = uop1 - uop2;
+            long sdiff = unchecked((long)udiff);
+
+            return sdiff >> 1;
+        }
+
+        public static ulong FusedSubtractHalving(ulong op1, ulong op2)
+        {
+            ulong diff = op1 - op2;
+            bool overflow = op1 < op2;
+            return (diff >> 1) + (overflow ? 1UL << 63 : 0);
+        }
+
 
         public static uint FusedAddRoundedHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2 + 1) >> 1);
 
@@ -5987,6 +6140,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte AddPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static sbyte AddPairwiseSve(sbyte[] op1, sbyte[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (sbyte)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (sbyte)(op2[i - 1] + op2[i]);
+            }
+        }
+
         public static sbyte Max(sbyte op1, sbyte op2) => Math.Max(op1, op2);
 
         public static sbyte MaxPairwise(sbyte[] op1, int i) => Pairwise(Max, op1, i);
@@ -6037,6 +6202,17 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte AddPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static byte AddPairwiseSve(byte[] op1, byte[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (byte)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (byte)(op2[i - 1] + op2[i]);
+            }
+        }
         public static byte Max(byte op1, byte op2) => Math.Max(op1, op2);
 
         public static byte MaxPairwise(byte[] op1, int i) => Pairwise(Max, op1, i);
@@ -6086,6 +6262,20 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short AddPairwise(short[] op1, int i) => Pairwise(Add, op1, i);
 
         public static short AddPairwise(short[] op1, short[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static short AddPairwiseSve(short[] op1, short[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (short)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static short AddPairwiseWidening(short[] op1, sbyte[] op2, int i) => (short)(op1[i] + (short)op2[i * 2] + (short)op2[i * 2 + 1]);
 
         public static short Max(short op1, short op2) => Math.Max(op1, op2);
 
@@ -6137,6 +6327,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AddPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static ushort AddPairwiseSve(ushort[] op1, ushort[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ushort)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (ushort)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static ushort AddPairwiseWidening(ushort[] op1, byte[] op2, int i) => (ushort)(op1[i] + (ushort)op2[i * 2] + (ushort)op2[i * 2 + 1]);
+
         public static ushort Max(ushort op1, ushort op2) => Math.Max(op1, op2);
 
         public static ushort MaxPairwise(ushort[] op1, int i) => Pairwise(Max, op1, i);
@@ -6186,6 +6390,20 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int AddPairwise(int[] op1, int i) => Pairwise(Add, op1, i);
 
         public static int AddPairwise(int[] op1, int[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static int AddPairwiseSve(int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+            return (int)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+            return (int)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static int AddPairwiseWidening(int[] op1, short[] op2, int i) => op1[i] + (int)op2[i * 2] + (int)op2[i * 2 + 1];
 
         public static int Max(int op1, int op2) => Math.Max(op1, op2);
 
@@ -6237,6 +6455,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AddPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static uint AddPairwiseSve(uint[] op1, uint[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (uint)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (uint)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static uint AddPairwiseWidening(uint[] op1, ushort[] op2, int i) => op1[i] + (uint)op2[i * 2] + (uint)op2[i * 2 + 1];
+
         public static uint Max(uint op1, uint op2) => Math.Max(op1, op2);
 
         public static uint MaxPairwise(uint[] op1, int i) => Pairwise(Max, op1, i);
@@ -6286,6 +6518,20 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AddPairwise(long[] op1, int i) => Pairwise(Add, op1, i);
 
         public static long AddPairwise(long[] op1, long[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static long AddPairwiseSve(long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (long)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (long)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static long AddPairwiseWidening(long[] op1, int[] op2, int i) => op1[i] + (int)op2[i * 2] + (int)op2[i * 2 + 1];
 
         public static long Max(long op1, long op2) => Math.Max(op1, op2);
 
@@ -6337,6 +6583,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AddPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static ulong AddPairwiseSve(ulong[] op1, ulong[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ulong)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (ulong)(op2[i - 1] + op2[i]);
+            }
+        }
+
+        public static ulong AddPairwiseWidening(ulong[] op1, uint[] op2, int i) => op1[i] + (ulong)op2[i * 2] + (ulong)op2[i * 2 + 1];
+
         public static ulong Max(ulong op1, ulong op2) => Math.Max(op1, op2);
 
         public static ulong MaxPairwise(ulong[] op1, int i) => Pairwise(Max, op1, i);
@@ -6386,6 +6646,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float AddPairwise(float[] op1, int i) => Pairwise(Add, op1, i);
 
         public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static float AddPairwiseSve(float[] op1, float[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (float)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (float)(op2[i - 1] + op2[i]);
+            }
+        }
 
         public static float[] AddRotateComplex(float[] op1, float[] op2, byte rot)
         {
@@ -6458,6 +6730,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
 
         public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static double AddPairwiseSve(double[] op1, double[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (double)(op1[i] + op1[i + 1]);
+            }
+            else
+            {
+                return (double)(op2[i - 1] + op2[i]);
+            }
+        }
 
         public static double[] AddRotateComplex(double[] op1, double[] op2, byte rot)
         {
@@ -6896,6 +7180,22 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        private static ulong PolynomialMult(uint op1, uint op2)
+        {
+            ulong result = default(ulong);
+            ulong extendedOp2 = (ulong)op2;
+
+            for (int i = 0; i < 8 * sizeof(uint); i++)
+            {
+                if ((op1 & ((uint)1 << i)) != 0)
+                {
+                    result = (ulong)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
         private static poly128_t PolynomialMult(ulong op1, ulong op2)
         {
             poly128_t result = default(poly128_t);
@@ -6979,6 +7279,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong PolynomialMultiplyWideningHi64(ulong op1, ulong op2) => PolynomialMult(op1, op2).hi;
 
         public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
+
+        public static ulong PolynomialMultiplyWidening(uint op1, uint op2) => PolynomialMult(op1, op2);
 
         public static sbyte Concat(sbyte[] op1, sbyte[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
@@ -10662,9 +10964,173 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (int i = 0; i < even.Length; i += 2)
             {
-                even[i+1] = left[i+1] ^ right[i];
+                even[i + 1] = left[i + 1] ^ right[i];
             }
             return even;
+        }
+
+        public static T[] SubtractBorrowWideningEven<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
+        public static T[] SubtractBorrowWideningOdd<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i+1];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
+        public static sbyte SubtractHighNarrowingEven(short[] left, short[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (sbyte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return 0;
+        }
+
+        public static short SubtractHighNarrowingEven(int[] left, int[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short) ((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return 0;
+        }
+
+        public static int SubtractHighNarrowingEven(long[] left, long[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (int) ((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return 0;
+        }
+
+        public static byte SubtractHighNarrowingEven(ushort[] left, ushort[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (byte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return 0;
+        }
+
+        public static ushort SubtractHighNarrowingEven(uint[] left, uint[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ushort)((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return 0;
+        }
+
+        public static uint SubtractHighNarrowingEven(ulong[] left, ulong[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (uint)((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return 0;
+        }
+
+        public static sbyte SubtractHighNarrowingOdd(sbyte[] even, short[] left, short[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (sbyte) ((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return even[i];
+        }
+
+        public static short SubtractHighNarrowingOdd(short[] even, int[] left, int[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (short) ((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return even[i];
+        }
+
+        public static int SubtractHighNarrowingOdd(int[] even, long[] left, long[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (int) ((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return even[i];
+        }
+
+        public static byte SubtractHighNarrowingOdd(byte[] even, ushort[] left, ushort[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (byte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return even[i];
+        }
+
+        public static ushort SubtractHighNarrowingOdd(ushort[] even, uint[] left, uint[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (ushort)((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return even[i];
+        }
+
+        public static uint SubtractHighNarrowingOdd(uint[] even, ulong[] left, ulong[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (uint)((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return even[i];
+        }
+
+        public static (T sum, T carryOut) AddWithCarry<T>(T a, T b, T carryIn)
+        where T : unmanaged, IBinaryInteger<T>
+        {
+            T sum = a + b + carryIn;
+            T one = T.One;
+            T zero = T.Zero;
+            T carryOut = (sum < a || (sum == a && carryIn == one)) ? one : zero;
+            return (sum, carryOut);
         }
 
         public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>
@@ -10737,5 +11203,310 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint SveShiftLogicalRoundedSaturate(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static ulong SveShiftLogicalRoundedSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static int NarrowIdx(int i)
+        {
+            return (i - i % 2) / 2;
+        }
+
+        public static T Even<T>(T val, int idx) where T : IBinaryInteger<T>, new()
+        {
+            if (idx % 2 == 0)
+            {
+                return val;
+            }
+            else
+            {
+                return new T();
+            }
+        }
+
+        public static T Odd<T>(T even, T odd, int idx) where T : IBinaryInteger<T>
+        {
+            if (idx % 2 != 0)
+            {
+                return odd;
+            }
+            else
+            {
+                return even;
+            }
+        }
+
+        public static U ArithmeticShift<T, U>(T value, int count, bool rounding = false, bool saturate = false)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            dynamic v = value;
+            dynamic shifted;
+            if (count > 0)
+            {
+                if (rounding)
+                {
+                    dynamic bias = 1L << (count - 1);
+                    shifted = v >= 0 ? (v + bias) >> count
+                                     : (v - bias) >> count;
+                }
+                else
+                {
+                    shifted = v >> count;
+                }
+            }
+            else if (count < 0)
+            {
+                shifted = v << -count;
+            }
+            else
+            {
+                shifted = v;
+            }
+
+            if (saturate)
+            {
+                dynamic min = typeof(U).GetField("MinValue", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                dynamic max = typeof(U).GetField("MaxValue", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                if (shifted < min) shifted = min;
+                if (shifted > max) shifted = max;
+            }
+
+            return (U)shifted;
+        }
+
+        public static U LogicalShift<T, U>(T value, int count, bool rounding = false, bool saturate = false)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            ulong v = Convert.ToUInt64(value);
+            dynamic shifted;
+            if (count > 0)
+            {
+                if (rounding)
+                {
+                    ulong bias = 1UL << (count - 1);
+                    shifted = v >= 0 ? (v + bias) >>> count
+                                     : (v - bias) >>> count;
+                }
+                else
+                {
+                    shifted = v >>> count;
+                }
+            }
+            else if (count < 0)
+            {
+                shifted = v << -count;
+            }
+            else
+            {
+                shifted = v;
+            }
+
+            if (saturate)
+            {
+                dynamic max = typeof(U).GetField("MaxValue", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                if (shifted > max) shifted = max;
+            }
+
+            return (U)shifted;
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateEven<T, U>(T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(ArithmeticShift<T, U>(op1, op2, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateOdd<T, U>(U op0, T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(op0, ArithmeticShift<T, U>(op1, op2, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateUnsignedEven<T, U>(T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return ShiftRightArithmeticNarrowingSaturateEven<T, U>(op1, op2, i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateUnsignedOdd<T, U>(U op0, T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return ShiftRightArithmeticNarrowingSaturateOdd<T, U>(op0, op1, op2, i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(ArithmeticShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, ArithmeticShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return ShiftRightArithmeticRoundedNarrowingSaturateEven<T, U>(val, shift, i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return ShiftRightArithmeticRoundedNarrowingSaturateOdd<T, U>(even, val, shift, i);
+        }
+
+        public static U ShiftRightLogicalNarrowingEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift), i);
+        }
+
+        public static U ShiftRightLogicalNarrowingOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift, rounding: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift, rounding: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingSaturateEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingSaturateOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static W MultiplyAddWidening<W, N>(W op1, N op2, N op3)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            dynamic a = op2;
+            dynamic b = op3;
+            W product = (W)((W)a * (W)b);
+            W r = (W)(op1 + product);
+            return r;
+        }
+
+        public static W MultiplySubtractWidening<W, N>(W op1, N op2, N op3)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            dynamic a = op2;
+            dynamic b = op3;
+            W product = (W)((W)a * (W)b);
+            W r = (W)(op1 - product);
+            return r;
+        }
+
+        public static N AddRoundedHighNarrowing<W, N>(W op1, W op2)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            int halfsize = default(N).GetByteCount() * 8;
+            dynamic a = op1;
+            dynamic b = op2;
+            ulong sum = (ulong)a + (ulong)b;
+            ulong bias = 1UL << (halfsize - 1);
+            dynamic result = sum + bias;
+            return (N)(result >> halfsize);
+        }
+
+        public static N AddRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>, new()
+        {
+            return Even<N>(AddRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N AddRoundedHighNarrowingOdd<W, N>(N even, W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            return Odd<N>(even, AddRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N SubtractRoundedHighNarrowing<W, N>(W op1, W op2)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            int halfsize = default(N).GetByteCount() * 8;
+            dynamic a = op1;
+            dynamic b = op2;
+            ulong sum = (ulong)a - (ulong)b;
+            ulong bias = 1UL << (halfsize - 1);
+            dynamic result = sum + bias;
+            return (N)(result >> halfsize);
+        }
+
+        public static N SubtractRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>, new()
+        {
+            return Even<N>(SubtractRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N SubtractRoundedHighNarrowingOdd<W, N>(N even, W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            return Odd<N>(even, SubtractRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static long FusedAddRoundedHalving(long op1, long op2) => (long)((ulong)(op1 + op2 + 1) >> 1);
+
+        public static ulong FusedAddRoundedHalving(ulong op1, ulong op2)
+        {
+            bool overflow = false;
+            ulong sum = 0;
+            try
+            {
+                sum = checked(op1 + op2 + 1);
+            }
+            catch (OverflowException)
+            {
+                overflow = true;
+                sum = op1 + op2 + 1;
+            }
+
+            sum >>>= 1;
+
+            if (overflow)
+            {
+                sum |= (ulong)(1UL << 63);
+            }
+
+            return sum;
+        }
     }
 }
