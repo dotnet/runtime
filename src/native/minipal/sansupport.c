@@ -6,6 +6,10 @@
 // Use a typedef here as __declspec + pointer return type causes a parse error in MSVC
 typedef const char* charptr_t;
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options(void) {
     // symbolize=1 to get symbolized stack traces
@@ -20,3 +24,7 @@ charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options(void) {
 
 void SANITIZER_CALLBACK_CALLCONV __asan_on_error(void) {
 }
+
+#ifdef __cplusplus
+}
+#endif
