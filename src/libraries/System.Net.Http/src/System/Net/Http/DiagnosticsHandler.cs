@@ -21,14 +21,16 @@ namespace System.Net.Http
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
         private readonly HeaderDescriptor[]? _propagatorFields;
+        private readonly IWebProxy? _proxy;
 
-        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
+        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, IWebProxy? proxy, bool autoRedirect = false)
         {
             Debug.Assert(GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation);
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;
             _propagator = propagator;
+            _proxy = proxy;
 
             // Prepare HeaderDescriptors for fields we need to clear when following redirects
             if (autoRedirect && _propagator.Fields is IReadOnlyCollection<string> fields && fields.Count > 0)
@@ -125,7 +127,7 @@ namespace System.Net.Http
 
                     if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
                     {
-                        activity.SetTag("server.address", requestUri.Host);
+                        activity.SetTag("server.address", DiagnosticsHelper.GetServerAddress(request, _proxy));
                         activity.SetTag("server.port", requestUri.Port);
                         activity.SetTag("url.full", UriRedactionHelper.GetRedactedUriString(requestUri));
                     }
