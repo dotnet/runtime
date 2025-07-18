@@ -117,8 +117,8 @@ namespace System.Collections.Frozen.Tests
                 new[]
                 {
                     "AsPointer", "As", "AsRef", "Add", "AddByteOffset", "Copy", "CopyBlock", "CopyBlockUnaligned", "InitBlock", "InitBlockUnaligned", "Read", "Write",
-                    "ReadUnaligned", "WriteUnaligned", "AreSame", "IsAddressGreaterThan", "IsAddressLessThan", "ByteOffset", "NullRef",  "IsNullRef", "SkipInit",
-                    "Subtract", "SubtractByteOffset", "Unbox",
+                    "ReadUnaligned", "WriteUnaligned", "AreSame", "IsAddressGreaterThan", "IsAddressGreaterThanOrEqualTo", "IsAddressLessThan", "IsAddressLessThanOrEqualTo",
+                    "ByteOffset", "NullRef",  "IsNullRef", "SkipInit", "Subtract", "SubtractByteOffset", "Unbox",
                 },
 
                 // from https://raw.githubusercontent.com/dotnet/roslyn/0456b4adc6939e366e7c509318b3ac6a85cda496/src/Compilers/CSharp/Test/Emit2/CodeGen/CodeGenLengthBasedSwitchTests.cs
@@ -153,7 +153,7 @@ namespace System.Collections.Frozen.Tests
                 Enumerable.Range(0, 100).Select(i => $"{i:D2}ABCDEFGH\U0001F600").ToArray(), // left justified substring non-ascii
                 Enumerable.Range(0, 100).Select(i => $"ABCDEFGH\U0001F600{i:D2}").ToArray(), // right justified substring non-ascii
                 Enumerable.Range(0, 20).Select(i => i.ToString("D2")).Select(s => (char)(s[0] + 128) + "" + (char)(s[1] + 128)).ToArray(), // left-justified non-ascii
-                
+
                 Enumerable.Range(0, 10).Select(i => $"{i}ABCDefgh").ToArray(), // left justified single char ascii, mixed casing
                 Enumerable.Range(0, 10).Select(i => $"ABCDefgh{i}").ToArray(), // right justified single char ascii, mixed casing
                 Enumerable.Range(0, 100).Select(i => $"{i:D2}ABCDefgh").ToArray(), // left justified substring ascii, mixed casing
