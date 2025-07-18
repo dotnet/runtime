@@ -84,6 +84,8 @@ class AsyncTransformation
                                           GenTreeCall*                   call,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
+    void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
+
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
 
     BasicBlock* CreateSuspension(
@@ -95,34 +97,34 @@ class AsyncTransformation
     void         FillInGCPointersOnSuspension(const ContinuationLayout& layout, BasicBlock* suspendBB);
     void         FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
+                                                GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,
                                                 AsyncLiveness&            life,
                                                 BasicBlock*               suspendBB,
                                                 BasicBlock**              remainder);
-
-    BasicBlock* CreateResumption(BasicBlock*               block,
-                                 BasicBlock*               remainder,
-                                 GenTreeCall*              call,
-                                 const CallDefinitionInfo& callDefInfo,
-                                 unsigned                  stateNum,
-                                 const ContinuationLayout& layout);
-    void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
-                                            const jitstd::vector<LiveLocalInfo>& liveLocals,
-                                            BasicBlock*                          resumeBB);
-    void        RestoreFromGCPointersOnResumption(unsigned                  resumeObjectArrLclNum,
-                                                  const ContinuationLayout& layout,
-                                                  BasicBlock*               resumeBB);
-    BasicBlock* RethrowExceptionOnResumption(BasicBlock*               block,
-                                             BasicBlock*               remainder,
+    BasicBlock*  CreateResumption(BasicBlock*               block,
+                                  BasicBlock*               remainder,
+                                  GenTreeCall*              call,
+                                  const CallDefinitionInfo& callDefInfo,
+                                  unsigned                  stateNum,
+                                  const ContinuationLayout& layout);
+    void         SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call);
+    void         RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
+                                             const jitstd::vector<LiveLocalInfo>& liveLocals,
+                                             BasicBlock*                          resumeBB);
+    void         RestoreFromGCPointersOnResumption(unsigned                  resumeObjectArrLclNum,
+                                                   const ContinuationLayout& layout,
+                                                   BasicBlock*               resumeBB);
+    BasicBlock*  RethrowExceptionOnResumption(BasicBlock*               block,
+                                              unsigned                  resumeObjectArrLclNum,
+                                              const ContinuationLayout& layout,
+                                              BasicBlock*               resumeBB);
+    void         CopyReturnValueOnResumption(GenTreeCall*              call,
+                                             const CallDefinitionInfo& callDefInfo,
+                                             unsigned                  resumeByteArrLclNum,
                                              unsigned                  resumeObjectArrLclNum,
                                              const ContinuationLayout& layout,
-                                             BasicBlock*               resumeBB);
-    void        CopyReturnValueOnResumption(GenTreeCall*              call,
-                                            const CallDefinitionInfo& callDefInfo,
-                                            unsigned                  resumeByteArrLclNum,
-                                            unsigned                  resumeObjectArrLclNum,
-                                            const ContinuationLayout& layout,
-                                            BasicBlock*               storeResultBB);
+                                             BasicBlock*               storeResultBB);
 
     GenTreeIndir*    LoadFromOffset(GenTree*     base,
                                     unsigned     offset,

@@ -4359,8 +4359,11 @@ enum class ContinuationContextHandling
 // Additional async call info.
 struct AsyncCallInfo
 {
-    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
-    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+    ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
+    bool                        SaveAndRestoreSynchronizationContextField = false;
+    bool                        HasSuspensionIndicatorDef                 = false;
+    unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4633,6 +4636,7 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
+    AsyncSuspendedIndicator,
 };
 
 #ifdef DEBUG
@@ -4847,6 +4851,7 @@ public:
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
+    void     RemoveUnsafe(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
@@ -5020,7 +5025,7 @@ struct GenTreeCall final : public GenTree
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
         // Used for async calls
-        const AsyncCallInfo* asyncInfo;
+        AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5078,7 +5083,7 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync(const AsyncCallInfo* info)
+    void SetIsAsync(AsyncCallInfo* info)
     {
         assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;
