@@ -676,44 +676,43 @@ namespace System.Text.Json.Serialization.Converters
                 return enumFields;
             }
 
-            var indices = new int[enumFields.Length];
+            var indices = new long[enumFields.Length];
             for (int i = 0; i < enumFields.Length; i++)
             {
-                indices[i] = i;
+                // we want values with more bits set to come first so negate the pop count
+                int popCount = -PopCount(enumFields[i].Key);
+                // pack into a long with the pop count in the high bits and the index in the low bits
+                // this allows us to sort by pop count and then by index in case of ties
+                indices[i] = ((long)popCount << 32) | (uint)i;
             }
 
-            Array.Sort(indices, (i, j) => GetComparisonKey(i).CompareTo(GetComparisonKey(j)));
+            Array.Sort(indices);
 
             var sortedFields = new EnumFieldInfo[enumFields.Length];
             for (int i = 0; i < indices.Length; i++)
             {
-                sortedFields[i] = enumFields[indices[i]];
+                // extract the index from the long, which is the low bits
+                // the high bits are the pop count, which we don't need anymore
+                int index = (int)(uint)indices[i];
+                sortedFields[i] = enumFields[index];
             }
 
             return sortedFields;
+        }
 
-            (int PopCount, int Index) GetComparisonKey(int i)
-            {
-                // Sort by descending pop count of the enum value.
-                // Since Array.Sort isn't a stable algorithm
-                // append the current index to the comparison key.
-                return (-PopCount(enumFields[i].Key), i);
-            }
-
-            static int PopCount(ulong value)
-            {
+        private static int PopCount(ulong value)
+        {
 #if NET
-                return (int)ulong.PopCount(value);
+            return (int)ulong.PopCount(value);
 #else
-                int count = 0;
-                while (value != 0)
-                {
-                    value &= value - 1;
-                    count++;
-                }
-                return count;
-#endif
+            int count = 0;
+            while (value != 0)
+            {
+                value &= value - 1;
+                count++;
             }
+            return count;
+#endif
         }
 
         private enum EnumFieldNameKind
