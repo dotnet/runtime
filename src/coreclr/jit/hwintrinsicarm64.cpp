@@ -306,6 +306,10 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
             intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOdd ||
             intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd ||
             intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract ||
+            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven ||
+            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd ||
+            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven ||
+            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd ||
             intrinsic == NI_Sve2_MultiplySubtractBySelectedScalar)
         {
             indexedElementBaseType = simdBaseType;
@@ -386,6 +390,10 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
                 // Index is on the half-width vector, hence double the maximum index.
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) * 2 - 1;
                 break;

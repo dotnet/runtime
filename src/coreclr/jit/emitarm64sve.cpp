@@ -5534,7 +5534,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5542,7 +5542,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // ii
                 fmt = IF_SVE_FJ_3B;
             }
