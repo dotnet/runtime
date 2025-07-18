@@ -751,8 +751,6 @@ typedef struct _LIST_ENTRY {
 #define RUNTIME_FUNCTION_INDIRECT 0x1
 #endif
 
-#include "retaddr.h"
-
 #define DIRECTORY_SEPARATOR_CHAR_A '/'
 #define DIRECTORY_SEPARATOR_CHAR_W W('/')
 #define DIRECTORY_SEPARATOR_STR_A "/"

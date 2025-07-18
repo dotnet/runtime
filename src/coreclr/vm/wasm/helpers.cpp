@@ -405,7 +405,7 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_,
     return nullptr;
 }
 
-EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength)
+EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength)
 {
     PORTABILITY_ASSERT("RhNewString is not implemented on wasm");
     return nullptr;
@@ -481,4 +481,9 @@ extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLeng
 void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet)
 {
     PORTABILITY_ASSERT("InvokeCalliStub is not implemented on wasm");
+}
+
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+{
+    PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 }

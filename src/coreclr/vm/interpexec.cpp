@@ -12,7 +12,8 @@
 #include <limits>
 
 #ifdef TARGET_WASM
-void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet, PCODE target);
+void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
 #else
 #include "callstubgenerator.h"
 
@@ -1912,12 +1913,8 @@ CALL_INTERP_METHOD:
                         }
                         if (targetIp == NULL)
                         {
-#ifndef TARGET_WASM
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
-#else
-                            PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
-#endif // !TARGET_WASM
                             break;
                         }
                     }
