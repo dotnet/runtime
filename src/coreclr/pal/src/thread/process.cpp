@@ -1492,38 +1492,36 @@ NotifyRuntimeUsingPipes()
     PAL_GetTransportPipeName(continuePipeName, gPID, applicationGroupId, RuntimeContinuePipeName);
     if (access(continuePipeName, F_OK) == -1)
     {
-        TRACE("access(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingPipes: access(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
         goto exit;
     }
 
     PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
     if (access(startupPipeName, F_OK) == -1)
     {
-        TRACE("access(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingPipes: access(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
         goto exit;
     }
 
     result = RuntimeEventsOverPipes_Failed;
 
-    TRACE("opening continue pipe\n");
+    TRACE("NotifyRuntimeUsingPipes: opening continue '%s' startup '%s' pipes\n", continuePipeName, startupPipeName);
 
     continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
     if (continuePipeFd == -1)
     {
-        TRACE("open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
         goto exit;
     }
-
-    TRACE("opening startup pipe\n");
 
     startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
     if (startupPipeFd == -1)
     {
-        TRACE("open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
         goto exit;
     }
 
-    TRACE("sending started event\n");
+    TRACE("NotifyRuntimeUsingPipes: sending started event\n");
 
     {
         unsigned char event = (unsigned char)RuntimeEvent_Started;
@@ -1543,12 +1541,12 @@ NotifyRuntimeUsingPipes()
 
         if (offset != bytesToWrite)
         {
-            TRACE("write(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            TRACE("NotifyRuntimeUsingPipes: write(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
             goto exit;
         }
     }
 
-    TRACE("waiting on continue event\n");
+    TRACE("NotifyRuntimeUsingPipes: waiting on continue event\n");
 
     {
         unsigned char event = (unsigned char)RuntimeEvent_Unknown;
@@ -1569,11 +1567,11 @@ NotifyRuntimeUsingPipes()
 
         if (offset == bytesToRead && event == (unsigned char)RuntimeEvent_Continue)
         {
-            TRACE("received continue event\n");
+            TRACE("NotifyRuntimeUsingPipes: received continue event\n");
         }
         else
         {
-            TRACE("received invalid event\n");
+            TRACE("NotifyRuntimeUsingPipes: received invalid event\n");
             goto exit;
         }
     }
@@ -1619,13 +1617,13 @@ NotifyRuntimeUsingSemaphores()
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
-    TRACE("PAL_NotifyRuntimeStarted opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
+    TRACE("NotifyRuntimeUsingSemaphores: opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
 
     // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
     startupSem = sem_open(startupSemName, 0);
     if (startupSem == SEM_FAILED)
     {
-        TRACE("sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingSemaphores: sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
         goto exit;
     }
 
@@ -1648,7 +1646,7 @@ NotifyRuntimeUsingSemaphores()
     {
         if (EINTR == errno)
         {
-            TRACE("sem_wait() failed with EINTR; re-waiting");
+            TRACE("NotifyRuntimeUsingSemaphores: sem_wait() failed with EINTR; re-waiting");
             continue;
         }
         ASSERT("sem_wait(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1692,13 +1690,13 @@ PAL_NotifyRuntimeStarted()
     switch (result)
     {
     case RuntimeEventsOverPipes_Disabled:
-        // Pipe handshake disabled, try semaphores.
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake disabled, try semaphores\n");
         return NotifyRuntimeUsingSemaphores();
     case RuntimeEventsOverPipes_Failed:
-        // Pipe handshake failed.
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake failed\n");
         return FALSE;
     case RuntimeEventsOverPipes_Succeeded:
-        // Pipe handshake succeeded.
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake succeeded\n");
         return TRUE;
     default:
         // Unexpected result.
