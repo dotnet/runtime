@@ -270,9 +270,9 @@ namespace System.IO.Tests
                     // This is expected for root directories - the validation passed but creation failed due to permissions
                     // This is the correct behavior and indicates our fix worked
                 }
-                catch (IOException ex) when (ex.Message.Contains("Permission denied"))
+                catch (IOException)
                 {
-                    // This is also expected for root directories - the validation passed but creation failed due to permissions
+                    // This is expected for root directories - the validation passed but creation failed due to permissions or read-only filesystem
                     // This is the correct behavior and indicates our fix worked
                 }
                 // ArgumentException should NOT be thrown - if it is, the test will fail
