@@ -192,10 +192,11 @@ namespace System
         }
 
         private static ulong s_crashingThreadId;
-        private static CrashInfo s_crashInfo;
-        private static int s_crashInfoPresent;
+        private static IntPtr s_triageBufferAddress;
+        private static int s_triageBufferSize;
+        private static volatile int s_crashInfoPresent;
 
-        internal static CrashInfo SerializeCrashInfo(RhFailFastReason reason, string? message, Exception? exception)
+        internal static void SerializeCrashInfo(RhFailFastReason reason, string? message, Exception? exception)
         {
             int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, 1, 0);
             if (previousState == 0)
@@ -208,10 +209,11 @@ namespace System
                     crashInfo.WriteException(exception);
                 }
                 crashInfo.Close();
-                s_crashInfo = crashInfo;
-            }
+                s_triageBufferAddress = crashInfo.TriageBufferAddress;
+                s_triageBufferSize = crashInfo.TriageBufferSize;
 
-            return s_crashInfo;
+                s_crashInfoPresent = 1;
+            }
         }
 
         [DoesNotReturn]
@@ -284,10 +286,7 @@ namespace System
 #endif
                 } // !minimalFailFast
 
-                CrashInfo crashInfo = SerializeCrashInfo(reason, message, minimalFailFast ? null : exception);
-
-                triageBufferAddress = crashInfo.TriageBufferAddress;
-                triageBufferSize = crashInfo.TriageBufferSize;
+                SerializeCrashInfo(reason, message, minimalFailFast ? null : exception);
 
                 // Try to map the failure into a HRESULT that makes sense
                 errorCode = exception != null ? exception.HResult : reason switch
