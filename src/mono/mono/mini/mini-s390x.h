@@ -84,7 +84,8 @@ struct SeqPointInfo {
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 		1
 #define MONO_ARCH_FLOAT32_SUPPORTED			1
 #define MONO_ARCH_SIMD_INTRINSICS                      mono_hwcap_s390x_has_vec
-
+#define MONO_ARCH_NEED_SIMD_BANK			1
+#define MONO_ARCH_USE_SHARED_FP_SIMD_BANK		1
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2
 #define S390_LAST_ARG_REG 		s390_r6
@@ -150,7 +151,7 @@ struct SeqPointInfo {
 /*-----------------------------------------------*/
 
 #define MONO_MAX_XREGS			31
-#define MONO_ARCH_CALLEE_XREGS		0x0
+#define MONO_ARCH_CALLEE_XREGS 0xFFFEFFFE
 #define MONO_ARCH_CALLEE_SAVED_XREGS	0x0
 
 // Does the ABI have a volatile non-parameter register, so tailcall
@@ -259,6 +260,7 @@ s390_patch_addr (guchar *code, guint64 target)
 } while (0)
 
 /*========================= End of Function ========================*/
+
 #define S390_SET(loc, dr, v)					\
 	do {							\
 		guint64 val = (guint64) v;			\
@@ -307,7 +309,6 @@ s390_patch_addr (guchar *code, guint64 target)
                }                                                       \
                s390_##op (loc, r, 0, s390_r13, 0);                     \
        }
-
 
 #define S390_SET_MASK(loc, dr, v)				\
 	do {							\
