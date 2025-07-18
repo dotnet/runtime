@@ -222,7 +222,6 @@ namespace System
                     Thread.Sleep(1);
                 }
             }
-
         }
 
         [DoesNotReturn]
