@@ -148,6 +148,7 @@ internal readonly struct Loader_1 : ILoader
             ? _target.ReadUtf16String(appDomain.FriendlyName)
             : string.Empty;
     }
+
     TargetPointer ILoader.GetModule(ModuleHandle handle)
     {
         return handle.Address;
