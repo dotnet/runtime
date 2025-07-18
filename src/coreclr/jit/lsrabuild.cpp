@@ -1,4 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -782,7 +783,27 @@ regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
     regMaskTP killMask = RBM_NONE;
 #ifdef TARGET_XARCH
     assert(mulNode->OperIsMul());
-    if (!mulNode->OperIs(GT_MUL) || (((mulNode->gtFlags & GTF_UNSIGNED) != 0) && mulNode->gtOverflowEx()))
+    if (!mulNode->OperIs(GT_MUL))
+    {
+        // If we can use the mulx instruction, we don't need to kill RAX
+        if (mulNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            // If on operand is contained, we define fixed RDX register for use, so we don't need to kill register.
+            if (mulNode->gtGetOp1()->isContained() || mulNode->gtGetOp2()->isContained())
+            {
+                killMask = RBM_NONE;
+            }
+            else
+            {
+                killMask = RBM_RDX;
+            }
+        }
+        else
+        {
+            killMask = RBM_RAX | RBM_RDX;
+        }
+    }
+    else if (mulNode->IsUnsigned() && mulNode->gtOverflowEx())
     {
         killMask = RBM_RAX | RBM_RDX;
     }
@@ -983,14 +1004,28 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 // getKillSetForReturn: Determine the liveness kill set for a return node.
 //
 // Arguments:
-//    NONE (this kill set is independent of the details of the specific return.)
+//    returnNode - the return node
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskTP LinearScan::getKillSetForReturn()
+regMaskTP LinearScan::getKillSetForReturn(GenTree* returnNode)
 {
-    return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE)
-                                                : RBM_NONE;
+    regMaskTP killSet = RBM_NONE;
+
+    if (compiler->compIsProfilerHookNeeded())
+    {
+        killSet = compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE);
+
+#if defined(TARGET_ARM)
+        // For arm methods with no return value R0 is also trashed.
+        if (returnNode->TypeIs(TYP_VOID))
+        {
+            killSet |= RBM_R0;
+        }
+#endif
+    }
+
+    return killSet;
 }
 
 //------------------------------------------------------------------------
@@ -1071,7 +1106,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         // more details.
         case GT_RETURN:
         case GT_SWIFT_ERROR_RET:
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             break;
 
         case GT_PROF_HOOK:
@@ -2689,16 +2724,14 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
-                        calleeSaveCount = CNT_CALLEE_SAVED_MASK;
+                        calleeSaveCount = CNT_CALLEE_ENREG_MASK;
                     }
-#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
-                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                        calleeSaveCount = CNT_CALLEE_ENREG_FLOAT;
                     }
 
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
@@ -2738,7 +2771,7 @@ void LinearScan::buildIntervals()
     // If the last block has successors, create a RefTypeBB to record
     // what's live
 
-    if (prevBlock->NumSucc(compiler) > 0)
+    if (prevBlock->NumSucc() > 0)
     {
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }
@@ -3062,6 +3095,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
 #ifndef TARGET_ARM
     setTgtPref(interval, tgtPrefUse);
     setTgtPref(interval, tgtPrefUse2);
+    setTgtPref(interval, tgtPrefUse3);
 #endif // !TARGET_ARM
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -4131,7 +4165,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             BuildUse(op1, RBM_NONE, i);
         }
 #if defined(FEATURE_SIMD) && defined(TARGET_X86)
-        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
         {
             if (varTypeIsSIMD(storeLoc) && op1->IsCall())
             {

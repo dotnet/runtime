@@ -35,22 +35,14 @@ namespace System.Diagnostics
             int size = count / (sizeof(ulong) * 8) + 1;
             BitMapper bitMapper = new BitMapper((uint)size <= 100 ? stackalloc ulong[size] : new ulong[size]);
 
-#if NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
-            if (tags2 is IReadOnlyCollection<KeyValuePair<string, object?>> tagsCol)
-#else
             if (tags2 is ICollection<KeyValuePair<string, object?>> tagsCol)
-#endif
             {
                 if (tagsCol.Count != count)
                 {
                     return false;
                 }
 
-#if NET10_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 10+
-                if (tagsCol is IReadOnlyList<KeyValuePair<string, object?>> secondList)
-#else
                 if (tagsCol is IList<KeyValuePair<string, object?>> secondList)
-#endif
                 {
                     for (int i = 0; i < count; i++)
                     {

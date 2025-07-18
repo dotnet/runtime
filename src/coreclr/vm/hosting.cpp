@@ -315,7 +315,7 @@ CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags) {
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // Note: we'll return NULL if the create fails. That's a true NULL, not a poisoned NULL.
     return ret;
@@ -350,8 +350,6 @@ DEBUG_NOINLINE void ClrEnterCriticalSection(CRITSEC_COOKIE cookie) {
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-
     Crst *pCrst = CookieToCrst(cookie);
     _ASSERTE(pCrst);
 
@@ -366,8 +364,6 @@ DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
     Crst *pCrst = CookieToCrst(cookie);
     _ASSERTE(pCrst);

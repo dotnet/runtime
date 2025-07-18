@@ -331,13 +331,13 @@ void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
 
-#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+#define CREATETHREAD_IF_NULL_FAILFAST(thread__, msg__)                  \
 {                                                                       \
-    HRESULT __ctinffhr;                                                 \
-    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
-    if (__thread == NULL)                                               \
+    HRESULT ctinffhr__;                                                 \
+    thread__ = SetupThreadNoThrow(&ctinffhr__);                         \
+    if (thread__ == NULL)                                               \
     {                                                                   \
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(ctinffhr__, msg__);    \
         UNREACHABLE();                                                  \
     }                                                                   \
 }
@@ -437,7 +437,7 @@ __declspec(selectany)
 #else
 extern
 #endif
-thread_local RuntimeThreadLocals t_runtime_thread_locals;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
@@ -469,7 +469,6 @@ class Thread
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
-    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
 
@@ -537,7 +536,7 @@ public:
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
 #endif // FEATURE_HIJACK
 
-        TS_SSToExitApcCall        = 0x00000100,    // Enable SS and resume the thread to exit an APC Call and keep the thread in suspend state
+        // unused                 = 0x00000100,
         TS_Background             = 0x00000200,    // Thread is a background thread
         TS_Unstarted              = 0x00000400,    // Thread has never been started
         TS_Dead                   = 0x00000800,    // Thread is dead
@@ -554,7 +553,7 @@ public:
         TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
-        TS_SSToExitApcCallDone    = 0x00040000,    // The thread exited an APC Call and it is already resumed and paused on SS
+        // unused                 = 0x00040000,
 
         TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
@@ -837,12 +836,6 @@ public:
         m_fHasDeadThreadBeenConsideredForGCTrigger = true;
     }
 #endif // !DACCESS_COMPILE
-
-    // returns if there is some extra work for the finalizer thread.
-    BOOL HaveExtraWorkForFinalizer();
-
-    // do the extra finalizer work.
-    void DoExtraWorkForFinalizer();
 
 #ifndef DACCESS_COMPILE
     DWORD CatchAtSafePoint()
@@ -1396,9 +1389,8 @@ public:
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled()
-                 || CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1409,10 +1401,9 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
-        _ASSERTE(PreemptiveGCDisabled() ||
-                 CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+        _ASSERTE(PreemptiveGCDisabled()
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1571,10 +1562,6 @@ public:
 
         return PTR_ThreadExceptionState(PTR_HOST_MEMBER_TADDR(Thread, this, m_ExceptionState));
     }
-
-private:
-    // ClearContext are to be called only during shutdown
-    void ClearContext();
 
 public:
 
@@ -2486,29 +2473,8 @@ public:
 public:
     static BOOL UniqueStack(void* startLoc = 0);
 
-    BOOL IsAddressInStack (PTR_VOID addr) const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(m_CacheStackBase != NULL);
-        _ASSERTE(m_CacheStackLimit != NULL);
-        _ASSERTE(m_CacheStackLimit < m_CacheStackBase);
-        return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
-    }
-
-    static BOOL IsAddressInCurrentStack (PTR_VOID addr)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        Thread* currentThread = GetThreadNULLOk();
-        if (currentThread == NULL)
-        {
-            return FALSE;
-        }
-
-        PTR_VOID sp = dac_cast<PTR_VOID>(GetCurrentSP());
-        _ASSERTE(currentThread->m_CacheStackBase != NULL);
-        _ASSERTE(sp < currentThread->m_CacheStackBase);
-        return sp < addr && addr <= currentThread->m_CacheStackBase;
-    }
+    BOOL IsAddressInStack (PTR_VOID addr) const;
+    static BOOL IsAddressInCurrentStack (PTR_VOID addr);
 
     // DetermineIfGuardPagePresent returns TRUE if the thread's stack contains a proper guard page. This function
     // makes a physical check of the stack, rather than relying on whether or not the CLR is currently processing a
@@ -2558,9 +2524,7 @@ private:
     //-------------------------------------------------------------
     // Waiting & Synchronization
     //-------------------------------------------------------------
-friend class DebuggerController;
-protected:
-    void MarkForSuspensionAndWait(ULONG bit);
+
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
     void    WaitSuspendEvents();
@@ -3475,29 +3439,29 @@ public:
 
 #ifdef _DEBUG
 private:
-    DWORD m_dwUnbreakableLockCount;
+    DWORD m_dwLockCount;
 public:
-    void IncUnbreakableLockCount()
+    void IncLockCount()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (m_dwUnbreakableLockCount != (DWORD)-1);
-        m_dwUnbreakableLockCount ++;
+        _ASSERTE (m_dwLockCount != (DWORD)-1);
+        m_dwLockCount ++;
     }
-    void DecUnbreakableLockCount()
+    void DecLockCount()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (m_dwUnbreakableLockCount > 0);
-        m_dwUnbreakableLockCount --;
+        _ASSERTE (m_dwLockCount > 0);
+        m_dwLockCount --;
     }
-    BOOL HasUnbreakableLock() const
+    BOOL HasLock() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwUnbreakableLockCount != 0;
+        return m_dwLockCount != 0;
     }
-    DWORD GetUnbreakableLockCount() const
+    DWORD GetLockCount() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwUnbreakableLockCount;
+        return m_dwLockCount;
     }
 #endif // _DEBUG
 
@@ -3964,10 +3928,8 @@ private:
     friend struct ::cdac_data<Thread>;
 
 #ifdef FEATURE_INTERPRETER
-private:
-    InterpThreadContext *m_pInterpThreadContext;
-
 public:
+    InterpThreadContext *m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
 #endif // FEATURE_INTERPRETER
 };
@@ -4568,7 +4530,6 @@ protected:
     FORCEINLINE_NONDEBUG
     void PopInternal()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -4751,7 +4712,6 @@ public:
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4764,7 +4724,6 @@ public:
     void Leave()
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4775,7 +4734,6 @@ public:
     DEBUG_NOINLINE
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4787,7 +4745,6 @@ public:
     DEBUG_NOINLINE
     void Enter(Thread * pThreadNullOk, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4800,7 +4757,6 @@ public:
     DEBUG_NOINLINE
     void Leave()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4811,7 +4767,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         // The thread must be non-null to enter MODE_COOP
@@ -4821,7 +4776,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4834,7 +4788,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoop()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4848,7 +4801,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop_HackNoThread(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4857,7 +4809,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4869,7 +4820,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopHackNoThread()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>();  // Thread might be NULL
     }
 };
@@ -4880,7 +4830,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop(pThread, true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4889,7 +4838,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4901,7 +4849,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4912,7 +4859,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4921,7 +4867,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4933,7 +4878,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreemp()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4944,7 +4888,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp<TRUE>(    // Thread must be non-NULL
@@ -4954,7 +4897,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4967,7 +4909,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreempThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4992,7 +4933,6 @@ class GCAssert
     DEBUG_NOINLINE void BeginGCAssert();
     DEBUG_NOINLINE void EndGCAssert()
     {
-        SCAN_SCOPE_END;
     }
 };
 
@@ -5005,7 +4945,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupGCAssert()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
         // This is currently disabled; we currently have a lot of code which doesn't
         // back out the GC mode properly (instead relying on the EX_TRY macros.)
@@ -5048,7 +4987,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
  public:
     DEBUG_NOINLINE GCForbid(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -5076,7 +5014,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE GCForbid(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -5099,8 +5036,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE ~GCForbid()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             GetThread()->EndForbidGC();
@@ -5130,7 +5065,6 @@ class GCNoTrigger
  public:
     DEBUG_NOINLINE GCNoTrigger(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_GC_NOTRIGGER;
@@ -5162,7 +5096,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE GCNoTrigger(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
         m_fConditional = TRUE;
@@ -5188,8 +5121,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE ~GCNoTrigger()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             Thread * pThread = GetThreadNULLOk();
@@ -5272,7 +5203,6 @@ class FCallGCCanTrigger
 public:
     static DEBUG_NOINLINE void Enter()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
@@ -5283,14 +5213,12 @@ public:
 
     static DEBUG_NOINLINE void Enter(Thread* pThread)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         pThread->EndForbidGC();
     }
 
     static DEBUG_NOINLINE void Leave(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
         {
@@ -5300,13 +5228,11 @@ public:
 
     static DEBUG_NOINLINE void Leave(Thread* pThread, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         pThread->BeginForbidGC(szFile, lineNum);
     }
 };
 
-#define TRIGGERSGC_NOSTOMP()  do {                                           \
-                            ANNOTATION_GC_TRIGGERS;                         \
+#define TRIGGERSGC_NOSTOMP()  do {                                          \
                             Thread* curThread = GetThread();                \
                             if(curThread->GCNoTrigger())                    \
                             {                                               \
@@ -5324,8 +5250,8 @@ public:
 
 #define BEGINFORBIDGC()
 #define ENDFORBIDGC()
-#define TRIGGERSGC_NOSTOMP() ANNOTATION_GC_TRIGGERS
-#define TRIGGERSGC() ANNOTATION_GC_TRIGGERS
+#define TRIGGERSGC_NOSTOMP()
+#define TRIGGERSGC()
 
 #endif // ENABLE_CONTRACTS_IMPL
 

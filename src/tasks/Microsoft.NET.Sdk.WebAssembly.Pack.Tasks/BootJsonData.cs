@@ -28,6 +28,9 @@ public class BootJsonData
     public string applicationEnvironment { get; set; }
 
     /// <summary>
+    /// For .NET < 10, this contains <see cref="ResourcesData"/>.
+    /// For .NET >= 10, this contains <see cref="AssetsData"/>.
+    /// ---
     /// Gets the set of resources needed to boot the application. This includes the transitive
     /// closure of .NET assemblies (including the entrypoint assembly), the dotnet.wasm file,
     /// and any PDBs to be loaded.
@@ -36,7 +39,8 @@ public class BootJsonData
     /// and values are SHA-256 hashes formatted in prefixed base-64 style (e.g., 'sha256-abcdefg...')
     /// as used for subresource integrity checking.
     /// </summary>
-    public ResourcesData resources { get; set; } = new ResourcesData();
+    [DataMember(EmitDefaultValue = false)]
+    public object resources { get; set; } = new ResourcesData();
 
     /// <summary>
     /// Gets a value that determines whether to enable caching of the <see cref="resources"/>
@@ -215,7 +219,6 @@ public class ResourcesData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
-    /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary libraryInitializers { get; set; }
@@ -247,6 +250,133 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
+}
+
+public class AssetsData
+{
+    /// <summary>
+    /// Gets a hash of all resources
+    /// </summary>
+    public string hash { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleDiagnostics { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleRuntime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<WasmAsset> wasmNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<SymbolsAsset> wasmSymbols { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> icu { get; set; }
+
+    /// <summary>
+    /// "assembly" (.dll) resources needed to start MonoVM
+    /// </summary>
+    public List<GeneralAsset> coreAssembly { get; set; } = new();
+
+    /// <summary>
+    /// "assembly" (.dll) resources
+    /// </summary>
+    public List<GeneralAsset> assembly { get; set; } = new();
+
+    /// <summary>
+    /// "debug" (.pdb) resources needed to start MonoVM
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> corePdb { get; set; }
+
+    /// <summary>
+    /// "debug" (.pdb) resources
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> pdb { get; set; }
+
+    /// <summary>
+    /// localization (.satellite resx) resources
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, List<GeneralAsset>> satelliteResources { get; set; }
+
+    /// <summary>
+    /// Assembly (.dll) resources that are loaded lazily during runtime
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> lazyAssembly { get; set; }
+
+    /// <summary>
+    /// JavaScript module initializers that Blazor will be in charge of loading.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> libraryInitializers { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> modulesAfterConfigLoaded { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> modulesAfterRuntimeReady { get; set; }
+
+    /// <summary>
+    /// Extensions created by users customizing the initialization process. The format of the file(s)
+    /// is up to the user.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> extensions { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<VfsAsset> coreVfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<VfsAsset> vfs { get; set; }
+}
+
+[DataContract]
+public class JsAsset
+{
+    public string name { get; set; }
+    public string moduleExports { get; set; }
+}
+
+[DataContract]
+public class SymbolsAsset
+{
+    public string name { get; set; }
+}
+
+[DataContract]
+public class WasmAsset
+{
+    public string name { get; set; }
+    public string integrity { get; set; }
+    public string resolvedUrl { get; set; }
+}
+
+[DataContract]
+public class GeneralAsset
+{
+    public string virtualPath { get; set; }
+    public string name { get; set; }
+    public string integrity { get; set; }
+    public string resolvedUrl { get; set; }
+}
+
+[DataContract]
+public class VfsAsset
+{
+    public string virtualPath { get; set; }
+    public string name { get; set; }
+    public string integrity { get; set; }
+    public string resolvedUrl { get; set; }
 }
 
 public enum GlobalizationMode : int

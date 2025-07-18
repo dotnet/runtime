@@ -585,14 +585,12 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
 
         case BBJ_EHFINALLYRET:
         {
-            BBehfDesc* currEhfDesc = blk->GetEhfTargets();
-            BBehfDesc* newEhfDesc  = new (this, CMK_BasicBlock) BBehfDesc;
-            newEhfDesc->bbeCount   = currEhfDesc->bbeCount;
-            newEhfDesc->bbeSuccs   = new (this, CMK_FlowEdge) FlowEdge*[newEhfDesc->bbeCount];
+            BBJumpTable* currEhfDesc = blk->GetEhfTargets();
+            FlowEdge**   newSuccs    = new (this, CMK_FlowEdge) FlowEdge*[currEhfDesc->GetSuccCount()];
 
-            for (unsigned i = 0; i < newEhfDesc->bbeCount; i++)
+            for (unsigned i = 0; i < currEhfDesc->GetSuccCount(); i++)
             {
-                FlowEdge* const   inspiringEdge = currEhfDesc->bbeSuccs[i];
+                FlowEdge* const   inspiringEdge = currEhfDesc->GetSucc(i);
                 BasicBlock* const ehfTarget     = inspiringEdge->getDestinationBlock();
                 FlowEdge*         newEdge;
 
@@ -606,9 +604,10 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
                     newEdge = fgAddRefPred(ehfTarget, newBlk, inspiringEdge);
                 }
 
-                newEhfDesc->bbeSuccs[i] = newEdge;
+                newSuccs[i] = newEdge;
             }
 
+            BBJumpTable* newEhfDesc = new (this, CMK_BasicBlock) BBJumpTable(newSuccs, currEhfDesc->GetSuccCount());
             newBlk->SetEhf(newEhfDesc);
             break;
         }
@@ -616,12 +615,12 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
         case BBJ_SWITCH:
         {
             BBswtDesc* currSwtDesc = blk->GetSwitchTargets();
-            BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(currSwtDesc);
-            newSwtDesc->bbsDstTab  = new (this, CMK_FlowEdge) FlowEdge*[newSwtDesc->bbsCount];
+            BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(this, currSwtDesc);
+            FlowEdge** succPtr     = newSwtDesc->GetSuccs();
 
-            for (unsigned i = 0; i < newSwtDesc->bbsCount; i++)
+            for (unsigned i = 0; i < newSwtDesc->GetCaseCount(); i++)
             {
-                FlowEdge* const   inspiringEdge = currSwtDesc->bbsDstTab[i];
+                FlowEdge* const   inspiringEdge = currSwtDesc->GetCase(i);
                 BasicBlock* const switchTarget  = inspiringEdge->getDestinationBlock();
                 FlowEdge*         newEdge;
 
@@ -637,13 +636,16 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
 
                 // Transfer likelihood... instead of doing this gradually
                 // for dup'd edges, we set it once, when we add the last dup.
+                // Also, add the new edge to the unique successor table.
                 //
                 if (newEdge->getDupCount() == inspiringEdge->getDupCount())
                 {
                     newEdge->setLikelihood(inspiringEdge->getLikelihood());
+                    *succPtr = newEdge;
+                    succPtr++;
                 }
 
-                newSwtDesc->bbsDstTab[i] = newEdge;
+                newSwtDesc->GetCases()[i] = newEdge;
             }
 
             newBlk->SetSwitch(newSwtDesc);
@@ -1681,7 +1683,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         }
 
         // Redirect exit edge from previous iteration to new entry.
-        fgRedirectTrueEdge(prevTestBlock, target);
+        fgRedirectEdge(prevTestBlock->TrueEdgeRef(), target);
         fgRemoveRefPred(prevTestBlock->GetFalseEdge());
         prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, prevTestBlock->GetTrueEdge());
 
@@ -2092,7 +2094,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     preheader->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
 
     // Redirect newPreheader from header to stayInLoopSucc
-    fgRedirectTargetEdge(newPreheader, stayInLoopSucc);
+    fgRedirectEdge(newPreheader->TargetEdgeRef(), stayInLoopSucc);
 
     // Duplicate all the code now
     for (int i = 0; i < duplicatedBlocks.Height(); i++)
@@ -2123,16 +2125,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         newPreheader->setBBProfileWeight(newCondToNewPreheader->getLikelyWeight());
         exit->decreaseBBProfileWeight(newCondToNewExit->getLikelyWeight());
 
-        // Update the weight for the duplicated blocks. Normally, this reduces
-        // the weight of condBlock, except in odd cases of stress modes with
-        // inconsistent weights.
+        // Update the duplicated blocks' weights
 
         for (int i = 0; i < (duplicatedBlocks.Height() - 1); i++)
         {
             BasicBlock* block = duplicatedBlocks.Bottom(i);
-            JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", block->bbNum, weightCond,
-                    weightStayInLoopSucc);
-            block->setBBProfileWeight(weightStayInLoopSucc);
+            block->setBBProfileWeight(block->computeIncomingWeight());
         }
 
         condBlock->setBBProfileWeight(condBlock->computeIncomingWeight());
@@ -2188,20 +2186,38 @@ PhaseStatus Compiler::optInvertLoops()
     }
 #endif // OPT_CONFIG
 
-    if (compCodeOpt() != SMALL_CODE)
+    if (compCodeOpt() == SMALL_CODE)
     {
-        fgDfsBlocksAndRemove();
-        optFindLoops();
-        for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
-        {
-            optTryInvertWhileLoop(loop);
-        }
-
-        fgInvalidateDfsTree();
-        return PhaseStatus::MODIFIED_EVERYTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    return PhaseStatus::MODIFIED_NOTHING;
+    bool madeChanges = false;
+    for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
+    {
+        madeChanges |= optTryInvertWhileLoop(loop);
+    }
+
+    if (Metrics.LoopsInverted > 0)
+    {
+        assert(madeChanges);
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        // In normal cases no further canonicalization will be required as we
+        // try to ensure loops stay canonicalized during inversion. However,
+        // duplicating the condition outside an inner loop can introduce new
+        // exits in the parent loop, so we may rarely need to recanonicalize
+        // exit blocks.
+        if (optCanonicalizeLoops())
+        {
+            fgInvalidateDfsTree();
+            m_dfsTree = fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-----------------------------------------------------------------------------
@@ -2543,6 +2559,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     //
     unsigned preheaderEHRegion    = EHblkDsc::NO_ENCLOSING_INDEX;
     bool     inSameRegionAsHeader = true;
+    bool     headerIsTryEntry     = bbIsTryBeg(header);
     if (header->hasTryIndex())
     {
         preheaderEHRegion = header->getTryIndex();
@@ -2580,6 +2597,14 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     if (inSameRegionAsHeader)
     {
         fgExtendEHRegionBefore(header);
+
+        // If the header was a try region entry, it no longer is.
+        //
+        if (headerIsTryEntry)
+        {
+            assert(!bbIsTryBeg(header));
+            header->RemoveFlags(BBF_DONT_REMOVE);
+        }
     }
     else
     {

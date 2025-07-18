@@ -3,6 +3,12 @@
 
 #include <exception>
 #include <platformdefines.h>
+#ifdef _WIN32
+#pragma warning(push)
+#pragma warning(disable:4265 4577)
+#include <thread>
+#pragma warning(pop)
+#endif // _WIN32
 
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE ThrowException()
 {
@@ -33,3 +39,22 @@ extern "C" DLL_EXPORT void InvokeCallbackCatchCallbackAndRethrow(PFNACTION1 call
     }
 }
 
+#ifdef _WIN32
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE InvokeCallbackAndCatchNative(PFNACTION1 callback)
+{
+    try
+    {
+        callback();
+    }
+    catch (std::exception& ex)
+    {
+        printf("Caught exception %s in native code\n", ex.what());
+    }
+}
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE InvokeCallbackOnNewThread(PFNACTION1 callback)
+{
+    std::thread t1(InvokeCallbackAndCatchNative, callback);
+    t1.join();
+}
+#endif // _WIN32

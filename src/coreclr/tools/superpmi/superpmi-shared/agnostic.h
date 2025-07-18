@@ -203,6 +203,8 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG continuationDataFldHnd;
     DWORDLONG continuationGCDataFldHnd;
     DWORD continuationsNeedMethodHandle;
+    DWORDLONG captureExecutionContextMethHnd;
+    DWORDLONG restoreExecutionContextMethHnd;
 };
 
 struct Agnostic_GetOSRInfo
@@ -266,6 +268,12 @@ struct Agnostic_CORINFO_CONST_LOOKUP
 {
     DWORD     accessType;
     DWORDLONG handle; // actually a union of two pointer sized things
+};
+
+struct Agnostic_GetHelperFtn
+{
+    Agnostic_CORINFO_CONST_LOOKUP helperLookup;
+    DWORDLONG                     helperMethod;
 };
 
 struct Agnostic_CORINFO_LOOKUP_KIND
@@ -706,6 +714,14 @@ struct CanGetVarArgsHandleValue
 };
 
 struct GetCookieForPInvokeCalliSigValue
+{
+    DWORD     cbSig;
+    DWORD     pSig_Index;
+    DWORDLONG scope;
+    DWORD     token;
+};
+
+struct GetCookieForInterpreterCalliSigValue
 {
     DWORD     cbSig;
     DWORD     pSig_Index;

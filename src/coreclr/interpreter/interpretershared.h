@@ -17,8 +17,12 @@
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
-#define INTERP_METHOD_HANDLE_TAG 4 // Tag of a MethodDesc in the interp method dataItems
-#define INTERP_INDIRECT_HELPER_TAG 1 // When a helper ftn's address is indirect we tag it with this tag bit
+struct InterpHelperData {
+    uint32_t addressDataItemIndex : 29;
+    uint32_t accessType : 3;
+};
+
+struct CallStubHeader;
 
 struct InterpMethod
 {
@@ -28,6 +32,8 @@ struct InterpMethod
     CORINFO_METHOD_HANDLE methodHnd;
     int32_t allocaSize;
     void** pDataItems;
+    // This stub is used for calling the interpreted method from JITted/AOTed code
+    CallStubHeader *pCallStub;
     bool initLocals;
 
     InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals)
@@ -39,6 +45,7 @@ struct InterpMethod
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
+        pCallStub = NULL;
     }
 
     bool CheckIntegrity()
@@ -48,6 +55,19 @@ struct InterpMethod
 #else
         return true;
 #endif
+    }
+};
+
+struct InterpByteCodeStart
+{
+#ifndef DPTR
+    InterpMethod* const Method; // Pointer to the InterpMethod structure
+#else
+    DPTR(InterpMethod) const Method; // Pointer to the InterpMethod structure
+#endif
+    const int32_t* GetByteCodes() const
+    {
+        return reinterpret_cast<const int32_t*>(this + 1);
     }
 };
 
@@ -65,6 +85,7 @@ private:
         bool        m_classNameContainsInstantiation;
         bool        m_methodNameContainsInstantiation;
         bool        m_containsSignature;
+        bool        m_containsAssemblyName;
     };
 
     const char* m_listFromConfig = nullptr;
@@ -101,5 +122,39 @@ public:
 const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
 const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
 const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
+
+enum class InterpGenericLookupType : uint32_t
+{
+    This,
+    Method,
+    Class
+};
+
+const int InterpGenericLookup_MaxIndirections = 4;
+
+const uint16_t InterpGenericLookup_UseHelper = InterpGenericLookup_MaxIndirections + 1;
+
+struct InterpGenericLookup
+{
+    // This is signature you must pass back to the runtime lookup helper
+    void*                   signature;
+
+    // Here is the helper you must call. It is one of CORINFO_HELP_RUNTIMEHANDLE_* helpers.
+
+    InterpGenericLookupType lookupType;
+
+    // Number of indirections to get there
+    // InterpGenericLookup_UseHelper = don't know how to get it, so use helper function at run-time instead
+    // 0 = use the this pointer itself (e.g. token is C<!0> inside code in sealed class C)
+    //     or method desc itself (e.g. token is method void M::mymeth<!!0>() inside code in M::mymeth)
+    // Otherwise, follow each byte-offset stored in the "offsets[]" array (may be negative)
+    uint16_t                indirections;
+
+    // If this is not CORINFO_NO_SIZE_CHECK, then the last indirection used needs to be checked
+    // against the size stored at this offset from the previous indirection pointer. The logic
+    // here is to allow for the generic dictionary to change in size without requiring any locks.
+    uint16_t                sizeOffset;
+    uint16_t                offsets[InterpGenericLookup_MaxIndirections];
+};
 
 #endif

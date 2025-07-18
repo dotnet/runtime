@@ -467,7 +467,7 @@ namespace System.Collections.Generic
             ArgumentNullException.ThrowIfNull(elements);
 
             int count;
-            if (elements is IReadOnlyCollection<TElement> collection &&
+            if (elements is ICollection<TElement> collection &&
                 (count = collection.Count) > _nodes.Length - _size)
             {
                 Grow(checked(_size + count));

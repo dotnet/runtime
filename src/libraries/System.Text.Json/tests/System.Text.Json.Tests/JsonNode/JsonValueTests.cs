@@ -18,13 +18,13 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Null(JsonValue.Create((bool?)null));
             Assert.Null(JsonValue.Create((string)null));
             Assert.Null(JsonValue.Create((JsonElement?)null));
-            Assert.Null(JsonValue.Create(JsonDocument.Parse("null").RootElement));
+            Assert.Null(JsonValue.Create(JsonElement.Parse("null")));
 
             Assert.Null(JsonValue.Create((object)null));
             Assert.Null(JsonValue.Create((bool?)null));
             Assert.Null(JsonValue.Create((string)null));
             Assert.Null(JsonValue.Create((JsonElement?)null));
-            Assert.Null(JsonValue.Create(JsonDocument.Parse("null").RootElement));
+            Assert.Null(JsonValue.Create(JsonElement.Parse("null")));
         }
 
         [Fact]
@@ -481,13 +481,13 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepEqualsJsonElement()
         {
-            JsonDocument document1 = JsonDocument.Parse("10");
+            using JsonDocument document1 = JsonDocument.Parse("10");
 
             JsonValue jsonValue1 = JsonValue.Create(document1.RootElement);
 
             JsonNodeTests.AssertDeepEqual(jsonValue1, JsonValue.Create(10));
 
-            JsonDocument document2 = JsonDocument.Parse("\"10\"");
+            using JsonDocument document2 = JsonDocument.Parse("\"10\"");
 
             JsonValue jsonValue2 = JsonValue.Create(document2.RootElement);
             JsonNodeTests.AssertNotDeepEqual(jsonValue1, jsonValue2);
@@ -497,8 +497,8 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepEqualsJsonElement_Boolean()
         {
-            JsonValue trueValue = JsonValue.Create(JsonDocument.Parse("true").RootElement);
-            JsonValue falseValue = JsonValue.Create(JsonDocument.Parse("false").RootElement);
+            JsonValue trueValue = JsonValue.Create(JsonElement.Parse("true"));
+            JsonValue falseValue = JsonValue.Create(JsonElement.Parse("false"));
 
             JsonNodeTests.AssertNotDeepEqual(trueValue, falseValue);
             JsonNodeTests.AssertDeepEqual(trueValue, trueValue.DeepClone());
@@ -534,8 +534,8 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepEquals_EscapedString()
         {
-            JsonValue jsonValue = JsonValue.Create(JsonDocument.Parse("\"It\'s alright\"").RootElement);
-            JsonValue escapedJsonValue = JsonValue.Create(JsonDocument.Parse("\"It\\u0027s alright\"").RootElement);
+            JsonValue jsonValue = JsonValue.Create(JsonElement.Parse("\"It\'s alright\""));
+            JsonValue escapedJsonValue = JsonValue.Create(JsonElement.Parse("\"It\\u0027s alright\""));
             JsonNodeTests.AssertDeepEqual(escapedJsonValue, jsonValue);
         }
 

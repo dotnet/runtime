@@ -136,8 +136,6 @@
 
 #include "profdetach.h"
 
-#include "metadataexports.h"
-
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
 #endif // FEATURE_PERFTRACING
@@ -949,7 +947,7 @@ void __stdcall UpdateGenerationBounds()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
         }
 
         if (s_currentGenerationTable == nullptr)

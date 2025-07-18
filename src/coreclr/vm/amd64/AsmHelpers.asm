@@ -4,6 +4,8 @@
 include AsmMacros.inc
 include asmconstants.inc
 
+Thread_GetInterpThreadContext  TEXTEQU <?GetInterpThreadContext@Thread@@QEAAPEAUInterpThreadContext@@XZ>
+
 extern NDirectImportWorker:proc
 extern ThePreStub:proc
 extern  ProfileEnter:proc
@@ -13,6 +15,7 @@ extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
+extern Thread_GetInterpThreadContext:proc
 endif
 
 extern g_pPollGC:QWORD
@@ -492,32 +495,33 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ;
         ; RCX = throwable
         ; RDX = PC to invoke
-        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R8 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
         ;  Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
-        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
-        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi - OFFSETOF__CONTEXT__Rbx]
-        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi - OFFSETOF__CONTEXT__Rbx]
-        mov     r12, [r8 + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
-        mov     r13, [r8 + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
-        mov     r14, [r8 + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
-        mov     r15, [r8 + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+        mov     rbx, [r8 + OFFSETOF__CONTEXT__Rbx]
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp]
+        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi]
+        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi]
+        mov     r12, [r8 + OFFSETOF__CONTEXT__R12]
+        mov     r13, [r8 + OFFSETOF__CONTEXT__R13]
+        mov     r14, [r8 + OFFSETOF__CONTEXT__R14]
+        mov     r15, [r8 + OFFSETOF__CONTEXT__R15]
 
         ; Restore XMM registers from CONTEXT
-        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14 - OFFSETOF__CONTEXT__Rbx]
-        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6]
+        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7]
+        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8]
+        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9]
+        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10]
+        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11]
+        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12]
+        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13]
+        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14]
+        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15]
 
          ; Save the SP of this function.
         mov     [r9], rsp
@@ -558,16 +562,324 @@ NESTED_ENTRY InterpreterStub, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK
 
-        ;
-        ; call ExecuteInterpretedMethod
-        ;
-        lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
-        mov             rdx, METHODDESC_REGISTER
-        call            ExecuteInterpretedMethod
+        __InterpreterStubArgumentRegistersOffset = __PWTB_ArgumentRegisters
+        ; IR bytecode address
+        mov             rbx, METHODDESC_REGISTER
+
+        INLINE_GETTHREAD r10; thrashes rax and r11
+
+        mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
+        test            rax, rax
+        jnz             HaveInterpThreadContext
+
+        mov             rcx, r10
+        call            Thread_GetInterpThreadContext
+        RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+
+HaveInterpThreadContext:
+        mov             r10, qword ptr [rax + OFFSETOF__InterpThreadContext__pStackPointer]
+        ; Load the InterpMethod pointer from the IR bytecode
+        mov             rax, qword ptr [rbx]
+        mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
+        lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
+        lea             rax, [rsp + __PWTB_TransitionBlock]
+        ; Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
+        call            qword ptr [r11]
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVoid, _TEXT
+        alloc_stack 028h
+END_PROLOGUE
+        mov             rcx, rax ; pTransitionBlock*
+        mov             rdx, rbx ; the IR bytecode pointer
+        xor             r8, r8
+        call            ExecuteInterpretedMethod
+        add             rsp, 028h
+        ret
+NESTED_END InterpreterStubRetVoid, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8, _TEXT
+        alloc_stack 028h
+END_PROLOGUE
+        mov             rcx, rax ; pTransitionBlock*
+        mov             rdx, rbx ; the IR bytecode pointer
+        xor             r8, r8
+        call            ExecuteInterpretedMethod
+        mov             rax, qword ptr [rax]
+        add             rsp, 028h
+        ret
+NESTED_END InterpreterStubRetI8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDouble, _TEXT
+        alloc_stack 028h
+END_PROLOGUE
+        mov             rcx, rax ; pTransitionBlock*
+        mov             rdx, rbx ; the IR bytecode pointer
+        xor             r8, r8
+        call            ExecuteInterpretedMethod
+        movsd           xmm0, real8 ptr [rax]
+        add             rsp, 028h
+        ret
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffRCX, _TEXT
+        alloc_stack 028h
+END_PROLOGUE
+        mov             rcx, rax ; pTransitionBlock*
+        mov             rdx, rbx ; the IR bytecode pointer
+        ; Load the return buffer address from the original rcx argument register
+        mov             r8, qword ptr [rsp + 028h + 8 + __InterpreterStubArgumentRegistersOffset]
+        call            ExecuteInterpretedMethod
+        add             rsp, 028h
+        ret
+NESTED_END InterpreterStubRetBuffRCX, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffRDX, _TEXT
+        alloc_stack 028h
+END_PROLOGUE
+        mov             rcx, rax ; pTransitionBlock*
+        mov             rdx, rbx ; the IR bytecode pointer
+        ; Load the return buffer address from the original rxx argument register
+        mov             r8, qword ptr [rsp + 028h + 8 + __InterpreterStubArgumentRegistersOffset + 8];
+        call            ExecuteInterpretedMethod
+        add             rsp, 028h
+        ret
+NESTED_END InterpreterStubRetBuffRDX, _TEXT
+
+; Copy arguments from the the processor stack to the interpreter stack.
+; The CPU stack slots are aligned to pointer size.
+LEAF_ENTRY Store_Stack, _TEXT
+        mov esi, dword ptr [r11 + 8]  ; SP offset
+        mov ecx, dword ptr [r11 + 12] ; number of stack slots
+        ; load the caller Rsp as a based for the stack arguments
+        ; The 8 represent the return address slot
+        lea rsi, [rsp + rsi + 8 + __InterpreterStubArgumentRegistersOffset]
+        mov rdi, r10
+        shr rcx, 3
+        rep movsq
+        mov r10, rdi
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Store_Stack, _TEXT
+
+LEAF_ENTRY Load_Stack_Ref, _TEXT
+        mov esi, dword ptr [r11 + 8]  ; SP offset
+        mov edi, dword ptr [r11 + 12] ; size of the value type
+        add rsi, 8; return address
+        add rsi, rsp
+        mov qword ptr [rsi], r10
+        add r10, rdi
+        lea r10, [r10 + 7]
+        and r10, 0fffffffffffffff8h
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Stack_Ref, _TEXT
+
+LEAF_ENTRY Store_Stack_Ref, _TEXT
+        mov esi, dword ptr [r11 + 8]  ; SP offset
+        mov ecx, dword ptr [r11 + 12] ; size of the value type
+        mov rsi, [rsp + rsi + 8 + __InterpreterStubArgumentRegistersOffset]
+        mov rdi, r10
+        rep movsb
+        ; align rdi up to the stack slot size
+        lea rdi, [rdi + 7]
+        and rdi, 0fffffffffffffff8h
+        mov r10, rdi
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Store_Stack_Ref, _TEXT
+
+; Routines for passing value type arguments by reference in general purpose registers RCX, RDX, R8, R9
+; from native code to the interpreter
+
+Store_Ref macro argReg
+
+LEAF_ENTRY Store_Ref_&argReg, _TEXT
+        mov rsi, argReg
+        mov rcx, [r11 + 8] ; size of the value type
+        mov rdi, r10
+        rep movsb
+        ; align rdi up to the stack slot size
+        lea rdi, [rdi + 7]
+        and rdi, 0fffffffffffffff8h
+        mov r10, rdi
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Store_Ref_&argReg, _TEXT
+
+        endm
+
+Store_Ref RCX
+Store_Ref RDX
+Store_Ref R8
+Store_Ref R9
+
+; Routines for passing arguments by value in general purpose registers RCX, RDX, R8, R9
+; from native code to the interpreter
+
+LEAF_ENTRY Store_RCX, _TEXT
+        mov [r10], rcx
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RCX, _TEXT
+
+LEAF_ENTRY Store_RCX_RDX, _TEXT
+        mov [r10], rcx
+        mov [r10 + 8], rdx
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RCX_RDX, _TEXT
+
+LEAF_ENTRY Store_RCX_RDX_R8, _TEXT
+        mov [r10], rcx
+        mov [r10 + 8], rdx
+        mov [r10 + 16], r8
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RCX_RDX_R8, _TEXT
+
+LEAF_ENTRY Store_RCX_RDX_R8_R9, _TEXT
+        mov [r10], rcx
+        mov [r10 + 8], rdx
+        mov [r10 + 16], r8
+        mov [r10 + 24], r9
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RCX_RDX_R8_R9, _TEXT
+
+LEAF_ENTRY Store_RDX, _TEXT
+        mov [r10], rdx
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX, _TEXT
+
+LEAF_ENTRY Store_RDX_R8, _TEXT
+        mov [r10], rdx
+        mov [r10 + 8], r8
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX_R8, _TEXT
+
+LEAF_ENTRY Store_RDX_R8_R9, _TEXT
+        mov [r10], rdx
+        mov [r10 + 8], r8
+        mov [r10 + 16], r9
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX_R8_R9, _TEXT
+
+LEAF_ENTRY Store_R8, _TEXT
+        mov [r10], r8
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_R8, _TEXT
+
+LEAF_ENTRY Store_R8_R9, _TEXT
+        mov [r10], r8
+        mov [r10 + 8], r9
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_R8_R9, _TEXT
+
+LEAF_ENTRY Store_R9, _TEXT
+        mov [r10], r9
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_R9, _TEXT
+
+LEAF_ENTRY Store_XMM0, _TEXT
+        movsd real8 ptr [r10], xmm0
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        movsd real8 ptr [r10 + 24], xmm3
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Store_XMM1, _TEXT
+        movsd real8 ptr [r10], xmm1
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        movsd real8 ptr [r10 + 16], xmm3
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Store_XMM2, _TEXT
+        movsd real8 ptr [r10], xmm2
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2, _TEXT
+
+LEAF_ENTRY Store_XMM2_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm2
+        movsd real8 ptr [r10 + 8], xmm3
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Store_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm3
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM3, _TEXT
 
 ; Copy arguments from the interpreter stack to the processor stack.
 ; The CPU stack slots are aligned to pointer size.
@@ -591,6 +903,7 @@ LEAF_ENTRY Load_Stack, _TEXT
 LEAF_END Load_Stack, _TEXT
 
 ; Routines for passing value type arguments by reference in general purpose registers RCX, RDX, R8, R9
+; from the interpreter to native code
 
 LEAF_ENTRY Load_Ref_RCX, _TEXT
         mov rcx, r10
@@ -621,6 +934,7 @@ LEAF_ENTRY Load_Ref_R9, _TEXT
 LEAF_END Load_Ref_R9, _TEXT
 
 ; Routines for passing arguments by value in general purpose registers RCX, RDX, R8, R9
+; from the interpreter to native code
 
 LEAF_ENTRY Load_RCX, _TEXT
         mov rcx, [r10]
@@ -785,8 +1099,8 @@ LEAF_ENTRY Load_XMM3, _TEXT
 LEAF_END Load_XMM3, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT
-        push_vol_reg rbp
-        mov  rbp, rsp
+        push_nonvol_reg rbp
+        set_frame rbp, 0
 END_PROLOGUE
         add r9, 20h ; argument save area + alignment
         sub rsp, r9 ; total stack space
@@ -798,9 +1112,9 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetBuff, _TEXT
-        push_vol_reg rbp
-        mov  rbp, rsp
+NESTED_ENTRY CallJittedMethodRetBuffRCX, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
 END_PROLOGUE
         add r9, 20h ; argument save area + alignment
         sub rsp, r9 ; total stack space
@@ -811,11 +1125,27 @@ END_PROLOGUE
         mov rsp, rbp
         pop rbp
         ret
-NESTED_END CallJittedMethodRetBuff, _TEXT
+NESTED_END CallJittedMethodRetBuffRCX, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetBuffRDX, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        mov rdx, r8  ; return buffer
+        call qword ptr [r11]
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetBuffRDX, _TEXT
+
 
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT
         push_nonvol_reg rbp
-        mov  rbp, rsp
+        set_frame rbp, 0
         push_vol_reg r8
         push_vol_reg rax ; align
 END_PROLOGUE
@@ -824,7 +1154,6 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
-        add rsp, 20h
         mov r8, [rbp - 8]
         movsd real8 ptr [r8], xmm0
         mov rsp, rbp
@@ -834,7 +1163,7 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT
         push_nonvol_reg rbp
-        mov  rbp, rsp
+        set_frame rbp, 0
         push_vol_reg r8
         push_vol_reg rax ; align
 END_PROLOGUE
@@ -843,7 +1172,6 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
-        add rsp, 20h
         mov r8, [rbp - 8]
         mov qword ptr [r8], rax
         mov rsp, rbp

@@ -50,7 +50,13 @@ namespace System.Net.Security
 
 
         private SafeFreeCredentials? _credentialsHandle;
+
+#if TARGET_APPLE
+        // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
+        private SafeDeleteContext? _securityContext;
+#else
         private SafeDeleteSslContext? _securityContext;
+#endif
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -568,7 +574,7 @@ namespace System.Net.Security
 
         --*/
 
-        private bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
+        internal bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
         {
             // Acquire possible Client Certificate information and set it on the handle.
             bool cachedCred = false;                   // this is a return result from this method.
@@ -604,7 +610,9 @@ namespace System.Net.Security
                     _sslAuthenticationOptions.EncryptionPolicy,
                     _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
                     _sslAuthenticationOptions.AllowTlsResume,
-                    sendTrustList: false);
+                    sendTrustList: false,
+                    _sslAuthenticationOptions.AllowRsaPssPadding,
+                    _sslAuthenticationOptions.AllowRsaPkcs1Padding);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -742,15 +750,16 @@ namespace System.Net.Security
             //
             // Note selectedCert is a safe ref possibly cloned from the user passed Cert object
             //
-            byte[] guessedThumbPrint = selectedCert.GetCertHash(HashAlgorithmName.SHA512);
-            bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
+            byte[] guessedThumbPrint = selectedCert.GetCertHash(HashAlgorithmName.SHA512); bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
             SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint,
                                                                 _sslAuthenticationOptions.EnabledSslProtocols,
                                                                 _sslAuthenticationOptions.IsServer,
                                                                 _sslAuthenticationOptions.EncryptionPolicy,
                                                                 _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
                                                                 _sslAuthenticationOptions.AllowTlsResume,
-                                                                sendTrustedList);
+                                                                sendTrustedList,
+                                                                _sslAuthenticationOptions.AllowRsaPssPadding,
+                                                                _sslAuthenticationOptions.AllowRsaPkcs1Padding);
             if (cachedCredentialHandle != null)
             {
                 _credentialsHandle = cachedCredentialHandle;
@@ -952,7 +961,9 @@ namespace System.Net.Security
                             _sslAuthenticationOptions.EncryptionPolicy,
                             _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
                             _sslAuthenticationOptions.AllowTlsResume,
-                            sendTrustList);
+                            sendTrustList,
+                            _sslAuthenticationOptions.AllowRsaPssPadding,
+                            _sslAuthenticationOptions.AllowRsaPkcs1Padding);
                     }
                 }
             }
@@ -1130,7 +1141,13 @@ namespace System.Net.Security
 
                 if (!success)
                 {
-                    CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
+#pragma warning disable CS0162 // unreachable code detected (compile time const)
+                    if (SslStreamPal.CanGenerateCustomAlerts)
+                    {
+                        CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
+                    }
+#pragma warning restore CS0162 // unreachable code detected (compile time const)
+
                     if (chain != null)
                     {
                         foreach (X509ChainStatus status in chain.ChainStatus)

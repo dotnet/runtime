@@ -409,6 +409,12 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
 #ifdef DEBUG
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+    dumpFunction |= ((unsigned)JitConfig.JitDumpFgHash() == info.compMethodHash());
+
+    if (opts.IsTier0())
+    {
+        dumpFunction &= (JitConfig.JitDumpFgTier0() > 0);
+    }
 
     CompAllocator allocator = getAllocatorDebugOnly();
     filename                = JitConfig.JitDumpFgFile();
@@ -656,6 +662,8 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //    Here are the config values that control it:
 //      DOTNET_JitDumpFg              A string (ala the DOTNET_JitDump string) indicating what methods to dump
 //                                     flowgraphs for.
+//      DOTNET_JitDumpFgHash          Dump flowgraphs for methods with this hash
+//      DOTNET_JitDumpFgTier0         Dump tier-0 compilations
 //      DOTNET_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
 //      DOTNET_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
@@ -1060,7 +1068,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
-                        if (bSource->GetSwitchTargets()->getDefault()->getDestinationBlock() == bTarget)
+                        if (bSource->GetSwitchTargets()->GetDefaultCase()->getDestinationBlock() == bTarget)
                         {
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
@@ -1970,7 +1978,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 printf("->");
                 printedBlockWidth = 2 + 9 /* kind */;
 
-                const BBehfDesc* const ehfDesc = block->GetEhfTargets();
+                const BBJumpTable* const ehfDesc = block->GetEhfTargets();
                 if (ehfDesc == nullptr)
                 {
                     printf(" ????");
@@ -1980,13 +1988,10 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 {
                     // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
 
-                    const unsigned   jumpCnt = ehfDesc->bbeCount;
-                    FlowEdge** const jumpTab = ehfDesc->bbeSuccs;
-
-                    for (unsigned i = 0; i < jumpCnt; i++)
+                    for (unsigned i = 0; i < ehfDesc->GetSuccCount(); i++)
                     {
                         printedBlockWidth += 1 /* space/comma */;
-                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(ehfDesc->GetSucc(i)));
                     }
                 }
 
@@ -2032,26 +2037,26 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 printedBlockWidth = 2 + 9 /* kind */;
 
                 const BBswtDesc* const jumpSwt = block->GetSwitchTargets();
-                const unsigned         jumpCnt = jumpSwt->bbsCount;
-                FlowEdge** const       jumpTab = jumpSwt->bbsDstTab;
+                const unsigned         jumpCnt = jumpSwt->GetCaseCount();
+                FlowEdge** const       jumpTab = jumpSwt->GetCases();
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
                     printedBlockWidth += 1 /* space/comma */;
                     printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
-                    const bool isDefault = jumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                    const bool isDefault = jumpSwt->HasDefaultCase() && (i == jumpCnt - 1);
                     if (isDefault)
                     {
                         printf("[def]");
                         printedBlockWidth += 5;
                     }
 
-                    const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
+                    const bool isDominant = jumpSwt->HasDominantCase() && (i == jumpSwt->GetDominantCase());
                     if (isDominant)
                     {
-                        printf("[dom(" FMT_WT ")]", jumpSwt->bbsDominantFraction);
-                        printedBlockWidth += 10;
+                        printf("[dom]");
+                        printedBlockWidth += 5;
                     }
                 }
 
@@ -2409,7 +2414,7 @@ void Compiler::fgDumpStmtTree(const BasicBlock* block, Statement* stmt)
 void Compiler::fgDumpBlock(BasicBlock* block)
 {
     printf("\n------------ ");
-    block->dspBlockHeader(this);
+    block->dspBlockHeader();
 
     if (fgSsaValid)
     {
@@ -2756,7 +2761,14 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            assert(blockPred->TargetIs(block));
+            if (!blockPred->TargetIs(block))
+            {
+                JITDUMP(FMT_BB " -> " FMT_BB " from pred links does not match " FMT_BB " -> " FMT_BB
+                               " from succ links\n",
+                        blockPred->bbNum, block->bbNum, blockPred->bbNum,
+                        blockPred->GetTarget() == nullptr ? 0 : blockPred->GetTarget()->bbNum);
+                assert(!"Invalid block preds");
+            }
             assert(blockPred->GetTargetEdge()->getLikelihood() == 1.0);
             return true;
 
@@ -2771,7 +2783,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-            for (BasicBlock* const bTarget : blockPred->SwitchTargets())
+            for (BasicBlock* const bTarget : blockPred->SwitchSuccs())
             {
                 if (block == bTarget)
                 {
@@ -2865,9 +2877,9 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 //------------------------------------------------------------------------------
 // fgDebugCheckBBNumIncreasing: Check that the block list bbNum are in increasing order in the bbNext
 // traversal. Given a block B1 and its bbNext successor B2, this means `B1->bbNum < B2->bbNum`, but not
-// that `B1->bbNum + 1 == B2->bbNum` (which is true after renumbering). This can be used as a precondition
-// to a phase that expects this ordering to compare block numbers (say, to look for backwards branches)
-// and doesn't want to call fgRenumberBlocks(), to avoid that potential expense.
+// that `B1->bbNum + 1 == B2->bbNum`.
+// This can be used as a precondition to a phase that expects this ordering to compare block numbers
+// (say, to look for backwards branches).
 //
 void Compiler::fgDebugCheckBBNumIncreasing()
 {
@@ -2955,38 +2967,10 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         maxBBNum = max(maxBBNum, block->bbNum);
 
-        // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
-        // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
-        // dynamically create the unique switch list.
-        if (block->KindIs(BBJ_SWITCH))
+        // Check that all the successors have the current traversal stamp.
+        for (BasicBlock* const succBlock : block->Succs())
         {
-            for (BasicBlock* const succBlock : block->Succs())
-            {
-                assert(succBlock->bbTraversalStamp == curTraversalStamp);
-            }
-
-            // Also check the unique successor set, if it exists. Make sure to NOT allocate it if it doesn't exist!
-            BlockToSwitchDescMap* switchMap = GetSwitchDescMap(/* createIfNull */ false);
-            if (switchMap != nullptr)
-            {
-                SwitchUniqueSuccSet sd;
-                if (switchMap->Lookup(block, &sd))
-                {
-                    for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
-                    {
-                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i]->getDestinationBlock();
-                        assert(nonDuplicateSucc != nullptr);
-                        assert(nonDuplicateSucc->bbTraversalStamp == curTraversalStamp);
-                    }
-                }
-            }
-        }
-        else
-        {
-            for (BasicBlock* const succBlock : block->Succs(this))
-            {
-                assert(succBlock->bbTraversalStamp == curTraversalStamp);
-            }
+            assert(succBlock->bbTraversalStamp == curTraversalStamp);
         }
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
@@ -3096,6 +3080,11 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (block->HasTarget())
         {
             assert(block->HasInitializedTarget());
+        }
+
+        if (block->KindIs(BBJ_COND))
+        {
+            assert(block->GetTrueEdge()->isHeuristicBased() == block->GetFalseEdge()->isHeuristicBased());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
@@ -3951,31 +3940,24 @@ void Compiler::fgDebugCheckBlockLinks()
         }
 
         // If this is a switch, check that the tables are consistent.
-        // Note that we don't call GetSwitchDescMap(), because it has the side-effect
-        // of allocating it if it is not present.
-        if (block->KindIs(BBJ_SWITCH) && m_switchDescMap != nullptr)
+        if (block->KindIs(BBJ_SWITCH))
         {
-            SwitchUniqueSuccSet uniqueSuccSet;
-            if (m_switchDescMap->Lookup(block, &uniqueSuccSet))
+            // Create a set with all the successors.
+            BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
+            BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+            for (unsigned i = 0; i < block->GetSwitchTargets()->GetCaseCount(); i++)
             {
-                // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-                // about the BlockSet epoch.
-                BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
-                BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
-                }
-                // Now we should have a set of unique successors that matches what's in the switchMap.
-                // First, check the number of entries, then make sure all the blocks in uniqueSuccSet
-                // are in the BlockSet.
-                unsigned count = BitVecOps::Count(&bitVecTraits, succBlocks);
-                assert(uniqueSuccSet.numDistinctSuccs == count);
-                for (unsigned i = 0; i < uniqueSuccSet.numDistinctSuccs; i++)
-                {
-                    assert(BitVecOps::IsMember(&bitVecTraits, succBlocks,
-                                               uniqueSuccSet.nonDuplicates[i]->getDestinationBlock()->bbNum));
-                }
+                BasicBlock* const bTarget = block->GetSwitchTargets()->GetCase(i)->getDestinationBlock();
+                BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
+            }
+            // Now we should have a set of unique successors that matches what's in the switchMap.
+            // First, check the number of entries, then make sure all the blocks in the unique successor table
+            // match the blocks in the set.
+            unsigned count = BitVecOps::Count(&bitVecTraits, succBlocks);
+            assert(block->GetSwitchTargets()->GetSuccCount() == count);
+            for (BasicBlock* const bTarget : block->SwitchSuccs())
+            {
+                assert(BitVecOps::IsMember(&bitVecTraits, succBlocks, bTarget->bbNum));
             }
         }
     }
@@ -4306,61 +4288,58 @@ public:
 
     void ProcessDefs(GenTree* tree)
     {
-        GenTreeLclVarCommon* lclNode;
-        bool                 isFullDef    = false;
-        ssize_t              offset       = 0;
-        unsigned             storeSize    = 0;
-        bool                 definesLocal = tree->DefinesLocal(m_compiler, &lclNode, &isFullDef, &offset, &storeSize);
+        auto visitDef = [=](const LocalDef& def) {
+            const bool       isUse  = (def.Def->gtFlags & GTF_VAR_USEASG) != 0;
+            unsigned const   lclNum = def.Def->GetLclNum();
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (!definesLocal)
-        {
-            return;
-        }
+            assert(!(def.IsEntire && isUse));
 
-        const bool       isUse  = (lclNode->gtFlags & GTF_VAR_USEASG) != 0;
-        unsigned const   lclNum = lclNode->GetLclNum();
-        LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-
-        assert(!(isFullDef && isUse));
-
-        if (lclNode->HasCompositeSsaName())
-        {
-            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            if (def.Def->HasCompositeSsaName())
             {
-                unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
-                LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
-                unsigned const   fieldSsaNum = lclNode->GetSsaNum(m_compiler, index);
-
-                ssize_t  fieldStoreOffset;
-                unsigned fieldStoreSize;
-                if (m_compiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+                for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
                 {
-                    ProcessDef(lclNode, fieldLclNum, fieldSsaNum);
+                    unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
+                    LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
+                    unsigned const   fieldSsaNum = def.Def->GetSsaNum(m_compiler, index);
 
-                    if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
+                    ssize_t  fieldStoreOffset;
+                    unsigned fieldStoreSize;
+                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                                                        &fieldStoreSize))
                     {
-                        assert(isUse);
-                        unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
-                        ProcessUse(lclNode, fieldLclNum, fieldUseSsaNum);
+                        ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
+
+                        if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset,
+                                                              fieldStoreSize))
+                        {
+                            assert(isUse);
+                            unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
+                            ProcessUse(def.Def, fieldLclNum, fieldUseSsaNum);
+                        }
                     }
                 }
             }
-        }
-        else
-        {
-            unsigned const ssaNum = lclNode->GetSsaNum();
-            ProcessDef(lclNode, lclNum, ssaNum);
-
-            if (isUse)
+            else
             {
-                unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                unsigned const ssaNum = def.Def->GetSsaNum();
+                ProcessDef(def.Def, lclNum, ssaNum);
+
+                if (isUse)
                 {
-                    useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+                    unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
+                    if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                    {
+                        useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+                    }
+                    ProcessUse(def.Def, lclNum, useSsaNum);
                 }
-                ProcessUse(lclNode, lclNum, useSsaNum);
             }
-        }
+
+            return GenTree::VisitResult::Continue;
+        };
+
+        tree->VisitLocalDefs(m_compiler, visitDef);
     }
 
     void ProcessUse(GenTreeLclVarCommon* tree, unsigned lclNum, unsigned ssaNum)

@@ -648,6 +648,22 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+struct LocalDef
+{
+    GenTreeLclVarCommon* Def;
+    bool                 IsEntire;
+    ssize_t              Offset;
+    unsigned             Size;
+
+    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, unsigned size)
+        : Def(def)
+        , IsEntire(isEntire)
+        , Offset(offset)
+        , Size(size)
+    {
+    }
+};
+
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -695,6 +711,12 @@ struct GenTree
 #define GTSTRUCT_3_SPECIAL(fn, en, en2, en3) GTSTRUCT_3(fn, en, en2, en3)
 
 #include "gtstructs.h"
+
+    enum class VisitResult
+    {
+        Abort    = false,
+        Continue = true
+    };
 
     genTreeOps gtOper; // enum subtype BYTE
     var_types  gtType; // enum subtype BYTE
@@ -1084,7 +1106,18 @@ public:
 
     bool IsNotGcDef() const
     {
-        return IsIntegralConst(0) || OperIs(GT_LCL_ADDR);
+        if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR))
+        {
+            return true;
+        }
+
+        // Any NonGC object or NonGC object + any offset.
+        if (IsIconHandle(GTF_ICON_OBJ_HDL) || (OperIs(GT_ADD) && gtGetOp1()->IsIconHandle(GTF_ICON_OBJ_HDL)))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     // LIR flags
@@ -1483,12 +1516,13 @@ public:
 #ifdef FEATURE_HW_INTRINSICS
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
-    bool isRMWHWIntrinsic(Compiler* comp);
+    bool isRMWHWIntrinsic(Compiler* comp) const;
 #if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
-    bool isEmbeddedBroadcastCompatibleHWIntrinsic() const;
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
+    bool isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, CorInfoType& tgtSimdBaseJitType) const;
 #endif // TARGET_XARCH
-    bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
+    bool isEmbeddedMaskingCompatible() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1500,7 +1534,7 @@ public:
         return false;
     }
 
-    bool isRMWHWIntrinsic(Compiler* comp)
+    bool isRMWHWIntrinsic(Compiler* comp) const
     {
         return false;
     }
@@ -1511,13 +1545,13 @@ public:
         return false;
     }
 
-    bool isEmbeddedBroadcastCompatibleHWIntrinsic() const
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
     {
         return false;
     }
 #endif // TARGET_XARCH
 
-    bool isEmbeddedMaskingCompatibleHWIntrinsic() const
+    bool isEmbeddedMaskingCompatible() const
     {
         return false;
     }
@@ -1682,6 +1716,7 @@ public:
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
     bool OperIsVectorConditionalSelect() const;
+    bool OperIsVectorFusedMultiplyOp() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
@@ -1802,8 +1837,9 @@ public:
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
-    inline bool IsMaskAllBitsSet() const;
     inline bool IsMaskZero() const;
+    inline bool IsMaskAllBitsSet() const;
+    inline bool IsTrueMask(var_types simdBaseType) const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -1894,6 +1930,7 @@ public:
 
     ExceptionSetFlags OperExceptions(Compiler* comp);
     bool              OperMayThrow(Compiler* comp);
+    bool              NodeOrContainedOperandsMayThrow(Compiler* comp);
 
     bool OperRequiresGlobRefFlag(Compiler* comp) const;
 
@@ -2008,11 +2045,13 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    bool DefinesLocal(Compiler*             comp,
-                      GenTreeLclVarCommon** pLclVarTree,
-                      bool*                 pIsEntire = nullptr,
-                      ssize_t*              pOffset   = nullptr,
-                      unsigned*             pSize     = nullptr);
+    template <typename TVisitor>
+    VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+
+    bool HasAnyLocalDefs(Compiler* comp);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr, target_ssize_t* offset);
@@ -2335,12 +2374,6 @@ public:
     // Returns a range that will produce the operands of this node in execution order.
     IteratorPair<GenTreeOperandIterator> Operands();
 
-    enum class VisitResult
-    {
-        Abort    = false,
-        Continue = true
-    };
-
     // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature
     // `GenTree::VisitResult VisitorFunction(GenTree* operand)`. Here is a simple example:
     //
@@ -2358,11 +2391,7 @@ public:
     // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
     // in HIR if for some reason you need to visit operands in the order in which they will execute.
     template <typename TVisitor>
-    void VisitOperands(TVisitor visitor);
-
-private:
-    template <typename TVisitor>
-    void VisitBinOpOperands(TVisitor visitor);
+    VisitResult VisitOperands(TVisitor visitor);
 
 public:
     bool Precedes(GenTree* other);
@@ -4305,6 +4334,35 @@ inline GenTreeCallDebugFlags& operator &=(GenTreeCallDebugFlags& a, GenTreeCallD
 
 // clang-format on
 
+enum class ExecutionContextHandling
+{
+    // No special handling of execution context is required.
+    None,
+    // Always save and restore ExecutionContext around this await.
+    // Used for task awaits.
+    SaveAndRestore,
+    // Save and restore execution context on suspension/resumption only.
+    // Used for custom awaitables.
+    AsyncSaveAndRestore,
+};
+
+enum class ContinuationContextHandling
+{
+    // No special handling of SynchronizationContext/TaskScheduler is required.
+    None,
+    // Continue on SynchronizationContext/TaskScheduler
+    ContinueOnCapturedContext,
+    // Continue on thread pool thread
+    ContinueOnThreadPool,
+};
+
+// Additional async call info.
+struct AsyncCallInfo
+{
+    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+};
+
 // Return type descriptor of a GT_CALL node.
 // x64 Unix, Arm64, Arm32 and x86 allow a value to be returned in multiple
 // registers. For such calls this struct provides the following info
@@ -4957,9 +5015,12 @@ struct GenTreeCall final : public GenTree
 
     union
     {
+        // Used for explicit tail prefixed calls
         TailCallSiteInfo* tailCallInfo;
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
+        // Used for async calls
+        const AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5017,12 +5078,22 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync()
+    void SetIsAsync(const AsyncCallInfo* info)
     {
+        assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;
+        asyncInfo = info;
     }
 
     bool IsAsync() const;
+
+    const AsyncCallInfo& GetAsyncInfo() const
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
+    bool IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.
@@ -6471,14 +6542,63 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperIsVectorConditionalSelect() const
     {
+        switch (GetHWIntrinsicId())
+        {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_Vector128_ConditionalSelect) || OperIsHWIntrinsic(NI_Vector256_ConditionalSelect) ||
-               OperIsHWIntrinsic(NI_Vector512_ConditionalSelect);
-#elif defined(TARGET_ARM64)
-        return OperIsHWIntrinsic(NI_AdvSimd_BitwiseSelect) || OperIsHWIntrinsic(NI_Sve_ConditionalSelect);
-#else
-        return false;
-#endif
+            case NI_Vector128_ConditionalSelect:
+            case NI_Vector256_ConditionalSelect:
+            case NI_Vector512_ConditionalSelect:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+            case NI_AdvSimd_BitwiseSelect:
+            case NI_Sve_ConditionalSelect:
+            {
+                return true;
+            }
+#endif // TARGET_ARM64
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    bool OperIsVectorFusedMultiplyOp() const
+    {
+        switch (GetHWIntrinsicId())
+        {
+#if defined(TARGET_XARCH)
+            case NI_AVX2_MultiplyAdd:
+            case NI_AVX2_MultiplyAddNegated:
+            case NI_AVX2_MultiplyAddNegatedScalar:
+            case NI_AVX2_MultiplyAddScalar:
+            case NI_AVX2_MultiplySubtract:
+            case NI_AVX2_MultiplySubtractNegated:
+            case NI_AVX2_MultiplySubtractNegatedScalar:
+            case NI_AVX2_MultiplySubtractScalar:
+            case NI_AVX512_FusedMultiplyAdd:
+            case NI_AVX512_FusedMultiplyAddNegated:
+            case NI_AVX512_FusedMultiplyAddNegatedScalar:
+            case NI_AVX512_FusedMultiplyAddScalar:
+            case NI_AVX512_FusedMultiplySubtract:
+            case NI_AVX512_FusedMultiplySubtractNegated:
+            case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX512_FusedMultiplySubtractScalar:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                return false;
+            }
+        }
     }
 
     bool OperRequiresAsgFlag() const;
@@ -6593,17 +6713,19 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    GenTree*   op2,
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
-                                                   bool       isScalar);
+                                                   bool       isScalar,
+                                                   bool       reverseCond = false);
 
-    static var_types GetLookupTypeForCmpOp(
-        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+    static var_types GetLookupTypeForCmpOp(Compiler*  comp,
+                                           genTreeOps oper,
+                                           var_types  type,
+                                           var_types  simdBaseType,
+                                           unsigned   simdSize,
+                                           bool       reverseCond = false);
 
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
-    genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
-    {
-        return GetOperForHWIntrinsicId(GetHWIntrinsicId(), GetSimdBaseType(), isScalar);
-    }
+    genTreeOps GetOperForHWIntrinsicId(bool* isScalar, bool getEffectiveOp = false) const;
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
@@ -9549,54 +9671,65 @@ inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
     return false;
 }
 
-inline bool GenTree::IsMaskAllBitsSet() const
+//-------------------------------------------------------------------
+// IsMaskZero: returns true if this node is a mask constant with all bits zero.
+//
+// Returns:
+//     True if this node is a mask constant with all bits zero
+//
+inline bool GenTree::IsMaskZero() const
 {
-#ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
-                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
-                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
-                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
-                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
-
-    if (OperIsHWIntrinsic())
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id == NI_Sve_CreateTrueMaskAll) ||
-                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+        return AsMskCon()->IsZero();
     }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
-#endif
     return false;
 }
 
-inline bool GenTree::IsMaskZero() const
+//-------------------------------------------------------------------
+// IsMaskAllBitsSet: returns true if this node is a mask constant with all bits set.
+//
+// Returns:
+//     True if this node is a mask constant with all bits set
+//
+inline bool GenTree::IsMaskAllBitsSet() const
+{
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (IsCnsMsk())
+    {
+        return AsMskCon()->IsAllBitsSet();
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsTrueMask: Is the given node a true mask
+//
+// Arguments:
+//   simdBaseType - the base type of the mask
+//
+// Returns true if the node is a true mask for the given simdBaseType.
+//
+// Note that a byte true mask (1111...) is different to an int true mask
+// (10001000...), therefore the simdBaseType of the mask needs to be
+// taken into account.
+//
+inline bool GenTree::IsTrueMask(var_types simdBaseType) const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
-                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
-                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
-                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
-                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
+    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
 
-    if (OperIsHWIntrinsic())
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
+        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
     }
-
 #endif
+
     return false;
 }
 

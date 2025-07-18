@@ -179,11 +179,13 @@ private:
 public:
     static bool instIsFP(instruction ins);
 #if defined(TARGET_XARCH)
-    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+    bool        instIsEmbeddedBroadcastCompatible(instruction ins);
     static bool instIsEmbeddedMaskingCompatible(instruction ins);
 
     static unsigned instInputSize(instruction ins);
     static unsigned instKMaskBaseSize(instruction ins);
+
+    static bool instHasPseudoName(instruction ins);
 
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH

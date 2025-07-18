@@ -1089,6 +1089,12 @@
   <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBaseMessage" xml:space="preserve">
     <value>'DynamicallyAccessedMemberAttribute' on '{0}' or one of its base types references compiler-generated member '{1}'.</value>
   </data>
+  <data name="TypeMapGroupTypeCannotBeStaticallyDeterminedTitle" xml:space="preserve">
+    <value>The provided generic argument cannot be statically determined.</value>
+  </data>
+  <data name="TypeMapGroupTypeCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Type '{0}' must not contain signature variables to be used as a type map group.</value>
+  </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
   </data>

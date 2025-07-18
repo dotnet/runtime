@@ -214,6 +214,9 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
+  <data name="Arg_BitArrayTypeUnsupported" xml:space="preserve">
+    <value>Only supported array types for CopyTo on BitArrays are Boolean[], Int32[] and Byte[].</value>
+  </data>
   <data name="Arg_ByteArrayTooSmallForValue" xml:space="preserve">
     <value>The array starting from the specified index is not long enough to read a value of the specified type.</value>
   </data>
@@ -887,6 +890,9 @@
   </data>
   <data name="Argument_ArrayParsingError" xml:space="preserve">
     <value>Error parsing array spec.</value>
+  </data>
+  <data name="Argument_ArrayTooLarge" xml:space="preserve">
+    <value>The input array length must not exceed Int32.MaxValue / {0}. Otherwise BitArray.Length would exceed Int32.MaxValue.</value>
   </data>
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
@@ -3917,6 +3923,12 @@
   <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
     <value>Attempt to track an Objective-C Type without a finalizer.</value>
   </data>
+  <data name="InvalidOperation_ReinitializeJavaMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize JavaMarshal.</value>
+  </data>
+  <data name="InvalidOperation_IncorrectGCHandleType" xml:space="preserve">
+    <value>Attempt to get context from an unsupport GCHandle type.</value>
+  </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
@@ -4198,6 +4210,9 @@
   </data>
   <data name="ClassLoad_InlineArrayExplicit" xml:space="preserve">
     <value>InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '{0}'.  Assembly: '{1}'.</value>
+  </data>
+  <data name="ClassLoad_InlineArrayExplicitSize" xml:space="preserve">
+    <value>InlineArrayAttribute cannot be applied to a type with explicit size. Type: '{0}'.  Assembly: '{1}'.</value>
   </data>
   <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>

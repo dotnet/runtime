@@ -72,7 +72,7 @@ TailCallTls::TailCallTls()
 }
 
 #ifndef _MSC_VER
-thread_local RuntimeThreadLocals t_runtime_thread_locals;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 #endif
 
 Thread* STDCALL GetThreadHelper()
@@ -172,25 +172,21 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId )
 #ifdef _DEBUG_IMPL
 template<> AutoCleanupGCAssert<TRUE>::AutoCleanupGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 }
 
 template<> AutoCleanupGCAssert<FALSE>::AutoCleanupGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 }
 
 template<> void GCAssert<TRUE>::BeginGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 }
 
 template<> void GCAssert<FALSE>::BeginGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 }
 #endif
@@ -349,7 +345,7 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-thread_local ThreadLocalInfo t_CurrentThreadInfo;
+PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 #endif // _MSC_VER
 
 #ifndef DACCESS_COMPILE
@@ -806,7 +802,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
         hr = GET_EXCEPTION()->GetHR();
     }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (pHR)
     {
@@ -869,11 +865,8 @@ void DestroyThread(Thread *th)
         th->UnmarkThreadForAbort();
     }
 
-    if (g_fEEShutDown == 0)
-    {
-        th->SetThreadState(Thread::TS_ReportDead);
-        th->OnThreadTerminate(FALSE);
-    }
+    th->SetThreadState(Thread::TS_ReportDead);
+    th->OnThreadTerminate(FALSE);
 }
 
 //-------------------------------------------------------------------------
@@ -1149,13 +1142,13 @@ void InitThreadManager()
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
 
-    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
+    g_offsetOfCurrentThreadInfo = (DWORD)Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
 
-    _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
+    _ASSERTE(g_offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
 
     // Save t_CurrentThreadInfo location for debugger
-    SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
+    SetIlsIndex((DWORD)(_tls_index + (g_offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
 #endif // !TARGET_UNIX
@@ -1326,7 +1319,7 @@ Thread::Thread()
     dbg_m_cSuspendedThreads = 0;
     dbg_m_cSuspendedThreadsWithoutOSLock = 0;
     m_Creator.Clear();
-    m_dwUnbreakableLockCount = 0;
+    m_dwLockCount = 0;
 #endif
 
     m_dwForbidSuspendThread = 0;
@@ -1691,8 +1684,9 @@ BOOL Thread::AllocHandles()
         if (!m_EventWait.IsValid()) {
             m_EventWait.CloseEvent();
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     return fOK;
 }
@@ -1771,7 +1765,7 @@ BOOL Thread::HasStarted()
         }
         res = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (res == FALSE)
         goto FAILURE;
@@ -2484,8 +2478,6 @@ Thread::~Thread()
         Exception::Delete (m_pExceptionDuringStartup);
     }
 
-    ClearContext();
-
     if (!IsAtProcessExit())
     {
         // Destroy any handles that we're using to hold onto exception objects
@@ -2815,7 +2807,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         CooperativeCleanup();
     }
 
-    if (g_fEEShutDown != 0)
+    if (g_fEEShutDown)
     {
         // We have started shutdown.  Not safe to touch CLR state.
         return;
@@ -2856,7 +2848,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         GCX_COOP();
 
         _ASSERTE(IsAtProcessExit());
-        ClearContext();
         if (m_ExposedObject != NULL)
             DecExternalCount(holdingLock);             // may destruct now
     }
@@ -3762,7 +3753,7 @@ DWORD EnterMonitorForRestore(SyncBlock *pSB)
             }
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return state;
 }
@@ -4202,7 +4193,7 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
         ret = CLRException::GetPreallocatedOutOfMemoryException();
         SetLastThrownObject(ret);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return ret;
 }
@@ -4254,7 +4245,7 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
         SetThrowable(ret DEBUG_ARG(stecFlags));
         SetLastThrownObject(ret, isUnhandled);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 
     return ret;
@@ -4331,7 +4322,7 @@ void Thread::SafeUpdateLastThrownObject(void)
             // If we can't create a duplicate handle, we set both throwables to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 }
 
@@ -4902,7 +4893,6 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Enter();
 }
@@ -4915,7 +4905,6 @@ DEBUG_NOINLINE void ThreadStore::Leave()
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Leave();
 }
@@ -5396,7 +5385,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fLoop;
 }
@@ -5697,7 +5686,7 @@ BOOL StartUniqueStackMapHelper()
     {
         fOK = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fOK;
 }
@@ -5860,7 +5849,7 @@ void UniqueStackHelper(size_t stackTraceHash, size_t *stackTrace)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 /***********************************************************************/
@@ -6142,22 +6131,14 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         //
         EXTRA_PAGES = 3;
         INDEBUG(EXTRA_PAGES += 1);
-
-        int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages);
-        if (ThreadGuardPages == 0)
-        {
-            uGuardSize += (EXTRA_PAGES * GetOsPageSize());
-        }
-        else
-        {
-            uGuardSize += (ThreadGuardPages * GetOsPageSize());
-        }
-
 #else // HOST_64BIT
 #ifdef _DEBUG
         uGuardSize += (1 * GetOsPageSize());    // one extra page for debug infrastructure
 #endif // _DEBUG
 #endif // HOST_64BIT
+
+        int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages, EXTRA_PAGES);
+        uGuardSize += (ThreadGuardPages * GetOsPageSize());
 
         LOG((LF_EH, LL_INFO10000, "STACKOVERFLOW: setting thread stack guarantee to 0x%x\n", uGuardSize));
 
@@ -6796,72 +6777,6 @@ T_CONTEXT *Thread::GetFilterContext(void)
 
 #ifndef DACCESS_COMPILE
 
-void Thread::ClearContext()
-{
-    CONTRACTL {
-        NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-#ifdef FEATURE_COMINTEROP
-    m_fDisableComObjectEagerCleanup = false;
-#endif //FEATURE_COMINTEROP
-}
-
-BOOL Thread::HaveExtraWorkForFinalizer()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return RequireSyncBlockCleanup()
-        || Thread::CleanupNeededForFinalizedThread()
-        || (m_DetachCount > 0)
-        || SystemDomain::System()->RequireAppDomainCleanup()
-        || YieldProcessorNormalization::IsMeasurementScheduled()
-        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
-}
-
-void Thread::DoExtraWorkForFinalizer()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(this == FinalizerThread::GetFinalizerThread());
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (RequiresCoInitialize())
-    {
-        SetApartment(AS_InMTA);
-    }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-    if (RequireSyncBlockCleanup())
-    {
-        SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
-    }
-    if (SystemDomain::System()->RequireAppDomainCleanup())
-    {
-        SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
-    }
-
-    if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
-    {
-        Thread::CleanupDetachedThreads();
-    }
-
-    if (YieldProcessorNormalization::IsMeasurementScheduled())
-    {
-        GCX_PREEMP();
-        YieldProcessorNormalization::PerformMeasurement();
-    }
-
-    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
-}
-
-
 // HELPERS FOR THE BASE OF A MANAGED THREAD, INCLUDING AD TRANSITION SUPPORT
 
 // We have numerous places where we start up a managed thread.  This includes several places in the
@@ -6986,7 +6901,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 /*
@@ -7789,7 +7704,46 @@ InterpThreadContext* Thread::GetInterpThreadContext()
 }
 #endif // FEATURE_INTERPRETER
 
+/* static */
+BOOL Thread::IsAddressInCurrentStack(PTR_VOID addr)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    Thread* currentThread = GetThreadNULLOk();
+    if (currentThread == NULL)
+    {
+        return FALSE;
+    }
+
+#ifdef FEATURE_INTERPRETER
+    InterpThreadContext* pInterpThreadContext = currentThread->m_pInterpThreadContext;
+    if ((pInterpThreadContext != NULL) && ((PTR_VOID)pInterpThreadContext->pStackStart <= addr) && (addr < (PTR_VOID)pInterpThreadContext->pStackPointer))
+    {
+        return TRUE;
+    }
+#endif // FEATURE_INTERPRETER
+
+    PTR_VOID sp = dac_cast<PTR_VOID>(GetCurrentSP());
+    _ASSERTE(currentThread->m_CacheStackBase != NULL);
+    _ASSERTE(sp < currentThread->m_CacheStackBase);
+    return sp < addr && addr <= currentThread->m_CacheStackBase;
+}
+
 #endif // #ifndef DACCESS_COMPILE
+
+BOOL Thread::IsAddressInStack (PTR_VOID addr) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(m_CacheStackBase != NULL);
+    _ASSERTE(m_CacheStackLimit != NULL);
+    _ASSERTE(m_CacheStackLimit < m_CacheStackBase);
+#ifdef FEATURE_INTERPRETER
+    if ((m_pInterpThreadContext != NULL) && ((PTR_VOID)m_pInterpThreadContext->pStackStart <= addr) && (addr < (PTR_VOID)m_pInterpThreadContext->pStackPointer))
+    {
+        return TRUE;
+    }
+#endif // FEATURE_INTERPRETER
+    return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
+}
 
 #ifdef DACCESS_COMPILE
 

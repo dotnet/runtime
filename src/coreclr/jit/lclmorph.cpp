@@ -1943,14 +1943,14 @@ private:
 
                 if (indir->TypeIs(TYP_FLOAT))
                 {
-                    if (((offset % genTypeSize(TYP_FLOAT)) == 0) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset % genTypeSize(TYP_FLOAT)) == 0)
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
                 }
                 else if (indir->TypeIs(TYP_SIMD12))
                 {
-                    if ((offset == 0) && varDsc->TypeIs(TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset == 0) && varDsc->TypeIs(TYP_SIMD16))
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1958,7 +1958,7 @@ private:
 #ifdef TARGET_ARM64
                 else if (indir->TypeIs(TYP_SIMD8))
                 {
-                    if (varDsc->TypeIs(TYP_SIMD16) && ((offset % 8) == 0) && m_compiler->IsBaselineSimdIsaSupported())
+                    if (varDsc->TypeIs(TYP_SIMD16) && ((offset % 8) == 0))
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }

@@ -2134,6 +2134,21 @@ typedef DPTR(class InlinedCallFrame) PTR_InlinedCallFrame;
 class InlinedCallFrame : public Frame
 {
 public:
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_INTERPRETER
+    InlinedCallFrame() : Frame(FrameIdentifier::InlinedCallFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_Datum = NULL;
+        m_pCallSiteSP = NULL;
+        m_pCallerReturnAddress = 0;
+        m_pCalleeSavedFP = 0;
+        m_pThread = NULL;
+    }
+#endif // FEATURE_INTERPRETER
+#endif // DACCESS_COMPILE
+
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;
@@ -2343,7 +2358,17 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
+
+    friend struct cdac_data<TailCallFrame>;
 };
+
+template<>
+struct cdac_data<TailCallFrame>
+{
+    static constexpr size_t CalleeSavedRegisters = offsetof(TailCallFrame, m_regs);
+    static constexpr size_t ReturnAddress = offsetof(TailCallFrame, m_ReturnAddress);
+};
+
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
 //------------------------------------------------------------------------
@@ -2397,11 +2422,18 @@ typedef DPTR(class InterpreterFrame) PTR_InterpreterFrame;
 
 class InterpreterFrame : public FramedMethodFrame
 {
+    static void DummyFuncletCaller() {}
 public:
+
+    // This is a special value representing a caller of the first interpreter frame
+    // in a block of interpreter frames belonging to a single InterpreterFrame.
+    static TADDR DummyCallerIP;
+
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
-        m_pTopInterpMethodContextFrame(pContextFrame)
+        m_pTopInterpMethodContextFrame(pContextFrame),
+        m_isFaulting(false)
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
         , m_SSP(0)
 #endif
@@ -2455,10 +2487,18 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+    void SetIsFaulting(bool isFaulting)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isFaulting = isFaulting;
+    }
+
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
     PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
+    // Set to true to indicate that the topmost interpreted frame has thrown an exception
+    bool m_isFaulting;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;

@@ -588,6 +588,11 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)                                                                                        \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispTreeRange(range, t);
+#define LABELEDDISPTREERANGE(label, range, t)                                                                          \
+    JITDUMP(label ":\n");                                                                                              \
+    if (JitTls::GetCompiler()->verbose)                                                                                \
+        JitTls::GetCompiler()->gtDispTreeRange(range, t);                                                              \
+    JITDUMP("\n");
 #define DISPBLOCK(b)                                                                                                   \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
@@ -606,6 +611,7 @@ const bool dspGCtbls = true;
 #define DISPSTMT(t)
 #define DISPRANGE(range)
 #define DISPTREERANGE(range, t)
+#define LABELEDDISPTREERANGE(title, range, t)
 #define DISPBLOCK(b)
 #define VERBOSE 0
 #endif // !DEBUG
@@ -732,16 +738,9 @@ inline size_t unsigned_abs(int64_t x)
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
 #endif // !FEATURE_TAILCALL_OPT
 
-#define CLFLG_CODESIZE   0x00001
-#define CLFLG_CODESPEED  0x00002
-#define CLFLG_CSE        0x00004
-#define CLFLG_REGVAR     0x00008
-#define CLFLG_RNGCHKOPT  0x00010
-#define CLFLG_DEADSTORE  0x00020
-#define CLFLG_CODEMOTION 0x00040
-#define CLFLG_QMARK      0x00080
-#define CLFLG_TREETRANS  0x00100
-#define CLFLG_INLINING   0x00200
+#define CLFLG_REGVAR    0x00008
+#define CLFLG_TREETRANS 0x00100
+#define CLFLG_INLINING  0x00200
 
 #if FEATURE_STRUCTPROMOTE
 #define CLFLG_STRUCTPROMOTE 0x00400
@@ -755,10 +754,7 @@ inline size_t unsigned_abs(int64_t x)
 #define FEATURE_LOOP_ALIGN 0
 #endif
 
-#define CLFLG_MAXOPT                                                                                                   \
-    (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADSTORE | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS | \
-     CLFLG_INLINING | CLFLG_STRUCTPROMOTE)
-
+#define CLFLG_MAXOPT (CLFLG_REGVAR | CLFLG_TREETRANS | CLFLG_INLINING | CLFLG_STRUCTPROMOTE)
 #define CLFLG_MINOPT (CLFLG_TREETRANS)
 
 /*****************************************************************************/

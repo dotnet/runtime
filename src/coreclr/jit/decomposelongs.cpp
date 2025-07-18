@@ -178,7 +178,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
                 return tree->gtNext;
             }
         }
-        else if (user->OperIs(GT_STOREIND) && tree->OperIsHWIntrinsic() && m_compiler->opts.OptimizationEnabled())
+        else if (user->OperIs(GT_STOREIND) && tree->OperIsHWIntrinsic() && m_compiler->opts.Tier0OptimizationEnabled())
         {
             NamedIntrinsic intrinsicId = tree->AsHWIntrinsic()->GetHWIntrinsicId();
             if (HWIntrinsicInfo::IsVectorToScalar(intrinsicId) && m_lowering->IsSafeToContainMem(user, tree))
@@ -1961,7 +1961,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     Range().InsertAfter(loResult, simdTmpVar);
 
     GenTree* hiResult;
-    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         GenTree* one = m_compiler->gtNewIconNode(1);
         hiResult     = m_compiler->gtNewSimdGetElementNode(TYP_INT, simdTmpVar, one, CORINFO_TYPE_INT, simdSize);
@@ -1970,8 +1970,6 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     }
     else
     {
-        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-
         GenTree* thirtyTwo = m_compiler->gtNewIconNode(32);
         GenTree* shift     = m_compiler->gtNewSimdBinOpNode(GT_RSZ, op1->TypeGet(), simdTmpVar, thirtyTwo,
                                                             node->GetSimdBaseJitType(), simdSize);

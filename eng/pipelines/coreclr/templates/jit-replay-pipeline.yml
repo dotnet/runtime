@@ -32,7 +32,7 @@ extends:
           buildConfig: checked
           platforms: ${{ parameters.platforms }}
           jobParameters:
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            buildArgs: -s clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:

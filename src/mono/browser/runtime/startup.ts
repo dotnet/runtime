@@ -339,14 +339,6 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
-        if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
-            loaderHelpers.logDownloadStatsToConsole();
-        }
-
-        setTimeout(() => {
-            loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
-        }, loaderHelpers.config.cachedResourcesPurgeDelay);
-
         // call user code
         try {
             userOnRuntimeInitialized(Module);

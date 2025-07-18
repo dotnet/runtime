@@ -4,33 +4,33 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBody
 {
-	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class WorksWithDynamicDependency
-	{
-		public static void Main ()
-		{
-			Foo.StaticMethod ();
-		}
+    [SetupLinkerArgument("--enable-opt", "unreachablebodies")]
+    public class WorksWithDynamicDependency
+    {
+        public static void Main()
+        {
+            Foo.StaticMethod();
+        }
 
-		[Kept]
-		class Foo
-		{
-			[Kept]
-			[DynamicDependency ("InstanceMethod()")]
-			public static void StaticMethod ()
-			{
-			}
+        [Kept]
+        class Foo
+        {
+            [Kept]
+            [DynamicDependency("InstanceMethod()")]
+            public static void StaticMethod()
+            {
+            }
 
-			[Kept]
-			[ExpectBodyModified]
-			public void InstanceMethod ()
-			{
-				UsedByMethod ();
-			}
+            [Kept]
+            [ExpectBodyModified]
+            public void InstanceMethod()
+            {
+                UsedByMethod();
+            }
 
-			void UsedByMethod ()
-			{
-			}
-		}
-	}
+            void UsedByMethod()
+            {
+            }
+        }
+    }
 }

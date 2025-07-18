@@ -2002,7 +2002,7 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
         iFilt = EXCEPTION_CONTINUE_SEARCH;
 
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return iFilt;
 }
