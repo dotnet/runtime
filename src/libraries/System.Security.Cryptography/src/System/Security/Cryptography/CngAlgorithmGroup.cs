@@ -144,7 +144,6 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An object that specifies the ML-KEM family of algorithms.
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithmGroup MLKem =>
             field ??= new CngAlgorithmGroup("MLKEM"); // NCRYPT_MLKEM_ALGORITHM_GROUP
 

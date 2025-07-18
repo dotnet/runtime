@@ -335,7 +335,6 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithm MD5 { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithm MLDsa { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithm MLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Rsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha1 { get { throw null; } }
@@ -359,7 +358,6 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithmGroup ECDsa { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithmGroup MLDsa { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithmGroup MLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup Rsa { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -436,11 +434,8 @@ namespace System.Security.Cryptography
         public string Format { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat GenericPrivateBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat GenericPublicBlob { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngKeyBlobFormat MLKemPrivateBlob { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngKeyBlobFormat MLKemPrivateSeedBlob { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngKeyBlobFormat MLKemPublicBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat OpaqueTransportBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat Pkcs8PrivateBlob { get { throw null; } }
