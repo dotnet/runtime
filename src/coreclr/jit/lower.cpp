@@ -4490,27 +4490,31 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
                 cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_LE : GT_GT);
                 cmp->SetUnsigned();
             }
-            assert(!cmp->OperIs(GT_EQ, GT_NE));
 
-            if (right->IsIntegralConst() && !right->IsIntegralConst(0) && cmp->OperIs(GT_LE, GT_GT))
+            if (cmp->OperIs(GT_LE, GT_GE))
             {
-                // a <= C  --->  a < C+1
-                if (cmp->IsUnsigned() && right->IsIntegralConst(SIZE_T_MAX))
+                if (right->IsIntegralConst())
                 {
-                    // (max+1) wraps to 0 so unsigned (a < max+1) would be always false instead of true
-                    BlockRange().Remove(left);
-                    BlockRange().Remove(right);
-                    cmp->BashToConst(cmp->OperIs(GT_LE) ? 1 : 0);
-                    return cmp->gtNext;
+                    // a <= C  --->  a < C+1
+                    INT64 value = right->AsIntConCommon()->IntegralValue();
+                    if (cmp->IsUnsigned() &&
+                        ((cmp->OperIs(GT_LE) && value == SIZE_T_MAX) || (cmp->OperIs(GT_GE) && value == 0)))
+                    {
+                        BlockRange().Remove(left);
+                        BlockRange().Remove(right);
+                        cmp->BashToConst(1);
+                        return cmp->gtNext;
+                    }
+                    right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
+                    cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
                 }
-                INT64 value = right->AsIntConCommon()->IntegralValue();
-                right->AsIntConCommon()->SetIntegralValue(value + 1);
-                cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GE);
+                else
+                {
+                    // a <= b  --->  !(a > b)
+                    isReversed = true;
+                    cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+                }
             }
-            // a <= b  --->  !(a > b)
-            isReversed = cmp->OperIs(GT_LE, GT_GE);
-            if (isReversed)
-                cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
 
             if (cmp->OperIs(GT_GT))
             {
