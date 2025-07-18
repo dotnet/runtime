@@ -156,25 +156,19 @@ namespace System.Security.Cryptography
                 return signature;
             }
 
-            byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
-
-            try
+            using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxSignatureSizeInBytes, skipClear: true))
             {
                 int bytesWritten = SignDataCore(
                     new ReadOnlySpan<byte>(data),
                     new ReadOnlySpan<byte>(context),
-                    rented.AsSpan(0, Algorithm.MaxSignatureSizeInBytes));
+                    lease.Span);
 
                 if (!Algorithm.SignatureSize.IsValidSize(bytesWritten))
                 {
                     throw new CryptographicException();
                 }
 
-                return rented.AsSpan(0, bytesWritten).ToArray();
-            }
-            finally
-            {
-                CryptoPool.Return(rented);
+                return lease.Span.Slice(0, bytesWritten).ToArray();
             }
         }
 
@@ -185,7 +179,7 @@ namespace System.Security.Cryptography
         ///   The data to sign.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature.
+        ///   The buffer to receive the signature. Its length must be at least <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/>.
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
@@ -194,6 +188,9 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The number of bytes written to the <paramref name="destination"/> buffer.
         /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is less than <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/> in length.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
         ///   255 bytes.
@@ -206,9 +203,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
-        /// <remarks>
-        ///   The signature will be at most <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/> in length.
-        /// </remarks>
         public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
             if (context.Length > MaxContextLength)
