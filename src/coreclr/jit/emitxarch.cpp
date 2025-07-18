@@ -16890,7 +16890,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
 
     unsigned regCode;
-    if (!id->idIsEvexNdContextSet() || !IsApxNddEncodableInstruction(ins))
+    if (!IsApxNddEncodableInstruction(ins) || !id->idIsEvexNdContextSet())
     {
         regCode = insEncodeReg345(id, regFor345Bits, size, &code);
         regCode |= insEncodeReg012(id, regFor012Bits, size, &code);
@@ -19193,7 +19193,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             code = insCodeRM(ins);
 
-            if (id->idIsEvexNdContextSet() && TakesApxExtendedEvexPrefix(id))
+            if (TakesApxExtendedEvexPrefix(id) && id->idIsEvexNdContextSet())
             {
                 // TODO-XArch-APX:
                 // I'm not sure why instructions on this path can be with instruction
