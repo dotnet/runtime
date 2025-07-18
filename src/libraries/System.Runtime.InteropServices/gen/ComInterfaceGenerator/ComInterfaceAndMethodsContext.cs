@@ -30,9 +30,9 @@ namespace Microsoft.Interop
         /// <summary>
         /// The size of the vtable for this interface, including the base interface methods and IUnknown methods.
         /// </summary>
-        public int VTableSize => Methods.Length == 0 ?
-                                    IUnknownConstants.VTableSize :
-                                    1 + Methods.Max(m => m.GenerationContext.VtableIndexData.Index);
+        public int VTableSize => Methods.Length == 0
+                                    ? IUnknownConstants.VTableSize
+                                    : 1 + Methods.Max(m => m.GenerationContext.VtableIndexData.Index);
 
         /// <summary>
         /// The size of the vtable for the base interface, including it's base interface methods and IUnknown methods.
