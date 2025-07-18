@@ -103,11 +103,11 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc />
         protected override void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
+            Interop.Crypto.MLDsaSignExternalMu(_key, mu, destination);
 
         /// <inheritdoc />
         protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
-            throw new PlatformNotSupportedException();
+            Interop.Crypto.MLDsaVerifyExternalMu(_key, mu, signature);
 
         /// <inheritdoc />
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>

@@ -185,6 +185,58 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_MLDsaSignExternalMu(
+            SafeEvpPKeyHandle pkey, IntPtr extraHandle,
+            ReadOnlySpan<byte> mu, int muLength,
+            Span<byte> destination, int destinationLength);
+
+        internal static void MLDsaSignExternalMu(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> mu,
+            Span<byte> destination)
+        {
+            int ret = CryptoNative_MLDsaSignExternalMu(
+                pkey, GetExtraHandle(pkey),
+                mu, mu.Length,
+                destination, destination.Length);
+
+            if (ret != 1)
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_MLDsaVerifyExternalMu(
+            SafeEvpPKeyHandle pkey, IntPtr extraHandle,
+            ReadOnlySpan<byte> mu, int muLength,
+            ReadOnlySpan<byte> signature, int signatureLength);
+
+        internal static bool MLDsaVerifyExternalMu(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> mu,
+            ReadOnlySpan<byte> signature)
+        {
+            int ret = CryptoNative_MLDsaVerifyExternalMu(
+                pkey, GetExtraHandle(pkey),
+                mu, mu.Length,
+                signature, signature.Length);
+
+            if (ret == 1)
+            {
+                return true;
+            }
+            else if (ret == 0)
+            {
+                return false;
+            }
+            else
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaExportSecretKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
         [LibraryImport(Libraries.CryptoNative)]
