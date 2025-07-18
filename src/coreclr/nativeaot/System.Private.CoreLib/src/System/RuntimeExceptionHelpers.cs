@@ -200,8 +200,6 @@ namespace System
             int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, 1, 0);
             if (previousState == 0)
             {
-                s_crashInfoPresent = 1;
-
                 CrashInfo crashInfo = new();
 
                 crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
