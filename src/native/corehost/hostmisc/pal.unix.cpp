@@ -965,10 +965,11 @@ void pal::enumerate_environment_variables(const std::function<void(const pal::ch
 
     for (char **env = environ; *env != nullptr; ++env)
     {
-        const char* separator = ::strchr(*env, '=');
-        if (separator != nullptr && separator != *env)
+        const char* current = *env;
+        const char* separator = ::strchr(current, '=');
+        if (separator != nullptr && separator != current)
         {
-            pal::string_t name(*env, separator - *env);
+            pal::string_t name(current, separator - current);
             callback(name.c_str(), separator + 1);
         }
     }
