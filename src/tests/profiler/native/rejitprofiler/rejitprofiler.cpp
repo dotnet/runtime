@@ -341,11 +341,12 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
     }
 
 
-    WCHAR wszNewUserDefinedString[4096] = { 0 };
-    swprintf_s(wszNewUserDefinedString, L"Hello from profiler rejit method '%lS'!", functionName.ToWString().c_str());
+    String newUserDefinedString = String(L"Hello from profiler rejit method '");
+    newUserDefinedString += functionName;
+    newUserDefinedString += L"'!";
     mdString tokmdsUserDefined = mdTokenNil;
-    hr = pTargetEmit->DefineUserString(wszNewUserDefinedString,
-                                       (ULONG)wcslen(wszNewUserDefinedString),
+    hr = pTargetEmit->DefineUserString(newUserDefinedString.ToCStr(),
+                                       (ULONG)newUserDefinedString.Length(),
                                        &tokmdsUserDefined);
     if (FAILED(hr))
     {
