@@ -27,8 +27,6 @@ Abstract:
 #include "pal/signal.hpp"
 #include "pal/virtual.h"
 
-#include "retaddr.h"
-
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
 #else

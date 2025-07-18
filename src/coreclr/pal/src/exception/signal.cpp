@@ -31,8 +31,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/palinternal.h"
 
-#include "retaddr.h"
-
 #include <clrconfignocache.h>
 
 #include <errno.h>
