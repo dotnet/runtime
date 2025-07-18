@@ -2216,14 +2216,13 @@ namespace System.Net.Http.Functional.Tests
                     // WinHTTP validates the input before opening connection whereas SocketsHttpHandler opens connection first and validates only when writing to the wire.
                     acceptConnection.SetResult(!IsWinHttpHandler);
                     var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                    var hrex = Assert.IsType<HttpRequestException>(ex);
                     if (IsWinHttpHandler)
                     {
-                        var fex = Assert.IsType<FormatException>(ex);
-                        Assert.Contains("Latin-1", fex.Message);
+                        Assert.Contains("Error 87", hrex.InnerException.Message);
                     }
                     else
                     {
-                        var hrex = Assert.IsType<HttpRequestException>(ex);
                         var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
                         Assert.Contains("ASCII", message);
                     }
@@ -2342,6 +2341,37 @@ namespace System.Net.Http.Functional.Tests
             Request,
             Content,
             Cookie
+        }
+
+        [Fact]
+        public async Task LargeUriAndHeaders_Works()
+        {
+            int length =
+                IsWinHttpHandler ? 65_000 :
+                PlatformDetection.IsBrowser ? 4_000 :
+                10_000_000;
+
+            string longPath = "/" + new string('X', length);
+            string longHeaderName = new string('Y', length);
+            string longHeaderValue = new string('Z', length);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, new UriBuilder(uri) { Path = longPath }.Uri, UseVersion);
+                    request.Headers.Add(longHeaderName, longHeaderValue);
+
+                    await client.SendAsync(request);
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+
+                    Assert.Equal(longPath, requestData.Path);
+                    Assert.Equal(longHeaderValue, requestData.GetSingleHeaderValue(longHeaderName));
+                });
         }
     }
 }

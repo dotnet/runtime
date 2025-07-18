@@ -356,6 +356,7 @@ GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
+GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);

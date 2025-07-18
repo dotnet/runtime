@@ -3013,7 +3013,7 @@ PhaseStatus Promotion::Run()
         Statement* firstStmt = replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
-        DBEXEC(m_compiler->verbose, bb->dspBlockHeader(m_compiler));
+        DBEXEC(m_compiler->verbose, bb->dspBlockHeader());
         JITDUMP("\n");
 
         for (Statement* stmt : StatementList(firstStmt))

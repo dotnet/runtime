@@ -437,6 +437,26 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.Position,
                         nodeContents.Data,
                         nodeContents.Relocs));
+
+#if DEBUG
+                    // Pointer relocs should be aligned at pointer boundaries within the image.
+                    // Processing misaligned relocs (especially relocs that straddle page boundaries) can be
+                    // expensive on Windows. But: we can't guarantee this on x86.
+                    if (_nodeFactory.Target.Architecture != TargetArchitecture.X86)
+                    {
+                        bool hasPointerRelocs = false;
+                        foreach (Relocation reloc in nodeContents.Relocs)
+                        {
+                            if ((reloc.RelocType is RelocType.IMAGE_REL_BASED_DIR64 && _nodeFactory.Target.PointerSize == 8) ||
+                                (reloc.RelocType is RelocType.IMAGE_REL_BASED_HIGHLOW && _nodeFactory.Target.PointerSize == 4))
+                            {
+                                hasPointerRelocs = true;
+                                Debug.Assert(reloc.Offset % _nodeFactory.Target.PointerSize == 0);
+                            }
+                        }
+                        Debug.Assert(!hasPointerRelocs || (nodeContents.Alignment % _nodeFactory.Target.PointerSize) == 0);
+                    }
+#endif
                 }
 
                 // Emit unwinding frames and LSDA

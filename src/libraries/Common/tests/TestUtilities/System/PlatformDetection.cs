@@ -547,7 +547,7 @@ namespace System
 
             }
 
-            return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+            return ((IsOSX && !IsNetworkFrameworkEnabled()) || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
         }
 
         private static bool OpenSslGetTlsSupport(SslProtocols protocol)
@@ -569,7 +569,7 @@ namespace System
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
-            if (IsApplePlatform || IsAndroid)
+            if ((IsApplePlatform && !IsNetworkFrameworkEnabled()) || IsAndroid)
             {
                 return true;
             }
@@ -580,7 +580,7 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls);
         }
 
         private static bool GetTls11Support()
@@ -597,12 +597,12 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
             // on macOS and Android TLS 1.1 is supported.
-            else if (IsApplePlatform || IsAndroid)
+            else if ((IsApplePlatform && !IsNetworkFrameworkEnabled()) || IsAndroid)
             {
                 return true;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls11);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls11);
         }
 #pragma warning restore SYSLIB0039
 
@@ -664,6 +664,31 @@ namespace System
 
             return false;
         }
+
+        /// <summary>
+        /// Determines if Network.framework is enabled for SSL/TLS operations on Apple platforms.
+        /// This can be controlled via AppContext switch or environment variable.
+        /// </summary>
+        /// <returns>True if Network.framework is enabled, false otherwise.</returns>
+        public static bool IsNetworkFrameworkEnabled()
+        {
+            // Check AppContext switch first (highest priority)
+            if (AppContext.TryGetSwitch("System.Net.Security.UseNetworkFramework", out bool isEnabled))
+            {
+                return isEnabled;
+            }
+
+            // Fall back to environment variable
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK");
+            if (!string.IsNullOrEmpty(envVar))
+            {
+                return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // Default is disabled
+            return false;
+        }
+
 
         private static bool GetSendsCAListByDefault()
         {

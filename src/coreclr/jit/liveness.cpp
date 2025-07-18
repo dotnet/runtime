@@ -342,11 +342,11 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 }
             }
 
-            GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
-            if (definedLcl != nullptr)
-            {
-                fgMarkUseDef<!lowered>(definedLcl);
-            }
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                fgMarkUseDef<!lowered>(lcl);
+                return GenTree::VisitResult::Continue;
+            };
+            call->VisitLocalDefNodes(this, visitDef);
             break;
         }
 
@@ -796,13 +796,11 @@ void Compiler::fgLiveVarAnalysis()
 //    call          - The call node in question.
 //
 // Returns:
-//    local defined by the call, if any (eg retbuf)
+//    partially defined local by the call, if any (eg retbuf)
 //
 GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call)
 {
     assert(call != nullptr);
-    GenTreeLclVarCommon* definedLcl = nullptr;
-
     // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
     // the method, then we're going to run the p/invoke epilog
     // So we mark the FrameRoot as used by this instruction.
@@ -861,13 +859,22 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
         }
     }
 
-    definedLcl = gtCallGetDefinedRetBufLclAddr(call);
-    if (definedLcl != nullptr)
-    {
-        fgComputeLifeLocal(life, keepAliveVars, definedLcl);
-    }
+    GenTreeLclVarCommon* partialDef = nullptr;
 
-    return definedLcl;
+    auto visitDef = [&](const LocalDef& def) {
+        if (!def.IsEntire)
+        {
+            assert(partialDef == nullptr);
+            partialDef = def.Def;
+        }
+
+        fgComputeLifeLocal(life, keepAliveVars, def.Def);
+        return GenTree::VisitResult::Continue;
+    };
+
+    call->VisitLocalDefs(this, visitDef);
+
+    return partialDef;
 }
 
 //------------------------------------------------------------------------
@@ -1207,11 +1214,12 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
 
         if (tree->IsCall())
         {
-            GenTreeLclVarCommon* const definedLcl = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
-            if (definedLcl != nullptr)
+            GenTreeLclVarCommon* const partialDef = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
+            if (partialDef != nullptr)
             {
-                isUse  = (definedLcl->gtFlags & GTF_VAR_USEASG) != 0;
-                varDsc = lvaGetDesc(definedLcl);
+                assert((partialDef->gtFlags & GTF_VAR_USEASG) != 0);
+                isUse  = true;
+                varDsc = lvaGetDesc(partialDef);
             }
         }
         else if (tree->OperIsNonPhiLocal())

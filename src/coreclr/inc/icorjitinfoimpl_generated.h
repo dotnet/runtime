@@ -550,10 +550,6 @@ void getFunctionFixedEntryPoint(
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
-void* getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection) override;
-
 CorInfoHelpFunc getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle) override;
 

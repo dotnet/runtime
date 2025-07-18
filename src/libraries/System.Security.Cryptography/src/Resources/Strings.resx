@@ -411,6 +411,9 @@
   <data name="Cryptography_HashLengthMismatch" xml:space="preserve">
     <value>The specified hash is not a valid size for this hash algorithm.</value>
   </data>
+  <data name="Cryptography_HashMLDsaAlgorithmMismatch" xml:space="preserve">
+    <value>HashML-DSA '{0}' cannot be used with hash algorithm '{1}'.</value>
+  </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
   </data>

@@ -95,15 +95,20 @@ namespace System.Security.Cryptography
             }
         }
 
-        public partial CngKey Key
+        public partial CngKey GetKey()
         {
-            get
-            {
-                ThrowIfDisposed();
+            ThrowIfDisposed();
 
-                return _key;
-            }
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
+#else
+#pragma warning disable CA1416 // only supported on: 'windows'
+            return _key.Duplicate();
+#pragma warning restore CA1416 // only supported on: 'windows'
+#endif
         }
+
+        internal CngKey KeyNoDuplicate => _key;
 
         /// <inheritdoc/>
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
@@ -267,12 +272,74 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
+        protected override unsafe void SignPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            Span<byte> destination)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+                fixed (void* pContext = context)
+                {
+                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    paddingInfo.pbCtx = (IntPtr)pContext;
+                    paddingInfo.cbCtx = context.Length;
+                    paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                    duplicatedHandle.SignHash(
+                        hash,
+                        destination,
+                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                        &paddingInfo);
+                }
+            }
+        }
 
         /// <inheritdoc/>
-        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
-            throw new PlatformNotSupportedException();
+        protected override unsafe bool VerifyPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            ReadOnlySpan<byte> signature)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+                fixed (void* pContext = context)
+                {
+                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    paddingInfo.pbCtx = (IntPtr)pContext;
+                    paddingInfo.cbCtx = context.Length;
+                    paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                    return duplicatedHandle.VerifyHash(
+                        hash,
+                        signature,
+                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                        &paddingInfo);
+                }
+            }
+        }
 
         [SupportedOSPlatform("windows")]
         internal static MLDsaCng ImportPkcs8PrivateKey(byte[] source, out int bytesRead)

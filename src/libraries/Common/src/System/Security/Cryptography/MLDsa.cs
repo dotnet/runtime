@@ -325,7 +325,29 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            if (hashAlgorithmIdentifier is null)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmOid));
+            }
+
+            if (insufficientCollisionResistance)
+            {
+                throw new CryptographicException(SR.Format(
+                    SR.Cryptography_HashMLDsaAlgorithmMismatch,
+                    Algorithm.Name,
+                    hashAlgorithmIdentifier));
+            }
+
+            if (hashLengthInBytes != hash.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
+            }
+
             ThrowIfDisposed();
 
             SignPreHashCore(hash, context, hashAlgorithmOid, destination);
@@ -413,13 +435,23 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
-            ThrowIfDisposed();
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
 
-            if (signature.Length != Algorithm.SignatureSizeInBytes)
+            if (hashAlgorithmIdentifier is null || insufficientCollisionResistance ||
+                signature.Length != Algorithm.SignatureSizeInBytes)
             {
                 return false;
             }
+
+            if (hashLengthInBytes != hash.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
+            }
+
+            ThrowIfDisposed();
 
             return VerifyPreHashCore(hash, context, hashAlgorithmOid, signature);
         }
@@ -2114,7 +2146,76 @@ namespace System.Security.Cryptography
             }
         }
 
+        // Returns a hash algorithm identifier for an OID.
+        // insufficientCollisionResistance is true if the hash algorithm is known, but does not meet the required
+        // collision resistance from FIPS 204.
+        private protected string? MapHashOidToAlgorithm(
+            string hashOid,
+            out int hashLengthInBytes,
+            out bool insufficientCollisionResistance)
+        {
+            int hashLambda;
+            string hashAlgorithmIdentifier;
 
+            switch (hashOid)
+            {
+                case Oids.Md5:
+                    hashLengthInBytes = 128 / 8;
+                    insufficientCollisionResistance = true;
+                    return HashAlgorithmNames.MD5;
+                case Oids.Sha1:
+                    hashLengthInBytes = 160 / 8;
+                    insufficientCollisionResistance = true;
+                    return HashAlgorithmNames.SHA1;
+                case Oids.Sha256:
+                    hashLengthInBytes = 256 / 8;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA256;
+                    break;
+                case Oids.Sha3_256:
+                    hashLengthInBytes = 256 / 8;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_256;
+                    break;
+                case Oids.Sha384:
+                    hashLengthInBytes = 384 / 8;
+                    hashLambda = 384 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA384;
+                    break;
+                case Oids.Sha3_384:
+                    hashLengthInBytes = 384 / 8;
+                    hashLambda = 384 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_384;
+                    break;
+                case Oids.Sha512:
+                    hashLengthInBytes = 512 / 8;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA512;
+                    break;
+                case Oids.Sha3_512:
+                    hashLengthInBytes = 512 / 8;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_512;
+                    break;
+                case Oids.Shake128: // SHAKE-128 with 256-bits of output
+                    hashLengthInBytes = 256 / 8;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE128;
+                    break;
+                case Oids.Shake256: // SHAKE-256 with 512-bits of output
+                    hashLengthInBytes = 512 / 8;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE256;
+                    break;
+                default:
+                    hashLengthInBytes = 0;
+                    insufficientCollisionResistance = false;
+                    return null;
+            }
+
+            insufficientCollisionResistance = hashLambda < Algorithm.LambdaCollisionStrength;
+            return hashAlgorithmIdentifier;
+        }
 
         private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
     }

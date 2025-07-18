@@ -1290,11 +1290,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         }
         else
         {
-            void *critSect = nullptr, **pCrit = nullptr;
-            critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
-            noway_assert((!critSect) != (!pCrit));
-
-            tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            tree = gtNewIconEmbClsHndNode(info.compClassHnd);
 
             // Given the class handle, get the pointer to the Monitor.
             tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
@@ -1440,7 +1436,6 @@ void Compiler::fgAddSyncMethodEnterExit()
     // Create a block for the fault.
     // It gets an artificial ref count.
 
-    assert(!tryLastBB->bbFallsThrough());
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
 
     assert(tryLastBB->NextIs(faultBB));
@@ -5391,11 +5386,13 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
                 return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            GenTreeLclVarCommon* lclDef;
-            if (tree->DefinesLocal(m_compiler, &lclDef))
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                return m_func(lcl) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
+            };
+
+            if (tree->VisitLocalDefNodes(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
-                if (!m_func(lclDef))
-                    return Compiler::WALK_ABORT;
+                return Compiler::WALK_ABORT;
             }
 
             return Compiler::WALK_CONTINUE;

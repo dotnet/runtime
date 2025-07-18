@@ -234,5 +234,27 @@ namespace System.Security.Cryptography.Tests
                 key.Delete();
             }
         }
+
+        [Fact]
+        public static void MLDsaCng_GetKey()
+        {
+            CngProperty parameterSet = MLDsaTestHelpers.GetCngProperty(MLDsaAlgorithm.MLDsa65);
+            CngKeyCreationParameters creationParams = new();
+            creationParams.Parameters.Add(parameterSet);
+
+            using CngKey key = CngKey.Create(CngAlgorithm.MLDsa, keyName: null, creationParams);
+
+            using (MLDsaCng mlDsaKey = new(key))
+            using (CngKey getKey1 = mlDsaKey.GetKey())
+            {
+                using (CngKey getKey2 = mlDsaKey.GetKey())
+                {
+                    Assert.NotSame(key, getKey1);
+                    Assert.NotSame(getKey1, getKey2);
+                }
+
+                Assert.Equal(key.Algorithm, getKey1.Algorithm); // Assert.NoThrow on getKey1.Algorithm
+            }
+        }
     }
 }

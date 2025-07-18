@@ -314,15 +314,22 @@ namespace System.Runtime.InteropServices
                         }
                         else
                         {
-                            Guid riidLocal = riid;
-                            switch (customQueryInterface.GetInterface(ref riidLocal, out ppvObject))
+                            try
                             {
-                                case CustomQueryInterfaceResult.Handled:
-                                    return HResults.S_OK;
-                                case CustomQueryInterfaceResult.NotHandled:
-                                    break;
-                                case CustomQueryInterfaceResult.Failed:
-                                    return HResults.COR_E_INVALIDCAST;
+                                Guid riidLocal = riid;
+                                switch (customQueryInterface.GetInterface(ref riidLocal, out ppvObject))
+                                {
+                                    case CustomQueryInterfaceResult.Handled:
+                                        return HResults.S_OK;
+                                    case CustomQueryInterfaceResult.NotHandled:
+                                        break;
+                                    case CustomQueryInterfaceResult.Failed:
+                                        return HResults.COR_E_INVALIDCAST;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                return Marshal.GetHRForException(ex);
                             }
                         }
                     }

@@ -308,6 +308,7 @@ BEGIN
     IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'. Assembly: '%2'."
     IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'. Assembly: '%2'."
     IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT_SIZE   "InlineArrayAttribute cannot be applied to a type with explicit size. Type: '%1'. Assembly: '%2'."
 
     IDS_CLASSLOAD_BYREF_OF_BYREF            "Could not create a ByRef of a ByRef. Type: '%1'. Assembly: '%2'."
     IDS_CLASSLOAD_POINTER_OF_BYREF          "Could not create a pointer to a ByRef. Type: '%1'. Assembly: '%2'."

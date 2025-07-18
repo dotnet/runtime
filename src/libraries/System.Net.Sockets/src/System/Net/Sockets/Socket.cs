@@ -2875,11 +2875,14 @@ namespace System.Net.Sockets
         }
 
         public bool ConnectAsync(SocketAsyncEventArgs e) =>
-            ConnectAsync(e, userSocket: true, saeaCancelable: true);
+            ConnectAsync(e, userSocket: true, saeaMultiConnectCancelable: true);
 
-        internal bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket, bool saeaCancelable)
+        internal bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket, bool saeaMultiConnectCancelable, CancellationToken cancellationToken = default)
         {
-            bool pending;
+            // saeaMultiConnectCancelable == true means that this method is being called by a SocketAsyncEventArgs-based top level API.
+            // In such cases, SocketAsyncEventArgs.StartOperationConnect() will set up an internal cancellation token (_multipleConnectCancellation)
+            // to support cancelling DNS multi-connect for Socket.CancelConnectAsync().
+            Debug.Assert(!saeaMultiConnectCancelable || cancellationToken == default);
 
             ThrowIfDisposed();
 
@@ -2901,6 +2904,7 @@ namespace System.Net.Sockets
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
             DnsEndPoint? dnsEP = endPointSnapshot as DnsEndPoint;
 
+            bool pending;
             if (dnsEP != null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.ConnectedAsyncDns(this);
@@ -2911,10 +2915,10 @@ namespace System.Net.Sockets
                 }
 
                 e.StartOperationCommon(this, SocketAsyncOperation.Connect);
-                e.StartOperationConnect(saeaCancelable, userSocket);
+                e.StartOperationConnect(saeaMultiConnectCancelable, userSocket);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, default, default);
+                    pending = e.DnsConnectAsync(dnsEP, default, default, cancellationToken);
                 }
                 catch
                 {
@@ -2957,8 +2961,8 @@ namespace System.Net.Sockets
                     // ConnectEx supports connection-oriented sockets but not UDS. The socket must be bound before calling ConnectEx.
                     bool canUseConnectEx = _socketType == SocketType.Stream && endPointSnapshot.AddressFamily != AddressFamily.Unix;
                     SocketError socketError = canUseConnectEx ?
-                        e.DoOperationConnectEx(this, _handle) :
-                        e.DoOperationConnect(_handle); // For connectionless protocols, Connect is not an I/O call.
+                        e.DoOperationConnectEx(this, _handle, cancellationToken) :
+                        e.DoOperationConnect(_handle, cancellationToken); // For connectionless protocols, Connect is not an I/O call.
                     pending = socketError == SocketError.IOPending;
                 }
                 catch (Exception ex)
@@ -3001,7 +3005,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(saeaMultiConnectCancelable: true, userSocket: false);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType);
+                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType, cancellationToken: default);
                 }
                 catch
                 {
@@ -3012,7 +3016,7 @@ namespace System.Net.Sockets
             else
             {
                 Socket attemptSocket = new Socket(endPointSnapshot.AddressFamily, socketType, protocolType);
-                pending = attemptSocket.ConnectAsync(e, userSocket: false, saeaCancelable: true);
+                pending = attemptSocket.ConnectAsync(e, userSocket: false, saeaMultiConnectCancelable: true);
             }
 
             return pending;

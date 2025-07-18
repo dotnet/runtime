@@ -2771,7 +2771,7 @@ void LinearScan::buildIntervals()
     // If the last block has successors, create a RefTypeBB to record
     // what's live
 
-    if (prevBlock->NumSucc(compiler) > 0)
+    if (prevBlock->NumSucc() > 0)
     {
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }

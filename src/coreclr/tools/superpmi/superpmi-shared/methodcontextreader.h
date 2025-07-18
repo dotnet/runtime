@@ -10,6 +10,7 @@
 
 #include "methodcontext.h"
 #include "tocfile.h"
+#include <minipal/mutex.h>
 
 struct MethodContextBuffer
 {
@@ -56,7 +57,7 @@ private:
     int curMCIndex;
 
     // The synchronization mutex
-    HANDLE mutex;
+    minipal_mutex mutex;
     bool   AcquireLock();
     void   ReleaseLock();
 

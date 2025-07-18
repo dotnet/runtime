@@ -317,6 +317,13 @@ mono_class_setup_fields (MonoClass *klass)
 	if (explicit_size)
 		instance_size += real_size;
 
+	if (explicit_size && real_size != 0 && m_class_is_inlinearray (klass)) {
+		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array must not have explicit size.");
+		else
+			mono_class_set_type_load_failure (klass, "Inline array must not have explicit size.");
+	}
+
 	/*
 	 * This function can recursively call itself.
 	 * Prevent infinite recursion by using a list in TLS.

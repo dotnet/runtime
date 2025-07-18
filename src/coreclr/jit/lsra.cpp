@@ -1101,7 +1101,7 @@ void LinearScan::setBlockSequence()
         {
             if (!hasUniquePred)
             {
-                if (predBlock->NumSucc(compiler) > 1)
+                if (predBlock->NumSucc() > 1)
                 {
                     blockInfo[block->bbNum].hasCriticalInEdge = true;
                     hasCriticalEdges                          = true;
@@ -1131,14 +1131,14 @@ void LinearScan::setBlockSequence()
 
         // First, update the NORMAL successors of the current block, adding them to the worklist
         // according to the desired order.  We will handle the EH successors below.
-        const unsigned numSuccs                = block->NumSucc(compiler);
+        const unsigned numSuccs                = block->NumSucc();
         bool           checkForCriticalOutEdge = (numSuccs > 1);
         if (!checkForCriticalOutEdge && block->KindIs(BBJ_SWITCH))
         {
             assert(!"Switch with single successor");
         }
 
-        for (BasicBlock* const succ : block->Succs(compiler))
+        for (BasicBlock* const succ : block->Succs())
         {
             if (checkForCriticalOutEdge && (succ->GetUniquePred(compiler) == nullptr))
             {
@@ -8953,7 +8953,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
     // Get the outVarToRegMap for this block
     VarToRegMap outVarToRegMap = getOutVarToRegMap(block->bbNum);
-    unsigned    succCount      = block->NumSucc(compiler);
+    unsigned    succCount      = block->NumSucc();
     assert(succCount > 1);
 
     // First, determine the live regs at the end of this block so that we know what regs are
@@ -9096,7 +9096,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         regNumber sameToReg           = REG_NA;
         for (unsigned succIndex = 0; succIndex < succCount; succIndex++)
         {
-            BasicBlock* succBlock = block->GetSucc(succIndex, compiler);
+            BasicBlock* succBlock = block->GetSucc(succIndex);
             if (!VarSetOps::IsMember(compiler, succBlock->bbLiveIn, outResolutionSetVarIndex))
             {
                 maybeSameLivePaths = true;
@@ -9215,7 +9215,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     {
         for (unsigned succIndex = 0; succIndex < succCount; succIndex++)
         {
-            BasicBlock* succBlock = block->GetSucc(succIndex, compiler);
+            BasicBlock* succBlock = block->GetSucc(succIndex);
 
             // Any "diffResolutionSet" resolution for a block with no other predecessors will be handled later
             // as split resolution.
@@ -9333,7 +9333,7 @@ void LinearScan::resolveEdges()
             continue;
         }
 
-        unsigned    succCount       = block->NumSucc(compiler);
+        unsigned    succCount       = block->NumSucc();
         BasicBlock* uniquePredBlock = block->GetUniquePred(compiler);
 
         // First, if this block has a single predecessor,
@@ -9366,7 +9366,7 @@ void LinearScan::resolveEdges()
 
         if (succCount == 1)
         {
-            BasicBlock* succBlock = block->GetSucc(0, compiler);
+            BasicBlock* succBlock = block->GetSucc(0);
             if (succBlock->GetUniquePred(compiler) == nullptr)
             {
                 VARSET_TP outResolutionSet(
@@ -10958,7 +10958,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                             continueLoop = false;
                             break;
                         }
-                        block->dspBlockHeader(compiler);
+                        block->dspBlockHeader();
                         printedBlockHeader = true;
                         printf("=====\n");
                         break;
@@ -10975,7 +10975,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         }
         else
         {
-            block->dspBlockHeader(compiler);
+            block->dspBlockHeader();
             printf("=====\n");
         }
         if (enregisterLocalVars && mode == LSRA_DUMP_POST && block != compiler->fgFirstBB &&

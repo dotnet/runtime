@@ -2002,11 +2002,11 @@ namespace System.Security.Cryptography
     {
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public MLDsaCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.MLDsaAlgorithm)) { }
-        public System.Security.Cryptography.CngKey Key { get { throw null; } }
         protected override void Dispose(bool disposing) { }
         protected override void ExportMLDsaPrivateSeedCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaPublicKeyCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaSecretKeyCore(System.Span<byte> destination) { }
+        public System.Security.Cryptography.CngKey GetKey() { throw null; }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
         protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -3386,6 +3386,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public Pkcs12LoaderLimits() { }
         public Pkcs12LoaderLimits(System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits copyFrom) { }
+        public bool AllowDuplicateAttributes { get { throw null; } set { } }
         public static System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits DangerousNoLimits { get { throw null; } }
         public static System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits Defaults { get { throw null; } }
         public bool IgnoreEncryptedAuthSafes { get { throw null; } set { } }

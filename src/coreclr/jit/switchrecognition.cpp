@@ -42,12 +42,12 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             modified = true;
 
             // Converted switches won't have dominant cases, so we can skip the switch peeling check.
-            assert(!block->GetSwitchTargets()->bbsHasDominantCase);
+            assert(!block->GetSwitchTargets()->HasDominantCase());
         }
         else
 #endif
 
-            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->bbsHasDominantCase)
+            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
         {
             fgPeelSwitch(block);
             modified = true;
@@ -377,7 +377,12 @@ bool Compiler::optSwitchConvert(
     FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
 
     // Convert firstBlock to a switch block
-    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc);
+    const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
+    assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
+    FlowEdge** const jmpTab =
+        new (this, CMK_FlowEdge) FlowEdge*[2 + jumpCount + 1 /* true/false edges | cases | default case */];
+
+    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(jmpTab, 2, jmpTab + 2, jumpCount + 1, true));
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
@@ -406,14 +411,7 @@ bool Compiler::optSwitchConvert(
         blockToRemove = nextBlockToRemove;
     }
 
-    const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
-    assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
-    FlowEdge** jmpTab = new (this, CMK_FlowEdge) FlowEdge*[jumpCount + 1 /*default case*/];
-
-    fgHasSwitch                                   = true;
-    firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
-    firstBlock->GetSwitchTargets()->bbsHasDefault = true;
-    firstBlock->GetSwitchTargets()->bbsDstTab     = jmpTab;
+    fgHasSwitch = true;
 
     // Splitting doesn't work well with jump-tables currently
     opts.compProcedureSplitting = false;
@@ -430,7 +428,8 @@ bool Compiler::optSwitchConvert(
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
     fgRemoveRefPred(trueEdge);
 
-    FlowEdge* switchTrueEdge = nullptr;
+    FlowEdge*        switchTrueEdge = nullptr;
+    FlowEdge** const cases          = jmpTab + 2;
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
@@ -438,7 +437,7 @@ bool Compiler::optSwitchConvert(
         const bool isTrue = (bitVector & static_cast<ssize_t>(1ULL << i)) != 0;
 
         FlowEdge* const newEdge = fgAddRefPred((isTrue ? blockIfTrue : blockIfFalse), firstBlock);
-        jmpTab[i]               = newEdge;
+        cases[i]                = newEdge;
 
         if ((switchTrueEdge == nullptr) && isTrue)
         {
@@ -450,11 +449,15 @@ bool Compiler::optSwitchConvert(
 
     // Link the 'default' case
     FlowEdge* const switchDefaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
-    jmpTab[jumpCount]                 = switchDefaultEdge;
+    cases[jumpCount]                  = switchDefaultEdge;
 
     // Fix likelihoods
     switchDefaultEdge->setLikelihood(falseLikelihood);
     switchTrueEdge->setLikelihood(1.0 - falseLikelihood);
+
+    // Initialize unique successor table
+    firstBlock->GetSwitchTargets()->GetSuccs()[0] = cases[0];
+    firstBlock->GetSwitchTargets()->GetSuccs()[1] = (cases[0] == switchTrueEdge) ? switchDefaultEdge : switchTrueEdge;
 
     return true;
 }

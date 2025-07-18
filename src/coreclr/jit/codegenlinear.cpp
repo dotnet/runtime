@@ -174,7 +174,7 @@ void CodeGen::genCodeForBBlist()
         if (compiler->verbose)
         {
             printf("\n=============== Generating ");
-            block->dspBlockHeader(compiler, true, true);
+            block->dspBlockHeader(true, true);
             compiler->fgDispBBLiveness(block);
         }
 #endif // DEBUG

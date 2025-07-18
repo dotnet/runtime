@@ -473,6 +473,85 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> AddPairwiseWideningAndAdd(Vector<ulong> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
+
+        // Rounding add narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svraddhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   RADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddRoundedHighNarrowingEven(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svraddhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   RADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddRoundedHighNarrowingEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svraddhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   RADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddRoundedHighNarrowingEven(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svraddhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   RADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddRoundedHighNarrowingEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svraddhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   RADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddRoundedHighNarrowingEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svraddhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   RADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddRoundedHighNarrowingEven(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding add narrow high part (top)
+
+        /// <summary>
+        /// svuint8_t svraddhnt[_u16](svuint8_t even, svuint16_t op1, svuint16_t op2)
+        ///   RADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddRoundedHighNarrowingOdd(Vector<byte> even, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svraddhnt[_s32](svint16_t even, svint32_t op1, svint32_t op2)
+        ///   RADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddRoundedHighNarrowingOdd(Vector<short> even, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svraddhnt[_s64](svint32_t even, svint64_t op1, svint64_t op2)
+        ///   RADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddRoundedHighNarrowingOdd(Vector<int> even, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svraddhnt[_s16](svint8_t even, svint16_t op1, svint16_t op2)
+        ///   RADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddRoundedHighNarrowingOdd(Vector<sbyte> even, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svraddhnt[_u32](svuint16_t even, svuint32_t op1, svuint32_t op2)
+        ///   RADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddRoundedHighNarrowingOdd(Vector<ushort> even, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svraddhnt[_u64](svuint32_t even, svuint64_t op1, svuint64_t op2)
+        ///   RADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddRoundedHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
         // Saturating add
 
         /// <summary>
@@ -1165,6 +1244,58 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UHSUBR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// </summary>
         public static Vector<ulong> FusedSubtractHalving(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding halving add
+
+        /// <summary>
+        /// svuint8_t svrhadd[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   URHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> FusedAddRoundedHalving(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrhadd[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SRHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> FusedAddRoundedHalving(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrhadd[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SRHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> FusedAddRoundedHalving(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrhadd[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SRHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> FusedAddRoundedHalving(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrhadd[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SRHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> FusedAddRoundedHalving(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrhadd[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   URHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> FusedAddRoundedHalving(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrhadd[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   URHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> FusedAddRoundedHalving(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrhadd[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   URHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> FusedAddRoundedHalving(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
 
         /// Interleaving Xor
 
@@ -2844,6 +2975,84 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SUBHNT Ztied.S, Zop1.D, Zop2.D
         /// </summary>
         public static Vector<uint> SubtractHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding subtract narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svrsubhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   RSUBHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> SubtractRoundedHighNarrowingEven(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrsubhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   RSUBHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> SubtractRoundedHighNarrowingEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrsubhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   RSUBHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> SubtractRoundedHighNarrowingEven(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrsubhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   RSUBHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> SubtractRoundedHighNarrowingEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrsubhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   RSUBHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> SubtractRoundedHighNarrowingEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrsubhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   RSUBHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> SubtractRoundedHighNarrowingEven(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding subtract narrow high part (top)
+
+        /// <summary>
+        /// svuint8_t svrsubhnt[_u16](svuint8_t even, svuint16_t op1, svuint16_t op2)
+        ///   RSUBHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> SubtractRoundedHighNarrowingOdd(Vector<byte> even, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrsubhnt[_s32](svint16_t even, svint32_t op1, svint32_t op2)
+        ///   RSUBHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> SubtractRoundedHighNarrowingOdd(Vector<short> even, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrsubhnt[_s64](svint32_t even, svint64_t op1, svint64_t op2)
+        ///   RSUBHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> SubtractRoundedHighNarrowingOdd(Vector<int> even, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrsubhnt[_s16](svint8_t even, svint16_t op1, svint16_t op2)
+        ///   RSUBHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> SubtractRoundedHighNarrowingOdd(Vector<sbyte> even, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrsubhnt[_u32](svuint16_t even, svuint32_t op1, svuint32_t op2)
+        ///   RSUBHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> SubtractRoundedHighNarrowingOdd(Vector<ushort> even, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrsubhnt[_u64](svuint32_t even, svuint64_t op1, svuint64_t op2)
+        ///   RSUBHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> SubtractRoundedHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
 
         // Saturating subtract
