@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.WixToolset.UI.wixext" Version="$(MicrosoftWixToolsetUIWixextVersion)" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.WixToolset.Dependency.wixext" Version="$(MicrosoftWixToolsetDependencyWixextVersion)" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.WixToolset.Util.wixext" Version="$(MicrosoftWixToolsetUtilWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.WixToolset.Bal.wixext" Version="$(MicrosoftWixToolsetBalWixextVersion)" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.WixToolset.Heat" Version="$(MicrosoftWixToolsetHeatVersion)" />
   </ItemGroup>
   

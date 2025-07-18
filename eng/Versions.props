@@ -287,6 +287,7 @@
     <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2729052</MicrosoftWixToolsetUIWixextVersion>
     <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.2729052</MicrosoftWixToolsetDependencyWixextVersion>
     <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.2729052</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.2729052</MicrosoftWixToolsetBalWixextVersion>
     <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.2729052</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 </Project>
