@@ -161,15 +161,15 @@ To reduce the number of comparisons for small inputs, we can re-arrange it in th
 void OptimalCodeStructure(ReadOnlySpan<byte> buffer)
 {
     if (!Vector128.IsHardwareAccelerated || buffer.Length < Vector128<byte>.Count)
-    {
+    { 
         // scalar code path
-    }
+    } 
     else if (!Vector256.IsHardwareAccelerated || buffer.Length < Vector256<byte>.Count)
-    {
+    { 
         // Vector128 code path
-    }
+    } 
     else
-    {
+    { 
         // Vector256 code path
     }
 }
@@ -890,7 +890,7 @@ unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> e
 
     uint mostSignificantBits = equals.ExtractMostSignificantBits();
     int index = BitOperations.TrailingZeroCount(mostSignificantBits);
-
+    
     return elementOffset + index;
 }
 ```
