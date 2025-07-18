@@ -192,23 +192,16 @@ namespace System
         }
 
         private static ulong s_crashingThreadId;
-        private static CrashInfo? s_crashInfo;
-        private static object s_crashLockObject = new object();
+        private static CrashInfo s_crashInfo;
+        private static int s_crashInfoPresent;
 
         internal static CrashInfo SerializeCrashInfo(RhFailFastReason reason, string? message, Exception? exception)
         {
-            if (s_crashInfo != null)
+            int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, 1, 0);
+            if (previousState == 0)
             {
-                // If we have already reported a crash, return the existing crash info.
-                return s_crashInfo.Value;
-            }
+                s_crashInfoPresent = 1;
 
-            lock (s_crashLockObject)
-            {
-                if (s_crashInfo != null)
-                {
-                    return s_crashInfo.Value;
-                }
                 CrashInfo crashInfo = new();
 
                 crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
@@ -218,10 +211,9 @@ namespace System
                 }
                 crashInfo.Close();
                 s_crashInfo = crashInfo;
-
-                return crashInfo;
             }
 
+            return s_crashInfo;
         }
 
         [DoesNotReturn]
