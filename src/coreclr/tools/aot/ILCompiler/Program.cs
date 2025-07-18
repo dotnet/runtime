@@ -604,10 +604,14 @@ namespace ILCompiler
             compilationRoots.Add(metadataManager);
             compilationRoots.Add(interopStubManager);
 
+            MethodBodyFoldingMode foldingMode = string.IsNullOrEmpty(Get(_command.MethodBodyFolding))
+                ? MethodBodyFoldingMode.None
+                : Enum.Parse<MethodBodyFoldingMode>(Get(_command.MethodBodyFolding), ignoreCase: true);
+
             builder
                 .UseInstructionSetSupport(instructionSetSupport)
                 .UseBackendOptions(Get(_command.CodegenOptions))
-                .UseMethodBodyFolding(enable: Get(_command.MethodBodyFolding))
+                .UseMethodBodyFolding(foldingMode)
                 .UseParallelism(parallelism)
                 .UseMetadataManager(metadataManager)
                 .UseInteropStubManager(interopStubManager)

@@ -3,7 +3,7 @@
 
 namespace System.Net.Http
 {
-    internal static class HttpUtilities
+    internal static partial class HttpUtilities
     {
         internal static bool IsSupportedScheme(string scheme) =>
             IsSupportedNonSecureScheme(scheme) ||
