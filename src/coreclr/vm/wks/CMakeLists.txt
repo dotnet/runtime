@@ -11,12 +11,6 @@ add_library_clr(cee_wks_core OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM}
 add_library_clr(cee_wks OBJECT ${VM_SOURCES_WKS_SPECIAL})
 add_library_clr(cee_wks_mergeable OBJECT ${VM_SOURCES_WKS_SPECIAL})
 
-if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
-  target_compile_definitions(cee_wks_core PRIVATE FEATURE_SIMD)
-  target_compile_definitions(cee_wks PRIVATE FEATURE_SIMD)
-  target_compile_definitions(cee_wks_mergeable PRIVATE FEATURE_SIMD)
-endif()
-
 target_precompile_headers(cee_wks_core PRIVATE [["common.h"]])
 target_precompile_headers(cee_wks PRIVATE [["common.h"]])
 target_precompile_headers(cee_wks_mergeable PRIVATE [["common.h"]])
