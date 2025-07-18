@@ -527,7 +527,7 @@ private:
     void* GetDataItemAtIndex(int32_t index);
     void* GetAddrOfDataItemAtIndex(int32_t index);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
-    int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
+    int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
@@ -697,7 +697,6 @@ private:
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
-    bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitLdelem(int32_t opcode, InterpType type);
@@ -745,7 +744,7 @@ private:
     void PrintBBCode(InterpBasicBlock *pBB);
     void PrintIns(InterpInst *ins);
     void PrintPointer(void* pointer);
-    void PrintHelperFtn(void* helperAddr);
+    void PrintHelperFtn(int32_t _data);
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);

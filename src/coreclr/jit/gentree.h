@@ -648,6 +648,22 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+struct LocalDef
+{
+    GenTreeLclVarCommon* Def;
+    bool                 IsEntire;
+    ssize_t              Offset;
+    unsigned             Size;
+
+    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, unsigned size)
+        : Def(def)
+        , IsEntire(isEntire)
+        , Offset(offset)
+        , Size(size)
+    {
+    }
+};
+
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -695,6 +711,12 @@ struct GenTree
 #define GTSTRUCT_3_SPECIAL(fn, en, en2, en3) GTSTRUCT_3(fn, en, en2, en3)
 
 #include "gtstructs.h"
+
+    enum class VisitResult
+    {
+        Abort    = false,
+        Continue = true
+    };
 
     genTreeOps gtOper; // enum subtype BYTE
     var_types  gtType; // enum subtype BYTE
@@ -2023,11 +2045,13 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    bool DefinesLocal(Compiler*             comp,
-                      GenTreeLclVarCommon** pLclVarTree,
-                      bool*                 pIsEntire = nullptr,
-                      ssize_t*              pOffset   = nullptr,
-                      unsigned*             pSize     = nullptr);
+    template <typename TVisitor>
+    VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+
+    bool HasAnyLocalDefs(Compiler* comp);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr, target_ssize_t* offset);
@@ -2349,12 +2373,6 @@ public:
 
     // Returns a range that will produce the operands of this node in execution order.
     IteratorPair<GenTreeOperandIterator> Operands();
-
-    enum class VisitResult
-    {
-        Abort    = false,
-        Continue = true
-    };
 
     // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature
     // `GenTree::VisitResult VisitorFunction(GenTree* operand)`. Here is a simple example:
@@ -4328,10 +4346,21 @@ enum class ExecutionContextHandling
     AsyncSaveAndRestore,
 };
 
+enum class ContinuationContextHandling
+{
+    // No special handling of SynchronizationContext/TaskScheduler is required.
+    None,
+    // Continue on SynchronizationContext/TaskScheduler
+    ContinueOnCapturedContext,
+    // Continue on thread pool thread
+    ContinueOnThreadPool,
+};
+
 // Additional async call info.
 struct AsyncCallInfo
 {
-    ExecutionContextHandling ExecutionContextHandling = ExecutionContextHandling::None;
+    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 };
 
 // Return type descriptor of a GT_CALL node.
