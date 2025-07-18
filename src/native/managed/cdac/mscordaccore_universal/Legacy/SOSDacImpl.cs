@@ -115,7 +115,64 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainList(count, values, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainName(addr, count, name, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            ILoader loader = _target.Contracts.Loader;
+            string friendlyName = loader.GetFriendlyName();
+            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
+            if (addr == systemDomain || friendlyName == string.Empty)
+            {
+                if (pNeeded is not null)
+                {
+                    *pNeeded = 1;
+                }
+                if (name is not null & count > 0)
+                {
+                    name[0] = '\0'; // Set the first character to null terminator
+                }
+            }
+            else
+            {
+                uint needed = (uint)(friendlyName.Length + 1); // +1 for null terminator
+                if (pNeeded is not null)
+                {
+                    *pNeeded = needed;
+                }
+
+                if (name is not null && count > 0)
+                {
+                    OutputBufferHelpers.CopyStringToBuffer(name, count, pNeeded, friendlyName);
+                    name[needed - 1] = '\0'; // Ensure null termination
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint neededLocal;
+            char[] nameLocal = new char[count];
+            int hrLocal;
+            fixed (char* ptr = nameLocal)
+            {
+                hrLocal = _legacyImpl.GetAppDomainName(addr, count, ptr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(name)));
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainStoreData(data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded)

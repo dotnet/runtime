@@ -139,10 +139,20 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
         return appDomain.RootAssembly;
     }
+
+    string ILoader.GetFriendlyName()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        return appDomain.FriendlyName != TargetPointer.Null
+            ? _target.ReadUtf16String(appDomain.FriendlyName)
+            : string.Empty;
+    }
     TargetPointer ILoader.GetModule(ModuleHandle handle)
     {
         return handle.Address;
     }
+
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
