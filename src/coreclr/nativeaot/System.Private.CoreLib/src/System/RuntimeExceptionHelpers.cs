@@ -214,10 +214,13 @@ namespace System
 
                 s_crashInfoPresent = 1;
             }
-            while (s_crashInfoPresent != 1)
+            else
             {
-                // Some other thread is generating the crash info
-                Thread.Sleep(1);
+                while (s_crashInfoPresent != 1)
+                {
+                    // Some other thread is generating the crash info
+                    Thread.Sleep(1);
+                }
             }
 
         }
