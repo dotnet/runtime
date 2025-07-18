@@ -5990,6 +5990,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
+        BoundsType::Instrumented, 
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
 
@@ -6052,6 +6053,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
+        BoundsType::Instrumented,
         &countMapCopy, &mapCopy,
         NULL, NULL);
 
@@ -7044,6 +7046,14 @@ CLRDataCreateInstance(REFIID iid,
 
                 // Release the AddRef from the QI.
                 pClrDataAccess->Release();
+            }
+
+            if (cdacInterface == nullptr)
+            {
+                // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+                // Release the ClrDataAccess instance we created
+                pClrDataAccess->Release();
+                return E_FAIL;
             }
         }
     }

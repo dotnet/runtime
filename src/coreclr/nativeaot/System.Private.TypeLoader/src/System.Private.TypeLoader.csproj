@@ -244,7 +244,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderTypeSystemContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemContextFactory.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemExtensions.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\WellKnownTypeExtensions.cs" />
     <Compile Include="Internal\TypeSystem\AssemblyNameInfo.Dummy.cs" />
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />

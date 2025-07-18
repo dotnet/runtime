@@ -2304,11 +2304,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 if (!op2->OperIsConst() && !op1->isContained())
                 {
-                    // If the index is not a constant or op1 is in register,
+                    // If the index is not a constant and op1 is in register,
                     // we will use the SIMD temp location to store the vector.
 
                     var_types requiredSimdTempType = Compiler::getSIMDTypeForSize(intrinsicTree->GetSimdSize());
                     compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+                }
+                else if (op1->IsCnsVec())
+                {
+                    // We need an int reg to load the address of the CnsVec data.
+                    buildInternalIntRegisterDefForNode(intrinsicTree);
                 }
                 break;
             }
@@ -2761,6 +2766,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            case NI_AVXVNNIINT_MultiplyWideningAndAdd:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate:
             {
                 assert(numArgs == 3);
 

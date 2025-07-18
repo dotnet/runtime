@@ -343,7 +343,9 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 
 int32_t SystemNative_Close(intptr_t fd)
 {
-    return close(ToFileDescriptor(fd));
+    int result = close(ToFileDescriptor(fd));
+    if (result < 0 && errno == EINTR) result = 0; // on all supported platforms, close(2) returning EINTR still means it was released
+    return result;
 }
 
 intptr_t SystemNative_Dup(intptr_t oldfd)

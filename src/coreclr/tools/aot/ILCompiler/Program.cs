@@ -361,6 +361,7 @@ namespace ILCompiler
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
             var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
                 .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
+                .UseSymbolOrder(Get(_command.OrderFile))
                 .UseCompilationUnitPrefix(compilationUnitPrefix);
 
             string[] mibcFilePaths = Get(_command.MibcFilePaths);
@@ -804,12 +805,16 @@ namespace ILCompiler
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new ILCompilerRootCommand(args)
+            new ILCompilerRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

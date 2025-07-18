@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
         [Kept]
 #if !NET
-		[ExpectBodyModified]
+        [ExpectBodyModified]
 #else
         [ExpectedInstructionSequence(new[] {
             "nop",
@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
         [Kept]
 #if !NET
-		[ExpectBodyModified]
+        [ExpectBodyModified]
 #else
         [ExpectedInstructionSequence(new[] {
             "nop",
