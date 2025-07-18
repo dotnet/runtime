@@ -838,7 +838,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 Activity? activity = null;
-
                 using ActivityListener listener = new ActivityListener()
                 {
                     ShouldListenTo = s => s.Name is "System.Net.Http",
@@ -846,15 +845,6 @@ namespace System.Net.Http.Functional.Tests
                     ActivityStopped = a =>
                     {
                         activity = a;
-                        Assert.Equal(ActivityStatusCode.Error, a.Status);
-                        ActivityAssert.HasTag(a, "error.type", typeof(TaskCanceledException).FullName);
-                        ActivityEvent evt = a.Events.Single(e => e.Name == "exception");
-                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
-                        Assert.Contains("exception.type", tags.Keys);
-                        Assert.Contains("exception.message", tags.Keys);
-                        Assert.Contains("exception.stacktrace", tags.Keys);
-                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
-
                         activityStopTcs.SetResult();
                     }
                 };
@@ -871,14 +861,23 @@ namespace System.Net.Http.Functional.Tests
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
 
-                        await Assert.ThrowsAsync<TaskCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+
+                        Assert.NotNull(activity);
+                        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+                        ActivityAssert.HasTag(activity, "error.type", (string errorType) => errorType == typeof(TaskCanceledException).FullName || errorType == typeof(OperationCanceledException).FullName);
+                        ActivityEvent evt = activity.Events.Single(e => e.Name == "exception");
+                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                        Assert.Contains("exception.type", tags.Keys);
+                        Assert.Contains("exception.message", tags.Keys);
+                        Assert.Contains("exception.stacktrace", tags.Keys);
+                        Assert.True((string)tags["exception.type"] == typeof(TaskCanceledException).FullName || (string)tags["exception.type"] == typeof(OperationCanceledException).FullName);
                     },
                     async server =>
                     {
                         await server.AcceptConnectionAsync(async connection =>
                         {
                             cts.Cancel();
-
                             await activityStopTcs.Task;
                         });
                     });

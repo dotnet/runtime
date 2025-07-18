@@ -57,6 +57,7 @@
              Link="Common\Interop\Windows\BCrypt\Interop.Blobs.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs" />
+    <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -75,7 +76,6 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
 
-    <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="System\Security\Cryptography\NetStandardShims.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />

@@ -200,7 +200,7 @@ namespace ILCompiler
 
                 ISymbolNode entryPoint;
                 if (mangledName != null)
-                    entryPoint = _compilation.NodeFactory.ExternSymbol(mangledName);
+                    entryPoint = _compilation.NodeFactory.ExternFunctionSymbol(mangledName);
                 else
                     entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 
@@ -393,6 +393,14 @@ namespace ILCompiler
                 ArrayBuilder<GenericLookupResult> slotBuilder = default;
                 ArrayBuilder<GenericLookupResult> discardedBuilder = default;
 
+                // Find all constructed type lookups. We'll deduplicate those with necessary type lookups.
+                var constructedTypeLookups = new HashSet<TypeDesc>();
+                foreach (GenericLookupResult lookupResult in slots)
+                {
+                    if (lookupResult is TypeHandleGenericLookupResult thLookup)
+                        constructedTypeLookups.Add(thLookup.Type);
+                }
+
                 // We go over all slots in the layout, looking for references to method dictionaries
                 // that are going to be empty.
                 // Set those slots aside so that we can avoid generating the references to such dictionaries.
@@ -411,6 +419,11 @@ namespace ILCompiler
                             discardedBuilder.Add(lookupResult);
                             continue;
                         }
+                    }
+                    else if (lookupResult is NecessaryTypeHandleGenericLookupResult thLookup)
+                    {
+                        if (constructedTypeLookups.Contains(thLookup.Type))
+                            continue;
                     }
 
                     slotBuilder.Add(lookupResult);
@@ -470,6 +483,7 @@ namespace ILCompiler
 
         private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
+            private CompilerTypeSystemContext _context;
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
@@ -483,6 +497,8 @@ namespace ILCompiler
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
+                _context = factory.TypeSystemContext;
+
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
                 var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();
 
@@ -499,12 +515,7 @@ namespace ILCompiler
                         _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
                     }
 
-                    TypeDesc type = node switch
-                    {
-                        ConstructedEETypeNode eetypeNode => eetypeNode.Type,
-                        CanonicalEETypeNode canoneetypeNode => canoneetypeNode.Type,
-                        _ => null,
-                    };
+                    TypeDesc type = (node as ConstructedEETypeNode)?.Type;
 
                     if (type != null)
                     {
@@ -576,23 +587,6 @@ namespace ILCompiler
                                 for (DefType @base = type.BaseType; @base != null; @base = @base.BaseType)
                                 {
                                     _disqualifiedTypes.Add(@base);
-                                }
-                            }
-                            else if (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
-                            {
-                                // Interfaces implemented by arrays and array enumerators have weird casting rules
-                                // due to array covariance (string[] castable to object[], or int[] castable to uint[]).
-                                // Disqualify such interfaces.
-                                TypeDesc elementType = type.IsArray ? ((ArrayType)type).ElementType : type.Instantiation[0];
-                                if (CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
-                                    (elementType.IsDefType && !elementType.IsValueType))
-                                {
-                                    foreach (DefType baseInterface in type.RuntimeInterfaces)
-                                    {
-                                        // Limit to the generic ones - ICollection<T>, etc.
-                                        if (baseInterface.HasInstantiation)
-                                            _disqualifiedTypes.Add(baseInterface);
-                                    }
                                 }
                             }
 
@@ -794,6 +788,9 @@ namespace ILCompiler
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {
                 if (_disqualifiedTypes.Contains(type))
+                    return null;
+
+                if (_context.IsArrayVariantCastable(type))
                     return null;
 
                 if (_implementators.TryGetValue(type, out HashSet<TypeDesc> implementations))

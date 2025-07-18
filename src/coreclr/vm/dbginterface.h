@@ -277,6 +277,7 @@ public:
                                          ULONG32 *pcMap,
                                          COR_DEBUG_IL_TO_NATIVE_MAP map[]) = 0;
 
+#ifdef DEBUG
     virtual HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -284,6 +285,7 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset) = 0;
+#endif // DEBUG
 
     virtual DWORD GetHelperThreadID(void ) = 0;
 
@@ -296,14 +298,6 @@ public:
     virtual HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain) = 0;
 
     virtual HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain) = 0;
-
-    // Called when an assembly is being loaded into an AppDomain.
-    // This includes when a domain neutral assembly is loaded into a new AppDomain.
-    // This is called only when a debugger is attached, and will occur after the
-    // related AddAppDomainToIPCBlock call and before any LoadModule or
-    // LoadClass calls for this assembly.
-    virtual void LoadAssembly(DomainAssembly * pDomainAssembly) = 0; // the assembly being loaded
-
 
     // Called for all assemblies in an AppDomain when the AppDomain is unloaded.
     // This includes domain neutral assemblies that are also loaded into other domains.
