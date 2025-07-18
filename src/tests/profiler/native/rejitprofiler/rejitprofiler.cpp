@@ -320,7 +320,8 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
 {
     SHUTDOWNGUARD();
 
-    INFO(L"Starting to build IL for method " << GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId, false)));
+    String functionName = GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId, false));
+    INFO(L"Starting to build IL for method " << functionName);
     COMPtrHolder<IUnknown> pUnk;
     HRESULT hr = _profInfo10->GetModuleMetaData(moduleId, ofWrite, IID_IMetaDataEmit2, &pUnk);
     if (FAILED(hr))
@@ -340,7 +341,8 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
     }
 
 
-    const WCHAR *wszNewUserDefinedString = WCHAR("Hello from profiler rejit!");
+    WCHAR wszNewUserDefinedString[4096] = { 0 };
+    swprintf_s(wszNewUserDefinedString, L"Hello from profiler rejit method '%lS'!", functionName.ToWString().c_str());
     mdString tokmdsUserDefined = mdTokenNil;
     hr = pTargetEmit->DefineUserString(wszNewUserDefinedString,
                                        (ULONG)wcslen(wszNewUserDefinedString),
