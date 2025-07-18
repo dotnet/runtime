@@ -129,7 +129,7 @@ internal sealed unsafe partial class SOSDacImpl
                 {
                     *pNeeded = 1;
                 }
-                if (name is not null & count > 0)
+                if (name is not null && count > 0)
                 {
                     name[0] = '\0'; // Set the first character to null terminator
                 }
