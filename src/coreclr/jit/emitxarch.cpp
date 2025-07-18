@@ -87,7 +87,23 @@ bool emitter::IsAvx512OnlyInstruction(instruction ins)
 
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
-    return (ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION);
+#ifdef TARGET_AMD64
+    if (IsApxZuCompatibleInstruction(ins))
+    {
+        return true;
+    }
+
+    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
+    {
+        return true;
+    }
+
+    if (IsCCMP(ins))
+    {
+        return true;
+    }
+#endif // TARGET_AMD64
+    return false;
 }
 
 bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
@@ -515,18 +531,6 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
 
     if (IsApxNfCompatibleInstruction(ins))
     {
-        return true;
-    }
-
-    if (IsApxZuCompatibleInstruction(ins))
-    {
-        // SETcc can use EVEX.ZU feature.
-        return true;
-    }
-
-    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
-    {
-        // With the new opcode, CRC32 is promoted to EVEX with APX.
         return true;
     }
 
@@ -2045,17 +2049,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     if (IsApxNfCompatibleInstruction(ins) && id->idIsEvexNfContextSet())
     {
         // The instruction uses APX-NF hint, and it requires EVEX.
-        return true;
-    }
-
-    if (IsApxZuCompatibleInstruction(ins) && id->idIsEvexZuContextSet())
-    {
-        // These are promoted forms of SETcc instruction with EVEX.ZU.
-        return true;
-    }
-
-    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
-    {
         return true;
     }
 
