@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Nodes
 {
@@ -20,7 +21,14 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.String:
                     byte[] quotedStringValue;
 
-                    if (reader.HasValueSequence)
+                    if (reader.ValueIsEscaped)
+                    {
+                        ReadOnlySpan<byte> unescapedValue = reader.GetUnescapedSpan();
+
+                        quotedStringValue = new byte[checked(2 + unescapedValue.Length)];
+                        unescapedValue.CopyTo(quotedStringValue.AsSpan().Slice(1, unescapedValue.Length));
+                    }
+                    else if (reader.HasValueSequence)
                     {
                         // Throw if the long to int conversion fails. This can be accommodated in the future if needed by
                         // adding another derived class that has a backing ReadOnlySequence<byte> instead of a byte[].
@@ -35,7 +43,7 @@ namespace System.Text.Json.Nodes
                     }
 
                     quotedStringValue[0] = quotedStringValue[quotedStringValue.Length - 1] = JsonConstants.Quote;
-                    return new JsonValueOfJsonString(quotedStringValue, reader.ValueIsEscaped, options);
+                    return new JsonValueOfJsonString(quotedStringValue, options);
                 case JsonTokenType.Number:
                     byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
                     return new JsonValueOfJsonNumber(new JsonValueOfJsonNumber.JsonNumber(numberValue), options);
@@ -49,32 +57,23 @@ namespace System.Text.Json.Nodes
         private sealed class JsonValueOfJsonString : JsonValue
         {
             private readonly byte[] _value;
-            private readonly bool _isEscaped;
 
-            internal JsonValueOfJsonString(byte[] value, bool isEscaped, JsonNodeOptions? options)
+            internal JsonValueOfJsonString(byte[] value, JsonNodeOptions? options)
                 : base(options)
             {
                 _value = value;
-                _isEscaped = isEscaped;
             }
 
-            private ReadOnlySpan<byte> ValueWithoutQuotes => _value.AsSpan(1, _value.Length - 2);
+            private ReadOnlySpan<byte> ValueWithoutQuotes => new ReadOnlySpan<byte>(_value, 1, _value.Length - 2);
 
-            internal override JsonNode DeepCloneCore() => new JsonValueOfJsonString(_value, _isEscaped, Options);
+            internal override JsonNode DeepCloneCore() => new JsonValueOfJsonString(_value, Options);
             private protected override JsonValueKind GetValueKindCore() => JsonValueKind.String;
 
             public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
             {
                 ArgumentNullException.ThrowIfNull(writer);
 
-                if (_isEscaped)
-                {
-                    writer.WriteStringValue(JsonReaderHelper.GetUnescapedString(ValueWithoutQuotes));
-                }
-                else
-                {
-                    writer.WriteStringValue(ValueWithoutQuotes);
-                }
+                writer.WriteStringValue(ValueWithoutQuotes);
             }
 
             public override T GetValue<T>()
@@ -92,15 +91,21 @@ namespace System.Text.Json.Nodes
             {
                 if (typeof(T) == typeof(JsonElement))
                 {
+                    int firstByteToEscape = JsonWriterHelper.NeedsEscaping(ValueWithoutQuotes, JavaScriptEncoder.Default);
+
+                    if (firstByteToEscape != -1)
+                    {
+                        value = (T)(object)EscapeAndConvert(ValueWithoutQuotes, firstByteToEscape);
+                        return true;
+                    }
+
                     value = (T)(object)JsonElement.Parse(_value);
                     return true;
                 }
 
                 if (typeof(T) == typeof(string))
                 {
-                    string? result = _isEscaped
-                        ? JsonReaderHelper.GetUnescapedString(ValueWithoutQuotes)
-                        : JsonReaderHelper.TranscodeHelper(ValueWithoutQuotes);
+                    string? result = JsonReaderHelper.TranscodeHelper(ValueWithoutQuotes);
 
                     Debug.Assert(result != null);
                     value = (T)(object)result;
@@ -111,30 +116,28 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(DateTime?))
                 {
-                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, _isEscaped, out DateTime result);
+                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, isEscaped: false, out DateTime result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(DateTimeOffset) || typeof(T) == typeof(DateTimeOffset?))
                 {
-                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, _isEscaped, out DateTimeOffset result);
+                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, isEscaped: false, out DateTimeOffset result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(Guid) || typeof(T) == typeof(Guid?))
                 {
-                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, _isEscaped, out Guid result);
+                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, isEscaped: false, out Guid result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(char) || typeof(T) == typeof(char?))
                 {
-                    string? result = _isEscaped
-                        ? JsonReaderHelper.GetUnescapedString(ValueWithoutQuotes)
-                        : JsonReaderHelper.TranscodeHelper(ValueWithoutQuotes);
+                    string? result = JsonReaderHelper.TranscodeHelper(ValueWithoutQuotes);
 
                     Debug.Assert(result != null);
                     if (result.Length == 1)
@@ -146,6 +149,43 @@ namespace System.Text.Json.Nodes
 
                 value = default!;
                 return false;
+
+                static JsonElement EscapeAndConvert(ReadOnlySpan<byte> value, int idx)
+                {
+                    Debug.Assert(idx != -1);
+                    Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
+
+                    int length = checked(2 + JsonWriterHelper.GetMaxEscapedLength(value.Length, idx));
+                    byte[]? rented = null;
+
+                    try
+                    {
+                        scoped Span<byte> escapedValue;
+
+                        if (length > JsonConstants.StackallocByteThreshold)
+                        {
+                            rented = ArrayPool<byte>.Shared.Rent(length);
+                            escapedValue = rented;
+                        }
+                        else
+                        {
+                            escapedValue = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                        }
+
+                        escapedValue[0] = JsonConstants.Quote;
+                        JsonWriterHelper.EscapeString(value, escapedValue.Slice(1), idx, JavaScriptEncoder.Default, out int written);
+                        escapedValue[1 + written] = JsonConstants.Quote;
+
+                        return JsonElement.Parse(escapedValue.Slice(0, written + 2));
+                    }
+                    finally
+                    {
+                        if (rented != null)
+                        {
+                            ArrayPool<byte>.Shared.Return(rented);
+                        }
+                    }
+                }
             }
         }
 
