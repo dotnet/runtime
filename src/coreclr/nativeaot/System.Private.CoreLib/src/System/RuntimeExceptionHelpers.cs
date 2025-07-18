@@ -198,7 +198,7 @@ namespace System
 
         internal static void SerializeCrashInfo(RhFailFastReason reason, string? message, Exception? exception)
         {
-            int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, 1, 0);
+            int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, -1, 0);
             if (previousState == 0)
             {
                 CrashInfo crashInfo = new();
@@ -214,6 +214,12 @@ namespace System
 
                 s_crashInfoPresent = 1;
             }
+            while (s_crashInfoPresent != 1)
+            {
+                // Some other thread is generating the crash info
+                Thread.Sleep(1);
+            }
+
         }
 
         [DoesNotReturn]
@@ -221,8 +227,6 @@ namespace System
             RhFailFastReason reason = RhFailFastReason.EnvironmentFailFast,
             IntPtr pExAddress = 0, IntPtr pExContext = 0)
         {
-            IntPtr triageBufferAddress = IntPtr.Zero;
-            int triageBufferSize = 0;
             int errorCode = 0;
 
             ulong currentThreadId = Thread.CurrentOSThreadId;
@@ -322,8 +326,8 @@ namespace System
             exceptionRecord.NumberParameters = 4;
             exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
             exceptionRecord.ExceptionInformation[1] = (uint)errorCode;
-            exceptionRecord.ExceptionInformation[2] = (nuint)triageBufferAddress;
-            exceptionRecord.ExceptionInformation[3] = (uint)triageBufferSize;
+            exceptionRecord.ExceptionInformation[2] = (nuint)s_triageBufferAddress;
+            exceptionRecord.ExceptionInformation[3] = (uint)s_triageBufferSize;
 
 #if TARGET_WINDOWS
             Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
