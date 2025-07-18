@@ -1122,6 +1122,38 @@ namespace System.Net.Sockets.Tests
             Assert.True(saea.ConnectSocket.Connected);
         }
 
+        [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
+        public void Connect_Parallel_Fails()
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.DualMode = false;
+                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            // the port blocker did not call Socket.Bind so we called bind() but we did not update properties on Socket
+            Socket b = new Socket(portBlocker.SecondarySocket.SafeHandle);
+
+            // do NOT a.Listen(1);
+            // do NOT b.Listen(1);
+            // Do NOT a.AcceptAsync();
+            // Do NOT b.AcceptAsync();
+
+            var mres = new ManualResetEventSlim();
+            SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            saea.Completed += (_, _) => mres.Set();
+            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            {
+                mres.Wait(TestSettings.PassingTestTimeout);
+            }
+            // we should see attemopt to both sockets
+            Assert.Null(saea.ConnectSocket);
+            Assert.NotEqual(SocketError.Success, saea.SocketError);
+        }
+
         [ConditionalTheory(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
         [InlineData(true)]
         [InlineData(false)]
@@ -1150,11 +1182,13 @@ namespace System.Net.Sockets.Tests
             SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
             saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
             saea.Completed += (_, _) => mres.Set();
+
             if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
             {
                 mres.Wait(TestSettings.PassingTestTimeout);
             }
             // we should see attempt to both sockets
+            Assert.NotNull(saea.ConnectSocket);
             Assert.True(saea.ConnectSocket.Connected);
             if (preferIPv6)
             {

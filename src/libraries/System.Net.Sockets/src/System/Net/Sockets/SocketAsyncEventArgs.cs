@@ -869,14 +869,13 @@ namespace System.Net.Sockets
                         // If we do parallel connect use SetResults from there to arbiter competing results.
                         if (caughtException != null)
                         {
-                            parallelState.SetResults(null, _socketError, 0, SocketFlags.None, caughtException);
+                            parallelState.SetResults(null, internalArgs.SocketError, 0, SocketFlags.None, caughtException);
                         }
                         else
                         {
                             parallelState.SetResults(internalArgs.ConnectSocket, internalArgs.SocketError, internalArgs.BytesTransferred, internalArgs.SocketFlags, null);
                         }
                         internalArgs.Dispose();
-
                     }
                     else
                     {
@@ -944,39 +943,38 @@ namespace System.Net.Sockets
             {
                 _saea = saea;
             }
-            public bool ReachedCoordinationPointFirst() => !Interlocked.Exchange(ref _isCompleted, true);
+            public bool Finished() => Interlocked.Exchange(ref _isCompleted, true);
 
             public void SetResults(Socket? socket, SocketError socketError, int bytesTransferred, SocketFlags flags, Exception? exception)
             {
                 int count = Interlocked.Increment(ref _count);
-                bool firstFinal = false;
+                bool shouldComplete = false;
 
                 if (socketError == SocketError.Success)
                 {
-                    firstFinal = ReachedCoordinationPointFirst();
-                    if (firstFinal)
+                    shouldComplete = !Finished();
+                    if (shouldComplete)
                     {
                         _saea._connectSocket = _saea._currentSocket = socket;
                         _saea.SetResults(SocketError.Success, bytesTransferred, flags);
-                        return;
                     }
                 }
                 else if (count == 2)    // We ignore failures on first socket since we have one more pending.
                 {
-                    firstFinal = ReachedCoordinationPointFirst();
-                    if (firstFinal)
+                    shouldComplete = !Finished();
+                    if (shouldComplete)
                     {
                         // We ignore failures on first socket since we have one more pending.
                         _saea.SetResults(exception!, 0, SocketFlags.None);
-                        _saea._currentSocket?.UpdateStatusAfterSocketError(socketError);
+                        _saea._currentSocket?.UpdateStatusAfterSocketError(_saea._socketError);
                     }
                 }
 
-                if (firstFinal)
+                if (shouldComplete)
                 {
                     // If this is the first final result, we need to complete the operation and release underlying SocketAsyncEventArgs
                     _saea.Complete();
-                    //if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(socket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
+                    if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(socket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
                     // signal caller we are done.
                     _saea.OnCompleted(_saea);
                 }
