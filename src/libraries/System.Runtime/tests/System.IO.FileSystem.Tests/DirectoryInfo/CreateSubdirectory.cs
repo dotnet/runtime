@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.RemoteExecutor;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class DirectoryInfo_CreateSubDirectory : FileSystemTest
     {
+        private static bool IsUnixAndPrivilegedProcess => !PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess;
         #region UniversalTests
 
         [Fact]
@@ -236,7 +238,8 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => di.CreateSubdirectory(Path.Combine("..", randomName + "abc", GetTestFileName())));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsSubstAvailable))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSubstAvailable))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void CreateSubdirectoryFromRootDirectory_Windows()
         {
 #if TARGET_WINDOWS
@@ -255,51 +258,41 @@ namespace System.IO.Tests
             Assert.Equal(Path.Combine(rootPath, subDirName), result.FullName);
             Assert.True(result.Exists);
             
-            // Clean up
-            result.Delete();
+            // VirtualDriveHelper handles cleanup when disposed
 #endif
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalFact(typeof(DirectoryInfo_CreateSubDirectory), nameof(IsUnixAndPrivilegedProcess))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void CreateSubdirectoryFromRootDirectory_Unix()
         {
-            // Skip if not on Unix or not privileged
-            if (PlatformDetection.IsWindows || !PlatformDetection.IsPrivilegedProcess)
-                return;
-                
-            // On Unix, create a temporary directory and test subdirectory creation
-            // This is a simplified test that avoids chroot but still tests the core functionality
-            string tempRoot = Path.Combine(Path.GetTempPath(), "test_root_" + Path.GetRandomFileName());
-            Directory.CreateDirectory(tempRoot);
-            
-            try
+            RemoteExecutor.Invoke(() =>
             {
-                // Create a directory that acts as our test root
-                DirectoryInfo testRootDir = new DirectoryInfo(tempRoot);
-                string subDirName = GetTestFileName();
+                string newRoot = Directory.CreateTempSubdirectory("new_root").FullName;
                 
-                // Test that CreateSubdirectory works on our test root
-                DirectoryInfo result = testRootDir.CreateSubdirectory(subDirName);
+                // Use chroot to change the root directory
+                if (chroot(newRoot) != 0)
+                {
+                    throw new InvalidOperationException("chroot failed");
+                }
+                
+                // Test CreateSubdirectory on the new root
+                DirectoryInfo rootDir = new DirectoryInfo("/");
+                string subDirName = Path.GetRandomFileName();
+                
+                // This should work without throwing ArgumentException
+                DirectoryInfo result = rootDir.CreateSubdirectory(subDirName);
                 
                 Assert.NotNull(result);
-                Assert.Equal(Path.Combine(tempRoot, subDirName), result.FullName);
+                Assert.Equal(Path.Combine("/", subDirName), result.FullName);
                 Assert.True(result.Exists);
                 
-                // Clean up
-                result.Delete();
-            }
-            finally
-            {
-                try
-                {
-                    Directory.Delete(tempRoot, recursive: true);
-                }
-                catch
-                {
-                    // Ignore cleanup errors
-                }
-            }
+                // No need to cleanup since this is a temp folder in a separate process
+            }).Dispose();
         }
+        
+        [DllImport("libc", SetLastError = true)]
+        private static extern int chroot(string path);
 
         [Fact]
         public void CreateSubdirectoryFromRootDirectory_Fallback()
