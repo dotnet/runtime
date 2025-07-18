@@ -5152,7 +5152,9 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
             ssize_t compressedDsp;
 
             // Only the scaling factor of the original EVEX instructions can be changed by embedded broadcast.
-            // If the instruction does not have tuple type info, say extended EVEX from APX, the scaling factor is constantly 1, then this optimization cannot be performed, and whether disp8 or disp32 should be applied only depends dspInByte.
+            // If the instruction does not have tuple type info, say extended EVEX from APX, the scaling factor is
+            // constantly 1, then this optimization cannot be performed, and whether disp8 or disp32 should be applied
+            // only depends dspInByte.
             if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
             {
                 SetEvexCompressedDisplacement(id);
@@ -14636,7 +14638,9 @@ GOT_DSP:
         }
         else
         {
-            // TODO-XArch-APX: for now, Extended Evex instruction will not have compressed displacement, or more accurately, extended evex may not have compressed displacement optimization as the scaling factor is constantly 1.
+            // TODO-XArch-APX: for now, Extended Evex instruction will not have compressed displacement, or more
+            // accurately, extended evex may not have compressed displacement optimization as the scaling factor is
+            // constantly 1.
             dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
         dspIsZero = (dsp == 0);
