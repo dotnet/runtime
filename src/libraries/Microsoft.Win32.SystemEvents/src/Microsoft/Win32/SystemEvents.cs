@@ -671,7 +671,9 @@ namespace Microsoft.Win32
                 Interop.User32.WNDCLASS windowClass = new Interop.User32.WNDCLASS
                 {
                     hbrBackground = (IntPtr)(Interop.User32.COLOR_WINDOW + 1),
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
                     lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_windowProc),
+#pragma warning restore CA1416
                     lpszClassName = className,
                     hInstance = hInstance
                 };
