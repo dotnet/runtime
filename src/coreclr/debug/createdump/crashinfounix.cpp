@@ -25,7 +25,7 @@ CrashInfo::Initialize()
         return false;
     }
 
-    m_fdMem = open(memPath, O_RDONLY);
+    while (-1 == (m_fdMem = open(memPath, O_RDONLY)) && errno == EINTR);
     if (m_fdMem == -1)
     {
         int err = errno;
@@ -54,7 +54,7 @@ CrashInfo::Initialize()
             printf_error("snprintf failed building /proc/<pid>/pagemap name\n");
             return false;
         }
-        m_fdPagemap = open(pagemapPath, O_RDONLY);
+        while (-1 == (m_fdPagemap = open(pagemapPath, O_RDONLY)) && errno == EINTR);
         if (m_fdPagemap == -1)
         {
             TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
@@ -176,7 +176,8 @@ CrashInfo::GetAuxvEntries()
         printf_error("snprintf failed building /proc/<pid>/auxv\n");
         return false;
     }
-    int fd = open(auxvPath, O_RDONLY, 0);
+    int fd;
+    while (-1 == (fd = open(auxvPath, O_RDONLY, 0)) && errno == EINTR);
     if (fd == -1)
     {
         printf_error("Problem reading aux info: open(%s) FAILED %s (%d)\n", auxvPath, strerror(errno), errno);

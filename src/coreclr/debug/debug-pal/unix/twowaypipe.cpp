@@ -61,13 +61,13 @@ bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
 
     // Pipe opening order is reversed compared to WaitForConnection()
     // in order to avoid deadlock.
-    m_outboundPipe = open(m_outPipeName, O_WRONLY);
+    while (-1 == (m_outboundPipe = open(m_outPipeName, O_WRONLY)) && errno == EINTR);
     if (m_outboundPipe == INVALID_PIPE)
     {
         return false;
     }
 
-    m_inboundPipe = open(m_inPipeName, O_RDONLY);
+    while (-1 == (m_inboundPipe = open(m_inPipeName, O_RDONLY)) && errno == EINTR);
     if (m_inboundPipe == INVALID_PIPE)
     {
         close(m_outboundPipe);
@@ -88,13 +88,13 @@ bool TwoWayPipe::WaitForConnection()
     if (m_state != Created)
         return false;
 
-    m_inboundPipe = open(m_inPipeName, O_RDONLY);
+    while (-1 == (m_inboundPipe = open(m_inPipeName, O_RDONLY)) && errno == EINTR);
     if (m_inboundPipe == INVALID_PIPE)
     {
         return false;
     }
 
-    m_outboundPipe = open(m_outPipeName, O_WRONLY);
+    while (-1 == (m_outboundPipe = open(m_outPipeName, O_WRONLY)) && errno == EINTR);
     if (m_outboundPipe == INVALID_PIPE)
     {
         close(m_inboundPipe);

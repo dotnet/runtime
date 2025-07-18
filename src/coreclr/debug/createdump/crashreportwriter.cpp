@@ -270,7 +270,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
 bool
 CrashReportWriter::OpenWriter(const char* fileName)
 {
-    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
+    while (-1 == (m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR)) && errno == EINTR);
     if (m_fd == -1)
     {
         printf_error("Could not create json file '%s': %s (%d)\n", fileName, strerror(errno), errno);

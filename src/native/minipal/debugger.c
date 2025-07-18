@@ -64,7 +64,8 @@ bool minipal_is_native_debugger_present(void)
     bool debugger_present = false;
     char buf[2048];
 
-    int status_fd = open("/proc/self/status", O_RDONLY);
+    int status_fd;
+    while (-1 == (status_fd = open("/proc/self/status", O_RDONLY)) && errno == EINTR);
     if (status_fd == -1)
     {
         return false;
@@ -125,7 +126,7 @@ bool minipal_is_native_debugger_present(void)
     int fd;
     char statusFilename[64];
     snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
-    fd = open(statusFilename, O_RDONLY);
+    while (-1 == (fd = open(statusFilename, O_RDONLY)) && errno == EINTR);
     if (fd == -1)
     {
         return false;

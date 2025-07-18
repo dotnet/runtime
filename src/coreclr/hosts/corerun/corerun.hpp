@@ -467,7 +467,8 @@ namespace pal
 
     inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
     {
-        int fd = open(path, O_RDONLY);
+        int fd;
+        while (-1 == (fd = open(path, O_RDONLY)) && errno == EINTR);
         if (fd == -1)
             return false;
 

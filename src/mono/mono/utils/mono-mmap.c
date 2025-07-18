@@ -298,7 +298,8 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 	BEGIN_CRITICAL_SECTION;
 	ptr = mmap (addr, length, prot, mflags, -1, 0);
 	if (ptr == MAP_FAILED) {
-		int fd = open ("/dev/zero", O_RDONLY);
+		int fd;
+		while (-1 == (fd = open ("/dev/zero", O_RDONLY)) && errno == EINTR);
 		if (fd != -1) {
 			ptr = mmap (addr, length, prot, mflags, fd, 0);
 			close (fd);

@@ -45,7 +45,8 @@ int test_kill(unsigned int pid)
 
 bool TestFileExists(const char *path)
 {
-    int fd = open(path, O_RDWR);
+    int fd;
+    while (-1 == (fd = open(path, O_RDWR)) && errno == EINTR);
     if (fd == -1)
         return false;
     close(fd);
@@ -54,7 +55,8 @@ bool TestFileExists(const char *path)
 
 bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryType, char version, int *fdRef)
 {
-    int fd = open(path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    int fd;
+    while (-1 == (fd = open(path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) && errno == EINTR);
     if (fd == -1)
         return false;
 

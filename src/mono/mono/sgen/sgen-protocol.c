@@ -102,7 +102,7 @@ binary_protocol_open_file (gboolean assert_on_failure)
 	binary_protocol_file = CreateFileA (filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #elif defined(HAVE_UNISTD_H)
 	do {
-		binary_protocol_file = open (filename, O_CREAT | O_WRONLY, 0644);
+		while (-1 == (binary_protocol_file = open (filename, O_CREAT | O_WRONLY, 0644)) && errno == EINTR);
 		if (binary_protocol_file == -1) {
 			if (errno != EINTR)
 				break; /* Failed */

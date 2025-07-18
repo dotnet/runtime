@@ -66,7 +66,7 @@ g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GEr
 	if (length)
 		*length = 0;
 
-	fd = open (filename, OPEN_FLAGS);
+	while (-1 == (fd = open (filename, OPEN_FLAGS)) && errno == EINTR);
 	if (fd == -1) {
 		if (gerror != NULL) {
 			int err = errno;

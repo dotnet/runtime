@@ -61,7 +61,8 @@ pal::string_t pal::get_timestamp()
 
 bool pal::touch_file(const pal::string_t& path)
 {
-    int fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH));
+    int fd;
+    while (-1 == (fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH))) && errno == EINTR);
     if (fd == -1)
     {
         trace::warning(_X("open(%s) failed in %s"), path.c_str(), _STRINGIFY(__FUNCTION__));
@@ -73,7 +74,8 @@ bool pal::touch_file(const pal::string_t& path)
 
 static void* map_file(const pal::string_t& path, size_t* length, int prot, int flags)
 {
-    int fd = open(path.c_str(), O_RDONLY);
+    int fd;
+    while (-1 == (fd = open(path.c_str(), O_RDONLY)) && errno == EINTR);
     if (fd == -1)
     {
         trace::error(_X("Failed to map file. open(%s) failed with error %d"), path.c_str(), errno);

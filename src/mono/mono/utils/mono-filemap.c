@@ -38,7 +38,8 @@ mono_file_map_open (const char* name)
 	g_free (wname);
 	return result;
 #else
-	int fd = open (name, O_RDONLY);
+	int fd;
+	while (-1 == (fd = open (name, O_RDONLY)) && errno == EINTR);
 	if (fd < 0)
 		return NULL;
 	return (MonoFileMap *)(size_t)fd;
