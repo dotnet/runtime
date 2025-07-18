@@ -2170,6 +2170,10 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve2_MultiplySubtractBySelectedScalar:
             case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
                 isLowVectorOpNum = (opNum == 3);
                 break;
             case NI_Sve_MultiplyBySelectedScalar:

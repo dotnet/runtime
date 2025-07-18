@@ -176,9 +176,7 @@ namespace System.Net.Security
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
 
-#if TARGET_ANDROID
-            _sslAuthenticationOptions.SslStreamProxy?.Dispose();
-#endif
+            _sslAuthenticationOptions.Dispose();
         }
 
         //
@@ -583,11 +581,7 @@ namespace System.Net.Security
 
             if (newCredentialsRequested)
             {
-                if (selectedCert != null)
-                {
-                    // build the cert context only if it was not provided by the user
-                    _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert);
-                }
+                UpdateCertificateContext(selectedCert);
 
                 if (SslStreamPal.TryUpdateClintCertificate(_credentialsHandle, _securityContext, _sslAuthenticationOptions))
                 {
@@ -645,17 +639,11 @@ namespace System.Net.Security
                         NetEventSource.Log.UsingCachedCredential(this);
                     _credentialsHandle = cachedCredentialHandle;
                     cachedCred = true;
-                    if (selectedCert != null)
-                    {
-                        _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert!);
-                    }
+                    UpdateCertificateContext(selectedCert);
                 }
                 else
                 {
-                    if (selectedCert != null)
-                    {
-                        _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert!);
-                    }
+                    UpdateCertificateContext(selectedCert);
 
                     _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions, newCredentialsRequested);
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
@@ -663,13 +651,18 @@ namespace System.Net.Security
             }
             finally
             {
-                if (selectedCert != null)
-                {
-                    _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert);
-                }
+                UpdateCertificateContext(selectedCert);
             }
 
             return cachedCred;
+
+            void UpdateCertificateContext(X509Certificate2? cert)
+            {
+                if (cert != null && _sslAuthenticationOptions.CertificateContext == null)
+                {
+                    _sslAuthenticationOptions.SetCertificateContextFromCert(cert);
+                }
+            }
         }
 
         private static List<T> EnsureInitialized<T>(ref List<T>? list) => list ??= new List<T>();
@@ -743,7 +736,7 @@ namespace System.Net.Security
                 }
 
                 Debug.Assert(localCertificate.Equals(selectedCert), "'selectedCert' does not match 'localCertificate'.");
-                _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
+                _sslAuthenticationOptions.SetCertificateContextFromCert(selectedCert);
             }
 
             Debug.Assert(_sslAuthenticationOptions.CertificateContext != null);
@@ -1054,6 +1047,13 @@ namespace System.Net.Security
             bool success = false;
             X509Chain? chain = null;
 
+            // We need to note the number of certs in ExtraStore that were
+            // provided (by the user), we will add more from the received peer
+            // chain and we want to dispose only these after we perform the
+            // validation.
+            // TODO: this forces allocation of X509Certificate2Collection
+            int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
+
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
@@ -1164,6 +1164,12 @@ namespace System.Net.Security
 
                 if (chain != null)
                 {
+                    // Dispose only the certificates that were added by GetRemoteCertificate
+                    for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                    {
+                        chain.ChainPolicy.ExtraStore[i].Dispose();
+                    }
+
                     int elementsCount = chain.ChainElements.Count;
                     for (int i = 0; i < elementsCount; i++)
                     {
