@@ -19,31 +19,19 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.True:
                     return new JsonValueOfJsonBool(reader.GetBoolean(), options);
                 case JsonTokenType.String:
-                    byte[] quotedStringValue;
+                    byte[] utf8String;
 
                     if (reader.ValueIsEscaped)
                     {
-                        ReadOnlySpan<byte> unescapedValue = reader.GetUnescapedSpan();
-
-                        quotedStringValue = new byte[checked(2 + unescapedValue.Length)];
-                        unescapedValue.CopyTo(quotedStringValue.AsSpan().Slice(1, unescapedValue.Length));
-                    }
-                    else if (reader.HasValueSequence)
-                    {
-                        // Throw if the long to int conversion fails. This can be accommodated in the future if needed by
-                        // adding another derived class that has a backing ReadOnlySequence<byte> instead of a byte[].
-                        int bufferLength = checked((int)(2 + reader.ValueSequence.Length));
-                        quotedStringValue = new byte[bufferLength];
-                        reader.ValueSequence.CopyTo(quotedStringValue.AsSpan().Slice(1, bufferLength - 2));
+                        ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+                        utf8String = JsonReaderHelper.GetUnescaped(span);
                     }
                     else
                     {
-                        quotedStringValue = new byte[2 + reader.ValueSpan.Length];
-                        reader.ValueSpan.CopyTo(quotedStringValue.AsSpan(1, reader.ValueSpan.Length));
+                        utf8String = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
                     }
 
-                    quotedStringValue[0] = quotedStringValue[quotedStringValue.Length - 1] = JsonConstants.Quote;
-                    return new JsonValueOfJsonString(quotedStringValue, options);
+                    return new JsonValueOfJsonString(utf8String, options);
                 case JsonTokenType.Number:
                     byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
                     return new JsonValueOfJsonNumber(new JsonValueOfJsonNumber.JsonNumber(numberValue), options);
@@ -58,13 +46,11 @@ namespace System.Text.Json.Nodes
         {
             private readonly byte[] _value;
 
-            internal JsonValueOfJsonString(byte[] value, JsonNodeOptions? options)
+            internal JsonValueOfJsonString(byte[] utf8String, JsonNodeOptions? options)
                 : base(options)
             {
-                _value = value;
+                _value = utf8String;
             }
-
-            private ReadOnlySpan<byte> ValueWithoutQuotes => new ReadOnlySpan<byte>(_value, 1, _value.Length - 2);
 
             internal override JsonNode DeepCloneCore() => new JsonValueOfJsonString(_value, Options);
             private protected override JsonValueKind GetValueKindCore() => JsonValueKind.String;
@@ -73,7 +59,7 @@ namespace System.Text.Json.Nodes
             {
                 ArgumentNullException.ThrowIfNull(writer);
 
-                writer.WriteStringValue(ValueWithoutQuotes);
+                writer.WriteStringValue(_value);
             }
 
             public override T GetValue<T>()
@@ -91,21 +77,18 @@ namespace System.Text.Json.Nodes
             {
                 if (typeof(T) == typeof(JsonElement))
                 {
-                    int firstByteToEscape = JsonWriterHelper.NeedsEscaping(ValueWithoutQuotes, JavaScriptEncoder.Default);
+                    int firstByteToEscape = JsonWriterHelper.NeedsEscaping(_value, JavaScriptEncoder.Default);
 
-                    if (firstByteToEscape != -1)
-                    {
-                        value = (T)(object)EscapeAndConvert(ValueWithoutQuotes, firstByteToEscape);
-                        return true;
-                    }
+                    value = firstByteToEscape == -1
+                        ? (T)(object)QuoteAndConvert(_value)
+                        : (T)(object)EscapeAndConvert(_value, firstByteToEscape);
 
-                    value = (T)(object)JsonElement.Parse(_value);
                     return true;
                 }
 
                 if (typeof(T) == typeof(string))
                 {
-                    string? result = JsonReaderHelper.TranscodeHelper(ValueWithoutQuotes);
+                    string? result = JsonReaderHelper.TranscodeHelper(_value);
 
                     Debug.Assert(result != null);
                     value = (T)(object)result;
@@ -116,28 +99,28 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(DateTime?))
                 {
-                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, isEscaped: false, out DateTime result);
+                    success = JsonReaderHelper.TryGetValue(_value, isEscaped: false, out DateTime result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(DateTimeOffset) || typeof(T) == typeof(DateTimeOffset?))
                 {
-                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, isEscaped: false, out DateTimeOffset result);
+                    success = JsonReaderHelper.TryGetValue(_value, isEscaped: false, out DateTimeOffset result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(Guid) || typeof(T) == typeof(Guid?))
                 {
-                    success = JsonReaderHelper.TryGetValue(ValueWithoutQuotes, isEscaped: false, out Guid result);
+                    success = JsonReaderHelper.TryGetValue(_value, isEscaped: false, out Guid result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(char) || typeof(T) == typeof(char?))
                 {
-                    string? result = JsonReaderHelper.TranscodeHelper(ValueWithoutQuotes);
+                    string? result = JsonReaderHelper.TranscodeHelper(_value);
 
                     Debug.Assert(result != null);
                     if (result.Length == 1)
@@ -149,6 +132,32 @@ namespace System.Text.Json.Nodes
 
                 value = default!;
                 return false;
+
+                static JsonElement QuoteAndConvert(ReadOnlySpan<byte> value)
+                {
+                    int quotedLength = value.Length + 2;
+                    byte[]? rented = null;
+
+                    try
+                    {
+                        Span<byte> quotedValue = value.Length > JsonConstants.StackallocByteThreshold
+                            ? (rented = ArrayPool<byte>.Shared.Rent(quotedLength)).AsSpan(0, quotedLength)
+                            : stackalloc byte[JsonConstants.StackallocByteThreshold].Slice(0, quotedLength);
+
+                        quotedValue[0] = JsonConstants.Quote;
+                        value.CopyTo(quotedValue.Slice(1));
+                        quotedValue[quotedValue.Length - 1] = JsonConstants.Quote;
+
+                        return JsonElement.Parse(quotedValue);
+                    }
+                    finally
+                    {
+                        if (rented != null)
+                        {
+                            ArrayPool<byte>.Shared.Return(rented);
+                        }
+                    }
+                }
 
                 static JsonElement EscapeAndConvert(ReadOnlySpan<byte> value, int idx)
                 {
