@@ -736,14 +736,9 @@ public:
 #ifdef FEATURE_COMINTEROP
         if (SF_IsForwardCOMStub(m_dwStubFlags))
         {
-            // Make sure that the RCW stays alive for the duration of the call. Note that if we do HRESULT
-            // swapping, we'll pass 'this' to GetCOMHRExceptionObject after returning from the target so
-            // GC.KeepAlive is not necessary.
-            if (!SF_IsHRESULTSwapping(m_dwStubFlags))
-            {
-                m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
-                pcsDispatch->EmitCALL(METHOD__GC__KEEP_ALIVE, 1, 0);
-            }
+            // Make sure that the RCW stays alive for the duration of the call.
+            m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
+            pcsDispatch->EmitCALL(METHOD__GC__KEEP_ALIVE, 1, 0);
         }
 #endif // FEATURE_COMINTEROP
 
@@ -761,7 +756,7 @@ public:
                 if (SF_IsCOMStub(m_dwStubFlags))
                 {
                     m_slIL.EmitLoadStubContext(pcsDispatch, m_dwStubFlags);
-                    m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
+                    pcsDispatch->EmitLDLOC(m_slIL.GetTargetInterfacePointerLocalNum());
 
                     pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT, 3, 1);
                 }

@@ -1351,26 +1351,20 @@ namespace System.StubHelpers
 
         internal static Exception GetHRExceptionObject(int hr)
         {
-            Exception? ex = null;
-            GetHRExceptionObject(hr, ObjectHandleOnStack.Create(ref ex));
-            ex!.InternalPreserveStackTrace();
-            return ex!;
+            Exception ex = Marshal.GetExceptionForHR(hr)!;
+            ex.InternalPreserveStackTrace();
+            return ex;
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetHRExceptionObject")]
-        private static partial void GetHRExceptionObject(int hr, ObjectHandleOnStack throwable);
 
 #if FEATURE_COMINTEROP
-        internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object pThis)
+        internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
         {
-            Exception? ex = null;
-            GetCOMHRExceptionObject(hr, pCPCMD, ObjectHandleOnStack.Create(ref pThis), ObjectHandleOnStack.Create(ref ex));
-            ex!.InternalPreserveStackTrace();
-            return ex!;
+            RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr(pCPCMD);
+            RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(handle.GetMethodInfo());
+            Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
+            ex.InternalPreserveStackTrace();
+            return ex;
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMHRExceptionObject")]
-        private static partial void GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, ObjectHandleOnStack pThis, ObjectHandleOnStack throwable);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
