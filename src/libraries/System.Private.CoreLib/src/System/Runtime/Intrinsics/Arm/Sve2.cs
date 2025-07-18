@@ -1120,6 +1120,33 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelectRightInverted(select, left, right);
 
+        // Complex dot product
+
+        /// <summary>
+        /// svint32_t svcdot[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_rotation)
+        ///   CDOT Ztied1.S, Zop2.B, Zop3.B, #imm_rotation
+        /// </summary>
+        public static Vector<int> DotProductRotateComplex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(op1, op2, op3, rotation);
+
+        /// <summary>
+        /// svint64_t svcdot[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_rotation)
+        ///   CDOT Ztied1.D, Zop2.H, Zop3.H, #imm_rotation
+        /// </summary>
+        public static Vector<long> DotProductRotateComplex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(op1, op2, op3, rotation);
+
+        /// <summary>
+        /// svint32_t svcdot_lane[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CDOT Ztied1.S, Zop2.B, Zop3.B[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<int> DotProductRotateComplexBySelectedIndex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(op1, op2, op3, imm_index, rotation);
+
+        /// <summary>
+        /// svint64_t svcdot_lane[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CDOT Ztied1.D, Zop2.H, Zop3.H[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<long> DotProductRotateComplexBySelectedIndex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(op1, op2, op3, imm_index, rotation);
+
+
         // Halving add
 
         /// <summary>

@@ -8148,6 +8148,125 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static int DotProductRotateComplex(int op1, sbyte[] op2, int s, sbyte[] op3, byte rotation)
+        {
+            int result = op1;
+
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((int)op2[r1] * (int)op3[r1]) - ((int)op2[i1] * (int)op3[i1]) + ((int)op2[r2] * (int)op3[r2]) - ((int)op2[i2] * (int)op3[i2]);
+                    break;
+                case 1:
+                    result += ((int)op2[r1] * (int)op3[i1]) + ((int)op2[i1] * (int)op3[r1]) + ((int)op2[r2] * (int)op3[i2]) + ((int)op2[i2] * (int)op3[r2]);
+                    break;
+                case 2:
+                    result += ((int)op2[r1] * (int)op3[r1]) + ((int)op2[i1] * (int)op3[i1]) + ((int)op2[r2] * (int)op3[r2]) + ((int)op2[i2] * (int)op3[i2]);
+                    break;
+                case 3:
+                    result += ((int)op2[r1] * (int)op3[i1]) - ((int)op2[i1] * (int)op3[r1]) + ((int)op2[r2] * (int)op3[i2]) - ((int)op2[i2] * (int)op3[r2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+        public static int DotProductRotateComplexBySelectedIndex(int op1, sbyte[] op2, int s, sbyte[] op3, int immIndex, byte rotation)
+        {
+            int result = op1;
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((int)op2[r1] * (int)op3[immIndex]) - ((int)op2[i1] * (int)op3[immIndex + 1]) + ((int)op2[r2] * (int)op3[immIndex + 2]) - ((int)op2[i2] * (int)op3[immIndex + 3]);
+                    break;
+                case 1:
+                    result += ((int)op2[r1] * (int)op3[immIndex + 1]) + ((int)op2[i1] * (int)op3[immIndex]) + ((int)op2[r2] * (int)op3[immIndex + 3]) + ((int)op2[i2] * (int)op3[immIndex + 2]);
+                    break;
+                case 2:
+                    result += ((int)op2[r1] * (int)op3[immIndex]) + ((int)op2[i1] * (int)op3[immIndex + 1]) + ((int)op2[r2] * (int)op3[immIndex + 2]) + ((int)op2[i2] * (int)op3[immIndex + 3]);
+                    break;
+                case 3:
+                    result += ((int)op2[r1] * (int)op3[immIndex + 1]) - ((int)op2[i1] * (int)op3[immIndex]) + ((int)op2[r2] * (int)op3[immIndex + 3]) - ((int)op2[i2] * (int)op3[immIndex + 2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+
+        public static long DotProductRotateComplex(long op1, short[] op2, int s, short[] op3, byte rotation)
+        {
+            long result = op1;
+
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((long)op2[r1] * (long)op3[r1]) - ((long)op2[i1] * (long)op3[i1]) + ((long)op2[r2] * (long)op3[r2]) - ((long)op2[i2] * (long)op3[i2]);
+                    break;
+                case 1:
+                    result += ((long)op2[r1] * (long)op3[i1]) + ((long)op2[i1] * (long)op3[r1]) + ((long)op2[r2] * (long)op3[i2]) + ((long)op2[i2] * (long)op3[r2]);
+                    break;
+                case 2:
+                    result += ((long)op2[r1] * (long)op3[r1]) + ((long)op2[i1] * (long)op3[i1]) + ((long)op2[r2] * (long)op3[r2]) + ((long)op2[i2] * (long)op3[i2]);
+                    break;
+                case 3:
+                    result += ((long)op2[r1] * (long)op3[i1]) - ((long)op2[i1] * (long)op3[r1]) + ((long)op2[r2] * (long)op3[i2]) - ((long)op2[i2] * (long)op3[r2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+        public static long DotProductRotateComplexBySelectedIndex(long op1, short[] op2, int s, short[] op3, int immIndex, byte rotation)
+        {
+            long result = op1;
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+            case 0:
+                result += ((long)op2[r1] * (long)op3[immIndex]) - ((long)op2[i1] * (long)op3[immIndex + 1]) + ((long)op2[r2] * (long)op3[immIndex + 2]) - ((long)op2[i2] * (long)op3[immIndex + 3]);
+                break;
+            case 1:
+                result += ((long)op2[r1] * (long)op3[immIndex + 1]) + ((long)op2[i1] * (long)op3[immIndex]) + ((long)op2[r2] * (long)op3[immIndex + 3]) + ((long)op2[i2] * (long)op3[immIndex + 2]);
+                break;
+            case 2:
+                result += ((long)op2[r1] * (long)op3[immIndex]) + ((long)op2[i1] * (long)op3[immIndex + 1]) + ((long)op2[r2] * (long)op3[immIndex + 2]) + ((long)op2[i2] * (long)op3[immIndex + 3]);
+                break;
+            case 3:
+                result += ((long)op2[r1] * (long)op3[immIndex + 1]) - ((long)op2[i1] * (long)op3[immIndex]) + ((long)op2[r2] * (long)op3[immIndex + 3]) - ((long)op2[i2] * (long)op3[immIndex + 2]);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
         public static int WhileLessThanMask(int op1, int op2)
         {
             return (op1 < op2) ? 1 : 0;
