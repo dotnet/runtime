@@ -141,7 +141,7 @@ internal sealed unsafe partial class SOSDacImpl
                     dataPtr->appDomainStage = loader.GetStage();
                     if (loader.IsActive())
                     {
-                        List<Contracts.ModuleHandle> modules = loader.GetModules(
+                        List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                             pAppDomain,
                             AssemblyIterationFlags.IncludeLoading |
                             AssemblyIterationFlags.IncludeLoaded |
@@ -155,7 +155,7 @@ internal sealed unsafe partial class SOSDacImpl
                                 dataPtr->AssemblyCount++;
                             }
                         }
-                        List<Contracts.ModuleHandle> failedModules = loader.GetModules(
+                        List<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
                             pAppDomain,
                             AssemblyIterationFlags.IncludeFailedToLoad).ToList();
                         dataPtr->FailedAssemblyCount = failedModules.Count;
