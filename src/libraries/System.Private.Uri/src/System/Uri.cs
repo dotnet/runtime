@@ -950,7 +950,8 @@ namespace System
                 }
                 else
                 {
-                    ArrayBuilder<string> pathSegments = default;
+                    var pathSegments = new ValueListBuilder<string>(4);
+
                     int current = 0;
                     while (current < path.Length)
                     {
@@ -959,10 +960,12 @@ namespace System
                         {
                             next = path.Length - 1;
                         }
-                        pathSegments.Add(path.Substring(current, (next - current) + 1));
+                        pathSegments.Append(path.Substring(current, (next - current) + 1));
                         current = next + 1;
                     }
-                    segments = pathSegments.ToArray();
+
+                    segments = pathSegments.AsSpan().ToArray();
+                    pathSegments.Dispose();
                 }
 
                 return segments;

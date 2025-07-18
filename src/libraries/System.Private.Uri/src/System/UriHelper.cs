@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -663,10 +664,17 @@ namespace System
         // The passed options control whether to use aggressive compression or the one specified in RFC 2396
         public static int Compress(Span<char> span, bool convertPathSlashes, bool canonicalizeAsFilePath)
         {
+            if (span.IsEmpty)
+            {
+                return 0;
+            }
+
             if (convertPathSlashes)
             {
                 span.Replace('\\', '/');
             }
+
+            ValueListBuilder<(int Start, int Length)> removedSegments = default;
 
             int slashCount = 0;
             int lastSlash = 0;
@@ -713,11 +721,7 @@ namespace System
                             && (dotCount <= 2))
                         {
                             //  /./ or /.<eos> or /../ or /..<eos>
-
-                            // span.Remove(i + 1, dotCount + (lastSlash == 0 ? 0 : 1));
-                            lastSlash = i + 1 + dotCount + (lastSlash == 0 ? 0 : 1);
-                            span.Slice(lastSlash).CopyTo(span.Slice(i + 1));
-                            span = span.Slice(0, span.Length - (lastSlash - i - 1));
+                            removedSegments.Append((i + 1, dotCount + (lastSlash == 0 ? 0 : 1)));
 
                             lastSlash = i;
                             if (dotCount == 2)
@@ -742,25 +746,22 @@ namespace System
                 {
                     if (removeSegments != 0)
                     {
-                        --removeSegments;
-
-                        span.Slice(lastSlash + 1).CopyTo(span.Slice(i + 1));
-                        span = span.Slice(0, span.Length - (lastSlash - i));
+                        removeSegments--;
+                        removedSegments.Append((i + 1, lastSlash - i));
                     }
+
                     lastSlash = i;
                 }
             }
 
-            if (span.Length != 0 && canonicalizeAsFilePath)
+            if (canonicalizeAsFilePath)
             {
                 if (slashCount <= 1)
                 {
                     if (removeSegments != 0 && span[0] != '/')
                     {
-                        //remove first not rooted segment
-                        lastSlash++;
-                        span.Slice(lastSlash).CopyTo(span);
-                        return span.Length - lastSlash;
+                        // remove first not rooted segment
+                        removedSegments.Append((0, lastSlash + 1));
                     }
                     else if (dotCount != 0)
                     {
@@ -768,15 +769,45 @@ namespace System
                         // then we remove this first segment
                         if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
                         {
-                            dotCount += lastSlash == 0 ? 0 : 1;
-                            span.Slice(dotCount).CopyTo(span);
-                            return span.Length - dotCount;
+                            removedSegments.Append((0, dotCount + (lastSlash == 0 ? 0 : 1)));
                         }
                     }
                 }
             }
 
-            return span.Length;
+            if (removedSegments.Length == 0)
+            {
+                return span.Length;
+            }
+
+            // Merge any remaining segments
+            int writeOffset = 0;
+            int readOffset = 0;
+
+            for (int i = removedSegments.Length - 1; i >= 0; i--)
+            {
+                (int start, int length) = removedSegments[i];
+
+                Debug.Assert(start >= readOffset && length > 0 && start + length <= span.Length);
+
+                if (readOffset != start)
+                {
+                    int segmentLength = start - readOffset;
+                    span.Slice(readOffset, segmentLength).CopyTo(span.Slice(writeOffset));
+                    writeOffset += segmentLength;
+                }
+
+                readOffset = start + length;
+            }
+
+            if (readOffset != span.Length)
+            {
+                span.Slice(readOffset).CopyTo(span.Slice(writeOffset));
+                writeOffset += span.Length - readOffset;
+            }
+
+            removedSegments.Dispose();
+            return writeOffset;
         }
     }
 }
