@@ -2781,7 +2781,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 else
                 {
                     // Use the helper to generate a table. The table can only use a single lookup value, therefore
-                    // the two immediates index  and rotation  must be combined to a single value
+                    // the two immediates index and rotation must be combined to a single value
                     assert(!intrin.op4->isContainedIntOrIImmed() && !intrin.op5->isContainedIntOrIImmed());
                     emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
 
