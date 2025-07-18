@@ -999,7 +999,42 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetMethodTableFieldData(ClrDataAddress mt, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodTableFieldData(mt, data) : HResults.E_NOTIMPL;
+    {
+        DacpMethodTableFieldData* mtFieldData = (DacpMethodTableFieldData*)data;
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer MTAddress = mt.ToTargetPointer(_target);
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle typeHandle = rtsContract.GetTypeHandle(MTAddress);
+            mtFieldData->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
+            mtFieldData->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
+            mtFieldData->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
+            mtFieldData->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
+            mtFieldData->wContextStaticsSize = 0;
+            mtFieldData->wContextStaticOffset = 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        {
+            if (_legacyImpl is not null)
+            {
+                DacpMethodTableFieldData mtFieldDataLocal = default;
+                int hrLocal = _legacyImpl.GetMethodTableFieldData(mt, &mtFieldDataLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                Debug.Assert(mtFieldData->wNumInstanceFields == mtFieldDataLocal.wNumInstanceFields);
+                Debug.Assert(mtFieldData->wNumStaticFields == mtFieldDataLocal.wNumStaticFields);
+                Debug.Assert(mtFieldData->wNumThreadStaticFields == mtFieldDataLocal.wNumThreadStaticFields);
+                Debug.Assert(mtFieldData->wContextStaticOffset == mtFieldDataLocal.wContextStaticOffset);
+                Debug.Assert(mtFieldData->wContextStaticsSize == mtFieldDataLocal.wContextStaticsSize);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetMethodTableForEEClass(ClrDataAddress eeClassReallyCanonMT, ClrDataAddress* value)
     {
         if (eeClassReallyCanonMT == 0 || value == null)

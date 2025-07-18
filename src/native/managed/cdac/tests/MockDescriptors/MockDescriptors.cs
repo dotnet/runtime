@@ -41,6 +41,10 @@ internal partial class MockDescriptors
             new(nameof(Data.EEClass.CorTypeAttr), DataType.uint32),
             new(nameof(Data.EEClass.NumMethods), DataType.uint16),
             new(nameof(Data.EEClass.InternalCorElementType), DataType.uint8),
+            new(nameof(Data.EEClass.NumInstanceFields), DataType.uint16),
+            new(nameof(Data.EEClass.NumStaticFields), DataType.uint16),
+            new(nameof(Data.EEClass.NumThreadStaticFields), DataType.uint16),
+            new(nameof(Data.EEClass.FieldDescList), DataType.pointer),
             new(nameof(Data.EEClass.NumNonVirtualSlots), DataType.uint16),
         ]
     };
