@@ -1930,7 +1930,7 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface4
     int ISOSDacInterface4.GetClrNotification(ClrDataAddress[] arguments, int count, int* pNeeded)
-=> _legacyImpl4 is not null ? _legacyImpl4.GetClrNotification(arguments, count, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl4 is not null ? _legacyImpl4.GetClrNotification(arguments, count, pNeeded) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface4
 
     #region ISOSDacInterface5
