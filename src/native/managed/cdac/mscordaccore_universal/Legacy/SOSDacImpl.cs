@@ -136,16 +136,9 @@ internal sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                uint needed = (uint)(friendlyName.Length + 1); // +1 for null terminator
-                if (pNeeded is not null)
-                {
-                    *pNeeded = needed;
-                }
-
                 if (name is not null && count > 0)
                 {
                     OutputBufferHelpers.CopyStringToBuffer(name, count, pNeeded, friendlyName);
-                    name[needed - 1] = '\0'; // Ensure null termination
                 }
             }
         }
