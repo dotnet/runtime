@@ -95,7 +95,7 @@ extern "C"
 
 // On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
 // Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
-#define ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
+#define ENABLE_RUNTIME_EVENTS_OVER_PIPES
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -1404,69 +1404,36 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
 static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
-#ifdef ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
 static const char* RuntimeStartupPipeName = "st";
 static const char* RuntimeContinuePipeName= "co";
 
 typedef enum
 {
-    PipeHandshakeState_Disabled = 0,
-    PipeHandshakeState_Suceeded = 1,
-    PipeHandshakeState_Failed = 2,
-} PipeHandshakeState;
+    RuntimeEventsOverPipes_Disabled = 0,
+    RuntimeEventsOverPipes_Succeeded = 1,
+    RuntimeEventsOverPipes_Failed = 2,
+} RuntimeEventsOverPipes;
 
 typedef enum
 {
-    PipeHandshakeCommand_Unknown = 0,
-    PipeHandshakeCommand_Startup = 1,
-    PipeHandshakeCommand_Continue = 2,
-} PipeHandshakeCommand;
+    RuntimeEvent_Unknown = 0,
+    RuntimeEvent_Started = 1,
+    RuntimeEvent_Continue = 2,
+} RuntimeEvent;
 
 static
 int
 OpenPipe(const char* name, int mode)
 {
     int fd = -1;
-    int retries = 0;
     int flags = mode;
 
 #if defined(FD_CLOEXEC)
     flags |= O_CLOEXEC;
 #endif
 
-    while(fd == -1)
-    {
-        if (access(name, F_OK) == -1)
-        {
-            TRACE("access(%s) failed: %d (%s)\n", name, errno, strerror(errno));
-            return -1;
-        }
-
-        fd = open(name, flags);
-        if (fd == -1)
-        {
-            if (mode == O_WRONLY && errno == ENXIO)
-            {
-                PAL_nanosleep(500 * 1000 * 1000);
-                continue;
-            }
-            else if (errno == EINTR)
-            {
-                continue;
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
-
-    if (fd == -1)
-    {
-        TRACE("open failed: errno is %d (%s)\n", errno, strerror(errno));
-        return -1;
-    }
-    
+    while((fd = open(name, flags)) < 0 && errno == EINTR);
     return fd;
 }
 
@@ -1481,10 +1448,10 @@ ClosePipe(int fd)
 }
 
 static
-PipeHandshakeState
-NotifyRuntimeStartedUsingPipes()
+RuntimeEventsOverPipes
+NotifyRuntimeUsingPipes()
 {
-    PipeHandshakeState result = PipeHandshakeState_Failed;
+    RuntimeEventsOverPipes result = RuntimeEventsOverPipes_Disabled;
     char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
     char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
     int startupPipeFd = -1;
@@ -1497,15 +1464,19 @@ NotifyRuntimeStartedUsingPipes()
     if (access(continuePipeName, F_OK) == -1)
     {
         TRACE("access(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
-        return PipeHandshakeState_Disabled;
+        goto exit;
     }
 
     PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
     if (access(startupPipeName, F_OK) == -1)
     {
         TRACE("access(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
-        return PipeHandshakeState_Disabled;
+        goto exit;
     }
+
+    result = RuntimeEventsOverPipes_Failed;
+
+    TRACE("opening continue pipe\n");
 
     continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
     if (continuePipeFd == -1)
@@ -1514,6 +1485,8 @@ NotifyRuntimeStartedUsingPipes()
         goto exit;
     }
 
+    TRACE("opening startup pipe\n");
+
     startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
     if (startupPipeFd == -1)
     {
@@ -1521,11 +1494,12 @@ NotifyRuntimeStartedUsingPipes()
         goto exit;
     }
 
+    TRACE("sending started event\n");
+
     {
-        // Notify the debugger that the runtime has started.
-        unsigned char command = (unsigned char)PipeHandshakeCommand_Startup;
-        unsigned char *buffer = &command;
-        int bytesToWrite = sizeof(command);
+        unsigned char event = (unsigned char)RuntimeEvent_Started;
+        unsigned char *buffer = &event;
+        int bytesToWrite = sizeof(event);
         int bytesWritten = 0;
 
         do
@@ -1545,11 +1519,12 @@ NotifyRuntimeStartedUsingPipes()
         }
     }
 
-    // Wait for the debugger to signal runtime to continue.
+    TRACE("waiting on continue event\n");
+
     {
-        unsigned char command = (unsigned char)PipeHandshakeCommand_Unknown;
-        unsigned char *buffer = &command;
-        int bytesToRead = sizeof(command);
+        unsigned char event = (unsigned char)RuntimeEvent_Unknown;
+        unsigned char *buffer = &event;
+        int bytesToRead = sizeof(event);
         int bytesRead = 0;
 
         offset = 0;
@@ -1563,18 +1538,18 @@ NotifyRuntimeStartedUsingPipes()
         }
         while ((bytesRead > 0 && offset < bytesToRead) || (bytesRead == -1 && errno == EINTR));
 
-        if (offset == bytesToRead && command == (unsigned char)PipeHandshakeCommand_Continue)
+        if (offset == bytesToRead && event == (unsigned char)RuntimeEvent_Continue)
         {
-            TRACE("received continue command\n");
+            TRACE("received continue event\n");
         }
         else
         {
-            TRACE("received invalid command\n");
+            TRACE("received invalid event\n");
             goto exit;
         }
     }
 
-    result = PipeHandshakeState_Suceeded;
+    result = RuntimeEventsOverPipes_Succeeded;
 
 exit:
 
@@ -1590,11 +1565,11 @@ exit:
 
     return result;
 }
-#endif // ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
 
 static
 BOOL
-NotifyRuntimeStartedUsingSemaphores()
+NotifyRuntimeUsingSemaphores()
 {
     char startupSemName[CLR_SEM_MAX_NAMELEN];
     char continueSemName[CLR_SEM_MAX_NAMELEN];
@@ -1682,18 +1657,18 @@ BOOL
 PALAPI
 PAL_NotifyRuntimeStarted()
 {
-#ifdef ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
-    // Test pipe as runtime event transport.
-    PipeHandshakeState result = NotifyRuntimeStartedUsingPipes();
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+    // Test pipes as runtime event transport.
+    RuntimeEventsOverPipes result = NotifyRuntimeUsingPipes();
     switch (result)
     {
-    case PipeHandshakeState_Disabled:
+    case RuntimeEventsOverPipes_Disabled:
         // Pipe handshake disabled, try semaphores.
-        return NotifyRuntimeStartedUsingSemaphores();
-    case PipeHandshakeState_Failed:
+        return NotifyRuntimeUsingSemaphores();
+    case RuntimeEventsOverPipes_Failed:
         // Pipe handshake failed.
         return FALSE;
-    case PipeHandshakeState_Suceeded:
+    case RuntimeEventsOverPipes_Succeeded:
         // Pipe handshake succeeded.
         return TRUE;
     default:
@@ -1701,8 +1676,8 @@ PAL_NotifyRuntimeStarted()
         return FALSE;
     }
 #else
-    return NotifyRuntimeStartedUsingSemaphores();
-#endif // ENABLE_RUNTIME_STARTUP_HANDSHAKE_USING_PIPES
+    return NotifyRuntimeUsingSemaphores();
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
 }
 
 LPCSTR
