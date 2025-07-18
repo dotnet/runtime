@@ -522,7 +522,7 @@ s390_vx: dest:x src1:x src2:x len:6
 s390_vo: dest:x src1:x src2:x len:6
 s390_vno: dest:x src1:x src2:x len:6
 s390_vn: dest:x src1:x src2:x len:6
-vandnot: dest:x src1:x src2:x len:6
+vector_andnot: dest:x src1:x src2:x len:6
 s390_vnn: dest:x src1:x src2:x len:6
 s390_vmlb: dest:x src1:x src2:x len:6
 s390_vmlhw: dest:x src1:x src2:x len:6

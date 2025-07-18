@@ -2618,9 +2618,9 @@ simd_type_to_negate_op (int t)
 	}
 }
 
-static int
+static bool
 type_is_float (int t){
-	return (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) ? OP_XCOMPARE_FP : OP_XCOMPARE;
+	return (t == MONO_TYPE_R4 || t == MONO_TYPE_R8);
 }
 
 /**
@@ -2758,16 +2758,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = GINT_TO_OPCODE (simd_type_to_comp_op (GTMREG_TO_INT (ins->inst_c1)));
 				break;
 			case CMP_LT:
-				temp = ins->sreg1;
-				ins->sreg1 = ins->sreg2;
-				ins->sreg2 = temp;
-			case CMP_GT:
-				ins->opcode = GINT_TO_OPCODE (simd_type_to_gt_op (GTMREG_TO_INT (ins->inst_c1)));
-				break;
 			case CMP_LT_UN:
 				temp = ins->sreg1;
 				ins->sreg1 = ins->sreg2;
 				ins->sreg2 = temp;
+			case CMP_GT:
 			case CMP_GT_UN:
 				ins->opcode = GINT_TO_OPCODE (simd_type_to_gt_op (GTMREG_TO_INT (ins->inst_c1)));
 				break;
@@ -2790,86 +2785,68 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_S390_XCOMPARE_XEXTRACT:{
-			switch (type_is_float(GTMREG_TO_INT(ins->inst_c1))){
-			case OP_XCOMPARE:{
+			guint32 temp_reg = alloc_ireg(cfg);
+			if (!type_is_float(GTMREG_TO_INT(ins->inst_c1))){
 				switch (ins->inst_c0 >> 4){
-                       		case CMP_EQ:
-					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_comp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), s390_vr16, ins->sreg1, ins->sreg2);
-                       		        break;
-                       		case CMP_LT:
-                       		case CMP_LT_UN:
-                       		        temp = ins->sreg1;
-                       		        ins->sreg1 = ins->sreg2;
-                       		        ins->sreg2 = temp;
-                       		case CMP_GT:
+				case CMP_EQ:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_comp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+					break;
+				case CMP_LT:
+				case CMP_LT_UN:
+				case CMP_GE:
+				case CMP_GE_UN:
+					temp = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = temp;
+				case CMP_GT:
 				case CMP_GT_UN:
-					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_any_all_op (GTMREG_TO_INT (ins->inst_c1))), s390_vr16, ins->sreg1, ins->sreg2);
-                       		        break;
-                       		case CMP_GE:
-                       		case CMP_GE_UN:
-                       		        temp = ins->sreg1;
-                       		        ins->sreg1 = ins->sreg2;
-                       		        ins->sreg2 = temp;
-                       		case CMP_LE:
-                       		case CMP_LE_UN:{
-                       		        NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_any_all_op (GTMREG_TO_INT (ins->inst_c1))), s390_vr16, ins->sreg1, ins->sreg2);
-                       		        NEW_SIMD_INS (cfg, ins, temp_ins, OP_S390_VNO, s390_vr16, s390_vr16, s390_vr16);
-                       		        break;
-                       		}
-                       		default:
-                       		        g_assert_not_reached ();
-                       		        break;
-                        	}
-				break;
+				case CMP_LE:
+				case CMP_LE_UN:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
 			}
-			case OP_XCOMPARE_FP:{
-                	        switch (ins->inst_c0 >> 4){
-                	        case CMP_EQ:
-					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_comp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), s390_vr16, ins->sreg1, ins->sreg2);
-                	                break;
-                	        case CMP_LT_UN:
-                	        case CMP_LT:
-                	                temp = ins->sreg1;
-                	                ins->sreg1 = ins->sreg2;
-                	                ins->sreg2 = temp;
-                	        case CMP_GT_UN:
-                	        case CMP_GT:
-					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_any_all_op (GTMREG_TO_INT (ins->inst_c1))), s390_vr16, ins->sreg1, ins->sreg2);
-                	                break;
-                	        case CMP_LE_UN:
-                	        case CMP_LE:
-                	                temp = ins->sreg1;
-                	                ins->sreg1 = ins->sreg2;
-                	                ins->sreg2 = temp;
-                	        case CMP_GE_UN:
-                	        case CMP_GE:
-					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_ge_fp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), s390_vr16, ins->sreg1, ins->sreg2);
-                	                break;
-                	        default:
-                	                g_assert_not_reached ();
-                	                break;
-                	        }
+			else {
+				switch (ins->inst_c0 >> 4){
+				case CMP_EQ:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_comp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+				        break;
+				case CMP_LT_UN:
+				case CMP_LT:
+					temp = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = temp;
+				case CMP_GT_UN:
+				case CMP_GT:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+					break;
+				case CMP_LE_UN:
+				case CMP_LE:
+					temp = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = temp;
+				case CMP_GE_UN:
+				case CMP_GE:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_ge_fp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+				        break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
 			}
-				break;
-			default:
-				g_assert_not_reached();
-				break;
+			if(!type_is_float(GTMREG_TO_INT(ins->inst_c1))){
+				NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_extract_int_op (GTMREG_TO_INT (ins->inst_c0 & 0x0f), GTMREG_TO_INT (ins->inst_c0 >> 4))), ins->dreg, -1, -1);
+				NULLIFY_INS(ins);
+			}
+			else {
+				NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_extract_fp_op (GTMREG_TO_INT (ins->inst_c0 & 0x0f), GTMREG_TO_INT (ins->inst_c0 >> 4))), ins->dreg, -1, -1);
+				NULLIFY_INS(ins);
+			}
 		}
-		switch (type_is_float(GTMREG_TO_INT(ins->inst_c1))){
-		case OP_XCOMPARE:
-			ins->opcode = GINT_TO_OPCODE (simd_type_to_extract_int_op (GTMREG_TO_INT (ins->inst_c0 & 0x0f), GTMREG_TO_INT (ins->inst_c0 >> 4)));
 			break;
-		case OP_XCOMPARE_FP:
-			ins->opcode = GINT_TO_OPCODE (simd_type_to_extract_fp_op (GTMREG_TO_INT (ins->inst_c0 & 0x0f), GTMREG_TO_INT (ins->inst_c0 >> 4)));
-			break;
-		default:
-			g_assert_not_reached ();
-			break;
-		}
-		/* we don't use a register rather the CC set by the vector compare instructions */
-		ins->sreg1 = -1;
-		}
-		break;
 		case OP_VECTOR_IABS:
 			ins->opcode = GINT_TO_OPCODE (simd_type_to_abs_op (GTMREG_TO_INT (ins->inst_c1)));
 			break;
@@ -5845,19 +5822,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_vfpsosb (code, ins->dreg, ins->sreg1, 0);
 			break;
 		case OP_INSERT_I1:
-			s390_vlr (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1)
+				s390_vlr (code, ins->dreg, ins->sreg1);
 			s390_vlvgb (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
 		case OP_INSERT_I2:
-			s390_vlr (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1)
+				s390_vlr (code, ins->dreg, ins->sreg1);
 			s390_vlvgh (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
 		case OP_INSERT_I4:
-			s390_vlr (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1)
+				s390_vlr (code, ins->dreg, ins->sreg1);
 			s390_vlvgf (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
 		case OP_INSERT_I8:
-			s390_vlr (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1)
+				s390_vlr (code, ins->dreg, ins->sreg1);
 			s390_vlvgg (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
 		case OP_INSERT_R4:
@@ -5909,30 +5890,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ldgr (code, ins->dreg, s390_r13);
 			break;
 		case OP_EXPAND_I1:
-			s390_vlvgb (code, s390_vr16, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
-			s390_vrepb (code, ins->dreg, s390_vr16, 0);
+			s390_vlvgb (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepb (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_I2:
-			s390_vlvgh (code, s390_vr16, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
-			s390_vreph (code, ins->dreg, s390_vr16, 0);
+			s390_vlvgh (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vreph (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_I4:
-			s390_vlvgf (code, s390_vr16, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
-			s390_vrepf (code, ins->dreg, s390_vr16, 0);
+			s390_vlvgf (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_I8:
-			s390_vlvgg (code, s390_vr16, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
-			s390_vrepg (code, ins->dreg, s390_vr16, 0);
+			s390_vlvgg (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepg (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R4:
 			s390_vlgvf (code, s390_r13, ins->sreg1, 0, 0);
-			s390_vlvgf (code, s390_vr16, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
-			s390_vrepf (code, ins->dreg, s390_vr16, 0);
+			s390_vlvgf (code, ins->dreg, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
 			s390_lgdr (code, s390_r13, ins->sreg1);
-			s390_vlvgg (code, s390_vr16, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
-			s390_vrepg (code, ins->dreg, s390_vr16, 0);
+			s390_vlvgg (code, ins->dreg, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepg (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_S390_VPKH:
 			s390_vpkh ( code, ins->dreg, ins->sreg1, ins->sreg2);

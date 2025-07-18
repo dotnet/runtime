@@ -121,7 +121,6 @@ MINI_OP(OP_STORER8_MEMBASE_REG, "storer8_membase_reg", IREG, FREG, NONE)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_STOREX_MEMBASE_REG, "storex_membase_reg", IREG, XREG, NONE)
-MINI_OP(OP_STOREX_ALIGNED_MEMBASE_REG,     "storex_aligned_membase_reg", IREG, XREG, NONE)
 MINI_OP(OP_STOREX_NTA_MEMBASE_REG,     "storex_nta_membase_reg", IREG, XREG, NONE)
 #endif
 
@@ -1629,7 +1628,6 @@ MINI_OP(OP_S390_VUPLLH, "s390_vupllh", XREG, XREG, NONE)
 MINI_OP(OP_S390_VUPLLF, "s390_vupllf", XREG, XREG, NONE)
 MINI_OP(OP_S390_VFISB, "s390_vfidb", XREG, XREG, NONE)
 MINI_OP(OP_S390_VFIDB, "s390_vfisb", XREG, XREG, NONE)
-MINI_OP(OP_S390_XEXTRACT, "s390_xextract", IREG, XREG, NONE)
 MINI_OP(OP_S390_XCOMPARE_XEXTRACT, "s390_xcompare_xextract", IREG, XREG, XREG)
 #endif
 
@@ -2012,7 +2010,7 @@ MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_ONES_COMPLEMENT,  "ones_complement", XREG, XREG, NONE)
 /* Select bits from src2/src3 using src1 */
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
-MINI_OP(OP_VECTOR_ANDN, "vandnot", XREG, XREG, XREG)
+MINI_OP(OP_VECTOR_ANDN, "vector_andnot", XREG, XREG, XREG)
 MINI_OP(OP_VECTOR_IABS, "vector_integer_abs", XREG, XREG, NONE)
 #endif
 

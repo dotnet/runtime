@@ -151,7 +151,7 @@ struct SeqPointInfo {
 /*-----------------------------------------------*/
 
 #define MONO_MAX_XREGS			31
-#define MONO_ARCH_CALLEE_XREGS 0xFFFEFFFE
+#define MONO_ARCH_CALLEE_XREGS		0xFFFFFFFE
 #define MONO_ARCH_CALLEE_SAVED_XREGS	0x0
 
 // Does the ABI have a volatile non-parameter register, so tailcall
