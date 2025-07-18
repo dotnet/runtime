@@ -4448,92 +4448,21 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #elif defined(TARGET_RISCV64)
-    // Note: branch instructions are fused with a full range of integer comparisons. However, comparisons which save the
-    // result to a register are covered with fewer instructions:
-    //  * for integer: "<" (with unsigned and immediate variants),
-    //  * for floating: "<", "<=", "==" (ordered only, register only),
-    // so the rest is achieved through various transformations.
-    GenTree*& left  = cmp->AsOp()->gtOp1;
-    GenTree*& right = cmp->AsOp()->gtOp2;
-    LIR::Use  cmpUse;
-    if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+    // Branch instructions are fused with a full range of integer comparisons, they will be lowered in LowerJTrue
+    LIR::Use cmpUse;
+    if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
+        return cmp->gtNext;
+
+    bool isReversed =
+        varTypeIsFloating(cmp->gtGetOp1()) ? LowerAndReverseFloatingCompare(cmp) : LowerAndReverseIntegerCompare(cmp);
+    if (isReversed)
     {
-        bool isReversed = false;
-        if (varTypeIsFloating(left))
-        {
-            // a CMP b (unordered) --->   !(a reversedCMP b (ordered))
-            isReversed = LowerAndReverseFloatingCompare(cmp);
-        }
-        else
-        {
-            assert(varTypeUsesIntReg(left));
-            if (cmp->OperIs(GT_EQ, GT_NE))
-            {
-                if (!right->IsIntegralConst(0))
-                {
-                    // a == b  --->  (a - b) == 0
-                    var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
-                    genTreeOps oper = GT_SUB;
-                    if (right->IsIntegralConst() && !right->IsIntegralConst(SSIZE_T_MIN))
-                    {
-                        // a - C  --->  a + (-C)
-                        oper = GT_ADD;
-                        right->AsIntConCommon()->SetIntegralValue(-right->AsIntConCommon()->IntegralValue());
-                    }
-                    left  = comp->gtNewOperNode(oper, type, left, right);
-                    right = comp->gtNewZeroConNode(type);
-                    BlockRange().InsertBefore(cmp, left);
-                    BlockRange().InsertBefore(cmp, right);
-                    ContainCheckBinary(left->AsOp());
-                }
-                // a == 0  --->  a <= 0 (unsigned)
-                cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_LE : GT_GT);
-                cmp->SetUnsigned();
-            }
-
-            if (cmp->OperIs(GT_LE, GT_GE))
-            {
-                if (right->IsIntegralConst())
-                {
-                    // a <= C  --->  a < C+1
-                    INT64 value = right->AsIntConCommon()->IntegralValue();
-                    if (cmp->IsUnsigned() &&
-                        ((cmp->OperIs(GT_LE) && value == SIZE_T_MAX) || (cmp->OperIs(GT_GE) && value == 0)))
-                    {
-                        BlockRange().Remove(left);
-                        BlockRange().Remove(right);
-                        cmp->BashToConst(1);
-                        return cmp->gtNext;
-                    }
-                    right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
-                    cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
-                }
-                else
-                {
-                    // a <= b  --->  !(a > b)
-                    isReversed = true;
-                    cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
-                }
-            }
-
-            if (cmp->OperIs(GT_GT))
-            {
-                cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
-                std::swap(left, right);
-            }
-            assert(cmp->OperIs(GT_LT));
-
-            SignExtendIfNecessary(&left);
-            SignExtendIfNecessary(&right);
-        }
-        if (isReversed)
-        {
-            GenTree* notOp = comp->gtNewOperNode(GT_NOT, cmp->gtType, cmp);
-            BlockRange().InsertAfter(cmp, notOp);
-            cmpUse.ReplaceWith(notOp);
-        }
+        GenTree* notOp = comp->gtNewOperNode(GT_NOT, cmp->gtType, cmp);
+        BlockRange().InsertAfter(cmp, notOp);
+        cmpUse.ReplaceWith(notOp);
     }
-
+    if (!cmp->OperIsCmpCompare()) // comparison was optimized out to some other node
+        return cmp->gtNext;
 #endif // TARGET_RISCV64
 
     ContainCheckCompare(cmp->AsOp());

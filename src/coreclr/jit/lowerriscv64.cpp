@@ -175,8 +175,8 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 }
 
 //------------------------------------------------------------------------
-// LowerAndReverseFloatingCompare: lowers and reverses a floating-point comparison so that its oper matches the
-// available instructions
+// LowerAndReverseFloatingCompare: lowers and reverses a floating-point comparison so that it matches the
+// available instructions: "<", "<=", "==" (ordered only, register only)
 //
 // Arguments:
 //    cmp - the floating-point comparison to lower
@@ -190,8 +190,7 @@ bool Lowering::LowerAndReverseFloatingCompare(GenTree* cmp)
     bool isUnordered = (cmp->gtFlags & GTF_RELOP_NAN_UN) != 0;
     if (isUnordered)
     {
-        // Unordered floating-point comparisons are achieved by neg'ing the ordered counterparts. Avoid that by
-        // reversing the FP comparison and communicating to the caller to reverse its use appropriately.
+        // a CMP b (unordered)  --->   !(a reversedCMP b (ordered))
         cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         cmp->gtFlags &= ~GTF_RELOP_NAN_UN;
     }
@@ -202,6 +201,83 @@ bool Lowering::LowerAndReverseFloatingCompare(GenTree* cmp)
     }
     assert(cmp->OperIs(GT_EQ, GT_LT, GT_LE));
     return isUnordered;
+}
+
+//------------------------------------------------------------------------
+// LowerAndReverseIntegerCompare: lowers and reverses an integer comparison so that it matches the available
+// instructions: only "<" (with unsigned and immediate variants)
+//
+// Arguments:
+//    cmp - the integer comparison to lower
+//
+// Returns:
+//    Whether the comparison was reversed.
+//
+bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
+{
+    GenTree*& left  = cmp->AsOp()->gtOp1;
+    GenTree*& right = cmp->AsOp()->gtOp2;
+    assert(cmp->OperIsCmpCompare() && varTypeUsesIntReg(left));
+    bool isReversed = false;
+    if (cmp->OperIs(GT_EQ, GT_NE))
+    {
+        if (!right->IsIntegralConst(0))
+        {
+            // a == b  --->  (a - b) == 0
+            var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
+            genTreeOps oper = GT_SUB;
+            if (right->IsIntegralConst() && !right->IsIntegralConst(SSIZE_T_MIN))
+            {
+                // a - C  --->  a + (-C)
+                oper = GT_ADD;
+                right->AsIntConCommon()->SetIntegralValue(-right->AsIntConCommon()->IntegralValue());
+            }
+            left  = comp->gtNewOperNode(oper, type, left, right);
+            right = comp->gtNewZeroConNode(type);
+            BlockRange().InsertBefore(cmp, left);
+            BlockRange().InsertBefore(cmp, right);
+            ContainCheckBinary(left->AsOp());
+        }
+        // a == 0  --->  a <= 0 (unsigned)
+        cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_LE : GT_GT);
+        cmp->SetUnsigned();
+    }
+
+    if (cmp->OperIs(GT_LE, GT_GE))
+    {
+        if (right->IsIntegralConst())
+        {
+            // a <= C  --->  a < C+1
+            INT64 value = right->AsIntConCommon()->IntegralValue();
+            if (cmp->IsUnsigned() &&
+                ((cmp->OperIs(GT_LE) && value == SIZE_T_MAX) || (cmp->OperIs(GT_GE) && value == 0)))
+            {
+                BlockRange().Remove(left);
+                BlockRange().Remove(right);
+                cmp->BashToConst(1);
+                return false;
+            }
+            right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
+            cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
+        }
+        else
+        {
+            // a <= b  --->  !(a > b)
+            isReversed = true;
+            cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+        }
+    }
+
+    if (cmp->OperIs(GT_GT))
+    {
+        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
+        std::swap(left, right);
+    }
+    assert(cmp->OperIs(GT_LT));
+
+    SignExtendIfNecessary(&left);
+    SignExtendIfNecessary(&right);
+    return isReversed;
 }
 
 //------------------------------------------------------------------------
