@@ -65,11 +65,9 @@ namespace System.Text.Json.Nodes.Tests
 
             JsonNode node = JsonSerializer.Deserialize<JsonNode>("\"42\"", options);
             Assert.IsAssignableFrom<JsonValue>(node);
+            Assert.Throws<InvalidOperationException>(() => node.GetValue<int>());
 
-            // JsonNode must retain options and use it for Deserialization during GetValue<T>.
-            Assert.Equal(42, node.GetValue<int>());
-
-            // Rountripping also should work.
+            // A second pass is needed to obtain the quoted number.
             Assert.Equal(42, JsonSerializer.Deserialize<int>(node.ToJsonString(), options));
 
             node = JsonSerializer.Deserialize<JsonNode>("\"NaN\"", options);
@@ -694,25 +692,53 @@ namespace System.Text.Json.Nodes.Tests
             Assert.True(JsonNode.DeepEquals(clone, node));
         }
 
+        private static readonly HashSet<Type> s_convertibleTypes =
+        [
+            // True/False
+            typeof(bool), typeof(bool?),
+
+            // Number
+            typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
+            typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal),
+
+            typeof(byte?), typeof(sbyte?), typeof(short?), typeof(ushort?), typeof(int?), typeof(uint?),
+            typeof(long?), typeof(ulong?), typeof(float?), typeof(double?), typeof(decimal?),
+
+            // String
+            typeof(char), typeof(char?),
+            typeof(string),
+            typeof(DateTimeOffset), typeof(DateTimeOffset?),
+            typeof(DateTime), typeof(DateTime?),
+            typeof(Guid), typeof(Guid?),
+        ];
+
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
         public static void PrimitiveTypes_Conversion<T>(WrappedT<T> wrapped, JsonValueKind _)
         {
             T value = wrapped.Value;
             string json = JsonSerializer.Serialize(value);
+            bool canGetValue = s_convertibleTypes.Contains(typeof(T));
 
             JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json)!;
-            AssertExtensions.TrueExpression(jsonValue.TryGetValue(out T unused));
+            AssertExtensions.TrueExpression(jsonValue.TryGetValue(out T unused) == canGetValue);
 
-            // Assert no throw
-            jsonValue.GetValue<T>();
+            if (canGetValue)
+            {
+                // Assert no throw
+                jsonValue.GetValue<T>();
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<T>());
+            }
 
             JsonValue jsonNode = (JsonValue)JsonSerializer.Deserialize<JsonNode>(json)!;
-            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused));
+            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused) == canGetValue);
 
             // Ensure the eager evaluation code path also produces the same result
             jsonNode = (JsonValue)JsonSerializer.Deserialize<JsonNode>(json, new JsonSerializerOptions { AllowDuplicateProperties = false })!;
-            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused));
+            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused) == canGetValue);
         }
 
         [Theory]

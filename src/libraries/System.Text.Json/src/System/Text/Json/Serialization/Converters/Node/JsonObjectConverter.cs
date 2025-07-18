@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.StartObject:
                     return options.AllowDuplicateProperties
                         ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
-                        : ReadAsJsonNode(ref reader, options);
+                        : ReadAsJsonNode(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -73,11 +73,11 @@ namespace System.Text.Json.Serialization.Converters
             return new JsonObject(jElement, options);
         }
 
-        internal static JsonObject ReadAsJsonNode(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        internal static JsonObject ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
 
-            JsonObject jObject = new JsonObject(options.GetNodeOptions());
+            JsonObject jObject = new JsonObject(options);
 
             while (reader.Read())
             {

@@ -33,14 +33,14 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.False:
                 case JsonTokenType.True:
                 case JsonTokenType.Number:
-                    return ReadNonNullPrimitiveValue(ref reader, options);
+                    return ReadNonNullPrimitiveValue(ref reader, options.GetNodeOptions());
                 default:
                     JsonElement element = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
                     return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
             }
         }
 
-        internal static JsonValue ReadNonNullPrimitiveValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        internal static JsonValue ReadNonNullPrimitiveValue(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.False or JsonTokenType.True or JsonTokenType.Number);
             return JsonValueOfJsonPrimitive.CreatePrimitiveValue(ref reader, options);
