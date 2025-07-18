@@ -24,45 +24,59 @@ int32_t SystemNative_LowLevelCrossProcessMutex_Size(void)
 
 int32_t SystemNative_LowLevelCrossProcessMutex_Init(LowLevelCrossProcessMutex* mutex)
 {
+    (void)mutex;
     assert(false);
     return Error_EINVAL;
 }
 
 int32_t SystemNative_LowLevelCrossProcessMutex_Acquire(LowLevelCrossProcessMutex* mutex, int32_t timeoutMilliseconds)
 {
+    (void)mutex;
+    (void)timeoutMilliseconds;
     assert(false);
     return Error_EINVAL;
 }
 
 int32_t SystemNative_LowLevelCrossProcessMutex_Release(LowLevelCrossProcessMutex* mutex)
 {
+    (void)mutex;
     assert(false);
     return Error_EINVAL;
 }
 
 int32_t SystemNative_LowLevelCrossProcessMutex_Destroy(LowLevelCrossProcessMutex* mutex)
 {
+    (void)mutex;
     assert(false);
     return Error_EINVAL;
 }
 
 void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint32_t* pOwnerThreadId)
 {
+    (void)mutex;
+    (void)pOwnerProcessId;
+    (void)pOwnerThreadId;
     assert(false);
 }
 
 void SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint32_t ownerThreadId)
 {
+    (void)mutex;
+    (void)ownerProcessId;
+    (void)ownerThreadId;
     assert(false);
 }
 
 uint8_t SystemNative_LowLevelCrossProcessMutex_IsAbandoned(LowLevelCrossProcessMutex* mutex)
 {
+    (void)mutex;
     assert(false);
-    return Error_EINVAL;
+    return false;
 }
 
 void SystemNative_LowLevelCrossProcessMutex_SetAbandoned(LowLevelCrossProcessMutex* mutex, uint8_t isAbandoned)
 {
+    (void)mutex;
+    (void)isAbandoned;
     assert(false);
 }
