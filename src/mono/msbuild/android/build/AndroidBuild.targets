@@ -1,6 +1,4 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)AndroidFeatureSwitchEnvVariables.props" />
-
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>

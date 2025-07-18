@@ -6,8 +6,6 @@
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidFeatureSwitchEnvVariables.props" />
-
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
