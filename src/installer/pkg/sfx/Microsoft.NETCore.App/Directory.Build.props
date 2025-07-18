@@ -114,6 +114,8 @@
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="libclrinterpreter.so" IsNative="true" />
+    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="libclrinterpreter.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />

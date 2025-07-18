@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
+    <MainLibraryFileName>iOS.Simulator.CoreCLR.Interpreter.Test.dll</MainLibraryFileName>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EnvironmentVariables Include="DOTNET_Interpreter=RunInterpreter" />
+    <EnvironmentVariables Include="DOTNET_InterpDump=RunInterpreter" />
+    <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

@@ -41,7 +41,7 @@ else()
     add_custom_target(interpreter_exports DEPENDS ${EXPORTS_FILE})
 endif()
 
-if(CLR_CMAKE_TARGET_BROWSER)
+if(FEATURE_STATICALLY_LINKED AND NOT FEATURE_JIT)
   set(LIBRARY_TYPE STATIC)
 else()
   set(LIBRARY_TYPE SHARED)
@@ -63,4 +63,4 @@ target_link_libraries(clrinterpreter
 
 set_property(TARGET clrinterpreter APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime)
+install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime)

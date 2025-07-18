@@ -322,6 +322,7 @@
       EnableAppSandbox="$(EnableAppSandbox)"
       ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
+      EnvironmentVariables="@(EnvironmentVariables)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
