@@ -18,14 +18,15 @@ struct LiveLocalInfo
 
 struct ContinuationLayout
 {
-    unsigned                             DataSize               = 0;
-    unsigned                             GCRefsCount            = 0;
-    ClassLayout*                         ReturnStructLayout     = nullptr;
-    unsigned                             ReturnSize             = 0;
-    bool                                 ReturnInGCData         = false;
-    unsigned                             ReturnValDataOffset    = UINT_MAX;
-    unsigned                             ExceptionGCDataIndex   = UINT_MAX;
-    unsigned                             ExecContextGCDataIndex = UINT_MAX;
+    unsigned                             DataSize                       = 0;
+    unsigned                             GCRefsCount                    = 0;
+    ClassLayout*                         ReturnStructLayout             = nullptr;
+    unsigned                             ReturnSize                     = 0;
+    bool                                 ReturnInGCData                 = false;
+    unsigned                             ReturnValDataOffset            = UINT_MAX;
+    unsigned                             ExceptionGCDataIndex           = UINT_MAX;
+    unsigned                             ExecContextGCDataIndex         = UINT_MAX;
+    unsigned                             ContinuationContextGCDataIndex = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
 
     explicit ContinuationLayout(const jitstd::vector<LiveLocalInfo>& locals)

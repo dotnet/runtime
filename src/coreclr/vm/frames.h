@@ -2134,6 +2134,21 @@ typedef DPTR(class InlinedCallFrame) PTR_InlinedCallFrame;
 class InlinedCallFrame : public Frame
 {
 public:
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_INTERPRETER
+    InlinedCallFrame() : Frame(FrameIdentifier::InlinedCallFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_Datum = NULL;
+        m_pCallSiteSP = NULL;
+        m_pCallerReturnAddress = 0;
+        m_pCalleeSavedFP = 0;
+        m_pThread = NULL;
+    }
+#endif // FEATURE_INTERPRETER
+#endif // DACCESS_COMPILE
+
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;
