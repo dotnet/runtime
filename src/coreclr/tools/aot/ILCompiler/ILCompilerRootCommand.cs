@@ -101,8 +101,8 @@ namespace ILCompiler
             new("--noinlinetls") { Description = "Do not generate inline thread local statics" };
         public Option<bool> EmitStackTraceData { get; } =
             new("--stacktracedata") { Description = "Emit data to support generating stack trace strings at runtime" };
-        public Option<bool> MethodBodyFolding { get; } =
-            new("--methodbodyfolding") { Description = "Fold identical method bodies" };
+        public Option<string> MethodBodyFolding { get; } =
+            new("--methodbodyfolding") { Description = "Fold identical method bodies (one of: none, generic, all" };
         public Option<string[]> InitAssemblies { get; } =
             new("--initassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Assembly(ies) with a library initializer" };
         public Option<string[]> FeatureSwitches { get; } =

@@ -136,7 +136,12 @@ namespace ILCompiler
             if (_resilient)
                 options |= RyuJitCompilationOptions.UseResilience;
 
-            ObjectDataInterner interner = _methodBodyFolding ? new ObjectDataInterner() : ObjectDataInterner.Null;
+            ObjectDataInterner interner = _methodBodyFolding switch
+            {
+                MethodBodyFoldingMode.Generic => new ObjectDataInterner(genericsOnly: true),
+                MethodBodyFoldingMode.All => new ObjectDataInterner(genericsOnly: false),
+                _ => ObjectDataInterner.Null,
+            };
 
             var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, _inlinedThreadStatics, GetPreinitializationManager(), _devirtualizationManager, interner, _typeMapManager);
 
