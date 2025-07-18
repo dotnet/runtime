@@ -672,24 +672,6 @@ namespace System.Net.Sockets
             }
         }
 
-        /// <summary>Gets the index of the next address in the specified family.</summary>
-        /// <param name="addresses">The array of IP addresses to search, typically from DNS resolution</param>
-        /// <param name="addressFamily">The address family to match.</param>
-        /// <param name="lastIndex">The index of the last matched address or -1 on first round. </param>
-        /// <returns>The index of the next matching address, or -1 if none found.</returns>
-        private static int GetNextAddressIndex(IPAddress[] addresses, AddressFamily addressFamily, int lastIndex)
-        {
-            for (int i = lastIndex + 1; i < addresses.Length; i++)
-            {
-                if (addresses[i].AddressFamily == addressFamily)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         /// <summary>Performs an asynchronous connect involving a DNS lookup.</summary>
         /// <param name="endPoint">The DNS end point to which to connect.</param>
         /// <param name="socketType">The SocketType to use to construct new sockets, if necessary.</param>
@@ -710,9 +692,15 @@ namespace System.Net.Sockets
                 cancellationToken = _multipleConnectCancellation.Token;
             }
 
+            // We can do parallel connect only if socket was not specified and when there is at least one address of each AF.
+            bool parallelConnect = connectAlgorithm == ConnectAlgorithm.Parallel &&
+                                            _currentSocket == null &&
+                                            endPoint.AddressFamily == AddressFamily.Unspecified &&
+                                            Socket.OSSupportsIPv6 && Socket.OSSupportsIPv4;
+
             // In .NET 5 and earlier, the APM implementation allowed for synchronous exceptions from this to propagate
             // synchronously.  This call is made here rather than in the Core async method below to preserve that behavior.
-            Task<IPAddress[]> addressesTask = Dns.GetHostAddressesAsync(endPoint.Host, endPoint.AddressFamily, cancellationToken);
+            Task<IPAddress[]> addressesTask = Dns.GetHostAddressesAsync(endPoint.Host, parallelConnect ? AddressFamily.InterNetwork : endPoint.AddressFamily, cancellationToken);
 
             // Initialize the internal event args instance.  It needs to be initialized with `this` instance's buffer
             // so that it may be used as part of receives during a connect.
@@ -724,16 +712,30 @@ namespace System.Net.Sockets
             // by a try/catch.  Thus we ignore the result.  We avoid an "async void" method so as to skip the implicit SynchronizationContext
             // interactions async void methods entail.
 #pragma warning disable CA2025
-            _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, connectAlgorithm, cancellationToken);
+            if (parallelConnect)
+            {
+                var state = new ParallelMultiConnectSocketState(this);
+                var internalArgsV6 = new MultiConnectSocketAsyncEventArgs();
+                internalArgsV6.CopyBufferFrom(this);
+
+                Task<IPAddress[]> addressesTask6 = Dns.GetHostAddressesAsync(endPoint.Host, AddressFamily.InterNetworkV6, cancellationToken);
+                _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, state, cancellationToken);
+                _ = Core(internalArgsV6, addressesTask6, endPoint.Port, socketType, protocolType, state, cancellationToken);
+                return true;
+            }
+            else
+            {
+                _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, null, cancellationToken);
+            }
 #pragma warning restore
 
-            // Determine whether the async operation already completed and stored the results into `this`.
-            // If we reached this point and the operation hasn't yet stored the results, then it's considered
-            // pending.  If by the time we get here it has stored the results, it's considered completed.
-            // The callback won't invoke the Completed event if it gets there first.
-            return internalArgs.ReachedCoordinationPointFirst();
+                // Determine whether the async operation already completed and stored the results into `this`.
+                // If we reached this point and the operation hasn't yet stored the results, then it's considered
+                // pending.  If by the time we get here it has stored the results, it's considered completed.
+                // The callback won't invoke the Completed event if it gets there first.
+                return internalArgs.ReachedCoordinationPointFirst();
 
-            async Task Core(MultiConnectSocketAsyncEventArgs internalArgs, Task<IPAddress[]> addressesTask, int port, SocketType socketType, ProtocolType protocolType, ConnectAlgorithm connectAlgorithm, CancellationToken cancellationToken)
+            async Task Core(MultiConnectSocketAsyncEventArgs internalArgs, Task<IPAddress[]> addressesTask, int port, SocketType socketType, ProtocolType protocolType, ParallelMultiConnectSocketState? parallelState, CancellationToken cancellationToken)
             {
                 Socket? tempSocketIPv4 = null, tempSocketIPv6 = null;
                 Exception? caughtException = null;
@@ -742,97 +744,11 @@ namespace System.Net.Sockets
                     // Try each address in turn.  We store the last error received, such that if we fail to connect to all addresses,
                     // we can use the last error to represent the entire operation.
                     SocketError lastError = SocketError.NoData;
-                    IPAddress[] addresses = await addressesTask.ConfigureAwait(false);
-                    IPAddress? address = null;
-                    IPAddress? address2 = null;
-                    AddressFamily currentAddressFamily = AddressFamily.InterNetwork;
-
-                    int nextAddressIndex = 0;
-                    int nextIPv6AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetworkV6, -1);
-                    int nextIPv4AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetwork, -1);
-
-
-                    // We can do parallel connect only if socket was not specified and when there is at least one address of each AF.
-                    bool parallelConnect = connectAlgorithm == ConnectAlgorithm.Parallel && _currentSocket == null &&
-                                            RemoteEndPoint!.AddressFamily == AddressFamily.Unspecified &&
-                                            nextIPv6AddressIndex >= 0 && nextIPv4AddressIndex >= 0;
-
-                    if (parallelConnect)
+                    foreach (IPAddress address in await addressesTask.ConfigureAwait(false))
                     {
-                        nextAddressIndex = nextIPv4AddressIndex;
-                        internalArgs.SecondarySaea = new MultiConnectSocketAsyncEventArgs();
-                    }
-                    internalArgs.SocketError = SocketError.Success;
-                    while (true)
-                    {
-                        if (!parallelConnect)
-                        {
-                            // We simply try addresses in sequence until we either try them all or operation is cancelled.
-                            if (nextAddressIndex >= addresses.Length)
-                            {
-                                break;
-                            }
-                            address = addresses[nextAddressIndex];
-                            nextAddressIndex++;
-                        }
-                        else
-                        {
-                            if (nextAddressIndex < 0 && nextIPv6AddressIndex < 0)
-                            {
-                                // we used all IPv4 & IPv6 addresses
-                                break;
-                            }
-
-                            if (internalArgs.SocketError != SocketError.IOPending)
-                            {
-                                if (nextAddressIndex >= 0)
-                                {
-                                    address = addresses[nextAddressIndex];
-                                    nextAddressIndex = GetNextAddressIndex(addresses, currentAddressFamily, nextAddressIndex);
-                                }
-                                else
-                                {
-                                    address = null;
-                                    currentAddressFamily = AddressFamily.InterNetworkV6;
-                                }
-                                internalArgs.SocketError = SocketError.IOPending;
-                            }
-
-                            if (internalArgs.SecondarySaea is not null && (internalArgs.SecondarySaea.SocketError != SocketError.IOPending || nextIPv6AddressIndex > 0))
-                            {
-                                if (nextIPv6AddressIndex >= 0)
-                                {
-                                    address2 = addresses[nextIPv6AddressIndex];
-                                    if (address is null)
-                                    {
-                                        // fall-back to normal processing without extra SAE
-                                        address = addresses[nextIPv6AddressIndex];
-                                        internalArgs.SocketError = SocketError.IOPending;
-                                        address2 = null;
-                                        internalArgs.SecondarySaea.Dispose();
-                                        internalArgs.SecondarySaea = null;
-                                    }
-                                    else
-                                    {
-                                        Debug.Assert(internalArgs.SecondarySaea != null);
-                                        address2 = addresses[nextIPv6AddressIndex];
-                                        internalArgs.SecondarySaea!.SocketError = SocketError.IOPending;
-                                    }
-
-                                    nextIPv6AddressIndex = GetNextAddressIndex(addresses, AddressFamily.InterNetworkV6, nextIPv6AddressIndex);
-                                }
-                                else
-                                {
-                                    address2 = null;
-                                }
-                            }
-                        }
-
                         Socket? attemptSocket = null;
-                        Socket? attemptSocket2 = null;
                         if (_currentSocket != null)
                         {
-                            Debug.Assert(address != null);
                             // If this SocketAsyncEventArgs was configured with a socket, then use it.
                             // If that instance doesn't support this address, move on to the next.
                             if (!_currentSocket.CanTryAddressFamily(address.AddressFamily))
@@ -846,68 +762,22 @@ namespace System.Net.Sockets
                         {
                             // If this SocketAsyncEventArgs doesn't have a socket, then we need to create a temporary one, which we do
                             // based on this address' address family (and then reuse for subsequent addresses for the same family).
-                            if (address != null)
+                            if (address.AddressFamily == AddressFamily.InterNetworkV6)
                             {
-                                if (address.AddressFamily == AddressFamily.InterNetworkV6)
-                                {
-                                    attemptSocket = tempSocketIPv6 ??= (Socket.OSSupportsIPv6 ? new Socket(AddressFamily.InterNetworkV6, socketType, protocolType) : null);
-                                    if (attemptSocket is not null && address.IsIPv4MappedToIPv6)
-                                    {
-                                        // We need a DualMode socket to connect to an IPv6-mapped IPv4 address.
-                                        attemptSocket.DualMode = true;
-                                    }
-                                }
-                                else if (address.AddressFamily == AddressFamily.InterNetwork)
-                                {
-                                    attemptSocket = tempSocketIPv4 ??= (Socket.OSSupportsIPv4 ? new Socket(AddressFamily.InterNetwork, socketType, protocolType) : null);
-                                }
-                            }
-
-                            if (address2 != null)
-                            {
-                                Debug.Assert(internalArgs.SecondarySaea != null);
-
-                                // if we have two addressess to connect to: IPv4 is in address and IPv6 in address2
-                                Debug.Assert(address2.AddressFamily == AddressFamily.InterNetworkV6);
-                                attemptSocket2 = tempSocketIPv6 ??= (Socket.OSSupportsIPv6 ? new Socket(AddressFamily.InterNetworkV6, socketType, protocolType) : null);
-                                if (attemptSocket2 is not null && address2.IsIPv4MappedToIPv6)
+                                attemptSocket = tempSocketIPv6 ??= (Socket.OSSupportsIPv6 ? new Socket(AddressFamily.InterNetworkV6, socketType, protocolType) : null);
+                                if (attemptSocket is not null && address.IsIPv4MappedToIPv6)
                                 {
                                     // We need a DualMode socket to connect to an IPv6-mapped IPv4 address.
-                                    attemptSocket2.DualMode = true;
+                                    attemptSocket.DualMode = true;
                                 }
-                                internalArgs.SecondarySaea._currentSocket = attemptSocket2;
-
-                                internalArgs.SecondarySaea.Completed += (s, e) =>
-                                {
-                                    Socket? socket = s as Socket;
-                                    MultiConnectSocketAsyncEventArgs? me = e.UserToken as MultiConnectSocketAsyncEventArgs;
-                                    if (me == null)
-                                    {
-                                        // primary connection is already done.
-                                        socket?.Dispose();
-                                    }
-                                    else
-                                    {
-                                        me.OnCompleted(e);
-                                    }
-
-                                };
-                                if (internalArgs.SecondarySaea.RemoteEndPoint is IPEndPoint existing2)
-                                {
-                                    existing2.Address = address2;
-                                    Debug.Assert(existing2.Port == port);
-                                }
-                                else
-                                {
-                                    internalArgs.SecondarySaea.RemoteEndPoint = new IPEndPoint(address2, port);
-                                    internalArgs.SecondarySaea.SocketError = SocketError.IOPending;
-                                    internalArgs.SecondarySaea.UserToken = internalArgs;
-                                }
+                            }
+                            else if (address.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                attemptSocket = tempSocketIPv4 ??= (Socket.OSSupportsIPv4 ? new Socket(AddressFamily.InterNetwork, socketType, protocolType) : null);
                             }
 
                             // If we were unable to get a socket to use for this address, move on to the next address.
-                            if (attemptSocket is null && attemptSocket2 == null &&
-                                internalArgs.SocketError != SocketError.IOPending && (internalArgs.SecondarySaea == null || internalArgs.SecondarySaea.SocketError != SocketError.IOPending))
+                            if (attemptSocket is null)
                             {
                                 continue;
                             }
@@ -917,50 +787,20 @@ namespace System.Net.Sockets
                         // the same socket handle can't be used for another connect, so we swap in a new handle under the covers if
                         // possible.  We do this not just for the 2nd+ address but also for the first in case the Socket was already
                         // used for a connection attempt outside of this call.
-
-                        attemptSocket2?.ReplaceHandleIfNecessaryAfterFailedConnect();
+                        attemptSocket.ReplaceHandleIfNecessaryAfterFailedConnect();
 
                         // Reconfigure the internal event args for the new address.
-                        if (address != null)
+                        if (internalArgs.RemoteEndPoint is IPEndPoint existing)
                         {
-                            Debug.Assert(attemptSocket != null);
-                            attemptSocket.ReplaceHandleIfNecessaryAfterFailedConnect();
-                            if (internalArgs.RemoteEndPoint is IPEndPoint existing)
-                            {
-                                existing.Address = address;
-                                Debug.Assert(existing.Port == port);
-                            }
-                            else
-                            {
-                                internalArgs.RemoteEndPoint = new IPEndPoint(address, port);
-                            }
+                            existing.Address = address;
+                            Debug.Assert(existing.Port == port);
+                        }
+                        else
+                        {
+                            internalArgs.RemoteEndPoint = new IPEndPoint(address, port);
                         }
 
                         // Issue the connect.  If it pends, wait for it to complete.
-
-                        bool? result = attemptSocket?.ConnectAsync(internalArgs);
-                        if (result != false)
-                        {
-                            if (attemptSocket2 != null)
-                            {
-                                Debug.Assert(internalArgs.SecondarySaea != null);
-                                attemptSocket2.ConnectAsync(internalArgs.SecondarySaea);
-                            }
-
-                            using (cancellationToken.UnsafeRegister(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), internalArgs))
-                            {
-                                if (internalArgs.SecondarySaea != null)
-                                {
-                                    var t1 = new ValueTask(internalArgs, internalArgs.Version).AsTask();
-                                    var t2 = new ValueTask(internalArgs.SecondarySaea, internalArgs.SecondarySaea.Version).AsTask();
-                                    await Task.WhenAny(t1, t2).ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
-                                }
-                            }
-
                         if (attemptSocket.ConnectAsync(internalArgs, userSocket: true, saeaMultiConnectCancelable: false, cancellationToken))
                         {
                             await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
@@ -968,15 +808,6 @@ namespace System.Net.Sockets
 
                         // If it completed successfully, we're done; cleanup will be handled by the finally.
                         if (internalArgs.SocketError == SocketError.Success)
-                        {
-                            if (internalArgs.SecondarySaea != null)
-                            {
-                                internalArgs.SecondarySaea.UserToken = null;
-                            }
-                            return;
-                        }
-
-                        if (internalArgs.SecondarySaea != null && internalArgs.SecondarySaea.SocketError == SocketError.Success)
                         {
                             return;
                         }
@@ -991,7 +822,7 @@ namespace System.Net.Sockets
                         lastError = internalArgs.SocketError;
 
                         // If multi-connect is no longer possible, terminate propagating the last error.
-                        if (attemptSocket?.CanProceedWithMultiConnect != true)
+                        if (!attemptSocket.CanProceedWithMultiConnect)
                         {
                             break;
                         }
@@ -1033,46 +864,61 @@ namespace System.Net.Sockets
                         }
                     }
 
-                    // Store the results.
-                    if (caughtException != null)
+                    if (parallelState != null)
                     {
-                        SetResults(caughtException, 0, SocketFlags.None);
-                        _currentSocket?.UpdateStatusAfterSocketError(_socketError);
+                        // If we do parallel connect use SetResults from there to arbiter competing results.
+                        if (caughtException != null)
+                        {
+                            parallelState.SetResults(null, _socketError, 0, SocketFlags.None, caughtException);
+                        }
+                        else
+                        {
+                            parallelState.SetResults(internalArgs.ConnectSocket, internalArgs.SocketError, internalArgs.BytesTransferred, internalArgs.SocketFlags, null);
+                        }
+                        internalArgs.Dispose();
+
                     }
                     else
                     {
-                        SetResults(SocketError.Success, internalArgs.BytesTransferred, internalArgs.SocketFlags);
-                        _connectSocket = _currentSocket = internalArgs.SecondarySaea?.ConnectSocket != null ? internalArgs.SecondarySaea.ConnectSocket : internalArgs.ConnectSocket!;
-                    }
+                        // Store the results.
+                        if (caughtException != null)
+                        {
+                            SetResults(caughtException, 0, SocketFlags.None);
+                            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
+                        }
+                        else
+                        {
+                            SetResults(SocketError.Success, internalArgs.BytesTransferred, internalArgs.SocketFlags);
+                            _connectSocket = _currentSocket = internalArgs.ConnectSocket!;
+                        }
 
-                    // Complete the operation.
-                    if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(_connectSocket?.SocketType, SocketAsyncOperation.Connect, internalArgs.BytesTransferred);
+                        // Complete the operation.
+                        if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(_connectSocket?.SocketType, SocketAsyncOperation.Connect, internalArgs.BytesTransferred);
 
-                    Complete();
+                        Complete();
 
-                    // Clean up after our temporary arguments.
-                    internalArgs.Dispose();
+                        // Clean up after our temporary arguments.
+                        internalArgs.Dispose();
 
-                    // If the caller is treating this operation as pending, own the completion.
-                    if (!internalArgs.ReachedCoordinationPointFirst())
-                    {
-                        // Regardless of _flowExecutionContext, context will have been flown through this async method, as that's part
-                        // of what async methods do.  As such, we're already on whatever ExecutionContext is the right one to invoke
-                        // the completion callback.  This method may have even mutated the ExecutionContext, in which case for telemetry
-                        // we need those mutations to be surfaced as part of this callback, so that logging performed here sees those
-                        // mutations (e.g. to the current Activity).
-                        OnCompleted(this);
+                        // If the caller is treating this operation as pending, own the completion.
+                        if (!internalArgs.ReachedCoordinationPointFirst())
+                        {
+                            // Regardless of _flowExecutionContext, context will have been flown through this async method, as that's part
+                            // of what async methods do.  As such, we're already on whatever ExecutionContext is the right one to invoke
+                            // the completion callback.  This method may have even mutated the ExecutionContext, in which case for telemetry
+                            // we need those mutations to be surfaced as part of this callback, so that logging performed here sees those
+                            // mutations (e.g. to the current Activity).
+                            OnCompleted(this);
+                        }
                     }
                 }
             }
         }
 
-        internal sealed class MultiConnectSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource
+        private sealed class MultiConnectSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource
         {
             private ManualResetValueTaskSourceCore<bool> _mrvtsc;
             private bool _isCompleted;
-            // used for parallel connect
-            public MultiConnectSocketAsyncEventArgs? SecondarySaea;
 
             public MultiConnectSocketAsyncEventArgs() : base(unsafeSuppressExecutionContextFlow: false) { }
 
@@ -1083,18 +929,60 @@ namespace System.Net.Sockets
             public short Version => _mrvtsc.Version;
             public void Reset() => _mrvtsc.Reset();
 
-            protected override void OnCompleted(SocketAsyncEventArgs e)
-            {
-                try
-                {
-                    // we dont't have TrySetResult and there could be two completing connections
-                    _mrvtsc.SetResult(true);
-                }
-                catch (InvalidOperationException) { };
-            }
+            protected override void OnCompleted(SocketAsyncEventArgs e) =>_mrvtsc.SetResult(true);
 
             public bool ReachedCoordinationPointFirst() => !Interlocked.Exchange(ref _isCompleted, true);
         }
+
+        private sealed class ParallelMultiConnectSocketState
+        {
+            private bool _isCompleted;
+            private int _count;
+            private SocketAsyncEventArgs _saea;
+
+            public ParallelMultiConnectSocketState(SocketAsyncEventArgs saea)
+            {
+                _saea = saea;
+            }
+            public bool ReachedCoordinationPointFirst() => !Interlocked.Exchange(ref _isCompleted, true);
+
+            public void SetResults(Socket? socket, SocketError socketError, int bytesTransferred, SocketFlags flags, Exception? exception)
+            {
+                int count = Interlocked.Increment(ref _count);
+                bool firstFinal = false;
+
+                if (socketError == SocketError.Success)
+                {
+                    firstFinal = ReachedCoordinationPointFirst();
+                    if (firstFinal)
+                    {
+                        _saea._connectSocket = _saea._currentSocket = socket;
+                        _saea.SetResults(SocketError.Success, bytesTransferred, flags);
+                        return;
+                    }
+                }
+                else if (count == 2)    // We ignore failures on first socket since we have one more pending.
+                {
+                    firstFinal = ReachedCoordinationPointFirst();
+                    if (firstFinal)
+                    {
+                        // We ignore failures on first socket since we have one more pending.
+                        _saea.SetResults(exception!, 0, SocketFlags.None);
+                        _saea._currentSocket?.UpdateStatusAfterSocketError(socketError);
+                    }
+                }
+
+                if (firstFinal)
+                {
+                    // If this is the first final result, we need to complete the operation and release underlying SocketAsyncEventArgs
+                    _saea.Complete();
+                    //if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(socket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
+                    // signal caller we are done.
+                    _saea.OnCompleted(_saea);
+                }
+            }
+        }
+
 
         internal void FinishOperationSyncSuccess(int bytesTransferred, SocketFlags flags)
         {
