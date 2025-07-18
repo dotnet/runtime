@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.Tests
         public static void IsSupported_AgreesWithPlatform()
         {
             // Composites are supported everywhere MLDsa is supported
-            Assert.Equal(MLDsa.IsSupported, CompositeMLDsa.IsSupported);
+            Assert.Equal(MLDsa.IsSupported && !PlatformDetection.IsLinux, CompositeMLDsa.IsSupported);
         }
 
         [Theory]
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Tests
         {
             bool supported = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                 algorithm,
-                _ => PlatformDetection.IsWindows10Version27858OrGreater,
+                _ => MLDsa.IsSupported && !PlatformDetection.IsLinux,
                 _ => false,
                 _ => false);
 
