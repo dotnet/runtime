@@ -644,6 +644,9 @@ enum class GCConfigurationType
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
+// NOTE!
+// Only add methods to the end.
+// Do not add overloaded methods. Always use a different name.
 class IGCHeap {
 public:
     /*

@@ -285,6 +285,9 @@ struct alloc_context : gc_alloc_context
 #endif // FEATURE_SVR_GC
 };
 
+// NOTE!
+// Do not add overloaded methods, always use a different name, different from any methods declared here or
+// on the IGCHeap interface.
 class IGCHeapInternal : public IGCHeap {
 public:
     virtual int GetNumberOfHeaps () PURE_VIRTUAL
