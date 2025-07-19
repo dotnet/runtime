@@ -927,7 +927,7 @@ CDAC_GLOBAL_STRING(RID, RID_STRING)
 CDAC_GLOBAL(GCInfoVersion, uint32, GCINFO_VERSION)
 
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
-CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomain)
+CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
@@ -968,6 +968,10 @@ CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
+CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
+#ifdef TARGET_WINDOWS
+CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
+#endif // TARGET_WINDOWS
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, uint8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
