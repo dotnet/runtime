@@ -479,7 +479,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.SignVerify.cs"
              Link="Common\Interop\Windows\NCrypt\Interop.SignVerify.cs" />
 
-    <Compile Include="System\Security\Cryptography\CngHelpers.cs" />
     <Compile Include="System\Security\Cryptography\CngExtensions.cs" />
     <Compile Include="System\Security\Cryptography\CngIdentifierExtensions.cs" />
   </ItemGroup>

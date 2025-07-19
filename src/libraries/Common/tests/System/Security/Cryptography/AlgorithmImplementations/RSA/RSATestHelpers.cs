@@ -6,8 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    // TODO This is used in multiple tests files, so move this into a common Helpers class.
-    public partial class ImportExport
+    public class RSATestHelpers
     {
         internal static void AssertKeyEquals(in RSAParameters expected, in RSAParameters actual)
         {

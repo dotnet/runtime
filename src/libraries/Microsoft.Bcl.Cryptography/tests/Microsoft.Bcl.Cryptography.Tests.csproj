@@ -192,8 +192,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.Shared.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.Shared.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSATestHelpers.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSATestHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaContractTests.cs"

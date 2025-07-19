@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             // DP is the most likely to fail, the rest just otherwise ensure that Export
             // isn't losing data.
-            AssertKeyEquals(diminishedDPParameters, exported);
+            RSATestHelpers.AssertKeyEquals(diminishedDPParameters, exported);
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 exported = rsa.ExportParameters(true);
 
-                AssertKeyEquals(imported, exported);
+                RSATestHelpers.AssertKeyEquals(imported, exported);
             }
         }
 
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             // Exponent is the most likely to fail, the rest just otherwise ensure that Export
             // isn't losing data.
-            AssertKeyEquals(unusualExponentParameters, exported);
+            RSATestHelpers.AssertKeyEquals(unusualExponentParameters, exported);
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 exportedPublic = rsa.ExportParameters(false);
             }
 
-            AssertKeyEquals(imported, exported);
+            RSATestHelpers.AssertKeyEquals(imported, exported);
 
             Assert.Equal(exportedPublic.Modulus, imported.Modulus);
             Assert.Equal(exportedPublic.Exponent, imported.Exponent);
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.Equal(imported.Modulus.Length * 8, rsa.KeySize);
 
                 exported = rsa.ExportParameters(true);
-                AssertKeyEquals(imported, exported);
+                RSATestHelpers.AssertKeyEquals(imported, exported);
             }
         }
 
@@ -207,18 +207,18 @@ namespace System.Security.Cryptography.Rsa.Tests
                 RSAParameters exportedPrivate3 = rsa.ExportParameters(true);
                 RSAParameters exportedPublic3 = rsa.ExportParameters(false);
 
-                AssertKeyEquals(imported, exportedPrivate);
+                RSATestHelpers.AssertKeyEquals(imported, exportedPrivate);
 
                 Assert.Equal(imported.Modulus, exportedPublic.Modulus);
                 Assert.Equal(imported.Exponent, exportedPublic.Exponent);
                 Assert.Null(exportedPublic.D);
                 ValidateParameters(ref exportedPublic);
 
-                AssertKeyEquals(exportedPrivate, exportedPrivate2);
-                AssertKeyEquals(exportedPrivate, exportedPrivate3);
+                RSATestHelpers.AssertKeyEquals(exportedPrivate, exportedPrivate2);
+                RSATestHelpers.AssertKeyEquals(exportedPrivate, exportedPrivate3);
 
-                AssertKeyEquals(exportedPublic, exportedPublic2);
-                AssertKeyEquals(exportedPublic, exportedPublic3);
+                RSATestHelpers.AssertKeyEquals(exportedPublic, exportedPublic2);
+                RSATestHelpers.AssertKeyEquals(exportedPublic, exportedPublic3);
             }
         }
 
