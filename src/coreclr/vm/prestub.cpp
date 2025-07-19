@@ -422,17 +422,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
-#ifdef FEATURE_INTERPRETER
-        if (pConfig->IsInterpreterCode())
-        {
-            AllocMemTracker amt;
-            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
-            amt.SuppressRelease();
-            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
-            SetNativeCodeInterlocked(pCode);
-            SetInterpreterCode(dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr));
-        }
-#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -816,12 +805,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     // (don't want this for OSR, need to see how it works)
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER* pilHeader = GetAndVerifyILHeader(this, pConfig, &ilDecoderTemp);
+    bool isInterpreterCode = false;
 
     if (!ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
     }
     else
     {
@@ -834,13 +824,24 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             &methodSignature);
 #endif //FEATURE_EVENT_TRACE
 
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
+
 #ifdef FEATURE_EVENT_TRACE
+        PCODE pNativeCodeStartAddress = pCode;
+#ifdef FEATURE_INTERPRETER
+        if (isInterpreterCode)
+        {
+            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+            InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+            pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
+        }
+#endif // FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,
             &methodSignature,
-            pCode,
+            pNativeCodeStartAddress,
             pConfig);
 #endif //FEATURE_EVENT_TRACE
     }
@@ -898,7 +899,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     return pCode;
 }
 
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
+PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode, bool *pIsInterpreterCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pConfig != NULL);
@@ -912,7 +913,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 
-        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pIsInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -992,6 +993,15 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         return pOtherCode;
     }
 
+#ifdef FEATURE_INTERPRETER
+    if (*pIsInterpreterCode)
+    {
+        InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+        InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+        pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
 #endif
@@ -1068,9 +1078,6 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_jitSwitchedToMinOpt(false),
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
-#endif
-#ifdef FEATURE_INTERPRETER
-    m_isInterpreterCode(false),
 #endif
     m_nextInSameThread(nullptr)
 {}
@@ -1431,15 +1438,15 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     }
 
 #ifdef TARGET_X86
+    if (msig.HasAsyncContinuation())
+    {
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
+
     if (msig.HasGenericContextArg())
     {
         // The hidden context parameter
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
     }
 #endif // TARGET_X86
 }
@@ -1462,6 +1469,9 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     MetaSig msig(pTargetMD);
 
     _ASSERTE(msig.HasThis());
+
+    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
+    _ASSERTE(!msig.HasAsyncContinuation());
 
     ILStubLinker sl(pTargetMD->GetModule(),
                     pTargetMD->GetSignature(),
@@ -1578,6 +1588,9 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
+    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
+    _ASSERTE(!msig.HasAsyncContinuation());
+
     // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
@@ -1600,12 +1613,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     // Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
-
-    // Push the async continuation
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
 
 #if !defined(TARGET_X86)
     // Push the rest of the arguments for not x86
@@ -3293,7 +3300,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
             if (pHelper != (PCODE)NULL)
             {
-                *(TADDR *)pCell = pHelper;
+                VolatileStore((TADDR *)pCell, pHelper);
             }
 
 #ifdef _DEBUG

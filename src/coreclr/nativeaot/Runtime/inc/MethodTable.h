@@ -197,6 +197,12 @@ public:
         return m_uBaseSize & ~FunctionPointerFlagsMask;
     }
 
+    uint32_t GetParameterizedTypeShape()
+    {
+        ASSERT(IsParameterizedType());
+        return m_uBaseSize;
+    }
+
     Kinds GetKind();
 
     bool IsArray()
@@ -207,6 +213,8 @@ public:
 
     bool IsSzArray()
         { return GetElementType() == ElementType_SzArray; }
+
+    uint32_t GetArrayRank();
 
     bool IsParameterizedType()
         { return (GetKind() == ParameterizedEEType); }

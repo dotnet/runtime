@@ -44,12 +44,18 @@
     <Compile Include="ProcessStartInfoTests.Windows.cs" />
     <Compile Include="ProcessTests.Windows.cs" />
     <Compile Include="ProcessThreadTests.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-         Link="Common\Interop\Windows\Interop.Libraries.cs" />
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
-         Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
+             Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
+             Link="Common\Interop\Windows\Interop.Errors.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)TestUtilities\System\WindowsTestFileShare.cs" Link="Common\TestUtilities\System\WindowsTestFileShare.cs" />
   </ItemGroup>
@@ -63,6 +69,10 @@
              Link="Common\Interop\OSX\Interop.libproc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs"
              Link="Common\Interop\OSX\Interop.libSystem.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" 
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" 
+             Link="Common\Interop\Unix\System.Native\Interop.PosixSignal.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />

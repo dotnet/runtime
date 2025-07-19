@@ -149,7 +149,7 @@ struct SeqPointInfo {
 /*-----------------------------------------------*/
 /* SIMD Related Definitions                      */
 /*-----------------------------------------------*/
-
+/* f0 overlaps with v0 and vr16 is used internally */
 #define MONO_MAX_XREGS			31
 #define MONO_ARCH_CALLEE_XREGS		0xFFFFFFFE
 #define MONO_ARCH_CALLEE_SAVED_XREGS	0x0

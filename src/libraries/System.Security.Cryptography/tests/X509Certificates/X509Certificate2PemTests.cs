@@ -916,8 +916,7 @@ MII
                         AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
                         break;
                     case (MLDsa mldsa, MLDsa mldsaPem):
-                        byte[] mldsaSignature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
-                        Assert.Equal(mldsaSignature.Length, mldsa.SignData(data, mldsaSignature));
+                        byte[] mldsaSignature = mldsa.SignData(data);
                         Assert.True(mldsaPem.VerifyData(data, mldsaSignature));
                         break;
                     case (SlhDsa slhDsa, SlhDsa slhDsaPem):

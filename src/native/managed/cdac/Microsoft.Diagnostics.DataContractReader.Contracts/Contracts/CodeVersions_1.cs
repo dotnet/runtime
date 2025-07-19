@@ -128,7 +128,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         TypeHandle mt = rts.GetTypeHandle(mtAddr);
         TargetPointer modAddr = rts.GetModule(mt);
         ILoader loader = _target.Contracts.Loader;
-        ModuleHandle mod = loader.GetModuleHandle(modAddr);
+        ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
         ModuleFlags modFlags = loader.GetFlags(mod);
         if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
             return false;
@@ -324,7 +324,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         if (methodDefToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
             return TargetPointer.Null;
 
-        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
         TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
         TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
         return ilVersionStateAddress;

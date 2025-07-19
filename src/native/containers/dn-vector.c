@@ -268,6 +268,9 @@ dn_vector_custom_free (
 	dn_vector_t *vector,
 	dn_vector_dispose_func_t dispose_func)
 {
+	if (DN_UNLIKELY(!vector))
+		return;
+
 	dn_vector_custom_dispose (vector, dispose_func);
 	dn_allocator_free (vector->_internal._allocator, vector);
 }

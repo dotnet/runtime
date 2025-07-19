@@ -294,7 +294,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public async Task CompleteWithLargeWriteThrows()
         {
             var completeDelay = TimeSpan.FromMilliseconds(10);
@@ -359,6 +358,21 @@ namespace System.IO.Pipelines.Tests
             pipe.Writer.Complete();
             Assert.Equal(0, pool.CurrentlyRentedBlocks);
             Assert.Equal(0, Pipe.Writer.UnflushedBytes);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.Is64BitProcess))]
+        public void UnflushedBytes_HandlesLargeValues()
+        {
+            PipeWriter writer = PipeWriter.Create(Stream.Null);
+            int bufferSize = 10000;
+
+            while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
+            {
+                writer.GetMemory(bufferSize);
+                writer.Advance(bufferSize);
+            }
+
+            Assert.Equal(2147490000, writer.UnflushedBytes);
         }
     }
 }
