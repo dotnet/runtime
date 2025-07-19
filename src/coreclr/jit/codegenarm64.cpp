@@ -271,6 +271,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
         compiler->unwindAllocStack(spAdjust);
     }
+
+    GetEmitter()->emitPacInEpilog();
 }
 
 //------------------------------------------------------------------------
@@ -1342,6 +1344,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     gcInfo.gcResetForBB();
 
     compiler->unwindBegProlog();
+    GetEmitter()->emitPacInProlog();
 
     regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
@@ -1627,6 +1630,8 @@ void CodeGen::genFuncletEpilog()
             genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
         }
     }
+
+    GetEmitter()->emitPacInEpilog();
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
     compiler->unwindReturn(REG_LR);
