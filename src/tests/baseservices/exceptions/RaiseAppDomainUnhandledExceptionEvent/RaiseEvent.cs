@@ -21,13 +21,13 @@ public class RaiseEvent
         {
             AppDomain.CurrentDomain.UnhandledException -= _handler;
 
-            // See usage of s_unhandledExceptionInProgress in the ExceptionHandling class.
+            // See usage of s_crashingThreadId in the ExceptionHandling class.
             // This is to ensure that the static field is reset after the test.
-            GetUnhandledExceptionInProgress(null) = 0;
+            GetCrashingThreadId(null) = 0;
         }
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_unhandledExceptionInProgress")]
-        private static extern ref int GetUnhandledExceptionInProgress([UnsafeAccessorType("System.Runtime.ExceptionServices.ExceptionHandling")] object? obj);
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_crashingThreadId")]
+        private static extern ref ulong GetCrashingThreadId([UnsafeAccessorType("System.AppContext")]object? obj);
     }
 
     [ThreadStatic]
