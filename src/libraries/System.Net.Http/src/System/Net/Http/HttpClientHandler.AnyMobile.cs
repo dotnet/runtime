@@ -777,12 +777,11 @@ namespace System.Net.Http
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
-        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
-            s_dangerousAcceptAnyServerCertificateValidator ??
-            Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-            s_dangerousAcceptAnyServerCertificateValidator;
+            field ??
+            Interlocked.CompareExchange(ref field, delegate { return true; }, null) ??
+            field;
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {

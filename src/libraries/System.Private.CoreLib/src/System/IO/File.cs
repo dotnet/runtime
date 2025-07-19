@@ -20,10 +20,9 @@ namespace System.IO
     public static partial class File
     {
         private const int ChunkSize = 8192;
-        private static Encoding? s_UTF8NoBOM;
 
         // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
-        private static Encoding UTF8NoBOM => s_UTF8NoBOM ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        private static Encoding UTF8NoBOM => field ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         internal const int DefaultBufferSize = 4096;
 

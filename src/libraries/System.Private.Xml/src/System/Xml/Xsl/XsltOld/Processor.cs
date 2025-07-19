@@ -91,7 +91,6 @@ namespace System.Xml.Xsl.XsltOld
 #pragma warning restore 618
         private readonly Hashtable _scriptExtensions;
 
-        private ArrayList? _numberList;
         //
         // Template lookup action
         //
@@ -303,7 +302,7 @@ namespace System.Xml.Xsl.XsltOld
         }
 #pragma warning restore CA1822
 
-        internal ArrayList NumberList => _numberList ??= new ArrayList();
+        internal ArrayList NumberList => field ??= new ArrayList();
 
         internal IXsltDebugger? Debugger
         {

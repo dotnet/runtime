@@ -1186,11 +1186,6 @@ namespace System.Collections.Immutable
         private readonly ImmutableList<T>.Builder _list;
 
         /// <summary>
-        /// The simple view of the collection.
-        /// </summary>
-        private T[]? _cachedContents;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableListBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The list to display in the debugger</param>
@@ -1204,6 +1199,6 @@ namespace System.Collections.Immutable
         /// Gets a simple debugger-viewable list.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Contents => _cachedContents ??= _list.ToArray(_list.Count);
+        public T[] Contents => field ??= _list.ToArray(_list.Count);
     }
 }
