@@ -44,8 +44,11 @@ void get_line_column_from_offset(const char* data, uint64_t size, size_t offset,
 
 } // empty namespace
 
-bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t& context)
+bool json_parser_t::parse_fully_trusted_raw_data(char* data, int64_t size, const pal::string_t& context)
 {
+    // This code assumes that the provided data is fully trusted; that is, that no portion
+    // of it has been provided by a hostile agent.
+
     assert(data != nullptr);
 
     constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag | rapidjson::ParseFlag::kParseCommentsFlag;
@@ -81,10 +84,13 @@ bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t
     return true;
 }
 
-bool json_parser_t::parse_file(const pal::string_t& path)
+bool json_parser_t::parse_fully_trusted_file(const pal::string_t& path)
 {
     // This code assumes that the caller has checked that the file `path` exists
-    // either within the bundle, or as a real file on disk.
+    // either within the bundle, or as a real file on disk. It also assumes
+    // that the contents of the target file are fully trusted; that is, that no
+    // portion of its contents has been provided by a hostile agent.
+
     assert(m_data == nullptr);
     assert(m_bundle_location == nullptr);
 
@@ -129,7 +135,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
         data += 3;
     }
 
-    return parse_raw_data(data, size, path);
+    return parse_fully_trusted_raw_data(data, size, path);
 }
 
 json_parser_t::~json_parser_t()
