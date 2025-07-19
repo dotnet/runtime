@@ -22,11 +22,19 @@ namespace System.Threading
         }
 
         /// <summary>
+        /// Returns <see cref="Environment.TickCount64"/> as a start time in milliseconds.
+        /// </summary>
+        public static long GetTime64()
+        {
+            return Environment.TickCount64;
+        }
+
+        /// <summary>
         /// Helper function to measure and update the elapsed time
         /// </summary>
         /// <param name="startTime"> The first time (in milliseconds) observed when the wait started</param>
         /// <param name="originalWaitMillisecondsTimeout">The original wait timeout in milliseconds</param>
-        /// <returns>The new wait time in milliseconds, or -1 if the time expired</returns>
+        /// <returns>The new wait time in milliseconds</returns>
         public static int UpdateTimeOut(uint startTime, int originalWaitMillisecondsTimeout)
         {
             // The function must be called in case the time out is not infinite
@@ -48,6 +56,27 @@ namespace System.Threading
             }
 
             return currentWaitTimeout;
+        }
+
+        /// <summary>
+        /// Helper function to measure and update the elapsed time
+        /// </summary>
+        /// <param name="startTime"> The first time (in milliseconds) observed when the wait started</param>
+        /// <param name="originalWaitMillisecondsTimeout">The original wait timeout in milliseconds</param>
+        /// <returns>The new wait time in milliseconds</returns>
+        public static long UpdateTimeOut(long startTime, uint originalWaitMillisecondsTimeout)
+        {
+            // The function must be called in case the time out is not infinite
+            Debug.Assert(originalWaitMillisecondsTimeout != Timeout.UnsignedInfinite);
+
+            long elapsedMilliseconds = GetTime64() - startTime;
+
+            if (originalWaitMillisecondsTimeout <= elapsedMilliseconds)
+            {
+                return 0;
+            }
+
+            return originalWaitMillisecondsTimeout - elapsedMilliseconds;
         }
     }
 }
