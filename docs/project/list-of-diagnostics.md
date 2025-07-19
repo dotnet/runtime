@@ -116,6 +116,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0059`__ | SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead. |
 |  __`SYSLIB0060`__ | The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead. |
 |  __`SYSLIB0061`__ | The Queryable MinBy and MaxBy taking an IComparer\<TSource\> are obsolete. Use the new ones that take an IComparer\<TKey\>. |
+|  __`SYSLIB0062`__ | XSLT Script blocks are not supported. |
 
 ## Analyzer Warnings
 
