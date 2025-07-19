@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Threading
 {
@@ -85,6 +86,15 @@ namespace System.Threading
             /// mutexes are abandoned in reverse order.
             /// </summary>
             private WaitableObject? _lockedMutexesHead;
+
+#if FEATURE_CROSS_PROCESS_MUTEX
+            /// <summary>
+            /// Linked list of named mutexes that are locked by the thread and need to be abandoned before the thread exits.
+            /// The linked list has only a head and no tail, which means acquired mutexes are prepended and
+            /// mutexes are abandoned in reverse order.
+            /// </summary>
+            private NamedMutexProcessDataBase? _lockedNamedMutexesHead;
+#endif
 
             public ThreadWaitInfo(Thread thread)
             {
@@ -553,6 +563,22 @@ namespace System.Threading
                 }
             }
 
+#if FEATURE_CROSS_PROCESS_MUTEX
+            public NamedMutexProcessDataBase? LockedNamedMutexesHead
+            {
+                get
+                {
+                    SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+                    return _lockedNamedMutexesHead;
+                }
+                set
+                {
+                    SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+                    _lockedNamedMutexesHead = value;
+                }
+            }
+#endif
+
             public void OnThreadExiting()
             {
                 // Abandon locked mutexes. Acquired mutexes are prepended to the linked list, so the mutexes are abandoned in
@@ -576,6 +602,28 @@ namespace System.Threading
                 {
                     s_lock.Release();
                 }
+
+#if FEATURE_CROSS_PROCESS_MUTEX
+                LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
+                try
+                {
+                    while (true)
+                    {
+                        NamedMutexProcessDataBase? namedMutex = LockedNamedMutexesHead;
+                        if (namedMutex == null)
+                        {
+                            break;
+                        }
+
+                        namedMutex.Abandon();
+                        Debug.Assert(LockedNamedMutexesHead != namedMutex);
+                    }
+                }
+                finally
+                {
+                    scope.Dispose();
+                }
+#endif
             }
 
             public sealed class WaitedListNode
