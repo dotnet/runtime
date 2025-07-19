@@ -1693,8 +1693,36 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetTLSIndex(uint* pIndex)
-        => _legacyImpl is not null ? _legacyImpl.GetTLSIndex(pIndex) : HResults.E_NOTIMPL;
+    {
+        if (pIndex == null)
+            return HResults.E_INVALIDARG;
 
+        int hr = HResults.S_OK;
+        try
+        {
+            uint TlsIndexBase = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.TlsIndexBase));
+            uint OffsetOfCurrentThreadInfo = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.OffsetOfCurrentThreadInfo));
+            uint CombinedTlsIndex = TlsIndexBase + (OffsetOfCurrentThreadInfo << 16) + 0x80000000;
+            *pIndex = CombinedTlsIndex;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint indexLocal;
+            int hrLocal = _legacyImpl.GetTLSIndex(&indexLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*pIndex == indexLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetUsefulGlobals(DacpUsefulGlobalsData* data)
     {
         if (data == null)
