@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -25,27 +26,35 @@ namespace System.Security.Cryptography
 #pragma warning restore SA1001
 #endif
     {
-        private static readonly string[] s_knownOids =
-        [
-            Oids.MLDsa44WithRSA2048PssPreHashSha256,
-            Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256,
-            Oids.MLDsa44WithEd25519PreHashSha512,
-            Oids.MLDsa44WithECDsaP256PreHashSha256,
-            Oids.MLDsa65WithRSA3072PssPreHashSha512,
-            Oids.MLDsa65WithRSA3072Pkcs15PreHashSha512,
-            Oids.MLDsa65WithRSA4096PssPreHashSha512,
-            Oids.MLDsa65WithRSA4096Pkcs15PreHashSha512,
-            Oids.MLDsa65WithECDsaP256PreHashSha512,
-            Oids.MLDsa65WithECDsaP384PreHashSha512,
-            Oids.MLDsa65WithECDsaBrainpoolP256r1PreHashSha512,
-            Oids.MLDsa65WithEd25519PreHashSha512,
-            Oids.MLDsa87WithECDsaP384PreHashSha512,
-            Oids.MLDsa87WithECDsaBrainpoolP384r1PreHashSha512,
-            Oids.MLDsa87WithEd448PreHashShake256_512,
-            Oids.MLDsa87WithRSA3072PssPreHashSha512,
-            Oids.MLDsa87WithRSA4096PssPreHashSha512,
-            Oids.MLDsa87WithECDsaP521PreHashSha512,
-        ];
+        private static readonly KeyFormatHelper.StringLookup s_knownOids =
+#if NET9_0_OR_GREATER
+            new(SearchValues.Create([
+#else
+            new([
+#endif
+                Oids.MLDsa44WithRSA2048PssPreHashSha256,
+                Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256,
+                Oids.MLDsa44WithEd25519PreHashSha512,
+                Oids.MLDsa44WithECDsaP256PreHashSha256,
+                Oids.MLDsa65WithRSA3072PssPreHashSha512,
+                Oids.MLDsa65WithRSA3072Pkcs15PreHashSha512,
+                Oids.MLDsa65WithRSA4096PssPreHashSha512,
+                Oids.MLDsa65WithRSA4096Pkcs15PreHashSha512,
+                Oids.MLDsa65WithECDsaP256PreHashSha512,
+                Oids.MLDsa65WithECDsaP384PreHashSha512,
+                Oids.MLDsa65WithECDsaBrainpoolP256r1PreHashSha512,
+                Oids.MLDsa65WithEd25519PreHashSha512,
+                Oids.MLDsa87WithECDsaP384PreHashSha512,
+                Oids.MLDsa87WithECDsaBrainpoolP384r1PreHashSha512,
+                Oids.MLDsa87WithEd448PreHashShake256_512,
+                Oids.MLDsa87WithRSA3072PssPreHashSha512,
+                Oids.MLDsa87WithRSA4096PssPreHashSha512,
+                Oids.MLDsa87WithECDsaP521PreHashSha512,
+#if NET9_0_OR_GREATER
+            ], StringComparison.Ordinal));
+#else
+            ]);
+#endif
 
         private const int MaxContextLength = 255;
 

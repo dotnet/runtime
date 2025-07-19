@@ -10,10 +10,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class RSAKeyFormatHelper
     {
-        private static readonly string[] s_validOids =
-        {
-            Oids.Rsa,
-        };
+        private static readonly KeyFormatHelper.StringLookupArray s_validOids = new([Oids.Rsa]);
 
         // TODO Currently reading PKCS#1 keys uses BigInteger which is not optimal and uses APIs that are not
         // available downlevel. These methods should eventually be replaced with a more efficient implementation

@@ -10,10 +10,7 @@ namespace System.Security.Cryptography
 {
     internal static class DSAKeyFormatHelper
     {
-        private static readonly string[] s_validOids =
-        {
-            Oids.Dsa,
-        };
+        private static readonly KeyFormatHelper.StringLookupArray s_validOids = new([Oids.Dsa]);
 
         internal static void ReadDsaPrivateKey(
             ReadOnlyMemory<byte> xBytes,

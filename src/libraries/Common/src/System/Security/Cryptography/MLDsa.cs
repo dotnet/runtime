@@ -32,12 +32,12 @@ namespace System.Security.Cryptography
 #pragma warning restore SA1001
 #endif
     {
-        private protected static readonly string[] KnownOids =
+        private protected static readonly KeyFormatHelper.StringLookupArray KnownOids = new(
         [
             Oids.MLDsa44,
             Oids.MLDsa65,
             Oids.MLDsa87,
-        ];
+        ]);
 
         private const int MaxContextLength = 255;
 

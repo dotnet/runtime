@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
@@ -14,7 +15,7 @@ namespace System.Security.Cryptography
         internal delegate void KeyReader<TRet>(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out TRet ret);
 
         internal static unsafe void ReadSubjectPublicKeyInfo<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlySpan<byte> source,
             KeyReader<TRet> keyReader,
             out int bytesRead,
@@ -30,7 +31,7 @@ namespace System.Security.Cryptography
         }
 
         internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
@@ -49,7 +50,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
+            if (!validOids.Contains(spki.Algorithm.Algorithm))
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
             }
@@ -59,7 +60,7 @@ namespace System.Security.Cryptography
         }
 
         private static void ReadSubjectPublicKeyInfo<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlyMemory<byte> source,
             KeyReader<TRet> keyReader,
             out int bytesRead,
@@ -80,7 +81,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
+            if (!validOids.Contains(spki.Algorithm.Algorithm))
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
             }
@@ -90,7 +91,7 @@ namespace System.Security.Cryptography
         }
 
         internal static unsafe void ReadPkcs8<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlySpan<byte> source,
             KeyReader<TRet> keyReader,
             out int bytesRead,
@@ -106,7 +107,7 @@ namespace System.Security.Cryptography
         }
 
         internal static ReadOnlyMemory<byte> ReadPkcs8(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
@@ -116,7 +117,7 @@ namespace System.Security.Cryptography
                 int read = reader.PeekEncodedValue().Length;
                 PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
-                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
+                if (!validOids.Contains(privateKeyInfo.PrivateKeyAlgorithm.Algorithm))
                 {
                     throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                 }
@@ -131,7 +132,7 @@ namespace System.Security.Cryptography
         }
 
         private static void ReadPkcs8<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlyMemory<byte> source,
             KeyReader<TRet> keyReader,
             out int bytesRead,
@@ -143,7 +144,7 @@ namespace System.Security.Cryptography
                 int read = reader.PeekEncodedValue().Length;
                 PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
-                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
+                if (!validOids.Contains(privateKeyInfo.PrivateKeyAlgorithm.Algorithm))
                 {
                     throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                 }
@@ -204,5 +205,27 @@ namespace System.Security.Cryptography
             writer.PopSequence();
             return writer;
         }
+
+        internal interface IStringLookup
+        {
+            bool Contains(string value);
+        }
+
+        internal sealed class StringLookupArray(string[] backingArray) : IStringLookup
+        {
+            public bool Contains(string value) => Array.IndexOf(backingArray, value) >= 0;
+        }
+
+#if NET9_0_OR_GREATER
+        internal sealed class StringLookup(SearchValues<string> backingSearchValues) : IStringLookup
+        {
+            public bool Contains(string value) => backingSearchValues.Contains(value);
+        }
+#else
+        internal sealed class StringLookup(HashSet<string> backingSet) : IStringLookup
+        {
+            public bool Contains(string value) => backingSet.Contains(value);
+        }
+#endif
     }
 }
