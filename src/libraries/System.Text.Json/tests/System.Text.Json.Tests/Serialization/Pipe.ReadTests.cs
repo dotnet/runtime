@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
 
             writer.Complete(new Exception());
 
-            // Attempt to deserialize should fail with JsonException due to incomplete JSON
+            // Attempt to deserialize should fail with Exception due to Pipe completed with exception
             await Assert.ThrowsAsync<Exception>(() => readTask);
 
             reader.Complete();
