@@ -336,7 +336,7 @@ namespace System.Text.RegularExpressions
             // Only apply optimization when LTR to avoid needing additional code for the much rarer RTL case.
             // Also only apply these optimizations when not using NonBacktracking, as these optimizations are
             // all about avoiding things that are impactful for the backtracking engines but nops for non-backtracking.
-            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) == 0)
+            if ((rootNode.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) == 0)
             {
                 // Optimization: eliminate backtracking for loops.
                 // For any single-character loop (Oneloop, Notoneloop, Setloop), see if we can automatically convert
@@ -411,10 +411,9 @@ namespace System.Text.RegularExpressions
         private void EliminateEndingBacktracking()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack() ||
-                (Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
+                (Options & RegexOptions.NonBacktracking) != 0)
             {
                 // If we can't recur further, just stop optimizing.
-                // We haven't done the work to validate this is correct for RTL.
                 // And NonBacktracking doesn't support atomic groups and doesn't have backtracking to be eliminated.
                 return;
             }
@@ -423,6 +422,12 @@ namespace System.Text.RegularExpressions
             RegexNode node = this;
             while (true)
             {
+                // In general we don't care too much about RightToLeft performance, as it's rarely used as a top-level option,
+                // and thus haven't done the work to either implement or vet these optimizations for RTL.
+                // However, it's also used to implement lookbehinds, and so where possible we still want to optimize
+                // when we can do so easily. Most of these cases are appropriately trivial.
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+
                 switch (node.Kind)
                 {
                     // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes, e.g. [abc]* => (?>[abc]*).
@@ -448,7 +453,7 @@ namespace System.Text.RegularExpressions
                     // an Atomic one if its grandparent is already Atomic.
                     // e.g. [xyz](?:abc|def) => [xyz](?>abc|def)
                     case RegexNodeKind.Capture:
-                    case RegexNodeKind.Concatenate:
+                    case RegexNodeKind.Concatenate when !rtl:
                         RegexNode existingChild = node.Child(node.ChildCount() - 1);
                         if ((existingChild.Kind is RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional or RegexNodeKind.Loop or RegexNodeKind.Lazyloop) &&
                             (node.Parent is null || node.Parent.Kind != RegexNodeKind.Atomic)) // validate grandparent isn't atomic
@@ -502,11 +507,14 @@ namespace System.Text.RegularExpressions
                                 continue;
                             }
 
-                            RegexNode? loopDescendent = node.FindLastExpressionInLoopForAutoAtomic();
-                            if (loopDescendent != null)
+                            if (!rtl)
                             {
-                                node = loopDescendent;
-                                continue; // loop around to process node
+                                RegexNode? loopDescendent = node.FindLastExpressionInLoopForAutoAtomic();
+                                if (loopDescendent != null)
+                                {
+                                    node = loopDescendent;
+                                    continue; // loop around to process node
+                                }
                             }
                         }
                         break;
@@ -1807,12 +1815,6 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            if ((Options & RegexOptions.RightToLeft) != 0)
-            {
-                // RTL is so rare, we don't need to spend additional time/code optimizing for it.
-                return;
-            }
-
             // For all node types that have children, recur into each of those children.
             int childCount = ChildCount();
             if (childCount != 0)
@@ -1839,9 +1841,11 @@ namespace System.Text.RegularExpressions
 
                 static void ProcessNode(RegexNode node, RegexNode subsequent)
                 {
-                    if (!StackHelper.TryEnsureSufficientExecutionStack())
+                    if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                        (node.Options & RegexOptions.RightToLeft) != 0)
                     {
                         // If we can't recur further, just stop optimizing.
+                        // And RTL is so rare, we don't need to spend additional time/code optimizing for it.
                         return;
                     }
 
@@ -1936,6 +1940,7 @@ namespace System.Text.RegularExpressions
         {
             RegexNode node = this;
 
+            Debug.Assert((node.Options & RegexOptions.RightToLeft) == 0, "Currently only implemented for left-to-right");
             Debug.Assert(node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop);
 
             // Start by looking at the loop's sole child.
