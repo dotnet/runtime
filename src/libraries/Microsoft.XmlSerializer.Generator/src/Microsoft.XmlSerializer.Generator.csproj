@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -22,22 +22,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="GenerateXmlSerializers.cs" />
+    <Compile Include="LogWriter.cs" />
     <Compile Include="Sgen.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Set an empty PackagePath to place this file in the root of the package -->
-    <None Include="build\prefercliruntime"
-          PackagePath=""
-          Pack="true" />
-    <None Include="build\Microsoft.XmlSerializer.Generator.targets"
-          PackagePath="build"
-          Pack="true" />
-    <None Include="build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json"
-          PackagePath="lib\netstandard2.0"
-          Pack="true" />
+    <None Include="build\prefercliruntime" PackagePath="" Pack="true" />
+    <None Include="build\Microsoft.XmlSerializer.Generator.targets" PackagePath="build" Pack="true" />
+    <None Include="build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json" PackagePath="lib\netstandard2.0" Pack="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageDownloadAndReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" Folder="ref/netstandard2.0" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" Folder="ref/netstandard2.0" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
   <Import Project="GenerateThisAssemblyCs.targets" />
   <Import Project="GenerateNupkgProps.targets" />
 
