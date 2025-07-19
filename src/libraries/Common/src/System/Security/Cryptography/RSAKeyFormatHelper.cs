@@ -15,48 +15,17 @@ namespace System.Security.Cryptography
             Oids.Rsa,
         };
 
-        // TODO Currently reading PKCS#1 keys uses BigInteger which is not optimal and uses APIs that are not
-        // available downlevel. These methods should eventually be replaced with a more efficient implementation
-        // and they should be moved into the RSAKeyFormatHelper.Pkcs1 (which is shared between S.S.C. and M.B.C.).
-
         internal static void FromPkcs1PrivateKey(
             ReadOnlyMemory<byte> keyData,
             in AlgorithmIdentifierAsn algId,
             out RSAParameters ret)
         {
-            RSAPrivateKeyAsn key = RSAPrivateKeyAsn.Decode(keyData, AsnEncodingRules.BER);
-
             if (!algId.HasNullEquivalentParameters())
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            const int MaxSupportedVersion = 0;
-
-            if (key.Version > MaxSupportedVersion)
-            {
-                throw new CryptographicException(
-                    SR.Format(
-                        SR.Cryptography_RSAPrivateKey_VersionTooNew,
-                        key.Version,
-                        MaxSupportedVersion));
-            }
-
-            // The modulus size determines the encoded output size of the CRT parameters.
-            byte[] n = key.Modulus.ToByteArray(isUnsigned: true, isBigEndian: true);
-            int halfModulusLength = (n.Length + 1) / 2;
-
-            ret = new RSAParameters
-            {
-                Modulus = n,
-                Exponent = key.PublicExponent.ToByteArray(isUnsigned: true, isBigEndian: true),
-                D = key.PrivateExponent.ExportKeyParameter(n.Length),
-                P = key.Prime1.ExportKeyParameter(halfModulusLength),
-                Q = key.Prime2.ExportKeyParameter(halfModulusLength),
-                DP = key.Exponent1.ExportKeyParameter(halfModulusLength),
-                DQ = key.Exponent2.ExportKeyParameter(halfModulusLength),
-                InverseQ = key.Coefficient.ExportKeyParameter(halfModulusLength),
-            };
+            ret = FromPkcs1PrivateKey(keyData, rsaParameters => rsaParameters, pinAndClearParameters: false);
         }
 
         internal static void ReadRsaPublicKey(
@@ -64,13 +33,7 @@ namespace System.Security.Cryptography
             in AlgorithmIdentifierAsn algId,
             out RSAParameters ret)
         {
-            RSAPublicKeyAsn key = RSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
-
-            ret = new RSAParameters
-            {
-                Modulus = key.Modulus.ToByteArray(isUnsigned: true, isBigEndian: true),
-                Exponent = key.PublicExponent.ToByteArray(isUnsigned: true, isBigEndian: true),
-            };
+            ret = FromPkcs1PublicKey(keyData, rsaParameters => rsaParameters);
         }
 
         internal static void ReadRsaPublicKey(
@@ -133,19 +96,6 @@ namespace System.Security.Cryptography
             }
 
             return bytesRead;
-        }
-
-        public static void ReadPkcs8(
-            ReadOnlySpan<byte> source,
-            out int bytesRead,
-            out RSAParameters key)
-        {
-            KeyFormatHelper.ReadPkcs8<RSAParameters>(
-                s_validOids,
-                source,
-                FromPkcs1PrivateKey,
-                out bytesRead,
-                out key);
         }
 
         internal static ReadOnlyMemory<byte> ReadPkcs8(
