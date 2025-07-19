@@ -582,9 +582,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/lifetime/lifetime2/**">
             <Issue>https://github.com/dotnet/runtime/issues/109313</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109314</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/AttributeConflict/**">
             <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
         </ExcludeList>
