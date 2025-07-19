@@ -1832,11 +1832,10 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private readonly SortedSet<T> _tree;
-            private readonly int _version;
-
             private readonly Stack<Node> _stack;
             private Node? _current;
 
+            private readonly int _version;
             private readonly bool _reverse;
 
             internal Enumerator(SortedSet<T> set)

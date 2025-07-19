@@ -1034,7 +1034,6 @@ namespace System.Collections.Generic
                         throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     }
 
-                    _index = _queue._size + 1;
                     _current = default;
                     return false;
                 }

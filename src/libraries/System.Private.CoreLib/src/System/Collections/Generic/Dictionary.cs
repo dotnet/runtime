@@ -1772,7 +1772,7 @@ namespace System.Collections.Generic
             private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
 
             internal const int DictEntry = 1;
-            internal const int KeyValuePair = 2;
+            internal const int KeyValuePair = 0;
 
             internal Enumerator(Dictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
             {
@@ -1790,8 +1790,6 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
-                // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
                 while ((uint)_index < (uint)_dictionary._count)
                 {
                     ref Entry entry = ref _dictionary._entries![_index++];
@@ -1803,7 +1801,7 @@ namespace System.Collections.Generic
                     }
                 }
 
-                _index = _dictionary._count + 1;
+                _index = -1;
                 _current = default;
                 return false;
             }
@@ -1816,7 +1814,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _dictionary._count + 1))
+                    if (_index <= 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
@@ -1826,7 +1824,7 @@ namespace System.Collections.Generic
                         return new DictionaryEntry(_current.Key, _current.Value);
                     }
 
-                    return new KeyValuePair<TKey, TValue>(_current.Key, _current.Value);
+                    return _current;
                 }
             }
 
@@ -1845,7 +1843,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _dictionary._count + 1))
+                    if (_index <= 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
@@ -1858,7 +1856,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _dictionary._count + 1))
+                    if (_index <= 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
@@ -1871,7 +1869,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _dictionary._count + 1))
+                    if (_index <= 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
@@ -2043,7 +2041,7 @@ namespace System.Collections.Generic
                         }
                     }
 
-                    _index = _dictionary._count + 1;
+                    _index = -1;
                     _currentKey = default;
                     return false;
                 }
@@ -2054,7 +2052,7 @@ namespace System.Collections.Generic
                 {
                     get
                     {
-                        if (_index == 0 || (_index == _dictionary._count + 1))
+                        if (_index <= 0)
                         {
                             ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                         }
@@ -2236,7 +2234,7 @@ namespace System.Collections.Generic
                             return true;
                         }
                     }
-                    _index = _dictionary._count + 1;
+                    _index = -1;
                     _currentValue = default;
                     return false;
                 }
@@ -2247,7 +2245,7 @@ namespace System.Collections.Generic
                 {
                     get
                     {
-                        if (_index == 0 || (_index == _dictionary._count + 1))
+                        if (_index <= 0)
                         {
                             ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                         }
