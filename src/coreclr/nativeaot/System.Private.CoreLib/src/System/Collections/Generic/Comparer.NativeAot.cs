@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Internal.IntrinsicSupport;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
@@ -14,14 +15,14 @@ namespace System.Collections.Generic
     public abstract partial class Comparer<T> : IComparer, IComparer<T>
     {
         [Intrinsic]
-        private static Comparer<T> Create()
+        private static unsafe Comparer<T> Create()
         {
             // The compiler will overwrite the Create method with optimized
             // instantiation-specific implementation.
             // This body serves as a fallback when instantiation-specific implementation is unavailable.
             // If that happens, the compiler ensures we generate data structures to make the fallback work
             // when this method is compiled.
-            return Unsafe.As<Comparer<T>>(ComparerHelpers.GetComparer(typeof(T).TypeHandle));
+            return Unsafe.As<Comparer<T>>(ComparerHelpers.GetComparer(new RuntimeTypeHandle(MethodTable.ForCastingOf<T>())));
         }
 
         public static Comparer<T> Default { [Intrinsic] get; } = Create();

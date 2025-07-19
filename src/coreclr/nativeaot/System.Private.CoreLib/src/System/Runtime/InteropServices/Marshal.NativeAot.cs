@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices
 
             if (structureTypeHandle.ToMethodTable()->IsEnum ||
                 structureTypeHandle.ToMethodTable()->IsInterface ||
-                RuntimeImports.AreTypesAssignable(MethodTable.Of<Delegate>(), structureTypeHandle.ToMethodTable()))
+                RuntimeImports.AreTypesAssignable(MethodTable.ForCastingOf<Delegate>(), structureTypeHandle.ToMethodTable()))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             }
