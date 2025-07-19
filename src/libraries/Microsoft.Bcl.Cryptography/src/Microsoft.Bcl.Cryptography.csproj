@@ -173,6 +173,20 @@
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.manual.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</Link>
     </AsnXml>

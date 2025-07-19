@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -863,6 +863,7 @@
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RC2Implementation.NotSupported.cs" />
