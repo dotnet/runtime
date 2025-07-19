@@ -885,6 +885,9 @@ template<>
 struct cdac_data<LoaderAllocator>
 {
     static constexpr size_t ReferenceCount = offsetof(LoaderAllocator, m_cReferences);
+    static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
+    static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
+    static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

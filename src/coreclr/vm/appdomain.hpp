@@ -1347,7 +1347,7 @@ private:
     friend class Assembly;
 
 private:
-    enum Stage {
+    enum Stage : ULONG {
         STAGE_CREATING,
         STAGE_READYFORMANAGEDCODE,
         STAGE_ACTIVE,
@@ -1627,6 +1627,7 @@ struct cdac_data<AppDomain>
 {
     static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
     static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
+    static constexpr size_t Stage = offsetof(AppDomain, m_Stage);
 };
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
@@ -1937,6 +1938,7 @@ template<>
 struct cdac_data<SystemDomain>
 {
     static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
+    static constexpr size_t GlobalLoaderAllocator = offsetof(SystemDomain, m_GlobalAllocator);
 };
 #endif // DACCESS_COMPILE
 

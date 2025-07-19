@@ -41,6 +41,23 @@ public enum AssemblyIterationFlags
     IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
 }
 
+public enum DacpAppDomainDataStage
+{
+    STAGE_CREATING,
+    STAGE_READYFORMANAGEDCODE,
+    STAGE_ACTIVE,
+    STAGE_OPEN,
+    STAGE_UNLOAD_REQUESTED,
+    STAGE_EXITING,
+    STAGE_EXITED,
+    STAGE_FINALIZING,
+    STAGE_FINALIZED,
+    STAGE_HANDLETABLE_NOACCESS,
+    STAGE_CLEARED,
+    STAGE_COLLECTED,
+    STAGE_CLOSED
+}
+
 record struct ModuleLookupTables(
     TargetPointer FieldDefToDesc,
     TargetPointer ManifestModuleReferences,
@@ -57,6 +74,8 @@ ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 TargetPointer GetModule(ModuleHandle handle);
+uint GetStage();
+bool IsActive();
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
@@ -66,7 +85,10 @@ ModuleFlags GetFlags(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
-TargetPointer GetThunkHeap(ModuleHandle handle);
+TargetPointer GetGlobalLoaderAllocator();
+TargetPointer GetHighFrequencyHeap(TargetPointer globalLoaderAllocator);
+TargetPointer GetLowFrequencyHeap(TargetPointer globalLoaderAllocator);
+TargetPointer GetStubHeap(TargetPointer globalLoaderAllocator);
 TargetPointer GetILBase(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
@@ -114,12 +136,17 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
+| `AppDomain` | `Stage` | Lifecycle stage of the AppDomain |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
+| `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
+| `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
+| `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
 | `ArrayListBlock` | `Size` | Size of data section in block |
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
+| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
 
 
 ### Global variables used:
@@ -359,11 +386,6 @@ string GetFileName(ModuleHandle handle)
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::LoaderAllocator offset */);
-}
-
-TargetPointer GetThunkHeap(ModuleHandle handle)
-{
-    return target.ReadPointer(handle.Address + /* Module::ThunkHeap offset */);
 }
 
 TargetPointer GetILBase(ModuleHandle handle)

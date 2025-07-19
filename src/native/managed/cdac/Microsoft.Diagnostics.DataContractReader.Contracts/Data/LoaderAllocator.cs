@@ -13,10 +13,16 @@ internal sealed class LoaderAllocator : IData<LoaderAllocator>
         Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
 
         ReferenceCount = target.Read<uint>(address + (ulong)type.Fields[nameof(ReferenceCount)].Offset);
+        HighFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(HighFrequencyHeap)].Offset);
+        LowFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(LowFrequencyHeap)].Offset);
+        StubHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(StubHeap)].Offset);
 
     }
 
     public uint ReferenceCount { get; init; }
+    public TargetPointer HighFrequencyHeap { get; init; }
+    public TargetPointer LowFrequencyHeap { get; init; }
+    public TargetPointer StubHeap { get; init; }
 
     public bool IsAlive => ReferenceCount != 0;
 }

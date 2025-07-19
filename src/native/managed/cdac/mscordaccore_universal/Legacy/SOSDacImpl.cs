@@ -111,7 +111,86 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainData(addr, data) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        DacpAppDomainData* dataPtr = (DacpAppDomainData*)data;
+        try
+        {
+            if (addr == 0)
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else
+            {
+                NativeMemory.Clear(dataPtr, (nuint)sizeof(DacpAppDomainData));
+                dataPtr->AppDomainPtr = addr;
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+                ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
+                TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
+                dataPtr->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                dataPtr->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                dataPtr->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                dataPtr->appDomainStage = (uint)DacpAppDomainDataStage.STAGE_OPEN;
+                if (addr != systemDomain)
+                {
+                    TargetPointer pAppDomain = addr.ToTargetPointer(_target);
+                    dataPtr->DomainLocalBlock = 0;
+                    dataPtr->pDomainLocalModules = 0;
+                    dataPtr->dwId = (int)_target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+                    dataPtr->appDomainStage = loader.GetStage();
+                    if (loader.IsActive())
+                    {
+                        List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                            pAppDomain,
+                            AssemblyIterationFlags.IncludeLoading |
+                            AssemblyIterationFlags.IncludeLoaded |
+                            AssemblyIterationFlags.IncludeExecution).ToList();
+
+                        for (int i = 0; i < modules.Count; i++)
+                        {
+                            Contracts.ModuleHandle module = modules[i];
+                            if (loader.IsAssemblyLoaded(module))
+                            {
+                                dataPtr->AssemblyCount++;
+                            }
+                        }
+                        List<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                            pAppDomain,
+                            AssemblyIterationFlags.IncludeFailedToLoad).ToList();
+                        dataPtr->FailedAssemblyCount = failedModules.Count;
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpAppDomainData dataLocal = default;
+            int hrLocal = _legacyImpl.GetAppDomainData(addr, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(dataPtr->AppDomainPtr == dataLocal.AppDomainPtr);
+                Debug.Assert(dataPtr->pHighFrequencyHeap == dataLocal.pHighFrequencyHeap);
+                Debug.Assert(dataPtr->pLowFrequencyHeap == dataLocal.pLowFrequencyHeap);
+                Debug.Assert(dataPtr->pStubHeap == dataLocal.pStubHeap);
+                Debug.Assert(dataPtr->DomainLocalBlock == dataLocal.DomainLocalBlock);
+                Debug.Assert(dataPtr->pDomainLocalModules == dataLocal.pDomainLocalModules);
+                Debug.Assert(dataPtr->dwId == dataLocal.dwId);
+                Debug.Assert(dataPtr->appDomainStage == dataLocal.appDomainStage);
+                Debug.Assert(dataPtr->AssemblyCount == dataLocal.AssemblyCount);
+                Debug.Assert(dataPtr->FailedAssemblyCount == dataLocal.FailedAssemblyCount);
+            }
+        }
+#endif
+        return hr;
+
+    }
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainList(count, values, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
