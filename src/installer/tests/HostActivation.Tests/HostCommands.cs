@@ -84,6 +84,77 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void Info_ListEnvironment()
+        {
+            var command = TestContext.BuiltDotNet.Exec("--info")
+                .CaptureStdOut();
+
+            // Add DOTNET_ROOT environment variables
+            (string Architecture, string Path)[] dotnetRootEnvVars = [
+                ("arm64", "/arm64/dotnet/root"),
+                ("x64", "/x64/dotnet/root"),
+                ("x86", "/x86/dotnet/root"),
+                ("unknown", "/unknown/dotnet/root")
+            ];
+            foreach (var envVar in dotnetRootEnvVars)
+            {
+                command = command.DotNetRoot(envVar.Path, envVar.Architecture);
+            }
+
+            string dotnetRootNoArch = "/dotnet/root";
+            command = command.DotNetRoot(dotnetRootNoArch);
+
+            // Add additional DOTNET_* and COREHOST_* environment variables
+            (string Name, string Value)[] envVars = [
+                ("DOTNET_ROLL_FORWARD", "Major"),
+                ("DOTNET_SOME_SETTING", "/some/setting"),
+                ("COREHOST_TRACE", "1")
+            ];
+
+            (string Name, string Value)[] differentCaseEnvVars = [
+                ("dotnet_env_var", "dotnet env var value"),
+                ("corehost_env_var", "corehost env var value"),
+            ];
+            foreach ((string name, string value) in envVars.Concat(differentCaseEnvVars))
+            {
+                command = command.EnvironmentVariable(name, value);
+            }
+
+            var otherEnvVar = "OTHER";
+            command = command.EnvironmentVariable(otherEnvVar, "value");
+
+            var result = command.Execute();
+            result.Should().Pass()
+                .And.HaveStdOutContaining("Environment variables:")
+                .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
+                .And.NotHaveStdOutContaining(otherEnvVar);
+
+            foreach ((string architecture, string path) in dotnetRootEnvVars)
+            {
+                result.Should()
+                    .HaveStdOutMatching($@"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{architecture.ToUpper()}\s*\[{path}\]");
+            }
+
+            foreach ((string name, string value) in envVars)
+            {
+                result.Should().HaveStdOutMatching($@"{name}\s*\[{value}\]");
+            }
+
+            foreach ((string name, string value) in differentCaseEnvVars)
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    // Environment variables are case-insensitive on Windows
+                    result.Should().HaveStdOutMatching($@"{name}\s*\[{value}\]");
+                }
+                else
+                {
+                    result.Should().NotHaveStdOutContaining(name);
+                }
+            }
+        }
+
+        [Fact]
         public void ListRuntimes()
         {
             // Verify exact match of command output. The output of --list-runtimes is intended to be machine-readable
