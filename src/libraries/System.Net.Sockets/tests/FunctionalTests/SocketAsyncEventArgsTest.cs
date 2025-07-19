@@ -1147,7 +1147,7 @@ namespace System.Net.Sockets.Tests
             saea.Completed += (_, _) => mres.Set();
             if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
             {
-                mres.Wait(TestSettings.PassingTestTimeout);
+                Assert.True(mres.Wait(TestSettings.PassingTestLongTimeout), "Completed did not get called in time");
             }
             // we should see attemopt to both sockets
             Assert.Null(saea.ConnectSocket);
