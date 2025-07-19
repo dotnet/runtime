@@ -26,14 +26,12 @@ namespace System.Net.Mime
     /// </summary>
     internal sealed class EightBitStream : DelegatedStream, IEncodableStream
     {
-        private WriteStateInfoBase? _writeState;
-
         // Should we do RFC 2821 Section 4.5.2 encoding of leading dots on a line?
         // We make this optional because this stream may be used recursively and
         // the encoding should only be done once.
         private readonly bool _shouldEncodeLeadingDots;
 
-        private WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase();
+        private WriteStateInfoBase WriteState => field ??= new WriteStateInfoBase();
 
         /// <summary>
         /// ctor.

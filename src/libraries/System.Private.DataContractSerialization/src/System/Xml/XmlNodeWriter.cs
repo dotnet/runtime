@@ -14,9 +14,7 @@ namespace System.Xml
 {
     internal abstract class XmlNodeWriter
     {
-        private static XmlNodeWriter? s_nullNodeWriter;
-
-        public static XmlNodeWriter Null => s_nullNodeWriter ??= new XmlNullNodeWriter();
+        public static XmlNodeWriter Null => field ??= new XmlNullNodeWriter();
 
         public abstract void Flush();
         public virtual Task FlushAsync()

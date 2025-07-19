@@ -15,8 +15,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Array containing lazily-initialized BDDs per defined UnicodeCategory value.</summary>
         private static readonly BDD?[] s_categories = new BDD[UnicodeCategoryValueCount];
-        /// <summary>Lazily-initialized BDD for \s.</summary>
-        private static volatile BDD? s_whiteSpace;
         /// <summary>Lazily-initialized BDD for \w.</summary>
         private static volatile BDD? s_wordLetter;
         /// <summary>Lazily-initialized BDD for \b.</summary>
@@ -39,9 +37,9 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Gets a <see cref="BDD"/> that represents the \s character class.</summary>
         public static BDD WhiteSpace =>
-            s_whiteSpace ??
-            Interlocked.CompareExchange(ref s_whiteSpace, BDD.Deserialize(UnicodeCategoryRanges.SerializedWhitespaceBDD), null) ??
-            s_whiteSpace;
+            field ??
+            Interlocked.CompareExchange(ref field, BDD.Deserialize(UnicodeCategoryRanges.SerializedWhitespaceBDD), null) ??
+            field;
 
         /// <summary>Gets a <see cref="BDD"/> that represents the \w character class.</summary>
         /// <remarks>\w is the union of the 8 categories: 0,1,2,3,4,5,8,18</remarks>

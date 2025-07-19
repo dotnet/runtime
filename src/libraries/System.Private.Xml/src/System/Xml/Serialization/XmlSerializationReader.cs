@@ -2043,12 +2043,11 @@ namespace System.Xml.Serialization
     internal sealed class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
     {
         private readonly Hashtable _idNames = new Hashtable();
-        private Hashtable? _enums;
         private readonly Hashtable _createMethods = new Hashtable();
         private int _nextCreateMethodNumber;
         private int _nextIdNumber;
 
-        internal Hashtable Enums => _enums ??= new Hashtable();
+        internal Hashtable Enums => field ??= new Hashtable();
 
         private sealed class CreateCollectionInfo
         {
