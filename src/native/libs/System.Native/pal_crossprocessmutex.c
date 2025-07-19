@@ -41,10 +41,16 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
     timeoutTimeSpec.tv_nsec = (timeoutMilliseconds % 1000) * 1000 * 1000;
 
     error = pthread_mutex_reltimedlock_np(mutex, &timeoutTimeSpec);
-#else
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK && HAVE_CLOCK_MONOTONIC
+#elif HAVE_PTHREAD_MUTEX_CLOCKLOCK && HAVE_CLOCK_MONOTONIC
     error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
     assert(error == 0);
+
+    uint64_t nanoseconds = (uint64_t)timeoutMilliseconds * 1000 * 1000 + (uint64_t)timeoutTimeSpec.tv_nsec;
+
+    timeoutTimeSpec.tv_sec += nanoseconds / (1000 * 1000 * 1000);
+    timeoutTimeSpec.tv_nsec = nanoseconds % (1000 * 1000 * 1000);
+
+    return pthread_mutex_clocklock(mutex, CLOCK_MONOTONIC, &timeoutTimeSpec);
 #else
     struct timeval tv;
 
@@ -53,12 +59,13 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
 
     timeoutTimeSpec.tv_sec = tv.tv_sec;
     timeoutTimeSpec.tv_nsec = tv.tv_usec * 1000;
-#endif
+
     uint64_t nanoseconds = (uint64_t)timeoutMilliseconds * 1000 * 1000 + (uint64_t)timeoutTimeSpec.tv_nsec;
+
     timeoutTimeSpec.tv_sec += nanoseconds / (1000 * 1000 * 1000);
     timeoutTimeSpec.tv_nsec = nanoseconds % (1000 * 1000 * 1000);
 
-    return pthread_mutex_timedlock((pthread_mutex_t*)mutex, &timeoutTimeSpec);
+    return pthread_mutex_timedlock(mutex, &timeoutTimeSpec);
 #endif
 }
 
