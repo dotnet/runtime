@@ -93,6 +93,9 @@ namespace System
             ulong previousCrashingThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousCrashingThreadId == 0)
             {
+#if NATIVEAOT
+                RuntimeExceptionHelpers.SerializeCrashInfo(System.Runtime.RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
+#endif
                 if (UnhandledException is UnhandledExceptionEventHandler handlers)
                 {
                     UnhandledExceptionEventArgs args = new(e, isTerminating: true);
