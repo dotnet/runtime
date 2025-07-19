@@ -11536,16 +11536,19 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     bool         canConvertOp2ToCCMP = CanConvertOpToCCMP(op2, tree);
     bool         canConvertOp1ToCCMP = CanConvertOpToCCMP(op1, tree);
 
-    if (canConvertOp2ToCCMP && (!canConvertOp1ToCCMP ||
-        ((op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
-        (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()))) &&
+    if (canConvertOp2ToCCMP &&
+        (!canConvertOp1ToCCMP ||
+         ((op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
+          (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()))) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1, false))
     {
         // Fall through, converting op2 to the CCMP
     }
     else if (canConvertOp1ToCCMP &&
-             (op1->gtGetOp1()->IsIntegralConst() || op1->gtGetOp1()->isUsedFromMemory() || !op1->gtGetOp1()->isContained()) &&
-             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || op1->gtGetOp2()->isUsedFromMemory() || !op1->gtGetOp2()->isContained()) &&
+             (op1->gtGetOp1()->IsIntegralConst() || op1->gtGetOp1()->isUsedFromMemory() ||
+              !op1->gtGetOp1()->isContained()) &&
+             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || op1->gtGetOp2()->isUsedFromMemory() ||
+              !op1->gtGetOp2()->isContained()) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
     {
         std::swap(op1, op2);
