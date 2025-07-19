@@ -1488,18 +1488,23 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
                         PREGDISPLAY     pRD
                         )
 {
-    _ASSERTE(regNum >= 0 && regNum <= 16);
+    _ASSERTE(regNum >= 0 && (regNum <= 16 || (IsAPXSupported() && regNum <=32)));
     _ASSERTE(regNum != 4);  // rsp
 
 #ifdef FEATURE_NATIVEAOT
     PTR_uintptr_t* ppRax = &pRD->pRax;
     if (regNum > 4) regNum--; // rsp is skipped in NativeAOT RegDisplay
-#else
+#else // FEATURE_NATIVEAOT
     // The fields of KNONVOLATILE_CONTEXT_POINTERS are in the same order as
     // the processor encoding numbers.
-
     ULONGLONG **ppRax = &pRD->pCurrentContextPointers->Rax;
-#endif
+    if(regNum >= 16)
+    {
+        assert(IsAPXSupported());
+        ppRax = &pRD->volatileCurrContextPointers.R16;
+        return (OBJECTREF*)*(ppRax + regNum - 16);
+    }
+#endif // FEATURE_NATIVEAOT
 
     return (OBJECTREF*)*(ppRax + regNum);
 }
@@ -1510,12 +1515,20 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
     PREGDISPLAY     pRD
     )
 {
+#if defined(TARGET_UNIX)
+    _ASSERTE(regNum >= 0 && regNum <= 32);
+#else // TARGET_UNIX
     _ASSERTE(regNum >= 0 && regNum <= 16);
+#endif // TARGET_UNIX
     _ASSERTE(regNum != 4);  // rsp
 
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
-
+    if (ExecutionManager::GetEEJitManager()->IsAPXSupported() && regNum >= 16)
+    {
+        ULONGLONG *pRax = &pRD->pCurrentContext->R16;
+        return (OBJECTREF*)(pRax + regNum - 16);
+    }
     ULONGLONG *pRax = &pRD->pCurrentContext->Rax;
 
     return (OBJECTREF*)(pRax + regNum);
@@ -1524,10 +1537,14 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
 
 template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
+#if defined(TARGET_UNIX)
+    _ASSERTE(regNum >= 0 && regNum <= 32);
+#else // TARGET_UNIX
     _ASSERTE(regNum >= 0 && regNum <= 16);
+#endif // TARGET_UNIX
     _ASSERTE(regNum != 4);  // rsp
 
-    UINT16 PreservedRegMask =
+    UINT32 PreservedRegMask =
           (1 << 3)  // rbx
         | (1 << 5)  // rbp
 #ifndef UNIX_AMD64_ABI
@@ -1568,7 +1585,11 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 {
     GCINFODECODER_CONTRACT;
 
+#if defined(TARGET_UNIX)
+    _ASSERTE(regNum >= 0 && regNum <= 32);
+#else // TARGET_UNIX
     _ASSERTE(regNum >= 0 && regNum <= 16);
+#endif // TARGET_UNIX
     _ASSERTE(regNum != 4);  // rsp
 
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));

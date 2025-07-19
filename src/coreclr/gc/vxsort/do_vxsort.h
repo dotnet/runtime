@@ -8,7 +8,7 @@ enum class InstructionSet
     AVX512F = 1,
 };
 
-void InitSupportedInstructionSet (int32_t configSetting);
+void InitSupportedInstructionSet (int32_t configSetting, int cpuFeatures);
 bool IsSupportedInstructionSet (InstructionSet instructionSet);
 
 void do_vxsort_avx2 (uint8_t** low, uint8_t** high, uint8_t *range_low, uint8_t *range_high);
