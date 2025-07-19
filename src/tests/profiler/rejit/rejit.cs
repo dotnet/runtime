@@ -10,6 +10,15 @@ namespace Profiler.Tests
     {
         static readonly Guid ReJitProfilerGuid = new Guid("66F7A9DF-8858-4A32-9CFF-3AD0787E0186");
 
+        static System.Text.StringBuilder OutputBuilder = new ();
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void TestWriteLine(string s)
+        {
+            OutputBuilder.AppendLine(s);
+            Console.WriteLine(s);
+        }
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static int MaxInlining()
         {
@@ -20,17 +29,27 @@ namespace Profiler.Tests
 
             TriggerReJIT();
 
+            OutputBuilder.Clear();
+
             // TriggerInliningChain triggers a ReJIT, now this time we should call
             // in to the ReJITted code
             TriggerDirectInlining();
             CallMethodWithoutInlining();
             TriggerInliningChain();
 
+            if (!OutputBuilder.ToString().Contains("Hello from profiler rejit method"))
+                return 1234;
+
             TriggerRevert();
+
+            OutputBuilder.Clear();
 
             TriggerDirectInlining();
             CallMethodWithoutInlining();
             TriggerInliningChain();
+
+            if (OutputBuilder.ToString().Contains("Hello from profiler rejit method"))
+                return 1235;
 
             return 100;
         }
@@ -50,7 +69,7 @@ namespace Profiler.Tests
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void TriggerInliningChain()
         {
-            Console.WriteLine("TriggerInlining");
+            TestWriteLine("TriggerInlining");
             // Test Inlining through another method
             InlineeChain1();
         }
@@ -58,14 +77,14 @@ namespace Profiler.Tests
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void TriggerDirectInlining()
         {
-            Console.WriteLine("TriggerDirectInlining");
+            TestWriteLine("TriggerDirectInlining");
             InlineeTarget();
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void CallMethodWithoutInlining()
         {
-            Console.WriteLine("CallMethodWithoutInlining");
+            TestWriteLine("CallMethodWithoutInlining");
             Action callMethod = InlineeTarget;
             callMethod();
         }
@@ -73,19 +92,19 @@ namespace Profiler.Tests
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static void InlineeChain1()
         {
-            Console.WriteLine("Inline.InlineeChain1");
+            TestWriteLine("Inline.InlineeChain1");
             InlineeTarget();
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static void InlineeTarget()
         {
-            Console.WriteLine("Inline.InlineeTarget");
+            TestWriteLine("Inline.InlineeTarget");
         }
 
         public static int RunTest(string[] args)
         {
-            Console.WriteLine("maxinlining");
+            TestWriteLine("maxinlining");
             return MaxInlining();
         }
 
@@ -108,7 +127,7 @@ namespace Profiler.Tests
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void TriggerInliningChain()
         {
-            Console.WriteLine("TriggerInlining");
+            RejitWithInlining.TestWriteLine("TriggerInlining");
             // Test Inlining through another method
             InlineeChain1();
         }
@@ -116,14 +135,14 @@ namespace Profiler.Tests
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void TriggerDirectInlining()
         {
-            Console.WriteLine("TriggerDirectInlining");
+            RejitWithInlining.TestWriteLine("TriggerDirectInlining");
             RejitWithInlining.InlineeTarget();
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static void InlineeChain1()
         {
-            Console.WriteLine("Inline.InlineeChain1");
+            RejitWithInlining.TestWriteLine("Inline.InlineeChain1");
             RejitWithInlining.InlineeTarget();
         }
     }
