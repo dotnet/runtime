@@ -56,6 +56,7 @@ ModuleHandle GetModuleHandleFromModulePtr(TargetPointer module);
 ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
+string GetFriendlyName();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -114,6 +115,7 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
+| `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
@@ -261,6 +263,15 @@ TargetPointer GetRootAssembly()
     TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
     AppDomain appDomain = // read AppDomain object starting at appDomainPointer
     return appDomain.RootAssembly;
+}
+
+string ILoader.GetFriendlyName()
+{
+    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+    Data.AppDomain appDomain = // read AppDomain object starting at appDomainPointer
+    TargetPointer pathStart = target.ReadPointer(handle.Address + /* AppDomain::FriendlyName offset */);
+    char[] name = // Read<char> from target starting at pathStart until null terminator
+    return new string(name);
 }
 
 TargetPointer ILoader.GetModule(ModuleHandle handle)
