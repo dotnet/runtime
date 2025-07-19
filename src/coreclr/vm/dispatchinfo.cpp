@@ -2168,7 +2168,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
         // which may swallow managed exceptions.  The debugger needs this in order to send a
         // CatchHandlerFound (CHF) notification.
-        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+        DebuggerU2MCatchHandlerFrame catchFrame;
 
         EX_TRY
         {
