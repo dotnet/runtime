@@ -11190,9 +11190,11 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 
 #ifdef FEATURE_INTERPRETER
 
+
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
     void* result = NULL;
+#ifndef TARGET_WASM
     JIT_TO_EE_TRANSITION();
 
     Module* module = GetModule(szMetaSig->scope);
@@ -11206,7 +11208,9 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     result = callStubGenerator.GenerateCallStubForSig(sig);
 
     EE_TO_JIT_TRANSITION();
-
+#else
+    PORTABILITY_ASSERT("GetCookieForInterpreterCalliSig is not supported on wasm yet");
+#endif // !TARGET_WASM
     return result;
 }
 
