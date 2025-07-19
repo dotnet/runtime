@@ -612,13 +612,12 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
  *  Generate a set instruction.
  */
 
-void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
+void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions)
 {
 #ifdef TARGET_XARCH
     instruction ins;
 
     /* Convert the condition to an instruction opcode */
-
     switch (condition)
     {
         case EJ_js:
@@ -672,10 +671,34 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
             return;
     }
 
+#ifdef TARGET_AMD64
+    // If using ZU feature, we need to promote the SETcc to the new instruction.
+    if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
+    {
+        assert(INS_seto_apx == (INS_seto + 16));
+        assert(INS_setno_apx == (INS_setno + 16));
+        assert(INS_setb_apx == (INS_setb + 16));
+        assert(INS_setae_apx == (INS_setae + 16));
+        assert(INS_sete_apx == (INS_sete + 16));
+        assert(INS_setne_apx == (INS_setne + 16));
+        assert(INS_setbe_apx == (INS_setbe + 16));
+        assert(INS_seta_apx == (INS_seta + 16));
+        assert(INS_sets_apx == (INS_sets + 16));
+        assert(INS_setns_apx == (INS_setns + 16));
+        assert(INS_setp_apx == (INS_setp + 16));
+        assert(INS_setnp_apx == (INS_setnp + 16));
+        assert(INS_setl_apx == (INS_setl + 16));
+        assert(INS_setge_apx == (INS_setge + 16));
+        assert(INS_setle_apx == (INS_setle + 16));
+        assert(INS_setg_apx == (INS_setg + 16));
+        ins = (instruction)(ins + 16);
+    }
+#endif
+
     assert(genRegMask(reg) & RBM_BYTE_REGS);
 
     // These instructions only write the low byte of 'reg'
-    GetEmitter()->emitIns_R(ins, EA_1BYTE, reg);
+    GetEmitter()->emitIns_R(ins, EA_1BYTE, reg, instOptions);
 #elif defined(TARGET_ARM64)
 
     GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, JumpKindToInsCond(condition));
