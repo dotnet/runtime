@@ -49779,10 +49779,10 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
-    return IsPromoted(object, true);
+    return IsPromoted2(object, true);
 }
 
-bool GCHeap::IsPromoted(Object* object, bool bVerifyNextHeader)
+bool GCHeap::IsPromoted2(Object* object, bool bVerifyNextHeader)
 {
     uint8_t* o = (uint8_t*)object;
 
