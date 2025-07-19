@@ -39,6 +39,8 @@ namespace System.Runtime.ExceptionServices
             }
         }
 
+        private static volatile int s_unhandledExceptionInProgress;
+
         /// <summary>
         /// Raises the <see cref="AppDomain.UnhandledException"/> event.
         /// </summary>
@@ -48,12 +50,33 @@ namespace System.Runtime.ExceptionServices
         /// event and then return.
         ///
         /// It will not raise the the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
+        ///
+        /// This API is thread safe and can be called from multiple threads. However, only one thread
+        /// will trigger the event handlers, while other threads will wait until the event is raised
+        /// and return without raising the event again.
         /// </remarks>
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception)
         {
             ArgumentNullException.ThrowIfNull(exception);
 
-            AppContext.OnUnhandledException(exception);
+            if (Interlocked.CompareExchange(ref s_unhandledExceptionInProgress, -1, 0) == 0)
+            {
+                AppContext.OnUnhandledException(exception);
+                s_unhandledExceptionInProgress = 1;
+            }
+            else
+            {
+                // If we are already in the process of handling an unhandled
+                // exception, we do not want to raise the event again. We wait
+                // here until the other thread finishes raising the unhandled exception.
+                // Waiting is important because it is possible upon returning, this thread
+                // could call some rude abort method that would terminate the process
+                // before the other thread finishes raising the unhandled exception.
+                while (s_unhandledExceptionInProgress != 1)
+                {
+                    Thread.Sleep(1);
+                }
+            }
         }
     }
 }
