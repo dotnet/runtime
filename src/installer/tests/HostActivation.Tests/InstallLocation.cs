@@ -322,6 +322,51 @@ namespace HostActivation.Tests
             }
         }
 
+        [Fact]
+        public void NotFound()
+        {
+            TestApp app = sharedTestState.TestBehaviourEnabledApp;
+
+            // Ensure no install locations are registered
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(app.AppExe))
+            {
+                string defaultLocation = Path.GetTempPath();
+                string registeredLocationOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
+                    ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
+                    : registeredInstallLocationOverride.PathValueOverride;
+                Command.Create(app.AppExe)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, defaultLocation)
+                    .DotNetRoot(null)
+                    .Execute()
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("The following locations were searched:")
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Application directory:
+                            {app.Location}
+                        """)
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Environment variable:
+                            DOTNET_ROOT_{TestContext.BuildArchitecture.ToUpper()} = <not set>
+                            DOTNET_ROOT = <not set>
+                        """)
+                    .And.HaveStdErrMatching(
+                        $"""
+                          Registered location:
+                            {System.Text.RegularExpressions.Regex.Escape(registeredLocationOverride)}.*{TestContext.BuildArchitecture}.* = <not set>
+                        """)
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Default location:
+                            {defaultLocation}
+                        """);
+            }
+        }
+
         [Theory]
         [InlineData(SearchLocation.AppLocal)]
         [InlineData(SearchLocation.AppRelative)]
