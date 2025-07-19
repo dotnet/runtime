@@ -460,6 +460,11 @@ namespace System.Data.SqlTypes
             return new XmlQualifiedName("base64Binary", XmlSchema.Namespace);
         }
 
+        /// <summary>
+        /// Wraps a byte array in a SqlBinary without copying the data.
+        /// </summary>
+        /// <param name="bytes">The byte array to wrap.</param>
+        /// <returns>A SqlBinary that wraps the provided byte array.</returns>
         public static SqlBinary WrapBytes(byte[] bytes)
         {
             return new SqlBinary(bytes, copy: false);
