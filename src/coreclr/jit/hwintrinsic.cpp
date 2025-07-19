@@ -87,107 +87,146 @@ instruction HWIntrinsicInfo::lookupIns(NamedIntrinsic id, var_types type, Compil
 #endif // TARGET_X86
 
 #if defined(TARGET_XARCH)
-    instruction evexIns = ins;
-
-    switch (ins)
+    if (comp != nullptr)
     {
-        case INS_movdqa32:
+        instruction evexIns = ins;
+
+        switch (ins)
         {
-            if (varTypeIsLong(type))
+            case INS_movdqa32:
             {
-                evexIns = INS_vmovdqa64;
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vmovdqa64;
+                }
+                break;
             }
-            break;
+
+            case INS_movdqu32:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vmovdqu64;
+                }
+                break;
+            }
+
+            case INS_pandd:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpandq;
+                }
+                break;
+            }
+
+            case INS_pandnd:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpandnq;
+                }
+                break;
+            }
+
+            case INS_pord:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vporq;
+                }
+                break;
+            }
+
+            case INS_pxord:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpxorq;
+                }
+                break;
+            }
+
+            case INS_vbroadcastf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vbroadcastf64x2;
+                }
+                break;
+            }
+
+            case INS_vbroadcasti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vbroadcasti64x2;
+                }
+                break;
+            }
+
+            case INS_vextractf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vextractf64x2;
+                }
+                else if (varTypeIsInt(type))
+                {
+                    evexIns = INS_vextracti32x4;
+                }
+                else if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vextracti64x2;
+                }
+                break;
+            }
+
+            case INS_vextracti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vextracti64x2;
+                }
+                break;
+            }
+
+            case INS_vinsertf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vinsertf64x2;
+                }
+                else if (varTypeIsInt(type))
+                {
+                    evexIns = INS_vinserti32x4;
+                }
+                else if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vinserti64x2;
+                }
+                break;
+            }
+
+            case INS_vinserti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vinserti64x2;
+                }
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
 
-        case INS_movdqu32:
+        if ((evexIns != ins) && comp->canUseEvexEncoding())
         {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vmovdqu64;
-            }
-            break;
+            ins = evexIns;
         }
-
-        case INS_vbroadcastf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vbroadcastf64x2;
-            }
-            break;
-        }
-
-        case INS_vbroadcasti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vbroadcasti64x2;
-            }
-            break;
-        }
-
-        case INS_vextractf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vextractf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vextracti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vextracti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vinsertf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vinsertf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vinserti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        case INS_vinserti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    if ((evexIns != ins) && (comp != nullptr) && comp->canUseEvexEncoding())
-    {
-        ins = evexIns;
     }
 #endif // TARGET_XARCH
 
