@@ -7364,7 +7364,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
                 index = impImplicitIorI4Cast(index, TYP_I_IMPL);
-                op1   = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+
+                GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+                INDEBUG(call->gtRawILOffset = opcodeOffs);
+                impConvertToUserCallAndMarkForInlining(call);
+                op1 = call;
+
                 goto SPILL_APPEND;
             }
 

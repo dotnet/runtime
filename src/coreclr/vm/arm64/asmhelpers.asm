@@ -883,21 +883,6 @@ CallHelper2
     br       x1
     LEAF_END
 
-; ------------------------------------------------------------------
-; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-    LEAF_ENTRY  JIT_WriteBarrier_Callable
-
-    ; Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
-    mov     x14, x0                     ; x14 = dst
-    mov     x15, x1                     ; x15 = val
-
-    ; Branch to the write barrier
-    adrp    x17, JIT_WriteBarrier_Loc
-    ldr     x17, [x17, JIT_WriteBarrier_Loc]
-    br      x17
-
-    LEAF_END
-
 #ifdef PROFILING_SUPPORTED
 
 ; ------------------------------------------------------------------

@@ -5129,6 +5129,30 @@ private:
                                                             GenTree*    dereferencedAddress,
                                                             InlArgInfo* inlArgInfo);
 
+    typedef JitHashTable<CORINFO_METHOD_HANDLE, JitPtrKeyFuncs<struct CORINFO_METHOD_STRUCT_>, CORINFO_METHOD_HANDLE> HelperToManagedMap;
+    HelperToManagedMap* m_helperToManagedMap = nullptr;
+
+public:
+    HelperToManagedMap* GetHelperToManagedMap()
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            m_helperToManagedMap = new (getAllocator()) HelperToManagedMap(getAllocator());
+        }
+        return m_helperToManagedMap;
+    }
+    bool HelperToManagedMapLookup(CORINFO_METHOD_HANDLE helperCallHnd, CORINFO_METHOD_HANDLE* userCallHnd)
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            return false;
+        }
+        bool found = m_helperToManagedMap->Lookup(helperCallHnd, userCallHnd);
+        return found;
+    }
+private:
+
+    void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
