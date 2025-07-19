@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
                     }
 
                     bytesWritten = pkcs8.Count;
-                    pkcs8.Array.CopyTo(destination);
+                    pkcs8.AsSpan().CopyTo(destination);
                     return true;
                 }
                 finally
