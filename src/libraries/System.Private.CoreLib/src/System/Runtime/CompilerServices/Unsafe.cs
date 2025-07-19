@@ -405,6 +405,32 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &gt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        // CoreCLR:CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN_OR_EQUAL_TO
+        // AOT:IsAddressGreaterThanOrEqualTo
+        // Mono:IsAddressGreaterThanOrEqualTo
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressGreaterThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressLessThan(in left, in right);
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+        }
+
+        /// <summary>
         /// Determines whether the memory address referenced by <paramref name="left"/> is less than
         /// the memory address referenced by <paramref name="right"/>.
         /// </summary>
@@ -425,6 +451,32 @@ namespace System.Runtime.CompilerServices
             // ldarg.0
             // ldarg.1
             // clt.un
+            // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is less than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &lt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN_OR_EQUAL_TO
+        // AOT:IsAddressLessThanOrEqualTo
+        // Mono:IsAddressLessThanOrEqualTo
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressLessThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressGreaterThan(in left, in right);
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ldc.i4.0
+            // ceq
             // ret
         }
 
