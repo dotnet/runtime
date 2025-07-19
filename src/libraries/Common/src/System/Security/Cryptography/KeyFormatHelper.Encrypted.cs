@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         internal delegate TRet ReadOnlySpanFunc<TIn, TRet>(ReadOnlySpan<TIn> span);
 
         internal static unsafe void ReadEncryptedPkcs8<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlySpan<byte> source,
             ReadOnlySpan<char> password,
             KeyReader<TRet> keyReader,
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
         }
 
         internal static unsafe void ReadEncryptedPkcs8<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlySpan<byte> source,
             ReadOnlySpan<byte> passwordBytes,
             KeyReader<TRet> keyReader,
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
         }
 
         private static void ReadEncryptedPkcs8<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlyMemory<byte> source,
             ReadOnlySpan<char> password,
             KeyReader<TRet> keyReader,
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
         }
 
         private static void ReadEncryptedPkcs8<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlyMemory<byte> source,
             ReadOnlySpan<byte> passwordBytes,
             KeyReader<TRet> keyReader,
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
         }
 
         private static void ReadEncryptedPkcs8<TRet>(
-            string[] validOids,
+            IStringLookup validOids,
             ReadOnlyMemory<byte> source,
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> passwordBytes,

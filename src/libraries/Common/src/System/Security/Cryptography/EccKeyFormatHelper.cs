@@ -17,10 +17,7 @@ namespace System.Security.Cryptography
         // there's no real point reading anything bigger than this (for now).
         private const int MaxFieldBitSize = 661;
 
-        private static readonly string[] s_validOids =
-        {
-            Oids.EcPublicKey,
-        };
+        private static readonly KeyFormatHelper.StringLookupArray s_validOids = new([Oids.EcPublicKey]);
 
         internal static void ReadSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,

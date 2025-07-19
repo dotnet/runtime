@@ -32,21 +32,29 @@ namespace System.Security.Cryptography
 #pragma warning restore SA1001
 #endif
     {
-        private static readonly string[] s_knownOids =
-        [
-            Oids.SlhDsaSha2_128s,
-            Oids.SlhDsaShake128s,
-            Oids.SlhDsaSha2_128f,
-            Oids.SlhDsaShake128f,
-            Oids.SlhDsaSha2_192s,
-            Oids.SlhDsaShake192s,
-            Oids.SlhDsaSha2_192f,
-            Oids.SlhDsaShake192f,
-            Oids.SlhDsaSha2_256s,
-            Oids.SlhDsaShake256s,
-            Oids.SlhDsaSha2_256f,
-            Oids.SlhDsaShake256f,
-        ];
+        private static readonly KeyFormatHelper.StringLookup s_knownOids =
+#if NET9_0_OR_GREATER
+            new(SearchValues.Create([
+#else
+            new([
+#endif
+                Oids.SlhDsaSha2_128s,
+                Oids.SlhDsaShake128s,
+                Oids.SlhDsaSha2_128f,
+                Oids.SlhDsaShake128f,
+                Oids.SlhDsaSha2_192s,
+                Oids.SlhDsaShake192s,
+                Oids.SlhDsaSha2_192f,
+                Oids.SlhDsaShake192f,
+                Oids.SlhDsaSha2_256s,
+                Oids.SlhDsaShake256s,
+                Oids.SlhDsaSha2_256f,
+                Oids.SlhDsaShake256f,
+#if NET9_0_OR_GREATER
+            ], StringComparison.Ordinal));
+#else
+            ]);
+#endif
 
         private const int MaxContextLength = 255;
 

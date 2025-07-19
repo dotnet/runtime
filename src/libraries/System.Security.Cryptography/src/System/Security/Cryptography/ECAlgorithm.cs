@@ -13,11 +13,8 @@ namespace System.Security.Cryptography
     /// </summary>
     public abstract class ECAlgorithm : AsymmetricAlgorithm
     {
-        private static readonly string[] s_validOids =
-        {
-            Oids.EcPublicKey,
-            // ECDH and ECMQV are not valid in this context.
-        };
+        // ECDH and ECMQV are not valid in this context.
+        private static readonly KeyFormatHelper.StringLookupArray s_validOids = new([Oids.EcPublicKey]);
 
         private protected static readonly KeySizes[] s_defaultKeySizes =
         {
