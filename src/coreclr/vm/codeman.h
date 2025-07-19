@@ -1980,9 +1980,7 @@ private:
     // must hold critical section to access this structure.
     CUnorderedArray<DomainCodeHeapList*, 5> m_DomainCodeHeaps;
     CUnorderedArray<DomainCodeHeapList*, 5> m_DynamicDomainCodeHeaps;
-#ifndef DACCESS_COMPILE
     CUnorderedArray<LoaderAllocator*, 4> m_delayUnload;
-#endif // !DACCESS_COMPILE
 
 protected:
     Crst m_CodeHeapLock;
