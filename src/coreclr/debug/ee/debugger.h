@@ -2617,11 +2617,7 @@ public:
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
 
-    HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
-    HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
-    HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain);
-
-    void SendCreateAppDomainEvent(AppDomain * pAppDomain);
+    void AppDomainCreated(AppDomain * pAppDomain);
 
     // Notify the debugger that an assembly has been unloaded
     void UnloadAssembly(DomainAssembly * pDomainAssembly);
@@ -2837,9 +2833,6 @@ private:
     DebuggerLaunchSetting GetDbgJITDebugLaunchSetting();
 
 public:
-    HRESULT InitAppDomainIPC(void);
-    HRESULT TerminateAppDomainIPC(void);
-
     bool ResumeThreads(AppDomain* pAppDomain);
 
     void ProcessAnyPendingEvals(Thread *pThread);
@@ -2920,7 +2913,6 @@ private:
     Volatile<BOOL>        m_jitAttachInProgress;
     BOOL                  m_launchingDebugger;
     BOOL                  m_LoggingEnabled;
-    AppDomainEnumerationIPCBlock    *m_pAppDomainCB;
 
     LONG                  m_dClassLoadCallbackCount;
 
