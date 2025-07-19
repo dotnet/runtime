@@ -7,6 +7,8 @@ internal static partial class Interop
     {
         internal static partial class FileAttributes
         {
+            internal const int INVALID_FILE_ATTRIBUTES = -1;
+
             internal const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
             internal const int FILE_ATTRIBUTE_READONLY = 0x00000001;
             internal const int FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
