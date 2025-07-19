@@ -62,7 +62,7 @@ namespace Microsoft.Interop
 
             // Calculate all of information to generate both managed-to-unmanaged and unmanaged-to-managed stubs
             // for each method.
-            IncrementalValuesProvider<IncrementalMethodStubGenerationContext> generateStubInformation = methodsToGenerate
+            IncrementalValuesProvider<SourceAvailableIncrementalMethodStubGenerationContext> generateStubInformation = methodsToGenerate
                 .Combine(context.CreateStubEnvironmentProvider())
                 .Select(static (data, ct) => new
                 {
@@ -89,7 +89,7 @@ namespace Microsoft.Interop
             context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
 
             // Filter the list of all stubs to only the stubs that requested unmanaged-to-managed stub generation.
-            IncrementalValuesProvider<IncrementalMethodStubGenerationContext> nativeToManagedStubContexts =
+            IncrementalValuesProvider<SourceAvailableIncrementalMethodStubGenerationContext> nativeToManagedStubContexts =
                 generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
 
@@ -195,7 +195,7 @@ namespace Microsoft.Interop
             };
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
+        private static SourceAvailableIncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
@@ -306,7 +306,7 @@ namespace Microsoft.Interop
 
             MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
 
-            return new IncrementalMethodStubGenerationContext(
+            return new SourceAvailableIncrementalMethodStubGenerationContext(
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
@@ -363,7 +363,7 @@ namespace Microsoft.Interop
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
-            IncrementalMethodStubGenerationContext methodStub)
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub)
         {
             var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
@@ -376,7 +376,7 @@ namespace Microsoft.Interop
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
-            IncrementalMethodStubGenerationContext methodStub)
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub)
         {
             var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
@@ -433,7 +433,7 @@ namespace Microsoft.Interop
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
         }
 
-        private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, IncrementalMethodStubGenerationContext> vtableMethods)
+        private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, SourceAvailableIncrementalMethodStubGenerationContext> vtableMethods)
         {
             ContainingSyntaxContext containingSyntax = vtableMethods.Key.AddContainingSyntax(NativeTypeContainingSyntax);
 
