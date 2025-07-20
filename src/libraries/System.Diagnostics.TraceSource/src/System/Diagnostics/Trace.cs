@@ -19,12 +19,10 @@ namespace System.Diagnostics
         {
         }
 
-        private static CorrelationManager? s_correlationManager;
-
         public static CorrelationManager CorrelationManager =>
-            Volatile.Read(ref s_correlationManager) ??
-            Interlocked.CompareExchange(ref s_correlationManager, new CorrelationManager(), null) ??
-            s_correlationManager;
+            Volatile.Read(ref field) ??
+            Interlocked.CompareExchange(ref field, new(), null) ??
+            field;
 
         /// <devdoc>
         ///    <para>Gets the collection of listeners that is monitoring the trace output.</para>
