@@ -42,7 +42,7 @@ namespace System.Xml.Xsl.Xslt
         public int CurrentPrecedence;  // Decreases by 1 with each import
         public XslNode? StartApplyTemplates;
         public RootLevel? Root;
-        [System.ObsoleteAttribute("XSLT Script blocks are not supported.", DiagnosticId = "SYSLIB0062", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete(Obsoletions.XsltSettingsEnableScriptMessage, DiagnosticId = Obsoletions.XsltSettingsEnableScriptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Scripts Scripts;
         public Output Output = new Output();
         public List<VarPar> ExternalPars = new List<VarPar>();
