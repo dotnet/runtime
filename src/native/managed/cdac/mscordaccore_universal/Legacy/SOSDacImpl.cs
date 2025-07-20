@@ -955,9 +955,9 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer MTAddress = mt.ToTargetPointer(_target);
+            TargetPointer mtAddress = mt.ToTargetPointer(_target);
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(MTAddress);
+            TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
             mtFieldData->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
             mtFieldData->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
             mtFieldData->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
