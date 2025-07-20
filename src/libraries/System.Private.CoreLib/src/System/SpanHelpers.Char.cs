@@ -68,74 +68,7 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
-            if (Vector512.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector512<ushort>.Count >= 0)
-            {
-                // Find the last unique (which is not equal to ch1) character
-                // the algorithm is fine if both are equal, just a little bit less efficient
-                ushort ch2Val = Unsafe.Add(ref value, valueTailLength);
-                nint ch1ch2Distance = (nint)(uint)valueTailLength;
-                while (ch2Val == valueHead && ch1ch2Distance > 1)
-                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
-
-                Vector512<ushort> ch1 = Vector512.Create((ushort)valueHead);
-                Vector512<ushort> ch2 = Vector512.Create(ch2Val);
-
-                nint searchSpaceMinusValueTailLengthAndVector =
-                    searchSpaceMinusValueTailLength - (nint)Vector512<ushort>.Count;
-
-                do
-                {
-                    // Make sure we don't go out of bounds
-                    Debug.Assert(offset + ch1ch2Distance + Vector512<ushort>.Count <= searchSpaceLength);
-
-                    Vector512<ushort> cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
-                    Vector512<ushort> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace, (nuint)offset));
-                    Vector512<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
-
-                    // Early out: cmpAnd is all zeros
-                    if (cmpAnd != Vector512<byte>.Zero)
-                    {
-                        goto CANDIDATE_FOUND;
-                    }
-
-                LOOP_FOOTER:
-                    offset += Vector512<ushort>.Count;
-
-                    if (offset == searchSpaceMinusValueTailLength)
-                        return -1;
-
-                    // Overlap with the current chunk for trailing elements
-                    if (offset > searchSpaceMinusValueTailLengthAndVector)
-                        offset = searchSpaceMinusValueTailLengthAndVector;
-
-                    continue;
-
-                CANDIDATE_FOUND:
-                    ulong mask = cmpAnd.ExtractMostSignificantBits();
-                    do
-                    {
-                        int bitPos = BitOperations.TrailingZeroCount(mask);
-                        // div by 2 (shr) because we work with 2-byte chars
-                        nint charPos = (nint)((uint)bitPos / 2);
-                        if (valueLength == 2 || // we already matched two chars
-                            SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
-                                ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
-                        {
-                            return (int)(offset + charPos);
-                        }
-
-                        // Clear two the lowest set bits
-                        if (Bmi1.X64.IsSupported)
-                            mask = Bmi1.X64.ResetLowestSetBit(Bmi1.X64.ResetLowestSetBit(mask));
-                        else
-                            mask &= ~(ulong)((ulong)0b11 << bitPos);
-                    } while (mask != 0);
-                    goto LOOP_FOOTER;
-
-                } while (true);
-            }
-            else if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<ushort>.Count >= 0)
+            if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<ushort>.Count >= 0)
             {
                 // Find the last unique (which is not equal to ch1) character
                 // the algorithm is fine if both are equal, just a little bit less efficient

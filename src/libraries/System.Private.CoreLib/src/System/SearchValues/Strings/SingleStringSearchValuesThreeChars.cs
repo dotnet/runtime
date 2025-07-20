@@ -88,55 +88,7 @@ namespace System.Buffers
             nuint ch2ByteOffset = _ch2ByteOffset;
             nuint ch3ByteOffset = _ch3ByteOffset;
 
-            if (Vector512.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector512<ushort>.Count >= 0)
-            {
-                Vector512<ushort> ch1 = Vector512.Create(_ch1);
-                Vector512<ushort> ch2 = Vector512.Create(_ch2);
-                Vector512<ushort> ch3 = Vector512.Create(_ch3);
-
-                ref char lastSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceMinusValueTailLength - Vector512<ushort>.Count);
-
-                while (true)
-                {
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count);
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch2ByteOffset / 2));
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch3ByteOffset / 2));
-
-                    // Find which starting positions likely contain a match (likely match all 3 anchor characters).
-                    Vector512<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, ch3ByteOffset, ch1, ch2, ch3);
-
-                    if (result != Vector512<byte>.Zero)
-                    {
-                        goto CandidateFound;
-                    }
-
-                LoopFooter:
-                    // We haven't found a match. Update the input position and check if we've reached the end.
-                    searchSpace = ref Unsafe.Add(ref searchSpace, Vector512<ushort>.Count);
-
-                    if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpace))
-                    {
-                        if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpace, Vector512<ushort>.Count)))
-                        {
-                            return -1;
-                        }
-
-                        // We have fewer than 32 characters remaining. Adjust the input position such that we will do one last loop iteration.
-                        searchSpace = ref lastSearchSpace;
-                    }
-
-                    continue;
-
-                CandidateFound:
-                    // We found potential matches, but they may be false-positives, so we must verify each one.
-                    if (TryMatch(ref searchSpaceStart, searchSpaceLength, ref searchSpace, result.ExtractMostSignificantBits(), out int offset))
-                    {
-                        return offset;
-                    }
-                    goto LoopFooter;
-                }
-            }
-            else if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<ushort>.Count >= 0)
+            if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<ushort>.Count >= 0)
             {
                 Vector256<ushort> ch1 = Vector256.Create(_ch1);
                 Vector256<ushort> ch2 = Vector256.Create(_ch2);
@@ -301,29 +253,6 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<byte> GetComparisonResult(ref char searchSpace, nuint ch2ByteOffset, nuint ch3ByteOffset, Vector512<ushort> ch1, Vector512<ushort> ch2, Vector512<ushort> ch3)
-        {
-            // See comments in 'GetComparisonResult' for Vector128<byte> above.
-            // This method is the same, but operates on 64 input characters at a time.
-            if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
-            {
-                Vector512<ushort> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace));
-                Vector512<ushort> cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16());
-                Vector512<ushort> cmpCh3 = Vector512.Equals(ch3, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16());
-                return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
-            }
-            else
-            {
-                Vector512<ushort> caseConversion = Vector512.Create(CaseConversionMask);
-
-                Vector512<ushort> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace) & caseConversion);
-                Vector512<ushort> cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16() & caseConversion);
-                Vector512<ushort> cmpCh3 = Vector512.Equals(ch3, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16() & caseConversion);
-                return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryMatch(ref char searchSpaceStart, int searchSpaceLength, ref char searchSpace, uint mask, out int offsetFromStart)
         {
             // 'mask' encodes the input positions where at least 3 characters likely matched.
@@ -350,35 +279,6 @@ namespace System.Buffers
             offsetFromStart = 0;
             return false;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryMatch(ref char searchSpaceStart, int searchSpaceLength, ref char searchSpace, ulong mask, out int offsetFromStart)
-        {
-            // 'mask' encodes the input positions where at least 3 characters likely matched.
-            // Verify each one to see if we've found a match, otherwise return back to the vectorized loop.
-            do
-            {
-                int bitPos = BitOperations.TrailingZeroCount(mask);
-                Debug.Assert(bitPos % 2 == 0);
-
-                ref char matchRef = ref Unsafe.AddByteOffset(ref searchSpace, bitPos);
-
-                ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _valueState.Value.Length);
-
-                if (CanSkipAnchorMatchVerification || TCaseSensitivity.Equals<TValueLength>(ref matchRef, in _valueState))
-                {
-                    offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
-                    return true;
-                }
-
-                mask = BitOperations.ResetLowestSetBit(BitOperations.ResetLowestSetBit(mask));
-            }
-            while (mask != 0);
-
-            offsetFromStart = 0;
-            return false;
-        }
-
 
         internal override bool ContainsCore(string value) => HasUniqueValues
             ? base.ContainsCore(value)
