@@ -1322,7 +1322,7 @@ namespace Mono.Linker.Steps
             MethodDefinition? getMethod = null;
             PropertyDefinition? property = null;
 
-            while (type is not null && (getMethod is null || getMethod.IsVirtual))
+            while (setMethod is null && type is not null && (property is null || getMethod is null || getMethod.IsVirtual))
             {
                 property = type.Properties.FirstOrDefault(p => p.Name == namedArgument.Name);
 
@@ -1330,11 +1330,6 @@ namespace Mono.Linker.Steps
                 {
                     setMethod = property.SetMethod;
                     getMethod = property.GetMethod;
-
-                    if (setMethod is not null)
-                    {
-                        break;
-                    }
                 }
                 else
                 {
