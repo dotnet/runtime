@@ -1155,11 +1155,11 @@ namespace System.Data.SqlTypes
         }
 
         /// <summary>
-        /// Writes the TDS representation of this SqlDecimal to the specified destination.
+        /// Writes the TDS representation of this <see cref="SqlDecimal" /> to the specified destination.
         /// </summary>
         /// <param name="destination">The destination span to write the TDS value to. Must be at least 4 elements long.</param>
-        /// <returns>The number of uint values written to the destination.</returns>
-        /// <exception cref="SqlNullValueException">Thrown when the SqlDecimal is null.</exception>
+        /// <returns>The number of <see langword="uint" /> values written to the destination.</returns>
+        /// <exception cref="SqlNullValueException">Thrown when the <see cref="SqlDecimal" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when the destination span is too small.</exception>
         [CLSCompliant(false)]
         public int WriteTdsValue(Span<uint> destination)

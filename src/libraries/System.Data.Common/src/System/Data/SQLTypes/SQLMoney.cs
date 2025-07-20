@@ -209,10 +209,10 @@ namespace System.Data.SqlTypes
         }
 
         /// <summary>
-        /// Gets the TDS (Tabular Data Stream) representation of this SqlMoney value.
+        /// Gets the TDS (Tabular Data Stream) representation of this <see cref="SqlMoney" /> value.
         /// </summary>
         /// <returns>A long value representing the TDS representation.</returns>
-        /// <exception cref="SqlNullValueException">Thrown when the SqlMoney is null.</exception>
+        /// <exception cref="SqlNullValueException">Thrown when the <see cref="SqlMoney" /> is <see langword="null" />.</exception>
         public long GetTdsValue()
         {
             if (IsNull)
@@ -255,10 +255,10 @@ namespace System.Data.SqlTypes
         }
 
         /// <summary>
-        /// Creates a SqlMoney from a TDS (Tabular Data Stream) value.
+        /// Creates a <see cref="SqlMoney" /> from a TDS (Tabular Data Stream) value.
         /// </summary>
-        /// <param name="value">The TDS value to convert to SqlMoney.</param>
-        /// <returns>A SqlMoney representing the TDS value.</returns>
+        /// <param name="value">The TDS value to convert to <see cref="SqlMoney" />.</param>
+        /// <returns>A <see cref="SqlMoney" /> representing the TDS value.</returns>
         public static SqlMoney FromTdsValue(long value)
         {
             return new SqlMoney(value, 0);
