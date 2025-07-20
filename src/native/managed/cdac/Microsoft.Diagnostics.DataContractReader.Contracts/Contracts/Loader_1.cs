@@ -295,6 +295,23 @@ internal readonly struct Loader_1 : ILoader
         return module.Base;
     }
 
+    TargetPointer ILoader.GetBinderALC(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+        if (peAssembly.HostAssembly != TargetPointer.Null)
+        {
+            Data.BinderSpaceAssembly binderSpaceAssembly = _target.ProcessedData.GetOrAdd<Data.BinderSpaceAssembly>(peAssembly.HostAssembly);
+            Data.AssemblyBinder assemblyBinder = _target.ProcessedData.GetOrAdd<Data.AssemblyBinder>(binderSpaceAssembly.Binder);
+            return assemblyBinder.ManagedAssemblyLoadContext;
+        }
+
+        else
+        {
+            return peAssembly.FallbackBinder;
+        }
+    }
+
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

@@ -13,7 +13,11 @@ internal sealed class PEAssembly : IData<PEAssembly>
         Target.TypeInfo type = target.GetTypeInfo(DataType.PEAssembly);
 
         PEImage = target.ReadPointer(address + (ulong)type.Fields[nameof(PEImage)].Offset);
+        HostAssembly = target.ReadPointer(address + (ulong)type.Fields[nameof(HostAssembly)].Offset);
+        FallbackBinder = target.ReadPointer(address + (ulong)type.Fields[nameof(FallbackBinder)].Offset);
     }
 
     public TargetPointer PEImage { get; init; }
+    public TargetPointer HostAssembly { get; init; }
+    public TargetPointer FallbackBinder { get; init; }
 }

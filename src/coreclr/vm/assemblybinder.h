@@ -128,6 +128,12 @@ private:
     INT_PTR m_ptrManagedAssemblyLoadContext;
 
     SArray<Assembly*> m_loadedAssemblies;
+    friend struct cdac_data<AssemblyBinder>;
 };
 
+template<>
+struct cdac_data<AssemblyBinder>
+{
+    static constexpr size_t ManagedAssemblyLoadContext = offsetof(AssemblyBinder, m_ptrManagedAssemblyLoadContext);
+};
 #endif

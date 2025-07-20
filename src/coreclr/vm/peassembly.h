@@ -442,6 +442,8 @@ template<>
 struct cdac_data<PEAssembly>
 {
     static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
+    static constexpr size_t HostAssembly = offsetof(PEAssembly, m_pHostAssembly);
+    static constexpr size_t FallbackBinder = offsetof(PEAssembly, m_pFallbackBinder);
 };
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;

@@ -1931,7 +1931,45 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl8 is not null ? _legacyImpl8.GetFinalizationFillPointersSvr(heapAddr, cFillPointers, pFinalizationFillPointers, pNeeded) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface8.GetAssemblyLoadContext(ClrDataAddress methodTable, ClrDataAddress* assemblyLoadContext)
-        => _legacyImpl8 is not null ? _legacyImpl8.GetAssemblyLoadContext(methodTable, assemblyLoadContext) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (methodTable == 0 || assemblyLoadContext == null)
+                hr = HResults.E_INVALIDARG;
+            else
+            {
+                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+                Contracts.ILoader loaderContract = _target.Contracts.Loader;
+                Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+                Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(rtsContract.GetModule(methodTableHandle));
+                TargetPointer assemblyLoadContextPtr = loaderContract.GetBinderAssemblyLoadContext(moduleHandle);
+                TargetPointer alc = TargetPointer.Null;
+                if (assemblyLoadContextPtr != TargetPointer.Null)
+                {
+                    alc = _target.ReadPointer(assemblyLoadContextPtr);
+                }
+                *assemblyLoadContext = alc.ToClrDataAddress(_target);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl8 is not null)
+        {
+            ClrDataAddress assemblyLoadContextLocal;
+            int hrLocal = _legacyImpl8.GetAssemblyLoadContext(methodTable, &assemblyLoadContextLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*assemblyLoadContext == assemblyLoadContextLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface8
 
     #region ISOSDacInterface9

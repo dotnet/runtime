@@ -68,6 +68,7 @@ string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
+TargetPointer GetBinderAssemblyLoadContext(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 bool IsCollectible(ModuleHandle handle);
@@ -104,6 +105,10 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
 | `Assembly` | `Level` | File load level of the assembly |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
+| `PEAssembly` | `HostAssembly` | Pointer to the PEAssembly's HostAssembly |
+| `PEAssembly` | `FallbackBinder` | Pointer to the PEAssembly's FallbackBinder (if HostAssembly is null) |
+| `BinderSpaceAssembly` | `Binder` | Pointer to the BinderSpaceAssembly's Binder |
+| `AssemblyBinder` | `ManagedAssemblyLoadContext` | Pointer to the AssemblyBinder's ManagedAssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
 | `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
@@ -369,6 +374,21 @@ TargetPointer GetThunkHeap(ModuleHandle handle)
 TargetPointer GetILBase(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::Base offset */);
+}
+
+TargetPointer ILoader.GetBinderAssemblyLoadContext(ModuleHandle handle)
+{
+    PEAssembly peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+    if (peAssembly.HostAssembly != TargetPointer.Null)
+    {
+        Data.AssemblyBinder assemblyBinder = target.ReadPointer(pe.HostAssembly + /* BinderSpaceAssembly::Binder offset */);
+        return assemblyBinder.ManagedAssemblyLoadContext;
+    }
+
+    else
+    {
+        return peAssembly.FallbackBinder;
+    }
 }
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)

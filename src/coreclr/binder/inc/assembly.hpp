@@ -83,9 +83,16 @@ namespace BINDER_SPACE
 #endif // !defined(DACCESS_COMPILE)
 
         friend class ::DefaultAssemblyBinder;
+        friend struct cdac_data<BINDER_SPACE::Assembly>;
     };
 
 #include "assembly.inl"
+};
+
+template<>
+struct cdac_data<BINDER_SPACE::Assembly>
+{
+    static constexpr size_t Binder = offsetof(BINDER_SPACE::Assembly, m_pBinder);
 };
 
 #endif
