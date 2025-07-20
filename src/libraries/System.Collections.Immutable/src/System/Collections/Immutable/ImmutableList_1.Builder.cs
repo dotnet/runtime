@@ -47,11 +47,6 @@ namespace System.Collections.Immutable
             private int _version;
 
             /// <summary>
-            /// The object callers may use to synchronize access to this collection.
-            /// </summary>
-            private object? _syncRoot;
-
-            /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
             /// </summary>
             /// <param name="list">A list to act as the basis for a new list.</param>
@@ -1159,18 +1154,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    if (_syncRoot == null)
-                    {
-                        System.Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
-                    }
-
-                    return _syncRoot;
-                }
-            }
+            object ICollection.SyncRoot =>
+                 field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
             #endregion
         }
     }

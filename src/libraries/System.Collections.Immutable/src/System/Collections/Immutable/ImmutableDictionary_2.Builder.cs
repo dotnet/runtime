@@ -57,11 +57,6 @@ namespace System.Collections.Immutable
             private int _version;
 
             /// <summary>
-            /// The object callers may use to synchronize access to this collection.
-            /// </summary>
-            private object? _syncRoot;
-
-            /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}.Builder"/> class.
             /// </summary>
             /// <param name="map">The map that serves as the basis for this Builder.</param>
@@ -251,18 +246,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    if (_syncRoot == null)
-                    {
-                        Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
-                    }
-
-                    return _syncRoot;
-                }
-            }
+            object ICollection.SyncRoot =>
+                 field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
 
             /// <summary>
             /// Gets a value indicating whether access to the <see cref="ICollection"/> is synchronized (thread safe).
