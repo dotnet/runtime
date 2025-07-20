@@ -1822,6 +1822,36 @@ cattr_class_match (MonoClass *attr_klass, MonoClass *klass)
 		(m_class_is_gtd (attr_klass) && m_class_is_ginst (klass) && mono_class_is_assignable_from_internal (attr_klass, mono_class_get_generic_type_definition (klass)));
 }
 
+/*
+ * Helper function to filter out internal/compiler-generated attributes
+ * that should not be visible through reflection to match CoreCLR behavior
+ */
+static gboolean
+should_filter_attribute_for_reflection (MonoMethod *ctor)
+{
+       MonoClass *attr_class = ctor->klass;
+       const char *attr_name = m_class_get_name (attr_class);
+       const char *attr_namespace = m_class_get_name_space (attr_class);
+
+       // Filter out these specific attributes from System.Object reflection
+       if (strcmp (attr_namespace, "System.Runtime.CompilerServices") == 0) {
+               if (strcmp (attr_name, "NullableContextAttribute") == 0 ||
+                   strcmp (attr_name, "TypeForwardedFromAttribute") == 0 ||
+		    strcmp (attr_name, "IsReadOnlyAttribute") == 0) {
+                       return TRUE;
+               }
+       }
+
+       if (strcmp (attr_namespace, "System.Runtime.InteropServices") == 0) {
+               if (strcmp (attr_name, "ClassInterfaceAttribute") == 0 ||
+                   strcmp (attr_name, "ComVisibleAttribute") == 0) {
+                       return TRUE;
+               }
+       }
+
+    return FALSE;
+}
+
 static MonoArrayHandle
 mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass, MonoError *error)
 {
@@ -1847,11 +1877,24 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 		for (i = 0; i < cinfo->num_attrs; ++i) {
 			MonoMethod *ctor = cinfo->attrs[i].ctor;
 			g_assert (ctor);
-			if (cattr_class_match (attr_klass, ctor->klass))
+			if (cattr_class_match (attr_klass, ctor->klass)) {
+				// Apply filtering for System.Object attributes
+				if (should_filter_attribute_for_reflection (ctor)) {
+					continue; // Skip this attribute
+				}
 				n++;
+			}
 		}
 	} else {
-		n = cinfo->num_attrs;
+		// Count attributes while applying filtering
+		for (i = 0; i < cinfo->num_attrs; ++i) {
+			MonoMethod *ctor = cinfo->attrs[i].ctor;
+			g_assert (ctor);
+			// Apply filtering for System.Object attributes
+			if (!should_filter_attribute_for_reflection (ctor)) {
+				n++;
+			}
+		}
 	}
 
 	result = mono_array_new_cached_handle (mono_defaults.attribute_class, n, error);
@@ -1860,6 +1903,10 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		MonoCustomAttrEntry *centry = &cinfo->attrs [i];
 		if (!attr_klass || cattr_class_match (attr_klass, centry->ctor->klass)) {
+			// Apply filtering for System.Object attributes
+			if (should_filter_attribute_for_reflection (centry->ctor)) {
+				continue; // Skip this attribute
+			}
 			create_custom_attr_into_array (cinfo->image, centry->ctor, centry->data,
 				centry->data_size, result, n, error);
 			goto_if_nok (error, exit);
