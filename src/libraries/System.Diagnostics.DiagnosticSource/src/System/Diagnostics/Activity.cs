@@ -2030,7 +2030,7 @@ namespace System.Diagnostics
         {
             int hi = HexConverter.FromLowerChar(char1);
             int lo = HexConverter.FromLowerChar(char2);
-            if ((hi | lo) == 0xFF)
+            if ((hi | lo) < 0)
             {
                 throw new ArgumentOutOfRangeException("idData");
             }

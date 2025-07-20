@@ -14,20 +14,20 @@ namespace System.Buffers.Text
                 return false;
             }
             byte nextCharacter;
-            byte nextDigit;
+            int nextDigit;
 
-            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
+            ReadOnlySpan<sbyte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit < 0)
             {
                 bytesConsumed = 0;
                 value = default;
                 return false;
             }
-            uint parsedValue = nextDigit;
+            uint parsedValue = (uint)nextDigit;
 
             if (source.Length <= ParserHelpers.ByteOverflowLengthHex)
             {
@@ -36,13 +36,13 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = (byte)(parsedValue);
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
             else
@@ -53,19 +53,19 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = (byte)(parsedValue);
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
                 for (int index = ParserHelpers.ByteOverflowLengthHex; index < source.Length; index++)
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = (byte)(parsedValue);
@@ -78,7 +78,7 @@ namespace System.Buffers.Text
                         value = default;
                         return false;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
 
@@ -96,20 +96,20 @@ namespace System.Buffers.Text
                 return false;
             }
             byte nextCharacter;
-            byte nextDigit;
+            int nextDigit;
 
-            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
+            ReadOnlySpan<sbyte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit < 0)
             {
                 bytesConsumed = 0;
                 value = default;
                 return false;
             }
-            uint parsedValue = nextDigit;
+            uint parsedValue = (uint)nextDigit;
 
             if (source.Length <= ParserHelpers.Int16OverflowLengthHex)
             {
@@ -118,13 +118,13 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = (ushort)(parsedValue);
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
             else
@@ -135,19 +135,19 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = (ushort)(parsedValue);
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
                 for (int index = ParserHelpers.Int16OverflowLengthHex; index < source.Length; index++)
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = (ushort)(parsedValue);
@@ -160,7 +160,7 @@ namespace System.Buffers.Text
                         value = default;
                         return false;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
 
@@ -178,20 +178,20 @@ namespace System.Buffers.Text
                 return false;
             }
             byte nextCharacter;
-            byte nextDigit;
+            int nextDigit;
 
-            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
+            ReadOnlySpan<sbyte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit < 0)
             {
                 bytesConsumed = 0;
                 value = default;
                 return false;
             }
-            uint parsedValue = nextDigit;
+            uint parsedValue = (uint)nextDigit;
 
             if (source.Length <= ParserHelpers.Int32OverflowLengthHex)
             {
@@ -200,13 +200,13 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
             else
@@ -217,19 +217,19 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
                 for (int index = ParserHelpers.Int32OverflowLengthHex; index < source.Length; index++)
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
@@ -242,7 +242,7 @@ namespace System.Buffers.Text
                         value = default;
                         return false;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
 
@@ -260,20 +260,20 @@ namespace System.Buffers.Text
                 return false;
             }
             byte nextCharacter;
-            byte nextDigit;
+            int nextDigit;
 
-            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
+            ReadOnlySpan<sbyte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit < 0)
             {
                 bytesConsumed = 0;
                 value = default;
                 return false;
             }
-            ulong parsedValue = nextDigit;
+            ulong parsedValue = (uint)nextDigit;
 
             if (source.Length <= ParserHelpers.Int64OverflowLengthHex)
             {
@@ -282,13 +282,13 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
             else
@@ -299,19 +299,19 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
                         return true;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
                 for (int index = ParserHelpers.Int64OverflowLengthHex; index < source.Length; index++)
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit < 0)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
@@ -324,7 +324,7 @@ namespace System.Buffers.Text
                         value = default;
                         return false;
                     }
-                    parsedValue = (parsedValue << 4) + nextDigit;
+                    parsedValue = (parsedValue << 4) + (uint)nextDigit;
                 }
             }
 
