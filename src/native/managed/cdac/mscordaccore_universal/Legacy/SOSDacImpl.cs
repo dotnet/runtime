@@ -142,7 +142,7 @@ internal sealed unsafe partial class SOSDacImpl
             ClrDataAddress[] valuesLocal = new ClrDataAddress[count];
             uint neededLocal;
             int hrLocal = _legacyImpl.GetAppDomainList(count, valuesLocal, &neededLocal);
-            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
             if (values is not null && values.Length > 0 && valuesLocal.Length > 0)
             {
