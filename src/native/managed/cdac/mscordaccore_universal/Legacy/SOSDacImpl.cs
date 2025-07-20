@@ -124,42 +124,39 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 NativeMemory.Clear(dataPtr, (nuint)sizeof(DacpAppDomainData));
                 dataPtr->AppDomainPtr = addr;
-                Contracts.ILoader loader = _target.Contracts.Loader;
+                uint StageOpen = _target.ReadGlobal<uint>(Constants.Globals.StageOpen);
                 TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
                 ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
+                Contracts.ILoader loader = _target.Contracts.Loader;
                 TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
                 dataPtr->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
                 dataPtr->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
                 dataPtr->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                dataPtr->appDomainStage = (uint)DacpAppDomainDataStage.STAGE_OPEN;
+                dataPtr->appDomainStage = StageOpen;
                 if (addr != systemDomain)
                 {
                     TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                    dataPtr->DomainLocalBlock = 0;
-                    dataPtr->pDomainLocalModules = 0;
                     dataPtr->dwId = (int)_target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
-                    dataPtr->appDomainStage = loader.GetStage();
-                    if (loader.IsActive())
-                    {
-                        List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                            pAppDomain,
-                            AssemblyIterationFlags.IncludeLoading |
-                            AssemblyIterationFlags.IncludeLoaded |
-                            AssemblyIterationFlags.IncludeExecution).ToList();
 
-                        for (int i = 0; i < modules.Count; i++)
+                    List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                        pAppDomain,
+                        AssemblyIterationFlags.IncludeLoading |
+                        AssemblyIterationFlags.IncludeLoaded |
+                        AssemblyIterationFlags.IncludeExecution).ToList();
+
+                    for (int i = 0; i < modules.Count; i++)
+                    {
+                        Contracts.ModuleHandle module = modules[i];
+                        if (loader.IsAssemblyLoaded(module))
                         {
-                            Contracts.ModuleHandle module = modules[i];
-                            if (loader.IsAssemblyLoaded(module))
-                            {
-                                dataPtr->AssemblyCount++;
-                            }
+                            dataPtr->AssemblyCount++;
                         }
-                        List<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
-                            pAppDomain,
-                            AssemblyIterationFlags.IncludeFailedToLoad).ToList();
-                        dataPtr->FailedAssemblyCount = failedModules.Count;
                     }
+
+                    List<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                        pAppDomain,
+                        AssemblyIterationFlags.IncludeFailedToLoad).ToList();
+                    dataPtr->FailedAssemblyCount = failedModules.Count;
                 }
             }
         }

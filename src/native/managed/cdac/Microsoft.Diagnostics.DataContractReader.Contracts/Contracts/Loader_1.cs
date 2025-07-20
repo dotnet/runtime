@@ -36,23 +36,6 @@ internal readonly struct Loader_1 : ILoader
         BeingUnloaded = 0x100000,
     }
 
-    public enum DacpAppDomainDataStage : uint
-    {
-        STAGE_CREATING,
-        STAGE_READYFORMANAGEDCODE,
-        STAGE_ACTIVE,
-        STAGE_OPEN,
-        STAGE_UNLOAD_REQUESTED,
-        STAGE_EXITING,
-        STAGE_EXITED,
-        STAGE_FINALIZING,
-        STAGE_FINALIZED,
-        STAGE_HANDLETABLE_NOACCESS,
-        STAGE_CLEARED,
-        STAGE_COLLECTED,
-        STAGE_CLOSED
-    }
-
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -159,20 +142,6 @@ internal readonly struct Loader_1 : ILoader
     TargetPointer ILoader.GetModule(ModuleHandle handle)
     {
         return handle.Address;
-    }
-
-    uint ILoader.GetStage()
-    {
-        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
-        return appDomain.Stage;
-    }
-
-    bool ILoader.IsActive()
-    {
-        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
-        return appDomain.Stage >= (uint)DacpAppDomainDataStage.STAGE_ACTIVE;
     }
 
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)

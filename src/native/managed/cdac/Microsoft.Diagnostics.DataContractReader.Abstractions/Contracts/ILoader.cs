@@ -61,24 +61,6 @@ public enum AssemblyIterationFlags
     ExcludeCollectible = 0x00000040, // Exclude all collectible assemblies
     IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
 }
-
-public enum DacpAppDomainDataStage : uint
-{
-    STAGE_CREATING,
-    STAGE_READYFORMANAGEDCODE,
-    STAGE_ACTIVE,
-    STAGE_OPEN,
-    STAGE_UNLOAD_REQUESTED,
-    STAGE_EXITING,
-    STAGE_EXITED,
-    STAGE_FINALIZING,
-    STAGE_FINALIZED,
-    STAGE_HANDLETABLE_NOACCESS,
-    STAGE_CLEARED,
-    STAGE_COLLECTED,
-    STAGE_CLOSED
-}
-
 public record struct ModuleLookupTables(
     TargetPointer FieldDefToDesc,
     TargetPointer ManifestModuleReferences,
@@ -97,8 +79,6 @@ public interface ILoader : IContract
     IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
-    uint GetStage() => throw new NotImplementedException();
-    bool IsActive() => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
