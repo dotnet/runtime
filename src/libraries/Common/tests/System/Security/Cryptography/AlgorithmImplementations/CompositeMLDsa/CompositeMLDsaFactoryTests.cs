@@ -13,6 +13,8 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void NullArgumentValidation()
         {
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.GenerateKey(null));
+
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.IsAlgorithmSupported(null));
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(null, Array.Empty<byte>()));
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(null, ReadOnlySpan<byte>.Empty));
@@ -167,6 +169,17 @@ namespace System.Security.Cryptography.Tests
                     algorithm),
                 algorithm,
                 key);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void AlgorithmMatches_GenerateKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            AssertThrowIfNotSupported(() =>
+            {
+                using CompositeMLDsa dsa = CompositeMLDsa.GenerateKey(algorithm);
+                Assert.Equal(algorithm, dsa.Algorithm);
+            });
         }
 
         [Theory]

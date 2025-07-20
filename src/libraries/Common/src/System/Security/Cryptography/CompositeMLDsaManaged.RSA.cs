@@ -35,8 +35,28 @@ namespace System.Security.Cryptography
 #if NETFRAMEWORK
             // RSA-PSS requires RSACng on .NET Framework
             private static RSACng CreateRSA() => new RSACng();
+            private static RSACng CreateRSA(int keySizeInBits) => new RSACng(keySizeInBits);
+#elif NETSTANDARD2_0
+            private static RSA CreateRSA() => RSA.Create();
+
+            private static RSA CreateRSA(int keySizeInBits)
+            {
+                RSA rsa = RSA.Create();
+
+                try
+                {
+                    rsa.KeySize = keySizeInBits;
+                    return rsa;
+                }
+                catch
+                {
+                    rsa.Dispose();
+                    throw;
+                }
+            }
 #else
             private static RSA CreateRSA() => RSA.Create();
+            private static RSA CreateRSA(int keySizeInBits) => RSA.Create(keySizeInBits);
 #endif
 
             internal override int SignData(
@@ -81,7 +101,7 @@ namespace System.Security.Cryptography
             }
 
             public static RsaComponent GenerateKey(RsaAlgorithm algorithm) =>
-                throw new NotImplementedException();
+                new RsaComponent(CreateRSA(algorithm.KeySizeInBits), algorithm.HashAlgorithmName, algorithm.Padding);
 
             public static RsaComponent ImportPrivateKey(RsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
