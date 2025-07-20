@@ -1331,9 +1331,8 @@ namespace Mono.Linker.Steps
                     setMethod = property.SetMethod;
                     getMethod = property.GetMethod;
 
-                    if (property.SetMethod is not null)
+                    if (setMethod is not null)
                     {
-                        setMethod = property.SetMethod;
                         break;
                     }
                 }
