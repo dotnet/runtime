@@ -1576,6 +1576,7 @@ namespace System.Reflection
                             RuntimeMethodInfo? setMethod = null;
                             RuntimeMethodInfo? getMethod = null;
                             RuntimePropertyInfo? property = null;
+                            RuntimePropertyInfo? firstNotNullPropInHierarchy = null;
                             Type? baseAttributeType = attributeType;
 
                             while (setMethod is null && baseAttributeType is not null
@@ -1587,6 +1588,7 @@ namespace System.Reflection
 
                                 if (property is not null)
                                 {
+                                    firstNotNullPropInHierarchy ??= property;
                                     // Public properties may have non-public setter methods
                                     setMethod = property.GetSetMethod(true)!;
                                     getMethod = property.GetGetMethod(true)!;
@@ -1600,7 +1602,7 @@ namespace System.Reflection
                                 baseAttributeType = baseAttributeType.BaseType;
                             }
 
-                            if (property is null)
+                            if (firstNotNullPropInHierarchy is null)
                             {
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             }

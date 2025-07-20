@@ -1246,6 +1246,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			mono_field_set_value_internal (MONO_HANDLE_RAW (attr), field, val); // FIXMEcoop
 		} else if (named_type == CATTR_TYPE_PROPERTY) {
 			MonoProperty *prop = NULL;
+			MonoProperty *firstNotNullPropInHierarchy = NULL;
 			MonoMethod *setMethod = NULL;
 			MonoMethod *getMethod = NULL;
 			MonoClass *attrBaseClass = mono_handle_class (attr);
@@ -1255,6 +1256,11 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 				if (prop)
 				{
+					if (!firstNotNullPropInHierarchy)
+					{
+						firstNotNullPropInHierarchy = prop;
+					}
+
 					setMethod = prop->set;
 					getMethod = prop->get;
 				}
@@ -1267,7 +1273,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 				attrBaseClass = m_class_get_parent(attrBaseClass);
 			}
 
-			if (!prop) {
+			if (!firstNotNullPropInHierarchy) {
 				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find a property with name %s", name);
 				goto fail;
 			}
