@@ -17,7 +17,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -317,8 +316,6 @@ namespace System.Tests
                 () => Assert.Equal(4, attribute.OptionalValue));
         }
 
-        [method: DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(DerivedAttributeWithGetter))]
-        [method: DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ClassWithDerivedAttr))]
         [Fact]
         public static void GetCustomAttributesWithSettersDefinedOnBaseClass()
         {

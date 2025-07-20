@@ -1317,16 +1317,45 @@ namespace Mono.Linker.Steps
 
         protected void MarkCustomAttributeProperty(CustomAttributeNamedArgument namedArgument, TypeDefinition attribute, ICustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
         {
-            PropertyDefinition? property = GetProperty(attribute, namedArgument.Name);
-            if (property != null)
-                MarkMethod(property.SetMethod, reason, origin);
+            TypeDefinition? type = attribute;
+            MethodDefinition? setMethod = null;
+            MethodDefinition? getMethod = null;
+            PropertyDefinition? property = null;
 
-            MarkCustomAttributeArgument(namedArgument.Argument, ca, origin);
-
-            if (property != null && Annotations.FlowAnnotations.RequiresDataFlowAnalysis(property.SetMethod))
+            while (type is not null && (getMethod is null || getMethod.IsVirtual))
             {
-                var scanner = new AttributeDataFlow(Context, this, origin);
-                scanner.ProcessAttributeDataflow(property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
+                property = type.Properties.FirstOrDefault(p => p.Name == namedArgument.Name);
+
+                if (property is not null)
+                {
+                    setMethod = property.SetMethod;
+                    getMethod = property.GetMethod;
+
+                    if (property.SetMethod is not null)
+                    {
+                        setMethod = property.SetMethod;
+                        break;
+                    }
+                }
+                else
+                {
+                    setMethod = null;
+                    getMethod = null;
+                }
+
+                type = Context.TryResolve(type.BaseType);
+            }
+
+            if (setMethod is not null)
+            {
+                MarkMethod(setMethod, reason, origin);
+                MarkCustomAttributeArgument(namedArgument.Argument, ca, origin);
+
+                if (Annotations.FlowAnnotations.RequiresDataFlowAnalysis(setMethod))
+                {
+                    var scanner = new AttributeDataFlow(Context, this, origin);
+                    scanner.ProcessAttributeDataflow(setMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
+                }
             }
         }
 
