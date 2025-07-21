@@ -740,6 +740,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         if (tailCallFlags != 0)
         {
             asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
+            asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
             asyncInfo.SaveAndRestoreSynchronizationContextField = false;
         }
 
