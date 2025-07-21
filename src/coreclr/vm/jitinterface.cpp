@@ -9133,7 +9133,17 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     // Resolve methodImpl.
     ftn = ftn->GetMethodTable()->MapMethodDeclToMethodImpl(ftn);
 
-    if (!ftn->IsFCall() && ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
+    if (ftn->IsFCall())
+    {
+        // FCalls can be called directly
+        ret = (void*)ECall::GetFCallImpl(ftn, false /* throwForInvalidFCall */);
+        if (ret == NULL)
+        {
+            ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
+            accessType = IAT_PVALUE;
+        }
+    }
+    else if (ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
         ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
         accessType = IAT_PVALUE;
