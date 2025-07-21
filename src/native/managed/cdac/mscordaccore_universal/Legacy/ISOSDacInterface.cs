@@ -42,6 +42,12 @@ internal struct DacpAppDomainData
     public uint appDomainStage;
 };
 
+internal struct DacpAppDomainStoreData
+{
+    public ClrDataAddress sharedDomain;
+    public ClrDataAddress systemDomain;
+    public int DomainCount;
+};
 internal struct DacpThreadData
 {
     public int corThreadId;
