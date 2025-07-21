@@ -46,7 +46,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">armv7</CrossCompileArch>
 
       <CrossCompileAbi>gnu</CrossCompileAbi>
-      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-'))">android21</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android'))">android21</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl-')) or $(CrossCompileRid.StartsWith('alpine-'))">musl</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm'">androideabi21</CrossCompileAbi>
@@ -142,7 +142,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
       <!-- Not compliant for Apple platforms -->
-      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_IsApplePlatform)' != 'true'" />
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic'" />
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_linuxLibcFlavor)' == 'bionic'" />
     </ItemGroup>
 
     <ItemGroup>

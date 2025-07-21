@@ -3,7 +3,7 @@
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
     <!-- TODO: Revisit this.
       We need to check for RuntimeFlavor setting as for runtime tests we always import CoreCLR props which force UseMonoRuntime=false (see: https://github.com/dotnet/runtime/issues/111919) -->
-    <UseMonoRuntime Condition="'$(RuntimeFlavor)' == 'coreclr'">false</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(RuntimeFlavor)' == 'coreclr' or '$(RuntimeFlavor)' == 'nativeaot'">false</UseMonoRuntime>
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' or '$(RuntimeFlavor)' == 'mono'">true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(UseMonoRuntime)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
@@ -14,6 +14,7 @@
     <_IsLibraryMode Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
     <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
+    <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'nativeaot'">false</StaticLinkedRuntime>
     <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == ''">false</StaticLinkedRuntime>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
