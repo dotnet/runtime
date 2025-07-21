@@ -61,6 +61,7 @@ public enum AssemblyIterationFlags
     ExcludeCollectible = 0x00000040, // Exclude all collectible assemblies
     IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
 }
+
 public record struct ModuleLookupTables(
     TargetPointer FieldDefToDesc,
     TargetPointer ManifestModuleReferences,

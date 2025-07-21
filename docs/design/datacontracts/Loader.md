@@ -87,7 +87,6 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | `Module` | `Base` | Pointer to start of PE file in memory |
 | `Module` | `Flags` | Assembly of the Module |
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
-| `Module` | `ThunkHeap` | Pointer to the thunk heap |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
@@ -133,6 +132,7 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
+| `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
 
 
 ### Contract Constants:

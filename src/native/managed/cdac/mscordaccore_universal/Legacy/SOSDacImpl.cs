@@ -110,10 +110,9 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, void* data)
+    int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data)
     {
         int hr = HResults.S_OK;
-        DacpAppDomainData* dataPtr = (DacpAppDomainData*)data;
         try
         {
             if (addr == 0)
@@ -122,21 +121,20 @@ internal sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                NativeMemory.Clear(dataPtr, (nuint)sizeof(DacpAppDomainData));
-                dataPtr->AppDomainPtr = addr;
-                uint StageOpen = _target.ReadGlobal<uint>(Constants.Globals.StageOpen);
+                NativeMemory.Clear(data, (nuint)sizeof(DacpAppDomainData));
+                data->AppDomainPtr = addr;
                 TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
                 ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
                 Contracts.ILoader loader = _target.Contracts.Loader;
                 TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
-                dataPtr->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                dataPtr->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                dataPtr->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                dataPtr->appDomainStage = StageOpen;
+                data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                data->appDomainStage = (uint)DacpAppDomainDataStage.STAGE_OPEN;
                 if (addr != systemDomain)
                 {
                     TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                    dataPtr->dwId = (int)_target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+                    data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
 
                     List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                         pAppDomain,
@@ -149,14 +147,14 @@ internal sealed unsafe partial class SOSDacImpl
                         Contracts.ModuleHandle module = modules[i];
                         if (loader.IsAssemblyLoaded(module))
                         {
-                            dataPtr->AssemblyCount++;
+                            data->AssemblyCount++;
                         }
                     }
 
                     List<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
                         pAppDomain,
                         AssemblyIterationFlags.IncludeFailedToLoad).ToList();
-                    dataPtr->FailedAssemblyCount = failedModules.Count;
+                    data->FailedAssemblyCount = failedModules.Count;
                 }
             }
         }
@@ -172,16 +170,16 @@ internal sealed unsafe partial class SOSDacImpl
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(dataPtr->AppDomainPtr == dataLocal.AppDomainPtr);
-                Debug.Assert(dataPtr->pHighFrequencyHeap == dataLocal.pHighFrequencyHeap);
-                Debug.Assert(dataPtr->pLowFrequencyHeap == dataLocal.pLowFrequencyHeap);
-                Debug.Assert(dataPtr->pStubHeap == dataLocal.pStubHeap);
-                Debug.Assert(dataPtr->DomainLocalBlock == dataLocal.DomainLocalBlock);
-                Debug.Assert(dataPtr->pDomainLocalModules == dataLocal.pDomainLocalModules);
-                Debug.Assert(dataPtr->dwId == dataLocal.dwId);
-                Debug.Assert(dataPtr->appDomainStage == dataLocal.appDomainStage);
-                Debug.Assert(dataPtr->AssemblyCount == dataLocal.AssemblyCount);
-                Debug.Assert(dataPtr->FailedAssemblyCount == dataLocal.FailedAssemblyCount);
+                Debug.Assert(data->AppDomainPtr == dataLocal.AppDomainPtr);
+                Debug.Assert(data->pHighFrequencyHeap == dataLocal.pHighFrequencyHeap);
+                Debug.Assert(data->pLowFrequencyHeap == dataLocal.pLowFrequencyHeap);
+                Debug.Assert(data->pStubHeap == dataLocal.pStubHeap);
+                Debug.Assert(data->DomainLocalBlock == dataLocal.DomainLocalBlock);
+                Debug.Assert(data->pDomainLocalModules == dataLocal.pDomainLocalModules);
+                Debug.Assert(data->dwId == dataLocal.dwId);
+                Debug.Assert(data->appDomainStage == dataLocal.appDomainStage);
+                Debug.Assert(data->AssemblyCount == dataLocal.AssemblyCount);
+                Debug.Assert(data->FailedAssemblyCount == dataLocal.FailedAssemblyCount);
             }
         }
 #endif

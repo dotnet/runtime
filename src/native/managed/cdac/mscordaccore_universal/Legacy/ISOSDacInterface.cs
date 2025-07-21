@@ -36,7 +36,7 @@ internal struct DacpAppDomainData
     public ClrDataAddress DomainLocalBlock;
     public ClrDataAddress pDomainLocalModules;
     // The creation sequence number of this app domain (starting from 1)
-    public int dwId;
+    public uint dwId;
     public int AssemblyCount;
     public int FailedAssemblyCount;
     public uint appDomainStage;
@@ -117,6 +117,23 @@ internal enum DacpObjectType
     OBJ_OBJECT,
     OBJ_ARRAY,
     OBJ_OTHER
+};
+
+internal enum DacpAppDomainDataStage
+{
+    STAGE_CREATING,
+    STAGE_READYFORMANAGEDCODE,
+    STAGE_ACTIVE,
+    STAGE_OPEN,
+    STAGE_UNLOAD_REQUESTED,
+    STAGE_EXITING,
+    STAGE_EXITED,
+    STAGE_FINALIZING,
+    STAGE_FINALIZED,
+    STAGE_HANDLETABLE_NOACCESS,
+    STAGE_CLEARED,
+    STAGE_COLLECTED,
+    STAGE_CLOSED
 };
 
 internal struct DacpObjectData
@@ -212,7 +229,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetAppDomainList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
     [PreserveSig]
-    int GetAppDomainData(ClrDataAddress addr, /*struct DacpAppDomainData*/ void* data);
+    int GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data);
     [PreserveSig]
     int GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded);
     [PreserveSig]
