@@ -136,6 +136,11 @@ internal sealed unsafe partial class SOSDacImpl
             }
             else
             {
+                if (pNeeded is not null)
+                {
+                    *pNeeded = (uint)(friendlyName.Length + 1); // +1 for null terminator
+                }
+
                 if (name is not null && count > 0)
                 {
                     OutputBufferHelpers.CopyStringToBuffer(name, count, pNeeded, friendlyName);
