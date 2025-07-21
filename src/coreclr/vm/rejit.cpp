@@ -750,7 +750,7 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
                     CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
                     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(inliner.m_module, inliner.m_methodDef);
-                    if (!ilVersion.HasDefaultIL())
+                    if (!ilVersion.HasDefaultIL() && !fIsRevert)
                     {
                         // This method has already been ReJITted, no need to request another ReJIT at this point.
                         // The ReJITted method will be in the JIT inliner check below.
