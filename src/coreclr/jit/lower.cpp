@@ -11547,10 +11547,10 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
         // Fall through, converting op2 to the CCMP
     }
     else if (canConvertOp1ToCCMP &&
-             (op1->gtGetOp1()->IsIntegralConst() || op1->gtGetOp1()->isUsedFromMemory() ||
-              !op1->gtGetOp1()->isContained()) &&
-             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || op1->gtGetOp2()->isUsedFromMemory() ||
-              !op1->gtGetOp2()->isContained()) &&
+             (!op1->gtGetOp1()->isContained() || op1->gtGetOp1()->IsIntegralConst() ||
+              IsContainableMemoryOp(op1->gtGetOp1())) &&
+             (op1->gtGetOp2() == nullptr || !op1->gtGetOp2()->isContained() || op1->gtGetOp2()->IsIntegralConst() ||
+              IsContainableMemoryOp(op1->gtGetOp2())) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
     {
         std::swap(op1, op2);
