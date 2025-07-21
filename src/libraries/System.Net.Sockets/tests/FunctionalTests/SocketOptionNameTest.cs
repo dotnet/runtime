@@ -16,8 +16,8 @@ namespace System.Net.Sockets.Tests
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
         // Does not work on Nano and Qemu and AzureLinux has firewall enabled by default
-        private static readonly bool CanRunMulticastTests = !(PlatformDetection.IsNotWindowsNanoNorServerCore ||
-                                                             PlatformDetection.IsAzureLinux || PlatformDetection.IsQemuLinux);
+        private static readonly bool CanRunMulticastTests = !(PlatformDetection.IsWindowsNanoServer || PlatformDetection.IsWindowsServerCore ||
+                                                              PlatformDetection.IsAzureLinux || PlatformDetection.IsQemuLinux);
 
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption()
