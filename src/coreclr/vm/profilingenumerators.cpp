@@ -214,15 +214,8 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
 
     // #ProfilerEnumAppDomains (See also code:#ProfilerEnumGeneral)
     //
-    // When enumerating AppDomains, ensure this timeline:
-    // AD available in catch-up enumeration
-    //     < AppDomainCreationFinished issued
-    //     < AD NOT available from catch-up enumeration
-    //
-    //     * AppDomainCreationFinished (with S_OK hrStatus) is issued once the AppDomain
-    //         reaches STAGE_ACTIVE.
     AppDomain * pAppDomain = ::GetAppDomain();
-    if (pAppDomain->IsActive())
+    if (pAppDomain)
     {
 
         // Of course, the AD could start unloading here, but if it does we're guaranteed
