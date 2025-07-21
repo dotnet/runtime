@@ -308,9 +308,6 @@ static const Entry s_QCall[] =
     DllImportEntry(WaitHandle_WaitOneCore)
     DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
     DllImportEntry(WaitHandle_SignalAndWait)
-#ifdef TARGET_UNIX
-    DllImportEntry(WaitHandle_WaitOnePrioritized)
-#endif // TARGET_UNIX
     DllImportEntry(ClrConfig_GetConfigBoolValue)
     DllImportEntry(Buffer_Clear)
     DllImportEntry(Buffer_MemMove)

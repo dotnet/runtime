@@ -892,13 +892,6 @@ WaitForSingleObject(
 PALIMPORT
 DWORD
 PALAPI
-PAL_WaitForSingleObjectPrioritized(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
 WaitForSingleObjectEx(
             IN HANDLE hHandle,
             IN DWORD dwMilliseconds,
