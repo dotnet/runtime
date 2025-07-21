@@ -33,6 +33,9 @@ namespace System.Diagnostics.CodeAnalysis
             Message = message;
         }
 
+        /// <summary>
+        /// Indicates whether the attribute should apply to static members.
+        /// </summary>
         public bool ExcludeStatics { get; set; }
 
         /// <summary>

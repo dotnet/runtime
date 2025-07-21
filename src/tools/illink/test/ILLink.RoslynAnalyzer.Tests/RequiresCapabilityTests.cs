@@ -35,6 +35,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task RequiresExcludeStatics()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task RequiresCapabilityFromCopiedAssembly()
         {
             return RunTest(nameof(RequiresCapabilityFromCopiedAssembly));
