@@ -953,29 +953,23 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
 
 /*static*/ void SystemDomain::EnumAllStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
 
-    SystemDomain* sysDomain = SystemDomain::System();
-    if (sysDomain)
+    AppDomain* pAppDomain = ::GetAppDomain();
+    if (pAppDomain)
     {
-        AppDomain* pAppDomain = ::GetAppDomain();
-        if (pAppDomain && pAppDomain->IsActive())
-        {
-            pAppDomain->EnumStaticGCRefs(fn, sc);
-        }
+        pAppDomain->EnumStaticGCRefs(fn, sc);
     }
-
-    RETURN;
 }
 
 extern "C" PCODE g_pGetGCStaticBase;
@@ -1480,7 +1474,6 @@ void AppDomain::Create()
 
     NewHolder<AppDomain> pDomain(new AppDomain());
     pDomain->Init();
-    pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
 
     m_pTheAppDomain = pDomain.Extract();
@@ -1613,7 +1606,6 @@ AppDomain::AppDomain()
 #ifdef FEATURE_COMWRAPPERS
     , m_pRCWRefCache{NULL}
 #endif // FEATURE_COMWRAPPERS
-    , m_Stage{STAGE_CREATING}
     , m_ForceTrivialWaitOperations{false}
 #ifdef FEATURE_TYPEEQUIVALENCE
     , m_pTypeEquivalenceTable{NULL}
@@ -1660,12 +1652,7 @@ AppDomain::~AppDomain()
 //*****************************************************************************
 void AppDomain::Init()
 {
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(m_Stage == STAGE_CREATING);
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     //
     //   The JIT lock and the CCtor locks are at the same level (and marked as
@@ -1705,8 +1692,6 @@ void AppDomain::Init()
 
     m_ReflectionCrst.Init(CrstReflection, CRST_UNSAFE_ANYMODE);
     m_RefClassFactCrst.Init(CrstClassFactInfoHash);
-
-    SetStage(STAGE_READYFORMANAGEDCODE);
 
 #ifdef FEATURE_TIERED_COMPILATION
     m_tieredCompilationManager.Init();
