@@ -1309,6 +1309,9 @@ private:
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
     OBJECTREF     m_StartHelper;
+#ifdef TARGET_UNIX
+    OBJECTREF     m_WaitInfo;
+#endif // TARGET_UNIX
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
