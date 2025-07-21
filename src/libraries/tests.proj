@@ -234,7 +234,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Text.Encoding.Tests\System.Text.Encoding.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/62547 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines\tests\System.IO.Pipelines.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/72908 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
   </ItemGroup>
