@@ -17,3 +17,6 @@ Global variables used
 | FreeObjectMethodTable | TargetPointer | Identify where the FreeObjectMethodTable exists |
 | SOSBreakingChangeVersion | TargetPointer | Identify where the SOSBreakingChangeVersion exists |
 | DacNotificationFlags | TargetPointer | Identify where the DacNotificationFlags exists |
+| MaxClrNotificationArgs | uint32 | Identify the maximum number of CLR notification arguments |
+| ClrNotificationArguments | TargetPointer | Identify where the ClrNotificationArguments exists |
+| DefaultADID | uint | Identify the default AppDomain ID |
