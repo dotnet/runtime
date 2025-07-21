@@ -219,12 +219,12 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisablediOSTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisabledAndroidTests)' != 'true'">
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisablediOSTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- https://github.com/dotnet/runtime/issues/117045 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/114951 -->
