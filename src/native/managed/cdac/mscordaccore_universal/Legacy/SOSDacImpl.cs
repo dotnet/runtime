@@ -1776,12 +1776,12 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface4.GetClrNotification(ClrDataAddress[] arguments, int count, int* pNeeded)
     {
         int hr = HResults.S_OK;
+        uint MaxClrNotificationArgs = _target.ReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs);
         try
         {
-            uint MaxClrNotificationArgs = _target.ReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs);
             *pNeeded = (int)MaxClrNotificationArgs;
             TargetPointer basePtr = _target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments);
-            if (_target.Read<ulong>(basePtr) == 0)
+            if (_target.ReadNUInt(basePtr).Value == 0)
             {
                 hr = HResults.E_FAIL;
             }
@@ -1789,7 +1789,7 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
                 {
-                    arguments[i] = _target.Read<ulong>(basePtr.Value + (ulong)(i * sizeof(ClrDataAddress)));
+                    arguments[i] = _target.ReadNUInt(basePtr.Value + (ulong)(i * sizeof(ClrDataAddress))).Value;
                 }
             }
         }
@@ -1807,7 +1807,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(*pNeeded == neededLocal);
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
                 {
                     Debug.Assert(arguments[i] == argumentsLocal[i]);
                 }
