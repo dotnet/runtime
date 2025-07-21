@@ -912,12 +912,16 @@ namespace ILCompiler
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new Crossgen2RootCommand(args)
+            new Crossgen2RootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(Crossgen2RootCommand.PrintExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(Crossgen2RootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

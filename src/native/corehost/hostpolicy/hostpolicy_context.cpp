@@ -70,11 +70,13 @@ namespace
             return SystemResolveDllImport(entry_point_name);
         }
 
+#if !defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
-#endif
+#endif // !defined(TARGET_OSX)
+#endif // !defined(_WIN32)
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
