@@ -21,6 +21,7 @@ namespace System.Runtime.Caching
 
         private int _configCacheMemoryLimitMegabytes;
         private int _configPhysicalMemoryLimitPercentage;
+        private long _configPhysicalMemoryBytesAvailable;
         private int _configPollingInterval;
         private int _inCacheManagerThread;
         private int _disposed;
@@ -137,6 +138,7 @@ namespace System.Runtime.Caching
             {
                 _configCacheMemoryLimitMegabytes = element.CacheMemoryLimitMegabytes;
                 _configPhysicalMemoryLimitPercentage = element.PhysicalMemoryLimitPercentage;
+                _configPhysicalMemoryBytesAvailable = element.PhysicalMemoryBytesAvailable;
                 double milliseconds = element.PollingInterval.TotalMilliseconds;
                 _configPollingInterval = (milliseconds < (double)int.MaxValue) ? (int)milliseconds : int.MaxValue;
             }
@@ -145,6 +147,7 @@ namespace System.Runtime.Caching
                 _configPollingInterval = ConfigUtil.DefaultPollingTimeMilliseconds;
                 _configCacheMemoryLimitMegabytes = 0;
                 _configPhysicalMemoryLimitPercentage = 0;
+                _configPhysicalMemoryBytesAvailable = -1;
             }
 
             if (config != null)
@@ -152,6 +155,7 @@ namespace System.Runtime.Caching
                 _configPollingInterval = ConfigUtil.GetIntValueFromTimeSpan(config, ConfigUtil.PollingInterval, _configPollingInterval);
                 _configCacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, int.MaxValue);
                 _configPhysicalMemoryLimitPercentage = ConfigUtil.GetIntValue(config, ConfigUtil.PhysicalMemoryLimitPercentage, _configPhysicalMemoryLimitPercentage, true, 100);
+                _configPhysicalMemoryBytesAvailable = ConfigUtil.GetLongValue(config, ConfigUtil.PhysicalMemoryBytesAvailable, _configPhysicalMemoryBytesAvailable, -1, long.MaxValue);
             }
 #if !NETCOREAPP
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _configPhysicalMemoryLimitPercentage > 0)
@@ -261,7 +265,7 @@ namespace System.Runtime.Caching
             _timerLock = new object();
             InitializeConfiguration(config);
             _pollingInterval = _configPollingInterval;
-            _physicalMemoryMonitor = new PhysicalMemoryMonitor(_configPhysicalMemoryLimitPercentage);
+            _physicalMemoryMonitor = new PhysicalMemoryMonitor(_configPhysicalMemoryLimitPercentage, _configPhysicalMemoryBytesAvailable);
             InitDisposableMembers();
         }
 
@@ -358,6 +362,7 @@ namespace System.Runtime.Caching
             int pollingInterval = ConfigUtil.GetIntValueFromTimeSpan(config, ConfigUtil.PollingInterval, _configPollingInterval);
             int cacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, int.MaxValue);
             int physicalMemoryLimitPercentage = ConfigUtil.GetIntValue(config, ConfigUtil.PhysicalMemoryLimitPercentage, _configPhysicalMemoryLimitPercentage, true, 100);
+            long physicalMemoryBytesAvailable = ConfigUtil.GetLongValue(config, ConfigUtil.PhysicalMemoryBytesAvailable, _configPhysicalMemoryBytesAvailable, -1, long.MaxValue);
 
             if (pollingInterval != _configPollingInterval)
             {
@@ -368,7 +373,8 @@ namespace System.Runtime.Caching
             }
 
             if (cacheMemoryLimitMegabytes == _configCacheMemoryLimitMegabytes
-                && physicalMemoryLimitPercentage == _configPhysicalMemoryLimitPercentage)
+                && physicalMemoryLimitPercentage == _configPhysicalMemoryLimitPercentage
+                && physicalMemoryBytesAvailable == _configPhysicalMemoryBytesAvailable)
             {
                 return;
             }
@@ -393,10 +399,12 @@ namespace System.Runtime.Caching
                         _cacheMemoryMonitor.SetLimit(cacheMemoryLimitMegabytes);
                         _configCacheMemoryLimitMegabytes = cacheMemoryLimitMegabytes;
                     }
-                    if (physicalMemoryLimitPercentage != _configPhysicalMemoryLimitPercentage)
+                    if (physicalMemoryLimitPercentage != _configPhysicalMemoryLimitPercentage
+                        || physicalMemoryBytesAvailable != _configPhysicalMemoryBytesAvailable)
                     {
-                        _physicalMemoryMonitor.SetLimit(physicalMemoryLimitPercentage);
+                        _physicalMemoryMonitor.SetLimit(physicalMemoryLimitPercentage, physicalMemoryBytesAvailable);
                         _configPhysicalMemoryLimitPercentage = physicalMemoryLimitPercentage;
+                        _configPhysicalMemoryBytesAvailable = physicalMemoryBytesAvailable;
                     }
                 }
             }

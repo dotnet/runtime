@@ -10,7 +10,7 @@ namespace System.Runtime.Caching
 {
     internal sealed partial class PhysicalMemoryMonitor : MemoryMonitor
     {
-        protected override unsafe int GetCurrentPressure()
+        private static unsafe int LegacyGetCurrentPressure()
         {
             Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
             memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);

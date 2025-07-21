@@ -13,6 +13,7 @@ namespace System.Runtime.Caching.Configuration
     {
         internal const string CacheMemoryLimitMegabytes = "cacheMemoryLimitMegabytes";
         internal const string PhysicalMemoryLimitPercentage = "physicalMemoryLimitPercentage";
+        internal const string PhysicalMemoryBytesAvailable = "physicalMemoryBytesAvailable";
         internal const string PollingInterval = "pollingInterval";
         internal const string UseMemoryCacheManager = "useMemoryCacheManager";
         internal const string ThrowOnDisposed = "throwOnDisposed";
@@ -74,6 +75,26 @@ namespace System.Runtime.Caching.Configuration
             double milliseconds = tValue.TotalMilliseconds;
             int iValue = (milliseconds < (double)int.MaxValue) ? (int)milliseconds : int.MaxValue;
             return iValue;
+        }
+
+        internal static long GetLongValue(NameValueCollection config, string valueName, long defaultValue, long minValueAllowed, long maxValueAllowed)
+        {
+            string sValue = config[valueName];
+
+            if (sValue == null)
+            {
+                return defaultValue;
+            }
+
+            long lValue;
+            if (!long.TryParse(sValue, out lValue)
+                || lValue < minValueAllowed
+                || lValue > maxValueAllowed)
+            {
+                throw new ArgumentException(RH.Format(SR.Argument_out_of_range, valueName, minValueAllowed, maxValueAllowed), nameof(config));
+            }
+
+            return lValue;
         }
 
         internal static bool GetBooleanValue(NameValueCollection config, string valueName, bool defaultValue)

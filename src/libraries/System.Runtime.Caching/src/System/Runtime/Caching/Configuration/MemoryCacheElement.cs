@@ -28,6 +28,13 @@ namespace System.Runtime.Caching.Configuration
                 null,
                 new IntegerValidator(0, 100),
                 ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propPhysicalMemoryBytesAvailable =
+            new ConfigurationProperty("physicalMemoryBytesAvailable",
+                typeof(long),
+                (long)-1,
+                null,
+                new LongValidator(-1, long.MaxValue),
+                ConfigurationPropertyOptions.None);
         private static readonly ConfigurationProperty s_propCacheMemoryLimitMegabytes =
             new ConfigurationProperty("cacheMemoryLimitMegabytes",
                 typeof(int),
@@ -46,6 +53,7 @@ namespace System.Runtime.Caching.Configuration
         {
             s_propName,
             s_propPhysicalMemoryLimitPercentage,
+            s_propPhysicalMemoryBytesAvailable,
             s_propCacheMemoryLimitMegabytes,
             s_propPollingInterval
         };
@@ -93,6 +101,19 @@ namespace System.Runtime.Caching.Configuration
             set
             {
                 base["physicalMemoryLimitPercentage"] = value;
+            }
+        }
+
+        [ConfigurationProperty("physicalMemoryBytesAvailable", DefaultValue = (long)-1)]
+        public long PhysicalMemoryBytesAvailable
+        {
+            get
+            {
+                return (long)base["physicalMemoryBytesAvailable"];
+            }
+            set
+            {
+                base["physicalMemoryBytesAvailable"] = value;
             }
         }
 
