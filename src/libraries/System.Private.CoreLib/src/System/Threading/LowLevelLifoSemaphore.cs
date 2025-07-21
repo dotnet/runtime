@@ -94,10 +94,6 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
 
-#if CORECLR && TARGET_UNIX
-            // The PAL's wait subsystem is slower, spin more to compensate for the more expensive wait
-            spinCount *= 2;
-#endif
             bool isSingleProcessor = Environment.IsSingleProcessor;
             int spinIndex = isSingleProcessor ? SpinSleep0Threshold : 0;
             while (spinIndex < spinCount)
