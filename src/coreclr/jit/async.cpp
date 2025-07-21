@@ -6,11 +6,11 @@
 // machines. The following key operations are performed:
 //
 // 1. Early, after import but before inlining: for async calls that require
-//    ExecutionContext save/restore semantics, ExecutionContext capture and
+//    ExecutionContext/SynchronizationContext save/restore semantics, capture and
 //    restore calls are inserted around the async call site. This ensures proper
 //    context flow across await boundaries when the continuation may run on
-//    different threads or synchronization contexts. The captured ExecutionContext
-//    is stored in a temporary local and restored after the async call completes,
+//    different threads or synchronization contexts. The captured contexts
+//    are stored in temporary locals and restored after the async call completes,
 //    with special handling for calls inside try regions using try-finally blocks.
 //
 // Later, right before lowering the actual transformation to a state machine is
@@ -47,7 +47,7 @@
 
 //------------------------------------------------------------------------
 // Compiler::SaveAsyncContexts:
-//   Insert code to save and restore ExecutionContext around async call sites.
+//   Insert code to save and restore contexts around async call sites.
 //
 // Returns:
 //   Suitable phase status.
