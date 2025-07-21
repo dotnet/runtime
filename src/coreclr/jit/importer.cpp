@@ -13737,27 +13737,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 // Arguments:
 //   arg - The argument
 //
-// Notes:
-//    This method primarily adds caller-supplied info to the inlArgInfo
-//    and sets up the lclVarInfo table.
-//
-//    For args, the inlArgInfo records properties of the actual argument
-//    including the tree node that produces the arg value. This node is
-//    usually the tree node present at the call, but may also differ in
-//    various ways:
-//    - when the call arg is a GT_RET_EXPR, we search back through the ret
-//      expr chain for the actual node. Note this will either be the original
-//      call (which will be a failed inline by this point), or the return
-//      expression from some set of inlines.
-//    - when argument type casting is needed the necessary casts are added
-//      around the argument node.
-//    - if an argument can be simplified by folding then the node here is the
-//      folded value.
-//
-//   The method may make observations that lead to marking this candidate as
-//   a failed inline. If this happens the initialization is abandoned immediately
-//   to try and reduce the jit time cost for a failed inline.
-//
 GenTree* Compiler::impFoldInlineArg(GenTree* arg)
 {
     arg = gtFoldExpr(arg);
