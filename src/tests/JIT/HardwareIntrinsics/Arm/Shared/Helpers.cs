@@ -5617,11 +5617,19 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MaxNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
 
+        public static float MaxNumberPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? MaxNumber(op1[i], op1[i + 1]) : MaxNumber(op2[i - 1], op2[i]);
+
+        public static float MaxPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static float MinNumber(float op1, float op2) => float.IsNaN(op1) ? op2 : (float.IsNaN(op2) ? op1 : MathF.Min(op1, op2));
 
         public static float MinNumberPairwise(float[] op1, int i) => Pairwise(MinNumber, op1, i);
 
         public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static float MinNumberPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? MinNumber(op1[i], op1[i + 1]) : MinNumber(op2[i - 1], op2[i]);
+
+        public static float MinPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static float[] MultiplyAddRotateComplex(float[] op1, float[] op2, float[] op3, byte imm)
         {
@@ -5839,11 +5847,19 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double MaxNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
 
+        public static double MaxPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
+        public static double MaxNumberPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? MaxNumber(op1[i], op1[i + 1]) : MaxNumber(op2[i - 1], op2[i]);
+
         public static double MinNumber(double op1, double op2) => double.IsNaN(op1) ? op2 : (double.IsNaN(op2) ? op1 : Math.Min(op1, op2));
 
         public static double MinNumberPairwise(double[] op1, int i) => Pairwise(MinNumber, op1, i);
 
         public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static double MinNumberPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? MinNumber(op1[i], op1[i + 1]) : MinNumber(op2[i - 1], op2[i]);
+
+        public static double MinPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static double[] MultiplyAddRotateComplex(double[] op1, double[] op2, double[] op3, byte imm)
         {
@@ -6158,11 +6174,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte MaxPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static sbyte MaxPairwiseSve(sbyte[] op1, sbyte[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static sbyte Min(sbyte op1, sbyte op2) => Math.Min(op1, op2);
 
         public static sbyte MinPairwise(sbyte[] op1, int i) => Pairwise(Min, op1, i);
 
         public static sbyte MinPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static sbyte MinPairwiseSve(sbyte[] op1, sbyte[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static sbyte Multiply(sbyte op1, sbyte op2) => (sbyte)(op1 * op2);
 
@@ -6219,11 +6239,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte MaxPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static byte MaxPairwiseSve(byte[] op1, byte[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static byte Min(byte op1, byte op2) => Math.Min(op1, op2);
 
         public static byte MinPairwise(byte[] op1, int i) => Pairwise(Min, op1, i);
 
         public static byte MinPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static byte MinPairwiseSve(byte[] op1, byte[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static byte Multiply(byte op1, byte op2) => (byte)(op1 * op2);
 
@@ -6283,11 +6307,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short MaxPairwise(short[] op1, short[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static short MaxPairwiseSve(short[] op1, short[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static short Min(short op1, short op2) => Math.Min(op1, op2);
 
         public static short MinPairwise(short[] op1, int i) => Pairwise(Min, op1, i);
 
         public static short MinPairwise(short[] op1, short[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static short MinPairwiseSve(short[] op1, short[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static short Multiply(short op1, short op2) => (short)(op1 * op2);
 
@@ -6347,11 +6375,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort MaxPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static ushort MaxPairwiseSve(ushort[] op1, ushort[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static ushort Min(ushort op1, ushort op2) => Math.Min(op1, op2);
 
         public static ushort MinPairwise(ushort[] op1, int i) => Pairwise(Min, op1, i);
 
         public static ushort MinPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static ushort MinPairwiseSve(ushort[] op1, ushort[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static ushort Multiply(ushort op1, ushort op2) => (ushort)(op1 * op2);
 
@@ -6411,11 +6443,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int MaxPairwise(int[] op1, int[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static int MaxPairwiseSve(int[] op1, int[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static int Min(int op1, int op2) => Math.Min(op1, op2);
 
         public static int MinPairwise(int[] op1, int i) => Pairwise(Min, op1, i);
 
         public static int MinPairwise(int[] op1, int[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static int MinPairwiseSve(int[] op1, int[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static int Multiply(int op1, int op2) => (int)(op1 * op2);
 
@@ -6475,11 +6511,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint MaxPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static uint MaxPairwiseSve(uint[] op1, uint[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static uint Min(uint op1, uint op2) => Math.Min(op1, op2);
 
         public static uint MinPairwise(uint[] op1, int i) => Pairwise(Min, op1, i);
 
         public static uint MinPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static uint MinPairwiseSve(uint[] op1, uint[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static uint Multiply(uint op1, uint op2) => (uint)(op1 * op2);
 
@@ -6539,11 +6579,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MaxPairwise(long[] op1, long[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static long MaxPairwiseSve(long[] op1, long[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static long Min(long op1, long op2) => Math.Min(op1, op2);
 
         public static long MinPairwise(long[] op1, int i) => Pairwise(Min, op1, i);
 
         public static long MinPairwise(long[] op1, long[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static long MinPairwiseSve(long[] op1, long[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static long Multiply(long op1, long op2) => (long)(op1 * op2);
 
@@ -6603,11 +6647,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong MaxPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Max, op1, op2, i);
 
+        public static ulong MaxPairwiseSve(ulong[] op1, ulong[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static ulong Min(ulong op1, ulong op2) => Math.Min(op1, op2);
 
         public static ulong MinPairwise(ulong[] op1, int i) => Pairwise(Min, op1, i);
 
         public static ulong MinPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static ulong MinPairwiseSve(ulong[] op1, ulong[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static ulong Multiply(ulong op1, ulong op2) => (ulong)(op1 * op2);
 
@@ -8095,6 +8143,125 @@ namespace JIT.HardwareIntrinsics.Arm
             for (int i = 0; i < 4; i++)
             {
                 result += (long)((long)op2[s + i] * (long)op3[t + i]);
+            }
+
+            return result;
+        }
+
+        public static int DotProductRotateComplex(int op1, sbyte[] op2, int s, sbyte[] op3, byte rotation)
+        {
+            int result = op1;
+
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((int)op2[r1] * (int)op3[r1]) - ((int)op2[i1] * (int)op3[i1]) + ((int)op2[r2] * (int)op3[r2]) - ((int)op2[i2] * (int)op3[i2]);
+                    break;
+                case 1:
+                    result += ((int)op2[r1] * (int)op3[i1]) + ((int)op2[i1] * (int)op3[r1]) + ((int)op2[r2] * (int)op3[i2]) + ((int)op2[i2] * (int)op3[r2]);
+                    break;
+                case 2:
+                    result += ((int)op2[r1] * (int)op3[r1]) + ((int)op2[i1] * (int)op3[i1]) + ((int)op2[r2] * (int)op3[r2]) + ((int)op2[i2] * (int)op3[i2]);
+                    break;
+                case 3:
+                    result += ((int)op2[r1] * (int)op3[i1]) - ((int)op2[i1] * (int)op3[r1]) + ((int)op2[r2] * (int)op3[i2]) - ((int)op2[i2] * (int)op3[r2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+        public static int DotProductRotateComplexBySelectedIndex(int op1, sbyte[] op2, int s, sbyte[] op3, int immIndex, byte rotation)
+        {
+            int result = op1;
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((int)op2[r1] * (int)op3[immIndex]) - ((int)op2[i1] * (int)op3[immIndex + 1]) + ((int)op2[r2] * (int)op3[immIndex + 2]) - ((int)op2[i2] * (int)op3[immIndex + 3]);
+                    break;
+                case 1:
+                    result += ((int)op2[r1] * (int)op3[immIndex + 1]) + ((int)op2[i1] * (int)op3[immIndex]) + ((int)op2[r2] * (int)op3[immIndex + 3]) + ((int)op2[i2] * (int)op3[immIndex + 2]);
+                    break;
+                case 2:
+                    result += ((int)op2[r1] * (int)op3[immIndex]) + ((int)op2[i1] * (int)op3[immIndex + 1]) + ((int)op2[r2] * (int)op3[immIndex + 2]) + ((int)op2[i2] * (int)op3[immIndex + 3]);
+                    break;
+                case 3:
+                    result += ((int)op2[r1] * (int)op3[immIndex + 1]) - ((int)op2[i1] * (int)op3[immIndex]) + ((int)op2[r2] * (int)op3[immIndex + 3]) - ((int)op2[i2] * (int)op3[immIndex + 2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+
+        public static long DotProductRotateComplex(long op1, short[] op2, int s, short[] op3, byte rotation)
+        {
+            long result = op1;
+
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((long)op2[r1] * (long)op3[r1]) - ((long)op2[i1] * (long)op3[i1]) + ((long)op2[r2] * (long)op3[r2]) - ((long)op2[i2] * (long)op3[i2]);
+                    break;
+                case 1:
+                    result += ((long)op2[r1] * (long)op3[i1]) + ((long)op2[i1] * (long)op3[r1]) + ((long)op2[r2] * (long)op3[i2]) + ((long)op2[i2] * (long)op3[r2]);
+                    break;
+                case 2:
+                    result += ((long)op2[r1] * (long)op3[r1]) + ((long)op2[i1] * (long)op3[i1]) + ((long)op2[r2] * (long)op3[r2]) + ((long)op2[i2] * (long)op3[i2]);
+                    break;
+                case 3:
+                    result += ((long)op2[r1] * (long)op3[i1]) - ((long)op2[i1] * (long)op3[r1]) + ((long)op2[r2] * (long)op3[i2]) - ((long)op2[i2] * (long)op3[r2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+        public static long DotProductRotateComplexBySelectedIndex(long op1, short[] op2, int s, short[] op3, int immIndex, byte rotation)
+        {
+            long result = op1;
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+            case 0:
+                result += ((long)op2[r1] * (long)op3[immIndex]) - ((long)op2[i1] * (long)op3[immIndex + 1]) + ((long)op2[r2] * (long)op3[immIndex + 2]) - ((long)op2[i2] * (long)op3[immIndex + 3]);
+                break;
+            case 1:
+                result += ((long)op2[r1] * (long)op3[immIndex + 1]) + ((long)op2[i1] * (long)op3[immIndex]) + ((long)op2[r2] * (long)op3[immIndex + 3]) + ((long)op2[i2] * (long)op3[immIndex + 2]);
+                break;
+            case 2:
+                result += ((long)op2[r1] * (long)op3[immIndex]) + ((long)op2[i1] * (long)op3[immIndex + 1]) + ((long)op2[r2] * (long)op3[immIndex + 2]) + ((long)op2[i2] * (long)op3[immIndex + 3]);
+                break;
+            case 3:
+                result += ((long)op2[r1] * (long)op3[immIndex + 1]) - ((long)op2[i1] * (long)op3[immIndex]) + ((long)op2[r2] * (long)op3[immIndex + 3]) - ((long)op2[i2] * (long)op3[immIndex + 2]);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
             }
 
             return result;

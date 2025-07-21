@@ -74,7 +74,6 @@ namespace System.Xml
         private readonly XmlImplementation _implementation;
         private readonly DomNameTable _domNameTable; // hash table of XmlName
         private XmlLinkedNode? _lastChild;
-        private XmlNamedNodeMap? _entities;
         private Hashtable? _htElementIdMap;
         private Hashtable? _htElementIDAttrDecl; //key: id; object: the ArrayList of the elements that have the same id (connected or disconnected)
         private SchemaInfo? _schemaInfo;
@@ -1090,8 +1089,8 @@ namespace System.Xml
 
         internal XmlNamedNodeMap Entities
         {
-            get => _entities ??= new XmlNamedNodeMap(this);
-            set => _entities = value;
+            get => field ??= new XmlNamedNodeMap(this);
+            set => field = value;
         }
 
         internal bool IsLoading
