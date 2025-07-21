@@ -304,7 +304,6 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/1429")]
         public void Contains(string throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
@@ -1111,7 +1110,9 @@ namespace MonoTests.System.Runtime.Caching
 
         // Due to internal implementation details Trim has very few easily verifiable scenarios
         // ActiveIssue: https://github.com/dotnet/runtime/issues/36488
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
+        //[ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
+        //https://github.com/dotnet/runtime/pull/36494/files
+        [Theory]
         [InlineData("true"), InlineData("false"), InlineData(null)]
         public void Trim(string throwOnDisposed)
         {
@@ -1201,7 +1202,7 @@ namespace MonoTests.System.Runtime.Caching
         // runtime binary on the wrong OS. Without it, this test will run for each 'TargetFramework'
         // in the test csproj, and the non-windows framework will run against the non-windows library
         // because 'netstandard' is still valid for windows execution.
-        [PlatformSpecific(TestPlatforms.Windows)]
+        //[PlatformSpecific(TestPlatforms.Windows)]
         public void TestCacheSliding()
         {
             var config = new NameValueCollection();
@@ -1510,7 +1511,7 @@ namespace MonoTests.System.Runtime.Caching
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
+        //[SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheShrink()
         {
             const int HEAP_RESIZE_THRESHOLD = 8192 + 2;
@@ -1570,7 +1571,7 @@ namespace MonoTests.System.Runtime.Caching
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
+        //[SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheExpiryOrdering()
         {
             var config = new NameValueCollection();
