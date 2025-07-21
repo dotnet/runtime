@@ -1796,5 +1796,153 @@ namespace System.Numerics.Tensors.Tests
             TensorSpan<int> span = a.AsTensorSpan();
             Assert.True(span == default);
         }
+
+        [Fact]
+        public static void GetSpanTest()
+        {
+            TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+
+            Span<int> span = tensorSpan.GetSpan([0, 0], 16);
+            Assert.Equal(16, span.Length);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
+
+            span = tensorSpan.GetSpan([1, 1], 3);
+            Assert.Equal(3, span.Length);
+            Assert.Equal([5, 6, 7], span);
+
+            span = tensorSpan.GetSpan([3, 0], 4);
+            Assert.Equal(4, span.Length);
+            Assert.Equal([12, 13, 14, 15], span);
+
+            span = tensorSpan.GetSpan([0, 3], 1);
+            Assert.Equal(1, span.Length);
+            Assert.Equal([3], span);
+
+            span = tensorSpan.GetSpan([3, 3], 1);
+            Assert.Equal(1, span.Length);
+            Assert.Equal([15], span);
+        }
+
+        [Fact]
+        public static void GetSpanThrowsForInvalidIndexesTest()
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([4, 0], 17);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([0, 4], 17);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([4, 4], 17);
+            });
+        }
+
+        [Fact]
+        public static void GetSpanThrowsForInvalidLengthsTest()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([0, 0], -1);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([0, 0], 17);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([1, 1], 4);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([3, 0], 5);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([0, 3], 2);
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.GetSpan([3, 3], 2);
+            });
+        }
+
+        [Fact]
+        public static void TryGetSpanTest()
+        {
+            TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+
+            Assert.True(tensorSpan.TryGetSpan([0, 0], 16, out Span<int> span));
+            Assert.Equal(16, span.Length);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], span);
+
+            Assert.True(tensorSpan.TryGetSpan([1, 1], 3, out span));
+            Assert.Equal(3, span.Length);
+            Assert.Equal([5, 6, 7], span);
+
+            Assert.True(tensorSpan.TryGetSpan([3, 0], 4, out span));
+            Assert.Equal(4, span.Length);
+            Assert.Equal([12, 13, 14, 15], span);
+
+            Assert.True(tensorSpan.TryGetSpan([0, 3], 1, out span));
+            Assert.Equal(1, span.Length);
+            Assert.Equal([3], span);
+
+            Assert.True(tensorSpan.TryGetSpan([3, 3], 1, out span));
+            Assert.Equal(1, span.Length);
+            Assert.Equal([15], span);
+        }
+
+        [Fact]
+        public static void TryGetSpanThrowsForInvalidIndexesTest()
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.TryGetSpan([4, 0], 17, out Span<int> _);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.TryGetSpan([0, 4], 17, out Span<int> _);
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+                _ = tensorSpan.TryGetSpan([4, 4], 17, out Span<int> _);
+            });
+        }
+
+        [Fact]
+        public static void TryGetSpanFailsForInvalidLengthsTest()
+        {
+            TensorSpan<int> tensorSpan = new TensorSpan<int>(Enumerable.Range(0, 16).ToArray(), [4, 4]);
+
+            Assert.False(tensorSpan.TryGetSpan([0, 0], -1, out Span<int> span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(tensorSpan.TryGetSpan([0, 0], 17, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(tensorSpan.TryGetSpan([1, 1], 4, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(tensorSpan.TryGetSpan([3, 0], 5, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(tensorSpan.TryGetSpan([0, 3], 2, out span));
+            Assert.Equal(0, span.Length);
+
+            Assert.False(tensorSpan.TryGetSpan([3, 3], 2, out span));
+            Assert.Equal(0, span.Length);
+        }
     }
 }
