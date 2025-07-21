@@ -69,7 +69,7 @@ namespace Profiler.Tests
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void TriggerInliningChain()
         {
-            TestWriteLine("TriggerInlining");
+            TestWriteLine("TriggerInliningChain");
             // Test Inlining through another method
             InlineeChain1();
         }
@@ -85,21 +85,27 @@ namespace Profiler.Tests
         private static void CallMethodWithoutInlining()
         {
             TestWriteLine("CallMethodWithoutInlining");
-            Action callMethod = InlineeTarget;
-            callMethod();
+            Action<string> callMethod = InlineeTarget;
+            callMethod("CallMethodWithoutInlining");
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static void InlineeChain1()
         {
-            TestWriteLine("Inline.InlineeChain1");
+            TestWriteLine(" Inline.InlineeChain1");
             InlineeTarget();
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static void InlineeTarget()
+        public static void InlineeTarget([CallerMemberName] string callerMemberName = null)
         {
-            TestWriteLine("Inline.InlineeTarget");
+            var sb = new System.Text.StringBuilder();
+            sb.Append("  Inline.InlineeTarget");
+            sb.Append(' ');
+            sb.Append('(');
+            sb.Append(callerMemberName);
+            sb.Append(')');
+            TestWriteLine(sb.ToString());
         }
 
         public static int RunTest(string[] args)

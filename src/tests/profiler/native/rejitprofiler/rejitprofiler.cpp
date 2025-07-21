@@ -341,11 +341,17 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
     }
 
 
-    String newUserDefinedString = String(L"Hello from profiler rejit method '");
+    String newUserDefinedString = String(WCHAR("Hello from profiler rejit method '"));
     newUserDefinedString += functionName;
-    newUserDefinedString += L"'!";
+    newUserDefinedString += WCHAR("'! ");
     mdString tokmdsUserDefined = mdTokenNil;
-    hr = pTargetEmit->DefineUserString(newUserDefinedString.ToCStr(),
+
+    // There's no portable way to convert a String to LPCWSTR so just make a manual copy on the stack.
+    char16_t buf[4096] = { 0 };
+    for (size_t i = 0, c = newUserDefinedString.Length(); i < c; i++)
+        buf[i] = (char16_t)newUserDefinedString[i];
+
+    hr = pTargetEmit->DefineUserString((LPCWSTR)(void *)buf,
                                        (ULONG)newUserDefinedString.Length(),
                                        &tokmdsUserDefined);
     if (FAILED(hr))
@@ -430,28 +436,39 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITError(ModuleID moduleId, mdMethodD
 
 void ReJITProfiler::AddInlining(FunctionID inliner, FunctionID inlinee)
 {
-    shared_ptr<unordered_set<FunctionID>> inliners;
-    auto result = _inlinings.find(inlinee);
-    if (result == _inlinings.end())
+    String calleeName = GetFunctionIDName(inlinee);
+    String moduleName = GetModuleIDName(GetModuleIDForFunction(inlinee));
+
+    // Depending on various things it's possible the JIT will inline code during our test run that isn't part of the
+    //  rejit test module. For example if part of the BCL didn't get crossgen'd or the crossgen'd code isn't used.
+    // We don't care about those inlinings, so we won't track them. This makes the test more reliable.
+    if (EndsWith(moduleName, String(WCHAR("rejit.dll"))))
     {
-        auto p = make_pair(inlinee, make_shared<unordered_set<FunctionID>>());
-        inliners = p.second;
-        _inlinings.insert(p);
+        shared_ptr<unordered_set<FunctionID>> inliners;
+        auto result = _inlinings.find(inlinee);
+        if (result == _inlinings.end())
+        {
+            auto p = make_pair(inlinee, make_shared<unordered_set<FunctionID>>());
+            inliners = p.second;
+            _inlinings.insert(p);
+        }
+        else
+        {
+            inliners = (*result).second;
+        }
+
+        auto it = inliners->find(inliner);
+        if (it == inliners->end())
+        {
+            inliners->insert(inliner);
+        }
+
+        INFO(L"Inlining in test module! Inliner=" << GetFunctionIDName(inliner) << L" Inlinee=" << calleeName << L" module=" << moduleName);
     }
     else
     {
-        inliners = (*result).second;
+        INFO(L"Inlining in non-test module! Inliner=" << GetFunctionIDName(inliner) << L" Inlinee=" << calleeName << L" module=" << moduleName);
     }
-
-    auto it = inliners->find(inliner);
-    if (it == inliners->end())
-    {
-        inliners->insert(inliner);
-    }
-
-    String calleeName = GetFunctionIDName(inlinee);
-    String moduleName = GetModuleIDName(GetModuleIDForFunction(inlinee));
-    INFO(L"Inlining occurred! Inliner=" << GetFunctionIDName(inliner) << L" Inlinee=" << calleeName << L" Inlinee module name=" << moduleName);
 }
 
 FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef token, bool invalidArgNotFailure)
