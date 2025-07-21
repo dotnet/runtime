@@ -48,6 +48,8 @@ endif()
 
 add_library_clr(clrinterpreter ${LIBRARY_TYPE} ${INTERPRETER_SOURCES})
 
+set_target_properties(clrinterpreter PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
+
 add_dependencies(clrinterpreter interpreter_exports)
 
 if(NOT CLR_CMAKE_HOST_WIN32)
@@ -62,4 +64,4 @@ target_link_libraries(clrinterpreter
 
 set_property(TARGET clrinterpreter APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime)
+install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)
