@@ -1172,6 +1172,7 @@ void AsyncTransformation::SetSuspendedIndicator(BasicBlock* block, BasicBlock* c
     LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, storeSuspended));
 
     call->gtArgs.RemoveUnsafe(suspendedArg);
+    call->asyncInfo->HasSuspensionIndicatorDef = false;
 
     // Avoid leaving LCL_ADDR around which will DNER the local.
     if (suspended->IsLclVarAddr())

@@ -19620,11 +19620,7 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(Ge
     }
 
     CallArg* asyncSuspensionIndicatorArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-    if (asyncSuspensionIndicatorArg == nullptr)
-    {
-        return nullptr;
-    }
-
+    assert(asyncSuspensionIndicatorArg != nullptr);
     GenTree* node = asyncSuspensionIndicatorArg->GetNode();
 
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
