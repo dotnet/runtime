@@ -12,6 +12,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#ifdef DEBUG
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
+#endif
+
 struct LowLevelCrossProcessMutex
 {
     bool Dummy;
@@ -51,6 +57,7 @@ int32_t SystemNative_LowLevelCrossProcessMutex_Destroy(LowLevelCrossProcessMutex
     return Error_EINVAL;
 }
 
+DEBUGNOTRETURN
 void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint32_t* pOwnerThreadId)
 {
     (void)mutex;
@@ -59,6 +66,7 @@ void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelC
     assert(false);
 }
 
+DEBUGNOTRETURN
 void SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint32_t ownerThreadId)
 {
     (void)mutex;
@@ -74,6 +82,7 @@ uint8_t SystemNative_LowLevelCrossProcessMutex_IsAbandoned(LowLevelCrossProcessM
     return false;
 }
 
+DEBUGNOTRETURN
 void SystemNative_LowLevelCrossProcessMutex_SetAbandoned(LowLevelCrossProcessMutex* mutex, uint8_t isAbandoned)
 {
     (void)mutex;
