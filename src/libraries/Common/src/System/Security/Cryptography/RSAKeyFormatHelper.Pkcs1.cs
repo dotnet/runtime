@@ -10,7 +10,6 @@ namespace System.Security.Cryptography
 {
     internal static partial class RSAKeyFormatHelper
     {
-
         internal delegate TRet RSAParametersCallback<TRet>(RSAParameters parameters);
 
         internal static unsafe TRet FromPkcs1PrivateKey<TRet>(
