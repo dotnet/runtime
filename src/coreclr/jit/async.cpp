@@ -2305,8 +2305,8 @@ void AsyncTransformation::CreateResumptionSwitch()
             }
         }
 
-        BBswtDesc* const swtDesc =
-            new (m_comp, CMK_BasicBlock) BBswtDesc(cases, (unsigned)numCases, succs, numUniqueSuccs, true);
+        BBswtDesc* const swtDesc = new (m_comp, CMK_BasicBlock)
+            BBswtDesc(succs, numUniqueSuccs, cases, (unsigned)numCases, /* hasDefault */ true);
         switchBB->SetSwitch(swtDesc);
     }
 

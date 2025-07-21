@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -43,11 +44,22 @@ namespace ILLink.RoslynAnalyzer.Tests
             additionalReferences ??= Array.Empty<MetadataReference>();
             var sources = new List<SyntaxTree>() { src };
             sources.AddRange(additionalSources ?? Array.Empty<SyntaxTree>());
+            TestCaseUtils.GetDirectoryPaths(out string rootSourceDirectory);
+            var commonSourcePath = Path.Combine(Path.GetDirectoryName(rootSourceDirectory)!,
+                "Mono.Linker.Tests.Cases.Expectations",
+                "Support",
+                "DynamicallyAccessedMembersAttribute.cs");
+            sources.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(commonSourcePath), path: commonSourcePath));
             var comp = CSharpCompilation.Create(
                 assemblyName: Guid.NewGuid().ToString("N"),
                 syntaxTrees: sources,
                 references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
-                new CSharpCompilationOptions(consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
+                new CSharpCompilationOptions(consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,
+                    specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
+                    {
+                        // Allow the polyfilled DynamicallyAccessedMembersAttribute to take precedence over the one in corelib.
+                        { "CS0436", ReportDiagnostic.Suppress }
+                    }));
             var analyzerOptions = new AnalyzerOptions(
                 additionalFiles: additionalFiles?.ToImmutableArray() ?? ImmutableArray<AdditionalText>.Empty,
                 new SimpleAnalyzerOptions(globalAnalyzerOptions));
