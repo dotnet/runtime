@@ -32,7 +32,7 @@ namespace System.Diagnostics.CodeAnalysis
         }
 
         /// <summary>
-        /// Indicates whether the attribute should apply to static members.
+        /// When set to true, indicates that the annotation should not apply to static members.
         /// </summary>
         public bool ExcludeStatics { get; set; }
 
