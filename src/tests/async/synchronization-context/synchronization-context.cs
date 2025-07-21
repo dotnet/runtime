@@ -178,4 +178,39 @@ public class Async2SynchronizationContext
             }, null);
         }
     }
+
+    [Fact]
+    public static void TestContinueOnCorrectSyncContext()
+    {
+        SynchronizationContext prevContext = SynchronizationContext.Current;
+        try
+        {
+            TestContinueOnCorrectSyncContextAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(prevContext);
+        }
+    }
+
+    private static async Task TestContinueOnCorrectSyncContextAsync()
+    {
+        MySyncContext context1 = new MySyncContext();
+        MySyncContext context2 = new MySyncContext();
+
+        SynchronizationContext.SetSynchronizationContext(context1);
+        await SetContext(context2, suspend: false);
+        Assert.True(SynchronizationContext.Current == context1);
+
+        await SetContext(context2, suspend: true);
+        Assert.True(SynchronizationContext.Current == context1);
+    }
+
+    private static async Task SetContext(SynchronizationContext context, bool suspend)
+    {
+        SynchronizationContext.SetSynchronizationContext(context);
+
+        if (suspend)
+            await Task.Yield();
+    }
 }
