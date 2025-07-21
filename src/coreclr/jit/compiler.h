@@ -5096,6 +5096,7 @@ private:
 
     bool impIsInvariant(const GenTree* tree);
     bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
+    void impRetypeAddressInLocal(GenTree* tree, var_types newType);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -5117,6 +5118,8 @@ private:
     void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, InlArgInfo* argInfo, InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
+
+    GenTree* impFoldInlineArg(GenTree* arg);
 
     unsigned impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reason));
 

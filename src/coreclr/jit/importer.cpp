@@ -12888,6 +12888,31 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 }
 
 //------------------------------------------------------------------------
+// impRetypeAddressInLocal:
+//   Retype a tree representing an address inside a local to be of a different type.
+//
+// Arguments:
+//     tree    - The tree
+//     newType - The new type
+//
+void Compiler::impRetypeAddressInLocal(GenTree* tree, var_types newType)
+{
+    assert((newType == TYP_I_IMPL) || (newType == TYP_BYREF));
+
+    while (true)
+    {
+        tree->gtType = newType;
+        if (tree->OperIs(GT_LCL_ADDR))
+        {
+            break;
+        }
+
+        assert(tree->OperIs(GT_FIELD_ADDR) && tree->AsFieldAddr()->IsInstance());
+        tree = tree->AsFieldAddr()->GetFldObj();
+    }
+}
+
+//------------------------------------------------------------------------
 // impMakeDiscretionaryInlineObservations: make observations that help
 // determine the profitability of a discretionary inline
 //
@@ -13395,7 +13420,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 //   The method may make observations that lead to marking this candidate as
 //   a failed inline. If this happens the initialization is abandoned immediately
 //   to try and reduce the jit time cost for a failed inline.
-
+//
 void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 {
     assert(!compIsForInlining());
@@ -13428,7 +13453,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 break;
         }
 
-        arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
+        arg.SetEarlyNode(impFoldInlineArg(arg.GetEarlyNode()));
         impInlineRecordArgInfo(pInlineInfo, &arg, argInfo, inlineResult);
 
         if (inlineResult->IsFailure())
@@ -13703,6 +13728,48 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
+}
+
+//------------------------------------------------------------------------
+// impFoldInlineArg:
+//   Try to fold an argument being passed to an inline candidate.
+//
+// Arguments:
+//   arg - The argument
+//
+// Notes:
+//    This method primarily adds caller-supplied info to the inlArgInfo
+//    and sets up the lclVarInfo table.
+//
+//    For args, the inlArgInfo records properties of the actual argument
+//    including the tree node that produces the arg value. This node is
+//    usually the tree node present at the call, but may also differ in
+//    various ways:
+//    - when the call arg is a GT_RET_EXPR, we search back through the ret
+//      expr chain for the actual node. Note this will either be the original
+//      call (which will be a failed inline by this point), or the return
+//      expression from some set of inlines.
+//    - when argument type casting is needed the necessary casts are added
+//      around the argument node.
+//    - if an argument can be simplified by folding then the node here is the
+//      folded value.
+//
+//   The method may make observations that lead to marking this candidate as
+//   a failed inline. If this happens the initialization is abandoned immediately
+//   to try and reduce the jit time cost for a failed inline.
+//
+GenTree* Compiler::impFoldInlineArg(GenTree* arg)
+{
+    arg = gtFoldExpr(arg);
+
+    if (arg->OperIs(GT_CAST) && arg->TypeIs(TYP_BYREF, TYP_I_IMPL) && !arg->gtOverflow() &&
+        impIsAddressInLocal(arg->AsCast()->CastOp()))
+    {
+        impRetypeAddressInLocal(arg->AsCast()->CastOp(), arg->TypeGet());
+        arg = arg->AsCast()->CastOp();
+    }
+
+    return arg;
 }
 
 //------------------------------------------------------------------------
