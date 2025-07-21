@@ -31,6 +31,11 @@ namespace System.Diagnostics.CodeAnalysis
         }
 
         /// <summary>
+        /// Indicates whether the attribute should apply to static members.
+        /// </summary>
+        public bool ExcludeStatics { get; set; }
+
+        /// <summary>
         /// Gets a message that contains information about the usage of dynamic code.
         /// </summary>
         public string Message { get; }
