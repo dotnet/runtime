@@ -825,9 +825,6 @@ void EEStartupHelper()
         // Static initialization
         SystemDomain::Attach();
 
-        // Start up the EE initializing all the global variables
-        ECall::Init();
-
         COMDelegate::Init();
 
         ExecutionManager::Init();
