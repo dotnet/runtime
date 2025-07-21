@@ -47,7 +47,8 @@ namespace ILCompiler
             RyuJitCompilationOptions options,
             MethodLayoutAlgorithm methodLayoutAlgorithm,
             FileLayoutAlgorithm fileLayoutAlgorithm,
-            int parallelism)
+            int parallelism,
+            string orderFile)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -61,7 +62,7 @@ namespace ILCompiler
 
             _parallelism = parallelism;
 
-            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory);
+            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory, orderFile);
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
