@@ -56,6 +56,8 @@ namespace
     template<size_t NameLen>
     bool get_host_env_var(const pal::char_t (&name)[NameLen], pal::string_t* value)
     {
+        assert(name[NameLen - 1] == _X('\0')); // name is expected to be null-terminated
+
         // DOTNET_HOST_* takes precedence
         constexpr size_t dotnet_host_prefix_len = STRING_LENGTH("DOTNET_HOST_");
         pal::char_t dotnet_host_name[dotnet_host_prefix_len + NameLen] = _X("DOTNET_HOST_");
