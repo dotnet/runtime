@@ -33,6 +33,10 @@ namespace System.Threading
         private string? _name;
         private StartHelper? _startHelper;
 
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+        internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
+#endif
+
         /*=========================================================================
         ** The base implementation of Thread is all native.  The following fields
         ** should never be used in the C# code.  They are here to define the proper
@@ -61,10 +65,6 @@ namespace System.Threading
         // Set in unmanaged and read in managed code.
         private bool _isDead;
         private bool _isThreadPool;
-
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-        internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
-#endif
 
         private Thread() { }
 
