@@ -949,21 +949,20 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetMethodTableFieldData(ClrDataAddress mt, void* data)
+    int ISOSDacInterface.GetMethodTableFieldData(ClrDataAddress mt, DacpMethodTableFieldData* data)
     {
-        DacpMethodTableFieldData* mtFieldData = (DacpMethodTableFieldData*)data;
         int hr = HResults.S_OK;
         try
         {
             TargetPointer mtAddress = mt.ToTargetPointer(_target);
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
-            mtFieldData->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
-            mtFieldData->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
-            mtFieldData->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
-            mtFieldData->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
-            mtFieldData->wContextStaticsSize = 0;
-            mtFieldData->wContextStaticOffset = 0;
+            data->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
+            data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
+            data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
+            data->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
+            data->wContextStaticsSize = 0;
+            data->wContextStaticOffset = 0;
         }
         catch (System.Exception ex)
         {
@@ -976,11 +975,14 @@ internal sealed unsafe partial class SOSDacImpl
                 DacpMethodTableFieldData mtFieldDataLocal = default;
                 int hrLocal = _legacyImpl.GetMethodTableFieldData(mt, &mtFieldDataLocal);
                 Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-                Debug.Assert(mtFieldData->wNumInstanceFields == mtFieldDataLocal.wNumInstanceFields);
-                Debug.Assert(mtFieldData->wNumStaticFields == mtFieldDataLocal.wNumStaticFields);
-                Debug.Assert(mtFieldData->wNumThreadStaticFields == mtFieldDataLocal.wNumThreadStaticFields);
-                Debug.Assert(mtFieldData->wContextStaticOffset == mtFieldDataLocal.wContextStaticOffset);
-                Debug.Assert(mtFieldData->wContextStaticsSize == mtFieldDataLocal.wContextStaticsSize);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(data->wNumInstanceFields == mtFieldDataLocal.wNumInstanceFields);
+                    Debug.Assert(data->wNumStaticFields == mtFieldDataLocal.wNumStaticFields);
+                    Debug.Assert(data->wNumThreadStaticFields == mtFieldDataLocal.wNumThreadStaticFields);
+                    Debug.Assert(data->wContextStaticOffset == mtFieldDataLocal.wContextStaticOffset);
+                    Debug.Assert(data->wContextStaticsSize == mtFieldDataLocal.wContextStaticsSize);
+                }
             }
         }
 #endif

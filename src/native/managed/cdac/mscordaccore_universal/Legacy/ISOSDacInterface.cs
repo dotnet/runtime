@@ -286,7 +286,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value);
     [PreserveSig]
-    int GetMethodTableFieldData(ClrDataAddress mt, /*struct DacpMethodTableFieldData*/ void* data);
+    int GetMethodTableFieldData(ClrDataAddress mt, DacpMethodTableFieldData* data);
     [PreserveSig]
     int GetMethodTableTransparencyData(ClrDataAddress mt, /*struct DacpMethodTableTransparencyData*/ void* data);
 
