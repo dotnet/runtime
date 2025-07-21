@@ -156,14 +156,22 @@ public class Async2SynchronizationContext
 
     private static async Task SuspendThenClearSyncContext()
     {
+        Assert.True(SynchronizationContext.Current is SyncContextWithoutRestore);
+        SyncContextWithoutRestore syncCtx = (SyncContextWithoutRestore)SyncContextWithoutRestore.Current;
+        Assert.Equal(0, syncCtx.NumPosts);
+
         await Task.Yield();
-        SynchronizationContext.SetSynchronizationContext(null);
+        Assert.Null(SynchronizationContext.Current);
+        Assert.Equal(1, syncCtx.NumPosts);
     }
 
     private class SyncContextWithoutRestore : SynchronizationContext
     {
+        public int NumPosts;
+
         public override void Post(SendOrPostCallback d, object state)
         {
+            NumPosts++;
             ThreadPool.UnsafeQueueUserWorkItem(_ =>
             {
                 d(state);
