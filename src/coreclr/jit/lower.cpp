@@ -4448,7 +4448,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #elif defined(TARGET_RISCV64)
-    // Branch instructions are fused with a full range of integer comparisons, they will be lowered in LowerJTrue
+    // Branches will be lowered in LowerJTrue
     LIR::Use cmpUse;
     if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
         return cmp->gtNext;

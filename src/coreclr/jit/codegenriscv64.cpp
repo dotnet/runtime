@@ -3182,174 +3182,47 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     assert(tree->OperIs(GT_JCMP));
-    assert(!varTypeIsFloating(tree));
     assert(tree->TypeIs(TYP_VOID));
     assert(tree->GetRegNum() == REG_NA);
+
+    genConsumeOperands(tree);
+    instruction ins = INS_invalid;
+    switch (tree->gtCondition.GetCode())
+    {
+        case GenCondition::EQ:
+            ins = INS_beq;
+            break;
+        case GenCondition::NE:
+            ins = INS_bne;
+            break;
+        case GenCondition::SGE:
+            ins = INS_bge;
+            break;
+        case GenCondition::UGE:
+            ins = INS_bgeu;
+            break;
+        case GenCondition::SLT:
+            ins = INS_blt;
+            break;
+        case GenCondition::ULT:
+            ins = INS_bltu;
+            break;
+        default:
+            NO_WAY("unexpected condition type-regs");
+            break;
+    }
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
-    assert(!op1->isContainedIntOrIImmed());
-
-    var_types op1Type = genActualType(op1->TypeGet());
-    var_types op2Type = genActualType(op2->TypeGet());
-    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
-
-    genConsumeOperands(tree);
-
-    emitter*    emit = GetEmitter();
-    instruction ins  = INS_invalid;
-    int         regs = 0;
-
-    GenCondition cond = tree->gtCondition;
-
-    emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
-    regNumber regOp1  = op1->GetRegNum();
-
-    if (op2->isContainedIntOrIImmed())
-    {
-        ssize_t imm = op2->AsIntCon()->gtIconVal;
-        if (imm)
-        {
-            assert(regOp1 != REG_R0);
-            switch (cmpSize)
-            {
-                case EA_4BYTE:
-                {
-                    regNumber tmpRegOp1 = rsGetRsvdReg();
-                    assert(regOp1 != tmpRegOp1);
-                    imm = static_cast<int32_t>(imm);
-                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                    regOp1 = tmpRegOp1;
-                    break;
-                }
-                case EA_8BYTE:
-                    break;
-                default:
-                    unreached();
-            }
-
-            GenTreeIntCon* con = op2->AsIntCon();
-
-            emitAttr attr = emitActualTypeSize(op2Type);
-            // TODO-CQ: Currently we cannot do this for all handles because of
-            // https://github.com/dotnet/runtime/issues/60712
-            if (con->ImmedValNeedsReloc(compiler))
-            {
-                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
-            }
-
-            if (op2Type == TYP_BYREF)
-            {
-                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
-            }
-
-            instGen_Set_Reg_To_Imm(attr, REG_RA, imm,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
-            regSet.verifyRegUsed(REG_RA);
-            regs = (int)REG_RA << 5;
-        }
-        else
-        {
-            if (cmpSize == EA_4BYTE)
-            {
-                regNumber tmpRegOp1 = rsGetRsvdReg();
-                assert(regOp1 != tmpRegOp1);
-                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                regOp1 = tmpRegOp1;
-            }
-        }
-
-        switch (cond.GetCode())
-        {
-            case GenCondition::EQ:
-                regs |= ((int)regOp1);
-                ins = INS_beq;
-                break;
-            case GenCondition::NE:
-                regs |= ((int)regOp1);
-                ins = INS_bne;
-                break;
-            case GenCondition::UGE:
-            case GenCondition::SGE:
-                regs |= ((int)regOp1);
-                ins = cond.IsUnsigned() ? INS_bgeu : INS_bge;
-                break;
-            case GenCondition::UGT:
-            case GenCondition::SGT:
-                regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
-                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
-                break;
-            case GenCondition::ULT:
-            case GenCondition::SLT:
-                regs |= ((int)regOp1);
-                ins = cond.IsUnsigned() ? INS_bltu : INS_blt;
-                break;
-            case GenCondition::ULE:
-            case GenCondition::SLE:
-                regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
-                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
-                break;
-            default:
-                NO_WAY("unexpected condition type");
-                break;
-        }
-    }
-    else
-    {
-        regNumber regOp2 = op2->GetRegNum();
-        if (cmpSize == EA_4BYTE)
-        {
-            regNumber tmpRegOp1 = REG_RA;
-            regNumber tmpRegOp2 = rsGetRsvdReg();
-            assert(regOp1 != tmpRegOp2);
-            assert(regOp2 != tmpRegOp2);
-            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
-            regOp1 = tmpRegOp1;
-            regOp2 = tmpRegOp2;
-        }
-
-        switch (cond.GetCode())
-        {
-            case GenCondition::EQ:
-                regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = INS_beq;
-                break;
-            case GenCondition::NE:
-                regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = INS_bne;
-                break;
-            case GenCondition::UGE:
-            case GenCondition::SGE:
-                regs = ((int)regOp1 | ((int)regOp2 << 5));
-                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
-                break;
-            case GenCondition::UGT:
-            case GenCondition::SGT:
-                regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
-                break;
-            case GenCondition::ULT:
-            case GenCondition::SLT:
-                regs = ((int)regOp1 | ((int)regOp2 << 5));
-                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
-                break;
-            case GenCondition::ULE:
-            case GenCondition::SLE:
-                regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
-                break;
-            default:
-                NO_WAY("unexpected condition type-regs");
-                break;
-        }
-    }
-    assert(ins != INS_invalid);
+    assert(op1->isContained() == op1->IsIntegralConst(0));
+    assert(op2->isContained() == op2->IsIntegralConst(0));
+    regNumber regOp1 = op1->isContained() ? REG_ZERO : op1->GetRegNum();
+    regNumber regOp2 = op2->isContained() ? REG_ZERO : op2->GetRegNum();
+    int       regs   = (int)regOp1 | (((int)regOp2) << 5);
     assert(regs != 0);
-
-    emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
+    GetEmitter()->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs);
 
     // If we cannot fall into the false target, emit a jump to it
     BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();

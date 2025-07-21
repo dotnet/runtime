@@ -70,9 +70,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_OR:
             case GT_XOR:
                 return emitter::isValidSimm12(immVal);
-            case GT_JCMP:
-                return true;
 
+            case GT_JCMP:
             case GT_CMPXCHG:
             case GT_XORR:
             case GT_XAND:
@@ -124,54 +123,47 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    GenTree*     op = jtrue->gtGetOp1();
-    GenCondition cond;
-    GenTree*     cmpOp1;
-    GenTree*     cmpOp2;
+    GenTree* cmp = jtrue->gtGetOp1();
+    assert(!cmp->OperIsCompare() || cmp->OperIsCmpCompare()); // We do not expect any other relops on RISCV64
 
-    assert(!op->OperIsCompare() || op->OperIsCmpCompare()); // We do not expect any other relops on RISCV64
-
-    if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
+    // for RISCV64's compare and condition-branch instructions, it's very similar to the IL instructions.
+    jtrue->ChangeOper(GT_JCMP);
+    GenTreeOpCC* jcmp = jtrue->AsOpCC();
+    if (cmp->OperIsCompare() && !varTypeIsFloating(cmp->gtGetOp1()))
     {
-        cond = GenCondition::FromRelop(op);
-
-        cmpOp1 = op->gtGetOp1();
-        cmpOp2 = op->gtGetOp2();
-
-        // We will fall through and turn this into a JCMP(op1, op2, kind), but need to remove the relop here.
-        BlockRange().Remove(op);
+        // Branch instructions are fused with a full range of integer comparisons so just remove the comparison
+        jcmp->gtCondition = GenCondition::FromIntegralRelop(cmp);
+        jcmp->gtOp1       = cmp->gtGetOp1();
+        jcmp->gtOp2       = cmp->gtGetOp2();
+        if (cmp->OperIs(GT_GT, GT_LE))
+        {
+            // ">" and "<=" are achieved by swapping inputs for "<" and ">="
+            jcmp->gtCondition = GenCondition::Swap(jcmp->gtCondition);
+            std::swap(jcmp->gtOp1, jcmp->gtOp2);
+        }
+        BlockRange().Remove(cmp);
     }
     else
     {
+        // branch if (cond)  --->  branch if (cond != 0)
         GenCondition::Code code = GenCondition::NE;
-        if (op->OperIsCompare() && varTypeIsFloating(op->gtGetOp1()))
+        if (cmp->OperIsCompare() && varTypeIsFloating(cmp->gtGetOp1()))
         {
-            if (LowerAndReverseFloatingCompare(op))
+            if (LowerAndReverseFloatingCompare(cmp))
                 code = GenCondition::EQ;
         }
-        cond = GenCondition(code);
-
-        cmpOp1 = op;
-        cmpOp2 = comp->gtNewZeroConNode(cmpOp1->TypeGet());
-
-        BlockRange().InsertBefore(jtrue, cmpOp2);
-
-        // Fall through and turn this into a JCMP(op1, 0, NE).
+        jcmp->gtCondition = GenCondition(code);
+        jcmp->gtOp1       = cmp;
+        jcmp->gtOp2       = comp->gtNewZeroConNode(cmp->TypeGet());
+        BlockRange().InsertBefore(jcmp, jcmp->gtOp2);
     }
 
-    // for RISCV64's compare and condition-branch instructions,
-    // it's very similar to the IL instructions.
-    jtrue->ChangeOper(GT_JCMP);
-    jtrue->gtOp1                 = cmpOp1;
-    jtrue->gtOp2                 = cmpOp2;
-    jtrue->AsOpCC()->gtCondition = cond;
-
-    if (cmpOp2->IsCnsIntOrI())
+    for (GenTree** op : {&jcmp->gtOp1, &jcmp->gtOp2})
     {
-        cmpOp2->SetContained();
+        SignExtendIfNecessary(op);
+        CheckImmedAndMakeContained(jcmp, *op);
     }
-
-    return jtrue->gtNext;
+    return jcmp->gtNext;
 }
 
 //------------------------------------------------------------------------
