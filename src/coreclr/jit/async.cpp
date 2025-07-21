@@ -1330,7 +1330,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     if (layout.GCRefsCount > 0)
     {
-        FillInGCPointersOnSuspension(layout, suspendBB);
+        FillInGCPointersOnSuspension(call, layout, suspendBB);
     }
 
     if (layout.DataSize > 0)
@@ -1410,10 +1410,13 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness& lif
 //   parts that need to be stored.
 //
 // Parameters:
+//   call      - The async call that is being transformed
 //   layout    - Layout information
 //   suspendBB - Basic block to add IR to.
 //
-void AsyncTransformation::FillInGCPointersOnSuspension(const ContinuationLayout& layout, BasicBlock* suspendBB)
+void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*              call,
+                                                       const ContinuationLayout& layout,
+                                                       BasicBlock*               suspendBB)
 {
     unsigned objectArrLclNum = GetGCDataArrayVar();
 
@@ -1502,14 +1505,20 @@ void AsyncTransformation::FillInGCPointersOnSuspension(const ContinuationLayout&
 
     if (layout.ContinuationContextGCDataIndex != UINT_MAX)
     {
+        const AsyncCallInfo& callInfo = call->GetAsyncInfo();
+        assert(callInfo.SaveAndRestoreSynchronizationContextField &&
+               (callInfo.SynchronizationContextLclNum != BAD_VAR_NUM));
+
         // Insert call AsyncHelpers.CaptureContinuationContext(ref
         // newContinuation.GCData[ContinuationContextGCDataIndex], ref newContinuation.Flags).
         GenTree*     contextElementPlaceholder = m_comp->gtNewZeroConNode(TYP_BYREF);
+        GenTree*     syncContextPlaceholder    = m_comp->gtNewNull();
         GenTree*     flagsPlaceholder          = m_comp->gtNewZeroConNode(TYP_BYREF);
         GenTreeCall* captureCall =
             m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
 
         captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(flagsPlaceholder));
+        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
         captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(contextElementPlaceholder));
 
         m_comp->compCurBB = suspendBB;
@@ -1531,7 +1540,15 @@ void AsyncTransformation::FillInGCPointersOnSuspension(const ContinuationLayout&
         use.ReplaceWith(contextElementOffset);
         LIR::AsRange(suspendBB).Remove(contextElementPlaceholder);
 
-        // And now replace flagsPlaceholder with actual address of the flags
+        // Then do the sync context
+        gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
+        assert(gotUse);
+        GenTree* syncContextLcl = m_comp->gtNewLclvNode(callInfo.SynchronizationContextLclNum, TYP_REF);
+        LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContextLcl);
+        use.ReplaceWith(syncContextLcl);
+        LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
+
+        // And finally replace flagsPlaceholder with actual address of the flags
         gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
         assert(gotUse);
 

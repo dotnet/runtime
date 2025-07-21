@@ -625,9 +625,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static void CaptureContinuationContext(ref object context, ref CorInfoContinuationFlags flags)
+        private static void CaptureContinuationContext(ref object context, SynchronizationContext syncCtx, ref CorInfoContinuationFlags flags)
         {
-            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
             {
                 flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT;
