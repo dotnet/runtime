@@ -219,7 +219,7 @@ public:
     virtual void MarshalLCID(int argIdx) = 0;
     virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc) = 0;
 
-    virtual void EmitInvokeTarget(MethodDesc *pStubMD) = 0;
+    virtual void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD) = 0;
 
     virtual void FinishEmit(MethodDesc* pMD) = 0;
 
@@ -489,11 +489,11 @@ public:
         pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
     }
 
-    void EmitInvokeTarget(MethodDesc *pStubMD)
+    void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
     {
         STANDARD_VM_CONTRACT;
 
-        m_slIL.DoNDirect(m_slIL.GetDispatchCodeStream(), m_dwStubFlags, pStubMD);
+        m_slIL.DoNDirect(m_slIL.GetDispatchCodeStream(), m_dwStubFlags, pTargetMD);
     }
 
     virtual void EmitExceptionHandler(LocalDesc* pNativeReturnType, LocalDesc* pManagedReturnType,
@@ -709,7 +709,7 @@ public:
         }
 
         // Invoke the target (calli, call method, call delegate, get/set field, etc.)
-        EmitInvokeTarget(pStubMD);
+        EmitInvokeTarget(m_slIL.GetTargetMD(), pStubMD);
 
         // Saving last error must be the first thing we do after returning from the target
         if (m_fSetLastError && SF_IsForwardStub(m_dwStubFlags))
@@ -1559,7 +1559,7 @@ public:
         m_pFD = pFD;
     }
 
-    void EmitInvokeTarget(MethodDesc *pStubMD)
+    void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
     {
         STANDARD_VM_CONTRACT;
 
@@ -2084,7 +2084,7 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     }
 }
 
-void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
+void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc* pMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2121,10 +2121,10 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             if (!SF_IsCOMStub(dwStubFlags)) // forward P/Invoke
 #endif // FEATURE_COMINTEROP
             {
-                EmitLoadStubContext(pcsEmit, dwStubFlags);
-
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pNDirectTarget));
-                pcsEmit->EmitADD();
+                _ASSERTE(pMD->IsNDirect());
+                NDirectMethodDesc* pTargetMD = (NDirectMethodDesc*)pMD;
+                pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->ndirect.m_pNDirectTarget);
+                pcsEmit->EmitCONV_I();
                 pcsEmit->EmitLDIND_I();
             }
 #ifdef FEATURE_COMINTEROP
@@ -2427,7 +2427,7 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    void EmitInvokeTarget(MethodDesc *pStubMD)
+    void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
     {
         LIMITED_METHOD_CONTRACT;
         UNREACHABLE_MSG("Should never come to DispatchStubState::EmitInvokeTarget");
@@ -4934,47 +4934,6 @@ namespace
                                 COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
                             }
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
-                        }
-
-                        if (SF_IsSharedStub(params.m_dwStubFlags))
-                        {
-                            // We need to re-acquire the lock in case we need to get a new pStubMD
-                            // in the case that the owner of the shared stub was destroyed.
-                            pILStubLock.Acquire();
-
-                            // Assure that pStubMD we have now has not been destroyed by other threads
-                            ilStubCreatorHelper.GetStubMethodDesc();
-
-                            while (pStubMD != ilStubCreatorHelper.GetStubMD())
-                            {
-                                pStubMD = ilStubCreatorHelper.GetStubMD();
-
-                                pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
-                                pEntryLock.Assign(pEntry, FALSE);
-
-                                // We have the entry lock we need to use, so we can release the global lock.
-                                pILStubLock.Release();
-
-                                if (!pEntryLock.DeadlockAwareAcquire())
-                                {
-                                    // the IL generation is not recursive.
-                                    // However, we can encounter a recursive situation when attempting to
-                                    // marshal a struct containing a layout class containing another struct.
-                                    // Throw an exception here instead of asserting.
-                                    if (SF_IsStructMarshalStub(dwStubFlags))
-                                    {
-                                        _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                        StackSString strTypeName;
-                                        TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
-                                        COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
-                                    }
-                                    UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
-                                }
-
-                                pILStubLock.Acquire();
-
-                                ilStubCreatorHelper.GetStubMethodDesc();
-                            }
                         }
 
                         for (;;)

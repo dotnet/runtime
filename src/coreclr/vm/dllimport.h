@@ -251,28 +251,6 @@ inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDGETTER)); }
 inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDSETTER)); }
 
-inline bool SF_IsSharedStub(DWORD dwStubFlags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsAsyncResumeStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    return true;
-}
-
 inline bool SF_IsForwardStub             (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return !SF_IsReverseStub(dwStubFlags); }
 
 inline bool SF_IsForwardPInvokeStub      (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (!SF_IsCOMStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags)); }
@@ -476,7 +454,7 @@ public:
 
     void    Begin(DWORD dwStubFlags);
     void    End(DWORD dwStubFlags);
-    void    DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD);
+    void    DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc* pMD);
     void    EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwPinnedLocal);
     void    LoadCleanupWorkList(ILCodeStream* pcsEmit);
 #ifdef PROFILING_SUPPORTED
