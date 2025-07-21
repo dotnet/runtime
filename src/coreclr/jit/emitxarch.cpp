@@ -5155,7 +5155,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
             // If the instruction does not have tuple type info, say extended EVEX from APX, the scaling factor is
             // constantly 1, then this optimization cannot be performed, and whether disp8 or disp32 should be applied
             // only depends dspInByte.
-            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
+            if (hasTupleTypeInfo(ins) && TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
             {
                 SetEvexCompressedDisplacement(id);
             }
@@ -5328,7 +5328,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     {
         ssize_t compressedDsp;
 
-        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
+        if (hasTupleTypeInfo(ins) && TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
         {
             SetEvexCompressedDisplacement(id);
         }
@@ -14633,7 +14633,7 @@ GOT_DSP:
         }
         else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
         {
-            assert(!(TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins)));
+            assert(!hasTupleTypeInfo(ins) || !TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
             dspInByte = false;
         }
         else
