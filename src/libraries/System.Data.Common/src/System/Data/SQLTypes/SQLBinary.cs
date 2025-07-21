@@ -461,7 +461,7 @@ namespace System.Data.SqlTypes
         }
 
         /// <summary>
-        /// Wraps a byte array in a SqlBinary without copying the data.
+        /// Wraps a byte array in a <see cref="SqlBinary" /> without copying the data.
         /// </summary>
         /// <param name="bytes">The byte array to wrap.</param>
         /// <returns>A <see cref="SqlBinary" /> that wraps the provided byte array.</returns>
