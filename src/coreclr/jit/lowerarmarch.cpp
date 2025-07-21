@@ -4091,6 +4091,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplex:
+            case NI_Sve2_DotProductRotateComplex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 if (intrin.op4->IsCnsIntOrI())
@@ -4148,6 +4149,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 assert(varTypeIsIntegral(intrin.op5));

@@ -17,7 +17,10 @@
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
-#define INTERP_DIRECT_HELPER_TAG 1  // When a helper ftn's address is direct we tag it with this tag bit
+struct InterpHelperData {
+    uint32_t addressDataItemIndex : 29;
+    uint32_t accessType : 3;
+};
 
 struct CallStubHeader;
 

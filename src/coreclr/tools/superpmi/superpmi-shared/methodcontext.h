@@ -460,13 +460,13 @@ public:
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
     CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 
-    void recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, 
+    void recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
                                  CORINFO_METHOD_HANDLE methodHandle,
                                  CORINFO_CLASS_HANDLE classHandle,
                                  CORINFO_METHOD_HANDLE result);
     void dmpGetInstantiatedEntry(DWORDLONG key, const Agnostic_GetInstantiatedEntryResult& value);
-    CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, 
-                                                  CORINFO_METHOD_HANDLE* methodHandle, 
+    CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
+                                                  CORINFO_METHOD_HANDLE* methodHandle,
                                                   CORINFO_CLASS_HANDLE* classHandle);
 
     void recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
@@ -712,10 +712,6 @@ public:
                             unsigned               methTOK,
                             CORINFO_CONTEXT_HANDLE context,
                             CORINFO_SIG_INFO*      sig);
-
-    void recGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection, void* result);
-    void dmpGetMethodSync(DWORDLONG key, DLDL value);
-    void* repGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
 
     void recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection, CORINFO_VARARGS_HANDLE result);
     void dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value);
@@ -1068,7 +1064,7 @@ enum mcPackets
     Packet_GetMethodHash = 73,
     Packet_GetMethodInfo = 74,
     Packet_GetMethodSig = 76,
-    Packet_GetMethodSync = 77,
+    // Packet_GetMethodSync = 77,
     Packet_GetMethodVTableOffset = 78,
     Packet_GetNewArrHelper = 79,
     Packet_GetNewHelper = 80,

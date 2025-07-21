@@ -12230,8 +12230,30 @@ void Compiler::gtDispConst(GenTree* tree)
         }
 
         case GT_CNS_STR:
-            printf("<string constant>");
-            break;
+        {
+            GenTreeStrCon* cnsStr = tree->AsStrCon();
+            if (cnsStr->IsStringEmptyField())
+            {
+                // Special case: do not call getStringLiteral for the empty string field
+                printf("\"\"");
+                break;
+            }
+
+            constexpr int maxLiteralLength      = 256;
+            char16_t      str[maxLiteralLength] = {};
+            int len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxLiteralLength);
+            if (len < 0)
+            {
+                printf("<unknown string literal>");
+            }
+            else
+            {
+                char dst[maxLiteralLength];
+                convertUtf16ToUtf8ForPrinting(str, len, dst, maxLiteralLength);
+                printf("\"%.50s%s\"", dst, len > 50 ? "..." : "");
+            }
+        }
+        break;
 
 #if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
@@ -17890,105 +17912,6 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 {
     return OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) &&
            (comp->lvaGetDesc(AsLclFld())->lvExactSize() != AsLclFld()->GetSize());
-}
-
-//------------------------------------------------------------------------
-// DefinesLocal: Does "this" define a local?
-//
-// Arguments:
-//    comp        - the compiler instance
-//    pLclVarTree - [out] parameter for the local representing the definition
-//    pIsEntire   - optional [out] parameter for whether the store represents
-//                  a "full" definition (overwrites the entire variable)
-//    pOffset     - optional [out] parameter for the offset, relative to the
-//                  local, at which the store is performed
-//    pSize       - optional [out] parameter for the amount of bytes affected
-//                  by the store
-//
-// Return Value:
-//    Whether "this" represents a store to a possibly tracked local variable
-//    before rationalization.
-//
-// Notes:
-//    This function is contractually bound to recognize a superset of stores
-//    that "LocalAddressVisitor" recognizes and transforms, as it is used to
-//    detect which trees can define tracked locals.
-//
-bool GenTree::DefinesLocal(
-    Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset, unsigned* pSize)
-{
-    assert((pOffset == nullptr) || (*pOffset == 0));
-
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        *pLclVarTree = AsLclVarCommon();
-        if (pIsEntire != nullptr)
-        {
-            *pIsEntire = true;
-        }
-        if (pOffset != nullptr)
-        {
-            *pOffset = 0;
-        }
-        if (pSize != nullptr)
-        {
-            *pSize = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
-        }
-
-        return true;
-    }
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        *pLclVarTree = AsLclVarCommon();
-        if (pIsEntire != nullptr)
-        {
-            *pIsEntire = !AsLclFld()->IsPartialLclFld(comp);
-        }
-        if (pOffset != nullptr)
-        {
-            *pOffset = AsLclFld()->GetLclOffs();
-        }
-        if (pSize != nullptr)
-        {
-            *pSize = AsLclFld()->GetSize();
-        }
-
-        return true;
-    }
-    if (OperIs(GT_CALL))
-    {
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
-        if (lclAddr == nullptr)
-        {
-            return false;
-        }
-
-        *pLclVarTree = lclAddr;
-
-        if ((pIsEntire != nullptr) || (pSize != nullptr))
-        {
-            unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
-
-            if (pIsEntire != nullptr)
-            {
-                *pIsEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
-            }
-
-            if (pSize != nullptr)
-            {
-                *pSize = storeSize;
-            }
-        }
-
-        if (pOffset != nullptr)
-        {
-            *pOffset = lclAddr->GetLclOffs();
-        }
-
-        return true;
-    }
-
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -32618,6 +32541,78 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             switch (ni)
             {
+#if defined(TARGET_ARM64)
+                case NI_Vector64_ExtractMostSignificantBits:
+#elif defined(TARGET_XARCH)
+                case NI_Vector256_ExtractMostSignificantBits:
+                case NI_X86Base_MoveMask:
+                case NI_AVX_MoveMask:
+                case NI_AVX2_MoveMask:
+#endif
+                case NI_Vector128_ExtractMostSignificantBits:
+                {
+                    simdmask_t simdMaskVal;
+
+                    switch (simdSize)
+                    {
+                        case 8:
+                        {
+                            EvaluateExtractMSB<simd8_t>(simdBaseType, &simdMaskVal, cnsNode->AsVecCon()->gtSimd8Val);
+                            break;
+                        }
+
+                        case 16:
+                        {
+                            EvaluateExtractMSB<simd16_t>(simdBaseType, &simdMaskVal, cnsNode->AsVecCon()->gtSimd16Val);
+                            break;
+                        }
+
+#if defined(TARGET_XARCH)
+                        case 32:
+                        {
+                            EvaluateExtractMSB<simd32_t>(simdBaseType, &simdMaskVal, cnsNode->AsVecCon()->gtSimd32Val);
+                            break;
+                        }
+#endif // TARGET_XARCH
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
+                    uint64_t mask      = simdMaskVal.GetRawBits() & simdmask_t::GetBitMask(elemCount);
+
+                    assert(varTypeIsInt(retType));
+                    assert(elemCount <= 32);
+
+                    resultNode = gtNewIconNode(static_cast<int32_t>(mask));
+                    break;
+                }
+
+#ifdef TARGET_XARCH
+                case NI_AVX512_MoveMask:
+                {
+                    GenTreeMskCon* mskCns = cnsNode->AsMskCon();
+
+                    uint32_t elemCount = simdSize / genTypeSize(simdBaseType);
+                    uint64_t mask      = mskCns->gtSimdMaskVal.GetRawBits() & simdmask_t::GetBitMask(elemCount);
+
+                    if (varTypeIsInt(retType))
+                    {
+                        assert(elemCount <= 32);
+                        resultNode = gtNewIconNode(static_cast<int32_t>(mask));
+                    }
+                    else
+                    {
+                        assert(varTypeIsLong(retType));
+                        resultNode = gtNewLconNode(static_cast<int64_t>(mask));
+                    }
+                    break;
+                }
+#endif // TARGET_XARCH
+
 #ifdef TARGET_ARM64
                 case NI_ArmBase_LeadingZeroCount:
 #else

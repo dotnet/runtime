@@ -3139,12 +3139,6 @@ public:
             CORINFO_CONST_LOOKUP *  pResult
             ) = 0;
 
-    // get the synchronization handle that is passed to monXstatic function
-    virtual void* getMethodSync(
-            CORINFO_METHOD_HANDLE   ftn,
-            void**                  ppIndirection = NULL
-            ) = 0;
-
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
     virtual CorInfoHelpFunc getLazyStringLiteralHelper(
