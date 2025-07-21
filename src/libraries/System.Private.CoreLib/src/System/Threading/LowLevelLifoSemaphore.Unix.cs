@@ -11,7 +11,9 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
-        private WaitSubsystem.WaitableObject _semaphore;
+        // Declared nullable even though it is initialized in Create
+        // as Roslyn doesn't see that it's set in Create and Create is called from all constructors.
+        private WaitSubsystem.WaitableObject? _semaphore;
 
         private void Create(int maximumSignalCount)
         {
@@ -24,12 +26,12 @@ namespace System.Threading
 
         private bool WaitCore(int timeoutMs)
         {
-            return WaitSubsystem.Wait(_semaphore, timeoutMs, false, true) == WaitHandle.WaitSuccess;
+            return WaitSubsystem.Wait(_semaphore!, timeoutMs, false, true) == WaitHandle.WaitSuccess;
         }
 
         private void ReleaseCore(int count)
         {
-            WaitSubsystem.ReleaseSemaphore(_semaphore, count);
+            WaitSubsystem.ReleaseSemaphore(_semaphore!, count);
         }
     }
 }
