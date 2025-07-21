@@ -923,6 +923,43 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
+            // If both sets are composed of only Unicode categories, we can compare most cases fairly easily.
+            Span<UnicodeCategory> categories1 = stackalloc UnicodeCategory[16], categories2 = stackalloc UnicodeCategory[16];
+            if (TryGetOnlyCategories(set1, categories1, out int numCategories1, out bool negated1) &&
+                TryGetOnlyCategories(set2, categories2, out int numCategories2, out bool negated2))
+            {
+                // Check for the case of the sets being negated versions of the same single category,
+                // e.g. \d and \D, in which case they don't overlap.
+                if (numCategories1 == 1 && numCategories2 == 1 &&
+                    categories1[0] == categories2[0] &&
+                    negated1 != negated2)
+                {
+                    return false;
+                }
+
+                // Otherwise, if either is negated, just assume they may overlap.
+                if (negated1 || negated2)
+                {
+                    return true;
+                }
+
+                // Check if any category is the same between the two. We've limited the number of elements in the spans
+                // to a small number, so we just do the easy thing of comparing the full product.
+                foreach (UnicodeCategory cat1 in categories1.Slice(0, numCategories1))
+                {
+                    foreach (UnicodeCategory cat2 in categories2.Slice(0, numCategories2))
+                    {
+                        if (cat1 == cat2)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                // If we got here, the two sets are disjoint.
+                return false;
+            }
+
             // If set2 can be easily enumerated (e.g. no unicode categories), then enumerate it and
             // check if any of its members are in set1.  Otherwise, the same for set1.
             if (CanEasilyEnumerateSetContents(set2))
@@ -939,8 +976,16 @@ namespace System.Text.RegularExpressions
             return true;
 
             static bool KnownDistinctSets(string set1, string set2) =>
-                (set1 == SpaceClass || set1 == ECMASpaceClass) &&
-                (set2 == DigitClass || set2 == WordClass || set2 == ECMADigitClass || set2 == ECMAWordClass);
+                // Because of how the set strings are constructed, these known distinct sets aren't handled by our
+                // more general UnicodeCategory logic.
+                set1 switch
+                {
+                    SpaceClass => set2 is NotSpaceClass or DigitClass or WordClass,
+                    ECMASpaceClass => set2 is NotECMASpaceClass or ECMADigitClass or ECMAWordClass,
+                    WordClass => set2 is NotWordClass,
+                    ECMAWordClass => set2 is NotECMAWordClass,
+                    _ => false,
+                };
 
             static bool MayOverlapByEnumeration(string set1, string set2)
             {

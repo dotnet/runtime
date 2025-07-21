@@ -695,11 +695,11 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
 
-    ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
+    ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
     cbnz x11, LOCAL_LABEL(HaveInterpThreadContext)
 
 #ifdef TARGET_APPLE
-    // There Thread::GetInterpThreadContext can destroy all argument registers, so we 
+    // There Thread::GetInterpThreadContext can destroy all argument registers, so we
     // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
     // Restore x0 thrashed by the INLINE_GETTHREAD
     mov x0, x21
@@ -886,6 +886,30 @@ NESTED_ENTRY InterpreterStubRet4Float, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRet4Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVector64, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr d0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVector64, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVector128, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr q0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVector128, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
@@ -1833,5 +1857,43 @@ NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRet4Float, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetVector64, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str d0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVector64, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetVector128, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str q0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVector128, _TEXT
 
 #endif // FEATURE_INTERPRETER
