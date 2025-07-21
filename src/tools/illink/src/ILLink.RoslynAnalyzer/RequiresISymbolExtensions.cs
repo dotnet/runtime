@@ -77,12 +77,6 @@ namespace ILLink.RoslynAnalyzer
 
             if (member.ContainingType is ITypeSymbol containingType && containingType.TryGetAttribute(attributeName, out requiresAttribute))
             {
-                if (containingType.Name == "ClassWithRequires" &&
-                    containingType.ContainingType is ITypeSymbol containingTypeContainingType &&
-                    containingTypeContainingType.Name == "RequiresOnClassExcludeStatics")
-                {
-                    containingType.TryGetAttribute(attributeName, out _);
-                }
                 if (!ExcludeStatics(requiresAttribute))
                         return true;
 

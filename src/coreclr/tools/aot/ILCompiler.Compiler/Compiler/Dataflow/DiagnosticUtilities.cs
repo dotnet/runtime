@@ -186,11 +186,19 @@ namespace ILCompiler.Dataflow
             };
         }
 
-        private static bool ExcludeStatics(CustomAttributeValue<TypeDesc> attribute) =>
-            attribute.NamedArguments.Length == 1 &&
-            attribute.NamedArguments[0].Name == "ExcludeStatics" &&
-            attribute.NamedArguments[0].Value is bool excludeStatics &&
-            excludeStatics;
+        private static bool ExcludeStatics(CustomAttributeValue<TypeDesc> attribute)
+        {
+            foreach (var namedArgument in attribute.NamedArguments)
+            {
+                if (namedArgument.Name == "ExcludeStatics" &&
+                    namedArgument.Value is bool excludeStatics &&
+                    excludeStatics)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         internal const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
         internal const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
