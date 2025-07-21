@@ -104,16 +104,16 @@ namespace HostActivation.Tests
             string dotnetRootNoArch = "/dotnet/root";
             command = command.DotNetRoot(dotnetRootNoArch);
 
-            // Add additional DOTNET_* and COREHOST_* environment variables
+            // Add additional DOTNET_* environment variables
             (string Name, string Value)[] envVars = [
                 ("DOTNET_ROLL_FORWARD", "Major"),
                 ("DOTNET_SOME_SETTING", "/some/setting"),
-                ("COREHOST_TRACE", "1")
+                ("DOTNET_HOST_TRACE", "1")
             ];
 
             (string Name, string Value)[] differentCaseEnvVars = [
                 ("dotnet_env_var", "dotnet env var value"),
-                ("corehost_env_var", "corehost env var value"),
+                ("dOtNeT_setting", "doOtNeT setting value"),
             ];
             foreach ((string name, string value) in envVars.Concat(differentCaseEnvVars))
             {
