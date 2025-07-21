@@ -105,11 +105,8 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
-  <data name="Argument_PrivateKeyTooShortForAlgorithm" xml:space="preserve">
-    <value>The private key is too short for the indicated algorithm.</value>
-  </data>
-  <data name="Argument_PublicKeyTooShortForAlgorithm" xml:space="preserve">
-    <value>The public key is too short for the indicated algorithm.</value>
+  <data name="Argument_PrivateKeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The private key is not the correct size for the indicated algorithm.</value>
   </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>
@@ -153,6 +150,9 @@
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
   </data>
+  <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
+    <value>Composite signature generation failed due to an error in one or both of the components.</value>
+  </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
   </data>
@@ -179,6 +179,9 @@
   </data>
   <data name="Cryptography_InvalidOidFormat" xml:space="preserve">
     <value>Invalid OID format.</value>
+  </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
   </data>
   <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
@@ -221,6 +224,9 @@
   </data>
   <data name="Cryptography_PqcNoSeed" xml:space="preserve">
     <value>The current instance does not contain a seed.</value>
+  </data>
+  <data name="Cryptography_RSAPrivateKey_VersionTooNew" xml:space="preserve">
+    <value>The provided RSAPrivateKey value has version '{0}', but version '{1}' is the maximum supported.</value>
   </data>
   <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
     <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>

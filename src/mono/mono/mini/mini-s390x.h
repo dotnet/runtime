@@ -83,7 +83,8 @@ struct SeqPointInfo {
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX	1
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 		1
 #define MONO_ARCH_FLOAT32_SUPPORTED			1
-
+#define MONO_ARCH_NEED_SIMD_BANK			1
+#define MONO_ARCH_USE_SHARED_FP_SIMD_BANK		1
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2
 #define S390_LAST_ARG_REG 		s390_r6
@@ -147,9 +148,9 @@ struct SeqPointInfo {
 /*-----------------------------------------------*/
 /* SIMD Related Definitions                      */
 /*-----------------------------------------------*/
-
+/* f0 overlaps with v0 and vr16 is used internally */
 #define MONO_MAX_XREGS			31
-#define MONO_ARCH_CALLEE_XREGS		0x0
+#define MONO_ARCH_CALLEE_XREGS		0xFFFEFFFE
 #define MONO_ARCH_CALLEE_SAVED_XREGS	0x0
 
 // Does the ABI have a volatile non-parameter register, so tailcall

@@ -553,6 +553,13 @@ namespace System.Text.Json.Serialization.Converters
                 enumFields[i] = new EnumFieldInfo(key, kind, originalName, jsonName);
             }
 
+            if (s_isFlagsEnum)
+            {
+                // Perform topological sort for flags enums to ensure values that are supersets of other values come first.
+                // This is important for flags enums to ensure proper parsing and formatting.
+                enumFields = TopologicalSortEnumFields(enumFields);
+            }
+
             return enumFields;
         }
 
@@ -656,6 +663,56 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Performs a topological sort on enum fields to ensure values that are supersets of other values come first.
+        /// </summary>
+        private static EnumFieldInfo[] TopologicalSortEnumFields(EnumFieldInfo[] enumFields)
+        {
+            if (enumFields.Length <= 1)
+            {
+                return enumFields;
+            }
+
+            var indices = new int[enumFields.Length];
+            for (int i = 0; i < enumFields.Length; i++)
+            {
+                indices[i] = i;
+            }
+
+            Array.Sort(indices, (i, j) => GetComparisonKey(i).CompareTo(GetComparisonKey(j)));
+
+            var sortedFields = new EnumFieldInfo[enumFields.Length];
+            for (int i = 0; i < indices.Length; i++)
+            {
+                sortedFields[i] = enumFields[indices[i]];
+            }
+
+            return sortedFields;
+
+            (int PopCount, int Index) GetComparisonKey(int i)
+            {
+                // Sort by descending pop count of the enum value.
+                // Since Array.Sort isn't a stable algorithm
+                // append the current index to the comparison key.
+                return (-PopCount(enumFields[i].Key), i);
+            }
+
+            static int PopCount(ulong value)
+            {
+#if NET
+                return (int)ulong.PopCount(value);
+#else
+                int count = 0;
+                while (value != 0)
+                {
+                    value &= value - 1;
+                    count++;
+                }
+                return count;
+#endif
             }
         }
 
