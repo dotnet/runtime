@@ -101,7 +101,13 @@ namespace ILCompiler.Dataflow
                 return true;
 
             if (method.OwningType is TypeDesc type && TryGetRequiresAttribute(type, requiresAttribute, out attribute))
-                return true;
+            {
+                if (!ExcludeStatics(attribute.Value))
+                    return true;
+
+                if (!method.Signature.IsStatic)
+                    return true;
+            }
 
             if (method.GetPropertyForAccessor() is PropertyPseudoDesc property && TryGetRequiresAttribute(property, requiresAttribute, out attribute))
                 return true;
@@ -123,7 +129,13 @@ namespace ILCompiler.Dataflow
 
             if ((method.Signature.IsStatic || method.IsConstructor) && method.OwningType is TypeDesc owningType &&
                 !owningType.IsArray && TryGetRequiresAttribute(owningType, requiresAttribute, out attribute))
-                return true;
+            {
+                if (!ExcludeStatics(attribute.Value))
+                    return true;
+
+                if (method.IsConstructor)
+                    return true;
+            }
 
             if (method.GetPropertyForAccessor() is PropertyPseudoDesc @property
                 && TryGetRequiresAttribute(@property, requiresAttribute, out attribute))
@@ -144,7 +156,7 @@ namespace ILCompiler.Dataflow
                 return false;
             }
 
-            return TryGetRequiresAttribute(field.OwningType, requiresAttribute, out attribute);
+            return TryGetRequiresAttribute(field.OwningType, requiresAttribute, out attribute) && !ExcludeStatics(attribute.Value);
         }
 
         internal static bool DoesPropertyRequire(this PropertyPseudoDesc property, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
@@ -173,6 +185,12 @@ namespace ILCompiler.Dataflow
                 _ => false
             };
         }
+
+        private static bool ExcludeStatics(CustomAttributeValue<TypeDesc> attribute) =>
+            attribute.NamedArguments.Length == 1 &&
+            attribute.NamedArguments[0].Name == "ExcludeStatics" &&
+            attribute.NamedArguments[0].Value is bool excludeStatics &&
+            excludeStatics;
 
         internal const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
         internal const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);

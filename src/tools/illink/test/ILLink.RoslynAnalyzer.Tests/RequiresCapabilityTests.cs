@@ -89,6 +89,18 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task RequiresOnClassExcludeStatics()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task RequiresIsolated()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task RequiresOnEvents()
         {
             return RunTest();
