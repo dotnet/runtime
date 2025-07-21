@@ -149,7 +149,7 @@ namespace System.Security.Cryptography
             field ??= new CngAlgorithmGroup("MLKEM"); // NCRYPT_MLKEM_ALGORITHM_GROUP
 
         /// <summary>
-        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Stateless Hash-based Digital Signature
+        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Stateless Hash-Based Digital Signature
         ///   Algorithm (SLH-DSA) family of algorithms.
         /// </summary>
         /// <value>

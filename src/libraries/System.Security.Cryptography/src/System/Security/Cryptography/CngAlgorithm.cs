@@ -220,11 +220,11 @@ namespace System.Security.Cryptography
         public static CngAlgorithm MLKem => field ??= new CngAlgorithm("ML-KEM"); // BCRYPT_MLKEM_ALGORITHM
 
         /// <summary>
-        ///   Gets a new <see cref="CngAlgorithm"/> object that specifies the Stateless Hash-based Digital Signature
+        ///   Gets a new <see cref="CngAlgorithm"/> object that specifies the Stateless Hash-Based Digital Signature
         ///   Algorithm (SLH-DSA).
         /// </summary>
         /// <value>
-        ///   A new <see cref="CngAlgorithm"/> object that specifies the Stateless Hash-based Digital Signature
+        ///   A new <see cref="CngAlgorithm"/> object that specifies the Stateless Hash-Based Digital Signature
         ///   Algorithm (SLH-DSA).
         /// </value>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]

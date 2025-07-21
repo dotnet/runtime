@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 namespace System.Security.Cryptography
 {
     /// <summary>
-    ///   Provides a Cryptography Next Generation (CNG) implementation of the Stateless Hash-based Digital Signature
+    ///   Provides a Cryptography Next Generation (CNG) implementation of the Stateless Hash-Based Digital Signature
     ///   Algorithm (SLH-DSA).
     /// </summary>
     /// <remarks>
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="key"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="key"/> does not specify a Stateless Hash-based Digital Signature Algorithm (SLH-DSA) group.
+        ///   <paramref name="key"/> does not specify a Stateless Hash-Based Digital Signature Algorithm (SLH-DSA) group.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   Cryptography Next Generation (CNG) classes are not supported on this system.
