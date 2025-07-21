@@ -1583,8 +1583,7 @@ namespace System.StubHelpers
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStubContext();
+        internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void MulticastDebuggerTraceHelper(object o, int count)
@@ -1596,11 +1595,10 @@ namespace System.StubHelpers
         private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count);
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr NextCallReturnAddress();
+        internal static IntPtr NextCallReturnAddress() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [Intrinsic]
-        internal static Continuation? AsyncCallContinuation() => null;
+        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }  // class StubHelpers
 
 #if FEATURE_COMINTEROP

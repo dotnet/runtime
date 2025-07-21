@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Formats.Asn1;
+using System.Security.Cryptography.Rsa.Tests;
 using Xunit;
 using Xunit.Sdk;
 
@@ -189,7 +190,7 @@ namespace System.Security.Cryptography.Tests
                     RSAParameters expectedRsaParameters = RSAParametersFromRawPrivateKey(expectedTradKey);
                     RSAParameters actualRsaParameters = RSAParametersFromRawPrivateKey(actualTradKey);
 
-                    Rsa.Tests.ImportExport.AssertKeyEquals(expectedRsaParameters, actualRsaParameters);
+                    RSATestHelpers.AssertKeyEquals(expectedRsaParameters, actualRsaParameters);
                 },
                 _ => Assert.Equal(expectedTradKey, actualTradKey),
                 _ => Assert.Equal(expectedTradKey, actualTradKey));
