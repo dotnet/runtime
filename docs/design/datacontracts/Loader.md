@@ -267,7 +267,7 @@ TargetPointer GetRootAssembly()
 
 string ILoader.GetFriendlyName()
 {
-    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+    TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
     Data.AppDomain appDomain = // read AppDomain object starting at appDomainPointer
     TargetPointer pathStart = target.ReadPointer(handle.Address + /* AppDomain::FriendlyName offset */);
     char[] name = // Read<char> from target starting at pathStart until null terminator
@@ -404,20 +404,20 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     uint index = rid;
     // have to read lookupMap an extra time upfront because only the first map
     // has valid supportedFlagsMask
-    TargetNUInt supportedFlagsMask = _target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
+    TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
     do
     {
-        if (index < _target.Read<uint>(table + /*ModuleLookupMap::Count*/))
+        if (index < target.Read<uint>(table + /*ModuleLookupMap::Count*/))
         {
-            TargetPointer entryAddress = _target.ReadPointer(lookupMap + /*ModuleLookupMap::TableData*/) + (ulong)(index * _target.PointerSize);
-            TargetPointer rawValue = _target.ReadPointer(entryAddress);
+            TargetPointer entryAddress = target.ReadPointer(lookupMap + /*ModuleLookupMap::TableData*/) + (ulong)(index * target.PointerSize);
+            TargetPointer rawValue = target.ReadPointer(entryAddress);
             flags = rawValue & supportedFlagsMask;
             return rawValue & ~(supportedFlagsMask.Value);
         }
         else
         {
-            table = _target.ReadPointer(lookupMap + /*ModuleLookupMap::Next*/);
-            index -= _target.Read<uint>(lookupMap + /*ModuleLookupMap::Count*/);
+            table = target.ReadPointer(lookupMap + /*ModuleLookupMap::Next*/);
+            index -= target.Read<uint>(lookupMap + /*ModuleLookupMap::Count*/);
         }
     } while (table != TargetPointer.Null);
     return TargetPointer.Null;
@@ -427,15 +427,15 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
 ```csharp
 bool ILoader.IsCollectible(ModuleHandle handle)
 {
-    TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    byte isCollectible = _target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
+    TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    byte isCollectible = target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
     return isCollectible != 0;
 }
 
 bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
 {
-    TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = _target.Read<uint>(assembly + /* Assembly::Level*/);
+    TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    uint loadLevel = target.Read<uint>(assembly + /* Assembly::Level*/);
     return assembly.Level >= ASSEMBLY_LEVEL_LOADED;
 }
 ```
