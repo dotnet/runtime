@@ -3735,6 +3735,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 static MonoInst*
 mono_emit_cached_localloc (MonoCompile *cfg, int cache_index, int new_size)
 {
+	g_assert (cache_index < (int)G_N_ELEMENTS (cfg->localloc_cache));
 	MonoCachedLocallocInfo *info = &cfg->localloc_cache [cache_index];
 
 	// Create var or update the size. All locallocs will be patched to the max size after IR code emit ends.
@@ -12378,6 +12379,7 @@ all_bbs_done:
 					p = p->next;
 				}
 				g_slist_free (info->localloc_ins);
+				info->localloc_ins = NULL;
 			}
 		}
 	}
