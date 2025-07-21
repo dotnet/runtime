@@ -334,7 +334,6 @@ namespace System.Runtime.Serialization.DataContracts
 
             [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             private readonly Type _underlyingType;
-            private Type? _originalUnderlyingType;
             private bool _isValueType;
             private GenericInfo? _genericInfo;
             private XmlQualifiedName _xmlName = null!; // XmlName is always set in concrete ctors set except for the "invalid" CollectionDataContract
@@ -967,7 +966,7 @@ namespace System.Runtime.Serialization.DataContracts
             [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             internal Type UnderlyingType => _underlyingType;
 
-            internal Type OriginalUnderlyingType => _originalUnderlyingType ??= GetDataContractOriginalType(_underlyingType);
+            internal Type OriginalUnderlyingType => field ??= GetDataContractOriginalType(_underlyingType);
 
             internal virtual bool IsBuiltInDataContract => false;
 
