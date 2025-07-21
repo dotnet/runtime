@@ -10844,7 +10844,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                     activeCodeVersion = manager->GetActiveILCodeVersion(helperMD).GetActiveNativeCodeVersion(helperMD);
                 }
 
-                if (activeCodeVersion.IsFinalTier())
+                // activeCodeVersion may be a null version if the current active ILCodeVersion
+                // does not have an associated NativeCodeVersion
+                if (!activeCodeVersion.IsNull() && activeCodeVersion.IsFinalTier())
                 {
                     finalTierAddr = (LPVOID)activeCodeVersion.GetNativeCode();
                     if (finalTierAddr != NULL)
@@ -13101,9 +13103,12 @@ static TADDR UnsafeJitFunctionWorker(
         if (g_pDebugInterface)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
-#ifdef DEBUG
-            ValidateILOffsets(ftn, NULL, 0, (uint8_t*)nativeEntry, sizeOfCode);
-#endif // DEBUG
+
+            // Validation currently disabled, see https://github.com/dotnet/runtime/issues/117561
+            //
+//#ifdef DEBUG
+//            ValidateILOffsets(ftn, NULL, 0, (uint8_t*)nativeEntry, sizeOfCode);
+//#endif // DEBUG
         }
 #endif // DEBUGGING_SUPPORTED
     }
@@ -14417,7 +14422,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
 
     auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
     {
-        _ASSERTE(!th.IsByRef());
         CorElementType ty = th.GetSignatureCorElementType();
         if (CorTypeInfo::IsObjRef(ty))
         {

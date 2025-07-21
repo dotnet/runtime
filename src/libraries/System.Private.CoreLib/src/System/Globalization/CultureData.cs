@@ -658,8 +658,7 @@ namespace System.Globalization
         /// Build our invariant information
         /// We need an invariant instance, which we build hard-coded
         /// </summary>
-        internal static CultureData Invariant => s_Invariant ??= CreateCultureWithInvariantData();
-        private static CultureData? s_Invariant;
+        internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedCultures;
