@@ -243,26 +243,28 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic    intrinsic,
                                       unsigned*         immSimdSize,
                                       var_types*        immSimdBaseType)
 {
-    HWIntrinsicCategory        category = HWIntrinsicInfo::lookupCategory(intrinsic);
-    HWIntrinsicSignatureReader sigReader;
-    sigReader.Read(info.compCompHnd, sig);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
 
     if (category == HW_Category_SIMDByIndexedElement)
     {
         assert(immNumber == 1);
-        *immSimdSize = 0;
+        *immSimdSize                   = 0;
+        CORINFO_ARG_LIST_HANDLE immArg = sig->args;
 
         switch (sig->numArgs)
         {
-            case 2:
-                getBaseJitTypeAndSizeOfSIMDType(sigReader.op1ClsHnd, immSimdSize);
-                break;
-            case 3:
-                getBaseJitTypeAndSizeOfSIMDType(sigReader.op2ClsHnd, immSimdSize);
-                break;
             case 4:
-                getBaseJitTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, immSimdSize);
+                immArg = info.compCompHnd->getArgNext(immArg);
+                FALLTHROUGH;
+            case 3:
+                immArg = info.compCompHnd->getArgNext(immArg);
+                FALLTHROUGH;
+            case 2:
+            {
+                CORINFO_CLASS_HANDLE typeHnd = info.compCompHnd->getArgClass(sig, immArg);
+                getBaseJitTypeAndSizeOfSIMDType(typeHnd, immSimdSize);
                 break;
+            }
             default:
                 unreached();
         }
@@ -271,8 +273,12 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic    intrinsic,
     {
         if (immNumber == 2)
         {
-            CorInfoType otherBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, immSimdSize);
-            *immSimdBaseType             = JitType2PreciseVarType(otherBaseJitType);
+            CORINFO_ARG_LIST_HANDLE immArg        = sig->args;
+            immArg                                = info.compCompHnd->getArgNext(immArg);
+            immArg                                = info.compCompHnd->getArgNext(immArg);
+            CORINFO_CLASS_HANDLE typeHnd          = info.compCompHnd->getArgClass(sig, immArg);
+            CorInfoType          otherBaseJitType = getBaseJitTypeAndSizeOfSIMDType(typeHnd, immSimdSize);
+            *immSimdBaseType                      = JitType2PreciseVarType(otherBaseJitType);
         }
         // For imm1 use default simd sizes.
     }

@@ -1639,6 +1639,76 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
     return false;
 }
 
+// HWIntrinsicSignatureReader: a helper class that "reads" a list of hardware intrinsic arguments and stores
+// the corresponding argument type descriptors as the fields of the class instance.
+//
+struct HWIntrinsicSignatureReader final
+{
+    // Read: enumerates the list of arguments of a hardware intrinsic and stores the CORINFO_CLASS_HANDLE
+    // and var_types values of each operand into the corresponding fields of the class instance.
+    //
+    // Arguments:
+    //    compHnd -- an instance of COMP_HANDLE class.
+    //    sig     -- a hardware intrinsic signature.
+    //
+    void Read(COMP_HANDLE compHnd, CORINFO_SIG_INFO* sig)
+    {
+        CORINFO_ARG_LIST_HANDLE args = sig->args;
+
+        if (sig->numArgs > 0)
+        {
+            op1JitType = strip(compHnd->getArgType(sig, args, &op1ClsHnd));
+
+            if (sig->numArgs > 1)
+            {
+                args       = compHnd->getArgNext(args);
+                op2JitType = strip(compHnd->getArgType(sig, args, &op2ClsHnd));
+            }
+
+            if (sig->numArgs > 2)
+            {
+                args       = compHnd->getArgNext(args);
+                op3JitType = strip(compHnd->getArgType(sig, args, &op3ClsHnd));
+            }
+
+            if (sig->numArgs > 3)
+            {
+                args       = compHnd->getArgNext(args);
+                op4JitType = strip(compHnd->getArgType(sig, args, &op4ClsHnd));
+            }
+        }
+    }
+
+    CORINFO_CLASS_HANDLE op1ClsHnd;
+    CORINFO_CLASS_HANDLE op2ClsHnd;
+    CORINFO_CLASS_HANDLE op3ClsHnd;
+    CORINFO_CLASS_HANDLE op4ClsHnd;
+    CorInfoType          op1JitType;
+    CorInfoType          op2JitType;
+    CorInfoType          op3JitType;
+    CorInfoType          op4JitType;
+
+    var_types GetOp1Type() const
+    {
+        return JITtype2varType(op1JitType);
+    }
+
+    var_types GetOp2Type() const
+    {
+        return JITtype2varType(op2JitType);
+    }
+
+    var_types GetOp3Type() const
+    {
+        return JITtype2varType(op3JitType);
+    }
+
+    var_types GetOp4Type() const
+    {
+        return JITtype2varType(op4JitType);
+    }
+};
+
 //------------------------------------------------------------------------
 // CheckHWIntrinsicImmRange: Check if an immediate is within the valid range
 //
