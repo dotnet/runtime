@@ -162,14 +162,23 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
-template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
+template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod *pMethod, int32_t _data)
 {
-    size_t helperDirectOrIndirect = (size_t)dataItem;
-    if (helperDirectOrIndirect & INTERP_DIRECT_HELPER_TAG)
-        // Clear the direct flag and then raise the thumb bit as needed
-        return (THelper)PINSTRToPCODE((TADDR)(helperDirectOrIndirect & ~INTERP_DIRECT_HELPER_TAG));
-    else
-        return *(THelper *)helperDirectOrIndirect;
+    InterpHelperData data;
+    memcpy(&data, &_data, sizeof(int32_t));
+
+    void *addr = pMethod->pDataItems[data.addressDataItemIndex];
+    switch (data.accessType) {
+        case IAT_VALUE:
+            return (THelper)addr;
+        case IAT_PVALUE:
+            return *(THelper *)addr;
+        case IAT_PPVALUE:
+            return **(THelper **)addr;
+        default:
+            COMPlusThrowHR(COR_E_EXECUTIONENGINE);
+            return (THelper)nullptr;
+    }
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
@@ -1695,7 +1704,7 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_P:
                 {
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod->pDataItems[ip[2]]);
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2]);
                     void* helperArg = pMethod->pDataItems[ip[3]];
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
@@ -1705,7 +1714,7 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_S:
                 {
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod->pDataItems[ip[2]]);
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2]);
                     void* helperArg = LOCAL_VAR(ip[3], void*);
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
@@ -1715,7 +1724,7 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_PS:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[2], void*));
@@ -1725,7 +1734,7 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_SP:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(LOCAL_VAR(ip[2], void*), helperArg);
@@ -1738,7 +1747,7 @@ MAIN_LOOP:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod->pDataItems[ip[3]]);
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3]);
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
                     ip += 5;
@@ -1750,7 +1759,7 @@ MAIN_LOOP:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[4]]);
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4]);
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[3], void*));
                     ip += 6;
@@ -1762,7 +1771,7 @@ MAIN_LOOP:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[4]]);
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4]);
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[3], void*));
                     ip += 6;
                     break;
@@ -1770,7 +1779,7 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_PA:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[2], void*));
                     ip += 5;
@@ -1782,7 +1791,7 @@ MAIN_LOOP:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod->pDataItems[ip[4]]);
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[4]);
                     helperFtn(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[3], void*));
                     ip += 6;
                     break;
@@ -1790,7 +1799,7 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_V_APS:
                 {
-                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod->pDataItems[ip[3]]);
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[3]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
                     helperFtn(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[2], void*));
                     ip += 5;
@@ -1986,9 +1995,6 @@ CALL_INTERP_METHOD:
                     int32_t vtSize = ip[4];
                     void *vtThis = stack + returnOffset;
 
-                    // clear the valuetype
-                    memset(vtThis, 0, vtSize);
-
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
 
@@ -2019,18 +2025,6 @@ CALL_INTERP_METHOD:
 
                     LOCAL_VAR(ip[1], void*) = pMemory;
                     ip += 3;
-                    break;
-                }
-                case INTOP_GC_COLLECT:
-                {
-                    // HACK: blocking gc of all generations to enable early stackwalk testing
-                    // Interpreter-TODO: Remove this
-                    {
-                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                        GCX_COOP();
-                        GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, collection_blocking | collection_aggressive);
-                    }
-                    ip++;
                     break;
                 }
                 case INTOP_THROW:
@@ -2068,7 +2062,7 @@ CALL_INTERP_METHOD:
                     int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
-                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[3]]);
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3]);
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
@@ -2088,7 +2082,7 @@ CALL_INTERP_METHOD:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     MethodTable *pMTBoxedObj = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[4]);
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                     Object *src = LOCAL_VAR(sreg, Object*);
@@ -2105,7 +2099,7 @@ CALL_INTERP_METHOD:
                         COMPlusThrow(kArgumentOutOfRangeException);
 
                     MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
-                    HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod->pDataItems[ip[4]]);
+                    HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
                     Object* arr = helper(arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
@@ -2122,7 +2116,7 @@ CALL_INTERP_METHOD:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     MethodTable *arrayClsHnd = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod->pDataItems[ip[4]]);
+                    HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
                     Object* arr = helper(arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
@@ -2460,11 +2454,8 @@ do                                                                      \
                 case INTOP_THROW_PNSE:
                     COMPlusThrow(kPlatformNotSupportedException);
                     break;
-                case INTOP_FAILFAST:
-                    assert(0);
-                    break;
                 default:
-                    assert(0);
+                    assert(!"Unimplemented or invalid interpreter opcode");
                     break;
             }
         }
