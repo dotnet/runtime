@@ -72,7 +72,6 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
 #endif
 }
 
-// ~LoaderHeap is not synchronised (obviously)
 ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
 {
     CONTRACTL
