@@ -9,57 +9,33 @@ using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    /// <summary>
-    /// Represents an X.509 Subject Alternative Name extension.
-    /// </summary>
     public sealed class X509SubjectAlternativeNameExtension : X509Extension
     {
         private List<GeneralNameAsn>? _decoded;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="X509SubjectAlternativeNameExtension"/> class.
-        /// </summary>
         public X509SubjectAlternativeNameExtension() : base(Oids.SubjectAltNameOid)
         {
             _decoded = new List<GeneralNameAsn>(0);
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="X509SubjectAlternativeNameExtension"/> class using encoded extension data.
-        /// </summary>
-        /// <param name="rawData">The encoded extension data.</param>
-        /// <param name="critical">A value indicating whether the extension is critical.</param>
         public X509SubjectAlternativeNameExtension(byte[] rawData, bool critical = false)
             : base(Oids.SubjectAltNameOid, rawData, critical)
         {
             _decoded = Decode(RawData);
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="X509SubjectAlternativeNameExtension"/> class using encoded extension data.
-        /// </summary>
-        /// <param name="rawData">The encoded extension data.</param>
-        /// <param name="critical">A value indicating whether the extension is critical.</param>
         public X509SubjectAlternativeNameExtension(ReadOnlySpan<byte> rawData, bool critical = false)
             : base(Oids.SubjectAltNameOid, rawData, critical)
         {
             _decoded = Decode(RawData);
         }
 
-        /// <summary>
-        /// Copies the extension properties from the specified <see cref="AsnEncodedData"/> object.
-        /// </summary>
-        /// <param name="asnEncodedData">The <see cref="AsnEncodedData"/> object to copy from.</param>
         public override void CopyFrom(AsnEncodedData asnEncodedData)
         {
             base.CopyFrom(asnEncodedData);
             _decoded = null;
         }
 
-        /// <summary>
-        /// Enumerates the DNS names contained in the Subject Alternative Name extension.
-        /// </summary>
-        /// <returns>An enumerable collection of DNS names.</returns>
         public IEnumerable<string> EnumerateDnsNames()
         {
             List<GeneralNameAsn> decoded = (_decoded ??= Decode(RawData));
@@ -78,10 +54,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        /// <summary>
-        /// Enumerates the IP addresses contained in the Subject Alternative Name extension.
-        /// </summary>
-        /// <returns>An enumerable collection of IP addresses.</returns>
         public IEnumerable<IPAddress> EnumerateIPAddresses()
         {
             List<GeneralNameAsn> decoded = (_decoded ??= Decode(RawData));
