@@ -95,12 +95,18 @@ HRESULT ReJITProfiler::Shutdown()
         _profInfo10 = nullptr;
     }
 
-    int expectedRejitCount = -1;
+    int expectedRejitCount;
     auto it = _inlinings.find(_targetFuncId);
     if (it != _inlinings.end())
     {
         // The number of inliners are expected to ReJIT, plus the method itself
         expectedRejitCount = (int)((*it).second->size() + 1);
+    }
+    else
+    {
+        // No inlinings happened, which can occur in composite R2R mode on some targets.
+        // This is fine as long as we rejitted the target method itself.
+        expectedRejitCount = 1;
     }
 
     INFO(L" rejit count=" << _rejits << L" expected rejit count=" << expectedRejitCount);

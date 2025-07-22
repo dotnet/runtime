@@ -37,8 +37,13 @@ namespace Profiler.Tests
             CallMethodWithoutInlining();
             TriggerInliningChain();
 
-            if (!OutputBuilder.ToString().Contains("Hello from profiler rejit method"))
+            string matchString = "Hello from profiler rejit method 'InlineeTarget'!";
+            int numRejittedTargets = OutputBuilder.ToString().Split(matchString).Length;
+            if (numRejittedTargets != 4)
+            {
+                Console.WriteLine("ReJIT did not update all instances of InlineeTarget!");
                 return 1234;
+            }
 
             TriggerRevert();
 
@@ -48,8 +53,16 @@ namespace Profiler.Tests
             CallMethodWithoutInlining();
             TriggerInliningChain();
 
-            if (OutputBuilder.ToString().Contains("Hello from profiler rejit method"))
-                Console.WriteLine("WARNING: ReJIT revert was not complete!");
+            if (OutputBuilder.ToString().Contains(matchString))
+            {
+                Console.WriteLine("ReJIT revert of InlineeTarget was not complete!");
+                return 1235;
+            }
+
+            // FIXME: Currently there will still be some 'Hello from profiler rejit method' messages left
+            //  in the output in certain configurations. This is because the profiler does not revert all
+            //  the methods that it modified - reverts are not symmetric with rejits.
+            // See https://github.com/dotnet/runtime/issues/117823
 
             return 100;
         }
