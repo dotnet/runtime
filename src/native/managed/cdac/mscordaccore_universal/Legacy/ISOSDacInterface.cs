@@ -24,6 +24,12 @@ internal struct DacpThreadStoreData
     public int fHostConfig; // Uses hosting flags defined above
 };
 
+internal struct DacpAppDomainStoreData
+{
+    public ClrDataAddress sharedDomain;
+    public ClrDataAddress systemDomain;
+    public int DomainCount;
+};
 internal struct DacpThreadData
 {
     public int corThreadId;
@@ -596,4 +602,12 @@ internal unsafe partial interface ISOSDacInterface15
 {
     [PreserveSig]
     int GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator);
+}
+
+[GeneratedComInterface]
+[Guid("4ba12ff8-daac-4e43-ac56-98cf8d5c595d")]
+internal unsafe partial interface ISOSDacInterface16
+{
+    [PreserveSig]
+    int GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
 }

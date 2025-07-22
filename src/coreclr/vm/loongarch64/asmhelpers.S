@@ -469,7 +469,7 @@ NESTED_END StubDispatchFixupStub, _TEXT
 #endif
 
 //
-// $t2 = UMEntryThunk*
+// $t2 = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
@@ -631,11 +631,6 @@ NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 //     |f13  |
 //     |f12  |
 //
-//#define UMThunkStub_Offset_t9    0x50
-#define UMThunkStub_Offset_Entry 0x58   // offset of saved UMEntryThunk *
-#define UMThunkStub_Offset_s0    0x60
-#define UMThunkStub_StackArgs    0x70   // Frame size.
-
 
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(args in regs $a0-$a7 & stack, t8:IndirectionCellAndFlags, $t2:DispatchToken)
@@ -728,7 +723,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // $a0 = throwable
     // $a1 = PC to invoke
-    // $a2 = address of s0 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+    // $a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -746,16 +741,16 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Save the SP of this function
     st.d  $sp, $a3, 0
 
-    ld.d  $fp, $a2, -8  // offset of fp in PCONTEXT relative to S0.
-    ld.d  $s0, $a2, 0
-    ld.d  $s1, $a2, 8
-    ld.d  $s2, $a2, 16
-    ld.d  $s3, $a2, 24
-    ld.d  $s4, $a2, 32
-    ld.d  $s5, $a2, 40
-    ld.d  $s6, $a2, 48
-    ld.d  $s7, $a2, 56
-    ld.d  $s8, $a2, 64
+    ld.d  $fp, $a2, OFFSETOF__CONTEXT__Fp
+    ld.d  $s0, $a2, OFFSETOF__CONTEXT__S0
+    ld.d  $s1, $a2, OFFSETOF__CONTEXT__S0+8
+    ld.d  $s2, $a2, OFFSETOF__CONTEXT__S0+16
+    ld.d  $s3, $a2, OFFSETOF__CONTEXT__S0+24
+    ld.d  $s4, $a2, OFFSETOF__CONTEXT__S0+32
+    ld.d  $s5, $a2, OFFSETOF__CONTEXT__S0+40
+    ld.d  $s6, $a2, OFFSETOF__CONTEXT__S0+48
+    ld.d  $s7, $a2, OFFSETOF__CONTEXT__S0+56
+    ld.d  $s8, $a2, OFFSETOF__CONTEXT__S0+64
 
     // Invoke the funclet
     jirl $ra, $a1, 0

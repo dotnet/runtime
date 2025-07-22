@@ -1066,7 +1066,7 @@ private:
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
     regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForReturn(GenTree* returnNode);
     regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -1935,6 +1935,7 @@ private:
     // 'tgtPrefUse' to that RefPosition.
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
+    RefPosition* tgtPrefUse3 = nullptr;
 
 public:
     // The following keep track of information about internal (temporary register) intervals
@@ -1957,6 +1958,7 @@ private:
     {
         tgtPrefUse               = nullptr;
         tgtPrefUse2              = nullptr;
+        tgtPrefUse3              = nullptr;
         internalCount            = 0;
         setInternalRegsDelayFree = false;
         pendingDelayFree         = false;

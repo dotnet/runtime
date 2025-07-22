@@ -18,9 +18,13 @@
       <SkipOnTestRuntimes>win-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <!-- Validate that the CCW VTables are folded by ILC -->
-    <TestConsoleAppSourceFiles Include="CCWPreinitializationNativeAot.cs" Condition="'$(RunNativeAotTestApps)' == 'true'">
+    <TestConsoleAppSourceFiles Include="CCWPreinitializationNativeAot.cs" NativeAotOnly="true">
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
       <DisabledProperties>IlcTrimMetadata</DisabledProperties>
+    </TestConsoleAppSourceFiles>
+
+    <TestConsoleAppSourceFiles Include="TypeMap.cs" NativeAotOnly="true">
+      <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

@@ -172,7 +172,6 @@ bool HeapWalkHelper(Object * pBO, void * pvContext)
 
     HRESULT hr = E_FAIL;
 
-#ifdef FEATURE_ETW
     if (ETW::GCLog::ShouldWalkHeapObjectsForEtw())
     {
         ETW::GCLog::ObjectReference(
@@ -182,7 +181,6 @@ bool HeapWalkHelper(Object * pBO, void * pvContext)
             cNumRefs,
             (Object **) arrObjRef);
     }
-#endif // FEATURE_ETW
 
     // If the data was not allocated on the stack, need to clean it up.
     if ((arrObjRef != NULL) && !bOnStack)

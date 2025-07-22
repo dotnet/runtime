@@ -1004,7 +1004,7 @@ Determining if a method is in a collectible module:
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
         TargetPointer loaderModuleAddr = GetLoaderModule(md);
-        ModuleHandle mod = _target.Contracts.Loader.GetModuleHandle(loaderModuleAddr);
+        ModuleHandle mod = _target.Contracts.Loader.GetModuleHandleFromModulePtr(loaderModuleAddr);
         return _target.Contracts.Loader.IsCollectible(mod);
 
     }

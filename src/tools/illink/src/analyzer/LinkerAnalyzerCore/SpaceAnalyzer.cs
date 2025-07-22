@@ -34,122 +34,132 @@ using Mono.Cecil;
 
 namespace LinkerAnalyzer.Core
 {
-	public class SpaceAnalyzer
-	{
-		readonly string assembliesDirectory;
-		readonly List<AssemblyDefinition> assemblies = new List<AssemblyDefinition> ();
-		readonly Dictionary<string, int> sizes = new Dictionary<string, int> ();
+    public class SpaceAnalyzer
+    {
+        readonly string assembliesDirectory;
+        readonly List<AssemblyDefinition> assemblies = new List<AssemblyDefinition>();
+        readonly Dictionary<string, int> sizes = new Dictionary<string, int>();
 
-		public SpaceAnalyzer (string assembliesDirectory)
-		{
-			this.assembliesDirectory = assembliesDirectory;
-		}
+        public SpaceAnalyzer(string assembliesDirectory)
+        {
+            this.assembliesDirectory = assembliesDirectory;
+        }
 
-		static bool IsAssemblyBound (TypeDefinition td)
-		{
-			do {
-				if (td.IsNestedPrivate || td.IsNestedAssembly || td.IsNestedFamilyAndAssembly)
-					return true;
+        static bool IsAssemblyBound(TypeDefinition td)
+        {
+            do
+            {
+                if (td.IsNestedPrivate || td.IsNestedAssembly || td.IsNestedFamilyAndAssembly)
+                    return true;
 
-				td = td.DeclaringType;
-			} while (td != null);
+                td = td.DeclaringType;
+            } while (td != null);
 
-			return false;
-		}
+            return false;
+        }
 
-		static string GetTypeKey (TypeDefinition td)
-		{
-			if (td == null)
-				return "";
+        static string GetTypeKey(TypeDefinition td)
+        {
+            if (td == null)
+                return "";
 
-			var addAssembly = td.IsNotPublic || IsAssemblyBound (td);
+            var addAssembly = td.IsNotPublic || IsAssemblyBound(td);
 
-			var addition = addAssembly ? $":{td.Module}" : "";
-			return $"{td.MetadataToken.TokenType}:{td}{addition}";
-		}
+            var addition = addAssembly ? $":{td.Module}" : "";
+            return $"{td.MetadataToken.TokenType}:{td}{addition}";
+        }
 
-		static string GetKey (MethodDefinition method)
-		{
-			return $"{method.MetadataToken.TokenType}:{method}";
-		}
+        static string GetKey(MethodDefinition method)
+        {
+            return $"{method.MetadataToken.TokenType}:{method}";
+        }
 
-		int GetMethodSize (MethodDefinition method)
-		{
-			var key = GetKey (method);
-			int msize;
+        int GetMethodSize(MethodDefinition method)
+        {
+            var key = GetKey(method);
+            int msize;
 
-			if (sizes.TryGetValue (key, out msize))
-				return msize;
+            if (sizes.TryGetValue(key, out msize))
+                return msize;
 
-			msize = method.Body.CodeSize;
-			msize += method.Name.Length;
+            msize = method.Body.CodeSize;
+            msize += method.Name.Length;
 
-			sizes.Add (key, msize);
+            sizes.Add(key, msize);
 
-			return msize;
-		}
+            return msize;
+        }
 
-		int ProcessType (TypeDefinition type)
-		{
-			int size = type.Name.Length;
+        int ProcessType(TypeDefinition type)
+        {
+            int size = type.Name.Length;
 
-			foreach (var field in type.Fields)
-				size += field.Name.Length;
+            foreach (var field in type.Fields)
+                size += field.Name.Length;
 
-			foreach (var method in type.Methods) {
-				method.Resolve ();
-				if (method.Body != null)
-					size += GetMethodSize (method);
-			}
+            foreach (var method in type.Methods)
+            {
+                method.Resolve();
+                if (method.Body != null)
+                    size += GetMethodSize(method);
+            }
 
-			type.Resolve ();
-			try {
-				sizes.Add (GetTypeKey (type), size);
-			} catch (ArgumentException e) {
-				Console.WriteLine ($"\nWarning: duplicated type '{type}' scope '{type.Scope}'\n{e}");
-			}
-			return size;
-		}
+            type.Resolve();
+            try
+            {
+                sizes.Add(GetTypeKey(type), size);
+            }
+            catch (ArgumentException e)
+            {
+                Console.WriteLine($"\nWarning: duplicated type '{type}' scope '{type.Scope}'\n{e}");
+            }
+            return size;
+        }
 
-		public void LoadAssemblies (bool verbose = true)
-		{
-			if (verbose) {
-				ConsoleDependencyGraph.Header ("Space analyzer");
-				Console.WriteLine ("Load assemblies from {0}", assembliesDirectory);
-			} else
-				Console.Write ("Analyzing assemblies .");
+        public void LoadAssemblies(bool verbose = true)
+        {
+            if (verbose)
+            {
+                ConsoleDependencyGraph.Header("Space analyzer");
+                Console.WriteLine("Load assemblies from {0}", assembliesDirectory);
+            }
+            else
+                Console.Write("Analyzing assemblies .");
 
-			var resolver = new DefaultAssemblyResolver ();
-			resolver.AddSearchDirectory (assembliesDirectory);
+            var resolver = new DefaultAssemblyResolver();
+            resolver.AddSearchDirectory(assembliesDirectory);
 
-			int totalSize = 0;
-			foreach (var file in System.IO.Directory.GetFiles (assembliesDirectory, "*.dll")) {
-				if (verbose)
-					Console.WriteLine ($"Analyzing {file}");
-				else
-					Console.Write (".");
+            int totalSize = 0;
+            foreach (var file in System.IO.Directory.GetFiles(assembliesDirectory, "*.dll"))
+            {
+                if (verbose)
+                    Console.WriteLine($"Analyzing {file}");
+                else
+                    Console.Write(".");
 
-				ReaderParameters parameters = new ReaderParameters () { ReadingMode = ReadingMode.Immediate, AssemblyResolver = resolver };
-				var assembly = AssemblyDefinition.ReadAssembly (file, parameters);
-				assemblies.Add (assembly);
-				foreach (var module in assembly.Modules) {
-					foreach (var type in module.Types) {
-						totalSize += ProcessType (type);
-						foreach (var child in type.NestedTypes)
-							totalSize += ProcessType (child);
-					}
-				}
-			}
+                ReaderParameters parameters = new ReaderParameters() { ReadingMode = ReadingMode.Immediate, AssemblyResolver = resolver };
+                var assembly = AssemblyDefinition.ReadAssembly(file, parameters);
+                assemblies.Add(assembly);
+                foreach (var module in assembly.Modules)
+                {
+                    foreach (var type in module.Types)
+                    {
+                        totalSize += ProcessType(type);
+                        foreach (var child in type.NestedTypes)
+                            totalSize += ProcessType(child);
+                    }
+                }
+            }
 
-			if (verbose)
-				Console.WriteLine ("Total known size: {0}", totalSize);
-			else
-				System.Console.WriteLine ();
-		}
+            if (verbose)
+                Console.WriteLine("Total known size: {0}", totalSize);
+            else
+                System.Console.WriteLine();
+        }
 
-		public int GetSize (VertexData vertex)
-		{
-			return sizes.TryGetValue (vertex.value, out var size) ? size : 0;
-		}
-	}
+        public int GetSize(VertexData vertex)
+        {
+            return sizes.TryGetValue(vertex.value, out var size) ? size : 0;
+        }
+    }
 }

@@ -791,7 +791,7 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    CORINFO_FLG_INTERPRETER         = 0x00000002, // The method was compiled by the interpreter
+    // unused                       = 0x00000002, // The method was compiled by the interpreter
     // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
@@ -1712,6 +1712,15 @@ enum CorInfoContinuationFlags
     // OSR method saved in the beginning of 'Data', or -1 if the continuation
     // belongs to a tier 0 method.
     CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+    // If this bit is set the continuation should continue on the thread
+    // pool.
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 8,
+    // If this bit is set the continuation has a SynchronizationContext
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 16,
+    // If this bit is set the continuation has a TaskScheduler
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 32,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1733,6 +1742,11 @@ struct CORINFO_ASYNC_INFO
     // Whether or not the continuation needs to be allocated through the
     // helper that also takes a method handle
     bool continuationsNeedMethodHandle;
+    // Method handle for AsyncHelpers.CaptureExecutionContext
+    CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.RestoreExecutionContext
+    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
 };
 
 // Flags passed from JIT to runtime.
@@ -3123,12 +3137,6 @@ public:
             CORINFO_METHOD_HANDLE   ftn,
             bool                    isUnsafeFunctionPointer,
             CORINFO_CONST_LOOKUP *  pResult
-            ) = 0;
-
-    // get the synchronization handle that is passed to monXstatic function
-    virtual void* getMethodSync(
-            CORINFO_METHOD_HANDLE   ftn,
-            void**                  ppIndirection = NULL
             ) = 0;
 
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).

@@ -5,11 +5,11 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 {
-	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
-	public class DumpDependenciesAttribute : BaseMetadataAttribute
-	{
-		public DumpDependenciesAttribute ()
-		{
-		}
-	}
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public class DumpDependenciesAttribute : BaseMetadataAttribute
+    {
+        public DumpDependenciesAttribute()
+        {
+        }
+    }
 }

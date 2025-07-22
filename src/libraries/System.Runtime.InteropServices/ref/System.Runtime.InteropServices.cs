@@ -2382,6 +2382,44 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_DISPATCH = 3,
     }
 }
+namespace System.Runtime.InteropServices.Java
+{
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public struct ComponentCrossReference
+    {
+        public nuint SourceGroupIndex;
+        public nuint DestinationGroupIndex;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public static class JavaMarshal
+    {
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences) => throw null;
+        public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context) => throw null;
+        public static unsafe void* GetContext(GCHandle obj) => throw null;
+        public static unsafe void FinishCrossReferenceProcessing(
+            MarkCrossReferencesArgs* crossReferences,
+            System.ReadOnlySpan<GCHandle> unreachableObjectHandles) => throw null;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct StronglyConnectedComponent
+    {
+        public nuint Count;
+        public void** Contexts;
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct MarkCrossReferencesArgs
+    {
+        public nuint ComponentCount;
+        public StronglyConnectedComponent* Components;
+        public nuint CrossReferenceCount;
+        public ComponentCrossReference* CrossReferences;
+    }
+}
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
