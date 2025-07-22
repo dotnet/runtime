@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
-using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
