@@ -1244,7 +1244,8 @@ public:
                 assert(TopValue(1).Node() == node);
                 assert(TopValue(0).Node() == node->AsCast()->CastOp());
 
-                if (!node->TypeIs(TYP_I_IMPL, TYP_BYREF) || node->gtOverflow() || !TopValue(0).IsAddress() || !TopValue(1).AddOffset(TopValue(0), 0))
+                if (!node->TypeIs(TYP_I_IMPL, TYP_BYREF) || node->gtOverflow() || !TopValue(0).IsAddress() ||
+                    !TopValue(1).AddOffset(TopValue(0), 0))
                 {
                     EscapeValue(TopValue(0), node);
                 }
