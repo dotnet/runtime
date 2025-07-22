@@ -31,7 +31,6 @@
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
-                      RemoveProperties="RuntimeIdentifier"
                       PrivateAssets="all"
                       Private="false"
                       SetConfiguration="Configuration=$(ToolsConfiguration)">
