@@ -762,7 +762,6 @@ void SystemDomain::DetachBegin()
     // Shut down the domain and its children (but don't deallocate anything just
     // yet).
 
-    // TODO: we should really not running managed DLLMain during process detach.
     if (GetThreadNULLOk() == NULL)
     {
         return;
@@ -1497,11 +1496,26 @@ void SystemDomain::PublishAppDomainAndInformDebugger (AppDomain *pDomain)
 
     LOG((LF_CORDB, LL_INFO100, "SD::PADAID: Adding 0x%x\n", pDomain));
 
-    // Call the publisher API to add this appdomain entry to the list
-    // The publisher will handle failures, so we don't care if this succeeds or fails.
-    if (g_pDebugInterface != NULL)
+    //
+    // We need to synchronize this routine with the attach logic.  The "normal"
+    // attach case uses the HelperThread and TrapAllRuntimeThreads to synchronize
+    // the runtime before sending any of the events (including AppDomainCreates)
+    // to the right-side.  Thus, we can synchronize with this case by forcing us
+    // to go co-operative.  If we were already co-op, then the helper thread will
+    // wait to start the attach until all co-op threads are paused.  If we were
+    // pre-emptive, then going co-op will suspend us until the HelperThread finishes.
+    //
+    // The second case is under the IPC event for ATTACHING, which is where there are
+    // zero app domains, so it is considered an 'early attach' case.  To synchronize
+    // with this we have to grab and hold the AppDomainDB lock.
+    //
+
+
+    // Send event to debugger if one is attached.
+    if (CORDebuggerAttached())
     {
-        g_pDebugInterface->AddAppDomainToIPC(pDomain);
+        GCX_COOP();
+        g_pDebugInterface->AppDomainCreated(pDomain);
     }
 }
 
@@ -1723,13 +1737,6 @@ void AppDomain::Stop()
 #ifdef DEBUGGING_SUPPORTED
     if (IsDebuggerAttached())
         NotifyDebuggerUnload();
-
-    if (NULL != g_pDebugInterface)
-    {
-        // Call the publisher API to delete this appdomain entry from the list
-        CONTRACT_VIOLATION(ThrowsViolation);
-        g_pDebugInterface->RemoveAppDomainFromIPC (this);
-    }
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2796,13 +2803,9 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
 
     if(g_pDebugInterface)
     {
-        // update the name in the IPC publishing block
-        if (SUCCEEDED(g_pDebugInterface->UpdateAppDomainEntryInIPC(this)))
-        {
-            // inform the attached debugger that the name of this appdomain has changed.
-            if (IsDebuggerAttached())
-                g_pDebugInterface->NameChangeEvent(this, NULL);
-        }
+        // inform the attached debugger that the name of this appdomain has changed.
+        if (IsDebuggerAttached())
+            g_pDebugInterface->NameChangeEvent(this, NULL);
     }
 }
 #endif // !DACCESS_COMPILE
