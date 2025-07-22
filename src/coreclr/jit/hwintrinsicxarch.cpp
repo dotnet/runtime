@@ -2270,9 +2270,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                 // Check to see if it is possible to emulate the integer division
-                if (!(simdBaseType == TYP_INT &&
+                if (!(varTypeIsIntegral(simdBaseType) && !varTypeIsLong(simdBaseType) &&
                       ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512)))))
+                       (varTypeIsInt(simdBaseType) && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512)))))
                 {
                     break;
                 }
@@ -2293,6 +2293,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
+
+            if (varTypeIsShort(simdBaseType))
+            {
+                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op2, NI_AVX2_ConvertToVector256Int32, simdBaseJitType, simdSize);
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, NI_AVX2_ConvertToVector256Int32, simdBaseJitType, simdSize);
+                retNode = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1, op2, CORINFO_TYPE_INT, simdSize * 2);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode,
+                                                   varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128Int16
+                                                                                 : NI_AVX512_ConvertToVector128UInt16,
+                                                   CORINFO_TYPE_INT, simdSize * 2);
+                break;
+            }
 
             retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
 
