@@ -60,15 +60,15 @@ namespace
 
         // DOTNET_HOST_* takes precedence
         constexpr size_t dotnet_host_prefix_len = STRING_LENGTH("DOTNET_HOST_");
-        pal::char_t dotnet_host_name[dotnet_host_prefix_len + NameLen] = _X("DOTNET_HOST_");
-        memcpy(dotnet_host_name + dotnet_host_prefix_len, name, NameLen * sizeof(pal::char_t));
+        pal::char_t dotnet_host_name[dotnet_host_prefix_len + NameLen];
+        pal::snwprintf(dotnet_host_name, ARRAY_SIZE(dotnet_host_name), _X("DOTNET_HOST_%s"), name);
         if (pal::getenv(dotnet_host_name, value))
             return true;
 
         // COREHOST_* for backwards compatibility
         constexpr size_t corehost_prefix_len = STRING_LENGTH("COREHOST_");
-        pal::char_t corehost_name[corehost_prefix_len + NameLen] = _X("COREHOST_");
-        memcpy(corehost_name + corehost_prefix_len, name, NameLen * sizeof(pal::char_t));
+        pal::char_t corehost_name[corehost_prefix_len + NameLen];
+        pal::snwprintf(corehost_name, ARRAY_SIZE(corehost_name), _X("COREHOST_%s"), name);
         return pal::getenv(corehost_name, value);
     }
 }
