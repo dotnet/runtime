@@ -385,8 +385,12 @@ namespace ILCompiler.ObjectWriter
                     continue;
 
                 ISymbolNode symbolNode = node as ISymbolNode;
-                if (_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode) != symbolNode)
+                ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
+                if (deduplicatedSymbolNode != symbolNode)
+                {
+                    dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
                     continue;
+                }
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
