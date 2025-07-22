@@ -3974,6 +3974,11 @@ namespace System
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
 
+            if (IsByRefLike)
+            {
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+            }
+
             // Compat: allocation always takes place outside the try block so that OOMs
             // bubble up to the caller; the ctor invocation is within the try block so
             // that it can be wrapped in TIE if needed.
@@ -4001,6 +4006,11 @@ namespace System
             if (!cache.CtorIsPublic)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            if (IsByRefLike)
+            {
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
 
             // We reuse ActivatorCache here to ensure that we aren't always creating two entries in the cache.
