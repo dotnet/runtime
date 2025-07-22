@@ -290,31 +290,6 @@ internal readonly struct Loader_1 : ILoader
         return module.LoaderAllocator;
     }
 
-    TargetPointer ILoader.GetGlobalLoaderAllocator()
-    {
-        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
-        return systemDomain.GlobalLoaderAllocator;
-    }
-
-    TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer globalLoaderAllocator)
-    {
-        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(globalLoaderAllocator);
-        return loaderAllocator.HighFrequencyHeap;
-    }
-
-    TargetPointer ILoader.GetLowFrequencyHeap(TargetPointer globalLoaderAllocator)
-    {
-        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(globalLoaderAllocator);
-        return loaderAllocator.LowFrequencyHeap;
-    }
-
-    TargetPointer ILoader.GetStubHeap(TargetPointer globalLoaderAllocator)
-    {
-        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(globalLoaderAllocator);
-        return loaderAllocator.StubHeap;
-    }
-
     TargetPointer ILoader.GetILBase(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -332,6 +307,46 @@ internal readonly struct Loader_1 : ILoader
             module.TypeDefToMethodTableMap,
             module.TypeRefToMethodTableMap,
             module.MethodDefToILCodeVersioningStateMap);
+    }
+
+    bool ILoader.IsCollectible(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        TargetPointer assembly = module.Assembly;
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
+        return la.IsCollectible != 0;
+    }
+
+    bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
+        return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
+    }
+
+    TargetPointer ILoader.GetGlobalLoaderAllocator()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.GlobalLoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.HighFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.LowFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetStubHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.StubHeap;
     }
 
     TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
@@ -363,20 +378,5 @@ internal readonly struct Loader_1 : ILoader
             }
         } while (table != TargetPointer.Null);
         return TargetPointer.Null;
-    }
-
-    bool ILoader.IsCollectible(ModuleHandle handle)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        TargetPointer assembly = module.Assembly;
-        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
-        return la.IsCollectible != 0;
-    }
-
-    bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
-        return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
     }
 }

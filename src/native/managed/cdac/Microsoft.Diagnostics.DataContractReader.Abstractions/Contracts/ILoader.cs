@@ -89,16 +89,16 @@ public interface ILoader : IContract
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
-    TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
-    TargetPointer GetHighFrequencyHeap(TargetPointer globalLoaderAllocator) => throw new NotImplementedException();
-    TargetPointer GetLowFrequencyHeap(TargetPointer globalLoaderAllocator) => throw new NotImplementedException();
-    TargetPointer GetStubHeap(TargetPointer globalLoaderAllocator) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
-
-    TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
+
+    TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
+    TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

@@ -36,7 +36,7 @@ internal struct DacpAppDomainData
     public ClrDataAddress DomainLocalBlock;
     public ClrDataAddress pDomainLocalModules;
     // The creation sequence number of this app domain (starting from 1)
-    public uint dwId;
+    public DacpAppDomainDataStage dwId;
     public int AssemblyCount;
     public int FailedAssemblyCount;
     public uint appDomainStage;
@@ -125,7 +125,7 @@ internal enum DacpObjectType
     OBJ_OTHER
 };
 
-internal enum DacpAppDomainDataStage
+internal enum DacpAppDomainDataStage : uint
 {
     STAGE_CREATING,
     STAGE_READYFORMANAGEDCODE,

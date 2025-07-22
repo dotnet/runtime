@@ -121,7 +121,7 @@ internal sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                NativeMemory.Clear(data, (nuint)sizeof(DacpAppDomainData));
+                *data = default;
                 data->AppDomainPtr = addr;
                 TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
                 ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
@@ -136,25 +136,24 @@ internal sealed unsafe partial class SOSDacImpl
                     TargetPointer pAppDomain = addr.ToTargetPointer(_target);
                     data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
 
-                    List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                    IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                         pAppDomain,
                         AssemblyIterationFlags.IncludeLoading |
                         AssemblyIterationFlags.IncludeLoaded |
-                        AssemblyIterationFlags.IncludeExecution).ToList();
+                        AssemblyIterationFlags.IncludeExecution);
 
-                    for (int i = 0; i < modules.Count; i++)
+                    foreach (Contracts.ModuleHandle module in modules)
                     {
-                        Contracts.ModuleHandle module = modules[i];
                         if (loader.IsAssemblyLoaded(module))
                         {
                             data->AssemblyCount++;
                         }
                     }
 
-                    List<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                    IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
                         pAppDomain,
-                        AssemblyIterationFlags.IncludeFailedToLoad).ToList();
-                    data->FailedAssemblyCount = failedModules.Count;
+                        AssemblyIterationFlags.IncludeFailedToLoad);
+                    data->FailedAssemblyCount = failedModules.Count();
                 }
             }
         }
