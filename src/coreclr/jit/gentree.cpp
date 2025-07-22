@@ -12230,8 +12230,30 @@ void Compiler::gtDispConst(GenTree* tree)
         }
 
         case GT_CNS_STR:
-            printf("<string constant>");
-            break;
+        {
+            GenTreeStrCon* cnsStr = tree->AsStrCon();
+            if (cnsStr->IsStringEmptyField())
+            {
+                // Special case: do not call getStringLiteral for the empty string field
+                printf("\"\"");
+                break;
+            }
+
+            constexpr int maxLiteralLength      = 256;
+            char16_t      str[maxLiteralLength] = {};
+            int len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxLiteralLength);
+            if (len < 0)
+            {
+                printf("<unknown string literal>");
+            }
+            else
+            {
+                char dst[maxLiteralLength];
+                convertUtf16ToUtf8ForPrinting(str, len, dst, maxLiteralLength);
+                printf("\"%.50s%s\"", dst, len > 50 ? "..." : "");
+            }
+        }
+        break;
 
 #if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
@@ -17893,105 +17915,6 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
-// DefinesLocal: Does "this" define a local?
-//
-// Arguments:
-//    comp        - the compiler instance
-//    pLclVarTree - [out] parameter for the local representing the definition
-//    pIsEntire   - optional [out] parameter for whether the store represents
-//                  a "full" definition (overwrites the entire variable)
-//    pOffset     - optional [out] parameter for the offset, relative to the
-//                  local, at which the store is performed
-//    pSize       - optional [out] parameter for the amount of bytes affected
-//                  by the store
-//
-// Return Value:
-//    Whether "this" represents a store to a possibly tracked local variable
-//    before rationalization.
-//
-// Notes:
-//    This function is contractually bound to recognize a superset of stores
-//    that "LocalAddressVisitor" recognizes and transforms, as it is used to
-//    detect which trees can define tracked locals.
-//
-bool GenTree::DefinesLocal(
-    Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset, unsigned* pSize)
-{
-    assert((pOffset == nullptr) || (*pOffset == 0));
-
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        *pLclVarTree = AsLclVarCommon();
-        if (pIsEntire != nullptr)
-        {
-            *pIsEntire = true;
-        }
-        if (pOffset != nullptr)
-        {
-            *pOffset = 0;
-        }
-        if (pSize != nullptr)
-        {
-            *pSize = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
-        }
-
-        return true;
-    }
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        *pLclVarTree = AsLclVarCommon();
-        if (pIsEntire != nullptr)
-        {
-            *pIsEntire = !AsLclFld()->IsPartialLclFld(comp);
-        }
-        if (pOffset != nullptr)
-        {
-            *pOffset = AsLclFld()->GetLclOffs();
-        }
-        if (pSize != nullptr)
-        {
-            *pSize = AsLclFld()->GetSize();
-        }
-
-        return true;
-    }
-    if (OperIs(GT_CALL))
-    {
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
-        if (lclAddr == nullptr)
-        {
-            return false;
-        }
-
-        *pLclVarTree = lclAddr;
-
-        if ((pIsEntire != nullptr) || (pSize != nullptr))
-        {
-            unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
-
-            if (pIsEntire != nullptr)
-            {
-                *pIsEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
-            }
-
-            if (pSize != nullptr)
-            {
-                *pSize = storeSize;
-            }
-        }
-
-        if (pOffset != nullptr)
-        {
-            *pOffset = lclAddr->GetLclOffs();
-        }
-
-        return true;
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
 // IsImplicitByrefParameterValuePreMorph:
 //    Determine if this tree represents the value of an implicit byref
 //    parameter, and if so return the tree for the parameter. To be used
@@ -20616,7 +20539,7 @@ bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
     {
         NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
         var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
-        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, comp);
 
         if (comp->codeGen->instIsEmbeddedBroadcastCompatible(ins))
         {
@@ -20861,7 +20784,12 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
 
     if (tgtSimdBaseJitType != CORINFO_TYPE_UNDEF)
     {
-        ins          = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
+        var_types tgtSimdBaseType = JitType2PreciseVarType(tgtSimdBaseJitType);
+
+        instruction tgtIns = HWIntrinsicInfo::lookupIns(intrinsic, tgtSimdBaseType, comp);
+        assert(ins != tgtIns);
+
+        ins          = tgtIns;
         maskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
     }
 
@@ -32471,10 +32399,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
                 GenTreeHWIntrinsic* cvtOp2 = (effectiveOper == GT_NOT) ? cvtOp1 : op2->AsHWIntrinsic();
 
-                unsigned simdBaseTypeSize = genTypeSize(simdBaseType);
+                var_types op1SimdBaseType = cvtOp1->GetSimdBaseType();
+                var_types op2SimdBaseType = cvtOp2->GetSimdBaseType();
 
-                if ((genTypeSize(cvtOp1->GetSimdBaseType()) == simdBaseTypeSize) &&
-                    (genTypeSize(cvtOp2->GetSimdBaseType()) == simdBaseTypeSize))
+                if (genTypeSize(op1SimdBaseType) == genTypeSize(op2SimdBaseType))
                 {
                     // We need both operands to be the same kind of mask; otherwise
                     // the bitwise operation can differ in how it performs
@@ -32526,6 +32454,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         tree->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
                         tree->gtFlags &= ~GTF_REVERSE_OPS;
                     }
+
+                    // The bitwise operation is likely normalized to int or uint, while
+                    // the underlying convert ops may be a small type. We need to preserve
+                    // such a small type since that indicates how many elements are in the mask.
+                    simdBaseJitType = cvtOp1->GetSimdBaseJitType();
+                    tree->SetSimdBaseJitType(simdBaseJitType);
 
                     tree->gtType = TYP_MASK;
                     DEBUG_DESTROY_NODE(op1);
