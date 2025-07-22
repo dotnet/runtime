@@ -134,6 +134,15 @@ public abstract class Target
     public abstract T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
 
     /// <summary>
+    /// Write a value to the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to write</typeparam>
+    /// <param name="address">Address to start writing to</param>
+    /// <param name="value">Value to write</param>
+    /// <returns>True if the write was successful, false otherwise</returns>
+    public abstract bool Write<T>(ulong address, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+
+    /// <summary>
     /// Read a target pointer from a span of bytes
     /// </summary>
     /// <param name="bytes">The span of bytes to read from</param>

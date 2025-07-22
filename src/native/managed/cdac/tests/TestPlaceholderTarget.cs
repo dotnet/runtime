@@ -160,6 +160,7 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
+    public override bool Write<T>(ulong address, T value) => throw new NotImplementedException();
 
 #region subclass reader helpers
 

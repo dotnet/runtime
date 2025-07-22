@@ -185,6 +185,26 @@ public unsafe class TargetTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void WriteValue(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        uint expected = 0xdeadbeef;
+        ulong addr = 0x1000;
+
+        Encoding encoding = arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+        MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
+        builder.AddHeapFragment(fragment);
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+        bool writeSuccess = target.Write<uint>(addr, expected);
+        Assert.True(writeSuccess);
+        Assert.Equal(expected, target.Read<uint>(addr));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ReadUtf16String(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
