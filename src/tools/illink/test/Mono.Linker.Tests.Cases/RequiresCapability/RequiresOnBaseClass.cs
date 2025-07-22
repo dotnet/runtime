@@ -19,12 +19,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             DerivedFromBaseWithRUC.StaticMethod();
             DerivedFromBaseWithRDC.StaticMethod();
 
-            // NativeAOT doesn't produce IL2109 if the class is not instantiated
             new DerivedFromBaseWithRDC();
             new DerivedFromBaseWithRUC();
         }
 
-        [ExpectedWarning("IL2109")]
         class DerivedFromBaseWithRUC : BaseWithRUC
         {
             [ExpectedWarning("IL2026")]
