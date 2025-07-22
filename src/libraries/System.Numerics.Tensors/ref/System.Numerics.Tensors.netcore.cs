@@ -756,6 +756,22 @@ namespace System.Numerics.Tensors
         {
             public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.TensorSpan<TScalar> tensor) { throw null; }
         }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IUnaryPlusOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> operator +(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(Tensor<TScalar>)
+            where TScalar : System.Numerics.IUnaryPlusOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.Tensor<TScalar> tensor) { throw null; }
+        }
+
+        extension<TScalar>(TensorSpan<TScalar>)
+            where TScalar : System.Numerics.IUnaryPlusOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.TensorSpan<TScalar> operator +(in System.Numerics.Tensors.TensorSpan<TScalar> tensor) { throw null; }
+        }
     }
     public readonly ref partial struct TensorDimensionSpan<T>
     {
