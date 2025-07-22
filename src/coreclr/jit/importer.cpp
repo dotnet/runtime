@@ -13250,14 +13250,8 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 
     assert(!curArgVal->OperIs(GT_RET_EXPR));
 
-    GenTree* addrCandidate = curArgVal;
-    if (curArgVal->OperIs(GT_CAST) && curArgVal->TypeIs(TYP_BYREF, TYP_I_IMPL) && !curArgVal->gtOverflow())
-    {
-        addrCandidate = curArgVal->AsCast()->CastOp();
-    }
-
     GenTree*   lclVarTree;
-    const bool isAddressInLocal = impIsAddressInLocal(addrCandidate, &lclVarTree);
+    const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
     if (isAddressInLocal)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
