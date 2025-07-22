@@ -4259,29 +4259,6 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region Negate
-        /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        public static Tensor<T> Negate<T>(in ReadOnlyTensorSpan<T> x)
-            where T : IUnaryNegationOperators<T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Negate<T>, T, T>(x, destination);
-            return destination;
-        }
-
-        /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Negate<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
-            where T : IUnaryNegationOperators<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Negate<T>, T, T>(x, destination);
-            return ref destination;
-        }
-        #endregion
-
         #region Norm
         /// <summary>
         ///  Takes the norm of the <see cref="ReadOnlyTensorSpan{T}"/> and returns the result.
