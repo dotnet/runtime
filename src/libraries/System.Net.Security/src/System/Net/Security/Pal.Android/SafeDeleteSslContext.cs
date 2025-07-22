@@ -32,8 +32,6 @@ namespace System.Net
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
-        private GCHandle? _selfHandle;
-
         public SslStream.JavaProxy SslStreamProxy { get; }
 
         public SafeSslHandle SslContext => _sslContext;
@@ -57,31 +55,22 @@ namespace System.Net
             }
         }
 
-        private volatile bool _disposed;
-
         public override bool IsInvalid => _sslContext?.IsInvalid ?? true;
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (disposing)
             {
-                _disposed = true;
-
-                if (_sslContext is SafeSslHandle sslContext && !sslContext.IsInvalid)
+                SafeSslHandle sslContext = _sslContext;
+                if (null != sslContext)
                 {
-                    // Dispose the SSL context which will call SSLStreamRelease
-                    // This will atomically invalidate the managedContextHandle on native side
+                    lock (_sslContext)
+                    {
+                        _inputBuffer.Dispose();
+                        _outputBuffer.Dispose();
+                    }
+
                     sslContext.Dispose();
-
-                    _inputBuffer.Dispose();
-                    _outputBuffer.Dispose();
-                }
-
-                // Free the GCHandle after native callbacks are stopped
-                if (_selfHandle is GCHandle handle && handle.IsAllocated)
-                {
-                    handle.Free();
-                    _selfHandle = null;
                 }
             }
 
@@ -91,91 +80,89 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe void WriteToConnection(IntPtr connection, byte* data, int dataLength)
         {
-            SafeDeleteSslContext? context;
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
+
             try
             {
-                context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+                lock (context)
+                {
+                    var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
+
+                    context._outputBuffer.EnsureAvailableSpace(dataLength);
+                    inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                    context._outputBuffer.Commit(dataLength);
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // GCHandle was already freed
-                return;
+                Debug.Write("Exception Caught. - " + ex);
             }
-
-            Debug.Assert(context != null);
-            if (context is null || context._disposed)
-            {
-                return;
-            }
-
-            var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
-
-            context._outputBuffer.EnsureAvailableSpace(dataLength);
-            inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
-            context._outputBuffer.Commit(dataLength);
         }
 
         [UnmanagedCallersOnly]
         private static unsafe PAL_SSLStreamStatus ReadFromConnection(IntPtr connection, byte* data, int* dataLength)
         {
-            SafeDeleteSslContext? context;
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
+
             try
             {
-                context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+                lock (context)
+                {
+                    int toRead = *dataLength;
+                    if (toRead == 0)
+                        return PAL_SSLStreamStatus.OK;
+
+                    if (context._inputBuffer.ActiveLength == 0)
+                    {
+                        *dataLength = 0;
+                        return PAL_SSLStreamStatus.NeedData;
+                    }
+
+                    toRead = Math.Min(toRead, context._inputBuffer.ActiveLength);
+
+                    context._inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
+                    context._inputBuffer.Discard(toRead);
+
+                    *dataLength = toRead;
+                    return PAL_SSLStreamStatus.OK;
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // GCHandle was already freed
+                Debug.Write("Exception Caught. - " + ex);
                 *dataLength = 0;
                 return PAL_SSLStreamStatus.Error;
             }
-
-            Debug.Assert(context != null);
-            if (context is null || context._disposed)
-            {
-                *dataLength = 0;
-                return PAL_SSLStreamStatus.Error;
-            }
-
-            int toRead = *dataLength;
-            if (toRead == 0)
-                return PAL_SSLStreamStatus.OK;
-
-            if (context._inputBuffer.ActiveLength == 0)
-            {
-                *dataLength = 0;
-                return PAL_SSLStreamStatus.NeedData;
-            }
-
-            toRead = Math.Min(toRead, context._inputBuffer.ActiveLength);
-
-            context._inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
-            context._inputBuffer.Discard(toRead);
-
-            *dataLength = toRead;
-            return PAL_SSLStreamStatus.OK;
         }
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            _inputBuffer.EnsureAvailableSpace(buf.Length);
-            buf.CopyTo(_inputBuffer.AvailableSpan);
-            _inputBuffer.Commit(buf.Length);
+            lock (_sslContext)
+            {
+                _inputBuffer.EnsureAvailableSpace(buf.Length);
+                buf.CopyTo(_inputBuffer.AvailableSpan);
+                _inputBuffer.Commit(buf.Length);
+            }
         }
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
-            if (_outputBuffer.ActiveLength == 0)
+            lock (_sslContext)
             {
-                token.Size = 0;
-                token.Payload = null;
-                return;
-            }
+                if (_outputBuffer.ActiveLength == 0)
+                {
+                    token.Size = 0;
+                    token.Payload = null;
+                    return;
+                }
 
-            token.SetPayload(_outputBuffer.ActiveSpan);
-            _outputBuffer.Discard(_outputBuffer.ActiveLength);
+                token.SetPayload(_outputBuffer.ActiveSpan);
+                _outputBuffer.Discard(_outputBuffer.ActiveLength);
+            }
         }
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
@@ -185,12 +172,15 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            int limit = Math.Min(count, _outputBuffer.ActiveLength);
+            lock (_sslContext)
+            {
+                int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
-            _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
-            _outputBuffer.Discard(limit);
+                _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
+                _outputBuffer.Discard(limit);
 
-            return limit;
+                return limit;
+            }
         }
 
         private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
@@ -273,13 +263,8 @@ namespace System.Net
 
             // Make sure the class instance is associated to the session and is provided
             // in the Read/Write callback connection parameter
-            if (!_selfHandle.HasValue || !_selfHandle.Value.IsAllocated)
-            {
-                _selfHandle = GCHandle.Alloc(this, GCHandleType.Normal);
-            }
-            IntPtr managedContextHandle = GCHandle.ToIntPtr(_selfHandle!.Value);
             string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
-            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, _sslContext, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
 
             if (authOptions.EnabledSslProtocols != SslProtocols.None)
             {
