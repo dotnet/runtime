@@ -276,7 +276,6 @@ namespace System.Reflection.Tests
             Assert.Equal(EnumForArrays.Two, ((EnumForArrays[])att.B3)[0]);
         }
 
-
         [Fact]
         public void SystemObject_GetCustomAttributes_InheritanceConsistency()
         {
