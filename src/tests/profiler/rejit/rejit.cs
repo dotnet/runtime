@@ -59,8 +59,8 @@ namespace Profiler.Tests
                 return 1235;
             }
 
-            // FIXME: Currently there will still be some 'Hello from profiler rejit method' messages left
-            //  in the output in certain configurations. This is because the profiler does not revert all
+            // Currently there will still be some 'Hello from profiler rejit method' messages left
+            //  in the output in certain configurations. This is because the test profiler does not revert all
             //  the methods that it modified - reverts are not symmetric with rejits.
             // See https://github.com/dotnet/runtime/issues/117823
 
