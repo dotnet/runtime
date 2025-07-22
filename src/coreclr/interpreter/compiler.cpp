@@ -2744,6 +2744,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         {
             // If we are being asked explicitly to compile an intrinsic for interpreting, we need to forcibly enable
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
+            //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
+            //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
             bool isMustExpand = (callInfo.hMethod == m_methodHnd);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
