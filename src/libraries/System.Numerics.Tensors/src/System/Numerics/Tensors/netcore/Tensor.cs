@@ -2798,62 +2798,6 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region BitwiseAnd
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-        #endregion
-
         #region BitwiseOr
         /// <summary>
         /// Computes the element-wise bitwise of of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
