@@ -1009,7 +1009,7 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     GetEmitter()->emitIns_R_R_I(INS_addi, attr, targetReg, operandReg, 1);
     // bne targetReg, zero, 2 * 4
     GetEmitter()->emitIns_R_R_I(INS_bne, attr, targetReg, REG_R0, 8);
-    GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, targetReg, -1);
+    GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, targetReg);
 
     genProduceReg(tree);
 }
@@ -1691,7 +1691,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     else if (tree->OperIs(GT_NOT))
     {
         assert(!varTypeIsFloating(targetType));
-        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
+        GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, operandReg);
     }
 
     genProduceReg(tree);
