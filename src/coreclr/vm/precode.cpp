@@ -212,17 +212,6 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
     return FALSE;
 }
 
-// If addr is patched fixup precode, returns address that it points to. Otherwise returns NULL.
-PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    return 0;
-}
-
 #ifndef DACCESS_COMPILE
 
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)

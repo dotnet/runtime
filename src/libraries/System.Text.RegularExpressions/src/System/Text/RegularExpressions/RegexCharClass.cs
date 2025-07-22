@@ -1272,6 +1272,55 @@ namespace System.Text.RegularExpressions
                 (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
         }
 
+        /// <summary>Determines whether the characters that match the specified set are known to all be word characters.</summary>
+        public static bool IsKnownWordClassSubset(string set)
+        {
+            // Check for common sets that we know to be subsets of \w.
+            if (set is
+                WordClass or DigitClass or LetterClass or LetterOrDigitClass or
+                AsciiLetterClass or AsciiLetterOrDigitClass or
+                HexDigitClass or HexDigitUpperClass or HexDigitLowerClass)
+            {
+                return true;
+            }
+
+            // Check for sets composed of Unicode categories that are part of \w.
+            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[16];
+            if (TryGetOnlyCategories(set, categories, out int numCategories, out bool negated) && !negated)
+            {
+                foreach (UnicodeCategory cat in categories.Slice(0, numCategories))
+                {
+                    if (!IsWordCategory(cat))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // If we can enumerate every character in the set quickly, do so, checking to see whether they're all in \w.
+            if (CanEasilyEnumerateSetContents(set))
+            {
+                for (int i = SetStartIndex; i < SetStartIndex + set[SetLengthIndex]; i += 2)
+                {
+                    int curSetEnd = set[i + 1];
+                    for (int c = set[i]; c < curSetEnd; c++)
+                    {
+                        if (!CharInClass((char)c, WordClass))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            // Unlikely to be a subset of \w, and we don't know for sure.
+            return false;
+        }
+
         /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
         public static bool IsBoundaryWordChar(char ch)
         {
@@ -1288,9 +1337,12 @@ namespace System.Text.RegularExpressions
             int chDiv8 = ch >> 3;
             return (uint)chDiv8 < (uint)ascii.Length ?
                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
-                ((WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0 ||
+                (IsWordCategory(CharUnicodeInfo.GetUnicodeCategory(ch)) ||
                  (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner));
         }
+
+        private static bool IsWordCategory(UnicodeCategory category) =>
+            (WordCategoriesMask & (1 << (int)category)) != 0;
 
         /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>
         /// <remarks>This isn't specific to RegexCharClass; it's just a convenient place to host it.</remarks>
@@ -2083,6 +2135,7 @@ namespace System.Text.RegularExpressions
                 '\f' => "\\f",
                 '\n' => "\\n",
                 '\\' => "\\\\",
+                '-'  => "\\-",
                 >= ' ' and <= '~' => ch.ToString(),
                 _ => $"\\u{(uint)ch:X4}"
             };
