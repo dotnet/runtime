@@ -1458,13 +1458,57 @@ int
 OpenPipe(const char* name, int mode)
 {
     int fd = -1;
-    int flags = mode;
+    int flags = mode | O_NONBLOCK;
 
 #if defined(FD_CLOEXEC)
     flags |= O_CLOEXEC;
 #endif
 
-    while((fd = open(name, flags)) < 0 && errno == EINTR);
+    while(fd == -1)
+    {
+        if (access(name, F_OK) == -1)
+        {
+            break;
+        }
+
+        fd = open(name, flags);
+        if (fd == -1)
+        {
+            if (mode == O_WRONLY && errno == ENXIO)
+            {
+                PAL_nanosleep(500 * 1000 * 1000);
+                continue;
+            }
+            else if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (fd != -1)
+    {
+        flags = fcntl(fd, F_GETFL);
+        if (flags != -1)
+        {
+            flags &= ~O_NONBLOCK;
+            if (fcntl(fd, F_SETFL, flags) == -1)
+            {
+                close(fd);
+                fd = -1;
+            }
+        }
+        else
+        {
+            close(fd);
+            fd = -1;
+        }
+    }
+
     return fd;
 }
 
