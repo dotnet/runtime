@@ -675,7 +675,6 @@ The contract depends on the following other contracts
 | ReJIT |
 | ExecutionManager |
 | PrecodeStubs |
-| ECall |
 
 And the following enumeration definitions
 
@@ -1230,15 +1229,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
             return methodDescPtr;
         }
 
-        // FCall path, look up address in the FCall table using the ECall contract
-        {
-            TargetPointer methodDescPtr = _target.Contracts.ECall.MapTargetBackToMethodDesc(pCode);
-            if (methodDescPtr != TargetPointer.Null)
-            {
-                return methodDescPtr;
-            }
-        }
-
         // Stub path, read address as a Precode and get the MethodDesc from it
         {
             TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
@@ -1258,16 +1248,20 @@ Getting a MethodDesc for a certain slot in a MethodTable
 
         if (pCode == TargetCodePointer.Null)
         {
-            // if pCode is null, we iterate through the method descs in the MT.
-            foreach (MethodDescHandle mdh in GetIntroducedMethods(typeHandle))
+            // if pCode is null, we iterate through the method descs in the MT
+            while (true) // arbitrary limit to avoid infinite loop
             {
-                MethodDesc md = _methodDescs[mdh.Address];
-
-                // if a MethodDesc matches the slot, return that MethodDesc
-                if (md.Slot == slot)
+                foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
                 {
-                    return mdh.Address;
+                    MethodDesc md = _methodDescs[mdh.Address];
+
+                    // if a MethodDesc matches the slot, return that MethodDesc
+                    if (md.Slot == slot)
+                    {
+                        return mdh.Address;
+                    }
                 }
+                canonMT = GetTypeHandle(GetCanonicalMethodTable(GetTypeHandle(GetParentMethodTable(canonMT))));
             }
         }
 

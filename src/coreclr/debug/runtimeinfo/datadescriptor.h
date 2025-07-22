@@ -913,13 +913,6 @@ CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryValue, cdac_data<
 CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<InstMethodHashTable>::VolatileEntryNextEntry)
 CDAC_TYPE_END(InstMethodHashTable)
 
-CDAC_TYPE_BEGIN(ECHash)
-CDAC_TYPE_INDETERMINATE(ECHash)
-CDAC_TYPE_FIELD(ECHash, /*pointer*/, Next, offsetof(ECHash, m_pNext))
-CDAC_TYPE_FIELD(ECHash, /*pointer*/, Implementation, offsetof(ECHash, m_pImplementation))
-CDAC_TYPE_FIELD(ECHash, /*pointer*/, MethodDesc, offsetof(ECHash, m_pMD))
-CDAC_TYPE_END(ECHash)
-
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1014,9 +1007,6 @@ CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionMana
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
-
-CDAC_GLOBAL(FCallHashSize, uint32, FCALL_HASH_SIZE)
-CDAC_GLOBAL_POINTER(FCallMethods, &::gFCallMethods)
 
 CDAC_GLOBALS_END()
 

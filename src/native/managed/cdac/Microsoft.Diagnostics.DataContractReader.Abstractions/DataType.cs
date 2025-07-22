@@ -102,7 +102,6 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
-    ECHash,
 
     TransitionBlock,
     DebuggerEval,

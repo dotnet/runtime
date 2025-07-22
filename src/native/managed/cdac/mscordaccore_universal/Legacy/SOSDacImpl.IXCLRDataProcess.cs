@@ -203,7 +203,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         private IEnumerable<Contracts.ModuleHandle> IterateModules()
         {
             ILoader loader = _target.Contracts.Loader;
-            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModules(
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                 _appDomain,
                 AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 

@@ -87,7 +87,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // Has this chunk had its methods been determined eligible for tiered compilation or not
         DeterminedIsEligibleForTieredCompilation = 0x4000,
         // Is this chunk associated with a LoaderModule directly? If this flag is set, then the LoaderModule pointer is placed at the end of the chunk.
-        LoaderModuleAttachedToChunk              = 0x8000,
+        LoaderModuleAttachedToChunk = 0x8000,
     }
 
     internal struct MethodDesc
@@ -1010,6 +1010,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     TargetPointer IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
     {
+        // based on MethodTable::GetMethodDescForSlot_NoThrow
         if (!typeHandle.IsMethodTable())
             throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
 
@@ -1021,14 +1022,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (pCode == TargetCodePointer.Null)
         {
             // if pCode is null, we iterate through the method descs in the MT.
-            foreach (MethodDescHandle mdh in GetIntroducedMethods(typeHandle))
+            for (int i = 0; i < 10000; i++) // arbitrary limit to avoid infinite loop
             {
-                MethodDesc md = _methodDescs[mdh.Address];
-                if (md.Slot == slot)
+                foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
                 {
-                    return mdh.Address;
+                    MethodDesc md = _methodDescs[mdh.Address];
+                    if (md.Slot == slot)
+                    {
+                        return mdh.Address;
+                    }
                 }
+                canonMT = GetTypeHandle(GetCanonicalMethodTable(GetTypeHandle(GetParentMethodTable(canonMT))));
             }
+            Debug.Fail("We should never reach here, as there should always be a MethodDesc for a slot");
         }
 
         return GetMethodDescForEntrypoint(pCode);
@@ -1042,15 +1048,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
             return methodDescPtr;
-        }
-
-        // FCall path, look up address in the FCall table
-        {
-            TargetPointer methodDescPtr = _target.Contracts.ECall.MapTargetBackToMethodDesc(pCode);
-            if (methodDescPtr != TargetPointer.Null)
-            {
-                return methodDescPtr;
-            }
         }
 
         // stub path, read address as a Precode and read MethodDesc from it
