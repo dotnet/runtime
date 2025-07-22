@@ -4371,64 +4371,6 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region Multiply
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">Input <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="y"><typeparamref name="T"/> value to multiply by.</param>
-        public static Tensor<T> Multiply<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            Tensor<T> destination = CreateFromShape<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="x">Left <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        /// <param name="y">Right <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        public static Tensor<T> Multiply<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">Input <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="y"><typeparamref name="T"/> value to multiply by.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="x">Left <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        /// <param name="y">Right <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-        #endregion
-
         #region Negate
         /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
         /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
