@@ -144,7 +144,17 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus Flush(JNIEnv* env, SSLStream* sslSt
 
     uint8_t* dataPtr = (uint8_t*)xmalloc((size_t)bufferLimit);
     (*env)->GetByteArrayRegion(env, data, 0, bufferLimit, (jbyte*)dataPtr);
-    sslStream->streamWriter(sslStream->managedContextHandle, dataPtr, bufferLimit);
+
+    // Atomically load
+    ManagedContextHandle handle = __atomic_load_n(&sslStream->managedContextHandle, __ATOMIC_ACQUIRE);
+    if (handle != 0) {
+       sslStream->streamWriter(handle, dataPtr, bufferLimit);
+    }
+    // else
+    // {
+    //     ret = SSLStreamStatus_Error;
+    //     goto cleanup;
+    // }
     free(dataPtr);
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferCompact));
@@ -297,8 +307,16 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         int netInBufferLimit = (*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferLimit);
         uint8_t* tmpNative = (uint8_t*)xmalloc((size_t)netInBufferLimit);
         int count = netInBufferLimit;
-        // todo assert streamReader != 0 ?
-        PAL_SSLStreamStatus status = sslStream->streamReader(sslStream->managedContextHandle, tmpNative, &count);
+
+        // Atomically load
+        ManagedContextHandle handle = __atomic_load_n(&sslStream->managedContextHandle, __ATOMIC_ACQUIRE);
+        if (handle == 0)
+        {
+            free(tmpNative);
+            return SSLStreamStatus_Error;
+        }
+
+        PAL_SSLStreamStatus status = sslStream->streamReader(handle, tmpNative, &count);
         if (status != SSLStreamStatus_OK)
         {
             free(tmpNative);
@@ -884,6 +902,12 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
 {
     abort_if_invalid_pointer_argument (sslStream);
 
+    // Atomically load
+    ManagedContextHandle handle = __atomic_load_n(&sslStream->managedContextHandle, __ATOMIC_ACQUIRE);
+    if (handle == 0) {
+        return SSLStreamStatus_Error;
+    }
+
     JNIEnv* env = GetJNIEnv();
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
 
@@ -895,7 +919,19 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
     // appOutBuffer = EnsureRemaining(appOutBuffer, length);
     // appOutBuffer.put(bufferByteBuffer);
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferCompact));
+    // Check for exceptions after compact
+    if (CheckJNIExceptions(env)) {
+        ret = SSLStreamStatus_Error;
+        goto cleanup;
+    }
+
     sslStream->appOutBuffer = EnsureRemaining(env, sslStream->appOutBuffer, length);
+    // Check for exceptions after EnsureRemaining
+    if (CheckJNIExceptions(env)) {
+        ret = SSLStreamStatus_Error;
+        goto cleanup;
+    }
+
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutBuffer, bufferByteBuffer));
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -929,6 +965,21 @@ void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
         return;
 
     JNIEnv* env = GetJNIEnv();
+
+    // Atomically exchange
+    ManagedContextHandle oldHandle = __atomic_exchange_n(&sslStream->managedContextHandle, 0, __ATOMIC_SEQ_CST);
+
+    // Only proceed with SSL engine cleanup if it is a valid handle
+    if (oldHandle != 0 && sslStream->sslEngine != NULL) {
+        // closeOutbound()
+        (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineCloseOutbound);
+        // Clear any exceptions
+        TryClearJNIExceptions(env);
+    }
+
+    // Memory barrier to ensure all closeOutbound operations are complete
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
+
     FreeSSLStream(env, sslStream);
 }
 
