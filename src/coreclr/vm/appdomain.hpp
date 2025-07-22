@@ -1230,26 +1230,6 @@ public:
 
     static void ExceptionUnwind(Frame *pFrame);
 
-    BOOL IsActive()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_Stage >= STAGE_ACTIVE;
-    }
-
-    BOOL IsValid()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-#ifdef DACCESS_COMPILE
-        // We want to see all appdomains in SOS, even the about to be destructed ones.
-        // There is no risk of races under DAC, so we will pretend to be unconditionally valid.
-        return TRUE;
-#else
-        return m_Stage > STAGE_CREATING;
-#endif
-    }
-
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
     Assembly* RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
@@ -1347,40 +1327,6 @@ private:
     friend class Assembly;
 
 private:
-    enum Stage {
-        STAGE_CREATING,
-        STAGE_READYFORMANAGEDCODE,
-        STAGE_ACTIVE,
-        STAGE_OPEN,
-        // Don't delete the following *_DONOTUSE members and in case a new member needs to be added,
-        // add it at the end. The reason is that debugger stuff has its own copy of this enum and
-        // it can use the members that are marked as *_DONOTUSE here when debugging older version
-        // of the runtime.
-        STAGE_UNLOAD_REQUESTED_DONOTUSE,
-        STAGE_EXITING_DONOTUSE,
-        STAGE_EXITED_DONOTUSE,
-        STAGE_FINALIZING_DONOTUSE,
-        STAGE_FINALIZED_DONOTUSE,
-        STAGE_HANDLETABLE_NOACCESS_DONOTUSE,
-        STAGE_CLEARED_DONOTUSE,
-        STAGE_COLLECTED_DONOTUSE,
-        STAGE_CLOSED_DONOTUSE
-    };
-    void SetStage(Stage stage)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-        STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Updating AD stage, stage=%d\n",stage);
-        Stage lastStage=m_Stage;
-        while (lastStage !=stage)
-            lastStage = (Stage)InterlockedCompareExchange((LONG*)&m_Stage,stage,lastStage);
-    };
-
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
     LoaderAllocator * m_pDelayedLoaderAllocatorUnloadList;
 
@@ -1439,8 +1385,6 @@ private:
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
 #endif // FEATURE_COMWRAPPERS
-
-    Volatile<Stage> m_Stage;
 
     ArrayList        m_failedAssemblies;
 

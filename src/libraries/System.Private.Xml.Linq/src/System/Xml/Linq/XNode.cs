@@ -28,9 +28,6 @@ namespace System.Xml.Linq
     /// </remarks>
     public abstract class XNode : XObject
     {
-        private static XNodeDocumentOrderComparer? s_documentOrderComparer;
-        private static XNodeEqualityComparer? s_equalityComparer;
-
         internal XNode? next;
 
         internal XNode() { }
@@ -77,12 +74,12 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets a comparer that can compare the relative position of two nodes.
         /// </summary>
-        public static XNodeDocumentOrderComparer DocumentOrderComparer => s_documentOrderComparer ??= new XNodeDocumentOrderComparer();
+        public static XNodeDocumentOrderComparer DocumentOrderComparer => field ??= new XNodeDocumentOrderComparer();
 
         /// <summary>
         /// Gets a comparer that can compare two nodes for value equality.
         /// </summary>
-        public static XNodeEqualityComparer EqualityComparer => s_equalityComparer ??= new XNodeEqualityComparer();
+        public static XNodeEqualityComparer EqualityComparer => field ??= new XNodeEqualityComparer();
 
         /// <overloads>
         /// Adds the specified content immediately after this node. The

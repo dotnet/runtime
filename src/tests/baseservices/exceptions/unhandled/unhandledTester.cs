@@ -109,6 +109,13 @@ namespace TestUnhandledExceptionTester
                         throw new Exception("Missing Unhandled exception header");
                     }
                 }
+                if (unhandledType == "mainthreadinterrupted" || unhandledType == "secondarythreadinterrupted")
+                {
+                    if (lines[0] != "Unhandled exception. System.Threading.ThreadInterruptedException: Test")
+                    {
+                        throw new Exception("Missing Unhandled exception header");
+                    }
+                }
                 else if (unhandledType == "foreign")
                 {
                     if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:") &&
@@ -149,8 +156,10 @@ namespace TestUnhandledExceptionTester
         {
             RunExternalProcess("main", "unhandled.dll");
             RunExternalProcess("mainhardware", "unhandled.dll");
+            RunExternalProcess("mainthreadinterrupted", "unhandled.dll");
             RunExternalProcess("secondary", "unhandled.dll");
             RunExternalProcess("secondaryhardware", "unhandled.dll");
+            RunExternalProcess("secondarythreadinterrupted", "unhandled.dll");
             RunExternalProcess("foreign", "unhandled.dll");
             File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
             RunExternalProcess("missingdependency", "unhandledmissingdependency.dll");

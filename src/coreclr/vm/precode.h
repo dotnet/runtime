@@ -774,9 +774,6 @@ public:
         return pPrecode;
     }
 
-    // If addr is patched fixup precode, returns address that it points to. Otherwise returns NULL.
-    static PCODE TryToSkipFixupPrecode(PCODE addr);
-
     //
     // Precode as temporary entrypoint
     //
