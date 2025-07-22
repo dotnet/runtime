@@ -2725,6 +2725,15 @@ void Thread::CooperativeCleanup()
 
     GCX_COOP();
 
+    if (!IsGCSpecial())
+    {
+        // Allow managed subsystems to clean up on thread exit.
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
+        DECLARE_ARGHOLDER_ARRAY(args, 1);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(GetExposedObject());
+        CALL_MANAGED_METHOD_NORET(args);
+    }
+
     // Clear any outstanding stale EH state that maybe still active on the thread.
 #ifdef FEATURE_EH_FUNCLETS
     ExInfo::PopTrackers((void*)-1);

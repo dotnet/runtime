@@ -557,6 +557,15 @@ namespace System.Threading
         }
 #endif
 
+        private void OnThreadExiting()
+        {
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+            // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
+            // the thread.
+            _waitInfo?.OnThreadExiting();
+#endif
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct NativeThreadClass
         {
