@@ -28,7 +28,6 @@
     <FlagNetStandard1XDependencies Condition="'$(FlagNetStandard1XDependencies)' == ''">true</FlagNetStandard1XDependencies>
     <!-- Runtime controls its dependency graph via Traversal projects and doesn't want or need Arcade's ExcludeFrom infrastructure. -->
     <DisableArcadeExcludeFromBuildSupport>true</DisableArcadeExcludeFromBuildSupport>
-    <!-- Use SDK compilers in full VMR builds. -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
   <ItemGroup>
