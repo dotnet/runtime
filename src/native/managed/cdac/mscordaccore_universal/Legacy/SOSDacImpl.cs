@@ -134,7 +134,7 @@ internal sealed unsafe partial class SOSDacImpl
                 if (addr != systemDomain)
                 {
                     TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                    data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+                    data->dwId = (DacpAppDomainDataStage)_target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
 
                     IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                         pAppDomain,
