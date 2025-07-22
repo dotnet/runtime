@@ -780,9 +780,11 @@ namespace System
                 return span.Length;
             }
 
-            // Merge any remaining segments
-            int writeOffset = 0;
-            int readOffset = 0;
+            // Merge any remaining segments.
+            // Write and read offsets are only ever the same for the first segment.
+            // Copying the first section would no-op anyway, so we start with the first removed segment.
+            int writeOffset = removedSegments[^1].Start;
+            int readOffset = writeOffset;
 
             for (int i = removedSegments.Length - 1; i >= 0; i--)
             {
@@ -792,6 +794,8 @@ namespace System
 
                 if (readOffset != start)
                 {
+                    Debug.Assert(readOffset != writeOffset);
+
                     int segmentLength = start - readOffset;
                     span.Slice(readOffset, segmentLength).CopyTo(span.Slice(writeOffset));
                     writeOffset += segmentLength;
