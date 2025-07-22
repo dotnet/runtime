@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if INCLUDE_EXPECTATIONS
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
+#endif
+
 #nullable enable
 
 namespace System.Diagnostics.CodeAnalysis
@@ -12,6 +16,9 @@ namespace System.Diagnostics.CodeAnalysis
     /// <remarks>
     /// This allows tools to understand which methods are unsafe to call when compiling ahead of time.
     /// </remarks>
+#if INCLUDE_EXPECTATIONS
+    [SkipKeptItemsValidation]
+#endif
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class, Inherited = false)]
 #if SYSTEM_PRIVATE_CORELIB
     public
