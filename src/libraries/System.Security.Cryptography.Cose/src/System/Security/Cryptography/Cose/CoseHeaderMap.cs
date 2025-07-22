@@ -181,12 +181,7 @@ namespace System.Security.Cryptography.Cose
         /// <inheritdoc/>
         public bool ContainsKey(CoseHeaderLabel key) => _headerParameters.ContainsKey(key);
 
-        /// <summary>
-        /// Attempts to get the value associated with the specified header label.
-        /// </summary>
-        /// <param name="key">The header label to search for.</param>
-        /// <param name="value">When this method returns, contains the value associated with the specified key, if found; otherwise, the default value for the type of the value parameter.</param>
-        /// <returns><see langword="true"/> if the header map contains an element with the specified key; otherwise, <see langword="false"/>.</returns>
+        /// <inheritdoc/>
         public bool TryGetValue(CoseHeaderLabel key, out CoseHeaderValue value) => _headerParameters.TryGetValue(key, out value);
 
         /// <summary>
