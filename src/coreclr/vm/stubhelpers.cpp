@@ -724,15 +724,6 @@ extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pM
     END_QCALL;
 }
 
-FCIMPL0(void*, StubHelpers::GetStubContext)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa0);
-    UNREACHABLE_MSG_RET("This is a JIT intrinsic!");
-}
-FCIMPLEND
-
 FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinnedArg)
 {
     FCALL_CONTRACT;
@@ -776,10 +767,3 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
 
     END_QCALL;
 }
-
-FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
-{
-    FCALL_CONTRACT;
-    UNREACHABLE_MSG("This is a JIT intrinsic!");
-}
-FCIMPLEND

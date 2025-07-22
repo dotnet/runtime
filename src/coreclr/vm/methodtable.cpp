@@ -6213,27 +6213,8 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
     }
     CONTRACT_END;
 
-    // If we see shared fcall implementation as an argument to this
-    // function, it means that a vtable slot for the shared fcall
-    // got backpatched when it shouldn't have.  The reason we can't
-    // backpatch this method is that it is an FCall that has many
-    // MethodDescs for one implementation.  If we backpatch delegate
-    // constructors, this function will not be able to recover the
-    // MethodDesc for the method.
-    //
-    _ASSERTE_IMPL(!ECall::IsSharedFCallImpl(addr) &&
-                  "someone backpatched shared fcall implementation -- "
-                  "see comment in code");
-
     MethodDesc* pMethodDesc = ExecutionManager::GetCodeMethodDesc(addr);
     if (NULL != pMethodDesc)
-    {
-        goto lExit;
-    }
-
-    // Is it an FCALL?
-    pMethodDesc = ECall::MapTargetBackToMethod(addr);
-    if (pMethodDesc != 0)
     {
         goto lExit;
     }
