@@ -92,7 +92,8 @@ Installing/building the Helix client can be quite involved, particularly for Arm
 Container images are referenced in our pipeline files:
 
 - [eng/pipelines/coreclr/templates/helix-queues-setup.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/coreclr/templates/helix-queues-setup.yml)
-- [eng/pipelines/libraries/helix.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/libraries/helix.yml)
+- [eng/pipelines/installer/helix-queues-setup.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/installer/helix-queues-setup.yml)
+- [eng/pipelines/libraries/helix-queues-setup.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/libraries/helix-queues-setup.yml)
 - [eng/pipelines/common/templates/pipeline-with-resources.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/common/templates/pipeline-with-resources.yml)
 
 Notes:
@@ -119,7 +120,9 @@ VMs and raw metal environments are used for Android, Apple, Linux, and Windows O
 
 ### Other
 
-Other environments are typically use a custom process.
+Other environments have their own process.
+
+- [Android](../workflow/testing/libraries/testing-android.md#upgrading-the-android-ndk-version-in-ci-pipelines)
 
 - [Browser Wasm](https://github.com/dotnet/runtime/pull/112066)
 

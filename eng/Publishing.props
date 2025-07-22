@@ -5,35 +5,9 @@
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuild)' != 'true'">
-    <PushToLocalStorage>true</PushToLocalStorage>
-    <ArtifactsStagingDir>$(ArtifactsDir)staging/</ArtifactsStagingDir>
-    <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)SymStore</SourceBuiltPdbArtifactsDir>
-    <!-- Put blobs where we put packages so our regular globbing in our publish join job finds them. -->
-    <SourceBuiltAssetsDir>$(ArtifactsStagingDir)</SourceBuiltAssetsDir>
-    <SourceBuiltShippingPackagesDir>$(ArtifactsStagingDir)packages/$(Configuration)/Shipping</SourceBuiltShippingPackagesDir>
-    <SourceBuiltNonShippingPackagesDir>$(ArtifactsStagingDir)packages/$(Configuration)/NonShipping</SourceBuiltNonShippingPackagesDir>
-    <PublishingUseHardlinksIfPossible>true</PublishingUseHardlinksIfPossible>
-    <!-- We don't use the asset manifest from the vertical dotnet/runtime legs outside of the VMR. Just dump it in a temp dir. -->
-    <SourceBuiltAssetManifestsDir>$(ArtifactsTmpDir)/manifests/$(Configuration)</SourceBuiltAssetManifestsDir>
-    <AssetManifestName>VerticalManifest.xml</AssetManifestName>
-  </PropertyGroup>
-
-  <!-- In the runtime official build, we only sign a subset of files. Add all of our blob artifacts here again for publishing -->
-  <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
-    <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
-                       $(ArtifactsPackagesDir)**\*.zip;
-                       $(ArtifactsPackagesDir)**\*.deb;
-                       $(ArtifactsPackagesDir)**\*.rpm;
-                       $(ArtifactsPackagesDir)**\*.pkg;
-                       $(ArtifactsPackagesDir)**\*.exe;
-                       $(ArtifactsPackagesDir)**\*.msi;"
-              Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
-              Kind="Blob"
-              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
-      <!-- Exclude wixpack.zip files from checksum generation -->
-      <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
-    </Artifact>
+  <!-- The PGO runtime should always have External visibility, even if someone changes the default artifact visibility -->
+  <ItemGroup>
+    <Artifact Update="$(ArtifactsNonShippingPackagesDir)dotnet-runtime-pgo-*" Visibility="External" />
   </ItemGroup>
 
   <!--
@@ -41,18 +15,18 @@
     We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
     Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
   -->
-  <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' != 'true' and '$(DotNetBuildOrchestrator)' == 'true'">
+  <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' != 'true' and '$(DotNetBuildFromVMR)' == 'true'">
     <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
-                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILAsm.*.nupkg" />
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.NETCore.ILAsm.*.nupkg" />
 
     <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
-                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILDAsm.*.nupkg" />
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.NETCore.ILDAsm.*.nupkg" />
 
     <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
-                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.DotNet.ILCompiler.*.nupkg" />
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.DotNet.ILCompiler.*.nupkg" />
 
     <_HostArtifact Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.*.nupkg"
-                    Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(OutputRID).*.nupkg" />
+                    Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(TargetRid).*.nupkg" />
 
     <Artifact Update="@(_HostArtifact)"
               Visibility="Vertical"
@@ -77,8 +51,8 @@
     This ensures that we don't produce these files in the "Repo source build" builds,
     but we do produce them in both the VMR and the runtime official build.
   -->
-  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
-    <ShouldGenerateProductVersionFiles Condition="'$(PackageRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
+  <PropertyGroup Condition="'$(DotNetBuildFromVMR)' == 'true'">
+    <ShouldGenerateProductVersionFiles Condition="'$(TargetRid)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
     <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
 
@@ -115,12 +89,12 @@
           DependsOnTargets="GetNonStableProductVersion"
           BeforeTargets="PublishToAzureDevOpsArtifacts"
           AfterTargets="GenerateChecksumsFromArtifacts">
-    <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true' or '$(DotNetBuildOrchestrator)' == 'true'">
+    <ItemGroup Condition="'$(DotNetBuildFromVMR)' == 'true'">
       <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.RelativeBlobPath)' == ''"
                 RelativeBlobPath="Runtime/$(NonStableProductVersion)/%(Artifact.SubBlobFolder)%(Filename)%(Extension)" />
     </ItemGroup>
     <!-- In vertical dotnet/runtime legs outside of the VMR, set the "relative blob path" to shipping vs non-shipping to make our download/upload work. -->
-    <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
+    <ItemGroup Condition="'$(DotNetBuildFromVMR)' != 'true'">
       <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
                 RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
       <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"

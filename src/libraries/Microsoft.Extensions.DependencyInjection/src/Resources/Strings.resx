@@ -195,4 +195,7 @@
   <data name="KeyedServiceAnyKeyUsedToResolveService" xml:space="preserve">
     <value>KeyedService.AnyKey cannot be used to resolve a single service.</value>
   </data>
+  <data name="NoKeyedServiceRegistered" xml:space="preserve">
+    <value>No keyed service for type '{0}' using key type '{1}' has been registered.</value>
+  </data>
 </root>

@@ -48,7 +48,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                minipal_log_print_error("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
         }
@@ -233,8 +233,9 @@ class CallStackLogger
 
         MethodDesc* pMD = m_frames[index];
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+        str.Append(W("\n"));
+
         PrintToStdErrW(str.GetUnicode());
-        PrintToStdErrA("\n");
     }
 
 public:
@@ -265,6 +266,7 @@ public:
             repeatStr.AppendPrintf("Repeated %d times:\n", m_largestCommonStartRepeat);
 
             PrintToStdErrW(repeatStr.GetUnicode());
+
             PrintToStdErrA("--------------------------------\n");
             for (int i = 0; i < m_largestCommonStartLength; i++)
             {
@@ -373,11 +375,11 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
     {
         if (exitCode == (UINT)COR_E_FAILFAST)
         {
-            PrintToStdErrA("Process terminated. ");
+            PrintToStdErrA("Process terminated.\n");
         }
         else
         {
-            PrintToStdErrA("Fatal error. ");
+            PrintToStdErrA("Fatal error.\n");
         }
 
         if (errorSource != NULL)
@@ -393,9 +395,9 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
         else
         {
             // If no message was passed in, generate it from the exitCode
-            SString exitCodeMessage;
+            InlineSString<256> exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
-            PrintToStdErrW((LPCWSTR)exitCodeMessage);
+            PrintToStdErrW(exitCodeMessage.GetUnicode());
         }
 
         PrintToStdErrA("\n");
@@ -413,7 +415,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
@@ -512,7 +514,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
@@ -672,7 +674,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 #ifdef _DEBUG
         g_LogStackOverflowExit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogStackOverflowExit) != 0;
 #endif
- 
+
         DisplayStackOverflowException();
 
         HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));

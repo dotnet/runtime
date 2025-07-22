@@ -45,6 +45,7 @@ internal static class ReflectionTest
         TestTypesInMethodSignatures.Run();
 
         TestAttributeInheritance.Run();
+        Test113750Regression.Run();
         TestStringConstructor.Run();
         TestAssemblyAndModuleAttributes.Run();
         TestAttributeExpressions.Run();
@@ -74,7 +75,7 @@ internal static class ReflectionTest
         TestCompilerGeneratedCode.Run();
         Test105034Regression.Run();
         TestMethodsNeededFromNativeLayout.Run();
-
+        TestFieldAndParamMetadata.Run();
 
         //
         // Mostly functionality tests
@@ -95,6 +96,8 @@ internal static class ReflectionTest
         TestEntryPoint.Run();
         TestGenericAttributesOnEnum.Run();
         TestLdtokenWithSignaturesDifferingInModifiers.Run();
+        TestActivatingThingsInSignature.Run();
+        TestDelegateInvokeFromEvent.Run();
 
         return 100;
     }
@@ -833,6 +836,29 @@ internal static class ReflectionTest
         }
     }
 
+    class TestFieldAndParamMetadata
+    {
+        public class FieldType;
+
+        public FieldType TheField;
+
+        public class ParameterType;
+
+        public static void TheMethod(ParameterType p) { }
+
+        public static void Run()
+        {
+            Type fieldType = typeof(TestFieldAndParamMetadata).GetField(nameof(TheField)).FieldType;
+
+            if (fieldType.Name != nameof(FieldType))
+                throw new Exception();
+
+            Type parameterType = typeof(TestFieldAndParamMetadata).GetMethod(nameof(TheMethod)).GetParameters()[0].ParameterType;
+            if (parameterType.Name != nameof(ParameterType))
+                throw new Exception();
+        }
+    }
+
     class TestCreateDelegate
     {
         internal class Greeter
@@ -1176,6 +1202,22 @@ internal static class ReflectionTest
             {
                 _i = i;
             }
+        }
+    }
+
+    class Test113750Regression
+    {
+        class Atom;
+
+        public static void Run()
+        {
+            var arr = Array.CreateInstance(GetAtom(), 0);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+
+            if (!(arr is Atom[]))
+                throw new Exception();
         }
     }
 
@@ -2875,6 +2917,50 @@ internal static class ReflectionTest
 
             Expression<CdeclDelegate> cdecl = x => Method(x);
             if (cdecl.Compile()(null) != "Cdecl")
+                throw new Exception();
+        }
+    }
+
+    class TestActivatingThingsInSignature
+    {
+        public static unsafe void Run()
+        {
+            var mi = typeof(TestActivatingThingsInSignature).GetMethod(nameof(MethodWithThingsInSignature));
+            var p = mi.GetParameters();
+
+            var d = typeof(TestActivatingThingsInSignature).GetMethod(nameof(Run)).CreateDelegate(p[0].ParameterType);
+            Console.WriteLine(d.ToString());
+
+            Span<byte> storage = stackalloc byte[sizeof(MyStruct)];
+            var s = RuntimeHelpers.Box(ref MemoryMarshal.GetReference(storage), p[1].ParameterType.TypeHandle);
+            Console.WriteLine(s.ToString());
+
+            var a = Array.CreateInstanceFromArrayType(p[2].ParameterType, 0);
+            Console.WriteLine(a.ToString());
+        }
+
+        public void MethodWithThingsInSignature(MyDelegate d, MyStruct s, MyArrayElementStruct[] a) { }
+
+        public delegate void MyDelegate();
+
+        public struct MyStruct;
+
+        public struct MyArrayElementStruct;
+    }
+
+    class TestDelegateInvokeFromEvent
+    {
+        class MyClass
+        {
+            public event EventHandler<int> MyEvent { add { } remove { } }
+        }
+
+        static EventInfo s_eventInfo = typeof(MyClass).GetEvent("MyEvent");
+
+        public static unsafe void Run()
+        {
+            var invokeMethod = s_eventInfo.EventHandlerType.GetMethod("Invoke");
+            if (invokeMethod.Name != "Invoke")
                 throw new Exception();
         }
     }

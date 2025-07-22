@@ -105,6 +105,9 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
     m_sig           = pMD->GetSignature();
     m_pModule       = pMD->GetModule();         // Used for token resolution.
 
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    _ASSERTE(!pMD->IsAsyncMethod());
+
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
     m_pMetadataModule = pMD->GetModule();
@@ -132,6 +135,7 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule,
 
     if (pMD != NULL)
     {
+        _ASSERTE(!pMD->IsAsyncMethod());
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
         m_pMetadataModule = pMD->GetModule();
@@ -1086,7 +1090,11 @@ public:
 
         DWORD dwToken = 0;
         if (pTargetMD)
+        {
+            // TODO: (async) revisit and examine if this needs to be supported somehow
+            _ASSERTE(!pTargetMD->IsAsyncVariantMethod());
             dwToken = pTargetMD->GetMemberDef();
+        }
 
 
         //
@@ -2710,6 +2718,10 @@ void PInvokeStaticSigInfo::DllImportInit(
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
     mdModuleRef modref = mdModuleRefNil;
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMD->IsAsyncMethod())
+        ThrowHR(COR_E_NOTSUPPORTED);
+
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
         InitCallConv(CallConvWinApiSentinel, pMD);
@@ -2814,7 +2826,7 @@ static LPBYTE FollowIndirect(LPBYTE pTarget)
     {
         // Catch AVs here.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     RETURN pRet;
 }
@@ -2987,6 +2999,10 @@ namespace
         CorInfoCallConvExtension callConvLocal;
         IMDInternalImport* pInternalImport = pMD->GetMDImport();
         CorPinvokeMap mappingFlags = pmMaxValue;
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+            ThrowHR(COR_E_NOTSUPPORTED);
+
         HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
         if (FAILED(hr))
             return false;
@@ -3229,7 +3245,7 @@ BOOL NDirect::MarshalingRequired(
 
     if (sigPointer.IsNull())
     {
-        PREFIX_ASSUME(pMD != NULL);
+        _ASSERTE(pMD != NULL);
 
         sigPointer = pMD->GetSigPointer();
         pModule = pMD->GetModule();
@@ -3247,6 +3263,10 @@ BOOL NDirect::MarshalingRequired(
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+            ThrowHR(COR_E_NOTSUPPORTED);
+
         methodToken = pMD->GetMemberDef();
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
@@ -3414,7 +3434,6 @@ BOOL NDirect::MarshalingRequired(
 
     return FALSE;
 }
-
 
 // factorization of CreateNDirectStubWorker
 static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
@@ -4291,7 +4310,13 @@ static void CreateNDirectStubAccessMetadata(
         // P/Invoke marked with UnmanagedCallersOnlyAttribute is not
         // presently supported.
         if (pMD->HasUnmanagedCallersOnlyAttribute())
-            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
+        {
+            SString namespaceOrClassName;
+            SString methodName;
+            pMD->GetMethodInfoNoSig(namespaceOrClassName, methodName);
+            COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_UNSUPPORTED_UNMANAGEDCALLERSONLY,
+                namespaceOrClassName.GetUnicode(), methodName.GetUnicode());
+        }
 
         // Check to see if we need to do LCID conversion.
         lcidArg = GetLCIDParameterIndex(pMD);
@@ -5758,9 +5783,11 @@ void CreateCLRToDispatchCOMStub(
                             iLCIDArg);
 
     _ASSERTE(pMD->IsCLRToCOMCall()); // no generic disp-calls
-    ((CLRToCOMCallMethodDesc *)pMD)->InitRetThunk();
-}
 
+#ifdef TARGET_X86
+    ((CLRToCOMCallMethodDesc *)pMD)->InitStackPop();
+#endif
+}
 
 #endif // FEATURE_COMINTEROP
 
@@ -5828,7 +5855,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 {
     LPVOID ret = NULL;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     CONTRACTL
     {
@@ -5879,8 +5906,6 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
-    END_PRESERVE_LAST_ERROR;
-
     return ret;
 }
 
@@ -5891,7 +5916,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
 EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5915,13 +5940,11 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock
     GetILStubForCalli(pVASigCookie, pMD);
 
     pFrame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5944,8 +5967,6 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     GetILStubForCalli(pVASigCookie, NULL);
 
     pFrame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
@@ -6040,6 +6061,10 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     if (pMD != NULL)
     {
         PInvokeStaticSigInfo sigInfo(pMD);
+
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+            ThrowHR(COR_E_NOTSUPPORTED);
 
         md = pMD->GetMemberDef();
         nlFlags = sigInfo.GetLinkFlags();
@@ -6458,27 +6483,8 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     pCode->EmitRET();
 
     // Generate all IL associated data for JIT
-    {
-        UINT maxStack;
-        size_t cbCode = sl.Link(&maxStack);
-        DWORD cbSig = sl.GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-        sl.GenerateCode(pbBuffer, cbCode);
-        sl.GetLocalSig(pbLocalSig, cbSig);
-
-        // Store the token lookup map
-        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-        *ppResolver = (DynamicResolver*)ilResolver;
-        *ppHeader = pILHeader;
-    }
-
-    ilResolver.SuppressRelease();
+    *ppHeader = ilResolver->FinalizeILStub(&sl);
+    *ppResolver = ilResolver.Extract();
     return true;
 }
 

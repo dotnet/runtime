@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +26,7 @@ namespace System.Linq
             IComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             comparer ??= Comparer<TSource>.Default;
 
@@ -59,27 +58,45 @@ namespace System.Linq
 
             static async ValueTask<TSource?> Impl(IAsyncEnumerable<TSource> source, IComparer<TSource> comparer, CancellationToken cancellationToken)
             {
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
                 TSource? value = default;
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                if (default(TSource) is null)
                 {
-                    if (default(TSource) is null)
+                    do
                     {
-                        do
+                        if (!await e.MoveNextAsync())
                         {
-                            if (!await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                return value;
-                            }
-
-                            value = e.Current;
+                            return value;
                         }
-                        while (value is null);
 
-                        while (await e.MoveNextAsync().ConfigureAwait(false))
+                        value = e.Current;
+                    }
+                    while (value is null);
+
+                    while (await e.MoveNextAsync())
+                    {
+                        TSource next = e.Current;
+                        if (next is not null && comparer.Compare(next, value) < 0)
+                        {
+                            value = next;
+                        }
+                    }
+                }
+                else
+                {
+                    if (!await e.MoveNextAsync())
+                    {
+                        ThrowHelper.ThrowNoElementsException();
+                    }
+
+                    value = e.Current;
+                    if (comparer == Comparer<TSource>.Default)
+                    {
+                        while (await e.MoveNextAsync())
                         {
                             TSource next = e.Current;
-                            if (next is not null && comparer.Compare(next, value) < 0)
+                            if (Comparer<TSource>.Default.Compare(next, value) < 0)
                             {
                                 value = next;
                             }
@@ -87,42 +104,18 @@ namespace System.Linq
                     }
                     else
                     {
-                        if (!await e.MoveNextAsync().ConfigureAwait(false))
+                        while (await e.MoveNextAsync())
                         {
-                            ThrowHelper.ThrowNoElementsException();
-                        }
-
-                        value = e.Current;
-                        if (comparer == Comparer<TSource>.Default)
-                        {
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
+                            TSource next = e.Current;
+                            if (comparer.Compare(next, value) < 0)
                             {
-                                TSource next = e.Current;
-                                if (Comparer<TSource>.Default.Compare(next, value) < 0)
-                                {
-                                    value = next;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                TSource next = e.Current;
-                                if (comparer.Compare(next, value) < 0)
-                                {
-                                    value = next;
-                                }
+                                value = next;
                             }
                         }
                     }
+                }
 
-                    return value;
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+                return value;
             }
         }
 
@@ -134,48 +127,41 @@ namespace System.Linq
             IAsyncEnumerable<float> source,
             CancellationToken cancellationToken)
         {
-            IAsyncEnumerator<float> e = source.GetAsyncEnumerator(cancellationToken);
-            try
+            await using IAsyncEnumerator<float> e = source.GetAsyncEnumerator(cancellationToken);
+
+            if (!await e.MoveNextAsync())
             {
-                if (!await e.MoveNextAsync().ConfigureAwait(false))
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
+                ThrowHelper.ThrowNoElementsException();
+            }
 
-                float value = e.Current;
-                if (float.IsNaN(value))
-                {
-                    return value;
-                }
-
-                while (await e.MoveNextAsync().ConfigureAwait(false))
-                {
-                    float x = e.Current;
-                    if (x < value)
-                    {
-                        value = x;
-                    }
-
-                    // Normally NaN < anything is false, as is anything < NaN
-                    // However, this leads to some irksome outcomes in Min and Max.
-                    // If we use those semantics then Min(NaN, 5.0) is NaN, but
-                    // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
-                    // ordering where NaN is smaller than every value, including
-                    // negative infinity. Not testing for NaN therefore isn't an option, but since we
-                    // can't find a smaller value, we can short-circuit.
-                    else if (float.IsNaN(x))
-                    {
-                        return x;
-                    }
-                }
-
+            float value = e.Current;
+            if (float.IsNaN(value))
+            {
                 return value;
+            }
 
-            }
-            finally
+            while (await e.MoveNextAsync())
             {
-                await e.DisposeAsync().ConfigureAwait(false);
+                float x = e.Current;
+                if (x < value)
+                {
+                    value = x;
+                }
+
+                // Normally NaN < anything is false, as is anything < NaN
+                // However, this leads to some irksome outcomes in Min and Max.
+                // If we use those semantics then Min(NaN, 5.0) is NaN, but
+                // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
+                // ordering where NaN is smaller than every value, including
+                // negative infinity. Not testing for NaN therefore isn't an option, but since we
+                // can't find a smaller value, we can short-circuit.
+                else if (float.IsNaN(x))
+                {
+                    return x;
+                }
             }
+
+            return value;
         }
 
         /// <summary>Returns the minimum value in a sequence of values.</summary>
@@ -186,48 +172,41 @@ namespace System.Linq
             IAsyncEnumerable<double> source,
             CancellationToken cancellationToken)
         {
-            IAsyncEnumerator<double> e = source.GetAsyncEnumerator(cancellationToken);
-            try
+            await using IAsyncEnumerator<double> e = source.GetAsyncEnumerator(cancellationToken);
+
+            if (!await e.MoveNextAsync())
             {
-                if (!await e.MoveNextAsync().ConfigureAwait(false))
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
+                ThrowHelper.ThrowNoElementsException();
+            }
 
-                double value = e.Current;
-                if (double.IsNaN(value))
-                {
-                    return value;
-                }
-
-                while (await e.MoveNextAsync().ConfigureAwait(false))
-                {
-                    double x = e.Current;
-                    if (x < value)
-                    {
-                        value = x;
-                    }
-
-                    // Normally NaN < anything is false, as is anything < NaN
-                    // However, this leads to some irksome outcomes in Min and Max.
-                    // If we use those semantics then Min(NaN, 5.0) is NaN, but
-                    // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
-                    // ordering where NaN is smaller than every value, including
-                    // negative infinity. Not testing for NaN therefore isn't an option, but since we
-                    // can't find a smaller value, we can short-circuit.
-                    else if (double.IsNaN(x))
-                    {
-                        return x;
-                    }
-                }
-
+            double value = e.Current;
+            if (double.IsNaN(value))
+            {
                 return value;
+            }
 
-            }
-            finally
+            while (await e.MoveNextAsync())
             {
-                await e.DisposeAsync().ConfigureAwait(false);
+                double x = e.Current;
+                if (x < value)
+                {
+                    value = x;
+                }
+
+                // Normally NaN < anything is false, as is anything < NaN
+                // However, this leads to some irksome outcomes in Min and Max.
+                // If we use those semantics then Min(NaN, 5.0) is NaN, but
+                // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
+                // ordering where NaN is smaller than every value, including
+                // negative infinity. Not testing for NaN therefore isn't an option, but since we
+                // can't find a smaller value, we can short-circuit.
+                else if (double.IsNaN(x))
+                {
+                    return x;
+                }
             }
+
+            return value;
         }
 
         /// <summary>Returns the minimum value in a sequence of nullable values.</summary>
@@ -239,7 +218,7 @@ namespace System.Linq
             CancellationToken cancellationToken)
         {
             float? value = null;
-            await foreach (float? x in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+            await foreach (float? x in source.WithCancellation(cancellationToken))
             {
                 if (x is null)
                 {
@@ -264,7 +243,7 @@ namespace System.Linq
             CancellationToken cancellationToken)
         {
             double? value = null;
-            await foreach (double? x in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+            await foreach (double? x in source.WithCancellation(cancellationToken))
             {
                 if (x is null)
                 {

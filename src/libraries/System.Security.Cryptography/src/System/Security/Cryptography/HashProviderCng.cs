@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
             _running = running;
         }
 
-        public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
+        public sealed override void AppendHashData(ReadOnlySpan<byte> source)
         {
             Debug.Assert(_hHash != null);
 

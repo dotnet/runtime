@@ -20,9 +20,9 @@ namespace System.Net.Http.Enterprise.Tests
         [InlineData(EnterpriseTestConfiguration.DigestAuthWebServer, true)]
         [InlineData(EnterpriseTestConfiguration.DigestAuthWebServer, false)]
         [InlineData(EnterpriseTestConfiguration.NtlmAuthWebServer, true)]
-        public void HttpClient_ValidAuthentication_Success(string url, bool useDomain, bool useAltPort = false)
+        public async Task HttpClient_ValidAuthentication_Success(string url, bool useDomain, bool useAltPort = false)
         {
-            RemoteExecutor.Invoke((url, useAltPort, useDomain) =>
+            await RemoteExecutor.Invoke((url, useAltPort, useDomain) =>
             {
                 // This is safe as we have no parallel tests
 		if (!string.IsNullOrEmpty(useAltPort))
@@ -35,7 +35,7 @@ namespace System.Net.Http.Enterprise.Tests
 
                 using HttpResponseMessage response = client.GetAsync(url).GetAwaiter().GetResult();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            }, url, useAltPort ? "true" : "" , useDomain ? "true" : "").Dispose();
+            }, url, useAltPort ? "true" : "" , useDomain ? "true" : "").DisposeAsync();
         }
 
         [Fact]

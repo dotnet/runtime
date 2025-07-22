@@ -61,14 +61,7 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public static byte[] Hash(byte[] source, long seed)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(source);
-#else
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-#endif
 
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }

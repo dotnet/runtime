@@ -434,7 +434,15 @@ private:
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
     PTR_AssemblyBinder m_pFallbackBinder;
+
+    friend struct cdac_data<PEAssembly>;
 };  // class PEAssembly
+
+template<>
+struct cdac_data<PEAssembly>
+{
+    static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
+};
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 

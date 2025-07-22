@@ -128,7 +128,7 @@ std::vector<pal::string_t> sdk_resolver::get_search_paths(const pal::string_t& d
             {
                 locations.push_back(dotnet_root);
             }
-            else if (pal::is_path_rooted(path))
+            else if (pal::is_path_fully_qualified(path))
             {
                 locations.push_back(path);
             }
@@ -446,7 +446,7 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
             const auto& path = paths_array[i];
             if (!path.IsString())
             {
-                trace::warning(_X("Ignoring non-string 'sdk/paths[%d]' value in [%s]"), global_file_path.c_str());
+                trace::warning(_X("Ignoring non-string 'sdk/paths[%u]' value in [%s]"), i, global_file_path.c_str());
                 continue;
             }
 

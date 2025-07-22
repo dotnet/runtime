@@ -54,10 +54,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CopyTo(Array array, int index)
         {
-            if (array is null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

@@ -646,6 +646,12 @@ nomac:StressLogTask:::StressLogEvent_V1
 nomac:CLRStackStress:::CLRStackWalkStress
 
 #################################
+# Debugger events
+#################################
+nostack:DebugIPCEvent:::DebugIPCEventStart
+nostack:DebugIPCEvent:::DebugIPCEventEnd
+
+#################################
 # Events from the Mono profiler provider
 #################################
 noclrinstanceid:MonoProfiler:::

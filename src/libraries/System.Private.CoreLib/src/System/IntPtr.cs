@@ -179,6 +179,24 @@ namespace System
             get => unchecked((nint)nint_t.MinValue);
         }
 
+        /// <summary>Produces the full product of two unsigned native integers.</summary>
+        /// <param name="left">The integer to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
+        /// <param name="lower">The lower half of the full product.</param>
+        /// <returns>The upper half of the full product.</returns>
+        public static nint BigMul(nint left, nint right, out nint lower)
+        {
+#if TARGET_64BIT
+            Int128 result = long.BigMul(left, right);
+            lower = (nint)result.Lower;
+            return (nint)result.Upper;
+#else
+            long result = Math.BigMul((int)left, (int)right);
+            lower = (int)result;
+            return (int)(result >>> 32);
+#endif
+        }
+
         public int CompareTo(object? value)
         {
             if (value is nint other)
@@ -994,15 +1012,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1040,8 +1066,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else
@@ -1071,15 +1101,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1115,8 +1153,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else

@@ -15,6 +15,7 @@ namespace System.Net.Http
             bool value;
 
             // First check for the AppContext switch, giving it priority over the environment variable.
+            // This being first is important for correctness of all callers marked [FeatureSwitchDefinition].
             if (AppContext.TryGetSwitch(appCtxSettingName, out value))
             {
                 return value;

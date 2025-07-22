@@ -45,6 +45,22 @@ void ArrIndex::PrintBoundsCheckNodes(unsigned dim /* = -1 */)
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+// Print: debug print an SpanIndex struct in form: `V01[V02]`.
+//
+void SpanIndex::Print()
+{
+    printf("V%02d[V%02d]", lenLcl, indLcl);
+}
+
+//--------------------------------------------------------------------------------------------------
+// PrintBoundsCheckNode: - debug print an SpanIndex struct bounds check node tree id
+//
+void SpanIndex::PrintBoundsCheckNode()
+{
+    Compiler::printTreeID(bndsChk);
+}
+
 #endif // DEBUG
 
 //--------------------------------------------------------------------------------------------------
@@ -88,7 +104,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
         {
-            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length, bb);
+            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length);
 
             // We already guaranteed (by a sequence of preceding checks) that the array length operator will not
             // throw an exception because we null checked the base array.
@@ -116,6 +132,20 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
+// ToGenTree: Convert a Span.Length operation into a GenTree node.
+//
+// Arguments:
+//     comp - Compiler instance to allocate trees
+//
+// Return Values:
+//     Returns the gen tree representation for Span.Length
+//
+GenTree* LC_Span::ToGenTree(Compiler* comp)
+{
+    return comp->gtNewLclvNode(spanIndex->lenLcl, comp->lvaTable[spanIndex->lenLcl].lvType);
+}
+
+//--------------------------------------------------------------------------------------------------
 // ToGenTree - Convert an "identifier" into a GenTree node.
 //
 // Arguments:
@@ -138,6 +168,8 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             return comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
         case ArrAccess:
             return arrAccess.ToGenTree(comp, bb);
+        case SpanAccess:
+            return spanAccess.ToGenTree(comp);
         case Null:
             return comp->gtNewIconNode(0, TYP_REF);
         case ClassHandle:
@@ -1080,6 +1112,10 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
     assert(optInfos->Size() > 0);
 
+    // If we have spans, that means we have to be careful about the stride (see below).
+    //
+    bool hasSpans = false;
+
     // We only need to check for iteration behavior if we have array checks.
     //
     bool checkIterationBehavior = false;
@@ -1092,6 +1128,11 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             case LcOptInfo::LcJaggedArray:
             case LcOptInfo::LcMdArray:
                 checkIterationBehavior = true;
+                break;
+
+            case LcOptInfo::LcSpan:
+                checkIterationBehavior = true;
+                hasSpans               = true;
                 break;
 
             case LcOptInfo::LcTypeTest:
@@ -1154,20 +1195,34 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
 
     const bool isIncreasingLoop = iterInfo->IsIncreasingLoop();
-    assert(isIncreasingLoop || iterInfo->IsDecreasingLoop());
+    if (!isIncreasingLoop && !iterInfo->IsDecreasingLoop())
+    {
+        // Normally, we reject weird-looking loops in optIsLoopClonable, but it's not the case
+        // when we have both GDVs and array checks inside such loops.
+        return false;
+    }
 
     // We already know that this is either increasing or decreasing loop and the
     // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
     // is beyond the limit.
     int stride = abs(iterInfo->IterConst());
 
-    if (stride >= 58)
+    static_assert_no_msg(INT32_MAX >= CORINFO_Array_MaxLength);
+    if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
     {
-        // Array.MaxLength can have maximum of 0X7FFFFFC7 elements, so make sure
+        // Array.MaxLength can have maximum of 0x7fffffc7 elements, so make sure
         // the stride increment doesn't overflow or underflow the index. Hence,
         // the maximum stride limit is set to
         // (int.MaxValue - (Array.MaxLength - 1) + 1), which is
         // (0X7fffffff - 0x7fffffc7 + 2) = 0x3a or 58.
+        return false;
+    }
+
+    // We don't know exactly whether we might be dealing with a Span<T> or not,
+    // but if we suspect we are, we need to be careful about the stride:
+    // As Span<>.Length can be INT32_MAX unlike arrays.
+    if (hasSpans && (stride > 1))
+    {
         return false;
     }
 
@@ -1313,6 +1368,15 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
             }
             break;
+            case LcOptInfo::LcSpan:
+            {
+                LcSpanOptInfo* spanInfo = optInfo->AsLcSpanOptInfo();
+                LC_Span        spanLen(&spanInfo->spanIndex);
+                LC_Ident       spanLenIdent = LC_Ident::CreateSpanAccess(spanLen);
+                LC_Condition   cond(opLimitCondition, LC_Expr(ident), LC_Expr(spanLenIdent));
+                context->EnsureConditions(loop->GetIndex())->Push(cond);
+            }
+            break;
             case LcOptInfo::LcMdArray:
             {
                 LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
@@ -1454,10 +1518,6 @@ bool Compiler::optComputeDerefConditions(FlowGraphNaturalLoop* loop, LoopCloneCo
     // Get the dereference-able arrays and objects.
     JitExpandArrayStack<LC_Array>* const arrayDeref = context->EnsureArrayDerefs(loop->GetIndex());
     JitExpandArrayStack<LC_Ident>* const objDeref   = context->EnsureObjDerefs(loop->GetIndex());
-
-    // We currently expect to have at least one of these.
-    //
-    assert((arrayDeref->Size() != 0) || (objDeref->Size() != 0));
 
     // Generate the array dereference checks.
     //
@@ -1679,6 +1739,39 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
                 DBEXEC(dynamicPath, optDebugLogLoopCloning(arrIndexInfo->arrIndex.useBlock, arrIndexInfo->stmt));
             }
             break;
+            case LcOptInfo::LcSpan:
+            {
+                LcSpanOptInfo* spanIndexInfo = optInfo->AsLcSpanOptInfo();
+                compCurBB                    = spanIndexInfo->spanIndex.useBlock;
+                GenTree* bndsChkNode         = spanIndexInfo->spanIndex.bndsChk;
+
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Remove bounds check ");
+                    printTreeID(bndsChkNode->gtGetOp1());
+                    printf(" for " FMT_STMT ", ", spanIndexInfo->stmt->GetID());
+                    spanIndexInfo->spanIndex.Print();
+                    printf(", bounds check nodes: ");
+                    spanIndexInfo->spanIndex.PrintBoundsCheckNode();
+                    printf("\n");
+                }
+#endif // DEBUG
+
+                if (bndsChkNode->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
+                {
+                    optRemoveCommaBasedRangeCheck(bndsChkNode, spanIndexInfo->stmt);
+                }
+                else
+                {
+                    JITDUMP("  Bounds check already removed\n");
+
+                    // If the bounds check node isn't there, it better have been converted to a GT_NOP.
+                    assert(bndsChkNode->gtGetOp1()->OperIs(GT_NOP));
+                }
+                DBEXEC(dynamicPath, optDebugLogLoopCloning(spanIndexInfo->spanIndex.useBlock, spanIndexInfo->stmt));
+            }
+            break;
             case LcOptInfo::LcMdArray:
                 // TODO-CQ: CLONE: Implement.
                 break;
@@ -1722,60 +1815,6 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
     }
 }
 
-//------------------------------------------------------------------------
-// optShouldCloneLoop: Decide if a loop that can be cloned should be cloned.
-//
-// Arguments:
-//     loop        - the current loop for which the optimizations are performed.
-//     context     - data structure where all loop cloning info is kept.
-//
-// Returns:
-//     true if expected performance gain from cloning is worth the potential
-//     size increase.
-//
-// Remarks:
-//     This is a simple-minded heuristic meant to avoid "runaway" cloning
-//     where large loops are cloned.
-//
-//     We estimate the size cost of cloning by summing up the number of
-//     tree nodes in all statements in all blocks in the loop.
-//
-//     This value is compared to a hard-coded threshold, and if bigger,
-//     then the method returns false.
-//
-bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
-{
-    // See if loop size exceeds the limit.
-    //
-    const int      sizeConfig = JitConfig.JitCloneLoopsSizeLimit();
-    unsigned const sizeLimit  = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
-    unsigned       size       = 0;
-
-    BasicBlockVisit result = loop->VisitLoopBlocks([&](BasicBlock* block) {
-        assert(sizeLimit >= size);
-        unsigned const slack     = sizeLimit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(this, slack, &blockSize))
-        {
-            return BasicBlockVisit::Abort;
-        }
-
-        size += blockSize;
-        return BasicBlockVisit::Continue;
-    });
-
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), sizeLimit);
-        return false;
-    }
-
-    JITDUMP("Loop cloning: loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size,
-            sizeLimit);
-
-    return true;
-}
-
 //----------------------------------------------------------------------------
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
@@ -1792,6 +1831,12 @@ bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* 
 //
 bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
+    if (loop->GetHeader()->isRunRarely())
+    {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Loop is cold.\n", loop->GetIndex());
+        return false;
+    }
+
     const bool           requireIterable = !doesMethodHaveGuardedDevirtualization();
     NaturalLoopIterInfo* iterInfo        = context->GetLoopIterInfo(loop->GetIndex());
 
@@ -1877,7 +1922,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 #ifdef DEBUG
         const unsigned ivLclNum = iterInfo->IterVar;
         GenTree* const op1      = iterInfo->Iterator();
-        assert((op1->gtOper == GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
+        assert(op1->OperIs(GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
 #endif
     }
 
@@ -1913,7 +1958,6 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext*     contex
                                                     BasicBlock*           insertAfter)
 {
     JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loop->GetIndex());
-    assert(context->HasBlockConditions(loop->GetIndex()));
     assert(slowPreheader != nullptr);
 
     if (context->HasBlockConditions(loop->GetIndex()))
@@ -2087,9 +2131,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     //      ...
     //      slowPreheader --> slowHeader
     //
-    // We should always have block conditions.
-
-    assert(context->HasBlockConditions(loop->GetIndex()));
 
     // If any condition is false, go to slowPreheader (which branches or falls through to header of the slow loop).
     BasicBlock* slowHeader = nullptr;
@@ -2222,7 +2263,7 @@ bool Compiler::optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lcl
 //
 bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal)
 {
-    if (tree->gtOper != GT_COMMA)
+    if (!tree->OperIs(GT_COMMA))
     {
         return false;
     }
@@ -2273,6 +2314,44 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 }
 
 //---------------------------------------------------------------------------------------------------------------
+//  optExtractSpanIndex: Try to extract the Span element access from "tree".
+//
+//  Arguments:
+//      tree   - the tree to be checked if it is the Span [] operation.
+//      result - the extracted information is updated in result.
+//
+//  Return Value:
+//      Returns true if Span index can be extracted, else, return false.
+//
+//  Notes:
+//      The way loop cloning works for Span is that we don't actually know (or care)
+//      if it's a Span or an array, we just extract index and length locals out
+///     of the GT_BOUNDS_CHECK node. The fact that the length is a local var
+///     allows us to not worry about array/span dereferencing.
+//
+bool Compiler::optExtractSpanIndex(GenTree* tree, SpanIndex* result)
+{
+    // Bounds checks are almost always wrapped in a comma node
+    // and are the first operand.
+    if (!tree->OperIs(GT_COMMA) || !tree->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
+    {
+        return false;
+    }
+
+    GenTreeBoundsChk* arrBndsChk = tree->gtGetOp1()->AsBoundsChk();
+    if (!arrBndsChk->GetIndex()->OperIs(GT_LCL_VAR) || !arrBndsChk->GetArrayLength()->OperIs(GT_LCL_VAR))
+    {
+        return false;
+    }
+
+    result->lenLcl   = arrBndsChk->GetArrayLength()->AsLclVarCommon()->GetLclNum();
+    result->indLcl   = arrBndsChk->GetIndex()->AsLclVarCommon()->GetLclNum();
+    result->bndsChk  = tree;
+    result->useBlock = compCurBB;
+    return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------
 //  optReconstructArrIndexHelp: Helper function for optReconstructArrIndex. See that function for more details.
 //
 //  Arguments:
@@ -2293,7 +2372,7 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
         return true;
     }
     // We have a comma (check if array base expr is computed in "before"), descend further.
-    else if (tree->OperGet() == GT_COMMA)
+    else if (tree->OperIs(GT_COMMA))
     {
         GenTree* before = tree->gtGetOp1();
 
@@ -2476,7 +2555,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
     //
     if (info->cloneForArrayBounds && optReconstructArrIndex(tree, &arrIndex))
     {
-        assert(tree->gtOper == GT_COMMA);
+        assert(tree->OperIs(GT_COMMA));
 
 #ifdef DEBUG
         if (verbose)
@@ -2531,6 +2610,30 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
             {
                 JITDUMP("Induction V%02d is not used as index on dim %d\n", iterInfo->IterVar, dim);
             }
+        }
+        return WALK_SKIP_SUBTREES;
+    }
+
+    SpanIndex spanIndex = SpanIndex();
+    if (info->cloneForArrayBounds && optExtractSpanIndex(tree, &spanIndex))
+    {
+        // Check that the span's length local variable is invariant within the loop body.
+        if (!optIsStackLocalInvariant(info->loop, spanIndex.lenLcl))
+        {
+            JITDUMP("Span.Length V%02d is not loop invariant\n", spanIndex.lenLcl);
+            return WALK_SKIP_SUBTREES;
+        }
+
+        unsigned iterVar = info->context->GetLoopIterInfo(info->loop->GetIndex())->IterVar;
+        if (spanIndex.indLcl == iterVar)
+        {
+            // Update the loop context.
+            info->context->EnsureLoopOptInfo(info->loop->GetIndex())
+                ->Push(new (this, CMK_LoopOpt) LcSpanOptInfo(spanIndex, info->stmt));
+        }
+        else
+        {
+            JITDUMP("Induction V%02d is not used as index\n", iterVar);
         }
         return WALK_SKIP_SUBTREES;
     }
@@ -2974,8 +3077,9 @@ PhaseStatus Compiler::optCloneLoops()
         }
         else
         {
-            bool allTrue  = false;
-            bool anyFalse = false;
+            bool      allTrue   = false;
+            bool      anyFalse  = false;
+            const int sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
             context.EvaluateConditions(loop->GetIndex(), &allTrue, &anyFalse DEBUGARG(verbose));
             if (anyFalse)
             {
@@ -2992,7 +3096,13 @@ PhaseStatus Compiler::optCloneLoops()
                 // No need to clone.
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
-            else if (!optShouldCloneLoop(loop, &context))
+            // This is a simple-minded heuristic meant to avoid "runaway" cloning
+            // where large loops are cloned.
+            // We estimate the size cost of cloning by summing up the number of
+            // tree nodes in all statements in all blocks in the loop.
+            // This value is compared to a hard-coded threshold, and if bigger,
+            // then the method returns false.
+            else if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit))
             {
                 context.CancelLoopOptInfo(loop->GetIndex());
             }

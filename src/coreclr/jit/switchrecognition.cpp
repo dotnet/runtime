@@ -42,12 +42,12 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             modified = true;
 
             // Converted switches won't have dominant cases, so we can skip the switch peeling check.
-            assert(!block->GetSwitchTargets()->bbsHasDominantCase);
+            assert(!block->GetSwitchTargets()->HasDominantCase());
         }
         else
 #endif
 
-            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->bbsHasDominantCase)
+            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
         {
             fgPeelSwitch(block);
             modified = true;
@@ -157,11 +157,14 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
 //
 // Arguments:
 //    firstBlock - A block to start the search from
+//    testingForConversion - Test if its likely a switch conversion will happen.
+//    Used to prevent a pessimization when optimizing for conditional chaining.
+//    Done in this function to prevent maintaining the check in two places.
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
 //
-bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
+bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion)
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
@@ -206,7 +209,8 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             {
                 // Only the first conditional block can have multiple statements.
                 // Stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return !testingForConversion &&
+                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
 
             // Inspect secondary blocks
@@ -216,25 +220,29 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 if (currTrueTarget != trueTarget)
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!GenTree::Compare(currVariableNode, variableNode->gtEffectiveVal()))
                 {
                     // A different variable node is used, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (currBb->GetUniquePred(this) != prevBlock)
                 {
                     // Multiple preds in a secondary block, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!BasicBlock::sameEHRegion(prevBlock, currBb))
                 {
                     // Current block is in a different EH region, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 // Ok we can work with that, add the test value to the list
@@ -244,21 +252,27 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
                 {
                     // Too many suitable tests found - stop and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (isReversed)
                 {
                     // We only support reversed test (GT_NE) for the last block.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
+
+                if (testingForConversion)
+                    return true;
 
                 prevBlock = currBb;
             }
             else
             {
                 // Current block is not a suitable test, stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return !testingForConversion &&
+                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
         }
     }
@@ -363,7 +377,12 @@ bool Compiler::optSwitchConvert(
     FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
 
     // Convert firstBlock to a switch block
-    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc);
+    const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
+    assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
+    FlowEdge** const jmpTab =
+        new (this, CMK_FlowEdge) FlowEdge*[2 + jumpCount + 1 /* true/false edges | cases | default case */];
+
+    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(jmpTab, 2, jmpTab + 2, jumpCount + 1, true));
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
@@ -392,14 +411,7 @@ bool Compiler::optSwitchConvert(
         blockToRemove = nextBlockToRemove;
     }
 
-    const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
-    assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
-    FlowEdge** jmpTab = new (this, CMK_FlowEdge) FlowEdge*[jumpCount + 1 /*default case*/];
-
-    fgHasSwitch                                   = true;
-    firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
-    firstBlock->GetSwitchTargets()->bbsHasDefault = true;
-    firstBlock->GetSwitchTargets()->bbsDstTab     = jmpTab;
+    fgHasSwitch = true;
 
     // Splitting doesn't work well with jump-tables currently
     opts.compProcedureSplitting = false;
@@ -416,7 +428,8 @@ bool Compiler::optSwitchConvert(
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
     fgRemoveRefPred(trueEdge);
 
-    FlowEdge* switchTrueEdge = nullptr;
+    FlowEdge*        switchTrueEdge = nullptr;
+    FlowEdge** const cases          = jmpTab + 2;
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
@@ -424,7 +437,7 @@ bool Compiler::optSwitchConvert(
         const bool isTrue = (bitVector & static_cast<ssize_t>(1ULL << i)) != 0;
 
         FlowEdge* const newEdge = fgAddRefPred((isTrue ? blockIfTrue : blockIfFalse), firstBlock);
-        jmpTab[i]               = newEdge;
+        cases[i]                = newEdge;
 
         if ((switchTrueEdge == nullptr) && isTrue)
         {
@@ -436,11 +449,15 @@ bool Compiler::optSwitchConvert(
 
     // Link the 'default' case
     FlowEdge* const switchDefaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
-    jmpTab[jumpCount]                 = switchDefaultEdge;
+    cases[jumpCount]                  = switchDefaultEdge;
 
     // Fix likelihoods
     switchDefaultEdge->setLikelihood(falseLikelihood);
     switchTrueEdge->setLikelihood(1.0 - falseLikelihood);
+
+    // Initialize unique successor table
+    firstBlock->GetSwitchTargets()->GetSuccs()[0] = cases[0];
+    firstBlock->GetSwitchTargets()->GetSuccs()[1] = (cases[0] == switchTrueEdge) ? switchDefaultEdge : switchTrueEdge;
 
     return true;
 }

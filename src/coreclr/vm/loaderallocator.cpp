@@ -18,6 +18,9 @@
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
 LoaderAllocator::LoaderAllocator(bool collectible) :
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    m_dynamicHelpersRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
     m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
@@ -30,7 +33,9 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pStubHeap = NULL;
     m_pExecutableHeap = NULL;
 #ifdef FEATURE_READYTORUN
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     m_pDynamicHelpersHeap = NULL;
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     m_pFuncPtrStubs = NULL;
     m_hLoaderAllocatorObjectHandle = (OBJECTHANDLE)NULL;
@@ -65,6 +70,10 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
+#ifdef FEATURE_INTERPRETER
+    m_pLastUsedInterpreterCodeHeap = NULL;
+    m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+#endif // FEATURE_INTERPRETER
     m_pJumpStubCache = NULL;
     m_IsCollectible = collectible;
 
@@ -365,12 +374,12 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
                 if (pLoaderAllocator->IsCollectible())
                 {
-                    printf("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
+                    minipal_log_print_info("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
                     LoaderAllocatorSet::Iterator iter = pLoaderAllocator->m_LoaderAllocatorReferences.Begin();
                     while (iter != pLoaderAllocator->m_LoaderAllocatorReferences.End())
                     {
                         LoaderAllocator * pAllocator = *iter;
-                        printf("LARefTo: %p\n", pAllocator);
+                        minipal_log_print_info("LARefTo: %p\n", pAllocator);
                         iter++;
                     }
                 }
@@ -492,9 +501,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(pOriginalLoaderAllocator != NULL);
         PRECONDITION(pOriginalLoaderAllocator->IsCollectible());
         PRECONDITION(pOriginalLoaderAllocator->Id()->GetType() == LAT_Assembly);
@@ -1159,7 +1166,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
-                                                                      UnlockedLoaderHeap::HeapKind::Executable
+                                                                      LoaderHeapImplementationKind::Executable
                                                                       );
         initReservedMem += dwExecutableHeapReserveSize;
     }
@@ -1192,25 +1199,29 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
                                                        STUBMANAGER_RANGELIST(StubLinkStubManager),
-                                                       UnlockedLoaderHeap::HeapKind::Executable);
+                                                       LoaderHeapImplementationKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
 
-    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                           2 * GetStubCodePageSize(),
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
                                                                            &m_stubPrecodeRangeList,
-                                                                           UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                            false /* fUnlocked */,
-                                                                           StubPrecode::GenerateCodePage,
-                                                                           StubPrecode::CodeSize);
+                                                                           &s_stubPrecodeHeapConfig);
 
-    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                       2 * GetStubCodePageSize(),
-                                                                       &m_fixupPrecodeRangeList,
-                                                                       UnlockedLoaderHeap::HeapKind::Interleaved,
+#if defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
+    if (IsCollectible())
+    {
+        m_pDynamicHelpersStubHeap = m_pNewStubPrecodeHeap;
+    }
+    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) InterleavedLoaderHeap(
+                                                                               &m_dynamicHelpersRangeList,
+                                                                               false /* fUnlocked */,
+                                                                               &s_stubPrecodeHeapConfig);
+#endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
+
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) InterleavedLoaderHeap(&m_fixupPrecodeRangeList,
                                                                        false /* fUnlocked */,
-                                                                       FixupPrecode::GenerateCodePage,
-                                                                       FixupPrecode::CodeSize);
+                                                                       &s_fixupStubPrecodeHeapConfig);
 
     // Initialize the EE marshaling data to NULL.
     m_pMarshalingData = NULL;
@@ -1237,6 +1248,8 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 
 
 #ifdef FEATURE_READYTORUN
+
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
 {
     CONTRACTL {
@@ -1252,6 +1265,7 @@ PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
     }
     return m_pDynamicHelpersHeap;
 }
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
 
 FuncPtrStubs * LoaderAllocator::GetFuncPtrStubs()
@@ -1388,23 +1402,34 @@ void LoaderAllocator::Terminate()
 
     if (m_pFixupPrecodeHeap != NULL)
     {
-        m_pFixupPrecodeHeap->~LoaderHeap();
+        m_pFixupPrecodeHeap->~InterleavedLoaderHeap();
         m_pFixupPrecodeHeap = NULL;
     }
 
+    #ifdef FEATURE_READYTORUN
+    #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+        if (m_pDynamicHelpersStubHeap != NULL)
+        {
+            if (m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
+            {
+                m_pDynamicHelpersStubHeap->~InterleavedLoaderHeap();
+            }
+            m_pDynamicHelpersStubHeap = NULL;
+        }
+    #else
+        if (m_pDynamicHelpersHeap != NULL)
+        {
+            delete m_pDynamicHelpersHeap;
+            m_pDynamicHelpersHeap = NULL;
+        }
+    #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    #endif
+
     if (m_pNewStubPrecodeHeap != NULL)
     {
-        m_pNewStubPrecodeHeap->~LoaderHeap();
+        m_pNewStubPrecodeHeap->~InterleavedLoaderHeap();
         m_pNewStubPrecodeHeap = NULL;
     }
-
-#ifdef FEATURE_READYTORUN
-    if (m_pDynamicHelpersHeap != NULL)
-    {
-        delete m_pDynamicHelpersHeap;
-        m_pDynamicHelpersHeap = NULL;
-    }
-#endif
 
     if (m_pFuncPtrStubs != NULL)
     {
@@ -1466,10 +1491,17 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pExecutableHeap->EnumMemoryRegions(flags);
     }
 #ifdef FEATURE_READYTORUN
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    if (m_pDynamicHelpersStubHeap.IsValid() && m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
+    {
+        m_pDynamicHelpersStubHeap->EnumMemoryRegions(flags);
+    }
+#else
     if (m_pDynamicHelpersHeap.IsValid())
     {
         m_pDynamicHelpersHeap->EnumMemoryRegions(flags);
     }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     if (m_pFixupPrecodeHeap.IsValid())
     {

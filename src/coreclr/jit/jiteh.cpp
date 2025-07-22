@@ -640,6 +640,20 @@ bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
+// bbIsFuncletBeg() returns true if "block" is the start of a handler or filter region,
+// and if the handler/filter is a funclet.
+//
+bool Compiler::bbIsFuncletBeg(const BasicBlock* block)
+{
+    if (UsesFunclets())
+    {
+        assert(fgFuncletsCreated);
+        return bbIsHandlerBeg(block);
+    }
+
+    return false;
+}
+
 bool Compiler::ehHasCallableHandlers()
 {
     if (UsesFunclets())
@@ -1523,6 +1537,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     assert(XTnum < compHndBBtabCount);
     assert(!ehTableFinalized);
 
+    JITDUMP("\nRemoving EH#%u\n", XTnum);
+
     EHblkDsc* HBtab;
 
     /* Reduce the number of entries in the EH table by one */
@@ -1632,6 +1648,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     }
     else
     {
+        JITDUMP("Updating ACD entries after EH removal\n");
         // There are three possibilities for each ACD entry
         //
         // 1. remains as is (stays in same region with same indices)
@@ -1704,6 +1721,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
                 JITDUMPEXEC(add->Dump());
             }
         }
+
+        JITDUMP("... done updating ACD entries after EH removal\n");
     }
 }
 
@@ -1723,7 +1742,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 //
 // Notes:
 //
-//  Note that changes the size of the exception table.
+//  Note that this changes the size of the exception table.
 //  All the blocks referring to the various index values are updated.
 //  The new table entries are not filled in.
 //
@@ -1752,8 +1771,9 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
     if (deferAdding)
     {
         // We can add count entries...
+        // (we may not have allocated a table, so return a dummy non-null entry)
         //
-        return compHndBBtab;
+        return (EHblkDsc*)(0x1);
     }
 
     if (newCount > compHndBBtabAllocCount)
@@ -1848,7 +1868,7 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
         // yet, such as when we add an EH region for synchronized methods that don't already have one,
         // we start at zero, so we need to make sure the new table has at least one entry.
         //
-        unsigned newHndBBtabAllocCount = max(1u, compHndBBtabAllocCount + newCount);
+        unsigned newHndBBtabAllocCount = max(1u, newCount);
         noway_assert(compHndBBtabAllocCount < newHndBBtabAllocCount); // check for overflow
 
         if (newHndBBtabAllocCount > MAX_XCPTN_INDEX)
@@ -2111,7 +2131,7 @@ void Compiler::fgSortEHTable()
 //
 //      The benefit of this is that adding a block to an EH region will not require examining every EH region,
 //      looking for possible shared "first" blocks to adjust. It also makes it easier to put code at the top
-//      of a particular EH region, especially for loop optimizations.
+//      of a particular EH region.
 //
 //      These empty blocks (BB08, BB09) will generate no code (unless some code is subsequently placed into them),
 //      and will have the same native code offset as BB01 after code is generated. There may be labels generated
@@ -3177,8 +3197,8 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
 
     // Note: the flags field is kind of weird. It should be compared for equality
     // to determine the type of clause, even though it looks like a bitfield. In
-    // Particular, CORINFO_EH_CLAUSE_NONE is zero, so you can "&" to check it.
-    // You do need to mask off the bits, though, because CORINFO_EH_CLAUSE_DUPLICATE
+    // particular, CORINFO_EH_CLAUSE_NONE is zero, so you cannot "&" to check it.
+    // You do need to mask off the bits, though, because CORINFO_EH_CLAUSE_SAMETRY
     // is and'ed in.
     const DWORD CORINFO_EH_CLAUSE_TYPE_MASK = 0x7;
     switch (clause.Flags & CORINFO_EH_CLAUSE_TYPE_MASK)
@@ -3211,17 +3231,7 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
             break;
     }
 
-    if ((clause.TryOffset == clause.TryLength) && (clause.TryOffset == clause.HandlerOffset) &&
-        ((clause.Flags & (CORINFO_EH_CLAUSE_DUPLICATE | CORINFO_EH_CLAUSE_FINALLY)) ==
-         (CORINFO_EH_CLAUSE_DUPLICATE | CORINFO_EH_CLAUSE_FINALLY)))
-    {
-        printf(" cloned finally");
-    }
-    else if (clause.Flags & CORINFO_EH_CLAUSE_DUPLICATE)
-    {
-        printf(" duplicated");
-    }
-    else if (clause.Flags & CORINFO_EH_CLAUSE_SAMETRY)
+    if (clause.Flags & CORINFO_EH_CLAUSE_SAMETRY)
     {
         printf(" same try");
     }
@@ -3232,12 +3242,6 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
 
 void Compiler::fgVerifyHandlerTab()
 {
-    if (compIsForInlining())
-    {
-        // We don't inline functions with EH. Don't bother verifying the EH table in the inlinee Compiler.
-        return;
-    }
-
     if (compHndBBtabCount == 0)
     {
         return;
@@ -3292,11 +3296,11 @@ void Compiler::fgVerifyHandlerTab()
 
         if (fgFuncletsCreated)
         {
-            assert(HBtab->ebdHndBeg->HasFlag(BBF_FUNCLET_BEG));
+            assert(bbIsFuncletBeg(HBtab->ebdHndBeg));
 
             if (HBtab->HasFilter())
             {
-                assert(HBtab->ebdFilter->HasFlag(BBF_FUNCLET_BEG));
+                assert(bbIsFuncletBeg(HBtab->ebdFilter));
             }
         }
     }
@@ -3733,11 +3737,9 @@ void Compiler::fgVerifyHandlerTab()
         {
             assert(block->bbCatchTyp == BBCT_NONE);
 
-            if (fgFuncletsCreated)
-            {
-                // Make sure blocks that aren't the first block of a funclet do not have the BBF_FUNCLET_BEG flag set.
-                assert(!block->HasFlag(BBF_FUNCLET_BEG));
-            }
+            // If this block wasn't marked as an EH handler 'begin' block,
+            // it shouldn't be the beginning of a funclet.
+            assert(!fgFuncletsCreated || !bbIsFuncletBeg(block));
         }
 
         // Check for legal block types
@@ -4474,13 +4476,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             block->bbRefs--;
             bPrev->bbRefs++;
 
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
-
             // If this is a handler for a filter, the last block of the filter will end with
             // a BBJ_EHFILTERRET block that jumps to the first block of its handler.
             // So we need to update it to keep things in sync.
@@ -4497,9 +4492,9 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                     printf("EH#%u: Updating target for filter ret block: " FMT_BB " => " FMT_BB "\n", ehGetIndex(HBtab),
                            bFilterLast->bbNum, bPrev->bbNum);
                 }
-#endif // DEBUG
-       // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRedirectTargetEdge(bFilterLast, bPrev);
+#endif
+                // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRedirectEdge(bFilterLast->TargetEdgeRef(), bPrev);
             }
         }
 
@@ -4518,13 +4513,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 
             HBtab->ebdFilter = bPrev;
             bPrev->SetFlags(BBF_DONT_REMOVE);
-
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
 
             bPrev->bbRefs++;
         }

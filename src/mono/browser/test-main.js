@@ -129,10 +129,7 @@ function processArguments(incomingArguments, runArgs) {
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
-        if (currentArg.startsWith("--profile=")) {
-            const arg = currentArg.substring("--profile=".length);
-            runArgs.profilers.push(arg);
-        } else if (currentArg.startsWith("--setenv=")) {
+        if (currentArg.startsWith("--setenv=")) {
             const arg = currentArg.substring("--setenv=".length);
             const parts = arg.split('=');
             if (parts.length != 2)
@@ -333,12 +330,6 @@ async function run() {
         }
 
         console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
-
-        for (let i = 0; i < runArgs.profilers.length; ++i) {
-            const init = App.runtime.Module.cwrap('mono_wasm_load_profiler_' + runArgs.profilers[i], 'void', ['string']);
-            init("");
-        }
-
 
         if (runArgs.applicationArguments[0] == "--regression") {
             const exec_regression = App.runtime.Module.cwrap('mono_wasm_exec_regression', 'number', ['number', 'string']);

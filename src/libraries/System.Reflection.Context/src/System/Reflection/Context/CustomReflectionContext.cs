@@ -22,10 +22,7 @@ namespace System.Reflection.Context
 
         protected CustomReflectionContext(ReflectionContext source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             SourceContext = source;
             _projector = new ReflectionContextProjector(this);
@@ -33,20 +30,14 @@ namespace System.Reflection.Context
 
         public override Assembly MapAssembly(Assembly assembly)
         {
-            if (assembly is null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
+            ArgumentNullException.ThrowIfNull(assembly);
 
             return _projector.ProjectAssemblyIfNeeded(assembly);
         }
 
         public override TypeInfo MapType(TypeInfo type)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             return _projector.ProjectTypeIfNeeded(type);
         }

@@ -12,15 +12,15 @@ namespace System
     public static partial class Buffer
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void __ZeroMemory(void* b, nuint byteLength) =>
+        private static unsafe void ZeroMemoryInternal(void* b, nuint byteLength) =>
             RuntimeImports.memset((byte*)b, 0, byteLength);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void __Memmove(byte* dest, byte* src, nuint len) =>
+        private static unsafe void MemmoveInternal(byte* dest, byte* src, nuint len) =>
             RuntimeImports.memmove(dest, src, len);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount) =>
+        private static void BulkMoveWithWriteBarrierInternal(ref byte destination, ref byte source, nuint byteCount) =>
             RuntimeImports.RhBulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
     }
 }

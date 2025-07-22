@@ -29,7 +29,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(float))]
         [JsonSerializable(typeof(double))]
         [JsonSerializable(typeof(decimal))]
-#if NETCOREAPP
+#if NET
         [JsonSerializable(typeof(UInt128))]
         [JsonSerializable(typeof(Int128))]
         [JsonSerializable(typeof(Half))]
@@ -41,8 +41,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyMemory<byte>))]
         [JsonSerializable(typeof(DateTime))]
         [JsonSerializable(typeof(DateTimeOffset))]
+        [JsonSerializable(typeof(DateTimeOffset?))]
         [JsonSerializable(typeof(TimeSpan))]
-#if NETCOREAPP
+#if NET
         [JsonSerializable(typeof(DateOnly))]
         [JsonSerializable(typeof(TimeOnly))]
 #endif

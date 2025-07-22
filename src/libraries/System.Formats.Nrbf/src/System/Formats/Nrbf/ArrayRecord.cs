@@ -25,9 +25,9 @@ public abstract class ArrayRecord : SerializationRecord
     }
 
     /// <summary>
-    /// When overridden in a derived class, gets a buffer of integers that represent the number of elements in every dimension.
+    /// When overridden in a derived class, gets a buffer of integers that represent the number of elements in each dimension.
     /// </summary>
-    /// <value>A buffer of integers that represent the number of elements in every dimension.</value>
+    /// <value>A buffer of integers that represent the number of elements in each dimension.</value>
     public abstract ReadOnlySpan<int> Lengths { get; }
 
     /// <summary>
@@ -65,21 +65,14 @@ public abstract class ArrayRecord : SerializationRecord
     /// <returns>An array filled with the data provided in the serialized records.</returns>
     /// <exception cref="InvalidOperationException"><paramref name="expectedArrayType" /> does not match the data from the payload.</exception>
     /// <remarks>
-    /// Check the total length of the array by using <see cref="Lengths"/> property before calling this method,
-    /// as an attacker could have sent you a small payload that will require to allocate a very large array
-    /// and potentially cause <see cref="OutOfMemoryException"/> and Denial of Service.
+    /// Before calling this method, check the total length of the array by using the <see cref="Lengths"/> property.
+    /// An attacker could have sent a small payload that requires allocation of a very large array, which could cause <see cref="OutOfMemoryException"/> and denial of service.
     /// </remarks>
     [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
     public Array GetArray(Type expectedArrayType, bool allowNulls = true)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(expectedArrayType);
-#else
-        if (expectedArrayType is null)
-        {
-            throw new ArgumentNullException(nameof(expectedArrayType));
-        }
-#endif
+
         if (!TypeNameMatches(expectedArrayType))
         {
             throw new InvalidOperationException(SR.Format(SR.Serialization_TypeMismatch, expectedArrayType.AssemblyQualifiedName, TypeName.AssemblyQualifiedName));

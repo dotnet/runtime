@@ -2869,8 +2869,15 @@ namespace System.Text
                 {
                     // If there's a custom formatter, always use it.
                     AppendCustomFormatter(value, format: null);
+                    return;
                 }
-                else if (value is IFormattable)
+
+                if (value is null)
+                {
+                    return;
+                }
+
+                if (value is IFormattable)
                 {
                     // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                     // requires the former.  For value types, it won't matter as the type checks devolve into
@@ -2917,7 +2924,7 @@ namespace System.Text
                         _stringBuilder.Append(((IFormattable)value).ToString(format: null, _provider)); // constrained call avoiding boxing for value types
                     }
                 }
-                else if (value is not null)
+                else
                 {
                     _stringBuilder.Append(value.ToString());
                 }
@@ -2933,8 +2940,15 @@ namespace System.Text
                 {
                     // If there's a custom formatter, always use it.
                     AppendCustomFormatter(value, format);
+                    return;
                 }
-                else if (value is IFormattable)
+
+                if (value is null)
+                {
+                    return;
+                }
+
+                if (value is IFormattable)
                 {
                     // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                     // requires the former.  For value types, it won't matter as the type checks devolve into
@@ -2981,7 +2995,7 @@ namespace System.Text
                         _stringBuilder.Append(((IFormattable)value).ToString(format, _provider)); // constrained call avoiding boxing for value types
                     }
                 }
-                else if (value is not null)
+                else
                 {
                     _stringBuilder.Append(value.ToString());
                 }

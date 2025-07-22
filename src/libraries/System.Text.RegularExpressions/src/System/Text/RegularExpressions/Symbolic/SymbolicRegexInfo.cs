@@ -92,7 +92,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// The alternation remains high priority nullable if the left alternative is so.
-        /// All other info properties are the logical disjunction of the resepctive info properties
+        /// All other info properties are the logical disjunction of the respective info properties
         /// except that IsLazyLoop is false.
         /// </summary>
         public static SymbolicRegexInfo Alternate(SymbolicRegexInfo left_info, SymbolicRegexInfo right_info) =>
@@ -135,7 +135,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // Inherit anchor visibility from the loop body
             uint i = body_info._info;
 
-            // The loop is nullable if either the body is nullable or if the lower boud is 0
+            // The loop is nullable if either the body is nullable or if the lower bound is 0
             if (lowerBound == 0)
             {
                 i |= IsAlwaysNullableMask | CanBeNullableMask;

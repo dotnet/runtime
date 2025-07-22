@@ -26,7 +26,7 @@ if /i "%__Ninja%" == "1" (
     set __CmakeGenerator=Ninja
 ) else (
     if /i NOT "%__Arch%" == "wasm" (
-        if /i "%__VSVersion%" == "vs2022" (set __CmakeGenerator=%__CmakeGenerator% 17 2022)
+        if /i "%__VSVersion%" == "17.0" (set __CmakeGenerator=%__CmakeGenerator% 17 2022)
 
         if /i "%__Arch%" == "x64" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A x64)
         if /i "%__Arch%" == "arm" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM)
@@ -45,19 +45,11 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "browser" (
         if "%EMSDK_PATH%" == "" (
-            if not exist "%__repoRoot%\src\mono\browser\emsdk" (
-                echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
-                exit /B 1
-            )
-
-            set "EMSDK_PATH=%__repoRoot%\src\mono\browser\emsdk"
+            echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
+            exit /B 1
         )
-        :: replace backslash with forward slash and append last slash
-        set "EMSDK_PATH=!EMSDK_PATH:\=/!"
-        if not "!EMSDK_PATH:~-1!" == "/" set "EMSDK_PATH=!EMSDK_PATH!/"
 
-        set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/emscripten/cmake/Modules/Platform/Emscripten.cmake"
-        set __UseEmcmake=1
+        set CMakeToolPrefix=emcmake
     )
     if /i "%__Os%" == "wasi" (
         set "__repoRoot=!__repoRoot:\=/!"
@@ -100,7 +92,7 @@ if /i "%__Os%" == "android" (
     if "%__Arch%" == "arm64" (
         set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=arm64-v8a"
     )
-    if "%__Arch%" == "x64" (
+    if "%__Arch%" == "arm" (
         set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=armeabi-v7a"
     )
 
@@ -135,12 +127,8 @@ if not "%__ConfigureOnly%" == "1" (
     )
 )
 
-if /i "%__UseEmcmake%" == "1" (
-    call "!EMSDK_PATH!/emsdk_env.cmd" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
-) else (
-    echo "%CMakePath% %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
-    "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
-)
+echo %CMakeToolPrefix% "%CMakePath% %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
+%CMakeToolPrefix% "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 
 if "%errorlevel%" == "0" (
     echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%

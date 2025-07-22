@@ -1319,31 +1319,6 @@ static DWORD GCThreadStub(void* param)
     return 0;
 }
 
-// Initialize the critical section
-bool CLRCriticalSection::Initialize()
-{
-    ::InitializeCriticalSection(&m_cs);
-    return true;
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    ::DeleteCriticalSection(&m_cs);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    ::EnterCriticalSection(&m_cs);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    ::LeaveCriticalSection(&m_cs);
-}
-
 // WindowsEvent is an implementation of GCEvent that forwards
 // directly to Win32 APIs.
 class GCEvent::Impl

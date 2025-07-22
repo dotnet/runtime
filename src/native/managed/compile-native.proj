@@ -10,7 +10,7 @@
     <ItemGroup>
         <!-- add new projects here -->
         <!-- NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" -->
-        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdacreader/src/cdacreader.csproj" />
+        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdac/mscordaccore_universal/mscordaccore_universal.csproj" />
     </ItemGroup>
 
     <!-- Decide if we're going to do the NativeAOT builds -->
@@ -23,7 +23,7 @@
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(HostOS)' != '$(TargetOS)'">false</SupportsNativeAotComponents>
         <!-- unsupported targets -->
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</SupportsNativeAotComponents>
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'riscv64')">false</SupportsNativeAotComponents>
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'riscv64')">false</SupportsNativeAotComponents>
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or ('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' != 'true'))">true</SupportsNativeAotComponents>
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
     </PropertyGroup>

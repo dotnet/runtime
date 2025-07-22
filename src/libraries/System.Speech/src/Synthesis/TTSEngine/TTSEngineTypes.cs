@@ -216,9 +216,9 @@ namespace System.Speech.Synthesis.TtsEngine
         public int LangId { get { return _langId; } internal set { _langId = value; } }
         public int Emphasis { get { return _emphasis; } internal set { _emphasis = value; } }
         public int Duration { get { return _duration; } internal set { _duration = value; } }
-        public SayAs SayAs { get { return _sayAs; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _sayAs = value; } }
-        public Prosody Prosody { get { return _prosody; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _prosody = value; } }
-        public char[] Phoneme { get { return _phoneme; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _phoneme = value; } }
+        public SayAs SayAs { get { return _sayAs; } internal set { ArgumentNullException.ThrowIfNull(value); _sayAs = value; } }
+        public Prosody Prosody { get { return _prosody; } internal set { ArgumentNullException.ThrowIfNull(value); _prosody = value; } }
+        public char[] Phoneme { get { return _phoneme; } internal set { ArgumentNullException.ThrowIfNull(value); _phoneme = value; } }
         public FragmentState(TtsEngineAction action,
                              int langId,
                              int emphasis,
@@ -280,7 +280,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public ContourPoint[] GetContourPoints() { return _contourPoints; }
         public void SetContourPoints(ContourPoint[] points)
         {
-            Helpers.ThrowIfNull(points, nameof(points));
+            ArgumentNullException.ThrowIfNull(points);
 
             _contourPoints = (ContourPoint[])points.Clone();
         }

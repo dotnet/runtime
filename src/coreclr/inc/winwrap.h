@@ -42,11 +42,9 @@
 #ifdef HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExWrapper
 #define WszCreateFile          CreateFileWrapper
-#define WszGetFileAttributesEx GetFileAttributesExWrapper
 #else // HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExW
 #define WszCreateFile          CreateFileW
-#define WszGetFileAttributesEx GetFileAttributesExW
 #endif // HOST_WINDOWS
 
 //APIS which have a buffer as an out parameter

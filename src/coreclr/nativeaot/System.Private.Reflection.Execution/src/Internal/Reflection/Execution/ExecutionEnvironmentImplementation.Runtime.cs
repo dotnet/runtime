@@ -90,12 +90,6 @@ namespace Internal.Reflection.Execution
                     out isFlags);
                 return;
             }
-#if ECMA_METADATA_SUPPORT
-            if (qTypeDefinition.IsEcmaFormatMetadataBased)
-            {
-                return EcmaFormatEnumInfo.Create<TUnderlyingValue>(typeHandle, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
-            }
-#endif
             names = Array.Empty<string>();
             values = Array.Empty<object>();
             isFlags = false;

@@ -999,7 +999,7 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 #define FPREG_StatusWord(uc)    FPSTATE(uc).fp_fxsave.status
 #define FPREG_TagWord(uc)       FPSTATE(uc).fp_fxsave.tag
 #define FPREG_MxCsr(uc)         FPSTATE(uc).fp_fxsave.mxcsr
-#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc).fp_fxsave.mscsr_mask
+#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc).fp_fxsave.mxcsr_mask
 #define FPREG_ErrorOffset(uc)   *(DWORD*) &(FPSTATE(uc).fp_fxsave.rip)
 #define FPREG_ErrorSelector(uc) *((WORD*) &(FPSTATE(uc).fp_fxsave.rip) + 2)
 #define FPREG_DataOffset(uc)    *(DWORD*) &(FPSTATE(uc).fp_fxsave.rdp)

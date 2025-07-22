@@ -10,7 +10,7 @@
 class ProbeExtensionResult
 {
 public:
-    enum class Type
+    enum class Type : int32_t
     {
         Invalid,
         Bundle,

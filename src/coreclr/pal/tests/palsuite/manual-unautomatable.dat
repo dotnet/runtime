@@ -13,9 +13,6 @@ debug_api/outputdebugstringa/test1,1
 pal_specific/pal_get_stdin/test1,1
 threading/setconsolectrlhandler/test1,1
 threading/setconsolectrlhandler/test4,1
-# These tests take several minutes to run and time out when run with the harness
-file_io/gettempfilenamea/test2,1
-file_io/gettempfilenamew/test2,1
 # getstdhandle fails under Windows if the output is redirected so 
 # it must be run from the command line
 file_io/getstdhandle/test1,1

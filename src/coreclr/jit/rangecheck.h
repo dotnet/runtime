@@ -217,7 +217,7 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(Compiler* comp)
+    const char* ToString(Compiler* comp) const
     {
         switch (type)
         {
@@ -283,11 +283,34 @@ struct Range
     }
 
 #ifdef DEBUG
-    const char* ToString(Compiler* comp)
+    const char* ToString(Compiler* comp) const
     {
         return comp->printfAlloc("<%s, %s>", lLimit.ToString(comp), uLimit.ToString(comp));
     }
 #endif
+
+    bool IsValid() const
+    {
+        // A valid range must have lower limit <= upper limit.
+        if (lLimit.IsConstant() && uLimit.IsConstant())
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // When both limits are BinOpArray, we check if their offsets are valid
+        if (lLimit.IsBinOpArray() && uLimit.IsBinOpArray() && lLimit.vn == uLimit.vn)
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // e.g. <$bnd + 10, 5> is not a valid range since $bnd is expected to be >= 0
+        if (lLimit.IsBinOpArray() && uLimit.IsConstant())
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        return true;
+    }
 };
 
 // Helpers for operations performed on ranges
@@ -452,6 +475,9 @@ struct RangeOps
     // then ignore the dependent variables for the lower bound but not for the upper bound.
     static Range Merge(const Range& r1, const Range& r2, bool monIncreasing)
     {
+        assert(r1.IsValid());
+        assert(r2.IsValid());
+
         const Limit& r1lo = r1.LowerLimit();
         const Limit& r1hi = r1.UpperLimit();
         const Limit& r2lo = r2.LowerLimit();
@@ -510,10 +536,15 @@ struct RangeOps
         {
             result.lLimit = r1lo;
         }
-        // Widen Upper Limit => Max(k, (a.len + n)) yields (a.len + n),
-        // This is correct if k >= 0 and n >= k, since a.len always >= 0
-        // (a.len + n) could overflow, but the result (a.len + n) also
+
+        // NOTE: in some of the calculations below, we assume that $bnd is never negative
+        // and we have to be careful by not masking possible overflows.
+
+        // Widen Upper Limit => Max(k, ($bnd + n)) yields ($bnd + n),
+        // This is correct if k >= 0 and n >= k, since $bnd always >= 0
+        // ($bnd + n) could overflow, but the result ($bnd + n) also
         // preserves the overflow.
+        //
         if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && r2hi.IsBinOpArray() &&
             r2hi.GetConstant() >= r1hi.GetConstant())
         {
@@ -524,14 +555,38 @@ struct RangeOps
         {
             result.uLimit = r1hi;
         }
+
+        // Rule: <$bnd + cns1, ...> U <cns2, ...> = <min(cns1, cns2), ...> when cns1 <= 0
+        //
+        // Example: <$bnd - 3, ...> U <0, ...> = <-3, ...>
+        //
+        if (r1lo.IsBinOpArray() && r2lo.IsConstant() && (r1lo.cns <= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, min(r1lo.cns, r2lo.cns));
+        }
+        if (r2lo.IsBinOpArray() && r1lo.IsConstant() && (r2lo.cns <= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, min(r2lo.cns, r1lo.cns));
+        }
+
+        // Rule: <..., $bnd + cns1> U <..., $bnd + cns2> = <..., $bnd + max(cns1, cns2)>
+        //
+        // Example: <..., $bnd + 10> U <..., $bnd + 20> = <..., $bnd + 20>
+        //
         if (r1hi.IsBinOpArray() && r2hi.IsBinOpArray() && r1hi.vn == r2hi.vn)
         {
-            result.uLimit = r1hi;
-            // Widen the upper bound if the other constant is greater.
-            if (r2hi.GetConstant() > r1hi.GetConstant())
-            {
-                result.uLimit = r2hi;
-            }
+            result.uLimit     = r1hi; // copy $bnd and kind info
+            result.uLimit.cns = max(r1hi.cns, r2hi.cns);
+        }
+
+        // Rule: <$bnd + cns1, ...> U <$bnd + cns2, ...> = <$bnd + min(cns1, cns2), ...>
+        //
+        // Example: <$bnd + 10, ...> U <$bnd + 20, ...> = <$bnd + 10, ...>
+        //
+        if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
+        {
+            result.lLimit     = r1lo; // copy $bnd and kind info
+            result.lLimit.cns = min(r1lo.cns, r2lo.cns);
         }
         return result;
     }
@@ -610,6 +665,9 @@ struct RangeOps
     //
     static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
     {
+        assert(x.IsValid());
+        assert(y.IsValid());
+
         const Limit& xLower = x.LowerLimit();
         const Limit& yLower = y.LowerLimit();
         const Limit& xUpper = x.UpperLimit();

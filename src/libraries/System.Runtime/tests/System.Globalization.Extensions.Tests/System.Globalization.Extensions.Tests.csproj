@@ -10,6 +10,7 @@
     <Compile Include="IdnMapping\Data\Unicode_9_0\Unicode_9_0_IdnaTest.cs" />
     <Compile Include="IdnMapping\Data\Unicode_11_0\Unicode_11_0_IdnaTest.cs" />
     <Compile Include="IdnMapping\Data\Unicode_13_0\Unicode_13_0_IdnaTest.cs" />
+    <Compile Include="IdnMapping\Data\Unicode_15_0\Unicode_15_0_IdnaTest.cs" />
     <Compile Include="IdnMapping\Data\Unicode_15_1\Unicode_15_1_IdnaTest.cs" />
     <Compile Include="IdnMapping\Data\Unicode_16_0\Unicode_16_0_IdnaTest.cs" />
     <Compile Include="IdnMapping\IdnMappingIdnaConformanceTests.cs" />
@@ -30,6 +31,7 @@
     <EmbeddedResource Include="IdnMapping\Data\Unicode_9_0\IdnaTest_9.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_11_0\IdnaTest_11.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_13_0\IdnaTest_13.txt" />
+    <EmbeddedResource Include="IdnMapping\Data\Unicode_15_0\IdnaTest_15_0.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_15_1\IdnaTest_15_1.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_16_0\IdnaTest_16.txt" />
     <EmbeddedResource Include="Normalization\Data\win8.txt">

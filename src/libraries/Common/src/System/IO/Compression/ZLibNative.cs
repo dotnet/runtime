@@ -280,6 +280,17 @@ namespace System.IO.Compression
                 }
             }
 
+            public unsafe ErrorCode InflateReset2_(int windowBits)
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForInflate);
+
+                fixed (ZStream* stream = &_zStream)
+                {
+                    return Interop.ZLib.InflateReset2_(stream, windowBits);
+                }
+            }
+
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();

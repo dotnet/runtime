@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
-**
-**
 ** Purpose: Exposes features of the Garbage Collector through
 ** the class libraries.  This is a class which cannot be
 ** instantiated.
-**
-**
 ===========================================================*/
 
 using System.Collections.Generic;
@@ -111,7 +106,7 @@ namespace System
         private static partial long GetTotalMemory();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
-        private static partial void _Collect(int generation, int mode);
+        private static partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
@@ -179,7 +174,7 @@ namespace System
         public static void Collect()
         {
             // -1 says to GC all generations.
-            _Collect(-1, (int)InternalGCCollectionMode.Blocking);
+            _Collect(-1, (int)InternalGCCollectionMode.Blocking, lowMemoryPressure: false);
         }
 
         public static void Collect(int generation, GCCollectionMode mode)
@@ -195,13 +190,17 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
+            Collect(generation, mode, blocking, compacting, lowMemoryPressure: false);
+        }
+
+        internal static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting, bool lowMemoryPressure)
+        {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
             {
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
-
 
             int iInternalModes = 0;
 
@@ -227,7 +226,9 @@ namespace System
             }
 
             if (compacting)
+            {
                 iInternalModes |= (int)InternalGCCollectionMode.Compacting;
+            }
 
             if (blocking)
             {
@@ -238,7 +239,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            _Collect(generation, iInternalModes);
+            _Collect(generation, (int)iInternalModes, lowMemoryPressure);
         }
 
         public static int CollectionCount(int generation)
@@ -347,13 +348,17 @@ namespace System
         // Indicates that the system should not call the Finalize() method on
         // an object that would normally require this call.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _SuppressFinalize(object o);
+        private static extern void SuppressFinalizeInternal(object o);
 
-        public static void SuppressFinalize(object obj)
+        public static unsafe void SuppressFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _SuppressFinalize(obj);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
+            {
+                SuppressFinalizeInternal(obj);
+            }
         }
 
         // Indicates that the system should call the Finalize() method on an object
@@ -600,12 +605,14 @@ namespace System
                     return true;
                 }
 
-                // We need to take a snapshot of s_notifications.Count, so that in the case that s_notifications[i].Notification() registers new notifications,
-                // we neither get rid of them nor iterate over them
+                // We need to take a snapshot of s_notifications.Count, so that in the case that
+                // s_notifications[i].Notification() registers new notifications, we neither get rid
+                // of them nor iterate over them.
                 int count = s_notifications.Count;
 
-                // If there is no existing notifications, we won't be iterating over any and we won't be adding any new one. Also, there wasn't any added since
-                // we last invoked this method so it's safe to assume we can reset s_previousMemoryLoad.
+                // If there is no existing notifications, we won't be iterating over any and we won't
+                // be adding any new one. Also, there wasn't any added since we last invoked this
+                // method so it's safe to assume we can reset s_previousMemoryLoad.
                 if (count == 0)
                 {
                     s_previousMemoryLoad = float.MaxValue;

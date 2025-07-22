@@ -114,10 +114,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string? dnsHostName = null;
 
             // check that the context is not null
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             // contexttype should be DirectoryServer
             if (context.ContextType != DirectoryContextType.DirectoryServer)
@@ -167,10 +164,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static AdamInstance FindOne(DirectoryContext context, string partitionName)
         {
             // validate parameters (partitionName validated by the call to ConfigSet)
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             // contexttype should be ConfigurationSet
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
@@ -178,10 +172,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeConfigSet, nameof(context));
             }
 
-            if (partitionName == null)
-            {
-                throw new ArgumentNullException(nameof(partitionName));
-            }
+            ArgumentNullException.ThrowIfNull(partitionName);
 
             if (partitionName.Length == 0)
             {
@@ -199,10 +190,7 @@ namespace System.DirectoryServices.ActiveDirectory
             AdamInstanceCollection? adamInstanceCollection = null;
 
             // validate parameters (partitionName validated by the call to ConfigSet)
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             // contexttype should be ConfigurationSet
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
@@ -210,10 +198,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeConfigSet, nameof(context));
             }
 
-            if (partitionName == null)
-            {
-                throw new ArgumentNullException(nameof(partitionName));
-            }
+            ArgumentNullException.ThrowIfNull(partitionName);
 
             if (partitionName.Length == 0)
             {

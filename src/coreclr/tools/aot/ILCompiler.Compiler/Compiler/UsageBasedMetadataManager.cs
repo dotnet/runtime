@@ -312,29 +312,6 @@ namespace ILCompiler
             }
 
             MetadataType mdType = type as MetadataType;
-
-            // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have
-            // method bodies for all properties. It's common to have anonymous types used with reflection
-            // and it's hard to specify them in RD.XML.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic) != 0)
-            {
-                if (mdType != null &&
-                    mdType.HasInstantiation &&
-                    !mdType.IsGenericDefinition &&
-                    mdType.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") &&
-                    mdType.Name.Contains("AnonymousType"))
-                {
-                    foreach (MethodDesc method in type.GetMethods())
-                    {
-                        if (!method.Signature.IsStatic && method.IsSpecialName)
-                        {
-                            dependencies ??= new DependencyList();
-                            dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
-                        }
-                    }
-                }
-            }
-
             ModuleDesc module = mdType?.Module;
             if (module != null && !_rootEntireAssembliesExaminedModules.Contains(module))
             {
@@ -1245,27 +1222,18 @@ namespace ILCompiler
         CompleteTypesOnly = 1,
 
         /// <summary>
-        /// Specifies that heuristic that makes anonymous types work should be applied.
-        /// </summary>
-        /// <remarks>
-        /// Generates method bodies for properties on anonymous types even if they're not
-        /// statically used.
-        /// </remarks>
-        AnonymousTypeHeuristic = 2,
-
-        /// <summary>
         /// Scan IL for common reflection patterns to find additional compilation roots.
         /// </summary>
-        ReflectionILScanning = 4,
+        ReflectionILScanning = 2,
 
         /// <summary>
         /// Consider all native artifacts (native method bodies, etc) visible from reflection.
         /// </summary>
-        CreateReflectableArtifacts = 8,
+        CreateReflectableArtifacts = 4,
 
         /// <summary>
         /// Fully root used assemblies that are not marked IsTrimmable in metadata.
         /// </summary>
-        RootDefaultAssemblies = 16,
+        RootDefaultAssemblies = 8,
     }
 }
