@@ -295,7 +295,7 @@ internal readonly struct Loader_1 : ILoader
         return module.Base;
     }
 
-    TargetPointer ILoader.GetBinderALC(ModuleHandle handle)
+    TargetPointer ILoader.GetBinderAssemblyLoadContext(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
