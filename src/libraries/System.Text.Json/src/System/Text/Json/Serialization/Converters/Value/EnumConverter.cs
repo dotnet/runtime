@@ -676,11 +676,11 @@ namespace System.Text.Json.Serialization.Converters
                 return enumFields;
             }
 
-            var indices = new Tuple<int, int>[enumFields.Length];
+            var indices = new (int negativePopCount, int index)[enumFields.Length];
             for (int i = 0; i < enumFields.Length; i++)
             {
                 // we want values with more bits set to come first so negate the pop count
-                indices[i] = Tuple.Create(-PopCount(enumFields[i].Key), i);
+                indices[i] = (-PopCount(enumFields[i].Key), i);
             }
 
             Array.Sort(indices);
@@ -689,7 +689,7 @@ namespace System.Text.Json.Serialization.Converters
             for (int i = 0; i < indices.Length; i++)
             {
                 // extract the index from the sorted tuple
-                int index = indices[i].Item2;
+                int index = indices[i].index;
                 sortedFields[i] = enumFields[index];
             }
 
