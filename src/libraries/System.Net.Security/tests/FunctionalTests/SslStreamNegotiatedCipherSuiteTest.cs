@@ -55,6 +55,12 @@ namespace System.Net.Security.Tests
             if (PlatformDetection.IsAndroid)
                 return false;
 
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                // Network.framework CipherSuite APIs doesn't enforce the given list.
+                return false;
+            }
+
             try
             {
                 new CipherSuitesPolicy(Array.Empty<TlsCipherSuite>());

@@ -23,6 +23,7 @@
 #include "pal_x509.h"
 #include "pal_x509_macos.h"
 #include "pal_x509chain.h"
+#include "pal_networkframework.h"
 
 static const Entry s_cryptoAppleNative[] =
 {
@@ -136,6 +137,14 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_X509StoreRemoveCertificate)
     DllImportEntry(AppleCryptoNative_Pbkdf2)
     DllImportEntry(AppleCryptoNative_X509GetSubjectSummary)
+    DllImportEntry(AppleCryptoNative_Init)
+    DllImportEntry(AppleCryptoNative_NwConnectionCreate)
+    DllImportEntry(AppleCryptoNative_NwConnectionStart)
+    DllImportEntry(AppleCryptoNative_NwFramerDeliverInput)
+    DllImportEntry(AppleCryptoNative_NwConnectionSend)
+    DllImportEntry(AppleCryptoNative_NwConnectionReceive)
+    DllImportEntry(AppleCryptoNative_NwConnectionCancel)
+    DllImportEntry(AppleCryptoNative_GetConnectionInfo)
 };
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);

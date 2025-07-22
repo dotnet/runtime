@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (privateKey is MLDsaCng mldsaCng)
             {
-                CngKey key = mldsaCng.Key;
+                CngKey key = mldsaCng.KeyNoDuplicate;
 
                 ICertificatePal? clone = CopyWithPersistedCngKey(key);
 
@@ -223,7 +223,7 @@ namespace System.Security.Cryptography.X509Certificates
             using (PinAndClear.Track(exportedPkcs8))
             using (MLDsaCng clonedKey = MLDsaCng.ImportPkcs8PrivateKey(exportedPkcs8, out _))
             {
-                CngKey clonedCngKey = clonedKey.Key;
+                CngKey clonedCngKey = clonedKey.KeyNoDuplicate;
 
                 if (clonedCngKey.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
                 {
