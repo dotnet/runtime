@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
                 {
                 }
 
-                throw new CryptographicException(SR.Cryptography_CompositeKeyGenerationError);
+                throw new CryptographicException();
             }
 
             //  3.  Output the composite public and private keys

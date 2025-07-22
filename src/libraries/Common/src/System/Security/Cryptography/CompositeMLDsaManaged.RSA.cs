@@ -100,8 +100,25 @@ namespace System.Security.Cryptography
 #endif
             }
 
-            public static RsaComponent GenerateKey(RsaAlgorithm algorithm) =>
-                new RsaComponent(CreateRSA(algorithm.KeySizeInBits), algorithm.HashAlgorithmName, algorithm.Padding);
+            public static RsaComponent GenerateKey(RsaAlgorithm algorithm)
+            {
+                RSA? rsa = null;
+
+                try
+                {
+                    rsa = CreateRSA(algorithm.KeySizeInBits);
+
+                    // RSA key generation is lazy, so we need to force it to happen eagerly.
+                    _ = rsa.ExportParameters(includePrivateParameters: false);
+
+                    return new RsaComponent(rsa, algorithm.HashAlgorithmName, algorithm.Padding);
+                }
+                catch (CryptographicException)
+                {
+                    rsa?.Dispose();
+                    throw;
+                }
+            }
 
             public static RsaComponent ImportPrivateKey(RsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
