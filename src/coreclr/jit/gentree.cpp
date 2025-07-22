@@ -21295,7 +21295,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_DIV:
         {
-            if (simdBaseType == TYP_INT)
+            if (varTypeIsInt(simdBaseType))
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX) ||
                        compIsaSupportedDebugOnly(InstructionSet_AVX512));
