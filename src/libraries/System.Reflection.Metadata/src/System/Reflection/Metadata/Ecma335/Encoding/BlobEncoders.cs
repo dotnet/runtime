@@ -425,7 +425,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Encodes custom modifiers for the field type.
+        /// Creates <see cref="CustomModifiersEncoder" /> object that can be used to encode custom modifiers.
         /// </summary>
         /// <returns>A <see cref="CustomModifiersEncoder"/> instance that can be used to encode custom modifiers.</returns>
         public CustomModifiersEncoder CustomModifiers()
