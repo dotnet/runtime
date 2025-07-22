@@ -18,7 +18,7 @@ namespace System.Net.WebSockets.Client.Tests
         [OuterLoop("Uses Task.Delay")]
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(1)))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(RemoteEchoServer, o => o.KeepAliveInterval = TimeSpan.FromSeconds(1)))
             {
                 await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
 
@@ -38,10 +38,8 @@ namespace System.Net.WebSockets.Client.Tests
         [InlineData(1, 2)] // ping/pong
         public async Task KeepAlive_LongDelayBetweenReceiveSends_Succeeds(int keepAliveIntervalSec, int keepAliveTimeoutSec)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(
+            using (ClientWebSocket cws = await GetConnectedWebSocket(
                 RemoteEchoServer,
-                TimeOutMilliseconds,
-                _output,
                 options =>
                 {
                     options.KeepAliveInterval = TimeSpan.FromSeconds(keepAliveIntervalSec);

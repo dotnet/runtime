@@ -12,15 +12,12 @@ namespace System.Net.WebSockets.Client.Tests
         protected Task RunEchoAsync(Func<Uri, Task> clientFunc, bool useSsl)
         {
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
-            var options = new LoopbackWebSocketServer.Options
+            var options = new LoopbackWebSocketServer.Options(HttpVersion, useSsl)
             {
-                HttpVersion = HttpVersion,
-                UseSsl = useSsl,
                 SkipServerHandshakeResponse = true,
                 IgnoreServerErrors = true,
                 AbortServerOnClientExit = true,
-                ParseEchoOptions = true,
-                Output = _output
+                ParseEchoOptions = true
             };
 
             return LoopbackWebSocketServer.RunEchoAsync(clientFunc, options, timeoutCts.Token);
@@ -29,13 +26,10 @@ namespace System.Net.WebSockets.Client.Tests
         protected Task RunEchoHeadersAsync(Func<Uri, Task> clientFunc, bool useSsl)
         {
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
-            var options = new LoopbackWebSocketServer.Options
+            var options = new LoopbackWebSocketServer.Options(HttpVersion, useSsl)
             {
-                HttpVersion = HttpVersion,
-                UseSsl = useSsl,
                 IgnoreServerErrors = true,
-                AbortServerOnClientExit = true,
-                Output = _output
+                AbortServerOnClientExit = true
             };
 
             return LoopbackWebSocketServer.RunAsync(

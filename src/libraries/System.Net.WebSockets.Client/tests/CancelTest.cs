@@ -58,7 +58,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(5);
                 return cws.SendAsync(
-                    ToUtf8(EchoControlMessage.Delay5Sec),
+                    EchoControlMessage.Delay5Sec.ToUtf8(),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -73,7 +73,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(5);
 
                 await cws.SendAsync(
-                    ToUtf8(EchoControlMessage.Delay5Sec),
+                    EchoControlMessage.Delay5Sec.ToUtf8(),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -93,7 +93,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    ToUtf8(EchoControlMessage.Delay5Sec),
+                    EchoControlMessage.Delay5Sec.ToUtf8(),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
@@ -114,7 +114,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    ToUtf8(EchoControlMessage.Delay5Sec),
+                    EchoControlMessage.Delay5Sec.ToUtf8(),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);

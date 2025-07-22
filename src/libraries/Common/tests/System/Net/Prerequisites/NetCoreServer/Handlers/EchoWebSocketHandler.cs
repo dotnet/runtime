@@ -13,7 +13,7 @@ namespace NetCoreServer
     {
         public static async Task InvokeAsync(HttpContext context)
         {
-            var queryString = context.Request.QueryString.HasValue ? context.Request.QueryString.Value : "";
+            var queryString = context.Request.QueryString.ToUriComponent(); // Returns empty string if request URI has no query
             WebSocketEchoOptions options = await WebSocketEchoHelper.ProcessOptions(queryString);
             try
             {

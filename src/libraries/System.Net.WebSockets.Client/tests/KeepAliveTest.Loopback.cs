@@ -43,24 +43,17 @@ namespace System.Net.WebSockets.Client.Tests
 
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
-            var options = new LoopbackWebSocketServer.Options
-            {
-                HttpVersion = HttpVersion,
-                UseSsl = useSsl,
-                HttpInvoker = GetInvoker(),
-                DisposeClientWebSocket = true,
-                ConfigureClientOptions = clientOptions =>
-                {
-                    clientOptions.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
-                    clientOptions.KeepAliveTimeout = TimeSpan.FromSeconds(1);
-                },
-                Output = _output
-            };
-
             return LoopbackWebSocketServer.RunAsync(
-                async (cws, token) =>
+                async uri =>
                 {
-                    ReadAheadWebSocket clientWebSocket = new(cws);
+                    var token = timeoutCts.Token;
+                    ClientWebSocket rawCws = await GetConnectedWebSocket(uri,
+                        o =>
+                        {
+                            o.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
+                            o.KeepAliveTimeout = TimeSpan.FromSeconds(1);
+                        });
+                    ReadAheadWebSocket clientWebSocket = new(rawCws);
 
                     await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token).ConfigureAwait(false);
 
@@ -98,7 +91,7 @@ namespace System.Net.WebSockets.Client.Tests
                     await serverWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token).ConfigureAwait(false);
                     Assert.Equal(WebSocketState.Closed, serverWebSocket.State);
                 },
-                options,
+                new LoopbackWebSocketServer.Options(HttpVersion, useSsl),
                 timeoutCts.Token);
         }
 

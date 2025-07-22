@@ -88,7 +88,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
             DateTime start = DateTime.Now;
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(Test.Common.Configuration.WebSockets.RemoteEchoServer))
             {
                 await SendAndReceive(cws, "test");
                 using (var timer = new Timers.Timer(fastTimeoutFrequency))

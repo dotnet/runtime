@@ -52,11 +52,13 @@ namespace System.Net.WebSockets.Client.Tests
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
             return LoopbackWebSocketServer.RunAsync(
-                async (clientWebSocket, token) =>
+                async uri =>
                 {
+                    ClientWebSocket clientWebSocket = await GetConnectedWebSocket(uri);
+
                     if (verifySendReceive)
                     {
-                        await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token);
+                        await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, timeoutCts.Token);
                     }
 
                     switch (abortType)
@@ -83,14 +85,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WebSocketError.ConnectionClosedPrematurely, exception.WebSocketErrorCode);
                     Assert.Equal(WebSocketState.Aborted, serverWebSocket.State);
                 },
-                new LoopbackWebSocketServer.Options
-                {
-                    HttpVersion = HttpVersion,
-                    UseSsl = useSsl,
-                    HttpInvoker = GetInvoker(),
-                    DisposeServerWebSocket = true,
-                    Output = _output
-                },
+                new LoopbackWebSocketServer.Options(HttpVersion, useSsl) { DisposeServerWebSocket = true },
                 timeoutCts.Token);
         }
 
@@ -107,15 +102,6 @@ namespace System.Net.WebSockets.Client.Tests
 
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
-            var globalOptions = new LoopbackWebSocketServer.Options
-            {
-                HttpVersion = HttpVersion,
-                UseSsl = useSsl,
-                HttpInvoker = null,
-                SkipServerHandshakeResponse = true,
-                Output = _output
-            };
-
             var serverReceivedEosTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var clientReceivedEosTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -123,8 +109,7 @@ namespace System.Net.WebSockets.Client.Tests
                 async uri =>
                 {
                     var token = timeoutCts.Token;
-                    var clientOptions = globalOptions with { HttpInvoker = GetInvoker() };
-                    var clientWebSocket = await LoopbackWebSocketServer.GetConnectedClientAsync(uri, clientOptions, token).ConfigureAwait(false);
+                    ClientWebSocket clientWebSocket = await GetConnectedWebSocket(uri);
 
                     if (serverEosType == ServerEosType.AfterSomeData)
                     {
@@ -174,7 +159,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                     serverWebSocket.Dispose();
                 },
-                globalOptions,
+                new LoopbackWebSocketServer.Options(HttpVersion, useSsl) { SkipServerHandshakeResponse = true },
                 timeoutCts.Token);
         }
 

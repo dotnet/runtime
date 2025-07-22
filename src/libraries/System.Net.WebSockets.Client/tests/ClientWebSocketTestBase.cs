@@ -39,9 +39,6 @@ namespace System.Net.WebSockets.Client.Tests
         public const int CloseDescriptionMaxLength = 123;
         public readonly ITestOutputHelper _output = output;
 
-        public static ArraySegment<byte> ToUtf8(string text) => WebSocketHelper.ToUtf8(text);
-        public static string FromUtf8(ArraySegment<byte> buffer) => WebSocketHelper.FromUtf8(buffer);
-
         public static IEnumerable<object[]> UnavailableWebSocketServers
         {
             get
@@ -141,35 +138,74 @@ namespace System.Net.WebSockets.Client.Tests
             return new HttpClient(handler);
         }
 
-        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri)
-            => WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, _output, o => ConfigureHttpVersion(o, uri), GetInvoker());
+        public Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, Action<ClientWebSocketOptions>? configureOptions = null)
+            => WebSocketHelper.Retry(
+                async () =>
+                {
+                    var cws = new ClientWebSocket();
+                    configureOptions?.Invoke(cws.Options);
+
+                    using var cts = new CancellationTokenSource(TimeOutMilliseconds);
+                    Task taskConnect = ConnectAsync(cws, uri, cts.Token);
+
+                    Assert.True(
+                        (cws.State == WebSocketState.None) ||
+                        (cws.State == WebSocketState.Connecting) ||
+                        (cws.State == WebSocketState.Open) ||
+                        (cws.State == WebSocketState.Aborted),
+                        "State immediately after ConnectAsync incorrect: " + cws.State);
+                    await taskConnect;
+
+                    Assert.Equal(WebSocketState.Open, cws.State);
+                    return cws;
+                });
 
         protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken)
-            => WebSocketHelper.ConnectAsync(cws, uri, o => ConfigureHttpVersion(o, uri), GetInvoker(), validateState: false, cancellationToken);
-
-        protected Task TestEcho(Uri uri, WebSocketMessageType type)
-            => WebSocketHelper.TestEcho(uri, type, TimeOutMilliseconds, _output, o => ConfigureHttpVersion(o, uri), GetInvoker());
-
-        protected void ConfigureHttpVersion(ClientWebSocketOptions options, Uri uri)
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsNotBrowser)
             {
-                return;
+                if (uri.Scheme == "wss" && UseSharedHandler)
+                {
+                    cws.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+                }
+
+                cws.Options.HttpVersion = HttpVersion;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                if (HttpVersion == Net.HttpVersion.Version20 && uri.Query is not (null or "" or "?"))
+                {
+                    // RFC 7540, section 8.3. The CONNECT Method:
+                    //  > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
+                    //
+                    // HTTP/2 CONNECT requests must drop query (containing echo options) from the request URI.
+                    // The information needs to be passed in a different way, e.g. in a custom header.
+
+                    cws.Options.SetRequestHeader(WebSocketHelper.OriginalQueryStringHeader, uri.Query);
+                }
             }
 
-            options.HttpVersion = HttpVersion;
-            options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            return UseSharedHandler
+                ? cws.ConnectAsync(uri, cancellationToken) // Ensure test coverage for both overloads
+                : cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
+        }
 
-            if (HttpVersion == Net.HttpVersion.Version20 && uri.Query is not (null or "" or "?"))
-            {
-                // RFC 7540, section 8.3. The CONNECT Method:
-                //  > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
-                //
-                // HTTP/2 CONNECT requests must drop query (containing echo options) from the request URI.
-                // The information needs to be passed in a different way, e.g. in a custom header.
+        protected Task RunClientAsync(
+            Uri uri,
+            Func<ClientWebSocket, CancellationToken, Task> clientWebSocketFunc,
+            Action<ClientWebSocketOptions>? configureOptions = null)
+        {
+            var cts = new CancellationTokenSource(TimeOutMilliseconds);
+            return RunClientAsync(uri, clientWebSocketFunc, configureOptions, cts.Token);
+        }
 
-                options.SetRequestHeader(WebSocketHelper.OriginalQueryStringHeader, uri.Query);
-            }
+        protected async Task RunClientAsync(
+            Uri uri,
+            Func<ClientWebSocket, CancellationToken, Task> clientWebSocketFunc,
+            Action<ClientWebSocketOptions>? configureOptions,
+            CancellationToken cancellationToken)
+        {
+            using ClientWebSocket cws = await GetConnectedWebSocket(uri, configureOptions);
+            await clientWebSocketFunc(cws, cancellationToken);
         }
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }

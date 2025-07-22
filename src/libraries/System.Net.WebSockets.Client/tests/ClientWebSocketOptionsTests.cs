@@ -50,7 +50,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             for (int i = 0; i < 3; i++) // Connect and disconnect multiple times to exercise shared handler on netcoreapp
             {
-                var ws = await WebSocketHelper.Retry(_output, async () =>
+                var ws = await WebSocketHelper.Retry(async () =>
                 {
                     var cws = new ClientWebSocket();
                     cws.Options.Proxy = null;
@@ -76,11 +76,7 @@ namespace System.Net.WebSockets.Client.Tests
             _output.WriteLine($"ProxyServer: {proxyServerUri}");
 
             IWebProxy proxy = new WebProxy(new Uri(proxyServerUri));
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(
-                server,
-                TimeOutMilliseconds,
-                _output,
-                proxy: proxy))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, o => o.Proxy = proxy))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 Assert.Equal(WebSocketState.Open, cws.State);

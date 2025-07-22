@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
@@ -19,25 +17,19 @@ namespace System.Net.WebSockets.Client.Tests
         public static bool WebSocketsSupported { get { return s_WebSocketSupported.Value; } }
 
         public static async Task TestEcho(
-            Uri server,
+            ClientWebSocket cws,
             WebSocketMessageType type,
-            int timeOutMilliseconds,
-            ITestOutputHelper output,
-            Action<ClientWebSocketOptions> configureOptions,
-            HttpMessageInvoker? invoker = null)
+            CancellationToken cancellationToken)
         {
-            var cts = new CancellationTokenSource(timeOutMilliseconds);
             string message = "Hello WebSockets!";
             string closeMessage = "Good bye!";
             var receiveBuffer = new byte[100];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, configureOptions, invoker);
-
-            await cws.SendAsync(ToUtf8(message), type, true, cts.Token);
+            await cws.SendAsync(message.ToUtf8(), type, true, cancellationToken);
             Assert.Equal(WebSocketState.Open, cws.State);
 
-            WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cts.Token);
+            WebSocketReceiveResult recvRet = await cws.ReceiveAsync(receiveSegment, cancellationToken);
             Assert.Equal(WebSocketState.Open, cws.State);
             Assert.Equal(message.Length, recvRet.Count);
             Assert.Equal(type, recvRet.MessageType);
@@ -46,9 +38,9 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Null(recvRet.CloseStatusDescription);
 
             var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
-            Assert.Equal(message, FromUtf8(recvSegment));
+            Assert.Equal(message, recvSegment.Utf8ToString());
 
-            Task taskClose = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeMessage, cts.Token);
+            Task taskClose = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeMessage, cancellationToken);
             Assert.True(
                 (cws.State == WebSocketState.Open) || (cws.State == WebSocketState.CloseSent) ||
                 (cws.State == WebSocketState.CloseReceived) || (cws.State == WebSocketState.Closed),
@@ -59,83 +51,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(closeMessage, cws.CloseStatusDescription);
         }
 
-        public static Task<ClientWebSocket> GetConnectedWebSocket(
-            Uri server,
-            int timeOutMilliseconds,
-            ITestOutputHelper output,
-            TimeSpan keepAliveInterval = default,
-            IWebProxy proxy = null,
-            HttpMessageInvoker? invoker = null) =>
-                GetConnectedWebSocket(
-                    server,
-                    timeOutMilliseconds,
-                    output,
-                    options =>
-                    {
-                        if (proxy != null)
-                        {
-                            options.Proxy = proxy;
-                        }
-                        if (keepAliveInterval.TotalSeconds > 0)
-                        {
-                            options.KeepAliveInterval = keepAliveInterval;
-                        }
-                    },
-                    invoker
-                );
-
-        public static Task<ClientWebSocket> GetConnectedWebSocket(
-            Uri server,
-            int timeOutMilliseconds,
-            ITestOutputHelper output,
-            Action<ClientWebSocketOptions> configureOptions,
-            HttpMessageInvoker? invoker = null) =>
-            Retry(output, async () =>
-            {
-                var cws = new ClientWebSocket();
-                using var cts = new CancellationTokenSource(timeOutMilliseconds);
-                await ConnectAsync(cws, server, configureOptions, invoker, validateState: true, cts.Token);
-                return cws;
-            });
-
-        public static async Task ConnectAsync(
-            ClientWebSocket cws,
-            Uri server,
-            Action<ClientWebSocketOptions> configureOptions,
-            HttpMessageInvoker? invoker = null,
-            bool validateState = true,
-            CancellationToken cancellationToken = default)
-        {
-            if (PlatformDetection.IsNotBrowser && server.Scheme == "wss" && invoker == null)
-            {
-                cws.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
-            }
-
-            configureOptions(cws.Options);
-
-            Task taskConnect = invoker == null
-                ? cws.ConnectAsync(server, cancellationToken)
-                : cws.ConnectAsync(server, invoker, cancellationToken);
-
-            if (validateState)
-            {
-                Assert.True(
-                    (cws.State == WebSocketState.None) ||
-                    (cws.State == WebSocketState.Connecting) ||
-                    (cws.State == WebSocketState.Open) ||
-                    (cws.State == WebSocketState.Aborted),
-                    "State immediately after ConnectAsync incorrect: " + cws.State);
-            }
-
-            await taskConnect;
-
-            if (validateState)
-            {
-                Assert.Equal(WebSocketState.Open, cws.State);
-            }
-        }
-
-        public static async Task<T> Retry<T>(ITestOutputHelper output, Func<Task<T>> func)
+        public static async Task<T> Retry<T>(Func<Task<T>> func)
         {
             const int MaxTries = 5;
             int betweenTryDelayMilliseconds = 1000;
@@ -148,10 +64,9 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 catch (WebSocketException exc)
                 {
-                    output.WriteLine($"Retry after attempt #{i} failed with {exc}");
                     if (i == MaxTries)
                     {
-                        throw;
+                        Assert.Fail($"Failed after {MaxTries} attempts with exception: {exc}");
                     }
 
                     await Task.Delay(betweenTryDelayMilliseconds);
@@ -179,22 +94,14 @@ namespace System.Net.WebSockets.Client.Tests
             }
             finally
             {
-                if (cws != null)
-                {
-                    cws.Dispose();
-                }
+                cws?.Dispose();
             }
         }
 
-        public static ArraySegment<byte> ToUtf8(string text)
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(text);
-            return new ArraySegment<byte>(buffer);
-        }
+        public static ArraySegment<byte> ToUtf8(this string text)
+            => new ArraySegment<byte>(Encoding.UTF8.GetBytes(text));
 
-        public static string FromUtf8(ArraySegment<byte> buffer)
-        {
-            return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
-        }
+        public static string Utf8ToString(this ArraySegment<byte> buffer)
+            => Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
     }
 }

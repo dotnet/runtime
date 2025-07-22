@@ -15,7 +15,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.True(options.IgnoreServerErrors);
             Assert.True(options.AbortServerOnClientExit);
 
-            return RunAsyncPrivate(
+            return RunAsync(
                 loopbackClientFunc,
                 (data, token) => RunEchoServerWebSocketAsync(data, options, token),
                 options,

@@ -12,34 +12,92 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static partial class LoopbackWebSocketServer
     {
-        private static Task RunClientAndHttpServerAsync(
-            Func<Uri, Task> clientFunc,
-            Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc,
-            Options options,
-            CancellationToken clientExitCt,
-            CancellationToken globalCt)
+        abstract class HttpRunner
         {
-            if (options.HttpVersion == HttpVersion.Version11)
+            protected abstract LoopbackServerFactory ServerFactory { get; }
+            protected abstract GenericLoopbackOptions CreateOptions(bool useSsl);
+
+            public async Task RunAsync(
+                        Func<Uri, Task> clientFunc,
+                        Func<WebSocketRequestData, CancellationToken, Task> wsServerFunc,
+                        Options options,
+                        CancellationToken clientExitCt,
+                        CancellationToken globalCt)
             {
-                return LoopbackServer.CreateClientAndServerAsync(
-                    clientFunc,
-                    server => RunHttpServer(
-                        ProcessHttp11WebSocketRequest, server, loopbackServerFunc, options, clientExitCt, globalCt),
-                    new LoopbackServer.Options { WebSocketEndpoint = true, UseSsl = options.UseSsl });
+                using (var server = ServerFactory.CreateServer(CreateOptions(options.UseSsl)))
+                {
+                    Task clientTask = clientFunc(server.Address);
+                    Task serverTask = ProcessWebSocketRequest(server, wsServerFunc, options, clientExitCt, globalCt);
+
+                    await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(LoopbackServerFactory.LoopbackServerTimeoutMilliseconds);
+                }
             }
 
-            if (options.HttpVersion == HttpVersion.Version20)
+            private async Task ProcessWebSocketRequest(
+                GenericLoopbackServer httpServer,
+                Func<WebSocketRequestData, CancellationToken, Task> wsServerFunc,
+                Options options,
+                CancellationToken clientExitCt,
+                CancellationToken globalCt)
             {
-                var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl, EnsureThreadSafeIO = true };
+                try
+                {
+                    using CancellationTokenSource linkedCts =
+                        CancellationTokenSource.CreateLinkedTokenSource(globalCt, clientExitCt);
+                    await ProcessWebSocketRequestCore(httpServer, wsServerFunc, options, linkedCts.Token);
+                }
+                catch (Exception e) when (options.IgnoreServerErrors)
+                {
+                    if (e is OperationCanceledException && clientExitCt.IsCancellationRequested)
+                    {
+                        return; // expected
+                    }
 
-                return Http2LoopbackServer.CreateClientAndServerAsync(
-                    clientFunc,
-                    server => RunHttpServer(
-                        ProcessHttp2WebSocketRequest, server, loopbackServerFunc, options, clientExitCt, globalCt),
-                    http2Options);
+                    if (e is WebSocketException or IOException or SocketException)
+                    {
+                        return; // ignore
+                    }
+
+                    throw; // don't swallow Assert failures and unexpected exceptions
+                }
             }
 
-            throw new ArgumentException(nameof(options.HttpVersion));
+            protected abstract Task ProcessWebSocketRequestCore(
+                GenericLoopbackServer httpServer,
+                Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc,
+                Options options,
+                CancellationToken cancellationToken);
+        }
+
+        class Http11Runner : HttpRunner
+        {
+            public static HttpRunner Singleton { get; } = new Http11Runner();
+            protected override LoopbackServerFactory ServerFactory => Http11LoopbackServerFactory.Singleton;
+
+            protected override GenericLoopbackOptions CreateOptions(bool useSsl) => new LoopbackServer.Options
+            {
+                UseSsl = useSsl,
+                WebSocketEndpoint = true
+            };
+
+            protected override Task ProcessWebSocketRequestCore(GenericLoopbackServer s, Func<WebSocketRequestData, CancellationToken, Task> func, Options o, CancellationToken ct)
+                => ProcessHttp11WebSocketRequest((LoopbackServer)s, func, o, ct);
+        }
+
+        class Http2Runner : HttpRunner
+        {
+            public static HttpRunner Singleton { get; } = new Http2Runner();
+            protected override LoopbackServerFactory ServerFactory => Http2LoopbackServerFactory.Singleton;
+
+            protected override GenericLoopbackOptions CreateOptions(bool useSsl) => new Http2Options
+            {
+                UseSsl = useSsl,
+                WebSocketEndpoint = true,
+                EnsureThreadSafeIO = true
+            };
+
+            protected override Task ProcessWebSocketRequestCore(GenericLoopbackServer s, Func<WebSocketRequestData, CancellationToken, Task> func, Options o, CancellationToken ct)
+                => ProcessHttp2WebSocketRequest((Http2LoopbackServer)s, func, o, ct);
         }
 
         private static Task ProcessHttp11WebSocketRequest(
@@ -56,8 +114,8 @@ namespace System.Net.WebSockets.Client.Tests
                         options.ParseEchoOptions,
                         cancellationToken).ConfigureAwait(false);
 
-                await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
-        });
+                    await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
+                });
 
         private static async Task ProcessHttp2WebSocketRequest(
             Http2LoopbackServer http2Server,
@@ -98,60 +156,6 @@ namespace System.Net.WebSockets.Client.Tests
             else
             {
                 await http2Connection.ShutdownIgnoringErrorsAsync(requestData.Http2StreamId.Value).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task RunHttpServer<THttpServer>(
-            Func<THttpServer, Func<WebSocketRequestData, CancellationToken, Task>, Options, CancellationToken, Task> httpServerFunc,
-            THttpServer httpServer,
-            Func<WebSocketRequestData, CancellationToken, Task> wsServerFunc,
-            Options options,
-            CancellationToken clientExitCt,
-            CancellationToken globalCt)
-            where THttpServer : GenericLoopbackServer
-        {
-            try
-            {
-                using CancellationTokenSource linkedCts =
-                    CancellationTokenSource.CreateLinkedTokenSource(globalCt, clientExitCt);
-
-                await httpServerFunc(httpServer, wsServerFunc, options, linkedCts.Token)
-                    .WaitAsync(linkedCts.Token).ConfigureAwait(false);
-            }
-            catch (Exception e) when (options.IgnoreServerErrors)
-            {
-                if (e is OperationCanceledException && clientExitCt.IsCancellationRequested)
-                {
-                    return; // expected for aborting on client exit
-                }
-
-                if (e is WebSocketException we)
-                {
-                    if (we.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
-                    {
-                        return; // expected for aborting on client exit
-                    }
-
-                    if (we.WebSocketErrorCode == WebSocketError.InvalidState)
-                    {
-                        const string closeOnClosedMsg = "The WebSocket is in an invalid state ('Closed') for this operation. Valid states are: 'Open, CloseSent, CloseReceived'";
-                        const string closeOnAbortedMsg = "The WebSocket is in an invalid state ('Aborted') for this operation. Valid states are: 'Open, CloseSent, CloseReceived'";
-                        if (we.Message == closeOnClosedMsg || we.Message == closeOnAbortedMsg)
-                        {
-                            return; // expected (Close on a closed WebSocket is not no-op: see https://github.com/dotnet/runtime/issues/22000)
-                        }
-                    }
-
-                    options.Output?.WriteLine($"[WARN] Server aborted on a WebSocketException ({we.WebSocketErrorCode}): {we}");
-                    return; // ignore
-                }
-
-                if (e is IOException or SocketException)
-                {
-                    return; // ignore
-                }
-
-                throw; // don't swallow Assert failures and unexpected exceptions
             }
         }
 

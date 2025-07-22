@@ -217,7 +217,12 @@ namespace System.Net.Test.Common
 
         private static Http2Options CreateOptions(GenericLoopbackOptions options)
         {
-            Http2Options http2Options = new Http2Options();
+            if (options is Http2Options http2Options)
+            {
+                return http2Options;
+            }
+
+            http2Options = new Http2Options();
             if (options != null)
             {
                 http2Options.Address = options.Address;

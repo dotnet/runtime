@@ -42,46 +42,49 @@ namespace System.Net.WebSockets.Client.Tests
 
         public enum SendReceiveType
         {
-            ArraySegment,
-            Memory
+            ArraySegment = 1,
+            Memory = 2
         }
 
-        protected Func<WebSocket, ArraySegment<byte>, WebSocketMessageType, bool, CancellationToken, Task> SendAsync { get; private set; } = null!;
-        protected Func<WebSocket, ArraySegment<byte>, CancellationToken, Task<WebSocketReceiveResult>> ReceiveAsync { get; private set; } = null!;
+        protected SendReceiveType TestType { get; private set; }
 
-        private void SelectSendReceive(SendReceiveType sendReceiveTestType)
+        protected Task SendAsync(WebSocket webSocket, ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
-            SendAsync = sendReceiveTestType switch
+            return TestType switch
             {
-                SendReceiveType.ArraySegment => static (ws, buf, opcode, eom, ct) => ws.SendAsync(buf, opcode, eom, ct),
-                SendReceiveType.Memory => static (ws, buf, opcode, eom, ct) => ws.SendAsync((ReadOnlyMemory<byte>)buf, opcode, eom, ct).AsTask(),
-                _ => throw new ArgumentException(nameof(sendReceiveTestType))
+                SendReceiveType.ArraySegment => webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken),
+                SendReceiveType.Memory => SendAsMemoryAsync(webSocket, buffer, messageType, endOfMessage, cancellationToken),
+                _ => throw new ArgumentException(nameof(TestType))
             };
 
-            ReceiveAsync = sendReceiveTestType switch
+            static Task SendAsMemoryAsync(WebSocket ws, ArraySegment<byte> buf, WebSocketMessageType mt, bool eom, CancellationToken ct)
+                => ws.SendAsync((ReadOnlyMemory<byte>)buf, mt, eom, ct).AsTask();
+        }
+
+        protected Task<WebSocketReceiveResult> ReceiveAsync(WebSocket webSocket, ArraySegment<byte> buffer, CancellationToken cancellationToken)
+        {
+            return TestType switch
             {
-                SendReceiveType.ArraySegment => static (ws, buf, ct) => ws.ReceiveAsync(buf, ct),
-                SendReceiveType.Memory => static async (ws, buf, ct) =>
-                    {
-                        ValueWebSocketReceiveResult r = await ws.ReceiveAsync((Memory<byte>)buf, ct).ConfigureAwait(false);
-                        return new WebSocketReceiveResult(r.Count, r.MessageType, r.EndOfMessage, ws.CloseStatus, ws.CloseStatusDescription);
-                    },
-                _ => throw new ArgumentException(nameof(sendReceiveTestType))
+                SendReceiveType.ArraySegment => webSocket.ReceiveAsync(buffer, cancellationToken),
+                SendReceiveType.Memory => ReceiveAsMemoryAsync(webSocket, buffer, cancellationToken),
+                _ => throw new ArgumentException(nameof(TestType))
             };
+
+            static async Task<WebSocketReceiveResult> ReceiveAsMemoryAsync(WebSocket ws, ArraySegment<byte> buf, CancellationToken ct)
+            {
+                ValueWebSocketReceiveResult result = await ws.ReceiveAsync((Memory<byte>)buf, ct);
+                return new WebSocketReceiveResult(result.Count, result.MessageType, result.EndOfMessage, ws.CloseStatus, ws.CloseStatusDescription);
+            }
         }
 
         protected Task RunSendReceive(Func<Task> sendReceiveFunc, SendReceiveType sendReceiveTestType)
         {
-            SelectSendReceive(sendReceiveTestType);
+            TestType = sendReceiveTestType;
             return sendReceiveFunc();
         }
 
-
         protected Task RunSendReceive(Func<Uri, Task> sendReceiveFunc, Uri uri, SendReceiveType sendReceiveTestType)
-        {
-            SelectSendReceive(sendReceiveTestType);
-            return sendReceiveFunc(uri);
-        }
+            => RunSendReceive(() => sendReceiveFunc(uri), sendReceiveTestType);
 
         #endregion
 
@@ -205,7 +208,7 @@ namespace System.Net.WebSockets.Client.Tests
                     {
                         tasks[i] = SendAsync(
                             cws,
-                            ToUtf8("hello"),
+                            "hello".ToUtf8(),
                             WebSocketMessageType.Text,
                             true,
                             cts.Token);
@@ -261,7 +264,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await SendAsync(
                     cws,
-                    ToUtf8(EchoControlMessage.Delay5Sec),
+                    EchoControlMessage.Delay5Sec.ToUtf8(),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -321,7 +324,7 @@ namespace System.Net.WebSockets.Client.Tests
                 string message = "hello";
                 await SendAsync(
                     cws,
-                    ToUtf8(message),
+                    message.ToUtf8(),
                     WebSocketMessageType.Text,
                     false,
                     cts.Token);
@@ -346,7 +349,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Null(recvRet.CloseStatusDescription);
 
                 var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
-                Assert.Equal(message, FromUtf8(recvSegment));
+                Assert.Equal(message, recvSegment.Utf8ToString());
             }
         }
 

@@ -38,15 +38,14 @@ namespace System.Net.WebSockets.Client.Tests
     {
         #region Common (Echo Server) tests
 
-        protected async Task RunClient_EchoBinaryMessage_Success(Uri server)
-        {
-            await TestEcho(server, WebSocketMessageType.Binary);
-        }
+        protected Task RunClient_EchoBinaryMessage_Success(Uri server)
+            => RunClientAsync(server,
+                (cws, ct) => WebSocketHelper.TestEcho(cws, WebSocketMessageType.Binary, ct));
 
-        protected async Task RunClient_EchoTextMessage_Success(Uri server)
-        {
-            await TestEcho(server, WebSocketMessageType.Text);
-        }
+
+        protected Task RunClient_EchoTextMessage_Success(Uri server)
+            => RunClientAsync(server,
+                (cws, ct) => WebSocketHelper.TestEcho(cws, WebSocketMessageType.Text, ct));
 
         protected async Task RunClient_ConnectAsync_AddCustomHeaders_Success(Uri server)
         {
@@ -75,7 +74,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
-                string headers = FromUtf8(new ArraySegment<byte>(buffer, 0, recvResult.Count));
+                string headers = new ArraySegment<byte>(buffer, 0, recvResult.Count).Utf8ToString();
                 Assert.Contains("X-CustomHeader1:Value1", headers, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("X-CustomHeader2:Value2", headers, StringComparison.OrdinalIgnoreCase);
 
@@ -129,7 +128,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
-                string headers = FromUtf8(new ArraySegment<byte>(buffer, 0, recvResult.Count));
+                string headers = new ArraySegment<byte>(buffer, 0, recvResult.Count).Utf8ToString();
 
                 Assert.Contains("Cookies=Are Yummy", headers);
                 Assert.Contains("Especially=Chocolate Chip", headers);

@@ -157,8 +157,10 @@ namespace System.Net.WebSockets.Client.Tests
 
                 TaskCompletionSource clientCompleted = new TaskCompletionSource();
 
-                return LoopbackWebSocketServer.RunAsync(async (clientWs, ct) =>
+                return LoopbackWebSocketServer.RunAsync(async uri =>
                 {
+                    var ct = timeoutCts.Token;
+                    using var clientWs = await test.GetConnectedWebSocket(uri);
                     await clientWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
                     await clientWs.ReceiveAsync(new byte[16], ct);
                     await Task.Delay(1500);
@@ -172,7 +174,7 @@ namespace System.Net.WebSockets.Client.Tests
                     await serverWs.ReceiveAsync(new byte[16], ct);
                     await serverWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
                     await clientCompleted.Task;
-                }, new LoopbackWebSocketServer.Options { HttpVersion = Net.HttpVersion.Version11, UseSsl = true, HttpInvoker = test.GetInvoker() }, timeoutCts.Token);
+                }, new LoopbackWebSocketServer.Options(Net.HttpVersion.Version11, UseSsl: PlatformDetection.SupportsAlpn), timeoutCts.Token);
             }, GetType().FullName).DisposeAsync();
         }
 
