@@ -144,7 +144,6 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus Flush(JNIEnv* env, SSLStream* sslSt
 
     uint8_t* dataPtr = (uint8_t*)xmalloc((size_t)bufferLimit);
     (*env)->GetByteArrayRegion(env, data, 0, bufferLimit, (jbyte*)dataPtr);
-
     sslStream->streamWriter(sslStream->managedContextHandle, dataPtr, bufferLimit);
     free(dataPtr);
 
