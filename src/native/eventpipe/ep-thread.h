@@ -270,6 +270,9 @@ struct _EventPipeThreadSessionState_Internal {
 	// The list of buffers that were written to by this thread.
 	// immutable
 	EventPipeBufferList *buffer_list;
+	// The sequence number of the last event that was read, only
+	// updated/read by the reader thread.
+	uint32_t last_read_sequence_number;
 	// The number of events that were attempted to be written by this
 	// thread. Each event was either successfully recorded in a buffer
 	// or it was dropped.
@@ -301,6 +304,8 @@ struct _EventPipeThreadSessionState {
 EP_DEFINE_GETTER_REF(EventPipeThreadSessionState *, thread_session_state, EventPipeThreadHolder *, thread_holder)
 EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, EventPipeBufferList *, buffer_list)
 EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, EventPipeSession *, session)
+EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, uint32_t, last_read_sequence_number);
+EP_DEFINE_SETTER(EventPipeThreadSessionState *, thread_session_state, uint32_t, last_read_sequence_number);
 
 EventPipeThreadSessionState *
 ep_thread_session_state_alloc (

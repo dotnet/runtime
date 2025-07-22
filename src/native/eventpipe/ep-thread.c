@@ -317,6 +317,7 @@ ep_thread_session_state_alloc (
 
 	instance->session = session;
 	instance->sequence_number = 1;
+	instance->last_read_sequence_number = 0;
 
 	instance->buffer_list = ep_buffer_list_alloc (buffer_manager);
 	ep_raise_error_if_nok (instance->buffer_list != NULL);
