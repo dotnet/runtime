@@ -106,11 +106,21 @@ namespace ILLink.RoslynAnalyzer
 
                 context.RegisterOperationBlockAction(context =>
                 {
-                    foreach (var operationBlock in context.OperationBlocks)
+                    try
                     {
-                        TrimDataFlowAnalysis trimDataFlowAnalysis = new(context, dataFlowAnalyzerContext, operationBlock);
-                        trimDataFlowAnalysis.InterproceduralAnalyze();
-                        trimDataFlowAnalysis.ReportDiagnostics(context.ReportDiagnostic);
+                        foreach (var operationBlock in context.OperationBlocks)
+                        {
+                            TrimDataFlowAnalysis trimDataFlowAnalysis = new(context, dataFlowAnalyzerContext, operationBlock);
+                            trimDataFlowAnalysis.InterproceduralAnalyze();
+                            trimDataFlowAnalysis.ReportDiagnostics(context.ReportDiagnostic);
+                        }
+                    }
+                    catch (InvalidCastException)
+                    {
+                        // Newer language features may produce NonErrorNamedTypeSymbol
+                        // which will fail to cast to a given target type. Catch and
+                        // ignore the failure in this scenario since it otherwise blocks
+                        // the analyzer
                     }
                 });
 
