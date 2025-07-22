@@ -29,12 +29,18 @@ namespace System.Net
 
         private readonly SafeSslHandle _sslContext;
 
+        private GCHandle _gcHandle;
+
+        private readonly object _lock = new object();
+
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SslStream.JavaProxy SslStreamProxy { get; }
 
         public SafeSslHandle SslContext => _sslContext;
+
+        private volatile bool _disposed;
 
         public SafeDeleteSslContext(SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
@@ -45,6 +51,7 @@ namespace System.Net
             try
             {
                 _sslContext = CreateSslContext(SslStreamProxy, authOptions);
+                _gcHandle = GCHandle.Alloc(this);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -59,18 +66,20 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && !_disposed)
             {
-                SafeSslHandle sslContext = _sslContext;
-                if (null != sslContext)
-                {
-                    lock (_sslContext)
-                    {
-                        _inputBuffer.Dispose();
-                        _outputBuffer.Dispose();
-                    }
+                _disposed = true;
 
-                    sslContext.Dispose();
+                lock (_lock)
+                {
+                    _inputBuffer.Dispose();
+                    _outputBuffer.Dispose();
+                    _sslContext.Dispose();
+                }
+
+                if (_gcHandle.IsAllocated)
+                {
+                    _gcHandle.Free();
                 }
             }
 
@@ -80,12 +89,17 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe void WriteToConnection(IntPtr connection, byte* data, int dataLength)
         {
-            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
-            Debug.Assert(context != null);
+            GCHandle h = GCHandle.FromIntPtr(connection);
+            SafeDeleteSslContext? context = h.IsAllocated ? h.Target as SafeDeleteSslContext : null;
+            if (context is null || context._disposed)
+            {
+                Debug.Write("WriteToConnection: context is null");
+                return;
+            }
 
             try
             {
-                lock (context)
+                lock (context._lock)
                 {
                     var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
 
@@ -103,12 +117,18 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe PAL_SSLStreamStatus ReadFromConnection(IntPtr connection, byte* data, int* dataLength)
         {
-            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
-            Debug.Assert(context != null);
+            GCHandle h = GCHandle.FromIntPtr(connection);
+            SafeDeleteSslContext? context = h.IsAllocated ? h.Target as SafeDeleteSslContext : null;
+            if (context is null || context._disposed)
+            {
+                Debug.Write("ReadFromConnection: context is null");
+                *dataLength = 0;
+                return PAL_SSLStreamStatus.Error;
+            }
 
             try
             {
-                lock (context)
+                lock (context._lock)
                 {
                     int toRead = *dataLength;
                     if (toRead == 0)
@@ -139,7 +159,7 @@ namespace System.Net
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            lock (_sslContext)
+            lock (_lock)
             {
                 _inputBuffer.EnsureAvailableSpace(buf.Length);
                 buf.CopyTo(_inputBuffer.AvailableSpan);
@@ -151,7 +171,7 @@ namespace System.Net
 
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
-            lock (_sslContext)
+            lock (_lock)
             {
                 if (_outputBuffer.ActiveLength == 0)
                 {
@@ -172,7 +192,7 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            lock (_sslContext)
+            lock (_lock)
             {
                 int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
@@ -264,7 +284,9 @@ namespace System.Net
             // Make sure the class instance is associated to the session and is provided
             // in the Read/Write callback connection parameter
             string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
-            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, _sslContext, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
+
+            IntPtr contextHandle = GCHandle.ToIntPtr(_gcHandle);
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, contextHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
 
             if (authOptions.EnabledSslProtocols != SslProtocols.None)
             {
