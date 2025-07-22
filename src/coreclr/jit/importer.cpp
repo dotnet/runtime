@@ -12888,31 +12888,6 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 }
 
 //------------------------------------------------------------------------
-// impRetypeAddressInLocal:
-//   Retype a tree representing an address inside a local to be of a different type.
-//
-// Arguments:
-//     tree    - The tree
-//     newType - The new type
-//
-void Compiler::impRetypeAddressInLocal(GenTree* tree, var_types newType)
-{
-    assert((newType == TYP_I_IMPL) || (newType == TYP_BYREF));
-
-    while (true)
-    {
-        tree->gtType = newType;
-        if (tree->OperIs(GT_LCL_ADDR))
-        {
-            break;
-        }
-
-        assert(tree->OperIs(GT_FIELD_ADDR) && tree->AsFieldAddr()->IsInstance());
-        tree = tree->AsFieldAddr()->GetFldObj();
-    }
-}
-
-//------------------------------------------------------------------------
 // impMakeDiscretionaryInlineObservations: make observations that help
 // determine the profitability of a discretionary inline
 //
@@ -13275,8 +13250,14 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 
     assert(!curArgVal->OperIs(GT_RET_EXPR));
 
+    GenTree* addrCandidate = curArgVal;
+    if (curArgVal->OperIs(GT_CAST) && curArgVal->TypeIs(TYP_BYREF, TYP_I_IMPL) && !curArgVal->gtOverflow())
+    {
+        addrCandidate = curArgVal->AsCast()->CastOp();
+    }
+
     GenTree*   lclVarTree;
-    const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
+    const bool isAddressInLocal = impIsAddressInLocal(addrCandidate, &lclVarTree);
     if (isAddressInLocal)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
@@ -13453,7 +13434,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 break;
         }
 
-        arg.SetEarlyNode(impFoldInlineArg(arg.GetEarlyNode()));
+        arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
         impInlineRecordArgInfo(pInlineInfo, &arg, argInfo, inlineResult);
 
         if (inlineResult->IsFailure())
@@ -13728,27 +13709,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
-}
-
-//------------------------------------------------------------------------
-// impFoldInlineArg:
-//   Try to fold an argument being passed to an inline candidate.
-//
-// Arguments:
-//   arg - The argument
-//
-GenTree* Compiler::impFoldInlineArg(GenTree* arg)
-{
-    arg = gtFoldExpr(arg);
-
-    if (arg->OperIs(GT_CAST) && arg->TypeIs(TYP_BYREF, TYP_I_IMPL) && !arg->gtOverflow() &&
-        impIsAddressInLocal(arg->AsCast()->CastOp()))
-    {
-        impRetypeAddressInLocal(arg->AsCast()->CastOp(), arg->TypeGet());
-        arg = arg->AsCast()->CastOp();
-    }
-
-    return arg;
 }
 
 //------------------------------------------------------------------------
