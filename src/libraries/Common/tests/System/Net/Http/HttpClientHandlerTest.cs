@@ -2173,6 +2173,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
         {
             TaskCompletionSource<bool> acceptConnection = new TaskCompletionSource<bool>();
+            SemaphoreSlim clientFinished = new SemaphoreSlim(0);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -2216,6 +2217,7 @@ namespace System.Net.Http.Functional.Tests
                     // WinHTTP validates the input before opening connection whereas SocketsHttpHandler opens connection first and validates only when writing to the wire.
                     acceptConnection.SetResult(!IsWinHttpHandler);
                     var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                    clientFinished.Release();
                     var hrex = Assert.IsType<HttpRequestException>(ex);
                     if (IsWinHttpHandler)
                     {
@@ -2231,7 +2233,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (await acceptConnection.Task)
                 {
-                    await IgnoreExceptions(server.AcceptConnectionAsync(c => Task.CompletedTask));
+                    await IgnoreExceptions(() => server.AcceptConnectionAsync(_ => clientFinished.WaitAsync(TestHelper.PassingTestTimeout)));
                 }
             });
         }

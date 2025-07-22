@@ -113,11 +113,78 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainList(count, values, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            uint i = 0;
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+
+            if (appDomain != TargetPointer.Null && values.Length > 0)
+            {
+                values[0] = appDomain.ToClrDataAddress(_target);
+                i = 1;
+            }
+
+            if (pNeeded is not null)
+            {
+                *pNeeded = i;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress[] valuesLocal = new ClrDataAddress[count];
+            uint neededLocal;
+            int hrLocal = _legacyImpl.GetAppDomainList(count, valuesLocal, &neededLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+            if (values is not null && values.Length > 0 && valuesLocal.Length > 0)
+            {
+                Debug.Assert(values[0] == valuesLocal[0], $"cDAC: {values[0]:x}, DAC: {valuesLocal[0]:x}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainName(addr, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainStoreData(data) : HResults.E_NOTIMPL;
+    {
+        DacpAppDomainStoreData* appDomainStoreData = (DacpAppDomainStoreData*)data;
+        int hr = HResults.S_OK;
+        try
+        {
+            appDomainStoreData->sharedDomain = 0;
+            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+            appDomainStoreData->systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
+            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            appDomainStoreData->DomainCount = _target.ReadPointer(appDomainPtr) != 0 ? 1 : 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        {
+            if (_legacyImpl is not null)
+            {
+                DacpAppDomainStoreData dataLocal = default;
+                int hrLocal = _legacyImpl.GetAppDomainStoreData(&dataLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                Debug.Assert(appDomainStoreData->sharedDomain == dataLocal.sharedDomain, $"cDAC: {appDomainStoreData->sharedDomain:x}, DAC: {dataLocal.sharedDomain:x}");
+                Debug.Assert(appDomainStoreData->systemDomain == dataLocal.systemDomain, $"cDAC: {appDomainStoreData->systemDomain:x}, DAC: {dataLocal.systemDomain:x}");
+                Debug.Assert(appDomainStoreData->DomainCount == dataLocal.DomainCount, $"cDAC: {appDomainStoreData->DomainCount}, DAC: {dataLocal.DomainCount}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded)
     {
         // Method is not supported on CoreCLR

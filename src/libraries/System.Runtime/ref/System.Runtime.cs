@@ -3574,6 +3574,7 @@ namespace System
         static int System.Numerics.INumberBase<System.Int128>.Radix { get { throw null; } }
         public static System.Int128 Zero { get { throw null; } }
         public static System.Int128 Abs(System.Int128 value) { throw null; }
+        public static System.Int128 BigMul(System.Int128 left, System.Int128 right, out System.Int128 lower) { throw null; }
         public static System.Int128 Clamp(System.Int128 value, System.Int128 min, System.Int128 max) { throw null; }
         public int CompareTo(System.Int128 value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -4189,6 +4190,7 @@ namespace System
         static nint System.Numerics.ISignedNumber<nint>.NegativeOne { get { throw null; } }
         public static nint Abs(nint value) { throw null; }
         public static nint Add(nint pointer, int offset) { throw null; }
+        public static nint BigMul(nint left, nint right, out nint lower) { throw null; }
         public static nint Clamp(nint value, nint min, nint max) { throw null; }
         public int CompareTo(nint value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -6823,6 +6825,7 @@ namespace System
         static System.UInt128 System.Numerics.IMultiplicativeIdentity<System.UInt128,System.UInt128>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt128>.Radix { get { throw null; } }
         public static System.UInt128 Zero { get { throw null; } }
+        public static System.UInt128 BigMul(System.UInt128 left, System.UInt128 right, out System.UInt128 lower) { throw null; }
         public static System.UInt128 Clamp(System.UInt128 value, System.UInt128 min, System.UInt128 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(System.UInt128 value) { throw null; }
@@ -7443,6 +7446,7 @@ namespace System
         static int System.Numerics.INumberBase<nuint>.Radix { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.Zero { get { throw null; } }
         public static nuint Add(nuint pointer, int offset) { throw null; }
+        public static nuint BigMul(nuint left, nuint right, out nuint lower) { throw null; }
         public static nuint Clamp(nuint value, nuint min, nuint max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(nuint value) { throw null; }
@@ -8885,7 +8889,8 @@ namespace System.Diagnostics.CodeAnalysis
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited=false)]
+    [System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes) { }
@@ -13265,6 +13270,11 @@ namespace System.Runtime.CompilerServices
     public enum CompilationRelaxations
     {
         NoStringInterning = 8,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
+    public sealed class CompilerLoweringPreserveAttribute : System.Attribute
+    {
+        public CompilerLoweringPreserveAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Module)]
     public partial class CompilationRelaxationsAttribute : System.Attribute

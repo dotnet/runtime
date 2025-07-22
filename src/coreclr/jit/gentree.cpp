@@ -12230,8 +12230,30 @@ void Compiler::gtDispConst(GenTree* tree)
         }
 
         case GT_CNS_STR:
-            printf("<string constant>");
-            break;
+        {
+            GenTreeStrCon* cnsStr = tree->AsStrCon();
+            if (cnsStr->IsStringEmptyField())
+            {
+                // Special case: do not call getStringLiteral for the empty string field
+                printf("\"\"");
+                break;
+            }
+
+            constexpr int maxLiteralLength      = 256;
+            char16_t      str[maxLiteralLength] = {};
+            int len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxLiteralLength);
+            if (len < 0)
+            {
+                printf("<unknown string literal>");
+            }
+            else
+            {
+                char dst[maxLiteralLength];
+                convertUtf16ToUtf8ForPrinting(str, len, dst, maxLiteralLength);
+                printf("\"%.50s%s\"", dst, len > 50 ? "..." : "");
+            }
+        }
+        break;
 
 #if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
@@ -20517,7 +20539,7 @@ bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
     {
         NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
         var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
-        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, comp);
 
         if (comp->codeGen->instIsEmbeddedBroadcastCompatible(ins))
         {
@@ -20762,7 +20784,12 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
 
     if (tgtSimdBaseJitType != CORINFO_TYPE_UNDEF)
     {
-        ins          = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
+        var_types tgtSimdBaseType = JitType2PreciseVarType(tgtSimdBaseJitType);
+
+        instruction tgtIns = HWIntrinsicInfo::lookupIns(intrinsic, tgtSimdBaseType, comp);
+        assert(ins != tgtIns);
+
+        ins          = tgtIns;
         maskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
     }
 
