@@ -2303,45 +2303,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-            if (varTypeIsShort(simdBaseType))
-            {
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, NI_AVX2_ConvertToVector256Int32, simdBaseJitType, simdSize);
-                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op2, NI_AVX2_ConvertToVector256Int32, simdBaseJitType, simdSize);
-                retNode = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1, op2, CORINFO_TYPE_INT, simdSize * 2);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode,
-                                                   varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128Int16
-                                                                                 : NI_AVX512_ConvertToVector128UInt16,
-                                                   CORINFO_TYPE_INT, simdSize * 2);
-                break;
-            }
-
-            if (varTypeIsByte(simdBaseType))
-            {
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, NI_AVX512_ConvertToVector512Int32, simdBaseJitType, simdSize * 4);
-                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op2, NI_AVX512_ConvertToVector512Int32, simdBaseJitType, simdSize * 4);
-
-                GenTree* op1Dup   = fgMakeMultiUse(&op1);
-                GenTree* op2Dup   = fgMakeMultiUse(&op2);
-                GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op1, CORINFO_TYPE_INT, simdSize * 4);
-                GenTree* op2Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op2, CORINFO_TYPE_INT, simdSize * 4);
-                GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, CORINFO_TYPE_INT, simdSize * 4);
-                GenTree* op2Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op2Dup, CORINFO_TYPE_INT, simdSize * 4);
-
-                GenTree* divLower =
-                    gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Lower, op2Lower, CORINFO_TYPE_INT, simdSize * 2);
-                GenTree* divUpper =
-                    gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Upper, op2Upper, CORINFO_TYPE_INT, simdSize * 2);
-
-                GenTree* divResult = gtNewSimdWithUpperNode(TYP_SIMD64, divLower, divUpper, CORINFO_TYPE_INT, simdSize * 4);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, divResult,
-                                                   varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128SByte
-                                                                                 : NI_AVX512_ConvertToVector128Byte,
-                                                   CORINFO_TYPE_INT, simdSize * 4);
-                break;
-            }
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-
             retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
 
             break;

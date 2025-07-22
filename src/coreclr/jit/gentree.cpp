@@ -21172,9 +21172,59 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_DIV:
         {
-            if (varTypeIsInt(simdBaseType))
+            if (varTypeIsIntegral(simdBaseType))
             {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                assert(!varTypeIsLong(simdBaseType));
+                if (varTypeIsShort(simdBaseType))
+                {
+                    assert(simdSize == 16);
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512));
+                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, NI_AVX2_ConvertToVector256Int32, simdBaseJitType,
+                                                   simdSize);
+                    op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op2, NI_AVX2_ConvertToVector256Int32, simdBaseJitType,
+                                                   simdSize);
+                    GenTree* divResult = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1, op2, CORINFO_TYPE_INT, simdSize * 2);
+                    GenTree* finalResult =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, divResult,
+                                                 varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128Int16
+                                                                               : NI_AVX512_ConvertToVector128UInt16,
+                                                 CORINFO_TYPE_INT, simdSize * 2);
+                    return finalResult;
+                }
+
+                if (varTypeIsByte(simdBaseType))
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512));
+                    assert(simdSize == 16);
+                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, NI_AVX512_ConvertToVector512Int32, simdBaseJitType,
+                                                   simdSize * 4);
+                    op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op2, NI_AVX512_ConvertToVector512Int32, simdBaseJitType,
+                                                   simdSize * 4);
+
+                    GenTree* op1Dup   = fgMakeMultiUse(&op1);
+                    GenTree* op2Dup   = fgMakeMultiUse(&op2);
+                    GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op1, CORINFO_TYPE_INT, simdSize * 4);
+                    GenTree* op2Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op2, CORINFO_TYPE_INT, simdSize * 4);
+                    GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, CORINFO_TYPE_INT, simdSize * 4);
+                    GenTree* op2Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op2Dup, CORINFO_TYPE_INT, simdSize * 4);
+
+                    GenTree* divLower =
+                        gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Lower, op2Lower, CORINFO_TYPE_INT, simdSize * 2);
+                    GenTree* divUpper =
+                        gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Upper, op2Upper, CORINFO_TYPE_INT, simdSize * 2);
+
+                    GenTree* divResult =
+                        gtNewSimdWithUpperNode(TYP_SIMD64, divLower, divUpper, CORINFO_TYPE_INT, simdSize * 4);
+                    GenTree* finalResult = gtNewSimdHWIntrinsicNode(TYP_SIMD16, divResult,
+                                                       varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128SByte
+                                                                                     : NI_AVX512_ConvertToVector128Byte,
+                                                       CORINFO_TYPE_INT, simdSize * 4);
+                    return finalResult;
+                }
+
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX) ||
+                       compIsaSupportedDebugOnly(InstructionSet_AVX512));
+                assert(varTypeIsInt(simdBaseType));
                 assert(simdSize == 16 || simdSize == 32);
 
                 NamedIntrinsic divIntrinsic     = simdSize == 16 ? NI_Vector128_op_Division : NI_Vector256_op_Division;
