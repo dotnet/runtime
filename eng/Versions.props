@@ -29,7 +29,7 @@
     <!-- Runtime controls its dependency graph via Traversal projects and doesn't want or need Arcade's ExcludeFrom infrastructure. -->
     <DisableArcadeExcludeFromBuildSupport>true</DisableArcadeExcludeFromBuildSupport>
     <!-- Use SDK compilers in full VMR builds. -->
-    <UsingToolMicrosoftNetCompilers Condition="'$(DotNetBuildOrchestrator)' != 'true'">true</UsingToolMicrosoftNetCompilers>
+    <UsingToolMicrosoftNetCompilers Condition="'$(DotNetBuildFromVMR)' != 'true'">true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
   <ItemGroup>
     <WorkloadSdkBandVersions Include="$(SdkBandVersion)" SupportsMachineArch="true" />
