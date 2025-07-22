@@ -28,6 +28,8 @@ namespace
     void ReleaseGCBridgeArgumentsWorker(
         MarkCrossReferencesArgs* args)
     {
+        _ASSERTE(args != NULL);
+
         // Memory was allocated for the collections by the GC.
         // See callers of GCToEEInterface::TriggerGCBridge().
 
@@ -55,21 +57,16 @@ void JavaMarshalNative::TriggerClientBridgeProcessing(
         return;
     }
 
-    bool gcBridgeTriggered = false;
     // Not initialized
-    if (g_MarkCrossReferences != NULL)
+    if (g_MarkCrossReferences == NULL)
     {
-        g_MarkCrossReferences(args);
-        gcBridgeTriggered = true;
-    }
-
-    if (!gcBridgeTriggered)
-    {
-        // Release the memory allocated since the GCBridge
-        // wasn't trigger for some reason.
+        // Release the memory allocated since we
+        // don't have a GC bridge callback.
         ReleaseGCBridgeArgumentsWorker(args);
         return;
     }
+
+    g_MarkCrossReferences(args);
 
     // This runs during GC while the world is stopped, no synchronisation required
     g_bridgeFinished.Reset();
@@ -84,7 +81,6 @@ extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
     _ASSERTE(markCrossReferences != NULL);
 
     BOOL success = FALSE;
-
 
     // Switch to Cooperative mode since we are setting callbacks that
     // will be used during a GC and we want to ensure a GC isn't occurring
@@ -122,8 +118,9 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
 
         IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
+        OBJECTHANDLE* handles = (OBJECTHANDLE*)unreachableObjectHandles;
         for (size_t i = 0; i < length; i++)
-            pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
+            pHandleManager->DestroyHandleOfUnknownType(handles[i]);
 
         g_GCBridgeActive = false;
         g_bridgeFinished.Set();
@@ -148,6 +145,8 @@ FCIMPLEND
 
 extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, OBJECTREF* pObj)
 {
+    _ASSERTE(pObj != NULL);
+
     // Transition to cooperative mode to ensure that the GC is not in progress
     Thread* pThisThread = ThreadStore::GetCurrentThreadIfAvailable();
     pThisThread->DeferTransitionFrame();

@@ -27,7 +27,6 @@ namespace System.Runtime.InteropServices
 
             return target;
         }
-#endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeImports.RuntimeLibrary, "GCHandle_InternalTryGetBridgeWait")]
@@ -35,5 +34,6 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
         private static unsafe partial void InternalGetBridgeWait(IntPtr handle, object?* result);
+#endif
     }
 }

@@ -296,7 +296,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAllocCrossReference")]
-        internal static extern IntPtr RhpHandleAllocCrossReference(object value, IntPtr context);
+        private static extern IntPtr RhpHandleAllocCrossReference(object value, IntPtr context);
 
         internal static IntPtr RhHandleAllocCrossReference(object value, IntPtr context)
         {
