@@ -267,6 +267,9 @@ struct _EventPipeThreadSessionState_Internal {
 	// the buffer allocation logic is estimating how many
 	// buffers a given thread has used (see: ep_thread_session_state_get_buffer_count_estimate and its uses).
 	EventPipeBufferList *buffer_list;
+	// The sequence number of the last event that was read, only
+	// updated/read by the reader thread.
+	uint32_t last_read_sequence_number;
 #ifdef EP_CHECKED_BUILD
 	// protected by the buffer manager lock.
 	EventPipeBufferManager *buffer_manager;
@@ -301,6 +304,8 @@ struct _EventPipeThreadSessionState {
 
 EP_DEFINE_GETTER_REF(EventPipeThreadSessionState *, thread_session_state, EventPipeThreadHolder *, thread_holder)
 EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, EventPipeSession *, session)
+EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, uint32_t, last_read_sequence_number);
+EP_DEFINE_SETTER(EventPipeThreadSessionState *, thread_session_state, uint32_t, last_read_sequence_number);
 
 EventPipeThreadSessionState *
 ep_thread_session_state_alloc (

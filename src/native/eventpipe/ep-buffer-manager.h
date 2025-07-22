@@ -31,9 +31,6 @@ struct _EventPipeBufferList_Internal {
 	EventPipeBuffer *tail_buffer;
 	// The number of buffers in the list.
 	uint32_t buffer_count;
-	// The sequence number of the last event that was read, only
-	// updated/read by the reader thread.
-	uint32_t last_read_sequence_number;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_MANAGER_GETTER_SETTER)
@@ -113,6 +110,9 @@ struct _EventPipeBufferManager_Internal {
 	EventPipeEventInstance *current_event;
 	EventPipeBuffer *current_buffer;
 	EventPipeBufferList *current_buffer_list;
+	// The thread session state grabbed from the thread_session_state_list containing the current event
+	// that is being processed by the reader thread.
+	EventPipeThreadSessionState *current_thread_session_state;
 	// The total allocation size of buffers under management.
 	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.
