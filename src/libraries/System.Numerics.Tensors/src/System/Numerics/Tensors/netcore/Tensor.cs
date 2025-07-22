@@ -4296,29 +4296,6 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region OnesComplement
-        /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        public static Tensor<T> OnesComplement<T>(in ReadOnlyTensorSpan<T> x)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.OnesComplement<T>, T, T>(x, destination);
-            return destination;
-        }
-
-        /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> OnesComplement<T>(scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(y, destination);
-            TensorOperation.Invoke<TensorOperation.OnesComplement<T>, T, T>(y, destination);
-            return ref destination;
-        }
-        #endregion
-
         #region PopCount
         /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
         /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
