@@ -578,6 +578,31 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Xor<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Xor<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Xor<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IAdditionOperators<TScalar, TScalar, TScalar>, System.Numerics.IAdditiveIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IAdditionOperators<TScalar, TScalar, TScalar>, System.Numerics.IAdditiveIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator +=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator +=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IAdditionOperators<TScalar, TScalar, TScalar>, System.Numerics.IAdditiveIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator +=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator +=(TScalar other) { throw null; }
+        }
     }
     public readonly ref partial struct TensorDimensionSpan<T>
     {

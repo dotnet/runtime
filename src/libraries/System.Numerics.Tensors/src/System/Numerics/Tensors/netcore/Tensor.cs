@@ -2453,62 +2453,6 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region Add
-        /// <summary>
-        /// Adds each element of <paramref name="x"/> to each element of <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The second <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        public static Tensor<T> Add<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Adds <paramref name="y"/> to each element of <paramref name="x"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The <typeparamref name="T"/> to add to each element of <paramref name="x"/>.</param>
-        public static Tensor<T> Add<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Adds each element of <paramref name="x"/> to each element of <paramref name="y"/> and returns a new <see cref="ReadOnlyTensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The second <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Adds <paramref name="y"/> to each element of <paramref name="x"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The <typeparamref name="T"/> to add to each element of <paramref name="x"/>.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-        #endregion
-
         #region Asin
         /// <summary>
         /// Takes the inverse sin of each element of the <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
