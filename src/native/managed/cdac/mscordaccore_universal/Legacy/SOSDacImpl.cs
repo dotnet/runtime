@@ -130,11 +130,11 @@ internal sealed unsafe partial class SOSDacImpl
                 data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
                 data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
                 data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                data->appDomainStage = (uint)DacpAppDomainDataStage.STAGE_OPEN;
+                data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
                 if (addr != systemDomain)
                 {
                     TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                    data->dwId = (DacpAppDomainDataStage)_target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+                    data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
 
                     IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                         pAppDomain,

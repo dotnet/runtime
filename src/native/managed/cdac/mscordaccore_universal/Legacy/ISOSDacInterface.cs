@@ -36,10 +36,10 @@ internal struct DacpAppDomainData
     public ClrDataAddress DomainLocalBlock;
     public ClrDataAddress pDomainLocalModules;
     // The creation sequence number of this app domain (starting from 1)
-    public DacpAppDomainDataStage dwId;
+    public uint dwId;
     public int AssemblyCount;
     public int FailedAssemblyCount;
-    public uint appDomainStage;
+    public DacpAppDomainDataStage appDomainStage;
 };
 
 internal struct DacpAppDomainStoreData
