@@ -2010,6 +2010,9 @@ MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_ONES_COMPLEMENT,  "ones_complement", XREG, XREG, NONE)
 /* Select bits from src2/src3 using src1 */
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
+#endif
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_S390X)
 MINI_OP(OP_VECTOR_ANDN, "vector_andnot", XREG, XREG, XREG)
 MINI_OP(OP_VECTOR_IABS, "vector_integer_abs", XREG, XREG, NONE)
 #endif
