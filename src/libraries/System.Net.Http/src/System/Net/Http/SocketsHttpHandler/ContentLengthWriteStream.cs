@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,7 +40,7 @@ namespace System.Net.Http
 
                 if (BytesWritten > _contentLength)
                 {
-                    return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_content_write_larger_than_content_length)));
                 }
 
                 HttpConnection connection = GetConnectionOrThrow();
@@ -51,7 +52,7 @@ namespace System.Net.Http
             {
                 if (BytesWritten != _contentLength)
                 {
-                    return Task.FromException(new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, BytesWritten, _contentLength)));
+                    return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, BytesWritten, _contentLength))));
                 }
 
                 _connection = null;

@@ -1454,7 +1454,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                 arrayExport = writeArrayFunc(rsa);
 
                 RSAParameters rsaParameters = rsa.ExportParameters(isPrivateKey);
-                ImportExport.AssertKeyEquals(expected, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(expected, rsaParameters);
             }
 
             // Public key formats are stable.
@@ -1478,7 +1478,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                 Assert.Equal(arrayExport.Length, bytesRead);
 
                 RSAParameters rsaParameters = rsa.ExportParameters(isPrivateKey);
-                ImportExport.AssertKeyEquals(expected, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(expected, rsaParameters);
 
                 Assert.False(
                     writeSpanFunc(rsa, Span<byte>.Empty, out int bytesWritten),

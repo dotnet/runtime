@@ -26,7 +26,6 @@ namespace System.Globalization
             True = 2
         }
 
-        private string? _listSeparator;
         private bool _isReadOnly;
 
         private readonly string _cultureName;
@@ -124,13 +123,13 @@ namespace System.Globalization
         /// </summary>
         public string ListSeparator
         {
-            get => _listSeparator ??= _cultureData.ListSeparator;
+            get => field ??= _cultureData.ListSeparator;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
-                _listSeparator = value;
+                field = value;
             }
         }
 

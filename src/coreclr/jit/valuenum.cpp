@@ -12142,7 +12142,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
             }
             else
             {
-                assert(!store->DefinesLocal(this, &lclVarTree));
+                assert(!store->HasAnyLocalDefs(this));
                 // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
                 // For the new ByrefExposed VN, we could use an operator here like
                 // VNF_ByrefExposedStore that carries the VNs of the pointer and RHS, then
@@ -13997,18 +13997,17 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         }
     }
 
-    // If the call generates a definition, because it uses "return buffer", then VN the local
+    // If the call generates any definitions, for example because it uses "return buffer", then VN the local
     // as well.
-    GenTreeLclVarCommon* lclVarTree = nullptr;
-    ssize_t              offset     = 0;
-    unsigned             storeSize  = 0;
-    if (call->DefinesLocal(this, &lclVarTree, /* pIsEntire */ nullptr, &offset, &storeSize))
-    {
+    auto visitDef = [=](const LocalDef& def) {
         ValueNumPair storeValue;
-        storeValue.SetBoth(vnStore->VNForExpr(compCurBB, TYP_STRUCT));
+        storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
 
-        fgValueNumberLocalStore(call, lclVarTree, offset, storeSize, storeValue);
-    }
+        fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size, storeValue);
+        return GenTree::VisitResult::Continue;
+    };
+
+    call->VisitLocalDefs(this, visitDef);
 }
 
 void Compiler::fgValueNumberCastHelper(GenTreeCall* call)

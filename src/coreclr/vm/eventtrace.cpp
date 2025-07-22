@@ -2683,29 +2683,39 @@ extern "C"
         ClrFlsThreadTypeSwitch etwRundownThreadHolder(ThreadType_ETWRundownThread);
         PMCGEN_TRACE_CONTEXT context = (PMCGEN_TRACE_CONTEXT)CallbackContext;
 
-        BOOLEAN bIsPublicTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeHandle);
+        BOOLEAN bIsPublicTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EtwProvider);
 
-        BOOLEAN bIsPrivateTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimePrivateHandle);
+        BOOLEAN bIsPrivateTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EtwProvider);
 
-        BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
+        BOOLEAN bIsRundownTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EtwProvider);
+
+        BOOLEAN bIsStressTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context.EtwProvider);
 
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
         CallbackProviderIndex providerIndex = DotNETRuntime;
         DOTNET_TRACE_CONTEXT providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
-        if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle) {
+        if (bIsPublicTraceHandle)
+        {
             providerIndex = DotNETRuntime;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
-        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeRundownHandle) {
+        }
+        else if (bIsRundownTraceHandle)
+        {
             providerIndex = DotNETRuntimeRundown;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context;
-        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeStressHandle) {
+        }
+        else if (bIsStressTraceHandle)
+        {
             providerIndex = DotNETRuntimeStress;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context;
-        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) {
+        }
+        else if (bIsPrivateTraceHandle)
+        {
             providerIndex = DotNETRuntimePrivate;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
-        } else {
+        }
+        else {
             assert(!"unknown registration handle");
             return;
         }
