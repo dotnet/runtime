@@ -19,22 +19,12 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.True:
                     return new JsonValueOfJsonBool(reader.GetBoolean(), options);
                 case JsonTokenType.String:
-                    byte[] utf8String;
-
-                    if (reader.ValueIsEscaped)
-                    {
-                        ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                        utf8String = JsonReaderHelper.GetUnescaped(span);
-                    }
-                    else
-                    {
-                        utf8String = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
-                    }
-
+                    byte[] buffer = new byte[reader.ValueLength];
+                    ReadOnlyMemory<byte> utf8String = buffer.AsMemory(0, reader.CopyString(buffer));
                     return new JsonValueOfJsonString(utf8String, options);
                 case JsonTokenType.Number:
                     byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
-                    return new JsonValueOfJsonNumber(new JsonValueOfJsonNumber.JsonNumber(numberValue), options);
+                    return new JsonValueOfJsonNumber(numberValue, options);
                 default:
                     Debug.Fail("Only primitives allowed.");
                     ThrowHelper.ThrowJsonException();
@@ -44,9 +34,9 @@ namespace System.Text.Json.Nodes
 
         private sealed class JsonValueOfJsonString : JsonValue
         {
-            private readonly byte[] _value;
+            private readonly ReadOnlyMemory<byte> _value;
 
-            internal JsonValueOfJsonString(byte[] utf8String, JsonNodeOptions? options)
+            internal JsonValueOfJsonString(ReadOnlyMemory<byte> utf8String, JsonNodeOptions? options)
                 : base(options)
             {
                 _value = utf8String;
@@ -59,7 +49,7 @@ namespace System.Text.Json.Nodes
             {
                 ArgumentNullException.ThrowIfNull(writer);
 
-                writer.WriteStringValue(_value);
+                writer.WriteStringValue(_value.Span);
             }
 
             public override T GetValue<T>()
@@ -77,18 +67,13 @@ namespace System.Text.Json.Nodes
             {
                 if (typeof(T) == typeof(JsonElement))
                 {
-                    int firstByteToEscape = JsonWriterHelper.NeedsEscaping(_value, JavaScriptEncoder.Default);
-
-                    value = firstByteToEscape == -1
-                        ? (T)(object)QuoteAndConvert(_value)
-                        : (T)(object)EscapeAndConvert(_value, firstByteToEscape);
-
+                    value = (T)(object)JsonWriterHelper.WriteString(_value.Span, static serialized => JsonElement.Parse(serialized));
                     return true;
                 }
 
                 if (typeof(T) == typeof(string))
                 {
-                    string? result = JsonReaderHelper.TranscodeHelper(_value);
+                    string? result = JsonReaderHelper.TranscodeHelper(_value.Span);
 
                     Debug.Assert(result != null);
                     value = (T)(object)result;
@@ -99,28 +84,28 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(DateTime?))
                 {
-                    success = JsonReaderHelper.TryGetValue(_value, isEscaped: false, out DateTime result);
+                    success = JsonReaderHelper.TryGetValue(_value.Span, isEscaped: false, out DateTime result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(DateTimeOffset) || typeof(T) == typeof(DateTimeOffset?))
                 {
-                    success = JsonReaderHelper.TryGetValue(_value, isEscaped: false, out DateTimeOffset result);
+                    success = JsonReaderHelper.TryGetValue(_value.Span, isEscaped: false, out DateTimeOffset result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(Guid) || typeof(T) == typeof(Guid?))
                 {
-                    success = JsonReaderHelper.TryGetValue(_value, isEscaped: false, out Guid result);
+                    success = JsonReaderHelper.TryGetValue(_value.Span, isEscaped: false, out Guid result);
                     value = (T)(object)result;
                     return success;
                 }
 
                 if (typeof(T) == typeof(char) || typeof(T) == typeof(char?))
                 {
-                    string? result = JsonReaderHelper.TranscodeHelper(_value);
+                    string? result = JsonReaderHelper.TranscodeHelper(_value.Span);
 
                     Debug.Assert(result != null);
                     if (result.Length == 1)
@@ -132,69 +117,6 @@ namespace System.Text.Json.Nodes
 
                 value = default!;
                 return false;
-
-                static JsonElement QuoteAndConvert(ReadOnlySpan<byte> value)
-                {
-                    int quotedLength = value.Length + 2;
-                    byte[]? rented = null;
-
-                    try
-                    {
-                        Span<byte> quotedValue = quotedLength > JsonConstants.StackallocByteThreshold
-                            ? (rented = ArrayPool<byte>.Shared.Rent(quotedLength)).AsSpan(0, quotedLength)
-                            : stackalloc byte[JsonConstants.StackallocByteThreshold].Slice(0, quotedLength);
-
-                        quotedValue[0] = JsonConstants.Quote;
-                        value.CopyTo(quotedValue.Slice(1));
-                        quotedValue[quotedValue.Length - 1] = JsonConstants.Quote;
-
-                        return JsonElement.Parse(quotedValue);
-                    }
-                    finally
-                    {
-                        if (rented != null)
-                        {
-                            ArrayPool<byte>.Shared.Return(rented);
-                        }
-                    }
-                }
-
-                static JsonElement EscapeAndConvert(ReadOnlySpan<byte> value, int idx)
-                {
-                    Debug.Assert(idx != -1);
-                    Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
-
-                    int length = checked(2 + JsonWriterHelper.GetMaxEscapedLength(value.Length, idx));
-                    byte[]? rented = null;
-
-                    try
-                    {
-                        scoped Span<byte> escapedValue;
-
-                        if (length > JsonConstants.StackallocByteThreshold)
-                        {
-                            rented = ArrayPool<byte>.Shared.Rent(length);
-                            escapedValue = rented;
-                        }
-                        else
-                        {
-                            escapedValue = stackalloc byte[JsonConstants.StackallocByteThreshold];
-                        }
-
-                        escapedValue[0] = JsonConstants.Quote;
-                        JsonWriterHelper.EscapeString(value, escapedValue.Slice(1), idx, JavaScriptEncoder.Default, out int written);
-                        escapedValue[1 + written] = JsonConstants.Quote;
-
-                        return JsonElement.Parse(escapedValue.Slice(0, written + 2));
-                    }
-                    finally
-                    {
-                        if (rented != null)
-                        {
-                            ArrayPool<byte>.Shared.Return(rented);
-                        }
-                    }
-                }
             }
         }
 
@@ -246,9 +168,13 @@ namespace System.Text.Json.Nodes
 
         private sealed class JsonValueOfJsonNumber : JsonValue
         {
-            private readonly JsonNumber _value;
+            // This can be optimized to store the decimal point position and the exponent so that
+            // conversion to different numeric types can be done without parsing the string again.
+            // Utf8Parser uses an internal ref struct, Number.NumberBuffer, which is really the
+            // same functionality that we would want here.
+            private readonly byte[] _value;
 
-            internal JsonValueOfJsonNumber(JsonNumber number, JsonNodeOptions? options)
+            internal JsonValueOfJsonNumber(byte[] number, JsonNodeOptions? options)
                 : base(options)
             {
                 _value = number;
@@ -272,7 +198,7 @@ namespace System.Text.Json.Nodes
             {
                 if (typeof(T) == typeof(JsonElement))
                 {
-                    value = (T)(object)JsonElement.Parse(_value.Bytes);
+                    value = (T)(object)JsonElement.Parse(_value);
                     return true;
                 }
 
@@ -280,8 +206,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(int) || typeof(T) == typeof(int?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out int result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out int result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -289,8 +215,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(long) || typeof(T) == typeof(long?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out long result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out long result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -298,8 +224,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(double) || typeof(T) == typeof(double?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out double result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out double result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -307,8 +233,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(short) || typeof(T) == typeof(short?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out short result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out short result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -316,8 +242,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(decimal) || typeof(T) == typeof(decimal?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out decimal result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out decimal result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -325,8 +251,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out byte result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out byte result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -334,8 +260,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(float?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out float result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out float result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -343,8 +269,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(uint) || typeof(T) == typeof(uint?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out uint result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out uint result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -352,8 +278,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(ushort) || typeof(T) == typeof(ushort?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out ushort result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out ushort result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -361,8 +287,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(ulong) || typeof(T) == typeof(ulong?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out ulong result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out ulong result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -370,8 +296,8 @@ namespace System.Text.Json.Nodes
 
                 if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(sbyte?))
                 {
-                    success = Utf8Parser.TryParse(_value.Bytes, out sbyte result, out int consumed) &&
-                              consumed == _value.Bytes.Length;
+                    success = Utf8Parser.TryParse(_value, out sbyte result, out int consumed) &&
+                              consumed == _value.Length;
 
                     value = (T)(object)result;
                     return success;
@@ -385,21 +311,7 @@ namespace System.Text.Json.Nodes
             {
                 ArgumentNullException.ThrowIfNull(writer);
 
-                writer.WriteNumberValue(_value.Bytes);
-            }
-
-            // This can be optimized to also store the decimal point position and the exponent so that
-            // conversion to different numeric types can be done without parsing the string again.
-            // Utf8Parser uses an internal ref struct, Number.NumberBuffer, which is really the
-            // same functionality that we would want here.
-            internal readonly struct JsonNumber
-            {
-                internal byte[] Bytes { get; }
-
-                internal JsonNumber(byte[] bytes)
-                {
-                    Bytes = bytes;
-                }
+                writer.WriteNumberValue(_value);
             }
         }
     }
