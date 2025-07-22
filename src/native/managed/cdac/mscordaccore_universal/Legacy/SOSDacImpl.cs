@@ -1866,7 +1866,7 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
                 {
-                    arguments[i] = _target.ReadNUInt(basePtr.Value + (ulong)(i * sizeof(ClrDataAddress))).Value;
+                    arguments[i] = _target.ReadNUInt(basePtr.Value + (ulong)(i * _target.PointerSize)).Value;
                 }
             }
         }
