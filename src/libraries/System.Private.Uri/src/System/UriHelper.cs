@@ -794,7 +794,7 @@ namespace System
 
                 if (readOffset != start)
                 {
-                    Debug.Assert(readOffset != writeOffset);
+                    Debug.Assert(readOffset > writeOffset);
 
                     int segmentLength = start - readOffset;
                     span.Slice(readOffset, segmentLength).CopyTo(span.Slice(writeOffset));
@@ -806,6 +806,8 @@ namespace System
 
             if (readOffset != span.Length)
             {
+                Debug.Assert(readOffset > writeOffset);
+
                 span.Slice(readOffset).CopyTo(span.Slice(writeOffset));
                 writeOffset += span.Length - readOffset;
             }
