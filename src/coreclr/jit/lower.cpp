@@ -4308,6 +4308,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // Transform EQ|NE(AND(x, y), y) into EQ|NE(AND(NOT(x), y), 0) when y is a constant.
             //
 
+            andOp1->ClearContained();
             GenTree* notNode               = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
             cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
             BlockRange().InsertAfter(andOp1, notNode);
@@ -8617,15 +8618,16 @@ void Lowering::FindInducedParameterRegisterLocals()
     {
         hasRegisterKill |= node->IsCall();
 
-        GenTreeLclVarCommon* storeLcl;
-        if (node->DefinesLocal(comp, &storeLcl))
-        {
-            storedToLocals.Emplace(storeLcl->GetLclNum(), true);
-            continue;
-        }
+        auto visitDefs = [&](GenTreeLclVarCommon* lcl) {
+            storedToLocals.Emplace(lcl->GetLclNum(), true);
+            return GenTree::VisitResult::Continue;
+        };
+
+        node->VisitLocalDefNodes(comp, visitDefs);
 
         if (node->OperIs(GT_LCL_ADDR))
         {
+            // Model these as stored to, since we cannot reason about them in the same way.
             storedToLocals.Emplace(node->AsLclVarCommon()->GetLclNum(), true);
             continue;
         }

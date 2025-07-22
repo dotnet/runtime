@@ -345,6 +345,10 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
                 // Index is on the half-width vector, hence double the maximum index.
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) * 2 - 1;
                 break;
@@ -444,6 +448,7 @@ void HWIntrinsicInfo::lookupImmBounds(
                 break;
 
             case NI_Sve_MultiplyAddRotateComplex:
+            case NI_Sve2_DotProductRotateComplex:
                 immLowerBound = 0;
                 immUpperBound = 3;
                 break;
@@ -466,6 +471,23 @@ void HWIntrinsicInfo::lookupImmBounds(
                     assert(immNumber == 2);
                     immLowerBound = 0;
                     immUpperBound = 1;
+                }
+                break;
+
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
+                if (immNumber == 1)
+                {
+                    // Bounds for rotation
+                    immLowerBound = 0;
+                    immUpperBound = 3;
+                }
+                else
+                {
+                    // Bounds for index
+                    assert(immNumber == 2);
+                    assert(baseType == TYP_BYTE || baseType == TYP_SHORT);
+                    immLowerBound = 0;
+                    immUpperBound = (baseType == TYP_BYTE) ? 3 : 1;
                 }
                 break;
 
@@ -3156,6 +3178,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+        case NI_Sve2_DotProductRotateComplexBySelectedIndex:
         {
             assert(sig->numArgs == 5);
             assert(!isScalar);
