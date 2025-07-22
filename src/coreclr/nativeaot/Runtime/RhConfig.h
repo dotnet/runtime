@@ -45,7 +45,6 @@ public:
     };
 
     bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
-    bool ReadConfigValue(_In_z_ const char* wszEnvName, _In_z_ const char* wszConfigName, uint64_t* pValue, bool decimal = false);
     bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
     bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
 
