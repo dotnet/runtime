@@ -2333,18 +2333,12 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             regNumber op2Reg   = op2->GetRegNum();
             regNumber tmpReg1  = internalRegisters.Extract(node, RBM_ALLFLOAT);
             regNumber tmpReg2  = internalRegisters.Extract(node, RBM_ALLFLOAT);
-            emitAttr  typeSize = emitTypeSize(node->TypeGet());
+            var_types nodeType = node->TypeGet();
+            emitAttr  typeSize = emitTypeSize(nodeType);
             noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
             emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
 
             simd_t negOneIntVec = simd_t::AllBitsSet();
-            simd_t minValueInt{};
-            int    numElements = genTypeSize(node->TypeGet()) / 4;
-            for (int i = 0; i < numElements; i++)
-            {
-                minValueInt.i32[i] = INT_MIN;
-            }
-            CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
             CORINFO_FIELD_HANDLE negOneFld   = emit->emitSimdConst(&negOneIntVec, typeSize);
 
             // div-by-zero check
@@ -2354,16 +2348,27 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);
 
             // overflow check
-            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg1, op1Reg, minValueFld, 0, instOptions);
-            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op2Reg, negOneFld, 0, instOptions);
-            emit->emitIns_SIMD_R_R_R(INS_pandd, typeSize, tmpReg1, tmpReg1, tmpReg2, instOptions);
-            emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
-            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+            if (varTypeIsSigned(nodeType))
+            {
+                simd_t minValueInt{};
+                int    numElements = genTypeSize(nodeType) / 4;
+                for (int i = 0; i < numElements; i++)
+                {
+                    minValueInt.i32[i] = INT_MIN;
+                }
+                CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
 
-            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
-            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg2, op2Reg, instOptions);
+                emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg1, op1Reg, minValueFld, 0, instOptions);
+                emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op2Reg, negOneFld, 0, instOptions);
+                emit->emitIns_SIMD_R_R_R(INS_pandd, typeSize, tmpReg1, tmpReg1, tmpReg2, instOptions);
+                emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
+                genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+            }
+
+            emit->emitIns_R_R(varTypeIsSigned(nodeType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(nodeType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg2, op2Reg, instOptions);
             emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg1, tmpReg2, instOptions);
-            emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, targetReg, targetReg, instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(nodeType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg, targetReg, instOptions);
             break;
         }
 
