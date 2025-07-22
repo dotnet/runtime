@@ -13,6 +13,7 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
 {
     // Enumerate environment variables and filter for DOTNET_
     std::vector<std::pair<pal::string_t, pal::string_t>> env_vars;
+    bool found_complus_var = false;
     pal::enumerate_environment_variables([&](const pal::char_t* name, const pal::char_t* value)
     {
         // Check if the environment variable starts with DOTNET_
@@ -26,6 +27,10 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
         {
             env_vars.push_back(std::make_pair(name, value));
         }
+        else if (!found_complus_var && comp_func(name, _X("COMPlus_"), STRING_LENGTH("COMPlus_")) == 0)
+        {
+            found_complus_var = true;
+        }
     });
 
     // Sort for consistent output
@@ -38,7 +43,10 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
         trace::println(fmt, leading_whitespace, env_var.first.c_str(), env_var.second.c_str());
     }
 
-    return env_vars.size() > 0;
+    if (found_complus_var)
+        trace::println(_X("%sDetected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent."), leading_whitespace);
+
+    return env_vars.size() > 0 || found_complus_var;
 }
 
 bool install_info::try_get_install_location(pal::architecture arch, pal::string_t& out_install_location, bool* out_is_registered)

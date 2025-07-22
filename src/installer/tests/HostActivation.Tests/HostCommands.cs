@@ -120,7 +120,7 @@ namespace HostActivation.Tests
                 command = command.EnvironmentVariable(name, value);
             }
 
-            var otherEnvVar = "OTHER";
+            string otherEnvVar = "OTHER";
             command = command.EnvironmentVariable(otherEnvVar, "value");
 
             var result = command.Execute();
@@ -152,6 +152,20 @@ namespace HostActivation.Tests
                     result.Should().NotHaveStdOutContaining(name);
                 }
             }
+        }
+
+        [Fact]
+        public void Info_ListEnvironment_LegacyPrefixDetection()
+        {
+            string comPlusEnvVar = "COMPlus_ReadyToRun";
+            TestContext.BuiltDotNet.Exec("--info")
+                .EnvironmentVariable(comPlusEnvVar, "0")
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Environment variables:")
+                .And.NotHaveStdOutContaining(comPlusEnvVar)
+                .And.HaveStdOutContaining("Detected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent.");
         }
 
         [Fact]
