@@ -1021,9 +1021,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         if (pCode == TargetCodePointer.Null)
         {
-            // if pCode is null, we iterate through the method descs in the MT.
-            for (int i = 0; i < 10000; i++) // arbitrary limit to avoid infinite loop
+            while (canonMT.Address != TargetPointer.Null) // arbitrary limit to avoid infinite loop
             {
+                // if pCode is null, we iterate through the method descs in the MT.
                 foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
                 {
                     MethodDesc md = _methodDescs[mdh.Address];

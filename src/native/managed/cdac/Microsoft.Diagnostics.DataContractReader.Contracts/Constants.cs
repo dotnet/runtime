@@ -66,9 +66,6 @@ public static class Constants
         public const string OperatingSystem = nameof(OperatingSystem);
 
         public const string GCInfoVersion = nameof(GCInfoVersion);
-
-        public const string FCallHashSize = nameof(FCallHashSize);
-        public const string FCallMethods = nameof(FCallMethods);
     }
     public static class FieldNames
     {

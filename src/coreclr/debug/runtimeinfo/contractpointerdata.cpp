@@ -9,7 +9,6 @@
 #include "cdacplatformmetadata.hpp"
 #include "threads.h"
 #include "vars.hpp"
-#include "ecall.h"
 
 extern "C"
 {
