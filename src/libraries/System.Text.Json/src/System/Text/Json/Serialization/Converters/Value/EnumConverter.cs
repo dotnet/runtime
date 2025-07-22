@@ -676,14 +676,11 @@ namespace System.Text.Json.Serialization.Converters
                 return enumFields;
             }
 
-            var indices = new long[enumFields.Length];
+            var indices = new Tuple<int, int>[enumFields.Length];
             for (int i = 0; i < enumFields.Length; i++)
             {
                 // we want values with more bits set to come first so negate the pop count
-                int popCount = -PopCount(enumFields[i].Key);
-                // pack into a long with the pop count in the high bits and the index in the low bits
-                // this allows us to sort by pop count and then by index in case of ties
-                indices[i] = ((long)popCount << 32) | (uint)i;
+                indices[i] = Tuple.Create(-PopCount(enumFields[i].Key), i);
             }
 
             Array.Sort(indices);
@@ -691,9 +688,8 @@ namespace System.Text.Json.Serialization.Converters
             var sortedFields = new EnumFieldInfo[enumFields.Length];
             for (int i = 0; i < indices.Length; i++)
             {
-                // extract the index from the long, which is the low bits
-                // the high bits are the pop count, which we don't need anymore
-                int index = (int)(uint)indices[i];
+                // extract the index from the sorted tuple
+                int index = indices[i].Item2;
                 sortedFields[i] = enumFields[index];
             }
 
