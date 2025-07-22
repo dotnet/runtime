@@ -523,6 +523,8 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in System.Numerics.Tensors.TensorSpan<T> tensor, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> other) where T : System.IEquatable<T>? { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> SetSlice<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> values, params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> SetSlice<T>(this System.Numerics.Tensors.Tensor<T> tensor, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> values, params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
+        public static Tensor<T> ShiftLeft<T>(in ReadOnlyTensorSpan<T> x, int shiftAmount) where T : IShiftOperators<T, int, T> { throw null; }
+        public static ref readonly TensorSpan<T> ShiftLeft<T>(scoped in ReadOnlyTensorSpan<T> x, int shiftAmount, in TensorSpan<T> destination) where T : IShiftOperators<T, int, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Sigmoid<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IExponentialFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Sigmoid<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IExponentialFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Sinh<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IHyperbolicFunctions<T> { throw null; }
@@ -714,6 +716,31 @@ namespace System.Numerics.Tensors
             public static System.Numerics.Tensors.Tensor<TScalar> operator *(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
             public void operator *=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
             public void operator *=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ReadOnlyTensorSpan<TScalar>)
+            where TScalar : IShiftOperators<TScalar, int, TScalar>
+        {
+            public static Tensor<TScalar> operator <<(in ReadOnlyTensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(Tensor<TScalar>)
+            where TScalar : IShiftOperators<TScalar, int, TScalar>
+        {
+            public static Tensor<TScalar> operator <<(Tensor<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(Tensor<TScalar> tensor)
+            where TScalar : IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator <<=(int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(TensorSpan<TScalar>)
+            where TScalar : IShiftOperators<TScalar, int, TScalar>
+        {
+            public static Tensor<TScalar> operator <<(in TensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(ref TensorSpan<TScalar> tensor)
+            where TScalar : IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator <<=(int shiftAmount) { throw null; }
         }
         extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
             where TScalar : System.Numerics.ISubtractionOperators<TScalar, TScalar, TScalar>
