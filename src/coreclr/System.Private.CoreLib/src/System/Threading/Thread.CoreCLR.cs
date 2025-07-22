@@ -557,6 +557,15 @@ namespace System.Threading
         }
 #endif
 
+        private void OnThreadExiting()
+        {
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+            // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
+            // the thread.
+            _waitInfo?.OnThreadExiting();
+#endif
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CurrentThreadIsFinalizerThread")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CurrentThreadIsFinalizerThread();
