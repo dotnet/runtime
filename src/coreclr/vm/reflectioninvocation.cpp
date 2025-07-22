@@ -1748,9 +1748,8 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
 
     TypeHandle type = pType.AsTypeHandle();
 
-    // Ref structs can't be boxed (allocated as an uninitialized object).
-    bool allowRefLike = false;
-    ValidateTypeAbleToBeInstantiated(type, allowRefLike, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed (allocated as an uninitialized object).
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 
@@ -1923,9 +1922,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     TypeHandle type = pType.AsTypeHandle();
 
-    // Ref structs can't be boxed.
-    bool allowRefLike = false;
-    ValidateTypeAbleToBeInstantiated(type, allowRefLike, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed.
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 

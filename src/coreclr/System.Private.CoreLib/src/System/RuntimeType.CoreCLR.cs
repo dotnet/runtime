@@ -4001,16 +4001,13 @@ namespace System
         [DebuggerHidden]
         internal object? CreateInstanceOfT()
         {
+            Debug.Assert(!IsValueType);
+
             ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
             if (!cache.CtorIsPublic)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
-            }
-
-            if (IsByRefLike)
-            {
-                throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
 
             // We reuse ActivatorCache here to ensure that we aren't always creating two entries in the cache.

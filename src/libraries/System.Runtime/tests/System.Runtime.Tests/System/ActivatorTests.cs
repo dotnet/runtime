@@ -343,6 +343,8 @@ namespace System.Tests
         [InlineData(typeof(RuntimeArgumentHandle))]
         [InlineData(typeof(Span<int>))]
         [InlineData(typeof(ReadOnlySpan<string>))]
+        [InlineData(typeof(RSNoCtor))]
+        [InlineData(typeof(RSCtor))]
         public void CreateInstance_BoxedByRefType_ThrowsNotSupportedException(Type type)
         {
             Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(type));
