@@ -21,6 +21,7 @@ namespace System.Diagnostics
         /// Gets the trace source that is being initialized.
         /// </summary>
         public TraceSource TraceSource { get; }
+
         /// <summary>
         /// Gets or sets a value indicating whether the trace source was initialized from configuration.
         /// </summary>

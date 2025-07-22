@@ -211,7 +211,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets the TDS (Tabular Data Stream) representation of this <see cref="SqlMoney" /> value.
         /// </summary>
-        /// <returns>A long value representing the TDS representation.</returns>
+        /// <returns>A long value representing the TDS (Tabular Data Stream) representation.</returns>
         /// <exception cref="SqlNullValueException">Thrown when the <see cref="SqlMoney" /> is <see langword="null" />.</exception>
         public long GetTdsValue()
         {

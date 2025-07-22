@@ -197,7 +197,7 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the data contract represents a value type.
+        /// Gets a value indicating whether the data contract represents a value type.
         /// </summary>
         public virtual bool IsValueType
         {
@@ -206,7 +206,7 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the data contract is serialized by reference.
+        /// Gets a value indicating whether the data contract is serialized by reference.
         /// </summary>
         public virtual bool IsReference
         {
@@ -215,7 +215,7 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         /// <summary>
-        /// Gets or sets the XML qualified name for the data contract.
+        /// Gets the XML qualified name for the data contract.
         /// </summary>
         public virtual XmlQualifiedName XmlName
         {

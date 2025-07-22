@@ -18,7 +18,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Gets the switch that is being initialized.
+        /// Gets the <see cref="Switch" /> that is being initialized.
         /// </summary>
         public Switch Switch { get; }
     }
