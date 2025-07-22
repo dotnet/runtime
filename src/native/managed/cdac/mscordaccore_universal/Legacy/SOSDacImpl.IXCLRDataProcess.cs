@@ -12,7 +12,6 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
-
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 /// <summary>
@@ -520,8 +519,27 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess is not null ? _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetOtherNotificationFlags(uint* flags)
-        => _legacyProcess is not null ? _legacyProcess.GetOtherNotificationFlags(flags) : HResults.E_NOTIMPL;
-
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *flags = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            uint flagsLocal;
+            int hrLocal = _legacyProcess.GetOtherNotificationFlags(&flagsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(*flags == flagsLocal);
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataProcess.SetOtherNotificationFlags(uint flags)
         => _legacyProcess is not null ? _legacyProcess.SetOtherNotificationFlags(flags) : HResults.E_NOTIMPL;
 
