@@ -954,15 +954,22 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer mtAddress = mt.ToTargetPointer(_target);
-            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
-            data->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
-            data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
-            data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
-            data->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
-            data->wContextStaticsSize = 0;
-            data->wContextStaticOffset = 0;
+            if (mt == 0 || data == null)
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else
+            {
+                TargetPointer mtAddress = mt.ToTargetPointer(_target);
+                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+                TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
+                data->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
+                data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
+                data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
+                data->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
+                data->wContextStaticsSize = 0;
+                data->wContextStaticOffset = 0;
+            }
         }
         catch (System.Exception ex)
         {
