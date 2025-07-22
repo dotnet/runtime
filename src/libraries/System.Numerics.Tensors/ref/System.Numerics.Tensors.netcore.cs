@@ -603,6 +603,31 @@ namespace System.Numerics.Tensors
             public void operator +=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
             public void operator +=(TScalar other) { throw null; }
         }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IDivisionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IDivisionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator /=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator /=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IDivisionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator /=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator /=(TScalar other) { throw null; }
+        }
     }
     public readonly ref partial struct TensorDimensionSpan<T>
     {

@@ -40,6 +40,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Addition.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Division.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorDimensionSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorOperation.cs" />
