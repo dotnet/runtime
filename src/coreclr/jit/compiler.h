@@ -4741,11 +4741,6 @@ protected:
     void getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                                 CORINFO_SIG_INFO*    sig,
                                 unsigned             immNumber,
-                                var_types            simdBaseType,
-                                CorInfoType          simdBaseJitType,
-                                CORINFO_CLASS_HANDLE op1ClsHnd,
-                                CORINFO_CLASS_HANDLE op2ClsHnd,
-                                CORINFO_CLASS_HANDLE op3ClsHnd,
                                 unsigned*            immSimdSize,
                                 var_types*           immSimdBaseType);
 
@@ -6954,13 +6949,13 @@ protected:
 
     // Hoist all expressions in "blocks" that are invariant in "loop"
     // outside of that loop.
-    void optHoistLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
+    void optHoistLoopBlocks(FlowGraphNaturalLoop* loop, BitVecTraits* traits, BitVec blocks, LoopHoistContext* hoistContext);
 
     // Return true if the tree looks profitable to hoist out of "loop"
-    bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
+    bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
     // Performs the hoisting "tree" into the PreHeader for "loop"
-    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
+    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
     // Note the new SSA uses in tree
     void optRecordSsaUses(GenTree* tree, BasicBlock* block);

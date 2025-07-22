@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"The application '{appOtherExt}' is not a managed .dll.");
+                .And.HaveStdErrContaining($"The application '{appOtherExt}' does not exist or is not a managed .dll or .exe");
         }
 
         [Fact]
