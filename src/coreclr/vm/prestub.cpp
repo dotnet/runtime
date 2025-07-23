@@ -1438,15 +1438,15 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     }
 
 #ifdef TARGET_X86
+    if (msig.HasAsyncContinuation())
+    {
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
+
     if (msig.HasGenericContextArg())
     {
         // The hidden context parameter
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
     }
 #endif // TARGET_X86
 }
@@ -1469,6 +1469,9 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     MetaSig msig(pTargetMD);
 
     _ASSERTE(msig.HasThis());
+
+    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
+    _ASSERTE(!msig.HasAsyncContinuation());
 
     ILStubLinker sl(pTargetMD->GetModule(),
                     pTargetMD->GetSignature(),
@@ -1585,6 +1588,9 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
+    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
+    _ASSERTE(!msig.HasAsyncContinuation());
+
     // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
@@ -1607,12 +1613,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     // Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
-
-    // Push the async continuation
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
 
 #if !defined(TARGET_X86)
     // Push the rest of the arguments for not x86
@@ -2238,14 +2238,10 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else if (IsFCall())
     {
         // Get the fcall implementation
-        BOOL fSharedOrDynamicFCallImpl;
-        pCode = ECall::GetFCallImpl(this, &fSharedOrDynamicFCallImpl);
+        pCode = ECall::GetFCallImpl(this);
 
-        if (fSharedOrDynamicFCallImpl)
-        {
-            // Fake ctors share one implementation that has to be wrapped by prestub
-            GetOrCreatePrecode();
-        }
+        // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc
+        GetOrCreatePrecode();
     }
     else if (IsArray())
     {
@@ -2387,14 +2383,13 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
     STANDARD_VM_CONTRACT;
 
     //
-    // Skip fixup precode jump for better perf. Since we have MethodDesc available, we can use cheaper method
-    // than code:Precode::TryToSkipFixupPrecode.
+    // Skip fixup precode jump for better perf.
     //
 #ifdef HAS_FIXUP_PRECODE
     if (pMD->HasPrecode() && pMD->GetPrecode()->GetType() == PRECODE_FIXUP
         && pMD->IsNativeCodeStableAfterInit())
     {
-        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD) : pMD->GetNativeCode();
+        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD, false /* throwForInvalidFCall */) : pMD->GetNativeCode();
         if (pDirectTarget != (PCODE)NULL)
             pCode = pDirectTarget;
     }
@@ -3300,7 +3295,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
             if (pHelper != (PCODE)NULL)
             {
-                *(TADDR *)pCell = pHelper;
+                VolatileStore((TADDR *)pCell, pHelper);
             }
 
 #ifdef _DEBUG

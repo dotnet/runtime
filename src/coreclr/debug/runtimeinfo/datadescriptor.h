@@ -333,8 +333,12 @@ CDAC_TYPE_BEGIN(EEClass)
 CDAC_TYPE_INDETERMINATE(EEClass)
 CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_data<EEClass>::MethodTable)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_data<EEClass>::NumMethods)
+CDAC_TYPE_FIELD(EEClass, /*pointer*/, FieldDescList, cdac_data<EEClass>::FieldDescList)
 CDAC_TYPE_FIELD(EEClass, /*uint32*/, CorTypeAttr, cdac_data<EEClass>::CorTypeAttr)
 CDAC_TYPE_FIELD(EEClass, /*uint8*/, InternalCorElementType, cdac_data<EEClass>::InternalCorElementType)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumInstanceFields, cdac_data<EEClass>::NumInstanceFields)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumStaticFields, cdac_data<EEClass>::NumStaticFields)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
 
@@ -523,20 +527,35 @@ CDAC_TYPE_END(MethodDescVersioningState)
 
 CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
 CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ReadWidthOfPrecodeType, offsetof(PrecodeMachineDescriptor, ReadWidthOfPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ShiftOfPrecodeType, offsetof(PrecodeMachineDescriptor, ShiftOfPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, OffsetOfPrecodeType, offsetof(PrecodeMachineDescriptor, OffsetOfPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
 #endif
+
 #ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
-#endif
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupCodeOffset, offsetof(PrecodeMachineDescriptor, FixupCodeOffset))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupStubPrecodeSize, offsetof(PrecodeMachineDescriptor, FixupStubPrecodeSize))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, FixupBytes, offsetof(PrecodeMachineDescriptor, FixupBytes))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, FixupIgnoredBytes, offsetof(PrecodeMachineDescriptor, FixupIgnoredBytes))
+#endif // HAS_FIXUP_PRECODE
+
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeSize, offsetof(PrecodeMachineDescriptor, StubPrecodeSize))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
+
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, StubBytes, offsetof(PrecodeMachineDescriptor, StubBytes))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, StubIgnoredBytes, offsetof(PrecodeMachineDescriptor, StubIgnoredBytes))
+
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ThisPointerRetBufPrecodeType, offsetof(PrecodeMachineDescriptor, ThisPointerRetBufPrecodeType))
 #endif
+#ifdef FEATURE_INTERPRETER
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InterpreterPrecodeType, offsetof(PrecodeMachineDescriptor, InterpreterPrecodeType))
+#endif
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, DynamicHelperPrecodeType, offsetof(PrecodeMachineDescriptor, DynamicHelperPrecodeType))
+#endif
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, UMEntryPrecodeType, offsetof(PrecodeMachineDescriptor, UMEntryPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
 
@@ -912,7 +931,7 @@ CDAC_GLOBAL_STRING(RID, RID_STRING)
 CDAC_GLOBAL(GCInfoVersion, uint32, GCINFO_VERSION)
 
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
-CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomain)
+CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
@@ -953,6 +972,11 @@ CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
+CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
+CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
+#ifdef TARGET_WINDOWS
+CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
+#endif // TARGET_WINDOWS
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, uint8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)

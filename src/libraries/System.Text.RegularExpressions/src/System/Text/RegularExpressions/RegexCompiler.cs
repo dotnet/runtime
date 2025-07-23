@@ -20,7 +20,6 @@ namespace System.Text.RegularExpressions
     [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
     internal abstract class RegexCompiler
     {
-#pragma warning disable CS9264 // nullability of `field`: https://github.com/dotnet/csharplang/issues/8425
         private static FieldInfo RuntextstartField => field ??= RegexRunnerField("runtextstart");
         private static FieldInfo RuntextposField => field ??= RegexRunnerField("runtextpos");
         private static FieldInfo RuntrackposField => field ??= RegexRunnerField("runtrackpos");
@@ -103,7 +102,6 @@ namespace System.Text.RegularExpressions
         private static MethodInfo MathMinIntIntMethod => field ??= typeof(Math).GetMethod("Min", [typeof(int), typeof(int)])!;
         private static MethodInfo MemoryMarshalGetArrayDataReferenceSearchValuesMethod => field ??= typeof(MemoryMarshal).GetMethod("GetArrayDataReference", [Type.MakeGenericMethodParameter(0).MakeArrayType()])!.MakeGenericMethod(typeof(SearchValues<char>))!;
         private static MethodInfo UnsafeAsMethod => field ??= typeof(Unsafe).GetMethod("As", [typeof(object)])!;
-#pragma warning restore CS9264
 
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those

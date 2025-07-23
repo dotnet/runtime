@@ -979,9 +979,21 @@ namespace System.Net.Test.Common
                 return headerString;
             }
 
-            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+            private string GetTrailerString(IList<HttpHeaderData> trailers)
             {
-                string headerString = GetResponseHeaderString(statusCode, headers);
+                StringBuilder bld = new StringBuilder();
+                bld.Append("0\r\n");
+                foreach (HttpHeaderData headerData in trailers)
+                {
+                    bld.Append($"{headerData.Name}: {headerData.Value}\r\n");
+                }
+                bld.Append("\r\n");
+                return bld.ToString();
+            }
+
+            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false)
+            {
+                string headerString = isTrailingHeader ? GetTrailerString(headers) : GetResponseHeaderString(statusCode, headers);
                 await SendResponseAsync(headerString).ConfigureAwait(false);
             }
 
@@ -1133,6 +1145,11 @@ namespace System.Net.Test.Common
 
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
         {
+            if (options is LoopbackServer.Options { } loopbackOptions)
+            {
+                return loopbackOptions;
+            }
+
             LoopbackServer.Options newOptions = new LoopbackServer.Options();
             if (options != null)
             {

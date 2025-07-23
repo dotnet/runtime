@@ -82,6 +82,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
                 void LocalFunction(int a) { }
                 LocalFunction(2);
+
+                AttributedMethod();
             }
 
             // The attribute would generate warning, but it is suppressed due to the Requires on the type
@@ -409,7 +411,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [ExpectedWarning("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
         [ExpectedWarning("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
-        // Although we suppress the warning from RequiresOnMethod.MethodWithRequires () we still get a warning because we call CallRequiresMethod() which is an static method on a type with RUC
+        // Although we suppress the warning from RequiresOnMethod.MethodWithRequires() we still get a warning because we call CallRequiresMethod() which is an static method on a type with RUC
         [ExpectedWarning("IL2026", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--")]
         [ExpectedWarning("IL3050", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
         [ExpectedWarning("IL2026", "ClassWithRequires.Instance", "--ClassWithRequires--")]
@@ -480,7 +482,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             TestStaticCtorMarkingTriggeredOnSecondAccessWrite();
             TestStaticRequiresFieldAccessSuppressedByRequiresOnMethod();
             TestStaticCtorMarkingIsTriggeredByFieldAccessRead();
-            //TestStaticCtorTriggeredByMethodCall ();
+            //TestStaticCtorTriggeredByMethodCall();
             TestStaticCtorTriggeredByCtorCall();
             TestInstanceFieldCallDontWarn();
         }
@@ -1322,7 +1324,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 public static RequiresAll<T> field;
 
-                // Instance fields get generic warnings but static fields don't.
                 [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/108523")]
                 public RequiresAll<T> instanceField;
 

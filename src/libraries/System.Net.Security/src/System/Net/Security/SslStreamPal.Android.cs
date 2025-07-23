@@ -21,6 +21,7 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = false;
         internal const bool CanEncryptEmptyMessage = false;
+        internal const bool CanGenerateCustomAlerts = false;
 
         public static void VerifyPackageInfo()
         {
@@ -230,6 +231,7 @@ namespace System.Net.Security
         {
             // There doesn't seem to be an exposed API for writing an alert.
             // The API seems to assume that all alerts are generated internally.
+            Debug.Assert(CanGenerateCustomAlerts);
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 

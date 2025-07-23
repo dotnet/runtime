@@ -755,6 +755,8 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 
+        UnwindInfoTable::Initialize();
+
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -804,6 +806,7 @@ void EEStartupHelper()
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
+        CDacPlatformMetadata::InitPrecodes();
 
         InitializeGarbageCollector();
 
@@ -821,9 +824,6 @@ void EEStartupHelper()
 
         // Static initialization
         SystemDomain::Attach();
-
-        // Start up the EE initializing all the global variables
-        ECall::Init();
 
         COMDelegate::Init();
 
@@ -1359,11 +1359,6 @@ part2:
             {
                 g_fEEShutDown |= ShutDown_Phase2;
 
-                // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
-                // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
-                // RemoveAppDomainFromIPC.
-                //
-                // (If we move those things to earlier, this can be called only if fShouldWeCleanup.)</TODO>
                 if (!g_fFastExitProcess)
                 {
                     SystemDomain::DetachBegin();
