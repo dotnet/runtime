@@ -1154,13 +1154,29 @@ INST3(ccmpge,           "ccmpge",           IUM_RD, 0x000038,    0x0003880,   0x
 INST3(ccmple,           "ccmple",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
 INST3(ccmpg,            "ccmpg",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
 #define LAST_CCMP_INSTRUCTION INS_ccmpg
-#define LAST_APX_INSTRUCTION INS_ccmpg
+INST3(crc32_apx,        "crc32",            IUM_RW, BAD_CODE,     BAD_CODE,     0x0000F0,                                3C,                1C,         INS_TT_NONE,    INS_FLAGS_None)
+INST3(movbe_apx,        "movbe",            IUM_WR, 0x000061,     BAD_CODE,     0x000060,                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_FLAGS_None)
+
+INST3(seto_apx,         "setzuo",           IUM_WR, SSEDBLMAP(4, 0x40),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF)
+INST3(setno_apx,        "setzuno",          IUM_WR, SSEDBLMAP(4, 0x41),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF)
+INST3(setb_apx,         "setzub",           IUM_WR, SSEDBLMAP(4, 0x42),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_CF)
+INST3(setae_apx,        "setzuae",          IUM_WR, SSEDBLMAP(4, 0x43),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_CF)
+INST3(sete_apx,         "setzue",           IUM_WR, SSEDBLMAP(4, 0x44),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF)
+INST3(setne_apx,        "setzune",          IUM_WR, SSEDBLMAP(4, 0x45),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF)
+INST3(setbe_apx,        "setzube",          IUM_WR, SSEDBLMAP(4, 0x46),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF | Reads_CF)
+INST3(seta_apx,         "setzua",           IUM_WR, SSEDBLMAP(4, 0x47),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF | Reads_CF)
+INST3(sets_apx,         "setzus",           IUM_WR, SSEDBLMAP(4, 0x48),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_SF)
+INST3(setns_apx,        "setzuns",          IUM_WR, SSEDBLMAP(4, 0x49),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_SF)
+INST3(setp_apx,         "setzup",           IUM_WR, SSEDBLMAP(4, 0x4A),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_PF)
+INST3(setnp_apx,        "setzunp",          IUM_WR, SSEDBLMAP(4, 0x4B),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_PF)
+INST3(setl_apx,         "setzul",           IUM_WR, SSEDBLMAP(4, 0x4C),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF)
+INST3(setge_apx,        "setzuge",          IUM_WR, SSEDBLMAP(4, 0x4D),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF)
+INST3(setle_apx,        "setzule",          IUM_WR, SSEDBLMAP(4, 0x4E),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
+INST3(setg_apx,         "setzug",           IUM_WR, SSEDBLMAP(4, 0x4F),  BAD_CODE, BAD_CODE,                             ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
+#define LAST_APX_INSTRUCTION INS_setg_apx
 
 // Scalar instructions in SSE4.2
 INST3(crc32,            "crc32",            IUM_RW, BAD_CODE,     BAD_CODE,     PSSE38(0xF2, 0xF0),                      3C,                1C,         INS_TT_NONE,    INS_FLAGS_None)
-#ifdef TARGET_AMD64
-INST3(crc32_apx,        "crc32",            IUM_RW, BAD_CODE,     BAD_CODE,     0x0000F0,                                3C,                1C,         INS_TT_NONE,    INS_FLAGS_None)
-#endif
 
 // BMI1
 INST3(tzcnt,            "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBC),                            3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)    // Count the Number of Trailing Zero Bits
@@ -1176,9 +1192,6 @@ INST3(lzcnt_apx,        "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // MOVBE
 INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     PCKMVB(0xF0),                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_FLAGS_None)
-#ifdef  TARGET_AMD64
-INST3(movbe_apx,        "movbe",            IUM_WR, 0x000061,     BAD_CODE,     0x000060,                                ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_FLAGS_None)
-#endif
 
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            3C,                1C,         INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | Encoding_REX2)
@@ -1292,27 +1305,6 @@ INST1(setl,             "setl",             IUM_WR, 0x0F009C,                   
 INST1(setge,            "setge",            IUM_WR, 0x0F009D,                                                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF       | Reads_SF | Encoding_REX2)
 INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
 INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
-
-#ifdef TARGET_AMD64
-// The following instructions shall always be next to SETcc instructions group, the offset between the original instruction and the ZU variant should be 16.
-// No new instruction should be inserted from INS_seto to setzug.
-INST1(seto_apx,             "setzuo",         IUM_WR, SSEDBLMAP(4, 0x40),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF)
-INST1(setno_apx,            "setzuno",        IUM_WR, SSEDBLMAP(4, 0x41),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF)
-INST1(setb_apx,             "setzub",         IUM_WR, SSEDBLMAP(4, 0x42),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_CF)
-INST1(setae_apx,            "setzuae",        IUM_WR, SSEDBLMAP(4, 0x43),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_CF)
-INST1(sete_apx,             "setzue",         IUM_WR, SSEDBLMAP(4, 0x44),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF)
-INST1(setne_apx,            "setzune",        IUM_WR, SSEDBLMAP(4, 0x45),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF)
-INST1(setbe_apx,            "setzube",        IUM_WR, SSEDBLMAP(4, 0x46),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF | Reads_CF)
-INST1(seta_apx,             "setzua",         IUM_WR, SSEDBLMAP(4, 0x47),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_ZF | Reads_CF)
-INST1(sets_apx,             "setzus",         IUM_WR, SSEDBLMAP(4, 0x48),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_SF)
-INST1(setns_apx,            "setzuns",        IUM_WR, SSEDBLMAP(4, 0x49),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_SF)
-INST1(setp_apx,             "setzup",         IUM_WR, SSEDBLMAP(4, 0x4A),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_PF)
-INST1(setnp_apx,            "setzunp",        IUM_WR, SSEDBLMAP(4, 0x4B),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_PF)
-INST1(setl_apx,             "setzul",         IUM_WR, SSEDBLMAP(4, 0x4C),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF)
-INST1(setge_apx,            "setzuge",        IUM_WR, SSEDBLMAP(4, 0x4D),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF)
-INST1(setle_apx,            "setzule",        IUM_WR, SSEDBLMAP(4, 0x4E),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
-INST1(setg_apx,             "setzug",         IUM_WR, SSEDBLMAP(4, 0x4F),                                                  ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
-#endif
 
 // Indirect jump used for tailcalls. We differentiate between func-internal
 // indirect jump (e.g. used for switch) and tailcall indirect jumps because the

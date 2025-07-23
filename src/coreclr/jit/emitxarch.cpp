@@ -88,20 +88,7 @@ bool emitter::IsAvx512OnlyInstruction(instruction ins)
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
 #ifdef TARGET_AMD64
-    if (IsApxZuCompatibleInstruction(ins))
-    {
-        return true;
-    }
-
-    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
-    {
-        return true;
-    }
-
-    if (IsCCMP(ins))
-    {
-        return true;
-    }
+    return (ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION);
 #endif // TARGET_AMD64
     return false;
 }

@@ -675,23 +675,24 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOption
     // If using ZU feature, we need to promote the SETcc to the new instruction.
     if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
     {
-        assert(INS_seto_apx == (INS_seto + 16));
-        assert(INS_setno_apx == (INS_setno + 16));
-        assert(INS_setb_apx == (INS_setb + 16));
-        assert(INS_setae_apx == (INS_setae + 16));
-        assert(INS_sete_apx == (INS_sete + 16));
-        assert(INS_setne_apx == (INS_setne + 16));
-        assert(INS_setbe_apx == (INS_setbe + 16));
-        assert(INS_seta_apx == (INS_seta + 16));
-        assert(INS_sets_apx == (INS_sets + 16));
-        assert(INS_setns_apx == (INS_setns + 16));
-        assert(INS_setp_apx == (INS_setp + 16));
-        assert(INS_setnp_apx == (INS_setnp + 16));
-        assert(INS_setl_apx == (INS_setl + 16));
-        assert(INS_setge_apx == (INS_setge + 16));
-        assert(INS_setle_apx == (INS_setle + 16));
-        assert(INS_setg_apx == (INS_setg + 16));
-        ins = (instruction)(ins + 16);
+        const int offset = (INS_seto - INS_seto_apx);
+        assert(INS_seto == (INS_seto_apx + offset));
+        assert(INS_setno == (INS_setno_apx + offset));
+        assert(INS_setb == (INS_setb_apx + offset));
+        assert(INS_setae == (INS_setae_apx + offset));
+        assert(INS_sete == (INS_sete_apx + offset));
+        assert(INS_setne == (INS_setne_apx + offset));
+        assert(INS_setbe == (INS_setbe_apx + offset));
+        assert(INS_seta == (INS_seta_apx + offset));
+        assert(INS_sets == (INS_sets_apx + offset));
+        assert(INS_setns == (INS_setns_apx + offset));
+        assert(INS_setp == (INS_setp_apx + offset));
+        assert(INS_setnp == (INS_setnp_apx + offset));
+        assert(INS_setl == (INS_setl_apx + offset));
+        assert(INS_setge == (INS_setge_apx + offset));
+        assert(INS_setle == (INS_setle_apx + offset));
+        assert(INS_setg == (INS_setg_apx + offset));
+        ins = (instruction)(ins + offset);
     }
 #endif
 
