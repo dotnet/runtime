@@ -276,5 +276,4 @@ function(set_target_definitions_to_custom_os_and_arch)
   if (TARGETDETAILS_ARCH STREQUAL "armel")
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ARM_SOFTFP)
   endif()
-
 endfunction()
