@@ -588,7 +588,7 @@ Initialize(
             }
         }
 
-#ifndef __wasm__
+#ifndef TARGET_WASM
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -601,7 +601,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-#endif
+#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -918,7 +918,7 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
-#ifdef __wasm__
+#ifdef TARGET_WASM
     // WebAssembly cannot set limits
     return TRUE;
 #endif

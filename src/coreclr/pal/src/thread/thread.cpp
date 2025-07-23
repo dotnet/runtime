@@ -2284,10 +2284,10 @@ Return :
 BOOL
 CPalThread::EnsureSignalAlternateStack()
 {
-#ifdef __wasm__
+#ifdef TARGET_WASM
     // WebAssembly does not support alternate signal stacks.
     return TRUE;
-#else // !__wasm__
+#else // !TARGET_WASM
     int st = 0;
 
     if (g_registered_signal_handlers)
@@ -2341,7 +2341,7 @@ CPalThread::EnsureSignalAlternateStack()
     }
 
     return (st == 0);
-#endif // !__wasm__
+#endif // !TARGET_WASM
 }
 
 /*++
@@ -2359,7 +2359,7 @@ Return :
 void
 CPalThread::FreeSignalAlternateStack()
 {
-#ifndef __wasm__ // WebAssembly does not support alternate signal stacks.
+#ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
     m_alternateStack = nullptr;
 
@@ -2383,7 +2383,7 @@ CPalThread::FreeSignalAlternateStack()
             }
         }
     }
-#endif // !__wasm__
+#endif // !TARGET_WASM
 }
 
 #endif // !HAVE_MACH_EXCEPTIONS
