@@ -1861,6 +1861,21 @@ namespace System.Numerics.Tensors
             }
         }
 
+        public readonly struct ShiftRightLogical<T>
+            : IBinaryOperation_Tensor_Scalar<T, int, T>
+            where T : IShiftOperators<T, int, T>
+        {
+            public static void Invoke(ref readonly T x, int shiftAmount, ref T destination)
+            {
+                destination = x >>> shiftAmount;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
+            {
+                TensorPrimitives.ShiftRightLogical(x, shiftAmount, destination);
+            }
+        }
+
         public readonly struct Sigmoid<T>
         : IUnaryOperation_Tensor<T, T>
         where T : IExponentialFunctions<T>
