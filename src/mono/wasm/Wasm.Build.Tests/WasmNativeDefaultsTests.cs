@@ -27,7 +27,10 @@ namespace Wasm.Build.Tests
                 ("WasmEnableExceptionHandling", true),
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
+                ("WasmEnableThreads", false),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
+                // ("RunAOTCompilation", false) -- tested separately as it changes build behavior significantly  
+                // ("PublishTrimmed", true) -- tested separately as it changes build behavior significantly
             };
 
             TheoryData<Configuration, string, bool, bool, bool> data = new();
