@@ -1981,7 +1981,7 @@ namespace System.Runtime.Intrinsics
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Vector64<double>.PositiveInfinity.As<double, T>());
+                return Equals(vector, Vector64<double>.NegativeInfinity.As<double, T>());
             }
             return Vector64<T>.Zero;
         }
