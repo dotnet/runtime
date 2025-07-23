@@ -411,6 +411,12 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     ReleaseGRef(env, sslStream->netOutBuffer);
     ReleaseGRef(env, sslStream->netInBuffer);
     ReleaseGRef(env, sslStream->appInBuffer);
+
+    if (sslStream->managedContextHandle != 0 && sslStream->managedContextCleanup != NULL)
+    {
+        sslStream->managedContextCleanup(sslStream->managedContextHandle);
+    }
+
     free(sslStream);
 }
 
@@ -650,7 +656,7 @@ cleanup:
 }
 
 int32_t AndroidCryptoNative_SSLStreamInitialize(
-    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize, char* peerHost)
+    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, MANAGED_CONTEXT_CLEANUP managedContextCleanup, int32_t appBufferSize, char* peerHost)
 {
     abort_if_invalid_pointer_argument (sslStream);
     abort_unless(sslStream->sslContext != NULL, "sslContext is NULL in SSL stream");
@@ -706,6 +712,7 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     sslStream->managedContextHandle = managedContextHandle;
     sslStream->streamReader = streamReader;
     sslStream->streamWriter = streamWriter;
+    sslStream->managedContextCleanup = managedContextCleanup;
 
     ret = SUCCESS;
 

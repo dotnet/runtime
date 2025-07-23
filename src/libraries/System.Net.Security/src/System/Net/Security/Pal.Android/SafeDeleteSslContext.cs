@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Collections.Concurrent;
 
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
@@ -27,6 +26,7 @@ namespace System.Net
             SslProtocols.Tls13,
         };
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
+
         private readonly SafeSslHandle _sslContext;
 
         private readonly object _lock = new object();
@@ -72,9 +72,12 @@ namespace System.Net
 
                     if (disposing)
                     {
+                        // First dispose the SSL context to trigger native cleanup
+                        _sslContext.Dispose();
+
+                        // Then dispose the buffers
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
-                        _sslContext.Dispose();
                     }
                 }
             }
@@ -163,6 +166,19 @@ namespace System.Net
                 Debug.Write("Exception Caught. - " + ex);
                 *dataLength = 0;
                 return PAL_SSLStreamStatus.Error;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void CleanupManagedContext(IntPtr managedContextHandle)
+        {
+            if (managedContextHandle != IntPtr.Zero)
+            {
+                GCHandle handle = GCHandle.FromIntPtr(managedContextHandle);
+                if (handle.IsAllocated)
+                {
+                    handle.Free();
+                }
             }
         }
 
@@ -294,7 +310,7 @@ namespace System.Net
             // in the Read/Write callback connection parameter
             IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
             string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
-            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, &CleanupManagedContext, InitialBufferSize, peerHost);
 
             if (authOptions.EnabledSslProtocols != SslProtocols.None)
             {
