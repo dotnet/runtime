@@ -437,7 +437,7 @@ namespace System
             }
             else
             {
-                Debug.Assert(typeof(TChar) == typeof(char));
+                Debug.Assert(typeof(TChar) == typeof(ushort));
                 fallbackResult = TryDecodeFromUtf16_Scalar(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(source.Slice((int)offset)), destination.Slice((int)(offset / 2)), out elementsProcessed);
             }
 
