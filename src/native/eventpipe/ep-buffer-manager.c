@@ -1206,15 +1206,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	EventPipeSequencePoint *sequence_point = NULL;
 	ep_timestamp_t current_timestamp_boundary;
 
-	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
-
-	dn_vector_ptr_custom_init_params_t params = {0, };
-	params.allocator = (dn_allocator_t *)&allocator;
-	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
-
-	dn_vector_ptr_t session_states_to_delete;
-	ep_raise_error_if_nok (dn_vector_ptr_custom_init (&session_states_to_delete, &params));
-
 	// loop across sequence points
 	while (true) {
 		current_timestamp_boundary = stop_timestamp;
@@ -1279,17 +1270,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 				if (0 < last_read_delta && last_read_delta < 0x80000000)
 					dn_umap_threadid_uint32_insert_or_assign (ep_sequence_point_get_thread_sequence_numbers (sequence_point), thread_id, last_read_sequence_number);
 
-				// if a session_state was exhausted during this sequence point, mark it for deletion
-				if (ep_thread_session_state_get_buffer_list (session_state)->head_buffer == NULL) {
-
-					// We don't hold the thread lock here, so it technically races with a thread getting unregistered. This is okay,
-					// because we will either not have passed the above if statement (there were events still in the buffers) or we
-					// will catch it at the next sequence point.
-					if (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (session_state))) > 0) {
-						dn_vector_ptr_push_back (&session_states_to_delete, session_state);
-						dn_list_remove (buffer_manager->thread_session_state_list, session_state);
-					}
-				}
 			} DN_LIST_FOREACH_END;
 		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 
@@ -1302,45 +1282,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section3)
 	}
 
-	// There are sequence points created during this flush and we've marked session states for deletion.
-	// We need to remove these from the internal maps of the subsequent Sequence Points
-	if (dn_vector_ptr_size (&session_states_to_delete) > 0) {
-		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section4)
-			if (buffer_manager_try_peek_sequence_point (buffer_manager, &sequence_point)) {
-				DN_LIST_FOREACH_BEGIN (EventPipeSequencePoint *, current_sequence_point, buffer_manager->sequence_points) {
-					// foreach (session_state in session_states_to_delete)
-					DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &session_states_to_delete) {
-						dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (current_sequence_point), thread_session_state);
-						if (!dn_umap_it_end (found)) {
-							dn_umap_erase (found);
-							// every entry of this map was holding an extra ref to the thread (see: ep-event-instance.{h|c})
-							ep_thread_release (ep_thread_session_state_get_thread (thread_session_state));
-						}
-					} DN_VECTOR_PTR_FOREACH_END;
-				} DN_LIST_FOREACH_END;
-			}
-
-		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section4)
-	}
-
-	// foreach (session_state in session_states_to_delete)
-	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &session_states_to_delete) {
-		EP_ASSERT (thread_session_state != NULL);
-
-		// This may be the last reference to a given EventPipeThread, so make a ref to keep it around till we're done
-		EventPipeThreadHolder thread_holder;
-		if (ep_thread_holder_init (&thread_holder, ep_thread_session_state_get_thread (thread_session_state))) {
-			ep_rt_spin_lock_handle_t *thread_lock = ep_thread_get_rt_lock_ref (ep_thread_holder_get_thread (&thread_holder));
-			EP_SPIN_LOCK_ENTER (thread_lock, section5)
-				EP_ASSERT(ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (thread_session_state))) > 0);
-				ep_thread_delete_session_state (ep_thread_session_state_get_thread (thread_session_state), ep_thread_session_state_get_session (thread_session_state));
-			EP_SPIN_LOCK_EXIT (thread_lock, section5)
-			ep_thread_holder_fini (&thread_holder);
-		}
-	} DN_VECTOR_PTR_FOREACH_END;
-
 ep_on_exit:
-	dn_vector_ptr_dispose (&session_states_to_delete);
 	return;
 ep_on_error:
 	ep_exit_error_handler ();
