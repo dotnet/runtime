@@ -4359,6 +4359,37 @@ enum class ContinuationContextHandling
 // Additional async call info.
 struct AsyncCallInfo
 {
+    // The following information is used to implement the proper observable handling of `ExecutionContext`,
+    // `SynchronizationContext` and `TaskScheduler` in async methods.
+    //
+    // The breakdown of the handling is as follows:
+    //
+    // - For custom awaitables there is no special handling of `SynchronizationContext` or `TaskScheduler`. All the handling
+    // that exists is custom implemented by the user. In this case "ContinuationContextHandling == None" and
+    // "SaveAndRestoreSynchronizationContextField == false".
+    //
+    // - For custom awaitables there _is_ special handling of `ExecutionContext`: when the custom awaitable suspends, the
+    // JIT ensures that the `ExecutionContext` will be captured on suspension and restored when the continuation is running.
+    // This is represented by "ExecutionContextHandling == AsyncSaveAndRestore".
+    //
+    // - For task awaits there is special handling of `SynchronizationContext` and `TaskScheduler` in multiple ways:
+    //
+    //   * The JIT ensures that `Thread.CurrentThread._synchronizationContext` is saved and restored around synchronously
+    //   finishing calls. This is represented by "SaveAndRestoreSynchronizationContextField == true".
+    //
+    //   * The JIT/runtime/BCL ensure that when the callee suspends, the caller will eventually be resumed on the
+    //   `SynchronizationContext`/`TaskScheduler` present before the call started, depending on the configuration of the
+    //   task await by the user. This resumption can be inlined if the `SynchronizationContext` is current when the
+    //   continuation is about to run, and otherwise will be posted to it. This is represented by
+    //   "ContinuationContextHandling == ContinueOnCapturedContext/ContinueOnThreadPool".
+    //
+    //   * When the callee suspends restoration of `Thread.CurrentThread._synchronizationContext` is left up to the custom
+    //   implementation of the `SynchronizationContext`, it must not be done by the JIT.
+    //
+    // - For task awaits the runtime/BCL ensure that `Thread.CurrentThread._executionContext` is captured before the call
+    // and restored after it. This happens consistently regardless of whether the callee finishes synchronously or not. This
+    // is represented by "ExecutionContextHandling == SaveAndRestore".
+    //
     ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
     ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
     bool                        SaveAndRestoreSynchronizationContextField = false;

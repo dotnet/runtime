@@ -1509,8 +1509,11 @@ void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*             
         assert(callInfo.SaveAndRestoreSynchronizationContextField &&
                (callInfo.SynchronizationContextLclNum != BAD_VAR_NUM));
 
-        // Insert call AsyncHelpers.CaptureContinuationContext(ref
-        // newContinuation.GCData[ContinuationContextGCDataIndex], ref newContinuation.Flags).
+        // Insert call
+        //   AsyncHelpers.CaptureContinuationContext(
+        //     ref newContinuation.GCData[ContinuationContextGCDataIndex],
+        //     syncContextFromBeforeCall,
+        //     ref newContinuation.Flags).
         GenTree*     contextElementPlaceholder = m_comp->gtNewZeroConNode(TYP_BYREF);
         GenTree*     syncContextPlaceholder    = m_comp->gtNewNull();
         GenTree*     flagsPlaceholder          = m_comp->gtNewZeroConNode(TYP_BYREF);
