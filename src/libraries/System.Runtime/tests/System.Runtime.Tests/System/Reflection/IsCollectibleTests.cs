@@ -17,6 +17,40 @@ namespace System.Reflection.Tests
         protected override Assembly Load(AssemblyName assemblyName) => null;
     }
 
+    public class BasicIsCollectibleTests
+    {
+        [Fact]
+        public void CoreLib_IsCollectibleFalse()
+        {
+            Assert.False(typeof(object).IsCollectible);
+            Assert.False(typeof(Console).Assembly.IsCollectible);
+            Assert.False(typeof(Math).Assembly.IsCollectible);
+            Assert.False(typeof(string).Assembly.IsCollectible);
+            Assert.False(typeof(List<>).Assembly.IsCollectible);
+            Assert.False(typeof(object).Assembly.IsCollectible);
+            Assert.False(typeof(IDisposable).Assembly.IsCollectible);
+            Assert.False(typeof(Span<>).Assembly.IsCollectible);
+            Assert.False(typeof(Enumerable).Assembly.IsCollectible);
+            Assert.False(typeof(string).GetMethods().First(m => m.Name == "Substring" && m.GetParameters().Length == 1).IsCollectible);
+            Assert.False(typeof(Dictionary<,>).Assembly.IsCollectible);
+            Assert.False(typeof(object).GetMethod("ToString").IsCollectible);
+            Assert.False(typeof(string).GetMethod("Contains", new[] { typeof(string) }).IsCollectible);
+            Assert.False(typeof(IntPtr).GetField("Zero").IsCollectible);
+            Assert.False(typeof(IntPtr).GetProperty("MaxValue").IsCollectible);
+            Assert.False(typeof(IntPtr).GetProperty("MinValue").IsCollectible);
+            Assert.False(typeof(DateTime).GetProperty("Now").IsCollectible);
+            Assert.False(typeof(AppDomain).GetMethod("GetData").IsCollectible);
+            Assert.False(typeof(AppDomain).GetMethod("ToString").IsCollectible);
+            Assert.False(typeof(string).GetConstructor(new[] { typeof(char[]), typeof(int), typeof(int) })!.IsCollectible);
+            Assert.False(typeof(string).GetConstructor(new[] { typeof(char), typeof(int) })!.IsCollectible);
+            Assert.False(typeof(TimeSpan).GetConstructor(new[] { typeof(int), typeof(int), typeof(int) })!.IsCollectible);
+            Assert.False(typeof(Uri).GetConstructor(new[] { typeof(string) })!.IsCollectible);
+            Assert.False(typeof(AppDomain).GetEvent("AssemblyLoad")!.IsCollectible);
+            Assert.False(typeof(AppDomain).GetEvent("ProcessExit")!.IsCollectible);
+
+       }
+    }
+
     [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
     public class IsCollectibleTests
     {

@@ -911,7 +911,7 @@ namespace System
         }
 
         /// <summary>Core implementation for all {Try}Parse methods, both generic and non-generic, parsing either by value or by name.</summary>
-        private static unsafe bool TryParseByValueOrName<TUnderlying, TStorage>(
+        private static bool TryParseByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
             where TUnderlying : unmanaged, IBinaryIntegerParseAndFormatInfo<TUnderlying>
             where TStorage : unmanaged, IBinaryIntegerParseAndFormatInfo<TStorage>
@@ -938,7 +938,7 @@ namespace System
                     return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
                 }
 
-                NumberFormatInfo numberFormat = CultureInfo.InvariantCulture.NumberFormat;
+                NumberFormatInfo numberFormat = NumberFormatInfo.InvariantInfo;
                 const NumberStyles NumberStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite;
 
                 Number.ParsingStatus status = Number.TryParseBinaryIntegerStyle(value, NumberStyle, numberFormat, out result);
@@ -969,7 +969,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryParseRareTypeByValueOrName<TUnderlying, TStorage>(
+        private static bool TryParseRareTypeByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
             where TUnderlying : struct, INumber<TUnderlying>, IBitwiseOperators<TUnderlying, TUnderlying, TUnderlying>, IMinMaxValue<TUnderlying>
             where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>, IMinMaxValue<TStorage>

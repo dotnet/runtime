@@ -24,13 +24,12 @@ This guide will walk you through building and running the CoreCLR tests. These a
 
 ## Requirements
 
-In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find more detailed instructions per platform in their dedicated docs:
+In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find detailed instructions on how to do it on their respective README's:
 
-* [Windows](/docs/workflow/building/coreclr/windows-instructions.md)
-* [macOS](/docs/workflow/building/coreclr/macos-instructions.md)
-* [Linux](/docs/workflow/building/coreclr/linux-instructions.md)
+* [CoreCLR](/docs/workflow/building/coreclr/README.md)
+* [Libraries](/docs/workflow/building/libraries/README.md)
 
-For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/README.md).
+For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/).
 
 ## Overview
 

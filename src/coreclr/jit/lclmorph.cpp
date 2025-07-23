@@ -175,6 +175,203 @@ void Compiler::fgSequenceLocals(Statement* stmt)
     seq.Sequence(stmt);
 }
 
+// Data structure that keeps track of local definitions inside loops.
+class LoopDefinitions
+{
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalDefinitionsMap;
+
+    FlowGraphNaturalLoops* m_loops;
+    // For every loop, we track all definitions exclusive to that loop.
+    // Definitions in descendant loops are not kept in their ancestor's maps.
+    LocalDefinitionsMap** m_maps;
+    // Blocks whose IR we have visited to find local definitions in.
+    BitVec m_visitedBlocks;
+
+    LocalDefinitionsMap* GetOrCreateMap(FlowGraphNaturalLoop* loop);
+
+    template <typename TFunc>
+    bool VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func);
+public:
+    LoopDefinitions(FlowGraphNaturalLoops* loops);
+
+    template <typename TFunc>
+    void VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func);
+};
+
+LoopDefinitions::LoopDefinitions(FlowGraphNaturalLoops* loops)
+    : m_loops(loops)
+{
+    Compiler* comp = loops->GetDfsTree()->GetCompiler();
+    m_maps = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LocalDefinitionsMap* [loops->NumLoops()] {};
+    BitVecTraits poTraits = loops->GetDfsTree()->PostOrderTraits();
+    m_visitedBlocks       = BitVecOps::MakeEmpty(&poTraits);
+}
+
+//------------------------------------------------------------------------------
+// LoopDefinitions:GetOrCreateMap:
+//   Get or create the map of occurrences exclusive to a single loop.
+//
+// Parameters:
+//   loop - The loop
+//
+// Returns:
+//   Map of occurrences.
+//
+// Remarks:
+//   As a precondition occurrences of all descendant loops must already have
+//   been found.
+//
+LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphNaturalLoop* loop)
+{
+    LocalDefinitionsMap* map = m_maps[loop->GetIndex()];
+    if (map != nullptr)
+    {
+        return map;
+    }
+
+    BitVecTraits poTraits = m_loops->GetDfsTree()->PostOrderTraits();
+
+#ifdef DEBUG
+    // As an invariant the map contains only the locals exclusive to each loop
+    // (i.e. occurrences inside descendant loops are not contained in ancestor
+    // loop maps). Double check that we've already computed the child maps to
+    // make sure we do not visit descendant blocks below.
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        assert(BitVecOps::IsMember(&poTraits, m_visitedBlocks, child->GetHeader()->bbPostorderNum));
+    }
+#endif
+
+    Compiler* comp           = m_loops->GetDfsTree()->GetCompiler();
+    map                      = new (comp, CMK_LoopOpt) LocalDefinitionsMap(comp->getAllocator(CMK_LoopOpt));
+    m_maps[loop->GetIndex()] = map;
+
+    struct LocalsVisitor : GenTreeVisitor<LocalsVisitor>
+    {
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        LocalsVisitor(Compiler* comp, LoopDefinitions::LocalDefinitionsMap* map)
+            : GenTreeVisitor(comp)
+            , m_map(map)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
+            if (!lcl->OperIsLocalStore())
+            {
+                return Compiler::WALK_CONTINUE;
+            }
+
+            m_map->Set(lcl->GetLclNum(), true, LocalDefinitionsMap::Overwrite);
+
+            LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
+            if (m_compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()) && lclDsc->lvPromoted)
+            {
+                // fgRetypeImplicitByRefArgs created a new promoted
+                // struct local to represent this arg. The stores will
+                // be rewritten by morph.
+                assert(lclDsc->lvFieldLclStart != 0);
+                m_map->Set(lclDsc->lvFieldLclStart, true, LocalDefinitionsMap::Overwrite);
+                lclDsc = m_compiler->lvaGetDesc(lclDsc->lvFieldLclStart);
+            }
+
+            if (lclDsc->lvPromoted)
+            {
+                for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
+                {
+                    unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
+                    m_map->Set(fieldLclNum, true, LocalDefinitionsMap::Overwrite);
+                }
+            }
+            else if (lclDsc->lvIsStructField)
+            {
+                m_map->Set(lclDsc->lvParentLcl, true, LocalDefinitionsMap::Overwrite);
+            }
+
+            return Compiler::WALK_CONTINUE;
+        }
+
+    private:
+        LoopDefinitions::LocalDefinitionsMap* m_map;
+    };
+
+    LocalsVisitor visitor(comp, map);
+
+    loop->VisitLoopBlocksReversePostOrder([=, &poTraits, &visitor](BasicBlock* block) {
+        if (!BitVecOps::TryAddElemD(&poTraits, m_visitedBlocks, block->bbPostorderNum))
+        {
+            return BasicBlockVisit::Continue;
+        }
+
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    return map;
+}
+
+//------------------------------------------------------------------------------
+// LoopDefinitions:VisitLoopNestMaps:
+//   Visit all occurrence maps of the specified loop nest.
+//
+// Type parameters:
+//   TFunc - bool(LocalToOccurrenceMap*) functor that returns true to continue
+//           the visit and false to abort.
+//
+// Parameters:
+//   loop - Root loop of the nest.
+//   func - Functor instance
+//
+// Returns:
+//   True if the visit completed; false if "func" returned false for any map.
+//
+template <typename TFunc>
+bool LoopDefinitions::VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func)
+{
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (!VisitLoopNestMaps(child, func))
+        {
+            return false;
+        }
+    }
+
+    return func(GetOrCreateMap(loop));
+}
+
+//------------------------------------------------------------------------------
+// LoopDefinitions:VisitDefinedLocalNums:
+//   Call a callback for all locals that are defined in the specified loop.
+//
+// Parameters:
+//   loop - The loop
+//   func - The callback
+//
+template <typename TFunc>
+void LoopDefinitions::VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func)
+{
+    auto visit = [=, &func](LocalDefinitionsMap* map) {
+        for (unsigned lclNum : LocalDefinitionsMap::KeyIteration(map))
+        {
+            func(lclNum);
+        }
+
+        return true;
+    };
+
+    VisitLoopNestMaps(loop, visit);
+}
+
 struct LocalEqualsLocalAddrAssertion
 {
     // Local num on the LHS
@@ -221,23 +418,30 @@ typedef JitHashTable<LocalEqualsLocalAddrAssertion, AssertionKeyFuncs, unsigned>
 class LocalEqualsLocalAddrAssertions
 {
     Compiler*                                 m_comp;
+    LoopDefinitions*                          m_loopDefs;
     ArrayStack<LocalEqualsLocalAddrAssertion> m_assertions;
     AssertionToIndexMap                       m_map;
     uint64_t*                                 m_lclAssertions;
-    uint64_t*                                 m_outgoingAssertions;
-    BitVec                                    m_localsToExpose;
+    // Assertions true going out of each block
+    uint64_t* m_outgoingAssertions;
+    // Assertions true at all points within each block
+    uint64_t* m_alwaysTrueAssertions;
+    BitVec    m_localsToExpose;
 
 public:
     uint64_t CurrentAssertions = 0;
+    uint64_t AlwaysAssertions  = 0;
 
-    LocalEqualsLocalAddrAssertions(Compiler* comp)
+    LocalEqualsLocalAddrAssertions(Compiler* comp, LoopDefinitions* loopDefs)
         : m_comp(comp)
+        , m_loopDefs(loopDefs)
         , m_assertions(comp->getAllocator(CMK_LocalAddressVisitor))
         , m_map(comp->getAllocator(CMK_LocalAddressVisitor))
     {
         m_lclAssertions =
             comp->lvaCount == 0 ? nullptr : new (comp, CMK_LocalAddressVisitor) uint64_t[comp->lvaCount]{};
-        m_outgoingAssertions = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
+        m_outgoingAssertions   = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
+        m_alwaysTrueAssertions = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
 
         BitVecTraits localsTraits(comp->lvaCount, comp);
         m_localsToExpose = BitVecOps::MakeEmpty(&localsTraits);
@@ -284,23 +488,67 @@ public:
     //
     void StartBlock(BasicBlock* block)
     {
-        if ((m_assertions.Height() == 0) || (block->bbPreds == nullptr) || m_comp->bbIsHandlerBeg(block))
+        CurrentAssertions = 0;
+        if (m_assertions.Height() == 0)
         {
-            CurrentAssertions = 0;
+            AlwaysAssertions = 0;
             return;
         }
 
-        CurrentAssertions = UINT64_MAX;
-        for (BasicBlock* pred : block->PredBlocks())
+        FlowEdge*             preds = m_comp->BlockPredsWithEH(block);
+        bool                  first = true;
+        FlowGraphNaturalLoop* loop  = nullptr;
+
+        uint64_t* assertionMap = m_comp->bbIsHandlerBeg(block) ? m_alwaysTrueAssertions : m_outgoingAssertions;
+
+        for (FlowEdge* predEdge = preds; predEdge != nullptr; predEdge = predEdge->getNextPredEdge())
         {
-            assert(m_comp->m_dfsTree->Contains(pred));
+            BasicBlock* pred = predEdge->getSourceBlock();
+            if (!m_comp->m_dfsTree->Contains(pred))
+            {
+                // Edges induced due to implicit EH flow can come from
+                // unreachable blocks; skip those.
+                continue;
+            }
+
             if (pred->bbPostorderNum <= block->bbPostorderNum)
             {
+                loop = m_comp->m_loops->GetLoopByHeader(block);
+                if ((loop != nullptr) && loop->ContainsBlock(pred))
+                {
+                    JITDUMP("Ignoring loop backedge " FMT_BB "->" FMT_BB "\n", pred->bbNum, block->bbNum);
+                    continue;
+                }
+
+                JITDUMP("Found non-loop backedge " FMT_BB "->" FMT_BB ", clearing assertions\n", pred->bbNum,
+                        block->bbNum);
                 CurrentAssertions = 0;
                 break;
             }
 
-            CurrentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
+            uint64_t prevAssertions = assertionMap[pred->bbPostorderNum];
+            if (first)
+            {
+                CurrentAssertions = prevAssertions;
+                first             = false;
+            }
+            else
+            {
+                CurrentAssertions &= prevAssertions;
+            }
+        }
+
+        AlwaysAssertions = CurrentAssertions;
+
+        if ((loop != nullptr) && (CurrentAssertions != 0))
+        {
+            JITDUMP("Block " FMT_BB " is a loop header; clearing assertions about defined locals\n", block->bbNum);
+            m_loopDefs->VisitDefinedLocalNums(loop, [=](unsigned lclNum) {
+                JITDUMP("  V%02u", lclNum);
+                Clear(lclNum);
+            });
+
+            JITDUMP("\n");
         }
 
 #ifdef DEBUG
@@ -329,7 +577,8 @@ public:
     //
     void EndBlock(BasicBlock* block)
     {
-        m_outgoingAssertions[block->bbPostorderNum] = CurrentAssertions;
+        m_outgoingAssertions[block->bbPostorderNum]   = CurrentAssertions;
+        m_alwaysTrueAssertions[block->bbPostorderNum] = AlwaysAssertions;
     }
 
     //-------------------------------------------------------------------
@@ -403,6 +652,7 @@ public:
     void Clear(unsigned dstLclNum)
     {
         CurrentAssertions &= ~m_lclAssertions[dstLclNum];
+        AlwaysAssertions &= CurrentAssertions;
     }
 
     //-----------------------------------------------------------------------------------
@@ -990,38 +1240,6 @@ public:
                 PopValue();
                 break;
 
-            case GT_RETURN:
-                if (TopValue(0).Node() != node)
-                {
-                    assert(TopValue(1).Node() == node);
-                    assert(TopValue(0).Node() == node->gtGetOp1());
-                    GenTreeUnOp* ret    = node->AsUnOp();
-                    GenTree*     retVal = ret->gtGetOp1();
-                    if (retVal->OperIs(GT_LCL_VAR))
-                    {
-                        // TODO-1stClassStructs: this block is a temporary workaround to keep diffs small,
-                        // having `doNotEnreg` affect block init and copy transformations that affect many methods.
-                        // I have a change that introduces more precise and effective solution for that, but it would
-                        // be merged separately.
-                        GenTreeLclVar* lclVar = retVal->AsLclVar();
-                        unsigned       lclNum = lclVar->GetLclNum();
-                        if (!m_compiler->compMethodReturnsMultiRegRetType() &&
-                            !m_compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
-                        {
-                            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-                            if (varDsc->lvFieldCnt > 1)
-                            {
-                                m_compiler->lvaSetVarDoNotEnregister(
-                                    lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
-                            }
-                        }
-                    }
-
-                    EscapeValue(TopValue(0), node);
-                    PopValue();
-                }
-                break;
-
             case GT_CALL:
                 while (TopValue(0).Node() != node)
                 {
@@ -1148,6 +1366,9 @@ private:
 
         if (m_lclAddrAssertions != nullptr)
         {
+            // Save and restore CurrentAssertions for each branch.
+            // AlwaysAssertions only shrinks, so it does not require special
+            // handling around QMARKs.
             uint64_t origAssertions = m_lclAddrAssertions->CurrentAssertions;
 
             if (WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT)
@@ -1544,7 +1765,7 @@ private:
                     case TYP_SIMD12:
                     {
                         // Handle the Vector3 field of case 2
-                        assert(varDsc->TypeGet() == TYP_SIMD16);
+                        assert(varDsc->TypeIs(TYP_SIMD16));
 
                         // We effectively inverse the operands here and take elementNode as the main value and
                         // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
@@ -1693,7 +1914,7 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (indir->TypeGet() != TYP_STRUCT)
+        if (!indir->TypeIs(TYP_STRUCT))
         {
             if (indir->TypeGet() == varDsc->TypeGet())
             {
@@ -1722,14 +1943,14 @@ private:
 
                 if (indir->TypeIs(TYP_FLOAT))
                 {
-                    if (((offset % genTypeSize(TYP_FLOAT)) == 0) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset % genTypeSize(TYP_FLOAT)) == 0)
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
                 }
                 else if (indir->TypeIs(TYP_SIMD12))
                 {
-                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset == 0) && varDsc->TypeIs(TYP_SIMD16))
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1737,8 +1958,7 @@ private:
 #ifdef TARGET_ARM64
                 else if (indir->TypeIs(TYP_SIMD8))
                 {
-                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0) &&
-                        m_compiler->IsBaselineSimdIsaSupported())
+                    if (varDsc->TypeIs(TYP_SIMD16) && ((offset % 8) == 0))
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1748,7 +1968,7 @@ private:
                 else if (((indir->TypeIs(TYP_SIMD16) &&
                            m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
                           (indir->TypeIs(TYP_SIMD32) &&
-                           m_compiler->IsBaselineVector512IsaSupportedOpportunistically())) &&
+                           m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))) &&
                          (genTypeSize(indir) * 2 == genTypeSize(varDsc)) && ((offset % genTypeSize(indir)) == 0))
                 {
                     return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
@@ -1774,12 +1994,12 @@ private:
             return IndirTransform::LclFld;
         }
 
-        if (varDsc->TypeGet() != TYP_STRUCT)
+        if (!varDsc->TypeIs(TYP_STRUCT))
         {
             return IndirTransform::LclFld;
         }
 
-        if ((offset == 0) && ClassLayout::AreCompatible(indir->AsBlk()->GetLayout(), varDsc->GetLayout()))
+        if ((offset == 0) && indir->AsBlk()->GetLayout()->CanAssignFrom(varDsc->GetLayout()))
         {
             return IndirTransform::LclVar;
         }
@@ -2128,7 +2348,13 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
     }
     else
     {
-        LocalEqualsLocalAddrAssertions  assertions(this);
+        // We'll be using BlockPredsWithEH, so clear its cache.
+        m_blockToEHPreds = nullptr;
+
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+        LoopDefinitions loopDefs(m_loops);
+
+        LocalEqualsLocalAddrAssertions  assertions(this, &loopDefs);
         LocalEqualsLocalAddrAssertions* pAssertions = &assertions;
 
 #ifdef DEBUG

@@ -244,9 +244,6 @@ namespace System
         internal static extern void GetModule(QCallTypeHandle type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetBaseType(QCallTypeHandle type, ObjectHandleOnStack res);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetMonoClass(QCallTypeHandle type);
 
         internal static int GetArrayRank(RuntimeType type)
@@ -268,18 +265,11 @@ namespace System
             return res!;
         }
 
-        internal static RuntimeType GetElementType(RuntimeType type)
+        internal static RuntimeType? GetElementType(RuntimeType type)
         {
             RuntimeType? res = null;
             GetElementType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
-            return res!;
-        }
-
-        internal static RuntimeType GetBaseType(RuntimeType type)
-        {
-            RuntimeType? res = null;
-            GetBaseType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
-            return res!;
+            return res;
         }
 
         internal static IntPtr GetMonoClass(RuntimeType type)

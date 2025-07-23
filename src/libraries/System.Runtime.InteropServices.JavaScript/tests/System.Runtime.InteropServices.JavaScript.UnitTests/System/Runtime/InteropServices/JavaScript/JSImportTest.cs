@@ -21,6 +21,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public unsafe void PrototypeNotEqual()
+        {
+            using var temp1 = JSHost.GlobalThis.GetPropertyAsJSObject("EventTarget");
+            using var temp2 = JSHost.GlobalThis.GetPropertyAsJSObject("Window");
+            Assert.NotEqual(temp1, temp2);
+        }
+
+        [Fact]
         public async Task MultipleImportAsync()
         {
             var first = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");

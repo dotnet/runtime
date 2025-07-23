@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates;
 using Test.Cryptography;
 using Xunit;
@@ -822,6 +823,82 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // ECDSA Oids are all under 1.2.840.10045.4.
             Assert.StartsWith("1.2.840.10045.4.", counterSigner.SignatureAlgorithm.Value);
 #endif
+
+            cms.CheckSignature(true);
+            byte[] encoded = cms.Encode();
+            cms.Decode(encoded);
+            cms.CheckSignature(true);
+        }
+
+        public static IEnumerable<object[]> AddCounterSignerSlhDsaTestData =>
+            from sit in new[] { SubjectIdentifierType.IssuerAndSerialNumber, SubjectIdentifierType.SubjectKeyIdentifier }
+            from algorithms in new (SlhDsaAlgorithm signAlgorithm, string hashAlgorithm)[]
+            {
+                (SlhDsaAlgorithm.SlhDsaSha2_128s, Oids.Sha256),
+                (SlhDsaAlgorithm.SlhDsaShake128f, Oids.Shake128),
+                (SlhDsaAlgorithm.SlhDsaSha2_256f, Oids.Sha512),
+                (SlhDsaAlgorithm.SlhDsaShake256f, Oids.Shake256),
+            }
+            from SlhDsaTestData.SlhDsaGeneratedKeyInfo info in SlhDsaTestData.GeneratedKeyInfosRaw
+            where info.Algorithm == algorithms.signAlgorithm // Find the matching test data for the algorithm
+            select new object[] { sit, algorithms.hashAlgorithm, info };
+
+        public static bool SlhDsaAndRsaSha1SignaturesSupported =>
+            SignatureSupport.SupportsRsaSha1Signatures && SlhDsa.IsSupported;
+
+        [ConditionalTheory(nameof(SlhDsaAndRsaSha1SignaturesSupported))]
+        [MemberData(nameof(AddCounterSignerSlhDsaTestData))]
+        public static void AddCounterSigner_SlhDsa(SubjectIdentifierType identifierType, string digestOid, SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+            Assert.Single(cms.Certificates);
+
+            SignerInfo firstSigner = cms.SignerInfos[0];
+            Assert.Empty(firstSigner.CounterSignerInfos);
+            Assert.Empty(firstSigner.UnsignedAttributes);
+
+            CertLoader loader = Certificates.SlhDsaGeneratedCerts.Single(cert => cert.CerData.SequenceEqual(info.Certificate));
+            using (X509Certificate2 signerCert = loader.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                firstSigner.ComputeCounterSignature(signer);
+            }
+
+            Assert.Empty(firstSigner.CounterSignerInfos);
+            Assert.Empty(firstSigner.UnsignedAttributes);
+
+            SignerInfo firstSigner2 = cms.SignerInfos[0];
+            Assert.Single(firstSigner2.CounterSignerInfos);
+            Assert.Single(firstSigner2.UnsignedAttributes);
+
+            Assert.Single(cms.SignerInfos);
+            Assert.Equal(2, cms.Certificates.Count);
+
+            SignerInfo counterSigner = firstSigner2.CounterSignerInfos[0];
+
+            int expectedVersion = identifierType == SubjectIdentifierType.IssuerAndSerialNumber ? 1 : 3;
+            Assert.Equal(expectedVersion, counterSigner.Version);
+
+            // On .NET Framework there will be two attributes, because Windows emits the
+            // content-type attribute even for counter-signers.
+            int expectedCount = 1;
+#if NETFRAMEWORK
+            expectedCount = 2;
+#endif
+            Assert.Equal(expectedCount, counterSigner.SignedAttributes.Count);
+            Assert.Equal(Oids.MessageDigest, counterSigner.SignedAttributes[expectedCount - 1].Oid.Value);
+
+            Assert.NotEqual(firstSigner2.Certificate, counterSigner.Certificate);
+            Assert.Equal(2, cms.Certificates.Count);
+
+            byte[] signature = counterSigner.GetSignature();
+            Assert.NotEmpty(signature);
+
+            // SLH-DSA Oids are all under 2.16.840.1.101.3.4.3.
+            Assert.StartsWith("2.16.840.1.101.3.4.3.", counterSigner.SignatureAlgorithm.Value);
 
             cms.CheckSignature(true);
             byte[] encoded = cms.Encode();

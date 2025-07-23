@@ -57,6 +57,9 @@
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
     </ItemGroup>
 
+    <Error Condition="'%(_WorkloadManifestValues.Value)' == ''"
+           Text="No version specified for template variable '%(_WorkloadManifestValues.Identity)'" />
+
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.json.in"
       Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"

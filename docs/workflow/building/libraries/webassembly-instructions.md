@@ -6,7 +6,7 @@ If you haven't already done so, please read [this document](../../README.md#Buil
 
 ## Building
 
-At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](../../../../src/mono/wasm/README.md#building).
+At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](../../../../src/mono/browser/README.md#building).
 
 This document explains how to work on the runtime or libraries. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
@@ -80,7 +80,7 @@ Individual projects and libraries can be build by specifying the build configura
 - Build all projects for a given library (e.g.: System.Net.Http) including the tests
 
 ```bash
-./build.sh -os browser -c Release --projects <full-repository-path>/src/libraries/System.Net.Http/System.Net.Http.sln
+./build.sh -os browser -c Release --projects <full-repository-path>/src/libraries/System.Net.Http/System.Net.Http.slnx
 ```
 
 - Build only the source project of a given library (e.g.: System.Net.Http)
@@ -158,4 +158,4 @@ Open a PR request with the new image.
 
 # Test libraries
 
-You can read about running library tests in [Libraries tests](../../../../src/mono/wasm/README.md#libraries-tests).
+You can read about running library tests in [Libraries tests](../../../../src/mono/browser/README.md#libraries-tests).

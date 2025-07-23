@@ -277,22 +277,22 @@ namespace Internal.TypeSystem
 
         private static MethodDesc FindImplFromDeclFromMethodImpls(MetadataType type, MethodDesc decl)
         {
+            if (decl.OwningType.IsInterface)
+                return FindInterfaceImplFromDeclFromMethodImpls(type, decl);
+
             MethodImplRecord[] foundMethodImpls = type.FindMethodsImplWithMatchingDeclName(decl.Name);
 
             if (foundMethodImpls == null)
                 return null;
 
-            bool interfaceDecl = decl.OwningType.IsInterface;
-
             foreach (MethodImplRecord record in foundMethodImpls)
             {
                 MethodDesc recordDecl = record.Decl;
 
-                if (interfaceDecl != recordDecl.OwningType.IsInterface)
+                if (recordDecl.OwningType.IsInterface)
                     continue;
 
-                if (!interfaceDecl)
-                    recordDecl = FindSlotDefiningMethodForVirtualMethod(recordDecl);
+                recordDecl = FindSlotDefiningMethodForVirtualMethod(recordDecl);
 
                 if (recordDecl == decl)
                 {
@@ -301,6 +301,56 @@ namespace Internal.TypeSystem
             }
 
             return null;
+        }
+
+        private static MethodDesc FindInterfaceImplFromDeclFromMethodImpls(MetadataType type, MethodDesc decl)
+        {
+            Debug.Assert(decl.OwningType.IsInterface);
+
+            MethodImplRecord[] foundMethodImpls = type.FindMethodsImplWithMatchingDeclName(decl.Name);
+
+            if (foundMethodImpls == null)
+                return null;
+
+            // We might find more than one result due to generic parameter folding
+            var results = new ArrayBuilder<int>(1);
+            for (int i = 0; i < foundMethodImpls.Length; i++)
+            {
+                MethodDesc recordDecl = foundMethodImpls[i].Decl;
+                if (recordDecl == decl)
+                {
+                    results.Add(i);
+                }
+            }
+
+            if (results.Count == 0)
+                return null;
+
+            int resultIndex = results[0];
+
+            // If we found multiple MethodImpls, need to do a tie break using type declaration order
+            if (results.Count > 1)
+            {
+                MetadataType typeDefinition = (MetadataType)type.GetTypeDefinition();
+                DefType[] interfacesOnDefinition = typeDefinition.RuntimeInterfaces;
+                MethodImplRecord[] foundMethodImplsOnDefinition = typeDefinition.FindMethodsImplWithMatchingDeclName(decl.Name);
+                Debug.Assert(foundMethodImplsOnDefinition.Length == foundMethodImpls.Length);
+
+                int bestInterfaceIndex = int.MaxValue;
+
+                for (int i = 0; i < results.Count; i++)
+                {
+                    int index = Array.IndexOf(interfacesOnDefinition, foundMethodImplsOnDefinition[results[i]].Decl.OwningType);
+                    Debug.Assert(index >= 0);
+                    if (index < bestInterfaceIndex)
+                    {
+                        bestInterfaceIndex = index;
+                        resultIndex = i;
+                    }
+                }
+            }
+
+            return FindSlotDefiningMethodForVirtualMethod(foundMethodImpls[resultIndex].Body);
         }
 
         private static bool IsInterfaceExplicitlyImplementedOnType(MetadataType type, MetadataType interfaceType)
@@ -629,7 +679,18 @@ namespace Internal.TypeSystem
         //    function returns null if the interface method implementation is not defined by the current type in
         //    the hierarchy.For variance to work correctly, this requires that interfaces be queried in correct order.
         //    See current interface call resolution for details on how that happens.
-        private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
+        //
+        //    The returnRecursive parameter is solely intended to optimize the recursion through
+        //    the ResolveInterfaceMethodToVirtualMethodOnTypeRecursive helper method and should not
+        //    be used for anything else. ResolveInterfaceMethodToVirtualMethodOnTypeRecursive walks
+        //    up the type hierarchy, calls ResolveInterfaceMethodToVirtualMethodOnType on each base
+        //    type, and bails out on a first successful match. Since we perform the same expansion in
+        //    the last branch of this method by calling ResolveInterfaceMethodToVirtualMethodOnTypeRecursive
+        //    for the base type, we allow the caller to specify that such computed value should be
+        //    returned instead of discarded. This allows short-circuiting the outer loop over type
+        //    hierarchy and avoids unnecessary exponential algorithmic complexity of the resolution
+        //    algorithm.
+        private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType, bool returnRecursive = false)
         {
             Debug.Assert(!interfaceMethod.Signature.IsStatic);
 
@@ -684,7 +745,7 @@ namespace Internal.TypeSystem
                 MethodDesc baseClassImplementationOfInterfaceMethod = ResolveInterfaceMethodToVirtualMethodOnTypeRecursive(interfaceMethod, baseType);
                 if (baseClassImplementationOfInterfaceMethod != null)
                 {
-                    return null;
+                    return returnRecursive ? baseClassImplementationOfInterfaceMethod : null;
                 }
                 else
                 {
@@ -748,7 +809,7 @@ namespace Internal.TypeSystem
                     return null;
                 }
 
-                MethodDesc currentTypeInterfaceResolution = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType);
+                MethodDesc currentTypeInterfaceResolution = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType, returnRecursive: true);
                 if (currentTypeInterfaceResolution != null)
                     return currentTypeInterfaceResolution;
 

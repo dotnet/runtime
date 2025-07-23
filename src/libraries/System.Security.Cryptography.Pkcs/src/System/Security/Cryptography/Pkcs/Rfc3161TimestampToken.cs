@@ -124,10 +124,7 @@ namespace System.Security.Cryptography.Pkcs
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (hashAlgorithmId is null)
-            {
-                throw new ArgumentNullException(nameof(hashAlgorithmId));
-            }
+            ArgumentNullException.ThrowIfNull(hashAlgorithmId);
 
             signerCertificate = null;
 
@@ -156,10 +153,7 @@ namespace System.Security.Cryptography.Pkcs
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (signerInfo is null)
-            {
-                throw new ArgumentNullException(nameof(signerInfo));
-            }
+            ArgumentNullException.ThrowIfNull(signerInfo);
 
             return VerifySignatureForData(
                 signerInfo.GetSignatureMemory().Span,

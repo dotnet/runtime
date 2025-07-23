@@ -16,15 +16,6 @@
 
 .macro NESTED_END Name, Section
         LEAF_END \Name, \Section
-#if defined(__APPLE__)
-        .set LOCAL_LABEL(\Name\()_Size), . - C_FUNC(\Name)
-        .section __LD,__compact_unwind,regular,debug
-        .quad C_FUNC(\Name)
-        .long LOCAL_LABEL(\Name\()_Size)
-        .long 0x04000000 # DWARF
-        .quad 0
-        .quad 0
-#endif
 .endm
 
 .macro PATCH_LABEL Name
@@ -50,6 +41,7 @@ C_FUNC(\Name):
         .global C_FUNC(_\Name)
         .type \Name, %function
 #endif
+        .p2align 4
 C_FUNC(\Name):
         .cfi_startproc
 .endm
@@ -242,15 +234,6 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
-//
-// Rename fields of nested structs
-//
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr    OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-#define OFFSETOF__Thread__m_alloc_context__alloc_limit  OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
-
-// GC type flags
-#define GC_ALLOC_FINALIZE           1
-
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 #define PTFF_SAVE_RBX            0x00000001
 #define PTFF_SAVE_R12            0x00000010
@@ -263,6 +246,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_RDX            0x00000400   // RDX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_ALL_SCRATCH    0x00007F00
 #define PTFF_THREAD_ABORT        0x00100000   // indicates that ThreadAbortException should be thrown when returning from the transition
+#define PTFF_THREAD_HIJACK       0x00200000   // indicates that this is a frame for a hijacked call
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
@@ -293,6 +277,10 @@ C_FUNC(\Name):
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
 #endif
+.endm
+
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+        INLINE_GETTHREAD
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

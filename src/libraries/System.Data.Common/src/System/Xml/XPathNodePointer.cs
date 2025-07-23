@@ -48,7 +48,7 @@ namespace System.Xml
         private XPathNodeType DecideXPNodeTypeForTextNodes(XmlNode node)
         {
             //the function can only be called on text like nodes.
-            Debug.Assert(XmlDataDocument.IsTextNode(node.NodeType));
+            Debug.Assert(XmlDataDocument.Helpers.IsTextNode(node.NodeType));
             XPathNodeType xnt = XPathNodeType.Whitespace;
             XmlNode? n = node;
             while (n != null)
@@ -73,7 +73,7 @@ namespace System.Xml
 
         private XPathNodeType ConvertNodeType(XmlNode node)
         {
-            if (XmlDataDocument.IsTextNode(node.NodeType))
+            if (XmlDataDocument.Helpers.IsTextNode(node.NodeType))
                 return DecideXPNodeTypeForTextNodes(node);
 
             int xnt = XmlNodeTypeToXpathNodeTypeMap[(int)(node.NodeType)];
@@ -298,6 +298,7 @@ namespace System.Xml
         internal string? Value
         {
             [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
             get
             {
                 RealFoliate();
@@ -307,14 +308,14 @@ namespace System.Xml
                 else if (_column == null)
                 {
                     string? strRet = _node.Value;
-                    if (XmlDataDocument.IsTextNode(_node.NodeType))
+                    if (XmlDataDocument.Helpers.IsTextNode(_node.NodeType))
                     {
                         //concatenate adjacent textlike nodes
                         XmlNode? parent = _node.ParentNode;
                         if (parent == null)
                             return strRet;
                         XmlNode? n = _doc.SafeNextSibling(_node);
-                        while (n != null && XmlDataDocument.IsTextNode(n.NodeType))
+                        while (n != null && XmlDataDocument.Helpers.IsTextNode(n.NodeType))
                         {
                             strRet += n.Value;
                             n = _doc.SafeNextSibling(n);
@@ -339,6 +340,7 @@ namespace System.Xml
         internal string InnerText
         {
             [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
             get
             {
                 RealFoliate();
@@ -755,13 +757,13 @@ namespace System.Xml
                     XmlNode? parent = _node.ParentNode;
                     if (parent == null)
                         return false;
-                    bool bTextLike = XmlDataDocument.IsTextNode(_node.NodeType);
+                    bool bTextLike = XmlDataDocument.Helpers.IsTextNode(_node.NodeType);
                     do
                     {
                         do
                         {
                             n = _doc.SafeNextSibling(n);
-                        } while (n != null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
+                        } while (n != null && bTextLike && XmlDataDocument.Helpers.IsTextNode(n.NodeType));
                     } while (n != null && !IsValidChild(parent, n));
                     if (n != null)
                     {
@@ -801,13 +803,13 @@ namespace System.Xml
                     XmlNode? parent = _node.ParentNode;
                     if (parent == null)
                         return false;
-                    bool bTextLike = XmlDataDocument.IsTextNode(_node.NodeType);
+                    bool bTextLike = XmlDataDocument.Helpers.IsTextNode(_node.NodeType);
                     do
                     {
                         do
                         {
                             n = _doc.SafePreviousSibling(n);
-                        } while (n != null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
+                        } while (n != null && bTextLike && XmlDataDocument.Helpers.IsTextNode(n.NodeType));
                     } while (n != null && !IsValidChild(parent, n));
                     if (n != null)
                     {
@@ -1052,6 +1054,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private XmlNodeOrder CompareNamespacePosition(XPathNodePointer other)
         {
             XPathNodePointer xp1 = Clone((DataDocumentXPathNavigator)(_owner.Target!));
@@ -1078,6 +1081,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal XmlNodeOrder ComparePosition(XPathNodePointer other)
         {
             RealFoliate();
@@ -1222,6 +1226,7 @@ namespace System.Xml
         internal XmlNode? Node
         {
             [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
             get
             {
                 RealFoliate();
@@ -1315,6 +1320,7 @@ namespace System.Xml
         //The function only helps to find out if there is a namespace declaration of given name is defined on the given node
         //It will not check the ancestor of the given node.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private string? GetNamespace(XmlBoundElement be, string name)
         {
             if (be == null)
@@ -1349,6 +1355,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal string GetNamespace(string name)
         {
             //we are checking the namespace nodes backwards comparing its normal order in DOM tree
@@ -1444,6 +1451,7 @@ namespace System.Xml
         //the function will find the next namespace node on the given bound element starting with the given column or attribute
         // whether to use column or attribute depends on if the bound element is foliated or not.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private bool MoveToNextNamespace(XmlBoundElement? be, DataColumn? col, XmlAttribute? curAttr)
         {
             if (be != null)
@@ -1497,6 +1505,7 @@ namespace System.Xml
 
         //Caller( DataDocumentXPathNavigator will make sure that the node is at the right position for this call )
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
             RealFoliate();
@@ -1533,6 +1542,7 @@ namespace System.Xml
 
         //endElem is on the path from startElem to root is enforced by the caller
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private bool DuplicateNS(XmlBoundElement endElem, string lname)
         {
             if (_parentOfNS == null || endElem == null)
@@ -1555,6 +1565,7 @@ namespace System.Xml
 
         //Caller( DataDocumentXPathNavigator will make sure that the node is at the right position for this call )
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
         {
             RealFoliate();

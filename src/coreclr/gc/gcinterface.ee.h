@@ -281,6 +281,9 @@ public:
     gc_alloc_context * GetAllocContext() PURE_VIRTUAL
 
     // Calls the given enum_alloc_context_func with every active alloc context.
+    // NOTE: The GC may mutate the allocation context fields inside the callback.
+    // If the GC does modify the fields, the only legal modification for the alloc_ptr
+    // alloc_limit fields is to setting them both to zero.
     virtual
     void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param) PURE_VIRTUAL
 
@@ -462,6 +465,9 @@ public:
 
     virtual
     uint64_t GetThreadOSThreadId(Thread* thread) PURE_VIRTUAL;
+
+    virtual
+    void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args) PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_

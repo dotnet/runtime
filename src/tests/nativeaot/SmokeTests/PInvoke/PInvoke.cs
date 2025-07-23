@@ -12,13 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-// Make sure the interop data are present even without reflection
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.All)]
-    internal class __BlockAllReflectionAttribute : Attribute { }
-}
-
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
 namespace PInvokeTests
@@ -403,6 +396,12 @@ namespace PInvokeTests
                 arr[i] = i;
 
             ThrowIfNotEquals(0, CheckIncremental(arr, ArraySize), "Array marshalling failed");
+
+            int[] empty = new int[0];
+            ThrowIfNotEquals(0, CheckIncremental(empty, 0), "Empty array marshalling failed");
+
+            int[] nullArray = null;
+            ThrowIfNotEquals(1, CheckIncremental(nullArray, 0), "Null array marshalling failed");
 
             Console.WriteLine("Testing marshalling blittable struct arrays");
 

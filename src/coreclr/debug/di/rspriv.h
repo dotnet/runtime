@@ -15,7 +15,7 @@
 #include <windows.h>
 
 #include <utilcode.h>
-
+#include <minipal/mutex.h>
 
 #ifdef _DEBUG
 #define LOGGING
@@ -49,6 +49,8 @@ struct MachineInfo;
 
 
 #include "eventchannel.h"
+
+#include <shash.h>
 
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
@@ -111,13 +113,6 @@ class CordbReJitILCode;
 class CordbEval;
 
 class CordbMDA;
-
-class CorpubPublish;
-class CorpubProcess;
-class CorpubAppDomain;
-class CorpubProcessEnum;
-class CorpubAppDomainEnum;
-
 
 class RSLock;
 class NeuterList;
@@ -796,7 +791,7 @@ protected:
     }
 
 
-    CRITICAL_SECTION m_lock;
+    minipal_mutex m_lock;
 
 #ifdef _DEBUG
 public:
@@ -837,9 +832,8 @@ public:
 typedef RSLock::RSLockHolder RSLockHolder;
 typedef RSLock::RSInverseLockHolder RSInverseLockHolder;
 
-// In the RS, we should be using RSLocks instead of raw critical sections.
-#define CRITICAL_SECTION USE_RSLOCK_INSTEAD_OF_CRITICAL_SECTION
-
+// In the RS, we should be using RSLocks instead of raw minipal_mutex.
+#define minipal_mutex USE_RSLOCK_INSTEAD_OF_MINIPAL_MUTEX
 
 /* ------------------------------------------------------------------------- *
  * Helper macros. Use the ATT_* macros below instead of these.
@@ -1093,11 +1087,11 @@ typedef enum {
     enumCordbEnCSnapshot,   //  21
     enumCordbEval,          //  22
     enumCordbUnmanagedThread,// 23
-    enumCorpubPublish,      //  24
-    enumCorpubProcess,      //  25
-    enumCorpubAppDomain,    //  26
-    enumCorpubProcessEnum,  //  27
-    enumCorpubAppDomainEnum,//  28
+    // unused,              //  24
+    // unused,              //  25
+    // unused,              //  26
+    // unused,              //  27
+    // unused,              //  28
     enumCordbEnumFilter,    //  29
     enumCordbEnCErrorInfo,  //  30
     enumCordbEnCErrorInfoEnum,//31
@@ -1156,7 +1150,7 @@ class CordbHashTable;
 #define CORDB_COMMON_BASE_SIGNATURE 0x0d00d96a
 #define CORDB_COMMON_BASE_SIGNATURE_DEAD 0x0dead0b1
 
-// Common base for both CorPublish + CorDebug objects.
+// Common base for CorDebug objects.
 class CordbCommonBase : public IUnknown
 {
 public:
@@ -1835,14 +1829,14 @@ public ICorDebugAssemblyEnum
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id);
+        const GUID &id);
 
 public:
     static void BuildOrThrow(
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
         CordbHashTable *table,
-        const _GUID &id,
+        const GUID &id,
         RSInitHolder<CordbHashTableEnum> * pHolder);
 
     CordbHashTableEnum(CordbHashTableEnum *cloneSrc);
@@ -2220,7 +2214,6 @@ public:
     // CorDebug
     //-----------------------------------------------------------
 
-    static COM_METHOD CreateObjectV1(REFIID id, void **object);
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
@@ -2530,8 +2523,7 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheAssembly(VMPTR_DomainAssembly vmDomainAssembly);
-    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
+    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly, VMPTR_DomainAssembly);
 
 
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
@@ -2543,7 +2535,7 @@ public:
     CordbSafeHashTable<CordbModule>      m_modules;
 private:
     // Cache of assemblies in this appdomain.
-    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
+    // This is indexed by VMPTR_Assembly.
     // This is populated by code:CordbAppDomain::LookupOrCreateAssembly (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbAssembly>    m_assemblies;
@@ -2883,6 +2875,10 @@ public:
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    virtual void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent) = 0;
+#endif
 };
 
 
@@ -2920,6 +2916,42 @@ public:
     CordbProcess *  m_pThis;
     VMPTR_AppDomain m_vmAppDomainDeleted;
 };
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+class UnmanagedThreadTracker
+{
+    DWORD m_dwThreadId = (DWORD)-1;
+    HANDLE m_hThread = INVALID_HANDLE_VALUE;
+    CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL;
+    DWORD m_dwSuspendCount = 0;
+
+public:
+    UnmanagedThreadTracker(DWORD wThreadId, HANDLE hThread) : m_dwThreadId(wThreadId), m_hThread(hThread) {}
+
+    DWORD GetThreadId() const { return m_dwThreadId; }
+    HANDLE GetThreadHandle() const { return m_hThread; }
+    bool IsInPlaceStepping() const { return m_pPatchSkipAddress != NULL; }
+    void SetPatchSkipAddress(CORDB_ADDRESS_TYPE *pPatchSkipAddress) { m_pPatchSkipAddress = pPatchSkipAddress; }
+    CORDB_ADDRESS_TYPE *GetPatchSkipAddress() const { return m_pPatchSkipAddress; }
+    void ClearPatchSkipAddress() { m_pPatchSkipAddress = NULL; }
+    void Suspend();
+    void Resume();
+    void Close();
+};
+
+class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+{
+    public:
+        typedef DWORD key_t;
+
+        static key_t GetKey(const element_t &e) { return e->GetThreadId(); }
+        static BOOL Equals(const key_t &e, const key_t &f) { return e == f; }
+        static count_t Hash(const key_t &e) { return (count_t)(e ^ (e >> 16) * 0x45D9F43); }
+};
+
+typedef SHash<CUnmanagedThreadSHashTraits> CUnmanagedThreadHashTableImpl;
+typedef SHash<CUnmanagedThreadSHashTraits>::Iterator CUnmanagedThreadHashTableIterator;
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 class CordbProcess :
     public CordbBase,
@@ -2967,11 +2999,10 @@ public:
     //-----------------------------------------------------------
     // IMetaDataLookup
     // -----------------------------------------------------------
-    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage);
+    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
     IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   bool &isILMetaDataForNGENImage,
                                                    CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
@@ -3286,6 +3317,7 @@ public:
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     void HandleSetThreadContextNeeded(DWORD dwThreadId);
+    bool HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress);
 #endif
 
     //
@@ -3649,8 +3681,8 @@ public:
     // Lookup or create an appdomain.
     CordbAppDomain * LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain);
 
-    // Get the shared app domain.
-    CordbAppDomain * GetSharedAppDomain();
+    // Get the app domain.
+    CordbAppDomain * GetAppDomain();
 
     // Get metadata dispenser.
     IMetaDataDispenserEx * GetDispenser();
@@ -3659,7 +3691,7 @@ public:
     // the jit attach.
     HRESULT GetAttachStateFlags(CLR_DEBUGGING_PROCESS_FLAGS *pFlags);
 
-    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
+    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
 
     WriteableMetadataUpdateMode GetWriteableMetadataUpdateMode() { return m_writableMetadataUpdateMode; }
 private:
@@ -3689,7 +3721,6 @@ private:
     void ProcessContinuedLogMessage (DebuggerIPCEvent *event);
 
     void CloseIPCHandles();
-    void UpdateThreadsForAdUnload( CordbAppDomain* pAppDomain );
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Each win32 debug event needs to be triaged to get a Reaction.
@@ -3862,8 +3893,6 @@ public:
 
     CordbSafeHashTable<CordbAppDomain>        m_appDomains;
 
-    CordbAppDomain * m_sharedAppDomain;
-
     // Since a stepper can begin in one appdomain, and complete in another,
     // we put the hashtable here, rather than on specific appdomains.
     CordbSafeHashTable<CordbStepper>          m_steppers;
@@ -4016,8 +4045,6 @@ public:
 
     HANDLE GetHelperThreadHandle() { return m_hHelperThread; }
 
-    CordbAppDomain* GetDefaultAppDomain() { return m_pDefaultAppDomain; }
-
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Lookup if there's a native BP at the given address. Return NULL not found.
     NativePatch * GetNativePatch(const void * pAddress);
@@ -4034,11 +4061,6 @@ private:
     DebuggerIPCEventType  m_dispatchedEvent;   // what event are we currently dispatching?
 
     RSLock            m_StopGoLock;
-
-    // Each process has exactly one Default AppDomain
-    // @dbgtodo  appdomain : We should try and simplify things by removing this.
-    // At the moment it's necessary for CordbProcess::UpdateThreadsForAdUnload.
-    CordbAppDomain*     m_pDefaultAppDomain;    // owned by m_appDomains
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Helpers
@@ -4124,7 +4146,15 @@ private:
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
-    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
+    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
+    DWORD m_dwOutOfProcessStepping;
+public:
+    void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 };
 
 // Some IMDArocess APIs are supported as interop-only.
@@ -4350,8 +4380,6 @@ public:
     // Get the module filename, or NULL if none.  Throws on error.
     const WCHAR * GetModulePath();
 
-    const WCHAR * GetNGenImagePath();
-
     const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
     {
         return m_vmDomainAssembly;
@@ -4409,10 +4437,6 @@ private:
 
     // Full path to module's image, if any.  Empty if none, NULL if not yet set.
     StringCopyHolder m_strModulePath;
-
-    // Full path to the ngen file. Empty if not ngenned, NULL if not yet set.
-    // This isn't exposed publicly, but we may use it internally for loading metadata.
-    StringCopyHolder m_strNGenImagePath;
 
     // "Global" class for this module. Global functions + vars exist in this class.
     RSSmartPtr<CordbClass> m_pClass;
@@ -10660,12 +10684,6 @@ public:
 };
 #endif // FEATURE_INTEROP_DEBUGGING
 
-
-//********************************************************************************
-//**************** App Domain Publishing Service API *****************************
-//********************************************************************************
-
-
 class EnumElement
 {
 public:
@@ -10684,293 +10702,6 @@ private:
     void        *m_pData;
     EnumElement *m_pNext;
 };
-
-#if defined(FEATURE_DBG_PUBLISH)
-
-// Prototype of psapi!GetModuleFileNameEx.
-typedef DWORD FPGetModuleFileNameEx(HANDLE, HMODULE, LPTSTR, DWORD);
-
-
-class CorpubPublish : public CordbCommonBase, public ICorPublish
-{
-public:
-    CorpubPublish();
-    virtual ~CorpubPublish();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbPublish"; }
-#endif
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublish
-    //-----------------------------------------------------------
-
-    COM_METHOD EnumProcesses(
-        COR_PUB_ENUMPROCESS Type,
-        ICorPublishProcessEnum **ppIEnum);
-
-    COM_METHOD GetProcess(
-        unsigned pid,
-        ICorPublishProcess **ppProcess);
-
-    //-----------------------------------------------------------
-    // CreateObject
-    //-----------------------------------------------------------
-    static COM_METHOD CreateObject(REFIID id, void **object)
-    {
-        *object = NULL;
-
-        if (id != IID_IUnknown && id != IID_ICorPublish)
-            return (E_NOINTERFACE);
-
-        CorpubPublish *pCorPub = new (nothrow) CorpubPublish();
-
-        if (pCorPub == NULL)
-            return (E_OUTOFMEMORY);
-
-        *object = (ICorPublish*)pCorPub;
-        pCorPub->AddRef();
-
-        return (S_OK);
-    }
-
-private:
-    HRESULT GetProcessInternal( unsigned pid, CorpubProcess **ppProcess );
-
-    // Cached information to get the process name. Not available on all platforms, so may be null.
-    HModuleHolder m_hPSAPIdll;
-    FPGetModuleFileNameEx * m_fpGetModuleFileNameEx;
-};
-
-class CorpubProcess : public CordbCommonBase, public ICorPublishProcess
-{
-public:
-    CorpubProcess(const ProcessDescriptor * pProcessDescriptor,
-        bool fManaged,
-        HANDLE hProcess,
-        HANDLE hMutex,
-        AppDomainEnumerationIPCBlock *pAD,
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
-        IPCReaderInterface *pIPCReader,
-#endif // !FEATURE_DBGIPC_TRANSPORT_DI
-        FPGetModuleFileNameEx * fpGetModuleFileNameEx);
-    virtual ~CorpubProcess();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CorpubProcess"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishProcess
-    //-----------------------------------------------------------
-    COM_METHOD IsManaged(BOOL *pbManaged);
-
-    /*
-     * Enumerate the list of known application domains in the target process.
-     */
-    COM_METHOD EnumAppDomains(ICorPublishAppDomainEnum **ppEnum);
-
-    /*
-     * Returns the OS ID for the process in question.
-     */
-    COM_METHOD GetProcessID(unsigned *pid);
-
-    /*
-     * Get the display name for a process.
-     */
-    COM_METHOD GetDisplayName(ULONG32 cchName,
-                                ULONG32 *pcchName,
-                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    CorpubProcess   *GetNextProcess () { return m_pNext;}
-    void SetNext (CorpubProcess *pNext) { m_pNext = pNext;}
-
-    // Helper to tell if this process has exited
-    bool IsExited();
-
-public:
-    ProcessDescriptor               m_processDescriptor;
-
-private:
-    bool                            m_fIsManaged;
-    HANDLE                          m_hProcess;
-    HANDLE                          m_hMutex;
-    AppDomainEnumerationIPCBlock    *m_AppDomainCB;
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    IPCReaderInterface              *m_pIPCReader;  // controls the lifetime of the AppDomainEnumerationIPCBlock
-#endif // !FEATURE_DBGIPC_TRANSPORT_DI
-    CorpubProcess                   *m_pNext;   // pointer to the next process in the process list
-    WCHAR                           *m_szProcessName;
-
-};
-
-class CorpubAppDomain  : public CordbCommonBase, public ICorPublishAppDomain
-{
-public:
-    CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id);
-    virtual ~CorpubAppDomain();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CorpubAppDomain"; }
-#endif
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface (REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishAppDomain
-    //-----------------------------------------------------------
-
-    /*
-     * Get the name and ID for an application domain.
-     */
-    COM_METHOD GetID (ULONG32 *pId);
-
-    /*
-     * Get the name for an application domain.
-     */
-    COM_METHOD GetName (ULONG32 cchName,
-                        ULONG32 *pcchName,
-                        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    CorpubAppDomain *GetNextAppDomain () { return m_pNext;}
-    void SetNext (CorpubAppDomain *pNext) { m_pNext = pNext;}
-
-private:
-    CorpubAppDomain *m_pNext;
-    WCHAR           *m_szAppDomainName;
-    ULONG           m_id;
-
-};
-
-class CorpubProcessEnum : public CordbCommonBase, public ICorPublishProcessEnum
-{
-public:
-    CorpubProcessEnum(CorpubProcess *pFirst);
-    virtual ~CorpubProcessEnum();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CorpubProcessEnum"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishProcessEnum
-    //-----------------------------------------------------------
-
-    COM_METHOD Skip(ULONG celt);
-    COM_METHOD Reset();
-    COM_METHOD Clone(ICorPublishEnum **ppEnum);
-    COM_METHOD GetCount(ULONG *pcelt);
-    COM_METHOD Next(ULONG celt,
-                    ICorPublishProcess *objects[],
-                    ULONG *pceltFetched);
-
-private:
-    CorpubProcess       *m_pFirst;
-    CorpubProcess       *m_pCurrent;
-
-};
-
-class CorpubAppDomainEnum : public CordbCommonBase, public ICorPublishAppDomainEnum
-{
-public:
-    CorpubAppDomainEnum(CorpubAppDomain *pFirst);
-    virtual ~CorpubAppDomainEnum();
-
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbAppDomainEnum"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishAppDomainEnum
-    //-----------------------------------------------------------
-    COM_METHOD Skip(ULONG celt);
-    COM_METHOD Reset();
-    COM_METHOD Clone(ICorPublishEnum **ppEnum);
-    COM_METHOD GetCount(ULONG *pcelt);
-
-    COM_METHOD Next(ULONG celt,
-                    ICorPublishAppDomain *objects[],
-                    ULONG *pceltFetched);
-
-private:
-    CorpubAppDomain     *m_pFirst;
-    CorpubAppDomain     *m_pCurrent;
-
-};
-
-#endif // defined(FEATURE_DBG_PUBLISH)
 
 class CordbHeapEnum : public CordbBase, public ICorDebugHeapEnum
 {
@@ -11157,7 +10888,7 @@ inline CordbEval * UnwrapCookieCordbEval(CordbProcess *pProc, UINT cookie)
 
 
 // We defined this at the top of the file - undef it now so that we don't pollute other files.
-#undef CRITICAL_SECTION
+#undef minipal_mutex
 
 
 #ifdef RSCONTRACTS
@@ -11184,11 +10915,7 @@ public:
     DbgRSThread();
 
     // The TLS slot that we'll put this thread object in.
-#ifndef __GNUC__
-    static __declspec(thread) DbgRSThread* t_pCurrent;
-#else  // !__GNUC__
-    static __thread DbgRSThread* t_pCurrent;
-#endif // !__GNUC__
+    static thread_local DbgRSThread* t_pCurrent;
 
     static LONG s_Total; // Total count of thread objects
 

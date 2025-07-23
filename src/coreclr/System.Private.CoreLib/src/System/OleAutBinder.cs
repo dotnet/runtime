@@ -33,7 +33,7 @@ namespace System
             }
 
             // If we are trying to convert from an object to another type then we don't
-            // need the OLEAUT change type, we can just use the normal COM+ mechanisms.
+            // need the OLEAUT change type, we can just use the normal CLR mechanisms.
             if (!type.IsPrimitive && type.IsInstanceOfType(value))
             {
 #if DISPLAY_DEBUG_INFO
@@ -70,7 +70,7 @@ namespace System
                 return RetObj;
             }
 #if DISPLAY_DEBUG_INFO
-            catch(NotSupportedException e)
+            catch (NotSupportedException e)
 #else
             catch (NotSupportedException)
 #endif

@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="PatchExclusionListInApks.cs" />
     <Compile Include="../AndroidAppBuilder/ApkBuilder.cs" />
+    <Compile Include="../Common/AndroidSdkHelper.cs" />
     <Compile Include="../Common/Utils.cs" />
   </ItemGroup>
   <ItemGroup>

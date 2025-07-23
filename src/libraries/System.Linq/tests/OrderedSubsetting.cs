@@ -107,7 +107,7 @@ namespace System.Linq.Tests
             Assert.Empty(ordered.Take(0));
             Assert.Empty(ordered.Take(-1));
             Assert.Empty(ordered.Take(int.MinValue));
-            Assert.Equal(new int[] { 0 }, ordered.Take(1));
+            Assert.Equal([0], ordered.Take(1));
             Assert.Equal(Enumerable.Range(0, 100), ordered.Take(101));
             Assert.Equal(Enumerable.Range(0, 100), ordered.Take(int.MaxValue));
             Assert.Equal(Enumerable.Range(0, 100), ordered.Take(100));
@@ -145,7 +145,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(0, 100), ordered.Skip(0));
             Assert.Equal(Enumerable.Range(0, 100), ordered.Skip(-1));
             Assert.Equal(Enumerable.Range(0, 100), ordered.Skip(int.MinValue));
-            Assert.Equal(new int[] { 99 }, ordered.Skip(99));
+            Assert.Equal([99], ordered.Skip(99));
             Assert.Empty(ordered.Skip(101));
             Assert.Empty(ordered.Skip(int.MaxValue));
             Assert.Empty(ordered.Skip(100));
@@ -224,7 +224,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(10, 1), ordered.Take(11).Skip(10));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void TakeAndSkip_DoesntIterateRangeUnlessNecessary()
         {
             Assert.Empty(Enumerable.Range(0, int.MaxValue).Take(int.MaxValue).OrderBy(i => i).Skip(int.MaxValue - 4).Skip(15));
@@ -335,10 +335,10 @@ namespace System.Linq.Tests
         [Fact]
         public void SkipTakesOnlyOne()
         {
-            Assert.Equal(new[] { 1 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(1));
-            Assert.Equal(new[] { 2 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Skip(1).Take(1));
-            Assert.Equal(new[] { 3 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(3).Skip(2));
-            Assert.Equal(new[] { 1 }, Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(3).Take(1));
+            Assert.Equal([1], Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(1));
+            Assert.Equal([2], Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Skip(1).Take(1));
+            Assert.Equal([3], Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(3).Skip(2));
+            Assert.Equal([1], Enumerable.Range(1, 10).Shuffle().OrderBy(i => i).Take(3).Take(1));
         }
 
         [Fact]
@@ -399,7 +399,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EnumeratorDoesntContinue()
         {
-            var enumerator = NumberRangeGuaranteedNotCollectionType(0, 3).Shuffle().OrderBy(i => i).Skip(1).GetEnumerator();
+            using var enumerator = NumberRangeGuaranteedNotCollectionType(0, 3).Shuffle().OrderBy(i => i).Skip(1).GetEnumerator();
             while (enumerator.MoveNext()) { }
             Assert.False(enumerator.MoveNext());
         }
@@ -407,7 +407,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Select()
         {
-            Assert.Equal(new[] { 0, 2, 4, 6, 8 }, Enumerable.Range(-1, 8).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2));
+            Assert.Equal([0, 2, 4, 6, 8], Enumerable.Range(-1, 8).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2));
         }
 
         [Fact]

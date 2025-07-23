@@ -1,20 +1,6 @@
 # This pipeline only runs on GitHub PRs, not on merges.
 trigger: none
 
-# Only run on specific changes to the JIT directory that are likely to affect AVX-512.
-pr:
-  branches:
-    include:
-    - main
-  paths:
-    include:
-    - src/coreclr/jit/hwintrinsiccodegenxarch.cpp
-    - src/coreclr/jit/hwintrinsiclistxarch.h
-    - src/coreclr/jit/hwintrinsicxarch.cpp
-    - src/coreclr/jit/instrsxarch.h
-    - src/coreclr/jit/emitxarch.cpp
-    - src/coreclr/jit/emitxarch.h
-
 schedules:
 - cron: "30 19 * * 6"
   displayName: Sat at 11:30 AM (UTC-8:00)

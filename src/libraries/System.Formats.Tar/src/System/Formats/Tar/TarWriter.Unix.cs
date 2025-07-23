@@ -63,8 +63,11 @@ namespace System.Formats.Tar
             }
 
             entry._header._mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.MTime);
-            entry._header._aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.ATime);
-            entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
+            // We do not set atime and ctime by default because many external tools are unable to read GNU entries
+            // that have these fields set to non-zero values. This is because the GNU format writes atime and ctime in the same
+            // location where other formats expect the prefix field to be written.
+            // If the user wants to set atime and ctime, they can do so by constructing the entry manually from the file and
+            // then setting the values.
 
             // This mask only keeps the least significant 12 bits valid for UnixFileModes
             entry._header._mode = status.Mode & (int)TarHelpers.ValidUnixFileModes;

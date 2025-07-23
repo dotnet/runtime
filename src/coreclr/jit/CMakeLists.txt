@@ -18,8 +18,7 @@ endif()
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
-  set(multiValueArgs DESTINATIONS)
-  cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "" ${ARGN})
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
@@ -58,19 +57,15 @@ function(create_standalone_jit)
     clr_unknown_arch()
   endif()
 
-  if (TARGETDETAILS_DESTINATIONS STREQUAL "")
-    add_jit(${TARGETDETAILS_TARGET})
-  else()
-    add_jit(${TARGETDETAILS_TARGET} DESTINATIONS "${TARGETDETAILS_DESTINATIONS}")
-  endif()
+  add_jit(${TARGETDETAILS_TARGET})
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
-  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
+  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_STATICALLY_LINKED TRUE)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
 
-  if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")))
+  if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR (TARGETDETAILS_ARCH STREQUAL "x86"))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MASKED_HW_INTRINSICS)
@@ -94,6 +89,7 @@ set( JIT_SOURCES
   abi.cpp
   alloc.cpp
   assertionprop.cpp
+  async.cpp
   bitset.cpp
   block.cpp
   buildstring.cpp
@@ -156,6 +152,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  optimizemaskconversions.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -163,14 +160,15 @@ set( JIT_SOURCES
   promotiondecomposition.cpp
   promotionliveness.cpp
   rangecheck.cpp
+  rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
-  registerargconvention.cpp
   regMaskTPOps.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
+  segmentlist.cpp
   sideeffects.cpp
   sm.cpp
   smdata.cpp
@@ -178,7 +176,6 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
-  structsegments.cpp
   switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
@@ -200,7 +197,6 @@ set( JIT_AMD64_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
-  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetamd64.cpp
   unwindamd64.cpp
@@ -227,7 +223,6 @@ set( JIT_I386_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
-  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetx86.cpp
   unwindx86.cpp
@@ -245,7 +240,6 @@ set( JIT_ARM64_SOURCES
   lsraarmarch.cpp
   lsraarm64.cpp
   simd.cpp
-  simdashwintrinsic.cpp
   targetarm64.cpp
   unwindarmarch.cpp
   unwindarm64.cpp
@@ -293,6 +287,7 @@ set( JIT_HEADERS
   abi.h
   alloc.h
   arraystack.h
+  async.h
   bitset.h
   layout.h
   bitsetasshortlong.h
@@ -301,7 +296,6 @@ set( JIT_HEADERS
   bitsetops.h
   bitvec.h
   block.h
-  blockset.h
   codegen.h
   codegeninterface.h
   compiler.h
@@ -361,17 +355,18 @@ set( JIT_HEADERS
   opcode.h
   optcse.h
   phase.h
+  priorityqueue.h
   promotion.h
   rangecheck.h
+  rangecheckcloning.h
   rationalize.h
   regalloc.h
-  registerargconvention.h
   register.h
   regset.h
   scev.h
+  segmentlist.h
   sideeffects.h
   simd.h
-  simdashwintrinsic.h
   sm.h
   smallhash.h
   smcommon.h
@@ -380,7 +375,6 @@ set( JIT_HEADERS
   ssaconfig.h
   ssarenamestate.h
   stacklevelsetter.h
-  structsegments.h
   target.h
   targetx86.h
   targetamd64.h
@@ -405,7 +399,6 @@ set( JIT_AMD64_HEADERS
   hwintrinsiclistxarch.h
   hwintrinsic.h
   instrsxarch.h
-  simdashwintrinsiclistxarch.h
 )
 
 set( JIT_I386_HEADERS ${JIT_AMD64_HEADERS} )
@@ -419,7 +412,6 @@ set( JIT_ARM64_HEADERS
     instrsarm64.h
     instrsarm64sve.h
     registerarm64.h
-    simdashwintrinsiclistarm64.h
 )
 
 set( JIT_ARM_HEADERS
@@ -505,6 +497,9 @@ elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
   set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+  set(JIT_ARCH_SOURCES ${JIT_WASM32_SOURCES})
+  set(JIT_ARCH_HEADERS ${JIT_WASM32_HEADERS})
 else()
   clr_unknown_arch()
 endif()
@@ -512,7 +507,7 @@ endif()
 
 set(JIT_DLL_MAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/dllmain.cpp)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
@@ -537,6 +532,7 @@ add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
 set(JIT_LINK_LIBRARIES
    utilcodestaticnohost
+   minipal
 )
 
 set(JIT_ARCH_LINK_LIBRARIES
@@ -568,8 +564,11 @@ else()
     )
 endif(CLR_CMAKE_HOST_UNIX)
 
+if (CLR_CMAKE_HOST_ANDROID)
+    list(APPEND JIT_LINK_LIBRARIES log)
+endif()
+
 # Shared function for generating JIT
-# optional arguments: DESTINATIONS path
 function(add_jit jitName)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
@@ -621,7 +620,7 @@ function(add_jit jitName)
     endif()
 
     # add the install targets
-    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
+    install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -629,7 +628,7 @@ set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
   set(TARGET_OS_NAME unix_osx)
 elseif (CLR_CMAKE_TARGET_UNIX)
   set(TARGET_OS_NAME unix)
@@ -637,32 +636,42 @@ else()
   set(TARGET_OS_NAME win)
 endif()
 
-create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
 install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
+
+if (NOT CLR_CROSS_COMPONENTS_BUILD)
+    # Install the clrjit into the sharedframework dir only when we're not doing a cross-components build.
+    # We never want to ship the cross-component JIT (it would never be used).
+    install_clr(TARGETS clrjit DESTINATIONS sharedFramework COMPONENT alljits)
+endif()
 
 # Enable profile guided optimization
 add_pgo(clrjit)
 
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-  create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64 DESTINATIONS .)
-  create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix_anyos ARCH x64 DESTINATIONS .)
-  create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64)
+  create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix_anyos ARCH x64)
+  create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
+  if (CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
+    create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64)
+    create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64)
+  endif(CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-  create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64)
 endif (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 
 if (CLR_CMAKE_TARGET_ARCH_RISCV64)
-  create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64)
 else()
-  create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm)
   target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
-  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
-  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86)
 endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
 if (CLR_CMAKE_TARGET_UNIX)

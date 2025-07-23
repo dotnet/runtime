@@ -77,21 +77,22 @@ struct ThreadLocalData
     int32_t cCollectibleTlsData; // Size of offset into the TLS array which is valid
     PTR_Object pNonCollectibleTlsArrayData;
     DPTR(OBJECTHANDLE) pCollectibleTlsArrayData; // Points at the Thread local array data.
-    PTR_Thread pThread;
+    PTR_Thread pThread; // This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
-    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.First, This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
+    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.t_first
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 };
 
 typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
 
+// Using compiler specific thread local storage directives due to linkage issues.
 #ifndef DACCESS_COMPILE
+extern
 #ifdef _MSC_VER
-extern __declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
-#else
-extern __thread ThreadLocalData t_ThreadStatics;
+__declspec(selectany)
 #endif // _MSC_VER
-#endif // DACCESS_COMPILE
+PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
+#endif // !DACCESS_COMPILE
 
 #define NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY 2
 
@@ -199,8 +200,8 @@ public:
         iterator operator++(int)
         {
             LIMITED_METHOD_CONTRACT;
-            iterator tmp = *this; 
-            ++(*this); 
+            iterator tmp = *this;
+            ++(*this);
             return tmp;
         }
     };

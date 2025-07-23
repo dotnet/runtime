@@ -70,11 +70,13 @@ namespace
             return SystemResolveDllImport(entry_point_name);
         }
 
+#if !defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
-#endif
+#endif // !defined(TARGET_OSX)
+#endif // !defined(_WIN32)
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
@@ -118,6 +120,18 @@ namespace
         if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
         {
             return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
+        }
+
+        if (::strcmp(key, HOST_PROPERTY_BUNDLE_EXTRACTION_PATH) == 0)
+        {
+            if (!bundle::info_t::is_single_file_bundle())
+                return -1;
+
+            auto bundle = bundle::runner_t::app();
+            if (bundle->extraction_path().empty())
+                return -1;
+
+            return pal::pal_utf8string(bundle->extraction_path(), value_buffer, value_buffer_size);
         }
 
         // Properties from runtime initialization

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -59,14 +60,16 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public CryptographicAttributeObjectCollection SignedAttributes =>
-            _parsedSignedAttrs ??= MakeAttributeCollection(_signedAttributes);
+            _parsedSignedAttrs ??= PkcsHelpers.MakeAttributeCollection(_signedAttributes);
 
         public CryptographicAttributeObjectCollection UnsignedAttributes =>
-            _parsedUnsignedAttrs ??= MakeAttributeCollection(_unsignedAttributes);
+            _parsedUnsignedAttrs ??= PkcsHelpers.MakeAttributeCollection(_unsignedAttributes);
 
         internal ReadOnlyMemory<byte> GetSignatureMemory() => _signature;
 
+#if NET || NETSTANDARD2_1
         public byte[] GetSignature() => _signature.ToArray();
+#endif
 
         public X509Certificate2? Certificate =>
             _signerCertificate ??= FindSignerCertificate();
@@ -89,7 +92,12 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid DigestAlgorithm => new Oid(_digestAlgorithm, null);
 
-        public Oid SignatureAlgorithm => new Oid(_signatureAlgorithm, null);
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        Oid SignatureAlgorithm => new Oid(_signatureAlgorithm, null);
 
         private delegate void WithSelfInfoDelegate(ref SignerInfoAsn mySigned);
 
@@ -167,7 +175,12 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
             WithSelfInfo((ref SignerInfoAsn mySigner) =>
                 {
@@ -208,7 +221,12 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
             WithSelfInfo((ref SignerInfoAsn mySigner) =>
                 {
@@ -407,10 +425,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void RemoveCounterSignature(SignerInfo counterSignerInfo)
         {
-            if (counterSignerInfo is null)
-            {
-                throw new ArgumentNullException(nameof(counterSignerInfo));
-            }
+            ArgumentNullException.ThrowIfNull(counterSignerInfo);
 
             SignerInfoCollection docSigners = _document.SignerInfos;
             int index = docSigners.FindIndexForSigner(this);
@@ -436,10 +451,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CheckSignature(X509Certificate2Collection extraStore, bool verifySignatureOnly)
         {
-            if (extraStore is null)
-            {
-                throw new ArgumentNullException(nameof(extraStore));
-            }
+            ArgumentNullException.ThrowIfNull(extraStore);
 
             X509Certificate2? certificate = Certificate;
 
@@ -471,17 +483,20 @@ namespace System.Security.Cryptography.Pkcs
 
         private bool CheckHash(bool compatMode)
         {
-            using (IncrementalHash? hasher = PrepareDigest(compatMode))
+            // compatMode only affects attribute processing so if there are none then
+            // compatMode true and false are the same. So short circuit when true.
+            if (_signedAttributes == null && compatMode)
             {
-                if (hasher == null)
-                {
-                    Debug.Assert(compatMode, $"{nameof(PrepareDigest)} returned null for the primary check");
-                    return false;
-                }
-
-                byte[] expectedSignature = hasher.GetHashAndReset();
-                return _signature.Span.SequenceEqual(expectedSignature);
+                return false;
             }
+
+            Debug.Assert(_signatureAlgorithm == Oids.NoSignature);
+
+            // The signature is a hash of the message or signed attributes.
+            return VerifyHashedMessage(
+                compatMode,
+                _signature,
+                static (signature, contentToVerify) => signature.Span.SequenceEqual(contentToVerify));
         }
 
         private X509Certificate2? FindSignerCertificate()
@@ -546,22 +561,9 @@ namespace System.Security.Cryptography.Pkcs
             return match;
         }
 
-        private IncrementalHash? PrepareDigest(bool compatMode)
+        private ReadOnlyMemory<byte> GetContentForVerification(out ReadOnlyMemory<byte>? additionalContent)
         {
-            HashAlgorithmName hashAlgorithmName = GetDigestAlgorithm();
-
-
-            IncrementalHash hasher;
-
-            try
-            {
-                hasher = IncrementalHash.CreateHash(hashAlgorithmName);
-            }
-            catch (PlatformNotSupportedException ex)
-            {
-                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName), ex);
-            }
-
+            additionalContent = null;
             if (_parentSignerInfo == null)
             {
                 // Windows compatibility: If a document was loaded in detached mode,
@@ -579,104 +581,257 @@ namespace System.Security.Cryptography.Pkcs
                             embeddedContent.Value,
                             documentData.EncapContentInfo.ContentType);
 
-                        hasher.AppendData(hashableContent.Span);
+                        additionalContent = hashableContent;
                     }
                 }
 
-                hasher.AppendData(_document.GetHashableContentSpan());
+                return _document.GetHashableContentMemory();
             }
             else
             {
-                hasher.AppendData(_parentSignerInfo._signature.Span);
+                // We are a counter-signer, so the content is the signature of the parent
+                return _parentSignerInfo._signature;
+            }
+        }
+
+        private CmsHash GetContentHash(ReadOnlyMemory<byte> content, ReadOnlyMemory<byte>? additionalContent)
+        {
+            CmsHash hasher = CmsHash.Create(DigestAlgorithm, forVerification: true);
+            if (additionalContent.HasValue)
+            {
+                hasher.AppendData(additionalContent.Value.Span);
             }
 
-            // A Counter-Signer always requires signed attributes.
-            // If any signed attributes are present, message-digest is required.
-            bool invalid = _parentSignerInfo != null || _signedAttributes != null;
+            hasher.AppendData(content.Span);
 
-            if (_signedAttributes != null)
+            return hasher;
+        }
+
+        private static bool VerifyAttributes<TState>(
+            ReadOnlySpan<byte> digest,
+            AttributeAsn[] signedAttributes,
+            bool compatMode,
+            bool needsContentAttr,
+            TState state,
+            VerifyCallback<TState> verify)
+        {
+            bool hasMatchingDigestAttr = false;
+            bool hasContentAttr = false;
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // Some CMS implementations exist which do not sort the attributes prior to
+            // generating the signature.  While they are not, technically, validly signed,
+            // Windows and OpenSSL both support trying in the document order rather than
+            // a sorted order.  To accomplish this we will build as a SEQUENCE OF, but feed
+            // the SET OF into the hasher.
+            using (compatMode ? writer.PushSequence() : writer.PushSetOf())
             {
-                byte[] contentDigest = hasher.GetHashAndReset();
-
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                foreach (AttributeAsn attr in signedAttributes)
                 {
-                    // Some CMS implementations exist which do not sort the attributes prior to
-                    // generating the signature.  While they are not, technically, validly signed,
-                    // Windows and OpenSSL both support trying in the document order rather than
-                    // a sorted order.  To accomplish this we will build as a SEQUENCE OF, but feed
-                    // the SET OF into the hasher.
-                    if (compatMode)
-                    {
-                        writer.PushSequence();
-                    }
-                    else
-                    {
-                        writer.PushSetOf();
-                    }
+                    attr.Encode(writer);
 
-                    foreach (AttributeAsn attr in _signedAttributes)
+                    // .NET Framework doesn't seem to validate the content type attribute,
+                    // so we won't, either.
+
+                    if (attr.AttrType == Oids.MessageDigest)
                     {
-                        attr.Encode(writer);
+                        CryptographicAttributeObject obj = PkcsHelpers.MakeAttribute(attr);
 
-                        // .NET Framework doesn't seem to validate the content type attribute,
-                        // so we won't, either.
-
-                        if (attr.AttrType == Oids.MessageDigest)
+                        if (obj.Values.Count != 1)
                         {
-                            CryptographicAttributeObject obj = MakeAttribute(attr);
-
-                            if (obj.Values.Count != 1)
-                            {
-                                throw new CryptographicException(SR.Cryptography_BadHashValue);
-                            }
-
-                            var digestAttr = (Pkcs9MessageDigest)obj.Values[0];
-
-                            if (!contentDigest.AsSpan().SequenceEqual(digestAttr.MessageDigest))
-                            {
-                                throw new CryptographicException(SR.Cryptography_BadHashValue);
-                            }
-
-                            invalid = false;
+                            throw new CryptographicException(SR.Cryptography_BadHashValue);
                         }
-                    }
 
-                    if (compatMode)
-                    {
-                        writer.PopSequence();
+                        var digestAttr = (Pkcs9MessageDigest)obj.Values[0];
 
-                        byte[] encoded = writer.Encode();
-                        encoded[0] = 0x31;
-                        hasher.AppendData(encoded);
-                    }
-                    else
-                    {
-                        writer.PopSetOf();
-
-#if NET9_0_OR_GREATER
-                        writer.Encode(hasher, static (hasher, encoded) =>
+                        if (!digest.SequenceEqual(digestAttr.MessageDigest))
                         {
-                            hasher.AppendData(encoded);
-                            return (object?)null;
-                        });
-#else
-                        hasher.AppendData(writer.Encode());
-#endif
+                            throw new CryptographicException(SR.Cryptography_BadHashValue);
+                        }
+
+                        hasMatchingDigestAttr = true;
+                    }
+                    else if (attr.AttrType == Oids.ContentType)
+                    {
+                        hasContentAttr = true;
                     }
                 }
             }
-            else if (compatMode)
-            {
-                // If there were no signed attributes there's nothing to be compatible about.
-                return null;
-            }
 
-            if (invalid)
+            // Message-digest is required when signed attributes are present.
+            if (!hasMatchingDigestAttr || (needsContentAttr && !hasContentAttr))
             {
                 throw new CryptographicException(SR.Cryptography_Cms_MissingAuthenticatedAttribute);
             }
 
-            return hasher;
+            if (compatMode)
+            {
+                int encodedLength = writer.GetEncodedLength();
+                byte[]? rented = null;
+                Span<byte> encoded = encodedLength <= 256
+                    ? stackalloc byte[256]
+                    : (rented = CryptoPool.Rent(encodedLength));
+
+                try
+                {
+                    encoded = encoded.Slice(0, encodedLength);
+                    writer.Encode(encoded);
+                    encoded[0] = 0x31;
+                    return verify(state, encoded);
+                }
+                finally
+                {
+                    if (rented != null)
+                    {
+                        CryptoPool.Return(rented);
+                    }
+                }
+            }
+            else
+            {
+#if NET9_0_OR_GREATER
+                return writer.Encode((state, verify), static (state, encoded) => state.verify(state.state, encoded));
+#else
+                return verify(state, writer.Encode());
+#endif
+            }
+        }
+
+        private delegate bool VerifyCallback<TState>(TState state, ReadOnlySpan<byte> contentToVerify);
+
+        private bool VerifyHashedMessage<TState>(bool compatMode, TState state, VerifyCallback<TState> verify)
+        {
+            ReadOnlyMemory<byte> content = GetContentForVerification(out ReadOnlyMemory<byte>? additionalContent);
+
+            using (CmsHash hasher = GetContentHash(content, additionalContent))
+            {
+#if NET || NETSTANDARD2_1
+                // SHA-2-512 is the biggest digest type we know about.
+                Span<byte> contentHash = stackalloc byte[512 / 8];
+
+                if (hasher.TryGetHashAndReset(contentHash, out int bytesWritten))
+                {
+                    contentHash = contentHash.Slice(0, bytesWritten);
+                }
+                else
+                {
+                    contentHash = hasher.GetHashAndReset();
+                }
+#else
+                byte[] contentHash = hasher.GetHashAndReset();
+#endif
+
+                // If there are no signed attributes, we can just verify the content directly.
+                if (_signedAttributes == null)
+                {
+                    // A Counter-Signer always requires signed attributes.
+                    if (_parentSignerInfo != null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Cms_MissingAuthenticatedAttribute);
+                    }
+
+                    return verify(state, contentHash);
+                }
+
+                // Since there are signed attributes, we need to verify those instead.
+                return
+                    VerifyAttributes(
+                        contentHash,
+                        _signedAttributes,
+                        compatMode,
+                        needsContentAttr: false,
+                        (state, hasher, verify),
+                        static (state, span) =>
+                        {
+                            CmsHash hasher = state.hasher;
+                            hasher.AppendData(span);
+
+#if NET || NETSTANDARD2_1
+                            // SHA-2-512 is the biggest digest type we know about.
+                            Span<byte> attrHash = stackalloc byte[512 / 8];
+
+                            if (hasher.TryGetHashAndReset(attrHash, out int bytesWritten))
+                            {
+                                attrHash = attrHash.Slice(0, bytesWritten);
+                            }
+                            else
+                            {
+                                attrHash = hasher.GetHashAndReset();
+                            }
+#else
+                            byte[] attrHash = hasher.GetHashAndReset();
+#endif
+
+                            return state.verify(state.state, attrHash);
+                        });
+            }
+        }
+
+        private bool VerifyPureMessage<TState>(bool compatMode, TState state, VerifyCallback<TState> verify)
+        {
+            ReadOnlyMemory<byte> content = GetContentForVerification(out ReadOnlyMemory<byte>? additionalContent);
+
+            // If there are no signed attributes, we can just verify the content directly.
+            if (_signedAttributes == null)
+            {
+                // A Counter-Signer always requires signed attributes.
+                if (_parentSignerInfo != null)
+                {
+                    throw new CryptographicException(SR.Cryptography_Cms_MissingAuthenticatedAttribute);
+                }
+
+                if (!additionalContent.HasValue)
+                {
+                    return verify(state, content.Span);
+                }
+
+                // If there are multiple pieces of content, concatenate them and verify.
+                int contentToVerifyLength = content.Length + additionalContent.Value.Length;
+                byte[] rented = CryptoPool.Rent(contentToVerifyLength);
+                try
+                {
+                    additionalContent.Value.Span.CopyTo(rented);
+                    content.Span.CopyTo(rented.AsSpan(additionalContent.Value.Length));
+                    return verify(state, rented.AsSpan(0, contentToVerifyLength));
+                }
+                finally
+                {
+                    CryptoPool.Return(rented);
+                }
+            }
+
+            // Since there are signed attributes, we need to verify those instead.
+            using (CmsHash hasher = GetContentHash(content, additionalContent))
+            {
+#if NET || NETSTANDARD2_1
+                // SHA-2-512 is the biggest digest type we know about.
+                Span<byte> contentHash = stackalloc byte[512 / 8];
+
+                if (hasher.TryGetHashAndReset(contentHash, out int bytesWritten))
+                {
+                    contentHash = contentHash.Slice(0, bytesWritten);
+                }
+                else
+                {
+                    contentHash = hasher.GetHashAndReset();
+                }
+#else
+                byte[] contentHash = hasher.GetHashAndReset();
+#endif
+
+                return
+                    VerifyAttributes(
+                        contentHash,
+                        _signedAttributes,
+                        compatMode,
+                        // IETF spec for SLH-DSA/ML-DSA requires that the content type be present but RFC 5652 says
+                        // it is invalid for countersigners. We'll just ignore it for now, but if we decide to
+                        // allow countersigners to omit the content type, we should check that `this` is a countersigner.
+                        needsContentAttr: false,
+                        (state, verify),
+                        static (state, span) => state.verify(state.state, span));
+            }
         }
 
         private void Verify(
@@ -707,14 +862,26 @@ namespace System.Security.Cryptography.Pkcs
             if (!verifySignatureOnly)
             {
                 X509Chain chain = new X509Chain();
-                chain.ChainPolicy.ExtraStore.AddRange(extraStore);
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                if (!chain.Build(certificate))
+                try
                 {
-                    X509ChainStatus status = chain.ChainStatus.FirstOrDefault();
-                    throw new CryptographicException(SR.Cryptography_Cms_TrustFailure, status.StatusInformation);
+                    chain.ChainPolicy.ExtraStore.AddRange(extraStore);
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                    if (!chain.Build(certificate))
+                    {
+                        X509ChainStatus status = chain.ChainStatus.FirstOrDefault();
+                        throw new CryptographicException(SR.Cryptography_Cms_TrustFailure, status.StatusInformation);
+                    }
+                }
+                finally
+                {
+                    for (int i = 0; i < chain.ChainElements.Count; i++)
+                    {
+                        chain.ChainElements[i].Certificate.Dispose();
+                    }
+
+                    chain.Dispose();
                 }
 
                 // .NET Framework checks for either of these
@@ -746,74 +913,49 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             bool compatMode)
         {
-            using (IncrementalHash? hasher = PrepareDigest(compatMode))
+            // compatMode only affects attribute processing so if there are none then
+            // compatMode true and false are the same. So short circuit when true.
+            if (_signedAttributes == null && compatMode)
             {
-                if (hasher == null)
-                {
-                    Debug.Assert(compatMode, $"{nameof(PrepareDigest)} returned null for the primary check");
-                    return false;
-                }
+                return false;
+            }
 
+            if (signatureProcessor.NeedsHashedMessage)
+            {
+                return VerifyHashedMessage(
+                    compatMode,
+                    (info: this, signatureProcessor, certificate),
+                    static (state, contentToVerify) =>
+                        state.signatureProcessor.VerifySignature(
 #if NET || NETSTANDARD2_1
-                // SHA-2-512 is the biggest digest type we know about.
-                Span<byte> digestValue = stackalloc byte[512 / 8];
-                ReadOnlySpan<byte> digest = digestValue;
-                ReadOnlyMemory<byte> signature = _signature;
-
-                if (hasher.TryGetHashAndReset(digestValue, out int bytesWritten))
-                {
-                    digest = digestValue.Slice(0, bytesWritten);
-                }
-                else
-                {
-                    digest = hasher.GetHashAndReset();
-                }
+                            contentToVerify,
+                            state.info._signature,
 #else
-                byte[] digest = hasher.GetHashAndReset();
-                byte[] signature = _signature.ToArray();
+                            contentToVerify.ToArray(),
+                            state.info._signature.ToArray(),
 #endif
-
-                return signatureProcessor.VerifySignature(
-                    digest,
-                    signature,
-                    DigestAlgorithm.Value,
-                    hasher.AlgorithmName,
-                    _signatureAlgorithmParameters,
-                    certificate);
+                            state.info.DigestAlgorithm.Value,
+                            state.info._signatureAlgorithmParameters,
+                            state.certificate));
             }
-        }
-
-        private HashAlgorithmName GetDigestAlgorithm()
-        {
-            return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value!, forVerification: true);
-        }
-
-        internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[]? attributes)
-        {
-            var coll = new CryptographicAttributeObjectCollection();
-
-            if (attributes == null)
-                return coll;
-
-            foreach (AttributeAsn attribute in attributes)
+            else
             {
-                coll.AddWithoutMerge(MakeAttribute(attribute));
+                return VerifyPureMessage(
+                    compatMode,
+                    (info: this, signatureProcessor, certificate),
+                    static (state, contentToVerify) =>
+                        state.signatureProcessor.VerifySignature(
+#if NET || NETSTANDARD2_1
+                            contentToVerify,
+                            state.info._signature,
+#else
+                            contentToVerify.ToArray(),
+                            state.info._signature.ToArray(),
+#endif
+                            state.info.DigestAlgorithm.Value,
+                            state.info._signatureAlgorithmParameters,
+                            state.certificate));
             }
-
-            return coll;
-        }
-
-        private static CryptographicAttributeObject MakeAttribute(AttributeAsn attribute)
-        {
-            Oid type = new Oid(attribute.AttrType);
-            AsnEncodedDataCollection valueColl = new AsnEncodedDataCollection();
-
-            foreach (ReadOnlyMemory<byte> attrValue in attribute.AttrValues)
-            {
-                valueColl.Add(PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(type, attrValue.ToArray()));
-            }
-
-            return new CryptographicAttributeObject(type, valueColl);
         }
 
         private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)

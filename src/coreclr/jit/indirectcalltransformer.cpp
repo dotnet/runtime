@@ -483,6 +483,7 @@ private:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
             , returnTemp(BAD_VAR_NUM)
+            , returnValueUnused(false)
         {
         }
 
@@ -754,8 +755,21 @@ private:
         //
         void SpillArgToTempBeforeGuard(CallArg* arg)
         {
-            unsigned   tmpNum    = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree*   store     = compiler->gtNewTempStore(tmpNum, arg->GetNode());
+            unsigned       tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+            GenTree* const argNode = arg->GetNode();
+            GenTree*       store   = compiler->gtNewTempStore(tmpNum, argNode);
+
+            if (argNode->TypeIs(TYP_REF))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE cls       = compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
+                if (cls != NO_CLASS_HANDLE)
+                {
+                    compiler->lvaSetClass(tmpNum, cls, isExact);
+                }
+            }
+
             Statement* storeStmt = compiler->fgNewStmtFromTree(store, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, storeStmt);
 
@@ -773,9 +787,52 @@ private:
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            InlineCandidateInfo* const inlineInfo = origCall->GetGDVCandidateInfo(0);
+            InlineCandidateInfo* const inlineInfo  = origCall->GetGDVCandidateInfo(0);
+            GenTree* const             retExprNode = inlineInfo->retExpr;
 
-            if (!origCall->TypeIs(TYP_VOID))
+            if (retExprNode == nullptr)
+            {
+                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
+                return;
+            }
+
+            GenTreeRetExpr* const retExpr       = retExprNode->AsRetExpr();
+            bool const            noReturnValue = origCall->TypeIs(TYP_VOID);
+
+            // If there is a return value, search the next statement to see if we can find
+            // retExprNode's parent. If we find it, see if retExprNode's value is unused.
+            //
+            // If we fail to find it, we will assume the return value is used.
+            //
+            if (!noReturnValue)
+            {
+                Statement* const nextStmt = stmt->GetNextStmt();
+                if (nextStmt != nullptr)
+                {
+                    Compiler::FindLinkData fld    = compiler->gtFindLink(nextStmt, retExprNode);
+                    GenTree* const         parent = fld.parent;
+
+                    if ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->AsOp()->gtGetOp1() == retExprNode))
+                    {
+                        returnValueUnused = true;
+                        JITDUMP("GT_RET_EXPR [%06u] value is unused\n", compiler->dspTreeID(retExprNode));
+                    }
+                }
+            }
+
+            if (noReturnValue)
+            {
+                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
+            }
+            else if (returnValueUnused)
+            {
+                JITDUMP("Linking GT_RET_EXPR [%06u] for UNUSED return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
+            }
+            else
             {
                 // If there's a spill temp already associated with this inline candidate,
                 // use that instead of allocating a new temp.
@@ -814,6 +871,16 @@ private:
                 {
                     returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
                     JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+
+                    // Keep the information about small typedness to avoid
+                    // inserting unnecessary casts for normalization, which can
+                    // make tailcall invariants unhappy. This is the same logic
+                    // that impImportCall uses when it introduces call temps.
+                    if (varTypeIsSmall(origCall->gtReturnType))
+                    {
+                        assert(origCall->NormalizesSmallTypesOnReturn());
+                        compiler->lvaGetDesc(returnTemp)->lvType = origCall->gtReturnType;
+                    }
                 }
 
                 if (varTypeIsStruct(origCall))
@@ -827,23 +894,6 @@ private:
                         returnTemp);
 
                 inlineInfo->retExpr->gtSubstExpr = tempTree;
-            }
-            else if (inlineInfo->retExpr != nullptr)
-            {
-                // We still oddly produce GT_RET_EXPRs for some void
-                // returning calls. Just bash the ret expr to a NOP.
-                //
-                // Todo: consider bagging creation of these RET_EXPRs. The only possible
-                // benefit they provide is stitching back larger trees for failed inlines
-                // of void-returning methods. But then the calls likely sit in commas and
-                // the benefit of a larger tree is unclear.
-                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
-                        compiler->dspTreeID(inlineInfo->retExpr));
-                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
-            }
-            else
-            {
-                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
             }
         }
 
@@ -894,6 +944,22 @@ private:
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
 
+            // If the original call was flagged as one that might inspire enumerator de-abstraction
+            // cloning, move the flag to the devirtualized call.
+            //
+            if (compiler->hasImpEnumeratorGdvLocalMap())
+            {
+                Compiler::NodeToUnsignedMap* const map           = compiler->getImpEnumeratorGdvLocalMap();
+                unsigned                           enumeratorLcl = BAD_VAR_NUM;
+                if (map->Lookup(origCall, &enumeratorLcl))
+                {
+                    JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", compiler->dspTreeID(call),
+                            enumeratorLcl);
+                    map->Remove(origCall);
+                    map->Set(call, enumeratorLcl);
+                }
+            }
+
             INDEBUG(call->SetIsGuarded());
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
@@ -907,7 +973,7 @@ private:
                 //
                 if (inlineInfo->arrayInterface)
                 {
-                    methodHnd = call->gtCallMethHnd;
+                    methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;
                 }
 
@@ -1016,7 +1082,6 @@ private:
                 if (oldRetExpr != nullptr)
                 {
                     inlineInfo->retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
-
                     GenTree* newRetExpr = inlineInfo->retExpr;
 
                     if (returnTemp != BAD_VAR_NUM)
@@ -1026,7 +1091,9 @@ private:
                     else
                     {
                         // We should always have a return temp if we return results by value
-                        assert(origCall->TypeGet() == TYP_VOID);
+                        // and that value is used.
+                        assert(origCall->TypeIs(TYP_VOID) || returnValueUnused);
+                        newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
                 }
@@ -1238,7 +1305,7 @@ private:
             // Rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRedirectTargetEdge(coldBlock, elseBlock);
+            compiler->fgRedirectEdge(coldBlock->TargetEdgeRef(), elseBlock);
 
             // Update the profile data
             //
@@ -1431,6 +1498,7 @@ private:
         unsigned   returnTemp;
         Statement* lastStmt;
         bool       checkFallsThrough;
+        bool       returnValueUnused;
 
         //------------------------------------------------------------------------
         // CreateTreeForLookup: Create a tree representing a lookup of a method address.

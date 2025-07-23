@@ -6,15 +6,22 @@
 
 namespace System.Net.ServerSentEvents
 {
+    public static partial class SseFormatter
+    {
+        public static System.Threading.Tasks.Task WriteAsync(System.Collections.Generic.IAsyncEnumerable<System.Net.ServerSentEvents.SseItem<string>> source, System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAsync<T>(System.Collections.Generic.IAsyncEnumerable<System.Net.ServerSentEvents.SseItem<T>> source, System.IO.Stream destination, System.Action<System.Net.ServerSentEvents.SseItem<T>, System.Buffers.IBufferWriter<byte>> itemFormatter, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
     public delegate T SseItemParser<out T>(string eventType, System.ReadOnlySpan<byte> data);
     public readonly partial struct SseItem<T>
     {
         private readonly T _Data_k__BackingField;
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public SseItem(T data, string eventType) { throw null; }
+        public SseItem(T data, string? eventType = null) { throw null; }
         public T Data { get { throw null; } }
+        public string? EventId { get { throw null; } init { } }
         public string EventType { get { throw null; } }
+        public System.TimeSpan? ReconnectionInterval { get { throw null; } init { } }
     }
     public static partial class SseParser
     {

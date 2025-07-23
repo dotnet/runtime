@@ -240,7 +240,12 @@ internal static partial class Interop
 
         internal static unsafe SafeTemporaryKeychainHandle CreateTemporaryKeychain()
         {
-            const int RandomSize = 256;
+            // Because we use the RNG to choose from 64 items, we only get 6 bits per byte of random.
+            // 128 * 6 is 768 bits of random, which undoubtedly vastly exceeds the space of the key
+            // it turns into, so it's plenty.
+            const int RandomSize = 128;
+            ReadOnlySpan<byte> choices = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@"u8;
+            Debug.Assert(int.IsPow2(choices.Length), $"Choice-set length {choices.Length} should be a power of 2 for perf");
 
             string tempPath = Path.GetTempPath();
             string tmpKeychainPath = Path.EndsInDirectorySeparator(tempPath) ?
@@ -248,24 +253,9 @@ internal static partial class Interop
                 $"{tempPath}{Path.DirectorySeparatorChar}{Guid.NewGuid():N}.keychain";
 
             // Use a random password so that if a keychain is abandoned it isn't recoverable.
-            // We use stack to minimize lingering
-            Span<byte> random = stackalloc byte[RandomSize];
-            RandomNumberGenerator.Fill(random);
-
-            // Create hex-like UTF8 string.
-            Span<byte> utf8Passphrase = stackalloc byte[RandomSize * 2 + 1];
-            utf8Passphrase[RandomSize * 2] = 0; // null termination for C string.
-
-            for (int i = 0; i < random.Length; i++)
-            {
-                // Instead of true hexadecimal, we simply take lower and upper 4 bits and we offset them from ASCII 'A'
-                // to get printable form. We dont use managed string to avoid lingering copies.
-                utf8Passphrase[i * 2] = (byte)((random[i] & 0x0F) + 65);
-                utf8Passphrase[i * 2 + 1] = (byte)((random[i] >> 4) & 0x0F + 65);
-            }
-
-            // clear the binary bits.
-            CryptographicOperations.ZeroMemory(random);
+            Span<byte> utf8Passphrase = stackalloc byte[RandomSize + 1];
+            utf8Passphrase[RandomSize] = 0; // null termination for C string.
+            RandomNumberGenerator.GetItems(choices, utf8Passphrase.Slice(0, RandomSize));
 
             SafeTemporaryKeychainHandle keychain;
             int osStatus;

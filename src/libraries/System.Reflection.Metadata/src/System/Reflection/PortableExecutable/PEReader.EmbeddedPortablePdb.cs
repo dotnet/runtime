@@ -31,7 +31,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentException"><paramref name="entry"/> is not a <see cref="DebugDirectoryEntryType.EmbeddedPortablePdb"/> entry.</exception>
         /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
-        public unsafe MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
+        public MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
         {
             if (entry.Type != DebugDirectoryEntryType.EmbeddedPortablePdb)
             {
@@ -90,7 +90,7 @@ namespace System.Reflection.PortableExecutable
             bool success = false;
             try
             {
-                var compressed = new ReadOnlyUnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
+                var compressed = new UnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
                 using var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
 
                 if (decompressedSize > 0)

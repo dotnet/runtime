@@ -47,6 +47,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyType")]
         internal static partial EvpAlgorithmId EvpPKeyType(SafeEvpPKeyHandle handle);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyFamily")]
+        internal static partial EvpAlgorithmFamilyId EvpPKeyFamily(SafeEvpPKeyHandle handle);
+
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(
             byte* buf,
@@ -326,6 +329,17 @@ internal static partial class Interop
             RSA = 6,
             DSA = 116,
             ECC = 408,
+        }
+
+        internal enum EvpAlgorithmFamilyId
+        {
+            Unknown = 0,
+            RSA = 1,
+            DSA = 2,
+            ECC = 3,
+            MLKem = 4,
+            SlhDsa = 5,
+            MLDsa = 6,
         }
     }
 }

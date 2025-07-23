@@ -95,5 +95,43 @@ namespace System.IO.Tests
             }
             Assert.False(File.Exists(path));
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PreallocationSizeVeryLargeThrowsCorrectHResult()
+        {
+            const long VeryLargeFileSize = (long)128 * 1024 * 1024 * 1024 * 1024; // 128TB
+
+            // The largest file size depends on cluster size.
+            // See https://learn.microsoft.com/en-us/windows-server/storage/file-server/ntfs-overview#support-for-large-volumes
+
+
+            const int ERROR_INVALID_PARAMETER = unchecked((int)0x80070057);
+            const int ERROR_DISK_FULL = unchecked((int)0x80070070);
+
+            string path = GetTestFilePath();
+            if (!IOServices.IsDriveNTFS(Path.GetPathRoot(path)))
+            {
+                // Skip the test for non-NTFS filesystems
+                return;
+            }
+
+            if (new DriveInfo(path).TotalFreeSpace >= VeryLargeFileSize)
+            {
+                // Skip the test if somehow the drive is really big.
+                return;
+            }
+
+            try
+            {
+                using (File.OpenHandle(path, mode: FileMode.Create, access: FileAccess.ReadWrite, preallocationSize: VeryLargeFileSize)) { }
+                Assert.Fail("File.OpenHandle should throw due to failure to preallocate a very large file.");
+            }
+            catch (IOException ex)
+            {
+                // Accept both results since we cannot assume the cluster size of testing volume
+                Assert.True(ex.HResult is ERROR_INVALID_PARAMETER or ERROR_DISK_FULL);
+            }
+        }
     }
 }

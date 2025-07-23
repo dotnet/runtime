@@ -26,8 +26,7 @@
     CALLEE_SAVED_REGISTER(S5) \
     CALLEE_SAVED_REGISTER(S6) \
     CALLEE_SAVED_REGISTER(S7) \
-    CALLEE_SAVED_REGISTER(S8) \
-    CALLEE_SAVED_REGISTER(Tp)
+    CALLEE_SAVED_REGISTER(S8)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(F[24]) \
@@ -122,7 +121,6 @@ struct CalleeSavedRegisters {
     INT64 s6;
     INT64 s7;
     INT64 s8;
-    INT64 tp;
 };
 
 //--------------------------------------------------------------------
@@ -231,6 +229,30 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->A0 = DWORD64(value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->A0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->A1 = DWORD64(value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->A1);
+}
+
 inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {
     TADDR mem;
@@ -256,7 +278,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     {
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return mem;
 }
 
@@ -340,21 +362,6 @@ struct IntReg
     WORD Mask() const { return 1 << reg; }
 };
 
-struct FloatReg
-{
-    int reg;
-    FloatReg(int reg):reg(reg)
-    {
-        _ASSERTE(0 <= reg && reg < 32);
-    }
-
-    operator int () { return reg; }
-    operator int () const { return reg; }
-    int operator == (FloatReg other) { return reg == other.reg; }
-    int operator != (FloatReg other) { return reg != other.reg; }
-    WORD Mask() const { return 1 << reg; }
-};
-
 struct VecReg
 {
     int reg;
@@ -379,7 +386,6 @@ class StubLinkerCPU : public StubLinker
 {
 
 private:
-    void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Rn, int offset, BOOL isVec);
     void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
@@ -406,9 +412,6 @@ public:
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-    void EmitNop() { Emit32(0x03400000); }
-    void EmitBreakPoint() { Emit32(0x002a0000); }
-
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
@@ -416,52 +419,15 @@ public:
     void EmitMovConstant(IntReg Rd, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
-    void EmitMovFloatReg(FloatReg Fd, FloatReg Fs);
 
-    void EmitSubImm(IntReg Rd, IntReg Rn, unsigned int value);
     void EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value);
 
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Rt1, IntReg Rt2, IntReg Rn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
-
     void EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int offset=0, int log2Size = 3);
-
-#if defined(TARGET_LOONGARCH64)
-    void EmitFloatLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset=0);
-#else
-    void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
-#endif
-    void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
 };
 
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 8
-
-struct DECLSPEC_ALIGN(16) UMEntryThunkCode
-{
-    DWORD        m_code[4];
-
-    TADDR       m_pTargetCode;
-    TADDR       m_pvSecretParam;
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)this;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-};
 
 struct HijackArgs
 {
@@ -471,7 +437,7 @@ struct HijackArgs
         DWORD64 Ra;
         size_t ReturnAddress;
     };
-    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8, Tp;
+    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8;
     union
     {
         struct {
@@ -491,47 +457,5 @@ struct HijackArgs
 };
 
 EXTERN_C VOID STDCALL PrecodeFixupThunk();
-
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 2;//2, for Type encoding.
-
-    UINT32  m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
 #endif // __cgencpu_h__

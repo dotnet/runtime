@@ -12,6 +12,7 @@ class DeadCodeElimination
     public static int Run()
     {
         SanityTest.Run();
+        Test110932Regression.Run();
         TestInstanceMethodOptimization.Run();
         TestReflectionInvokeSignatures.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
@@ -19,6 +20,7 @@ class DeadCodeElimination
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
         TestInlinedDeadBranchElimination.Run();
+        TestComplexInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeIs.Run();
@@ -31,6 +33,8 @@ class DeadCodeElimination
         TestUnmodifiableInstanceFieldOptimization.Run();
         TestGetMethodOptimization.Run();
         TestTypeOfCodegenBranchElimination.Run();
+        TestInvisibleGenericsTrimming.Run();
+        TestTypeHandlesInGenericDictionaries.Run();
 
         return 100;
     }
@@ -49,6 +53,34 @@ class DeadCodeElimination
                 throw new Exception();
 
             ThrowIfPresent(typeof(SanityTest), nameof(NotPresentType));
+        }
+    }
+
+    class Test110932Regression
+    {
+        static bool s_trueConst = true;
+        static bool s_falseConst = false;
+
+        interface I
+        {
+            static virtual bool GetValue() => false;
+        }
+
+        class C : I
+        {
+            static bool I.GetValue() => true;
+        }
+
+        public static void Run()
+        {
+            if (!Call<C>())
+                throw new Exception();
+        }
+        static bool Call<T>() where T : I
+        {
+            if (T.GetValue())
+                return s_trueConst;
+            return s_falseConst;
         }
     }
 
@@ -103,8 +135,13 @@ class DeadCodeElimination
 
             {
                 MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke2));
-                mi.Invoke(null, new object[1]);
+                var args = new object[1];
+                mi.Invoke(null, args);
                 ThrowIfNotPresent(typeof(TestReflectionInvokeSignatures), nameof(Allocated1));
+                if (args[0].GetType().Name != nameof(Allocated1))
+                    throw new Exception();
+                if (!args[0].ToString().Contains(nameof(Allocated1)))
+                    throw new Exception();
             }
         }
     }
@@ -281,6 +318,49 @@ class DeadCodeElimination
             }
 
             ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
+        }
+    }
+
+    class TestComplexInlinedDeadBranchElimination
+    {
+        class Log
+        {
+            public static Log Instance;
+
+            public bool IsEnabled => false;
+        }
+
+        class OperatingSystem
+        {
+            public static bool IsInterix => false;
+        }
+
+        public static bool CombinedCheck() => Log.Instance.IsEnabled || OperatingSystem.IsInterix;
+
+        class NeverReferenced1 { }
+
+        public static void Run()
+        {
+            bool didThrow = false;
+
+            // CombinedCheck is going to throw a NullRef but we still should have been able to deadcode
+            // the Log.Instance.IsEnabled call (this pattern is common in EventSources).
+            try
+            {
+                if (CombinedCheck())
+                {
+                    Activator.CreateInstance(typeof(NeverReferenced1));
+                }
+            }
+            catch (NullReferenceException)
+            {
+                didThrow = true;
+            }
+
+            if (!didThrow)
+                throw new Exception();
+
+            ThrowIfPresent(typeof(TestComplexInlinedDeadBranchElimination), nameof(NeverReferenced1));
         }
     }
 
@@ -1015,6 +1095,69 @@ class DeadCodeElimination
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static Type GetAtom1() => typeof(Atom1);
+        }
+    }
+
+    class TestInvisibleGenericsTrimming
+    {
+        class NotPresentType1<T>;
+        class NotPresentType2<T>;
+
+        class PresentType<T>;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsNotPresentType1(object o) => o is NotPresentType1<object>;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsNotPresentType2(object o) => o.GetType() == typeof(NotPresentType2<object>);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsPresentType(object o) => o.GetType() == typeof(PresentType<object>);
+
+        public static void Run()
+        {
+            IsNotPresentType1(new object());
+#if !DEBUG
+            ThrowIfPresent(typeof(TestInvisibleGenericsTrimming), "NotPresentType1`1");
+#endif
+
+            IsNotPresentType2(new object());
+#if !DEBUG
+            ThrowIfPresent(typeof(TestInvisibleGenericsTrimming), "NotPresentType2`1");
+#endif
+
+            IsPresentType(new PresentType<object>());
+            ThrowIfNotPresent(typeof(TestInvisibleGenericsTrimming), "PresentType`1");
+        }
+    }
+
+    class TestTypeHandlesInGenericDictionaries
+    {
+        class InvisibleType1;
+        class InvisibleType2;
+        class VisibleType1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void GenericMethod<T, U, V>(object o, string expectedNameOfV)
+        {
+            if (o is T)
+                Console.WriteLine("Yes");
+
+            if (o.GetType() == typeof(U))
+                Console.WriteLine("Yes");
+
+            if (typeof(V).Name != expectedNameOfV)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            GenericMethod<InvisibleType1, InvisibleType2, VisibleType1>(new object(), nameof(VisibleType1));
+
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType1));
+#if !DEBUG
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType2));
+#endif
         }
     }
 

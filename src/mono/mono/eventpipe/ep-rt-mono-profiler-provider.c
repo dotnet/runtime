@@ -2929,7 +2929,7 @@ eventpipe_provider_callback (
 			mono_profiler_set_thread_name_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (_mono_profiler_provider_callspec.enabled) {
+		if (!_mono_profiler_provider_callspec.enabled) {
 			if (is_keword_enabled(live_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
 				mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
 			} else {
@@ -3012,6 +3012,8 @@ ep_rt_mono_profiler_provider_component_init (void)
 	if (_mono_profiler_provider_enabled) {
 		_mono_profiler_provider = mono_profiler_create (NULL);
 		_mono_heap_dump_profiler_provider = mono_profiler_create (NULL);
+		if (_mono_profiler_provider && _mono_profiler_provider_callspec.enabled)
+			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
 	}
 }
 
@@ -3172,8 +3174,6 @@ ep_rt_mono_profiler_provider_parse_options (const char *options)
 			mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing '%s': %s", options, errstr);
 			g_free (errstr);
 			mono_callspec_cleanup (&_mono_profiler_provider_callspec);
-		} else {
-			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
 		}
 		return true;
 	} else {

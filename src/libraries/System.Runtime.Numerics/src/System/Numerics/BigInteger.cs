@@ -384,7 +384,7 @@ namespace System.Numerics
                     // The bytes parameter is in little-endian byte order.
                     // We can just copy the bytes directly into the uint array.
 
-                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val));
+                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val.AsSpan()));
                 }
 
                 // In both of the above cases on big-endian architecture, we need to perform
@@ -511,15 +511,22 @@ namespace System.Numerics
             {
                 this = default;
             }
-            else if (value.Length == 1 && value[0] < kuMaskHighBit)
+            else if (value.Length == 1)
             {
-                // Values like (Int32.MaxValue+1) are stored as "0x80000000" and as such cannot be packed into _sign
-                _sign = negative ? -(int)value[0] : (int)value[0];
-                _bits = null;
-                if (_sign == int.MinValue)
+                if (value[0] < kuMaskHighBit)
+                {
+                    _sign = negative ? -(int)value[0] : (int)value[0];
+                    _bits = null;
+                }
+                else if (negative && value[0] == kuMaskHighBit)
                 {
                     // Although Int32.MinValue fits in _sign, we represent this case differently for negate
                     this = s_bnMinInt;
+                }
+                else
+                {
+                    _sign = negative ? -1 : +1;
+                    _bits = [value[0]];
                 }
             }
             else
@@ -544,9 +551,9 @@ namespace System.Numerics
                 isNegative = true;
                 length = value.LastIndexOfAnyExcept(uint.MaxValue) + 1;
 
-                if ((length == 0) || ((int)value[length - 1] > 0))
+                if ((length == 0) || ((int)value[length - 1] >= 0))
                 {
-                    // We ne need to preserve the sign bit
+                    // We need to preserve the sign bit
                     length++;
                 }
                 Debug.Assert((int)value[length - 1] < 0);
@@ -1438,33 +1445,60 @@ namespace System.Numerics
                     break;
             }
 
-            int curByte = isBigEndian ? length - 1 : 0;
+            int curByte = isBigEndian ? length : 0;
             int increment = isBigEndian ? -1 : 1;
 
             if (bits != null)
             {
-                for (int i = 0; i < bits.Length - 1; i++)
+                if (BitConverter.IsLittleEndian && sign > 0)
                 {
-                    uint dword = bits[i];
+                    ReadOnlySpan<byte> srcBytes = MemoryMarshal.AsBytes(bits.AsSpan(..^1));
 
-                    if (sign == -1)
+                    if (isBigEndian)
                     {
-                        dword = ~dword;
-                        if (i <= nonZeroDwordIndex)
+                        curByte = length - srcBytes.Length;
+                        Span<byte> destBytes = destination.Slice(curByte, srcBytes.Length);
+                        srcBytes.CopyTo(destBytes);
+                        destBytes.Reverse();
+                    }
+                    else
+                    {
+                        srcBytes.CopyTo(destination);
+                        curByte = srcBytes.Length;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < bits.Length - 1; i++)
+                    {
+                        uint dword = bits[i];
+
+                        if (sign == -1)
                         {
-                            dword = unchecked(dword + 1U);
+                            dword = ~dword;
+                            if (i <= nonZeroDwordIndex)
+                            {
+                                dword = unchecked(dword + 1U);
+                            }
+                        }
+
+                        if (isBigEndian)
+                        {
+                            curByte -= 4;
+                            BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(curByte), dword);
+                        }
+                        else
+                        {
+                            BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(curByte), dword);
+                            curByte += 4;
                         }
                     }
-
-                    destination[curByte] = unchecked((byte)dword);
-                    curByte += increment;
-                    destination[curByte] = unchecked((byte)(dword >> 8));
-                    curByte += increment;
-                    destination[curByte] = unchecked((byte)(dword >> 16));
-                    curByte += increment;
-                    destination[curByte] = unchecked((byte)(dword >> 24));
-                    curByte += increment;
                 }
+            }
+
+            if (isBigEndian)
+            {
+                curByte--;
             }
 
             Debug.Assert(msbIndex >= 0 && msbIndex <= 3);
@@ -1694,7 +1728,7 @@ namespace System.Numerics
             }
 
             if (bitsFromPool != null)
-                    ArrayPool<uint>.Shared.Return(bitsFromPool);
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
 
             return result;
         }
@@ -2629,7 +2663,7 @@ namespace System.Numerics
 
             if (zdFromPool != null)
                 ArrayPool<uint>.Shared.Return(zdFromPool);
-        exit:
+            exit:
             if (xdFromPool != null)
                 ArrayPool<uint>.Shared.Return(xdFromPool);
 
@@ -3232,7 +3266,27 @@ namespace System.Numerics
         public static BigInteger RotateLeft(BigInteger value, int rotateAmount)
         {
             value.AssertValid();
-            int byteCount = (value._bits is null) ? sizeof(int) : (value._bits.Length * 4);
+
+            bool negx = value._sign < 0;
+            uint smallBits = NumericsHelpers.Abs(value._sign);
+            scoped ReadOnlySpan<uint> bits = value._bits;
+            if (bits.IsEmpty)
+            {
+                bits = new ReadOnlySpan<uint>(in smallBits);
+            }
+
+            int xl = bits.Length;
+            if (negx && (bits[^1] >= kuMaskHighBit) && ((bits[^1] != kuMaskHighBit) || bits.IndexOfAnyExcept(0u) != (bits.Length - 1)))
+            {
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
+                ++xl;
+            }
+
+            int byteCount = xl * 4;
 
             // Normalize the rotate amount to drop full rotations
             rotateAmount = (int)(rotateAmount % (byteCount * 8L));
@@ -3249,14 +3303,13 @@ namespace System.Numerics
             (int digitShift, int smallShift) = Math.DivRem(rotateAmount, kcbitUint);
 
             uint[]? xdFromPool = null;
-            int xl = value._bits?.Length ?? 1;
-
             Span<uint> xd = (xl <= BigIntegerCalculator.StackAllocThreshold)
                           ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                           : xdFromPool = ArrayPool<uint>.Shared.Rent(xl);
             xd = xd.Slice(0, xl);
+            xd[^1] = 0;
 
-            bool negx = value.GetPartsForBitManipulation(xd);
+            bits.CopyTo(xd);
 
             int zl = xl;
             uint[]? zdFromPool = null;
@@ -3367,7 +3420,28 @@ namespace System.Numerics
         public static BigInteger RotateRight(BigInteger value, int rotateAmount)
         {
             value.AssertValid();
-            int byteCount = (value._bits is null) ? sizeof(int) : (value._bits.Length * 4);
+
+
+            bool negx = value._sign < 0;
+            uint smallBits = NumericsHelpers.Abs(value._sign);
+            scoped ReadOnlySpan<uint> bits = value._bits;
+            if (bits.IsEmpty)
+            {
+                bits = new ReadOnlySpan<uint>(in smallBits);
+            }
+
+            int xl = bits.Length;
+            if (negx && (bits[^1] >= kuMaskHighBit) && ((bits[^1] != kuMaskHighBit) || bits.IndexOfAnyExcept(0u) != (bits.Length - 1)))
+            {
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
+                ++xl;
+            }
+
+            int byteCount = xl * 4;
 
             // Normalize the rotate amount to drop full rotations
             rotateAmount = (int)(rotateAmount % (byteCount * 8L));
@@ -3384,14 +3458,13 @@ namespace System.Numerics
             (int digitShift, int smallShift) = Math.DivRem(rotateAmount, kcbitUint);
 
             uint[]? xdFromPool = null;
-            int xl = value._bits?.Length ?? 1;
-
             Span<uint> xd = (xl <= BigIntegerCalculator.StackAllocThreshold)
                           ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                           : xdFromPool = ArrayPool<uint>.Shared.Rent(xl);
             xd = xd.Slice(0, xl);
+            xd[^1] = 0;
 
-            bool negx = value.GetPartsForBitManipulation(xd);
+            bits.CopyTo(xd);
 
             int zl = xl;
             uint[]? zdFromPool = null;
@@ -3438,19 +3511,12 @@ namespace System.Numerics
             {
                 int carryShift = kcbitUint - smallShift;
 
-                int dstIndex = 0;
-                int srcIndex = digitShift;
+                int dstIndex = xd.Length - 1;
+                int srcIndex = digitShift == 0
+                    ? xd.Length - 1
+                    : digitShift - 1;
 
-                uint carry = 0;
-
-                if (digitShift == 0)
-                {
-                    carry = xd[^1] << carryShift;
-                }
-                else
-                {
-                    carry = xd[srcIndex - 1] << carryShift;
-                }
+                uint carry = xd[digitShift] << carryShift;
 
                 do
                 {
@@ -3459,22 +3525,22 @@ namespace System.Numerics
                     zd[dstIndex] = (part >> smallShift) | carry;
                     carry = part << carryShift;
 
-                    dstIndex++;
-                    srcIndex++;
+                    dstIndex--;
+                    srcIndex--;
                 }
-                while (srcIndex < xd.Length);
+                while ((uint)srcIndex < (uint)xd.Length); // is equivalent to (srcIndex >= 0 && srcIndex < xd.Length)
 
-                srcIndex = 0;
+                srcIndex = xd.Length - 1;
 
-                while (dstIndex < zd.Length)
+                while ((uint)dstIndex < (uint)zd.Length) // is equivalent to (dstIndex >= 0 && dstIndex < zd.Length)
                 {
                     uint part = xd[srcIndex];
 
                     zd[dstIndex] = (part >> smallShift) | carry;
                     carry = part << carryShift;
 
-                    dstIndex++;
-                    srcIndex++;
+                    dstIndex--;
+                    srcIndex--;
                 }
             }
 
@@ -5232,13 +5298,32 @@ namespace System.Numerics
 
             BigInteger result;
 
+            bool negx = value._sign < 0;
+            uint smallBits = NumericsHelpers.Abs(value._sign);
+            scoped ReadOnlySpan<uint> bits = value._bits;
+            if (bits.IsEmpty)
+            {
+                bits = new ReadOnlySpan<uint>(in smallBits);
+            }
+
+            int xl = bits.Length;
+            if (negx && (bits[^1] >= kuMaskHighBit) && ((bits[^1] != kuMaskHighBit) || bits.IndexOfAnyExcept(0u) != (bits.Length - 1)))
+            {
+                // For a shift of N x 32 bit,
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
+                ++xl;
+            }
+
             uint[]? xdFromPool = null;
-            int xl = value._bits?.Length ?? 1;
             Span<uint> xd = (xl <= BigIntegerCalculator.StackAllocThreshold
                           ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                           : xdFromPool = ArrayPool<uint>.Shared.Rent(xl)).Slice(0, xl);
-
-            bool negx = value.GetPartsForBitManipulation(xd);
+            xd[^1] = 0;
+            bits.CopyTo(xd);
 
             if (negx)
             {

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
@@ -70,10 +71,12 @@ internal sealed unsafe partial class MsQuicApi
     internal static bool Tls13ClientMayBeDisabled { get; }
 
 #pragma warning disable CA1810 // Initialize all static fields in 'MsQuicApi' when those fields are declared and remove the explicit static constructor
+    [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        Justification = "The code handles the Assembly.Location being null/empty by falling back to AppContext.BaseDirectory")]
     static MsQuicApi()
     {
         bool loaded = false;
-        IntPtr msQuicHandle;
+        IntPtr msQuicHandle = IntPtr.Zero;
         Version = default;
 
         // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
@@ -89,8 +92,21 @@ internal sealed unsafe partial class MsQuicApi
 
         if (OperatingSystem.IsWindows())
         {
-            // Windows ships msquic in the assembly directory.
-            loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
+            // Windows ships msquic in the assembly directory next to System.Net.Quic, so load that.
+            // For single-file deployments, the assembly location is an empty string so we fall back
+            // to AppContext.BaseDirectory which is the directory containing the single-file executable.
+            string path = !ShouldUseAppLocalMsQuic() && typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation)
+                ? System.IO.Path.GetDirectoryName(assemblyLocation)!
+                : AppContext.BaseDirectory;
+
+            path = System.IO.Path.Combine(path, Interop.Libraries.MsQuic);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(null, $"Attempting to load MsQuic from {path}");
+            }
+
+            loaded = NativeLibrary.TryLoad(path, typeof(MsQuicApi).Assembly, DllImportSearchPath.LegacyBehavior, out msQuicHandle);
         }
         else
         {
@@ -263,4 +279,7 @@ internal sealed unsafe partial class MsQuicApi
 #endif
         return false;
     }
+
+    private static bool ShouldUseAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig(
+        "System.Net.Quic.AppLocalMsQuic");
 }

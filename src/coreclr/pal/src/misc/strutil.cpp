@@ -18,7 +18,6 @@ Abstract:
 
 #include "pal/corunix.hpp"
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
 #include "pal/dbgmsg.h"
 
 SET_DEFAULT_DEBUG_CHANNEL(PAL);

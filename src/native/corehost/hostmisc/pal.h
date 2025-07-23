@@ -6,7 +6,6 @@
 
 #include <string>
 #include <vector>
-#include <fstream>
 #include <sstream>
 #include <iostream>
 #include <cstring>
@@ -118,14 +117,6 @@ namespace pal
     typedef wchar_t char_t;
     typedef std::wstring string_t;
     typedef std::wstringstream stringstream_t;
-    // TODO: Agree on the correct encoding of the files: The PoR for now is to
-    // temporarily wchar for Windows and char for Unix. Current implementation
-    // implicitly expects the contents on both Windows and Unix as char and
-    // converts them to wchar in code for Windows. This line should become:
-    // typedef std::basic_ifstream<char_t> ifstream_t.
-    typedef std::basic_ifstream<char> ifstream_t;
-    typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
-    typedef std::basic_istream<char> istream_t;
     typedef HRESULT hresult_t;
     typedef HMODULE dll_t;
     typedef FARPROC proc_t;
@@ -183,7 +174,16 @@ namespace pal
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
 
-    inline bool mkdir(const char_t* dir, int mode) { return CreateDirectoryW(dir, NULL) != 0; }
+    inline bool mkdir(const char_t* dir, int mode, int& error_code)
+    {
+        BOOL result = ::CreateDirectoryW(dir, NULL);
+        if (result != FALSE)
+            return true;
+
+        error_code = ::GetLastError();
+        return false;
+    }
+
     inline bool rmdir(const char_t* path) { return RemoveDirectoryW(path) != 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::_wremove(path); }
@@ -207,9 +207,6 @@ namespace pal
     typedef char char_t;
     typedef std::string string_t;
     typedef std::stringstream stringstream_t;
-    typedef std::basic_ifstream<char> ifstream_t;
-    typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
-    typedef std::basic_istream<char> istream_t;
     typedef int hresult_t;
     typedef void* dll_t;
     typedef void* proc_t;
@@ -249,7 +246,16 @@ namespace pal
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
 
-    inline bool mkdir(const char_t* dir, int mode) { return ::mkdir(dir, mode) == 0; }
+    inline bool mkdir(const char_t* dir, int mode, int& error_code)
+    {
+        int ret = ::mkdir(dir, mode);
+        if (ret == 0)
+            return true;
+
+        error_code = errno;
+        return false;
+    }
+
     inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::remove(path); }
@@ -286,6 +292,7 @@ namespace pal
     // Fullpath resolves a fully-qualified path to the target. It may resolve through symlinks, depending on platform.
     bool fullpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
+    bool is_directory(const pal::string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
     void readdir(const string_t& path, const string_t& pattern, std::vector<string_t>* list);
     void readdir(const string_t& path, std::vector<string_t>* list);
@@ -335,6 +342,7 @@ namespace pal
 
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
+    bool is_path_fully_qualified(const string_t& path);
 
     // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.

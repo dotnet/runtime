@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: DacDbiImpl.cpp
 //
-
-//
 // Implement DAC/DBI interface
-//
 //*****************************************************************************
-
 
 #include "stdafx.h"
 
@@ -59,7 +56,7 @@
 
 
 
-// Global allocator for DD. Access is protected under the g_dacCritSec lock.
+// Global allocator for DD. Access is protected under the g_dacMutex lock.
 IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 
 //---------------------------------------------------------------------------------------
@@ -362,7 +359,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
     const ReflectionModule * pReflectionModule,
     bool fThrowEx)
 {
-    // Since this is called from an existing DAC-primitive, we already hold the g_dacCritSec lock.
+    // Since this is called from an existing DAC-primitive, we already hold the g_dacMutex lock.
     // The lock conveniently protects our cache.
     SUPPORTS_DAC;
 
@@ -392,19 +389,13 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
 
     // Go to DBI to find the metadata.
     IMDInternalImport * pInternal = NULL;
-    bool isILMetaDataForNI = false;
     EX_TRY
     {
-        // If test needs it in the future, prop isILMetaDataForNI back up to
-        // ClrDataAccess.m_mdImports.Add() call.
-        // example in code:ClrDataAccess::GetMDImport
-        // CordbModule::GetMetaDataInterface also looks up MetaData and would need attention.
-
         // This is the new codepath that uses ICorDebugMetaDataLookup.
         // To get the old codepath that uses the v2 metadata lookup methods,
         // you'd have to load DAC only and then you'll get ClrDataAccess's implementation
         // of this function.
-        pInternal = pLookup->LookupMetaData(vmPEAssembly, isILMetaDataForNI);
+        pInternal = pLookup->LookupMetaData(vmPEAssembly);
     }
     EX_CATCH
     {
@@ -417,7 +408,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (pInternal == NULL)
     {
@@ -673,8 +664,7 @@ void DacDbiInterfaceImpl::GetCompilerFlags (
 
     // Get the underlying module - none of this is AppDomain specific
     Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
-    DWORD dwBits = pModule->GetDebuggerInfoBits();
-    *pfAllowJITOpts = !CORDisableJITOptimizations(dwBits);
+    *pfAllowJITOpts = !pModule->AreJITOptimizationsDisabled();
     *pfEnableEnC = pModule->IsEditAndContinueEnabled();
 
 
@@ -878,6 +868,7 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
                                                 InfoStoreNew, NULL, // allocator
+                                                BoundsType::Instrumented,
                                                 NULL, NULL,
                                                 &entryCount, &nativeVars);
 
@@ -889,76 +880,6 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
 } // GetNativeVarData
 
 
-//-----------------------------------------------------------------------------
-// Given a instrumented IL map from the profiler that maps:
-//   Original offset IL_A -> Instrumentend offset IL_B
-// And a native mapping from the JIT that maps:
-//   Instrumented offset IL_B -> native offset Native_C
-// This function merges the two maps and stores the result back into the nativeMap.
-// The nativeMap now maps:
-//   Original offset IL_A -> native offset Native_C
-// pEntryCount is the number of valid entries in nativeMap, and it may be adjusted downwards
-// as part of the composition.
-//-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount)
-{
-    // Translate the IL offset if the profiler has provided us with a mapping.
-    // The ICD public API should always expose the original IL offsets, but GetBoundaries()
-    // directly accesses the debug info, which stores the instrumented IL offsets.
-
-    ULONG32 entryCount = *pEntryCount;
-    // The map pointer could be NULL or there could be no entries in the map, in either case no work to do
-    if (pProfilerILMap && !pProfilerILMap->IsNull())
-    {
-        // If we did instrument, then we can't have any sequence points that
-        // are "in-between" the old-->new map that the profiler gave us.
-        // Ex, if map is:
-        // (6 old -> 36 new)
-        // (8 old -> 50 new)
-        // And the jit gives us an entry for 44 new, that will map back to 6 old.
-        // Since the map can only have one entry for 6 old, we remove 44 new.
-
-        // First Pass: invalidate all the duplicate entries by setting their IL offset to MAX_ILNUM
-        ULONG32 cDuplicate = 0;
-        ULONG32 prevILOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
-        for (ULONG32 i = 0; i < entryCount; i++)
-        {
-            ULONG32 origILOffset = TranslateInstrumentedILOffsetToOriginal(nativeMap[i].ilOffset, pProfilerILMap);
-
-            if (origILOffset == prevILOffset)
-            {
-                // mark this sequence point as invalid; refer to the comment above
-                nativeMap[i].ilOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
-                cDuplicate += 1;
-            }
-            else
-            {
-                // overwrite the instrumented IL offset with the original IL offset
-                nativeMap[i].ilOffset = origILOffset;
-                prevILOffset = origILOffset;
-            }
-        }
-
-        // Second Pass: move all the valid entries up front
-        ULONG32 realIndex = 0;
-        for (ULONG32 curIndex = 0; curIndex < entryCount; curIndex++)
-        {
-            if (nativeMap[curIndex].ilOffset != (ULONG32)(ICorDebugInfo::MAX_ILNUM))
-            {
-                // This is a valid entry.  Move it up front.
-                nativeMap[realIndex] = nativeMap[curIndex];
-                realIndex += 1;
-            }
-        }
-
-        // make sure we have done the bookkeeping correctly
-        _ASSERTE((realIndex + cDuplicate) == entryCount);
-
-        // Final Pass: derecement entryCount
-        entryCount -= cDuplicate;
-        *pEntryCount = entryCount;
-    }
-}
 
 
 //-----------------------------------------------------------------------------
@@ -993,37 +914,13 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 
     ULONG32 entryCount;
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                      InfoStoreNew, NULL, // allocator
+                                                      InfoStoreNew, 
+                                                      NULL, // allocator
+                                                      BoundsType::Uninstrumented,
                                                       &entryCount, &mapCopy,
                                                       NULL, NULL);
     if (!success)
         ThrowHR(E_FAIL);
-
-#ifdef FEATURE_REJIT
-    CodeVersionManager * pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
-    ILCodeVersion ilVersion;
-    NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(dac_cast<PTR_MethodDesc>(pMethodDesc), (PCODE)startAddr);
-    if (!nativeCodeVersion.IsNull())
-    {
-        ilVersion = nativeCodeVersion.GetILCodeVersion();
-    }
-
-    // if there is a rejit IL map for this function, apply that in preference to load-time mapping
-    if (!ilVersion.IsNull() && !ilVersion.IsDefaultVersion())
-    {
-        const InstrumentedILOffsetMapping * pRejitMapping = ilVersion.GetInstrumentedILMap();
-        ComposeMapping(pRejitMapping, mapCopy, &entryCount);
-    }
-    else
-    {
-#endif
-        // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
-        InstrumentedILOffsetMapping loadTimeMapping =
-            pMethodDesc->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(pMethodDesc->GetMemberDef());
-        ComposeMapping(&loadTimeMapping, mapCopy, &entryCount);
-#ifdef FEATURE_REJIT
-    }
-#endif
 
     pSeqPoints->InitSequencePoints(entryCount);
 
@@ -1033,46 +930,6 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
     pSeqPoints->CopyAndSortSequencePoints(mapCopy);
 
 } // GetSequencePoints
-
-// ----------------------------------------------------------------------------
-// DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal
-//
-// Description:
-//    Helper function to convert an instrumented IL offset to the corresponding original IL offset.
-//
-// Arguments:
-//    * ilOffset - offset to be translated
-//    * pMapping - the profiler-provided mapping between original IL offsets and instrumented IL offsets
-//
-// Return Value:
-//    Return the translated offset.
-//
-
-ULONG DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
-                                                                   const InstrumentedILOffsetMapping * pMapping)
-{
-    SIZE_T               cMap  = pMapping->GetCount();
-    ARRAY_PTR_COR_IL_MAP rgMap = pMapping->GetOffsets();
-
-    _ASSERTE((cMap == 0) == (rgMap == NULL));
-
-    // Early out if there is no mapping, or if we are dealing with a special IL offset such as
-    // prolog, epilog, etc.
-    if ((cMap == 0) || ((int)ilOffset < 0))
-    {
-        return ilOffset;
-    }
-
-    SIZE_T i = 0;
-    for (i = 1; i < cMap; i++)
-    {
-        if (ilOffset < rgMap[i].newOffset)
-        {
-            return rgMap[i - 1].oldOffset;
-        }
-    }
-    return rgMap[i - 1].oldOffset;
-}
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function Data
@@ -1225,7 +1082,6 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                                         DWORD &dwTimeStamp,
                                                         DWORD &dwSize,
-                                                        bool  &isNGEN,
                                                         IStringHolder* pStrFilename)
 {
     DD_ENTER_MAY_THROW;
@@ -1244,23 +1100,11 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAss
                                                             dwSize,
                                                             dwDataSize,
                                                             dwRvaHint,
-                                                            isNGEN,
                                                             wszFilePath,
                                                             cchFilePath);
 
     pStrFilename->AssignCopy(wszFilePath);
     return ret;
-}
-
-
-bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
-                                                       DWORD &dwTimeStamp,
-                                                       DWORD &dwSize,
-                                                       IStringHolder* pStrFilename)
-{
-
-    return false;
-
 }
 
 // Get start addresses and sizes for hot and cold regions for a native code blob.
@@ -1599,8 +1443,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
             if (pFD->IsRVA())
             {
                 // RVA statics are relative to a base module address
-                DWORD offset = pFD->GetOffset();
-                PTR_VOID addr = pFD->GetModule()->GetRvaField(offset);
+                PTR_VOID addr = pFD->GetStaticAddressHandle(NULL);
                 if (pCurrentFieldData->OkToGetOrSetStaticAddress())
                 {
                     pCurrentFieldData->SetStaticAddress(PTR_TO_TADDR(addr));
@@ -3563,7 +3406,9 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
     if (pVcsMgr)
     {
         if (pVcsMgr->indcell_heap != NULL) heapsToEnumerate.Push(pVcsMgr->indcell_heap);
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
         if (pVcsMgr->cache_entry_heap != NULL) heapsToEnumerate.Push(pVcsMgr->cache_entry_heap);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
     }
 
     TADDR rangeAccumAsTaddr = TO_TADDR(rangeAcummulator);
@@ -3578,9 +3423,9 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_
 {
     // We should always have a valid EEJitManager with at least one code heap.
     EEJitManager *pEM = ExecutionManager::GetEEJitManager();
-    _ASSERTE(pEM != NULL && pEM->m_pCodeHeap.IsValid());
+    _ASSERTE(pEM != NULL && pEM->m_pAllCodeHeaps.IsValid());
 
-    PTR_HeapList pHeapList = pEM->m_pCodeHeap;
+    PTR_HeapList pHeapList = pEM->m_pAllCodeHeaps;
     while (pHeapList != NULL)
     {
         CodeHeap *pHeap = pHeapList->pHeap;
@@ -4119,17 +3964,6 @@ BOOL DacDbiInterfaceImpl::GetModulePath(VMPTR_Module vmModule,
 
 NoFileName:
     // no filename
-    IfFailThrow(pStrFilename->AssignCopy(W("")));
-    return FALSE;
-}
-
-// Get the full path and file name to the ngen image for the module (if any).
-BOOL DacDbiInterfaceImpl::GetModuleNGenPath(VMPTR_Module vmModule,
-                                            IStringHolder *  pStrFilename)
-{
-    DD_ENTER_MAY_THROW;
-
-    // no ngen filename
     IfFailThrow(pStrFilename->AssignCopy(W("")));
     return FALSE;
 }
@@ -4889,14 +4723,12 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetCurrentCustomDebuggerNotification(VMP
     return vmObjHandle;
 }
 
-// Return the current appdomain the specified thread is in.
-VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
+// Return the current appdomain.
+VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain()
 {
     DD_ENTER_MAY_THROW;
 
-    Thread *    pThread    = vmThread.GetDacPtr();
     AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
-
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
     return vmAppDomain;
@@ -5131,9 +4963,21 @@ void DacDbiInterfaceImpl::Hijack(
     // Setup context for hijack
     //
     T_CONTEXT ctx;
+#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS) && (defined(DTCONTEXT_IS_AMD64) || defined(DTCONTEXT_IS_ARM64))
+    // If the host or target is not Windows, then we can assume that the DT_CONTEXT
+    // is the same as the T_CONTEXT, except for the XSTATE registers.
+    static_assert(sizeof(DT_CONTEXT) == offsetof(T_CONTEXT, XStateFeaturesMask), "DT_CONTEXT does not include the XSTATE registers");
+#else
+    // Since Dac + DBI are tightly coupled, context sizes should be the same.
+    static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
+#endif
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
-        CONTEXT_FULL,
+        CONTEXT_FULL | CONTEXT_FLOATING_POINT
+#ifdef CONTEXT_EXTENDED_REGISTERS
+        | CONTEXT_EXTENDED_REGISTERS
+#endif
+        ,
         sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
@@ -5170,9 +5014,9 @@ void DacDbiInterfaceImpl::Hijack(
     CORDB_ADDRESS esp = GetSP(&ctx);
 
     //
-    // Find out where the OS exception dispatcher has pushed the EXCEPTION_RECORD and CONTEXT. The ExInfo and
-    // ExceptionTracker have pointers to these data structures, but when we get the unhandled exception
-    // notification, the OS exception dispatcher is no longer on the stack, so these pointers are no longer
+    // Find out where the OS exception dispatcher has pushed the EXCEPTION_RECORD and CONTEXT. The ExInfo
+    // has pointers to these data structures, but when we get the unhandled exception notification,
+    // the OS exception dispatcher is no longer on the stack, so these pointers are no longer
     // valid.  We need to either update these pointers in the ExInfo/ExcepionTracker, or reuse the stack
     // space used by the OS exception dispatcher.  We are using the latter approach here.
     //
@@ -5187,8 +5031,8 @@ void DacDbiInterfaceImpl::Hijack(
         // The managed exception may not be related to the unhandled exception for which we are trying to
         // hijack.  An example would be when a thread hits a managed exception, VS tries to do func eval on
         // the thread, but the func eval causes an unhandled exception (e.g. AV in mscorwks.dll).  In this
-        // case, the pointers stored on the ExInfo/ExceptionTracker are closer to the root than the current
-        // SP of the thread.  The check below makes sure we don't reuse the pointers in this case.
+        // case, the pointers stored on the ExInfo are closer to the root than the current SP of the thread.
+        // The check below makes sure we don't reuse the pointers in this case.
         if (espOSContext < esp)
         {
             SafeWriteStructOrThrow(espOSContext, &ctx);
@@ -5454,29 +5298,21 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
     BOOL fIsGCSafe = FALSE;
     Thread * pThread = vmThread.GetDacPtr();
 
-    // Check if the runtime has entered "Shutdown for Finalizer" mode.
-    if ((g_fEEShutDown & ShutDown_Finalize2) != 0)
+    T_CONTEXT ctx;
+    REGDISPLAY rd;
+    SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
+
+    ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
+
+    StackFrameIterator iter;
+    iter.Init(pThread, pThread->GetFrame(), &rd, flags);
+
+    CrawlFrame * pCF = &(iter.m_crawl);
+    if (pCF->IsFrameless() && pCF->IsActiveFunc())
     {
-        fIsGCSafe = TRUE;
-    }
-    else
-    {
-        T_CONTEXT ctx;
-        REGDISPLAY rd;
-        SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
-
-        ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
-
-        StackFrameIterator iter;
-        iter.Init(pThread, pThread->GetFrame(), &rd, flags);
-
-        CrawlFrame * pCF = &(iter.m_crawl);
-        if (pCF->IsFrameless() && pCF->IsActiveFunc())
+        if (pCF->IsGcSafe())
         {
-            if (pCF->IsGcSafe())
-            {
-                fIsGCSafe = TRUE;
-            }
+            fIsGCSafe = TRUE;
         }
     }
 
@@ -5670,7 +5506,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
 
             // Going through thread Frames and looking for first (deepest one) one that
             // that has context available for stackwalking (SP and PC)
-            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, CLRToCOMMethodFrame
+            // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame, CLRToCOMMethodFrame
             Frame *frame = pThread->GetFrame();
             while (frame != NULL && frame != FRAME_TOP)
             {
@@ -5679,7 +5515,12 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
                 {
                     UpdateContextFromRegDisp(&tmpRd, &tmpContext);
                     CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
-                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL;
+                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
+                                                | DT_CONTEXT_INTEGER  // DT_CONTEXT_INTEGER is needed to include the frame register on ARM32 and AMD64 architectures
+                                                                      // DT_CONTEXT_CONTROL already includes the frame register for X86 and ARM64 architectures
+#endif
+                    ;
                     return;
                 }
                 frame = frame->Next();
@@ -5783,7 +5624,7 @@ BOOL DacDbiInterfaceImpl::IsVmObjectHandleValid(VMPTR_OBJECTHANDLE vmHandle)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return ret;
 }
@@ -5869,7 +5710,7 @@ HRESULT DacDbiInterfaceImpl::FastSanityCheckObject(PTR_Object objPtr)
         LOG((LF_CORDB, LL_INFO10000, "GOI: exception indicated ref is bad.\n"));
         hr = E_INVALIDARG;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }   // DacDbiInterfaceImpl::FastSanityCheckObject
@@ -6416,7 +6257,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
     {
         ret = false;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return ret;
 }
@@ -6518,10 +6359,11 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        if ((&g_global_alloc_context)->alloc_ptr != nullptr)
+        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
+        if (globalCtx.alloc_ptr != nullptr)
         {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_limit;
+            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
+            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
         }
 
         mThreadCount = j;
@@ -6978,7 +6820,7 @@ bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
         {
             isValid = false;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return isValid;
@@ -7313,11 +7155,11 @@ HRESULT DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(VMPTR_Module vmModu
     // Be careful, there are two different definitions of 'active' being used here
     // For the CodeVersionManager, the active IL version is whatever one should be used in the next invocation of the method
     // 'rejit active' narrows that to only include rejit IL bodies where the profiler has already provided the definition
-    // for the new IL (ilCodeVersion.GetRejitState()==ILCodeVersion::kStateActive). It is possible that the code version
+    // for the new IL (ilCodeVersion.GetRejitState()==RejitFlags::kStateActive). It is possible that the code version
     // manager's active IL version hasn't yet asked the profiler for the IL body to use, in which case we want to filter it
     //  out from the return in this method.
     ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
-    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != ILCodeVersion::kStateActive)
+    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7419,7 +7261,7 @@ HRESULT DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vm
     DD_ENTER_MAY_THROW;
 #ifdef FEATURE_REJIT
     ILCodeVersion ilCode(vmILCodeVersionNode.GetDacPtr());
-    pData->m_state = ilCode.GetRejitState();
+    pData->m_state = static_cast<DWORD>(ilCode.GetRejitState());
     pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(ilCode.GetIL()));
     pData->m_dwCodegenFlags = ilCode.GetJitFlags();
     const InstrumentedILOffsetMapping* pMapping = ilCode.GetInstrumentedILMap();

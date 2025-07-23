@@ -56,10 +56,6 @@ namespace System.Threading
             WindowsThreadPool.BindHandle(osHandle) :
             BindHandlePortableCore(osHandle);
 
-#if !CORECLR
-        internal static bool EnsureConfigInitialized() => true;
-#endif
-
         internal static void InitializeForThreadPoolThread()
         {
             if (ThreadPool.UseWindowsThreadPool)
@@ -161,7 +157,7 @@ namespace System.Threading
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
-        internal static unsafe void RequestWorkerThread()
+        internal static void RequestWorkerThread()
         {
             if (ThreadPool.UseWindowsThreadPool)
             {

@@ -2067,10 +2067,6 @@ pin_handle_stack_interior_ptrs (void **ptr_slot, void *user_data)
 	sgen_conservatively_pin_objects_from (ptr_slot, ptr_slot+1, ud->start_nursery, ud->end_nursery, PIN_TYPE_STACK);
 }
 
-#if defined(HOST_WASM) || defined(HOST_WASI)
-extern gboolean mono_wasm_enable_gc;
-#endif
-
 /*
  * Mark from thread stacks and registers.
  */
@@ -2079,11 +2075,6 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 {
 	scan_area_arg_start = start_nursery;
 	scan_area_arg_end = end_nursery;
-#if defined(HOST_WASM) || defined(HOST_WASI)
-	//Under WASM we don't scan thread stacks and we can't trust the values we find there either.
-	if (!mono_wasm_enable_gc)
-		return;
-#endif
 
 	SGEN_TV_DECLARE (scan_thread_data_start);
 	SGEN_TV_DECLARE (scan_thread_data_end);

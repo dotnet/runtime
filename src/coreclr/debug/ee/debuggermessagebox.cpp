@@ -23,7 +23,7 @@ static void DbgPrintf(const LPCSTR szFormat, ...)
 
     va_end(args);
 
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         OutputDebugStringUtf8(szBuffer);
     }
@@ -138,7 +138,7 @@ static int UtilMessageBoxNonLocalized(
     {
         result = IDCANCEL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }
@@ -170,7 +170,7 @@ int NotifyUserOfFaultMessageBox(
     {
         result = IDCANCEL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }

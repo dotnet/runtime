@@ -70,7 +70,7 @@ public:
 
     //---------------------------------------------------------
     // Either creates or retrieves from the cache, a stub to
-    // invoke com to com+
+    // invoke com to CLR
     // Each call refcounts the returned stub.
     // This routines throws an exception rather than returning
     // NULL.

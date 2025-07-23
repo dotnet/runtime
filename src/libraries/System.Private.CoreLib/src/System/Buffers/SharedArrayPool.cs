@@ -38,7 +38,7 @@ namespace System.Buffers
         private bool _trimCallbackCreated;
 
         /// <summary>Allocate a new <see cref="SharedArrayPoolPartitions"/> and try to store it into the <see cref="_buckets"/> array.</summary>
-        private unsafe SharedArrayPoolPartitions CreatePerCorePartitions(int bucketIndex)
+        private SharedArrayPoolPartitions CreatePerCorePartitions(int bucketIndex)
         {
             var inst = new SharedArrayPoolPartitions();
             return Interlocked.CompareExchange(ref _buckets[bucketIndex], inst, null) ?? inst;

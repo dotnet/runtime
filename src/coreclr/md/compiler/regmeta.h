@@ -33,19 +33,10 @@ struct CORDBG_SYMBOL_URL
     GUID        FormatID;               // ID of the format type.
     WCHAR       rcName[2];              // Variable sized name of the item.
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6305) // "Potential mismatch between sizeof and countof quantities"
-#endif
-
     ULONG Size() const
     {
         return (ULONG)(sizeof(GUID) + ((u16_strlen(rcName) + 1) * 2));
     }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 };
 
 
@@ -141,6 +132,7 @@ class RegMeta :
     , public IMetaDataEmit2
 #else
     , public IMetaDataEmit3
+    , public IILAsmPortablePdbWriter
 #endif
     , public IMetaDataAssemblyEmit
 #endif
@@ -313,28 +305,28 @@ public:
     STDMETHODIMP FindMember(
         mdTypeDef   td,                     // [IN] given typedef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdToken     *pmb);                  // [OUT] matching memberdef
 
     STDMETHODIMP FindMethod(
         mdTypeDef   td,                     // [IN] given typedef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodDef *pmb);                  // [OUT] matching memberdef
 
     STDMETHODIMP FindField(
         mdTypeDef   td,                     // [IN] given typedef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdFieldDef  *pmb);                  // [OUT] matching memberdef
 
     STDMETHODIMP FindMemberRef(
         mdTypeRef   td,                     // [IN] given typeRef
         LPCWSTR     szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMemberRef *pmr);                  // [OUT] matching memberref
 
@@ -736,7 +728,6 @@ public:
     STDMETHODIMP GetAssemblyFromScope(      // S_OK or error
         mdAssembly  *ptkAssembly);          // [OUT] Put token here.
 
-    // This uses Fusion to lookup, so it's E_NOTIMPL in the standalone versions.
     STDMETHODIMP FindAssembliesByName(      // S_OK or error
          LPCWSTR  szAppBase,                // [IN] optional - can be NULL
          LPCWSTR  szPrivateBin,             // [IN] optional - can be NULL
@@ -753,7 +744,7 @@ public:
         mdTypeDef   td,                     // Parent TypeDef
         LPCWSTR     szName,                 // Name of member
         DWORD       dwMethodFlags,          // Member attributes
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         ULONG       ulCodeRVA,
         DWORD       dwImplFlags,
@@ -789,7 +780,7 @@ public:
     STDMETHODIMP DefineMemberRef(           // S_OK or error
         mdToken     tkImport,               // [IN] ClassRef or ClassDef importing a member.
         LPCWSTR     szName,                 // [IN] member's name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMemberRef *pmr);                  // [OUT] memberref token
 
@@ -939,7 +930,7 @@ public:
         mdTypeDef   td,                     // Parent TypeDef
         LPCWSTR     szName,                 // Name of member
         DWORD       dwFieldFlags,           // Member attributes
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value
@@ -1045,7 +1036,7 @@ public:
 
     STDMETHODIMP DefineMethodSpec(          // S_OK or error
         mdToken     tkImport,               // [IN] MethodDef or MemberRef
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodSpec *pmi);                 // [OUT] method instantiation token
 
@@ -1132,6 +1123,16 @@ public:
         USHORT      index,                  // [IN] Variable index (slot).
         char        *name,                  // [IN] Variable name.
         mdLocalVariable *locVarToken);      // [OUT] Token of the defined variable.
+
+//*****************************************************************************
+// IILAsmPortablePdbWriter methods
+//*****************************************************************************
+    STDMETHODIMP ComputeSha256PdbStreamChecksum(                                        // S_OK or error.
+        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), // [IN]
+        BYTE (&checksum)[32]);                                                          // [OUT] 256-bit Pdb checksum
+
+    STDMETHODIMP ChangePdbStreamGuid(       // S_OK or error.
+        REFGUID newGuid);                   // [IN] GUID to use as the PDB GUID
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************
@@ -1558,16 +1559,12 @@ public:
 
     HRESULT SetOption(OptionValue *pOptionValue);
 
-    // HRESULT Init();
-    // void Cleanup();
-
     HRESULT InitWithStgdb(
         IUnknown            *pUnk,          // The IUnknown that owns the life time for the existing stgdb
         CLiteWeightStgdbRW *pStgdb);        // existing light weight stgdb
 
     ULONG   GetRefCount() { return m_cRef; }
     HRESULT AddToCache();
-    static HRESULT FindCachedReadOnlyEntry(LPCWSTR szName, DWORD dwOpenFlags, RegMeta **ppMeta);
     BOOL IsReadOnly() { return IsOfReadOnly(m_OpenFlags); }
     BOOL IsCopyMemory() { return IsOfCopyMemory(m_OpenFlags); }
 
@@ -1612,9 +1609,6 @@ public:
         return (m_OptionValue.m_ThreadSafetyOptions & MDThreadSafetyOn) == MDThreadSafetyOn;
     }
 
-    LPCWSTR GetNameOfDBFile() { return (m_pStgdb->m_wszFileName == NULL) ? W("") : m_pStgdb->m_wszFileName; }
-    DWORD   GetLowFileTimeOfDBFile() { return m_pStgdb->m_dwDatabaseLFT; }
-    DWORD   GetLowFileSizeOfDBFile() { return m_pStgdb->m_dwDatabaseLFS; }
 protected:
     // Helper functions used for implementation of MetaData APIs.
     HRESULT RefToDefOptimization();
@@ -1625,9 +1619,6 @@ protected:
     }
 
     HRESULT PreSave();
-
-    // Initialize the EE
-    HRESULT StartupEE();
 
     // Define a TypeRef given the name.
     enum eCheckDups {eCheckDefault=0, eCheckNo=1, eCheckYes=2};
@@ -1866,7 +1857,7 @@ protected:
         IMetaDataEmit *emit,                // [IN] emit interface.
         BOOL        fCreateTrIfNotFound,    // [IN] create typeref if not found or fail out?
         LPCSTR      *ppOneArgSig,           // [IN|OUT] class file format signature. On exit, it will be next arg starting point
-        CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
+        CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
         ULONG       cbStart,                // [IN] bytes that are already in pqbNewSig
         ULONG       *pcbCount);             // [OUT] count of bytes put into the QuickBytes buffer
 
@@ -2028,13 +2019,10 @@ private:
     LONG        m_cRef;                     // Ref count.
     IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
 
-    // If true, cached in list of global scopes. This is very dangerous because it may allow
-    // unpredictable state sharing between seemingly unrelated dispensers.
+    // If true, cached in list of global scopes.
     bool        m_bCached;
 
     OptionValue m_OptionValue;
-
-    mdTypeRef   m_trLanguageType;
 
     // Specifies whether the caller of the Set API is one of the Define functions
     // or an external API.  This allows for performance optimization in the Set APIs
@@ -2047,8 +2035,6 @@ private:
     SHash<CustAttrHashTraits>   m_caHash;   // Hashed list of custom attribute types seen.
 #endif
 
-    bool        m_bKeepKnownCa;             // Should all known CA's be kept?
-
     MetaDataReorderingOptions m_ReorderingOptions;
 
 #ifdef FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN
@@ -2058,23 +2044,6 @@ private:
                               // TRUE in order to delete safely.
 #endif
 
-private:
-    // Returns pointer to zeros of size (cbSize).
-    // Used by public APIs to return compatible values with previous releases.
-    static const BYTE *GetPublicApiCompatibilityZerosOfSize(UINT32 cbSize);
-    // Returns pointer to zeros typed as type T.
-    // Used by public APIs to return compatible values with previous releases.
-    template<class T>
-    T *GetPublicApiCompatibilityZeros()
-    {
-        static_assert_no_msg(sizeof(T) <= sizeof(s_rgMetaDataPublicApiCompatibilityZeros));
-        return reinterpret_cast<T *>(s_rgMetaDataPublicApiCompatibilityZeros);
-    }
-    // Zeros used by public APIs as return value (or pointer to this memory) for invalid input.
-    // It is used by methods:
-    //  * code:RegMeta::GetPublicApiCompatibilityZeros, and
-    //  * code:RegMeta::GetPublicApiCompatibilityZerosOfSize.
-    static const BYTE s_rgMetaDataPublicApiCompatibilityZeros[64];
 
 };  // class RegMeta
 

@@ -1018,7 +1018,7 @@ CHECK PEDecoder::CheckCorHeader() const
 
     //CHECK(((ULONGLONG)pCor & 0x3)==0);
 
-    // If the file is COM+ 1.0, which by definition has nothing the runtime can
+    // If the file is CLR 1.0, which by definition has nothing the runtime can
     // use, or if the file requires a newer version of this engine than us,
     // it cannot be run by this engine.
     if (!possiblyCompositeR2R)
@@ -1274,7 +1274,7 @@ const void *PEDecoder::GetResource(COUNT_T offset, COUNT_T *pSize) const
 
     void * resourceBlob = (void *)GetRvaData(VAL32(pDir->VirtualAddress) + offset);
     // Holds if CheckResource(offset) == TRUE
-    PREFIX_ASSUME(resourceBlob != NULL);
+    _ASSERTE(resourceBlob != NULL);
 
      if (pSize != NULL)
         *pSize = GET_UNALIGNED_VAL32(resourceBlob);
@@ -1461,7 +1461,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import directory entry
     PIMAGE_DATA_DIRECTORY pDirEntryImport = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT);
     CHECK(pDirEntryImport != NULL);
-    PREFIX_ASSUME(pDirEntryImport != NULL);
+    _ASSERTE(pDirEntryImport != NULL);
 
     // There should be space for 2 entries. (mscoree and NULL)
     CHECK(VAL32(pDirEntryImport->Size) >= (2 * sizeof(IMAGE_IMPORT_DESCRIPTOR)));
@@ -1469,7 +1469,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import data
     PIMAGE_IMPORT_DESCRIPTOR pID = (PIMAGE_IMPORT_DESCRIPTOR) GetDirectoryData(pDirEntryImport);
     CHECK(pID != NULL);
-    PREFIX_ASSUME(pID != NULL);
+    _ASSERTE(pID != NULL);
 
     // Entry 0: ILT, Name, IAT must be be non-null.  Forwarder, DateTime should be NULL.
     CHECK( IMAGE_IMPORT_DESC_FIELD(pID[0], Characteristics) != 0
@@ -1587,23 +1587,13 @@ CHECK PEDecoder::CheckILOnlyBaseRelocations() const
 
         UINT16 *pRelocEntry = (UINT16 *) (pReloc + 1);
         UINT16 *pRelocEntryEnd = (UINT16 *) ((BYTE *) pReloc + VAL32(pReloc->SizeOfBlock));
-        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_IA64))
-        {
-            // Exactly 2 Reloc records, both IMAGE_REL_BASED_DIR64
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+2*sizeof(UINT16)));
+
+        // Only one Reloc record is expected
+        CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
+        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
             CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            pRelocEntry++;
-            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-        }
         else
-        {
-            // Only one Reloc record is expected
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
-            if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            else
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
-        }
+            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
 
         while (++pRelocEntry < pRelocEntryEnd)
         {
@@ -1641,7 +1631,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
         static const BYTE s_DllOrExeMain[] = JMP_DWORD_PTR_DS_OPCODE;
 
         // 403570: prefix complained about stub being possibly NULL.
-        // Unsure here. PREFIX_ASSUME might be also correct as indices are
+        // Unsure here. _ASSERTE might be also correct as indices are
         // verified in the above CHECK statement.
         CHECK(stub != NULL);
         CHECK(memcmp(stub, s_DllOrExeMain, JMP_DWORD_PTR_DS_OPCODE_SIZE) == 0);
@@ -2509,7 +2499,6 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
-		ANNOTATION_DEBUG_ONLY;                                          \
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
@@ -2585,12 +2574,14 @@ ErrExit:
 #endif // _DEBUG
 
 //
-//  MethodSectionIterator class is used to iterate hot (or) cold method section in an ngen image.
-//  Also used to iterate over jitted methods in the code heap
+//  MethodSectionIterator class is used to iterate hot (or) cold method sections
+//  over jitted methods in the code heap
 //
-MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
-                                             const void *codeTable, SIZE_T codeTableSize)
+MethodSectionIterator::MethodSectionIterator(void *code, SIZE_T codeSize,
+                                             void *codeTable, SIZE_T codeTableSize)
 {
+    using namespace NibbleMap;
+
     //For DAC builds,we'll read the table one DWORD at a time.  Note that m_code IS
     //NOT a host pointer.
     m_codeTableStart = PTR_DWORD(TADDR(codeTable));
@@ -2605,6 +2596,11 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
     {
         m_dword = *m_codeTable++;
         m_index = 0;
+        while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+        {
+            m_dword = *m_codeTable++;
+            m_code += BYTES_PER_DWORD;
+        }
     }
     else
     {
@@ -2614,6 +2610,8 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
 
 BOOL MethodSectionIterator::Next()
 {
+    using namespace NibbleMap;
+
     while (m_codeTable < m_codeTableEnd || m_index < (int)NIBBLES_PER_DWORD)
     {
         while (m_index++ < (int)NIBBLES_PER_DWORD)
@@ -2624,7 +2622,7 @@ BOOL MethodSectionIterator::Next()
             if (nibble != 0)
             {
                 // We have found a method start
-                m_current = m_code + ((nibble-1)*CODE_ALIGN);
+                m_current = m_code + ((nibble-1) << LOG2_CODE_ALIGN);
                 m_code += BYTES_PER_BUCKET;
                 return TRUE;
             }
@@ -2636,6 +2634,11 @@ BOOL MethodSectionIterator::Next()
         {
             m_dword = *m_codeTable++;
             m_index = 0;
+            while(m_codeTable < m_codeTableEnd && (IsPointer(m_dword) || m_dword == 0))
+            {
+                m_dword = *m_codeTable++;
+                m_code += BYTES_PER_DWORD;
+            }
         }
     }
     return FALSE;

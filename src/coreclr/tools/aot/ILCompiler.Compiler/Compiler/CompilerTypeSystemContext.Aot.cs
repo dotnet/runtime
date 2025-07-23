@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -39,8 +40,10 @@ namespace ILCompiler
         private readonly TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
 
         private TypeDesc[] _arrayOfTInterfaces;
+        private TypeDesc[] _arrayEnumeratorOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataType _arrayOfTType;
+        private MetadataType _arrayOfTEnumeratorType;
         private MetadataType _attributeType;
 
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures,
@@ -62,6 +65,38 @@ namespace ILCompiler
             GenericsConfig = new SharedGenericsConfiguration();
         }
 
+        public MetadataType ArrayOfTEnumeratorType
+        {
+            get
+            {
+                // This type is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                return _arrayOfTEnumeratorType ??= SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            }
+        }
+
+        public bool IsArrayVariantCastable(TypeDesc type)
+        {
+            // Arrays and array enumerators have weird casting rules due to array covariance
+            // (string[] castable to object[], or int[] castable to uint[], or int[] castable
+            // to IList<SomeIntEnum>).
+
+            if (type.IsSzArray
+                || type.GetTypeDefinition() == ArrayOfTEnumeratorType
+                || IsGenericArrayInterfaceType(type)
+                || IsGenericArrayEnumeratorInterfaceType(type))
+            {
+                TypeDesc elementType = type.IsSzArray ? ((ArrayType)type).ElementType : type.Instantiation[0];
+                if (CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
+                    (elementType.IsDefType && !elementType.IsValueType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetKnownType("System", "Array`1"));
@@ -70,9 +105,7 @@ namespace ILCompiler
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            if (type == UniversalCanonType)
-                return UniversalCanonLayoutAlgorithm.Instance;
-            else if (type.IsRuntimeDeterminedType)
+            if (type.IsRuntimeDeterminedType)
                 return _runtimeDeterminedFieldLayoutAlgorithm;
             else if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(type))
                 return _vectorOfTFieldLayoutAlgorithm;
@@ -126,6 +159,33 @@ namespace ILCompiler
             }
 
             return false;
+        }
+
+        public bool IsGenericArrayEnumeratorInterfaceType(TypeDesc type)
+        {
+            // Hardcode the fact that all generic interfaces on array enumerator have arity 1
+            if (!type.IsInterface || type.Instantiation.Length != 1)
+                return false;
+
+            if (_arrayEnumeratorOfTInterfaces == null)
+            {
+                DefType[] implementedInterfaces = ArrayOfTEnumeratorType?.ExplicitlyImplementedInterfaces;
+
+                ArrayBuilder<TypeDesc> definitions = default;
+                if (implementedInterfaces != null)
+                {
+                    foreach (DefType interfaceType in implementedInterfaces)
+                    {
+                        if (interfaceType.HasInstantiation)
+                            definitions.Add(interfaceType.GetTypeDefinition());
+                    }
+                }
+
+                Interlocked.CompareExchange(ref _arrayEnumeratorOfTInterfaces, definitions.ToArray(), null);
+            }
+
+            TypeDesc interfaceDefinition = type.GetTypeDefinition();
+            return Array.IndexOf(_arrayEnumeratorOfTInterfaces, interfaceDefinition) >= 0;
         }
 
         protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
@@ -224,34 +284,12 @@ namespace ILCompiler
 
     public class SharedGenericsConfiguration
     {
-        //
-        // Universal Shared Generics heuristics magic values determined empirically
-        //
-        public long UniversalCanonGVMReflectionRootHeuristic_InstantiationCount { get; }
-        public long UniversalCanonGVMDepthHeuristic_NonCanonDepth { get; }
-        public long UniversalCanonGVMDepthHeuristic_CanonDepth { get; }
-
-        // Controls how many different instantiations of a generic method, or method on generic type
-        // should be allowed before trying to fall back to only supplying USG in the reflection
-        // method table.
-        public long UniversalCanonReflectionMethodRootHeuristic_InstantiationCount { get; }
-
         // To avoid infinite generic recursion issues during debug type record generation, attempt to
         // use canonical form for types with high generic complexity.
         public long MaxGenericDepthOfDebugRecord { get; }
 
         public SharedGenericsConfiguration()
         {
-            UniversalCanonGVMReflectionRootHeuristic_InstantiationCount = 4;
-            UniversalCanonGVMDepthHeuristic_NonCanonDepth = 2;
-            UniversalCanonGVMDepthHeuristic_CanonDepth = 1;
-
-            // Unlike the GVM heuristics which are intended to kick in aggressively
-            // this heuristic exists to make it so that a fair amount of generic
-            // expansion is allowed. Numbers are chosen to allow a fairly large
-            // amount of generic expansion before trimming.
-            UniversalCanonReflectionMethodRootHeuristic_InstantiationCount = 1024;
-
             MaxGenericDepthOfDebugRecord = 15;
         }
     }

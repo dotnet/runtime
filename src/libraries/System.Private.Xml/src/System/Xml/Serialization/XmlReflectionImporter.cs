@@ -84,12 +84,14 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void IncludeTypes(ICustomAttributeProvider provider)
         {
             IncludeTypes(provider, new RecursionLimiter());
         }
 
         [RequiresUnreferencedCode("calls IncludeType")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void IncludeTypes(ICustomAttributeProvider provider, RecursionLimiter limiter)
         {
             object[] attrs = provider.GetCustomAttributes(typeof(XmlIncludeAttribute), false);
@@ -104,12 +106,14 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void IncludeType(Type type)
         {
             IncludeType(type, new RecursionLimiter());
         }
 
         [RequiresUnreferencedCode("calls ImportTypeMapping")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void IncludeType(Type type, RecursionLimiter limiter)
         {
             int previousNestingLevel = _arrayNestingLevel;
@@ -134,6 +138,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type)
         {
             return ImportTypeMapping(type, null, null);
@@ -143,6 +148,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, string? defaultNamespace)
         {
             return ImportTypeMapping(type, null, defaultNamespace);
@@ -152,6 +158,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root)
         {
             return ImportTypeMapping(type, root, null);
@@ -161,6 +168,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -175,6 +183,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, false);
@@ -184,6 +193,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, false);
@@ -194,6 +204,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         ///
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, openModel, XmlMappingAccess.Read | XmlMappingAccess.Write);
@@ -204,6 +215,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         ///
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel, XmlMappingAccess access)
         {
             ElementAccessor element = new ElementAccessor();
@@ -252,6 +264,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ImportTypeMapping")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private ElementAccessor ImportElement(TypeModel model, XmlRootAttribute? root, string? defaultNamespace, RecursionLimiter limiter)
         {
             XmlAttributes a = GetAttributes(model.Type, true);
@@ -374,12 +387,14 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ImportTypeMapping")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private TypeMapping ImportTypeMapping(TypeModel model, string? ns, ImportContext context, string dataType, XmlAttributes? a, RecursionLimiter limiter)
         {
             return ImportTypeMapping(model, ns, context, dataType, a, false, false, limiter);
         }
 
         [RequiresUnreferencedCode("calls ImportEnumMapping")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private TypeMapping ImportTypeMapping(TypeModel model, string? ns, ImportContext context, string dataType, XmlAttributes? a, bool repeats, bool openModel, RecursionLimiter limiter)
         {
             try
@@ -491,6 +506,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls IncludeTypes")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private SpecialMapping ImportSpecialMapping(Type type, TypeDesc typeDesc, string? ns, ImportContext context)
         {
             _specials ??= new Hashtable();
@@ -708,6 +724,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetRootMapping")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private StructMapping ImportStructLikeMapping(StructModel model, string? ns, bool openModel, XmlAttributes? a, RecursionLimiter limiter)
         {
             if (model.TypeDesc.Kind == TypeKind.Root) return GetRootMapping();
@@ -773,6 +790,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetTypeModel")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private bool InitializeStructMembers(StructMapping mapping, StructModel model, bool openModel, string? typeName, RecursionLimiter limiter)
         {
             if (mapping.IsFullyInitialized)
@@ -844,7 +862,11 @@ namespace System.Xml.Serialization
                     if (member == null) continue;
                     if (mapping.BaseMapping != null)
                     {
-                        if (mapping.BaseMapping.Declares(member, mapping.TypeName)) continue;
+                        // If the base mapping already declares this member, then we should remove that accessor and prefer the derived one.
+                        if (mapping.BaseMapping.Declares(member, mapping.TypeName))
+                        {
+                            RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
+                        }
                     }
                     isSequence |= member.IsSequence;
                     // add All member accessors to the scope accessors
@@ -1071,6 +1093,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls SetArrayMappingType")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private ArrayMapping ImportArrayLikeMapping(ArrayModel model, string? ns, RecursionLimiter limiter)
         {
             ArrayMapping mapping = new ArrayMapping();
@@ -1224,6 +1247,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetTypeDesc")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private MembersMapping ImportMembersMapping(XmlReflectionMember[] xmlReflectionMembers, string? ns, bool hasWrapperElement, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             MembersMapping members = new MembersMapping();
@@ -1302,6 +1326,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) and XmlReflectionImporter.ImportAccessorMapping both of which RequireUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private MemberMapping ImportMemberMapping(XmlReflectionMember xmlReflectionMember, string? ns, XmlReflectionMember[] xmlReflectionMembers, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             XmlSchemaForm form = rpc ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified;
@@ -1383,6 +1408,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ImportAccessorMapping")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private MemberMapping ImportFieldMapping(StructModel parent, FieldModel model, XmlAttributes a, string? ns, RecursionLimiter limiter)
         {
             MemberMapping member = new MemberMapping();
@@ -1477,6 +1503,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ImportTypeMapping")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void CreateArrayElementsFromAttributes(ArrayMapping arrayMapping, XmlArrayItemAttributes attributes, Type arrayElementType, string? arrayElementNs, RecursionLimiter limiter)
         {
             NameTable arrayItemElements = new NameTable();   // xmlelementname + xmlns -> ElementAccessor
@@ -1502,6 +1529,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetArrayElementType")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void ImportAccessorMapping(MemberMapping accessor, FieldModel model, XmlAttributes a, string? ns, Type? choiceIdentifierType, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             XmlSchemaForm elementFormDefault = XmlSchemaForm.Qualified;
@@ -2197,6 +2225,36 @@ namespace System.Xml.Serialization
             }
         }
 
+        private static void RemoveUniqueAccessor(INameScope scope, Accessor accessor)
+        {
+            Accessor? existing = (Accessor?)scope[accessor.Name, accessor.Namespace];
+            if (existing != null)
+            {
+                scope[accessor.Name, accessor.Namespace] = null;
+            }
+#if DEBUG
+            else
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"The XML attribute/element '{accessor.Namespace}{accessor.Name}' does not have an existing accessor to remove."));
+            }
+#endif
+        }
+
+        private static void RemoveUniqueAccessor(MemberMapping member, INameScope elements, INameScope attributes, bool isSequence)
+        {
+            if (member.Attribute != null)
+            {
+                RemoveUniqueAccessor(attributes, member.Attribute);
+            }
+            else if (!isSequence && member.Elements != null && member.Elements.Length > 0)
+            {
+                for (int i = 0; i < member.Elements.Length; i++)
+                {
+                    RemoveUniqueAccessor(elements, member.Elements[i]);
+                }
+            }
+        }
+
         private static void CheckForm(XmlSchemaForm form, bool isQualified)
         {
             if (isQualified && form == XmlSchemaForm.Unqualified) throw new InvalidOperationException(SR.XmlInvalidFormUnqualified);
@@ -2329,7 +2387,6 @@ namespace System.Xml.Serialization
     {
         private readonly int _maxDepth;
         private int _depth;
-        private WorkItems? _deferredWorkItems;
 
         internal RecursionLimiter()
         {
@@ -2340,6 +2397,6 @@ namespace System.Xml.Serialization
         internal bool IsExceededLimit { get { return _depth > _maxDepth; } }
         internal int Depth { get { return _depth; } set { _depth = value; } }
 
-        internal WorkItems DeferredWorkItems => _deferredWorkItems ??= new WorkItems();
+        internal WorkItems DeferredWorkItems => field ??= new WorkItems();
     }
 }

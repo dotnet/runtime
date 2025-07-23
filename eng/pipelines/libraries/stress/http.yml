@@ -8,11 +8,11 @@ pr:
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: HttpStress nightly run
+  always: true
   branches:
     include:
     - main
-    - release/8.0
-    - release/9.0
+    - release/*-staging
 
 variables:
   - template: ../variables.yml
@@ -38,7 +38,7 @@ extends:
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-ubuntu-1804-open
+          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
         steps:
         - checkout: self
@@ -100,12 +100,6 @@ extends:
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
-
-          # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
-          # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
-          # This is worked around by handpicking the V2 executable.
-          # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
-          DOCKER_COMPOSE_CMD: "C:/ProgramData/docker/cli-plugins/docker-compose.exe"
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
@@ -117,9 +111,6 @@ extends:
           lfs: false
 
         - powershell: |
-            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
-            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
-
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
             echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
           name: buildRuntime
@@ -143,7 +134,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
+            docker compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
@@ -152,7 +143,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
+            docker compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
@@ -161,7 +152,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
+            docker compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 

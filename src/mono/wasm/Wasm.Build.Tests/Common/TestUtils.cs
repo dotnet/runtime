@@ -65,6 +65,14 @@ public static class TestUtils
         return first ?? Path.Combine(parentDir, dirName);
     }
 
+    public static void AssertSubstring(string substring, IReadOnlyCollection<string> full, bool contains)
+    {
+        if (contains)
+            Assert.Contains(full, m => m.Contains(substring));
+        else
+            Assert.All(full, m => Assert.DoesNotContain(substring, m));
+    }
+
     public static void AssertSubstring(string substring, string full, bool contains)
     {
         if (contains)

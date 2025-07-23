@@ -27,10 +27,7 @@ namespace System.Security.Cryptography.Xml
 #pragma warning disable CS8995 // Nullable type 'object?' is null-checked and will throw if null.
         public int Add(object? value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!(value is DataReference) && !(value is KeyReference))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
@@ -56,10 +53,7 @@ namespace System.Security.Cryptography.Xml
 
         public void Insert(int index, object? value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!(value is DataReference) && !(value is KeyReference))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
