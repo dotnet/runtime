@@ -285,11 +285,16 @@ struct alloc_context : gc_alloc_context
 #endif // FEATURE_SVR_GC
 };
 
+// NOTE!
+// Do not add overloaded methods, always use a different name, different from any methods declared here or
+// on the IGCHeap interface.
 class IGCHeapInternal : public IGCHeap {
 public:
     virtual int GetNumberOfHeaps () PURE_VIRTUAL
     virtual int GetHomeHeapNumber () PURE_VIRTUAL
     virtual size_t GetPromotedBytes(int heap_index) PURE_VIRTUAL
+    // Used by the bridge code.
+    virtual bool IsPromoted2(Object* object, bool bVerifyNextHeader) PURE_VIRTUAL
 
     unsigned GetMaxGeneration()
     {
