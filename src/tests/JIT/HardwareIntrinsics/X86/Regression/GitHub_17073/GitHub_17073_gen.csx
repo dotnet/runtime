@@ -169,11 +169,13 @@ static string CreateVector(int vectorSize, string vectorElementType, double valu
 {
     if (vectorElementType == "Single")
         return double.IsNaN(value) ? $"Vector{vectorSize}<float>.NaN" :
+               (value == 0.0f) && float.IsPositive(value) ? $"Vector{vectorSize}<float>.Zero" :
                (value == 1.0f) ? $"Vector{vectorSize}<float>.One" :
                (value == -1.0f) ? $"Vector{vectorSize}<float>.NegativeOne" :
                $"Vector{vectorSize}.Create({value:F1}f)";
     if (vectorElementType == "Double")
         return double.IsNaN(value) ? $"Vector{vectorSize}<double>.NaN"
+               (value == 0.0) && double.IsPositive(value) ? $"Vector{vectorSize}<double>.Zero" :
                (value == 1.0) ? $"Vector{vectorSize}<double>.One" :
                (value == -1.0) ? $"Vector{vectorSize}<double>.NegativeOne" :
                $"Vector{vectorSize}.Create({value:F1})";
@@ -182,7 +184,9 @@ static string CreateVector(int vectorSize, string vectorElementType, double valu
 
 static string CreateVector(int vectorSize, int value)
 {
-    return $"Vector{vectorSize}.Create({value})";
+    return (value == 0) ? $"Vector{vectorSize}<int>.Zero" :
+           (value == 1) ? $"Vector{vectorSize}<int>.One" :
+           $"Vector{vectorSize}.Create({value})";
 }
 
 static string CreateVector<T>(int vectorSize, string vectorElementType, T value)
