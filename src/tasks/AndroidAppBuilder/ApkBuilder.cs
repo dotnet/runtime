@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
@@ -381,7 +382,13 @@ public partial class ApkBuilder
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
-        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), Utils.GetEmbeddedResource(monodroidSource));
+
+        string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
+        if (IsCoreCLR)
+        {
+            monodroidContent = ReplaceMonodroidCoreClrPlaceholders(monodroidContent);
+        }
+        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
         AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
         project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
@@ -639,4 +646,66 @@ public partial class ApkBuilder
 
     [GeneratedRegex(@"\.(\d)")]
     private static partial Regex DotNumberRegex();
+
+    // Replaces placeholders in the monodroid-coreclr.c template with actual values.
+    private string ReplaceMonodroidCoreClrPlaceholders(string monodroidContent)
+    {
+        // Construct the base AppContext keys and values strings.
+        var allKeys = new StringBuilder();
+        allKeys.AppendLine("    appctx_keys[0] = \"RUNTIME_IDENTIFIER\";");
+        allKeys.AppendLine("    appctx_keys[1] = \"APP_CONTEXT_BASE_DIRECTORY\";");
+        allKeys.AppendLine("    appctx_keys[2] = \"HOST_RUNTIME_CONTRACT\";");
+
+        var allValues = new StringBuilder();
+        allValues.AppendLine("    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;");
+        allValues.AppendLine("    appctx_values[1] = g_bundle_path;");
+        allValues.AppendLine();
+        allValues.AppendLine("    char contract_str[19];"); // 0x + 16 hex digits + '\0'
+        allValues.AppendLine("    snprintf(contract_str, 19, \"0x%zx\", (size_t)(&g_host_contract));");
+        allValues.AppendLine("    appctx_values[2] = contract_str;");
+        allValues.AppendLine();
+
+        // Parse runtime config properties and add them to the AppContext keys and values.
+        // The extra 3 is for the base keys and values we added above.
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
+        int i = 0;
+        foreach ((string key, string value) in configProperties)
+        {
+            allKeys.AppendLine($"    appctx_keys[{i + 3}] = \"{key}\";");
+            allValues.AppendLine($"    appctx_values[{i + 3}] = \"{value}\";");
+            i++;
+        }
+
+        // Finally replace the placeholders.
+        string updatedContent = monodroidContent.Replace("%AppContextPropertyCount%", (configProperties.Count + 3).ToString())
+            .Replace("%AppContextKeys%", allKeys.ToString().TrimEnd())
+            .Replace("%AppContextValues%", allValues.ToString().TrimEnd());
+        return updatedContent;
+    }
+
+    private Dictionary<string, string> ParseRuntimeConfigProperties()
+    {
+        var configProperties = new Dictionary<string, string>();
+        string runtimeConfigPath = Path.Combine(AppDir!, $"{ProjectName}.runtimeconfig.json");
+
+        try
+        {
+            string jsonContent = File.ReadAllText(runtimeConfigPath);
+            using JsonDocument doc = JsonDocument.Parse(jsonContent);
+            JsonElement root = doc.RootElement;
+            if (root.TryGetProperty("runtimeOptions", out JsonElement runtimeOptions) && runtimeOptions.TryGetProperty("configProperties", out JsonElement propertiesJson))
+            {
+                foreach (JsonProperty property in propertiesJson.EnumerateObject())
+                {
+                    configProperties[property.Name] = property.Value.ToString();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
+        }
+
+        return configProperties;
+    }
 }
