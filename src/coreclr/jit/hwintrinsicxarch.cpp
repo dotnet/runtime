@@ -2275,13 +2275,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     break;
                 }
                 if ((varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType)) &&
-                    (simdSize != 16 || !compOpportunisticallyDependsOn(InstructionSet_AVX512)))
+                    !compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     break;
                 }
-                if (varTypeIsInt(simdBaseType) &&
-                    ((simdSize == 16 && !compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                     (simdSize == 32 && !compOpportunisticallyDependsOn(InstructionSet_AVX512))))
+                if (varTypeIsInt(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_AVX) ||
+                                                   !compOpportunisticallyDependsOn(InstructionSet_AVX512)))
+                {
+                    break;
+                }
+                if (varTypeIsUnsigned(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     break;
                 }

@@ -2348,7 +2348,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);
 
             // overflow check
-            if (varTypeIsSigned(nodeType))
+            if (varTypeIsSigned(baseType))
             {
                 simd_t minValueInt{};
                 int    numElements = genTypeSize(nodeType) / 4;
@@ -2365,10 +2365,10 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
             }
 
-            emit->emitIns_R_R(varTypeIsSigned(nodeType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
-            emit->emitIns_R_R(varTypeIsSigned(nodeType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg2, op2Reg, instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg2, op2Reg, instOptions);
             emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg1, tmpReg2, instOptions);
-            emit->emitIns_R_R(varTypeIsSigned(nodeType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg, targetReg, instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg, targetReg, instOptions);
             break;
         }
 
