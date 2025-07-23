@@ -86,7 +86,11 @@ namespace Wasm.Build.Tests
             if (runOutsideProjectDirectory)
             {
                 // When running outside, the project is in a subdirectory of workingDir
-                string projectDirName = Path.GetFileName(Path.GetDirectoryName(projectFilePath))!;
+                string? directoryName = Path.GetDirectoryName(projectFilePath);
+                if (directoryName == null)
+                    throw new InvalidOperationException($"Invalid project file path: {projectFilePath}");
+
+                string projectDirName = Path.GetFileName(directoryName);
                 string projectFileName = Path.GetFileName(projectFilePath);
                 projectFilePath = Path.Combine(projectDirName, projectFileName);
             }
