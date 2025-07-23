@@ -25,12 +25,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Needed to workaround ApiCompat not fully supporting extension members and some corelibs complaining suppressions are unneccessary -->
-    <!-- https://github.com/dotnet/sdk/issues/48983 -->
-    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
 

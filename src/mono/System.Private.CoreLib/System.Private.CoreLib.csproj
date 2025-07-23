@@ -15,12 +15,6 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- Needed to workaround ApiCompat not fully supporting extension members and some corelibs complaining suppressions are unneccessary -->
-    <!-- https://github.com/dotnet/sdk/issues/48983 -->
-    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
-  </ItemGroup>
-
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">

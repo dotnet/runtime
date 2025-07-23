@@ -2232,6 +2232,12 @@ namespace Mono.Linker.Steps
                         // For methods that must be preserved, blame the declaring type.
                         MarkMethod(method, new DependencyInfo(DependencyKind.VirtualNeededDueToPreservedScope, type), typeOrigin);
                     }
+                    else if (method.IsExtensionMarkerMethod())
+                    {
+                        // Extension marker methods are private, but are key metadata used by tooling,
+                        // they should be preserved if the corresponding type is preserved.
+                        MarkMethod(method, new DependencyInfo(DependencyKind.TypePreserve, type), typeOrigin);
+                    }
                 }
                 if (ShouldMarkTypeStaticConstructor(type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod)
                 {
