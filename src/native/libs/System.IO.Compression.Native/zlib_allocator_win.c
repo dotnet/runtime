@@ -57,10 +57,6 @@ voidpf z_custom_calloc(opaque, items, size)
     unsigned items;
     unsigned size;
 {
-    (void)opaque; // suppress C4100 - unreferenced formal parameter
-
-    // If initializing a fixed-size structure, zero the memory.
-    DWORD dwFlags = (items == 1) ? HEAP_ZERO_MEMORY : 0;
 
     SIZE_T cbRequested;
     if (sizeof(items) + sizeof(size) <= sizeof(cbRequested))
@@ -74,15 +70,13 @@ voidpf z_custom_calloc(opaque, items, size)
         if (FAILED(SIZETMult(items, size, &cbRequested))) { return NULL; }
     }
 
-    return HeapAlloc(GetZlibHeap(), dwFlags, cbRequested);
+    return HeapAlloc(GetZlibHeap(), 0, cbRequested);
 }
 
 void z_custom_cfree(opaque, ptr)
     voidpf opaque;
     voidpf ptr;
 {
-    (void)opaque; // suppress C4100 - unreferenced formal parameter
-
     if (ptr == NULL) { return; } // ok to free nullptr
 
     if (!HeapFree(GetZlibHeap(), 0, ptr)) { goto Fail; }
