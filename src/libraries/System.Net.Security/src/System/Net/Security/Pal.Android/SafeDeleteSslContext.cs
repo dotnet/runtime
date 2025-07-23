@@ -84,7 +84,7 @@ namespace System.Net
                         _sslContext.Dispose();
 
                         // Remove our GC handle from the dictionary
-                        if (s_contextMap.TryRemove(_nativeHandle, out GCHandle handle) && handle.IsAllocated)
+                        if (s_contextMap.TryRemove(_nativeHandle, out GCHandle handle))
                         {
                             handle.Free();
                         }
