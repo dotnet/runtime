@@ -352,7 +352,7 @@ inline bool IsServerHeap()
 // TRACE_GC has two sub-modes: the standard VM stress log mechanism and
 // SIMPLE_DPRINTF, which is text output.  By default, we enable TRACE_GC (not
 // SIMPLE_DPRINTF) for debug/checked builds so that we can catch build breaks.
-// HOST_64BIT is required because logging dprintf to the stress log us only
+// HOST_64BIT is required because logging dprintf to the stress log is only
 // supported on 64 bit platforms.  We could consider enabling it in release
 // builds and for more logging sites (see below for details) but are being
 // conservative about performance impact.
@@ -421,7 +421,7 @@ void GCLog (const char *fmt, ... );
 // time, which doesn't match usual stress log usage.
 //
 // In practice, dprintf(1) and LL_INFO10 (which has the value 4) have been used
-// similarly on log messages.  A dprintf(1) is generally called about once per
+// similarly on log messages.  A dprintf(1) is generally called about a few times per
 // GC, and LL_INFO10 is "10 logs per small but not trivial run".  Other values
 // have been audited.  We could consider moving the GC values to be in line with
 // the rest of the runtime (change 1 to 4 to make room for errors/warnings, etc.)
