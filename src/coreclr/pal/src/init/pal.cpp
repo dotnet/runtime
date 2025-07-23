@@ -727,7 +727,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
-#endif // !__wasm__
+#endif // !TARGET_WASM
 
     if (!PROCAbortInitialize())
     {
