@@ -2135,6 +2135,7 @@ namespace System.Text.RegularExpressions
                 '\f' => "\\f",
                 '\n' => "\\n",
                 '\\' => "\\\\",
+                '-'  => "\\-",
                 >= ' ' and <= '~' => ch.ToString(),
                 _ => $"\\u{(uint)ch:X4}"
             };
