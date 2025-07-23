@@ -686,7 +686,7 @@ public partial class ApkBuilder
     private Dictionary<string, string> ParseRuntimeConfigProperties()
     {
         var configProperties = new Dictionary<string, string>();
-        string runtimeConfigPath = Path.Combine(AppDir!, $"{ProjectName}.runtimeconfig.json");
+        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), $"{ProjectName}.runtimeconfig.json");
 
         try
         {
