@@ -550,7 +550,7 @@ namespace System.Security.Cryptography.Tests
             }
             signature[0] ^= 1;
 
-            if (context.Length > 0)
+            if (context?.Length > 0)
             {
                 AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, Array.Empty<byte>()));
                 AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
