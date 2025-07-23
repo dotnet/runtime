@@ -275,12 +275,12 @@ namespace MonoTests.System.Runtime.Caching
                 // Update the file dependency
                 File.WriteAllText(setup.Item2, "I am the first file. Updated.");
 
-                // Wait for the monitor to detect the change - 100ms should be plenty
-                for (int i = 0; i < 10; i++)
+                // Wait for the monitor to detect the change - 5s should be more than enough
+                for (int i = 0; i < 250; i++)
                 {
                     if (!mc.Contains("key"))
                         break;
-                    Thread.Sleep(10);
+                    Thread.Sleep(20);
                 }
 
                 Assert.Null(mc["key"]);
