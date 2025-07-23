@@ -356,8 +356,6 @@ FCFuncStart(gStubHelperFuncs)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("CalcVaListSize", StubHelpers::CalcVaListSize)
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
-    FCFuncElement("GetStubContext", StubHelpers::GetStubContext)
-    FCFuncElement("NextCallReturnAddress", StubHelpers::NextCallReturnAddress)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)

@@ -6808,7 +6808,7 @@ void Compiler::impCheckForPInvokeCall(
         }
     }
 
-    JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s\n", info.compFullName));
+    JITLOG((LL_INFO1000000, "\nInline a PINVOKE call from method %s\n", info.compFullName));
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
     call->unmgdCallConv = unmanagedCallConv;
@@ -6817,7 +6817,6 @@ void Compiler::impCheckForPInvokeCall(
         info.compUnmanagedCallCountWithGCTransition++;
     }
 
-    // AMD64 convention is same for native and managed
     if (unmanagedCallConv == CorInfoCallConvExtension::C ||
         unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
