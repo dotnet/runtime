@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 public class Test_lifetime2
@@ -51,19 +52,27 @@ public class Test_lifetime2
     }
     private static int f1()
     {
-        B a = new B();
-        a.F();
-
-        Console.WriteLine();
-        Console.WriteLine("testcase f1-1");
-        if (aExists != 1)
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        static bool f1_1()
         {
-            Console.WriteLine("f1-1 failed");
-            return -1;
+            B a = new B();
+            a.F();
+
+            Console.WriteLine();
+            Console.WriteLine("testcase f1-1");
+            if (aExists != 1)
+            {
+                Console.WriteLine("f1-1 failed");
+                return false;
+            }
+
+            GC.KeepAlive(a);
+            return true;
         }
 
-        GC.KeepAlive(a);
-        a = null;
+        if (!f1_1())
+            return -1;
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
@@ -75,19 +84,27 @@ public class Test_lifetime2
             return -1;
         }
 
-        C b = new C();
-        b.G();
-
-        Console.WriteLine();
-        Console.WriteLine("testcase f1-3");
-        if ((aExists != 1) || (bExists != 1))
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        static bool f1_3()
         {
-            Console.WriteLine("f1-3 failed");
-            return -1;
+            C b = new C();
+            b.G();
+
+            Console.WriteLine();
+            Console.WriteLine("testcase f1-3");
+            if ((aExists != 1) || (bExists != 1))
+            {
+                Console.WriteLine("f1-3 failed");
+                return false;
+            }
+
+            GC.KeepAlive(b);
+            return true;
         }
 
-        GC.KeepAlive(b);
-        b = null;
+        if (!f1_3())
+            return -1;
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
@@ -102,26 +119,38 @@ public class Test_lifetime2
     }
     private static int f2()
     {
-        B a = new B();
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        static bool f2_2()
         {
-            C b = new C();
-            b.G();
-            b = null;
-        }
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
+            B a = new B();
 
-        a.F();
-        Console.WriteLine();
-        Console.WriteLine("testcase f2-1");
-        if ((aExists != 1) || (bExists != 0))
-        {
-            Console.WriteLine("f2-1 failed");
+            [MethodImplAttribute(MethodImplOptions.NoInlining)]
+            static void f2_1()
+            {
+                C b = new C();
+                b.G();
+                b = null;
+            }
+            f2_1();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            a.F();
+            Console.WriteLine();
+            Console.WriteLine("testcase f2-1");
+            if ((aExists != 1) || (bExists != 0))
+            {
+                Console.WriteLine("f2-1 failed");
+                return false;
+            }
+
+            GC.KeepAlive(a);
+            return true;
+        }
+
+        if (!f2_2())
             return -1;
-        }
-
-        GC.KeepAlive(a);
-        a = null;
         GC.Collect();
         GC.WaitForPendingFinalizers();
         Console.WriteLine();
