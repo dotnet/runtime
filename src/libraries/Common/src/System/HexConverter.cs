@@ -282,7 +282,7 @@ namespace System
         {
 #if SYSTEM_PRIVATE_CORELIB
             if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
-                (utf8Source.Length >= (Vector128<byte>.Count * 2)))
+                (utf8Source.Length >= Vector128<byte>.Count))
             {
                 return TryDecodeFrom_Vector128(utf8Source, destination, out bytesProcessed);
             }
@@ -311,10 +311,22 @@ namespace System
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
             Debug.Assert(source.Length <= (destination.Length * 2));
             Debug.Assert((source.Length % 2) == 0);
-            Debug.Assert(source.Length >= (Vector128<TChar>.Count * 2));
+
+            int elementsReadPerIteration;
+
+            if (typeof(TChar) == typeof(byte))
+            {
+                elementsReadPerIteration = Vector128<byte>.Count;
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(ushort));
+                elementsReadPerIteration = Vector128<ushort>.Count * 2;
+            }
+            Debug.Assert(source.Length >= elementsReadPerIteration);
 
             nuint offset = 0;
-            nuint lengthSubTwoVector128 = (nuint)source.Length - ((nuint)Vector128<TChar>.Count * 2);
+            nuint lengthSubElementsReadPerIteration = (nuint)source.Length - (nuint)elementsReadPerIteration;
 
             ref TChar srcRef = ref MemoryMarshal.GetReference(source);
             ref byte destRef = ref MemoryMarshal.GetReference(destination);
@@ -413,7 +425,7 @@ namespace System
                 // Store 8 bytes in dest by given offset
                 Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, offset / 2), output.AsUInt64().ToScalar());
 
-                offset += (nuint)Vector128<byte>.Count;
+                offset += (nuint)elementsReadPerIteration;
                 if (offset == (nuint)source.Length)
                 {
                     elementsProcessed = source.Length;
@@ -421,9 +433,9 @@ namespace System
                 }
 
                 // Overlap with the current chunk for trailing elements
-                if (offset > lengthSubTwoVector128)
+                if (offset > lengthSubElementsReadPerIteration)
                 {
-                    offset = lengthSubTwoVector128;
+                    offset = lengthSubElementsReadPerIteration;
                 }
             }
             while (true);
