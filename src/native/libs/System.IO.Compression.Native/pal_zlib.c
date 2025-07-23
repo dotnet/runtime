@@ -8,10 +8,10 @@
 #ifdef _WIN32
     #define c_static_assert(e) static_assert((e),"")
     #include "../Common/pal_utilities.h"
+    #include <zlib_allocator.h>
 #else
     #include "pal_utilities.h"
 #endif
-#include <zlib_allocator.h>
 #include <zlib.h>
 
 c_static_assert(PAL_Z_NOFLUSH == Z_NO_FLUSH);
@@ -40,8 +40,10 @@ static int32_t Init(PAL_ZStream* stream)
 {
     z_stream* zStream = (z_stream*)calloc(1, sizeof(z_stream));
 
+#ifdef _WIN32
     zStream->zalloc = z_custom_calloc;
     zStream->zfree = z_custom_cfree;
+#endif
 
     stream->internalState = zStream;
 
