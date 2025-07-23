@@ -21298,7 +21298,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (varTypeIsIntegral(simdBaseType))
             {
                 assert(!varTypeIsLong(simdBaseType));
-                if (((varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType)) && simdSize > 16) || (varTypeIsInt(simdBaseType) && simdSize == 64))
+                if (((varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType)) && simdSize > 16) ||
+                    (varTypeIsInt(simdBaseType) && simdSize == 64))
                 {
                     var_types divType  = simdSize == 64 ? TYP_SIMD32 : TYP_SIMD16;
                     GenTree*  op1Dup   = fgMakeMultiUse(&op1);
@@ -21312,8 +21313,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         gtNewSimdBinOpNode(GT_DIV, divType, op1Lower, op2Lower, simdBaseJitType, simdSize / 2);
                     GenTree* divUpper =
                         gtNewSimdBinOpNode(GT_DIV, divType, op1Upper, op2Upper, simdBaseJitType, simdSize / 2);
-                    GenTree* divResult =
-                        gtNewSimdWithUpperNode(type, divLower, divUpper, simdBaseJitType, simdSize);
+                    GenTree* divResult = gtNewSimdWithUpperNode(type, divLower, divUpper, simdBaseJitType, simdSize);
                     return divResult;
                 }
 
@@ -30190,7 +30190,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_DIV:
         {
 #if defined(TARGET_XARCH)
-            assert(varTypeIsFloating(simdBaseType) || (varTypeIsIntegral(simdBaseType) && !varTypeIsLong(simdBaseType)));
+            assert(varTypeIsFloating(simdBaseType) ||
+                   (varTypeIsIntegral(simdBaseType) && !varTypeIsLong(simdBaseType)));
 #else
             assert(varTypeIsFloating(simdBaseType));
 #endif
