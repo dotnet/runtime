@@ -386,7 +386,7 @@ public partial class ApkBuilder
         string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
         if (IsCoreCLR)
         {
-            monodroidContent = ReplaceMonodroidCoreClrPlaceholders(monodroidContent);
+            monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
         }
         File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
@@ -647,39 +647,39 @@ public partial class ApkBuilder
     [GeneratedRegex(@"\.(\d)")]
     private static partial Regex DotNumberRegex();
 
-    // Replaces placeholders in the monodroid-coreclr.c template with actual values.
-    private string ReplaceMonodroidCoreClrPlaceholders(string monodroidContent)
+    private string RenderMonodroidCoreClrTemplate(string monodroidContent)
     {
-        // Construct the base AppContext keys and values strings.
-        var allKeys = new StringBuilder();
-        allKeys.AppendLine("    appctx_keys[0] = \"RUNTIME_IDENTIFIER\";");
-        allKeys.AppendLine("    appctx_keys[1] = \"APP_CONTEXT_BASE_DIRECTORY\";");
-        allKeys.AppendLine("    appctx_keys[2] = \"HOST_RUNTIME_CONTRACT\";");
+        // At the moment, we only set the AppContext properties, so it's all done here for simplicity.
+        // If we need to add more rendering logic, we can refactor this method later.
+        var appContextKeys = new StringBuilder();
+        appContextKeys.AppendLine("    appctx_keys[0] = \"RUNTIME_IDENTIFIER\";");
+        appContextKeys.AppendLine("    appctx_keys[1] = \"APP_CONTEXT_BASE_DIRECTORY\";");
+        appContextKeys.AppendLine("    appctx_keys[2] = \"HOST_RUNTIME_CONTRACT\";");
 
-        var allValues = new StringBuilder();
-        allValues.AppendLine("    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;");
-        allValues.AppendLine("    appctx_values[1] = g_bundle_path;");
-        allValues.AppendLine();
-        allValues.AppendLine("    char contract_str[19];"); // 0x + 16 hex digits + '\0'
-        allValues.AppendLine("    snprintf(contract_str, 19, \"0x%zx\", (size_t)(&g_host_contract));");
-        allValues.AppendLine("    appctx_values[2] = contract_str;");
-        allValues.AppendLine();
+        var appContextValues = new StringBuilder();
+        appContextValues.AppendLine("    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;");
+        appContextValues.AppendLine("    appctx_values[1] = g_bundle_path;");
+        appContextValues.AppendLine();
+        appContextValues.AppendLine("    char contract_str[19];"); // 0x + 16 hex digits + '\0'
+        appContextValues.AppendLine("    snprintf(contract_str, 19, \"0x%zx\", (size_t)(&g_host_contract));");
+        appContextValues.AppendLine("    appctx_values[2] = contract_str;");
+        appContextValues.AppendLine();
 
         // Parse runtime config properties and add them to the AppContext keys and values.
-        // The extra 3 is for the base keys and values we added above.
         Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
+        int baseAppContextProperties = 3; // For the base AppContext keys and values we added above.
         int i = 0;
         foreach ((string key, string value) in configProperties)
         {
-            allKeys.AppendLine($"    appctx_keys[{i + 3}] = \"{key}\";");
-            allValues.AppendLine($"    appctx_values[{i + 3}] = \"{value}\";");
+            appContextKeys.AppendLine($"    appctx_keys[{i + baseAppContextProperties}] = \"{key}\";");
+            appContextValues.AppendLine($"    appctx_values[{i + baseAppContextProperties}] = \"{value}\";");
             i++;
         }
 
-        // Finally replace the placeholders.
-        string updatedContent = monodroidContent.Replace("%AppContextPropertyCount%", (configProperties.Count + 3).ToString())
-            .Replace("%AppContextKeys%", allKeys.ToString().TrimEnd())
-            .Replace("%AppContextValues%", allValues.ToString().TrimEnd());
+        // Replace the template placeholders.
+        string updatedContent = monodroidContent.Replace("%AppContextPropertyCount%", (configProperties.Count + baseAppContextProperties).ToString())
+            .Replace("%AppContextKeys%", appContextKeys.ToString().TrimEnd())
+            .Replace("%AppContextValues%", appContextValues.ToString().TrimEnd());
         return updatedContent;
     }
 
