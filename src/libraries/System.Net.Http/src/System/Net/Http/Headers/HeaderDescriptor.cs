@@ -258,11 +258,13 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 24:
-                    switch (contentTypeValue[19])
+                    switch (contentTypeValue[10] ^ contentTypeValue[19])
                     {
-                        case (byte)'t': candidate = "application/octet-stream"; break; // application/octet-s[t]ream
-                        case (byte)'u': candidate = "text/html; charset=utf-8"; break; // text/html; charset=[u]tf-8
-                        case (byte)'U': candidate = "text/html; charset=UTF-8"; break; // text/html; charset=[U]TF-8
+                        case 'n' ^ 't': candidate = "application/octet-stream"; break; // applicatio[n]/octet-s[t]ream
+                        case ' ' ^ 'u': candidate = "text/html; charset=utf-8"; break; // text/html;[ ]charset=[u]tf-8
+                        case ' ' ^ 'U': candidate = "text/html; charset=UTF-8"; break; // text/html;[ ]charset=[U]TF-8
+                        case ';' ^ 'u': candidate = "text/plain;charset=utf-8"; break; // text/plain[;]charset=[u]tf-8
+                        case ';' ^ 'U': candidate = "text/plain;charset=UTF-8"; break; // text/plain[;]charset=[U]TF-8
                     }
                     break;
 

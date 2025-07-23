@@ -187,6 +187,8 @@ namespace System.Net.Http.Tests
         [InlineData("Content-Type", "application/octet-stream")]
         [InlineData("Content-Type", "text/html; charset=utf-8")]
         [InlineData("Content-Type", "text/html; charset=UTF-8")]
+        [InlineData("Content-Type", "text/plain;charset=utf-8")]
+        [InlineData("Content-Type", "text/plain;charset=UTF-8")]
         [InlineData("Content-Type", "text/plain; charset=utf-8")]
         [InlineData("Content-Type", "text/plain; charset=UTF-8")]
         [InlineData("Content-Type", "text/html; charset=ISO-8859-1")]
