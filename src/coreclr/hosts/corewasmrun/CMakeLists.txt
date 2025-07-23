@@ -10,7 +10,7 @@ add_executable_clr(corewasmrun
   corewasmrun.cpp
 )
 
-set(_WASM_PRELOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/../../../../../bin/coreclr/browser.wasm.Debug/IL")
+set(_WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
 if (EXISTS "${_WASM_PRELOAD_DIR}")
   set(_WASM_PRELOAD_FILE --preload-file ${_WASM_PRELOAD_DIR}@/)
 endif (EXISTS "${_WASM_PRELOAD_DIR}")
