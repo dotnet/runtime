@@ -20,10 +20,32 @@ public class Async2Reflection
         Assert.Equal(100, (int)(r.Result + d.Bar().Result));
     }
 
+#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
+    [Fact]
+    public static void DynamicInvokeAsync()
+    {
+        var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
+        Assert.NotNull(mi);
+        Assert.Throws<TargetInvocationException>(() => mi.Invoke(null, new object[] { FooTask() }));
+
+        // Sadly the following does not throw and results in UB
+        // We cannot completely prevent putting a token of an Async method into IL stream.
+        // CONSIDER: perhaps JIT could throw?
+        //
+        // dynamic d = FooTask();
+        // System.Runtime.CompilerServices.AsyncHelpers.Await(d);
+    }
+#pragma warning restore SYSLIB5007
+
     private static async Task<int> Foo()
     {
         await Task.Yield();
         return 90;
+    }
+
+    private static async Task FooTask()
+    {
+        await Task.Yield();
     }
 
     private async Task<int> Bar()
