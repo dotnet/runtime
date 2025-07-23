@@ -1511,27 +1511,35 @@ void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*             
 
         // Insert call
         //   AsyncHelpers.CaptureContinuationContext(
-        //     ref newContinuation.GCData[ContinuationContextGCDataIndex],
         //     syncContextFromBeforeCall,
+        //     ref newContinuation.GCData[ContinuationContextGCDataIndex],
         //     ref newContinuation.Flags).
-        GenTree*     contextElementPlaceholder = m_comp->gtNewZeroConNode(TYP_BYREF);
         GenTree*     syncContextPlaceholder    = m_comp->gtNewNull();
+        GenTree*     contextElementPlaceholder = m_comp->gtNewZeroConNode(TYP_BYREF);
         GenTree*     flagsPlaceholder          = m_comp->gtNewZeroConNode(TYP_BYREF);
         GenTreeCall* captureCall =
             m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
 
         captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(flagsPlaceholder));
-        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
         captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(contextElementPlaceholder));
+        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
 
         m_comp->compCurBB = suspendBB;
         m_comp->fgMorphTree(captureCall);
 
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, captureCall));
 
-        // Now replace contextElementPlaceholder with actual address of the context element
+        // Replace sync context placeholder with actual sync context from before call
         LIR::Use use;
-        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(contextElementPlaceholder, &use);
+        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
+        assert(gotUse);
+        GenTree* syncContextLcl = m_comp->gtNewLclvNode(callInfo.SynchronizationContextLclNum, TYP_REF);
+        LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContextLcl);
+        use.ReplaceWith(syncContextLcl);
+        LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
+
+        // Replace contextElementPlaceholder with actual address of the context element
+        gotUse = LIR::AsRange(suspendBB).TryGetUse(contextElementPlaceholder, &use);
         assert(gotUse);
 
         GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
@@ -1543,15 +1551,7 @@ void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*             
         use.ReplaceWith(contextElementOffset);
         LIR::AsRange(suspendBB).Remove(contextElementPlaceholder);
 
-        // Then do the sync context
-        gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
-        assert(gotUse);
-        GenTree* syncContextLcl = m_comp->gtNewLclvNode(callInfo.SynchronizationContextLclNum, TYP_REF);
-        LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContextLcl);
-        use.ReplaceWith(syncContextLcl);
-        LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
-
-        // And finally replace flagsPlaceholder with actual address of the flags
+        // Replace flagsPlaceholder with actual address of the flags
         gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
         assert(gotUse);
 
