@@ -27,10 +27,7 @@ namespace System.Net
             SslProtocols.Tls13,
         };
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
-        private static readonly ConcurrentDictionary<IntPtr, GCHandle> s_contextMap = new();
-
         private readonly SafeSslHandle _sslContext;
-        private readonly IntPtr _nativeHandle;
 
         private readonly object _lock = new object();
 
@@ -53,11 +50,6 @@ namespace System.Net
             {
                 _sslContext = CreateSslContext(SslStreamProxy, authOptions);
 
-                // Create GC handle and store it in dictionary
-                GCHandle gcHandle = GCHandle.Alloc(this);
-                _nativeHandle = GCHandle.ToIntPtr(gcHandle);
-                s_contextMap[_nativeHandle] = gcHandle;
-
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -72,22 +64,17 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            lock (_lock)
             {
-                lock (_lock)
+                if (!_disposed)
                 {
-                    if (!_disposed)
+                    _disposed = true;
+
+                    if (disposing)
                     {
-                        _disposed = true;
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
                         _sslContext.Dispose();
-
-                        // Remove our GC handle from the dictionary
-                        if (s_contextMap.TryRemove(_nativeHandle, out GCHandle handle))
-                        {
-                            handle.Free();
-                        }
                     }
                 }
             }
@@ -305,9 +292,9 @@ namespace System.Net
 
             // Make sure the class instance is associated to the session and is provided
             // in the Read/Write callback connection parameter
+            IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
             string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
-
-            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, _nativeHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
 
             if (authOptions.EnabledSslProtocols != SslProtocols.None)
             {
