@@ -1996,6 +1996,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLDsaAlgorithm MLDsa44 { get { throw null; } }
         public static System.Security.Cryptography.MLDsaAlgorithm MLDsa65 { get { throw null; } }
         public static System.Security.Cryptography.MLDsaAlgorithm MLDsa87 { get { throw null; } }
+        public int MuSizeInBytes { get { throw null; } }
         public string Name { get { throw null; } }
         public int PrivateSeedSizeInBytes { get { throw null; } }
         public int PublicKeySizeInBytes { get { throw null; } }

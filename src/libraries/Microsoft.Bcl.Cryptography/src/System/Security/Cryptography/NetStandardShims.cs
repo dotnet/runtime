@@ -130,7 +130,7 @@ namespace System.Security.Cryptography
 
             if (buffer.IsEmpty)
             {
-                return await stream.ReadAsync(Array.Empty<byte>(), 0, 0, cancellationToken).ConfigureAwait(false)   ;
+                return await stream.ReadAsync(Array.Empty<byte>(), 0, 0, cancellationToken).ConfigureAwait(false);
             }
 
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))

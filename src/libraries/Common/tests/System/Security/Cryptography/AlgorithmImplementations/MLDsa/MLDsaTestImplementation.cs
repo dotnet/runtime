@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        override protected void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination)
+        protected override void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination)
         {
             SignExternalMuCoreCallCount++;
             SignExternalMuHook(mu, destination);

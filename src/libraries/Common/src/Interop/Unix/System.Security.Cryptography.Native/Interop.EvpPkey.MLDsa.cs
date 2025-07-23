@@ -195,13 +195,17 @@ internal static partial class Interop
             ReadOnlySpan<byte> mu,
             Span<byte> destination)
         {
+            const int Success = 1;
+            const int SigningFailure = 0;
+
             int ret = CryptoNative_MLDsaSignExternalMu(
                 pkey, GetExtraHandle(pkey),
                 mu, mu.Length,
                 destination, destination.Length);
 
-            if (ret != 1)
+            if (ret != Success)
             {
+                Debug.Assert(ret == SigningFailure, $"Unexpected return value {ret} from {nameof(CryptoNative_MLDsaSignExternalMu)}.");
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
@@ -217,16 +221,19 @@ internal static partial class Interop
             ReadOnlySpan<byte> mu,
             ReadOnlySpan<byte> signature)
         {
+            const int ValidSignature = 1;
+            const int InvalidSignature = 0;
+
             int ret = CryptoNative_MLDsaVerifyExternalMu(
                 pkey, GetExtraHandle(pkey),
                 mu, mu.Length,
                 signature, signature.Length);
 
-            if (ret == 1)
+            if (ret == ValidSignature)
             {
                 return true;
             }
-            else if (ret == 0)
+            else if (ret == InvalidSignature)
             {
                 return false;
             }

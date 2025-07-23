@@ -324,7 +324,10 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            Span<byte> mu = stackalloc byte[HashLengthInBytes];
+            int hashLength = HashLengthInBytes;
+            Debug.Assert(hashLength == 64);
+
+            Span<byte> mu = stackalloc byte[hashLength];
             GetHashAndResetCore(mu);
             return Key.SignExternalMu(mu);
         }
@@ -350,7 +353,10 @@ namespace System.Security.Cryptography
 
             Helpers.ThrowIfWrongLength(destination, Key.Algorithm.SignatureSizeInBytes);
 
-            Span<byte> mu = stackalloc byte[HashLengthInBytes];
+            int hashLength = HashLengthInBytes;
+            Debug.Assert(hashLength == 64);
+
+            Span<byte> mu = stackalloc byte[hashLength];
             GetHashAndResetCore(mu);
             Key.SignExternalMu(mu, destination);
         }
@@ -371,14 +377,17 @@ namespace System.Security.Cryptography
         ///   The signature to verify against the computed mu value.
         /// </param>
         /// <returns>
-        ///   <see langword="true"/> if the mu value is valid for the key; otherwise, <see langword="false"/>.
+        ///   <see langword="true"/> if the mu value is valid for the key and signature; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         public bool VerifyAndReset(ReadOnlySpan<byte> signature)
         {
             ThrowIfDisposed();
 
-            Span<byte> mu = stackalloc byte[HashLengthInBytes];
+            int hashLength = HashLengthInBytes;
+            Debug.Assert(hashLength == 64);
+
+            Span<byte> mu = stackalloc byte[hashLength];
             GetHashAndResetCore(mu);
             return Key.VerifyExternalMu(mu, signature);
         }
@@ -427,14 +436,7 @@ namespace System.Security.Cryptography
 
         private void ThrowIfDisposed()
         {
-#if NET
             ObjectDisposedException.ThrowIf(_disposed, typeof(MLDsaMuHash));
-#else
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(MLDsaMuHash).FullName);
-            }
-#endif
         }
     }
 }

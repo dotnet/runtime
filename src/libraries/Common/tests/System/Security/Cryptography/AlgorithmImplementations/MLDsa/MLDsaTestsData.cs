@@ -6387,9 +6387,9 @@ namespace System.Security.Cryptography.Tests
                         "0000000000000000000000000000000000000000000000060E15171D1F"),
 
                 new MLDsaNistTestCase(
-                    nistTestCaseId: 123,
+                    nistTestCaseId: 126,
                     MLDsaAlgorithm.MLDsa65,
-                    shouldPass: false,
+                    shouldPass: true,
                     publicKeyHex:
                         "4A85E851AD50F93CAD46F6712050807F12C33503971AEC79A1B712C65A546A3576DCE9D9AD1982B0" +
                         "D423B8B5E5AB064D65EA4EC4A84F52EB0B7B81B8CB08424C490F4F1CA88F4BC963C503B2AC4C0A88" +

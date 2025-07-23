@@ -305,21 +305,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(testCase.SecretKey, secretKey);
             Assert.Throws<CryptographicException>(() => mldsa.ExportMLDsaPrivateSeed());
 
-            int runCount = 0;
-
-            if (testCase.Message is not null)
-            {
-                Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
-                runCount++;
-            }
-
-            if (testCase.Mu is not null)
-            {
-                Assert.Equal(testCase.ShouldPass, mldsa.VerifyExternalMu(testCase.Mu, testCase.Signature));
-                runCount++;
-            }
-
-            AssertExtensions.GreaterThan(runCount, 0, "At least one verification method should be tested.");
+            Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
         }
 
         protected virtual void AssertExportPkcs8FromPublicKey(Action export) =>

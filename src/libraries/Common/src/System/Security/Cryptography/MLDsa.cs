@@ -468,18 +468,22 @@ namespace System.Security.Cryptography
         ///   the signature mu (&#x3BC;) value, with an empty context.
         /// </summary>
         /// <returns>
-        ///   A hash accumulator instance that is associated with the current key, and the specified context.
+        ///   A hash accumulator instance that is associated with the current key, and the empty context.
         /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
         public MLDsaMuHash OpenExternalMuHash()
         {
             return OpenExternalMuHash(ReadOnlySpan<byte>.Empty);
         }
 
         /// <inheritdoc cref="OpenExternalMuHash(ReadOnlySpan{byte})"/>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
         public MLDsaMuHash OpenExternalMuHash(byte[]? context)
         {
-            ArgumentNullException.ThrowIfNull(context);
-
             return OpenExternalMuHash(new ReadOnlySpan<byte>(context));
         }
 
@@ -495,6 +499,9 @@ namespace System.Security.Cryptography
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
         /// </exception>
         public MLDsaMuHash OpenExternalMuHash(ReadOnlySpan<byte> context)
         {
@@ -513,7 +520,7 @@ namespace System.Security.Cryptography
 
         /// <summary>
         ///   Opens an <see cref="MLDsaMuHash"/> instance to accumulate data for the computation of
-        ///   the signature mu (&#x3BC;) value for use with the <c>SignExternalMu</c> method group.
+        ///   the signature mu (&#x3BC;) value.
         /// </summary>
         /// <param name="context">
         ///   The signature context.
@@ -542,13 +549,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Signs the specified externally computed signature mu (&#x3BC;) value,
-        ///   writing the signature into the provided buffer.
+        ///   Signs the specified externally computed signature mu (&#x3BC;) value.
         /// </summary>
         /// <param name="mu">
         ///   The signature mu value to sign.
         /// </param>
         /// <returns>
+        ///   ML-DSA signature for the specified mu value.
         /// </returns>
         /// <exception cref="ArgumentException">
         ///   The buffer in <paramref name="mu"/> is the incorrect length for the signature mu value.
@@ -2293,15 +2300,12 @@ namespace System.Security.Cryptography
             private byte[] _keyState;
             private Shake256 _shake;
 
-            // The base ctor wants an MLDsaAlgorithm in case the 64 byte mu length ever becomes a parameter set,
-            // but other than checking it's not null, it doesn't currently care what it is.
-            // Until there's a new parameter set that makes it matter, just clone with ML-DSA-87 (non-null).
             private DefaultMLDsaMuHash(DefaultMLDsaMuHash toClone)
                 : base(toClone.Key)
             {
                 _shake = toClone._shake.Clone();
 
-                // The key state is never update after the initial computation,
+                // The key state is never updated after the initial computation,
                 // so it doesn't need a full clone.
                 _keyState = toClone._keyState;
             }

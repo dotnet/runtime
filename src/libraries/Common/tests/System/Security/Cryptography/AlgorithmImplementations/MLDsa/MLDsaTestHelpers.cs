@@ -35,13 +35,24 @@ namespace System.Security.Cryptography.Tests
             byte[] bigBuffer = new byte[10000];
             byte[] mu = new byte[64];
 
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignData(Array.Empty<byte>()));
             Assert.Throws<ObjectDisposedException>(() => mldsa.SignData(ReadOnlySpan<byte>.Empty, signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyData(Array.Empty<byte>(), signature));
             Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyData(ReadOnlySpan<byte>.Empty, signature));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.SignExternalMu(mu, signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignPreHash(mu, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignPreHash(mu, signature, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyPreHash(mu, signature, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyPreHash(new ReadOnlySpan<byte>(mu), signature, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignExternalMu(mu));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignExternalMu(new ReadOnlySpan<byte>(mu)));
             Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyExternalMu(mu, signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyExternalMu(new ReadOnlySpan<byte>(mu), signature));
 
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed());
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed(new byte[mldsa.Algorithm.PrivateSeedSizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey());
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey(new byte[mldsa.Algorithm.PublicKeySizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaSecretKey());
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaSecretKey(new byte[mldsa.Algorithm.SecretKeySizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKey());
@@ -61,6 +72,11 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfoPem());
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.OpenExternalMuHash());
+            Assert.Throws<ObjectDisposedException>(() => mldsa.OpenExternalMuHash(mu));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.OpenExternalMuHash(new ReadOnlySpan<byte>(mu)));
+
+            // Doesn't throw:
+            Assert.NotNull(mldsa.Algorithm);
         }
 
         internal static void AssertImportPublicKey(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] publicKey) =>
