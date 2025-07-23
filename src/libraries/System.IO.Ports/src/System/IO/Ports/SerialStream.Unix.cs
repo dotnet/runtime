@@ -31,7 +31,6 @@ namespace System.IO.Ports
         private readonly byte[] _tempBuf = new byte[1];
         private Task _ioLoop;
         private readonly object _ioLoopLock = new object();
-        private bool _hasCancelledTasksToProcess;
         // Use a Queue with locking instead of ConcurrentQueue because ConcurrentQueue preserves segments for
         // observation when using TryPeek(). These segments will not clear out references after a dequeue
         // and as a result they hold on to SerialStreamIORequest instances so that they cannot be GC'ed.
@@ -362,8 +361,8 @@ namespace System.IO.Ports
 
         private bool HasCancelledTasksToProcess
         {
-            get => Volatile.Read(ref _hasCancelledTasksToProcess);
-            set => Volatile.Write(ref _hasCancelledTasksToProcess, value);
+            get => Volatile.Read(ref field);
+            set => Volatile.Write(ref field, value);
         }
 
         internal void DiscardInBuffer()

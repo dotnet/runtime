@@ -173,7 +173,7 @@ NESTED_END RhpNewObject, _TEXT
 
 // Allocate a string.
 //  RDI == MethodTable
-//  ESI == character/element count
+//  RSI == character/element count
 LEAF_ENTRY RhNewString, _TEXT
 
         // we want to limit the element count to the non-negative 32-bit int range
