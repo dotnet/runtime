@@ -53,6 +53,11 @@ namespace System.Text.Json.Nodes
                 {
                     return jsonElement.Value.GetString()!;
                 }
+
+                if (this is JsonValueOfJsonString jsonValueOfJsonString)
+                {
+                    return jsonValueOfJsonString.GetValue<string>()!;
+                }
             }
 
             Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(new JsonWriterOptions { Indented = true }, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
