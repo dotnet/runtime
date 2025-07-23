@@ -926,7 +926,7 @@ PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destina
     }
     return param.result;
 }
-#elif defined(__wasm__)
+#elif defined(TARGET_WASM)
 // WASM-TODO: get rid of whole module loading on wasm
 PALIMPORT
 int

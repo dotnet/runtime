@@ -641,7 +641,7 @@ static LPVOID ReserveVirtualMemory(
     }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     // Do not include reserved uncommitted memory in coredump.
     if (!(fAllocationType & MEM_COMMIT))
     {
