@@ -16,7 +16,6 @@
 // Gets the special heap we'll allocate from.
 HANDLE GetZlibHeap()
 {
-#ifdef _WIN64
     static HANDLE s_hPublishedHeap = NULL;
 
     // If already initialized, return immediately.
@@ -45,11 +44,6 @@ HANDLE GetZlibHeap()
     // We don't need a volatile read here since the publish is performed with release semantics.
     _ASSERTE(s_hPublishedHeap != NULL);
     return s_hPublishedHeap;
-#else
-    // We don't want to create a new heap in a 32-bit process because it could end up
-    // reserving too much of the address space. Instead, fall back to the normal process heap.
-    return GetProcessHeap();
-#endif
 }
 
 voidpf z_custom_calloc(opaque, items, size)
