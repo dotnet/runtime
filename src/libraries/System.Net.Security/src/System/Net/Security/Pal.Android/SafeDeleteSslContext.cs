@@ -66,20 +66,22 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (disposing)
             {
-                _disposed = true;
-
                 lock (_lock)
                 {
-                    _inputBuffer.Dispose();
-                    _outputBuffer.Dispose();
-                    _sslContext.Dispose();
-                }
+                    if (!_disposed)
+                    {
+                        _disposed = true;
+                        _inputBuffer.Dispose();
+                        _outputBuffer.Dispose();
+                        _sslContext.Dispose();
 
-                if (_gcHandle.IsAllocated)
-                {
-                    _gcHandle.Free();
+                        if (_gcHandle.IsAllocated)
+                        {
+                            _gcHandle.Free();
+                        }
+                    }
                 }
             }
 
@@ -91,7 +93,7 @@ namespace System.Net
         {
             GCHandle h = GCHandle.FromIntPtr(connection);
             SafeDeleteSslContext? context = h.IsAllocated ? h.Target as SafeDeleteSslContext : null;
-            if (context is null || context._disposed)
+            if (context is null)
             {
                 Debug.Write("WriteToConnection: context is null");
                 return;
@@ -101,6 +103,12 @@ namespace System.Net
             {
                 lock (context._lock)
                 {
+                    if (context._disposed)
+                    {
+                        Debug.Write("WriteToConnection: context is disposed");
+                        return;
+                    }
+
                     var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
 
                     context._outputBuffer.EnsureAvailableSpace(dataLength);
@@ -119,7 +127,7 @@ namespace System.Net
         {
             GCHandle h = GCHandle.FromIntPtr(connection);
             SafeDeleteSslContext? context = h.IsAllocated ? h.Target as SafeDeleteSslContext : null;
-            if (context is null || context._disposed)
+            if (context is null)
             {
                 Debug.Write("ReadFromConnection: context is null");
                 *dataLength = 0;
@@ -130,6 +138,13 @@ namespace System.Net
             {
                 lock (context._lock)
                 {
+                    if (context._disposed)
+                    {
+                        Debug.Write("ReadFromConnection: context is disposed");
+                        *dataLength = 0;
+                        return PAL_SSLStreamStatus.Error;
+                    }
+
                     int toRead = *dataLength;
                     if (toRead == 0)
                         return PAL_SSLStreamStatus.OK;
