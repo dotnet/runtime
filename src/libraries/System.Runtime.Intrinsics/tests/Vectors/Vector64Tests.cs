@@ -4243,14 +4243,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector64DoubleEqualsNaNTest()
         {
-            Vector64<double> nan = Vector64.NaN;
+            Vector64<double> nan = Vector64<double>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
         [Fact]
         public void Vector64SingleEqualsNaNTest()
         {
-            Vector64<float> nan = Vector64.NaN;
+            Vector64<float> nan = Vector64<float>.NaN;
             Assert.True(nan.Equals(nan));
         }
 

@@ -4962,14 +4962,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector128DoubleEqualsNaNTest()
         {
-            Vector128<double> nan = Vector128.NaN;
+            Vector128<double> nan = Vector128<double>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
         [Fact]
         public void Vector128SingleEqualsNaNTest()
         {
-            Vector128<float> nan = Vector128.NaN;
+            Vector128<float> nan = Vector128<float>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
