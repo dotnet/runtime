@@ -19914,7 +19914,13 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 bool GenTree::SupportsSettingZeroFlag()
 {
 #if defined(TARGET_XARCH)
-    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
+    if (OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
+    {
+        // Shift/Rotate instructions do not update the flags in case of count being zero.
+        return gtGetOp2()->IsNeverZero();
+    }
+
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
     {
         return true;
     }
@@ -20539,7 +20545,7 @@ bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
     {
         NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
         var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
-        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, comp);
 
         if (comp->codeGen->instIsEmbeddedBroadcastCompatible(ins))
         {
@@ -20784,7 +20790,12 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
 
     if (tgtSimdBaseJitType != CORINFO_TYPE_UNDEF)
     {
-        ins          = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
+        var_types tgtSimdBaseType = JitType2PreciseVarType(tgtSimdBaseJitType);
+
+        instruction tgtIns = HWIntrinsicInfo::lookupIns(intrinsic, tgtSimdBaseType, comp);
+        assert(ins != tgtIns);
+
+        ins          = tgtIns;
         maskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
     }
 
@@ -32394,10 +32405,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
                 GenTreeHWIntrinsic* cvtOp2 = (effectiveOper == GT_NOT) ? cvtOp1 : op2->AsHWIntrinsic();
 
-                unsigned simdBaseTypeSize = genTypeSize(simdBaseType);
+                var_types op1SimdBaseType = cvtOp1->GetSimdBaseType();
+                var_types op2SimdBaseType = cvtOp2->GetSimdBaseType();
 
-                if ((genTypeSize(cvtOp1->GetSimdBaseType()) == simdBaseTypeSize) &&
-                    (genTypeSize(cvtOp2->GetSimdBaseType()) == simdBaseTypeSize))
+                if (genTypeSize(op1SimdBaseType) == genTypeSize(op2SimdBaseType))
                 {
                     // We need both operands to be the same kind of mask; otherwise
                     // the bitwise operation can differ in how it performs
@@ -32449,6 +32460,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         tree->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
                         tree->gtFlags &= ~GTF_REVERSE_OPS;
                     }
+
+                    // The bitwise operation is likely normalized to int or uint, while
+                    // the underlying convert ops may be a small type. We need to preserve
+                    // such a small type since that indicates how many elements are in the mask.
+                    simdBaseJitType = cvtOp1->GetSimdBaseJitType();
+                    tree->SetSimdBaseJitType(simdBaseJitType);
 
                     tree->gtType = TYP_MASK;
                     DEBUG_DESTROY_NODE(op1);

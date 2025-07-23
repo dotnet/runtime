@@ -234,96 +234,51 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
 //    intrinsic                -- NamedIntrinsic associated with the HWIntrinsic to lookup
 //    sig                      -- signature of the intrinsic call.
 //    immNumber                -- Which immediate to use (1 for most intrinsics)
-//    simdBaseType             -- base type of the intrinsic
-//    simdType                 -- vector size of the intrinsic
-//    op1ClsHnd                -- cls handler for op1
-//    op2ClsHnd                -- cls handler for op2
-//    op2ClsHnd                -- cls handler for op3
 //    immSimdSize [IN/OUT]     -- Size of the immediate to override
 //    immSimdBaseType [IN/OUT] -- Base type of the immediate to override
 //
-void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
-                                      CORINFO_SIG_INFO*    sig,
-                                      unsigned             immNumber,
-                                      var_types            simdBaseType,
-                                      CorInfoType          simdBaseJitType,
-                                      CORINFO_CLASS_HANDLE op1ClsHnd,
-                                      CORINFO_CLASS_HANDLE op2ClsHnd,
-                                      CORINFO_CLASS_HANDLE op3ClsHnd,
-                                      unsigned*            immSimdSize,
-                                      var_types*           immSimdBaseType)
+void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic    intrinsic,
+                                      CORINFO_SIG_INFO* sig,
+                                      unsigned          immNumber,
+                                      unsigned*         immSimdSize,
+                                      var_types*        immSimdBaseType)
 {
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
 
     if (category == HW_Category_SIMDByIndexedElement)
     {
         assert(immNumber == 1);
+        *immSimdSize                   = 0;
+        CORINFO_ARG_LIST_HANDLE immArg = sig->args;
 
-        CorInfoType indexedElementBaseJitType;
-        var_types   indexedElementBaseType;
-        *immSimdSize = 0;
-
-        if (sig->numArgs == 2)
+        switch (sig->numArgs)
         {
-            indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op1ClsHnd, immSimdSize);
-            indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
-        }
-        else if (sig->numArgs == 3)
-        {
-            indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op2ClsHnd, immSimdSize);
-            indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
-        }
-        else
-        {
-            assert(sig->numArgs == 4);
-            indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op3ClsHnd, immSimdSize);
-            indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
-
-            if (intrinsic == NI_Dp_DotProductBySelectedQuadruplet)
+            case 4:
+                immArg = info.compCompHnd->getArgNext(immArg);
+                FALLTHROUGH;
+            case 3:
+                immArg = info.compCompHnd->getArgNext(immArg);
+                FALLTHROUGH;
+            case 2:
             {
-                assert(((simdBaseType == TYP_INT) && (indexedElementBaseType == TYP_BYTE)) ||
-                       ((simdBaseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)));
-                // The second source operand of sdot, udot instructions is an indexed 32-bit element.
-                indexedElementBaseType = simdBaseType;
+                CORINFO_CLASS_HANDLE typeHnd = info.compCompHnd->getArgClass(sig, immArg);
+                getBaseJitTypeAndSizeOfSIMDType(typeHnd, immSimdSize);
+                break;
             }
-
-            if (intrinsic == NI_Sve_DotProductBySelectedScalar)
-            {
-                assert(((simdBaseType == TYP_INT) && (indexedElementBaseType == TYP_BYTE)) ||
-                       ((simdBaseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)) ||
-                       ((simdBaseType == TYP_LONG) && (indexedElementBaseType == TYP_SHORT)) ||
-                       ((simdBaseType == TYP_ULONG) && (indexedElementBaseType == TYP_USHORT)));
-
-                // The second source operand of sdot, udot instructions is an indexed 32-bit element.
-                indexedElementBaseType = simdBaseType;
-            }
+            default:
+                unreached();
         }
-
-        if (intrinsic == NI_Sve2_MultiplyBySelectedScalar ||
-            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEven ||
-            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd ||
-            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract ||
-            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOdd ||
-            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd ||
-            intrinsic == NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract ||
-            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven ||
-            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd ||
-            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven ||
-            intrinsic == NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd ||
-            intrinsic == NI_Sve2_MultiplySubtractBySelectedScalar)
-        {
-            indexedElementBaseType = simdBaseType;
-        }
-
-        assert(indexedElementBaseType == simdBaseType);
     }
     else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
     {
         if (immNumber == 2)
         {
-            CorInfoType otherBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op3ClsHnd, immSimdSize);
-            *immSimdBaseType             = JitType2PreciseVarType(otherBaseJitType);
-            assert(otherBaseJitType == simdBaseJitType);
+            CORINFO_ARG_LIST_HANDLE immArg        = sig->args;
+            immArg                                = info.compCompHnd->getArgNext(immArg);
+            immArg                                = info.compCompHnd->getArgNext(immArg);
+            CORINFO_CLASS_HANDLE typeHnd          = info.compCompHnd->getArgClass(sig, immArg);
+            CorInfoType          otherBaseJitType = getBaseJitTypeAndSizeOfSIMDType(typeHnd, immSimdSize);
+            *immSimdBaseType                      = JitType2PreciseVarType(otherBaseJitType);
         }
         // For imm1 use default simd sizes.
     }
