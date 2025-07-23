@@ -665,6 +665,7 @@ PEAssembly::PEAssembly(
     m_isSystem = isSystem;
     m_pHostAssembly = nullptr;
     m_pFallbackBinder = nullptr;
+    m_pAssemblyLoadContext = nullptr;
 
     pPEImage = pBindResultInfo ? pBindResultInfo->GetPEImage() : pPEImage;
     if (pPEImage)
@@ -714,6 +715,18 @@ PEAssembly::PEAssembly(
         _ASSERTE(pHostAssembly == nullptr);
         pBindResultInfo = clr::SafeAddRef(pBindResultInfo);
         m_pHostAssembly = pBindResultInfo;
+    }
+
+    if (m_pHostAssembly != nullptr)
+    {
+        m_pAssemblyLoadContext = m_pHostAssembly->GetBinder()->GetManagedAssemblyLoadContextAddr();
+    }
+    else
+    {
+        if (m_PEImage == NULL)
+        {
+            m_pAssemblyLoadContext = m_pFallbackBinder->GetManagedAssemblyLoadContextAddr();
+        }
     }
 
 #ifdef LOGGING

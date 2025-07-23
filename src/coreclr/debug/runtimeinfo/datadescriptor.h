@@ -265,6 +265,7 @@ CDAC_TYPE_INDETERMINATE(PEAssembly)
 CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, PEImage, cdac_data<PEAssembly>::PEImage)
 CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, HostAssembly, cdac_data<PEAssembly>::HostAssembly)
 CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, FallbackBinder, cdac_data<PEAssembly>::FallbackBinder)
+CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, AssemblyLoadContext, cdac_data<PEAssembly>::AssemblyLoadContext)
 CDAC_TYPE_END(PEAssembly)
 
 CDAC_TYPE_BEGIN(BinderSpaceAssembly)
