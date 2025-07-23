@@ -2338,8 +2338,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
             emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
 
-            simd_t negOneIntVec = simd_t::AllBitsSet();
-            CORINFO_FIELD_HANDLE negOneFld   = emit->emitSimdConst(&negOneIntVec, typeSize);
+            simd_t               negOneIntVec = simd_t::AllBitsSet();
+            CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
 
             // div-by-zero check
             emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg1, tmpReg1, tmpReg1, instOptions);
@@ -2365,10 +2365,13 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
             }
 
-            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
-            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg2, op2Reg, instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg1, op1Reg,
+                              instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvtdq2pd : INS_vcvtudq2pd, divTypeSize, tmpReg2, op2Reg,
+                              instOptions);
             emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg1, tmpReg2, instOptions);
-            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg, targetReg, instOptions);
+            emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg,
+                              targetReg, instOptions);
             break;
         }
 
