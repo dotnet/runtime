@@ -579,7 +579,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -627,13 +627,13 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 #else
     bool success = true;
-#endif // !TARGET_BROWSER
+#endif // !TARGET_WASM
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.

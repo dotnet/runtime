@@ -2657,7 +2657,7 @@ VOID
 PALAPI
 FlushProcessWriteBuffers()
 {
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
@@ -2717,7 +2717,7 @@ FlushProcessWriteBuffers()
         CHECK_MACH("vm_deallocate()", machret);
     }
 #endif // TARGET_APPLE
-#endif // !TARGET_BROWSER
+#endif // !TARGET_WASM
 }
 
 /*++
