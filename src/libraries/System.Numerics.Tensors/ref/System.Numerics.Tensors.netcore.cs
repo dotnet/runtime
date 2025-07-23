@@ -315,6 +315,8 @@ namespace System.Numerics.Tensors
         public static System.Numerics.Tensors.Tensor<T> CreateFromShape<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> CreateFromShapeUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> CreateFromShapeUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Decrement<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IDecrementOperators<T> { throw null; }
+        public static ref readonly System.Numerics.Tensors.TensorSpan<T> Decrement<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IDecrementOperators<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> DegreesToRadians<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> DegreesToRadians<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static T Distance<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IRootFunctions<T> { throw null; }
@@ -672,6 +674,14 @@ namespace System.Numerics.Tensors
             public static System.Numerics.Tensors.Tensor<TScalar> operator ^(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
             public void operator ^=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
             public void operator ^=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor) where TScalar : System.Numerics.IDecrementOperators<TScalar>
+        {
+            public void operator --() { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor) where TScalar : System.Numerics.IDecrementOperators<TScalar>
+        {
+            public void operator --() { throw null; }
         }
         extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
             where TScalar : System.Numerics.IDivisionOperators<TScalar, TScalar, TScalar>

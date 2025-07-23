@@ -949,6 +949,22 @@ namespace System.Numerics.Tensors
             }
         }
 
+        public readonly struct Decrement<T>
+            : IUnaryOperation_Tensor<T, T>
+            where T : IDecrementOperators<T>
+        {
+            public static void Invoke(ref readonly T x, ref T destination)
+            {
+                T tmp = x;
+                destination = --tmp;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, Span<T> destination)
+            {
+                TensorPrimitives.Decrement(x, destination);
+            }
+        }
+
         public readonly struct DegreesToRadians<T>
         : IUnaryOperation_Tensor<T, T>
         where T : ITrigonometricFunctions<T>
