@@ -433,12 +433,12 @@ namespace System
 
             if (typeof(TChar) == typeof(byte))
             {
-                fallbackResult = TryDecodeFromUtf8_Scalar(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(source), destination, out elementsProcessed);
+                fallbackResult = TryDecodeFromUtf8_Scalar(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(source.Slice((int)offset)), destination.Slice((int)(offset / 2)), out elementsProcessed);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(char));
-                fallbackResult = TryDecodeFromUtf16_Scalar(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(source), destination, out elementsProcessed);
+                fallbackResult = TryDecodeFromUtf16_Scalar(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(source.Slice((int)offset)), destination.Slice((int)(offset / 2)), out elementsProcessed);
             }
 
             elementsProcessed = (int)offset + elementsProcessed;
