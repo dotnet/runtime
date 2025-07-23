@@ -68,8 +68,6 @@
       <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(_hostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
       <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == ''">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
       <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' != ''">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
-      <IlcUseNativeAOTRuntimePackLayout Condition="'@(ResolvedTargetILCompilerPack)' == '$(_targetRuntimePackName)'">true</IlcUseNativeAOTRuntimePackLayout>
-      <IlcUseNativeAOTRuntimePackLayout Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == ''">$(PublishAotUsingRuntimePack)</IlcUseNativeAOTRuntimePackLayout>
     </PropertyGroup>
 
   </Target>

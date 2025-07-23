@@ -94,7 +94,6 @@ namespace System.Net.Http
 
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
-        private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
         private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
@@ -575,7 +574,7 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties => _properties ??= new Dictionary<string, object>();
+        public IDictionary<string, object> Properties => field ??= new Dictionary<string, object>();
         #endregion
 
         protected override void Dispose(bool disposing)
