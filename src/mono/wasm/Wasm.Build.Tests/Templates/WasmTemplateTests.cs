@@ -72,37 +72,44 @@ namespace Wasm.Build.Tests
 
         [Theory, TestCategory("no-fingerprinting")]
         [MemberData(nameof(TestDataForAppBundleDir))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/108107")]
         public async Task RunWithDifferentAppBundleLocations(bool runOutsideProjectDirectory, string extraProperties)
             => await BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration.Release, extraProperties, runOutsideProjectDirectory);
 
         private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration config, string extraProperties = "", bool runOutsideProjectDirectory = false)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+        ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
+        UpdateBrowserProgramFile();
+        UpdateBrowserMainJs();
 
-            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
+        string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
+        string projectFilePath = info.ProjectFilePath;
+        if (runOutsideProjectDirectory)
+        {
+            // When running outside, the project is in a subdirectory of workingDir
+            string projectDirName = Path.GetFileName(Path.GetDirectoryName(projectFilePath))!;
+            string projectFileName = Path.GetFileName(projectFilePath);
+            projectFilePath = Path.Combine(projectDirName, projectFileName);
+        }
 
-            {
-                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                            .WithWorkingDirectory(workingDir);
+        {
+            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(workingDir);
 
-                await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{info.ProjectName}.csproj\" --forward-console");
-                await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
-            }
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFilePath}\" --forward-console");
+            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+            Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+        }
 
-            {
-                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                            .WithWorkingDirectory(workingDir);
+        {
+            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(workingDir);
 
-                await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{info.ProjectName}.csproj\" --forward-console");
-                await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
-            }
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFilePath}\" --forward-console");
+            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+            Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+        }
         }
 
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
