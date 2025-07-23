@@ -2346,7 +2346,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             //
             //      Vector128<int> overflowMask =
             //          Vector128.Equals(op1, Vector128.Create(int.MinValue)
-            //          & Vector128.Equals(op2, Vector128.Create(-1));
+            //          & Vector128.Equals(op2, Vector128<int>.NegativeOne);
             //      if (!Vector128.EqualsAll(overflowMask, Vector128<int>.Zero))
             //      {
             //          throw new OverflowException();
