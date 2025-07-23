@@ -22,7 +22,7 @@ public class Runtime_116125
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Problem(ulong x, ref ushort y)
+    static void Problem(ulong x, ref ushort y)
     {
         if (x / ((0UL & y) | 1) <= 0)
         {
