@@ -385,6 +385,8 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Ieee754Remainder<T>(T x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<int> ILogB<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IFloatingPointIeee754<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<int> ILogB<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<int> destination) where T : System.Numerics.IFloatingPointIeee754<T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Increment<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IIncrementOperators<T> { throw null; }
+        public static ref readonly System.Numerics.Tensors.TensorSpan<T> Increment<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IIncrementOperators<T> { throw null; }
         public static nint IndexOfMaxMagnitude<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
         public static nint IndexOfMax<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
         public static nint IndexOfMinMagnitude<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
@@ -695,6 +697,14 @@ namespace System.Numerics.Tensors
             public static System.Numerics.Tensors.Tensor<TScalar> operator /(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
             public void operator /=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
             public void operator /=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor) where TScalar : System.Numerics.IIncrementOperators<TScalar>
+        {
+            public void operator ++() { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor) where TScalar : System.Numerics.IIncrementOperators<TScalar>
+        {
+            public void operator ++() { throw null;  }
         }
         extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
             where TScalar : System.Numerics.IMultiplyOperators<TScalar, TScalar, TScalar>, System.Numerics.IMultiplicativeIdentity<TScalar, TScalar>

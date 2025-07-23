@@ -1186,6 +1186,22 @@ namespace System.Numerics.Tensors
             }
         }
 
+        public readonly struct Increment<T>
+            : IUnaryOperation_Tensor<T, T>
+            where T : IIncrementOperators<T>
+        {
+            public static void Invoke(ref readonly T x, ref T destination)
+            {
+                T tmp = x;
+                destination = ++tmp;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, Span<T> destination)
+            {
+                TensorPrimitives.Increment(x, destination);
+            }
+        }
+
         public readonly struct LeadingZeroCount<T>
         : IUnaryOperation_Tensor<T, T>
         where T : IBinaryInteger<T>

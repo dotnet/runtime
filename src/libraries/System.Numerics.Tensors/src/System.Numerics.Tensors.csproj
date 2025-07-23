@@ -44,6 +44,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_BitwiseOr.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Division.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_ExclusiveOr.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Increment.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_LeftShift.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Multiply.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_OnesComplement.cs" />
