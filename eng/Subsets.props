@@ -558,7 +558,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.aotcross+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)monoaotcross.proj" Category="mono" AdditionalProperties="%(AdditionalProperties);DotNetBuildMonoCrossAOT=true" />
+    <ProjectToBuild Include="$(MonoProjectRoot)monoaotcross.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
