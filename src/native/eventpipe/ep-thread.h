@@ -36,7 +36,7 @@ struct _EventPipeThread_Internal {
 	ep_rt_spin_lock_handle_t rt_lock;
 	// This is initialized when the Thread object is first constructed and remains
 	// immutable afterwards.
-	uint64_t os_thread_id;
+	ep_rt_thread_id_t os_thread_id;
 	// The EventPipeThreadHolder maintains one count while the thread is alive
 	// and each session's EventPipeBufferList maintains one count while it
 	// exists.
@@ -73,7 +73,7 @@ ep_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_ha
 EP_DEFINE_GETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session);
 EP_DEFINE_SETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, ep_rt_spin_lock_handle_t *, rt_lock);
-EP_DEFINE_GETTER(EventPipeThread *, thread, uint64_t, os_thread_id);
+EP_DEFINE_GETTER(EventPipeThread *, thread, ep_rt_thread_id_t, os_thread_id);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, int32_t *, ref_count);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, volatile uint32_t *, unregistered);
 

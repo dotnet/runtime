@@ -56,6 +56,7 @@ dn_umap_ ## key_type_name ## _ ## value_type_name ## _find (dn_umap_t *map, key_
 }
 
 DN_UMAP_IT_KEY_T (ptr, void *)
+DN_UMAP_IT_KEY_T (threadid, ep_rt_thread_id_t)
 
 DN_UMAP_IT_VALUE_T (bool, bool)
 DN_UMAP_IT_VALUE_T (int8_t, int8_t)
@@ -73,5 +74,6 @@ DN_UMAP_T (ptr, void *, uint16, uint16_t)
 DN_UMAP_T (ptr, void *, int32, int32_t)
 DN_UMAP_T (ptr, void *, uint32, uint32_t)
 DN_UMAP_T (uint32, uint32_t, ptr, void *)
+DN_UMAP_T (threadid, ep_rt_thread_id_t, uint32, uint32_t)
 
 #endif /* __DN_UMAP_T_H__ */
