@@ -21,9 +21,9 @@ namespace System.Security.Cryptography.Tests
         internal int SignDataCoreCallCount = 0;
         internal int SignPreHashCoreCallCount = 0;
         internal int VerifyPreHashCoreCallCount = 0;
-        internal int OpenExternalMuCallCount = 0;
-        internal int SignExternalMuCallCount = 0;
-        internal int VerifyExternalMuCallCount = 0;
+        internal int OpenExternalMuHashCoreCallCount = 0;
+        internal int SignExternalMuCoreCallCount = 0;
+        internal int VerifyExternalMuCoreCallCount = 0;
         internal int ExportMLDsaPrivateSeedCoreCallCount = 0;
         internal int ExportMLDsaPublicKeyCoreCallCount = 0;
         internal int ExportMLDsaSecretKeyCoreCallCount = 0;
@@ -38,14 +38,13 @@ namespace System.Security.Cryptography.Tests
         internal VerifyFunc VerifyDataHook { get; set; }
         internal SignPreHashAction SignPreHashHook { get; set; }
         internal VerifyPreHashFunc VerifyPreHashHook { get; set; }
-        internal OpenExternalMuHashFunc OpenExternalMuHashCoreHook { get; set; }
+        internal OpenExternalMuHashFunc OpenExternalMuHashHook { get; set; }
         internal SignMuAction SignExternalMuHook { get; set; }
         internal VerifyMuFunc VerifyExternalMuHook { get; set; }
         internal Action<bool> DisposeHook { get; set; }
 
         private MLDsaTestImplementation(MLDsaAlgorithm algorithm) : base(algorithm)
         {
-            UseBaseExternalMuHash();
         }
 
         protected override void Dispose(bool disposing)
@@ -102,26 +101,29 @@ namespace System.Security.Cryptography.Tests
             return VerifyPreHashHook(hash, context, hashAlgorithmOid, signature);
         }
 
-        internal void UseBaseExternalMuHash()
-        {
-            OpenExternalMuHashCoreHook = base.OpenExternalMuHashCore;
-        }
-
         protected override MLDsaMuHash OpenExternalMuHashCore(ReadOnlySpan<byte> context)
         {
-            OpenExternalMuCallCount++;
-            return OpenExternalMuHashCoreHook(context);
+            OpenExternalMuHashCoreCallCount++;
+
+            if (OpenExternalMuHashHook is null)
+            {
+                return base.OpenExternalMuHashCore(context);
+            }
+            else
+            {
+                return OpenExternalMuHashHook(context);
+            }
         }
 
         override protected void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination)
         {
-            SignExternalMuCallCount++;
+            SignExternalMuCoreCallCount++;
             SignExternalMuHook(mu, destination);
         }
 
         protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature)
         {
-            VerifyExternalMuCallCount++;
+            VerifyExternalMuCoreCallCount++;
             return VerifyExternalMuHook(mu, signature);
         }
 
@@ -136,7 +138,7 @@ namespace System.Security.Cryptography.Tests
                 VerifyDataHook = (_, _, _) => { Assert.Fail(); return false; },
                 SignPreHashHook = (_, _, _, _) => Assert.Fail(),
                 VerifyPreHashHook = (_, _, _, _) => { Assert.Fail(); return false; },
-                OpenExternalMuHashCoreHook = _ => { Assert.Fail(); return null; },
+                OpenExternalMuHashHook = _ => { Assert.Fail(); return null; },
                 SignExternalMuHook = (_, _) => Assert.Fail(),
                 VerifyExternalMuHook = (_, _) => { Assert.Fail(); return false; },
                 DisposeHook = _ => { },
@@ -240,6 +242,23 @@ namespace System.Security.Cryptography.Tests
             VerifyPreHashHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
             {
                 bool ret = oldVerifyPreHashHook(hash, context, hashAlgorithmOid, signature);
+                Assert.Equal(Algorithm.SignatureSizeInBytes, signature.Length);
+                return ret;
+            };
+
+            SignMuAction oldSignExternalMuHook = SignExternalMuHook;
+            SignExternalMuHook = (ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            {
+                oldSignExternalMuHook(mu, destination);
+                Assert.Equal(64, mu.Length);
+                Assert.Equal(Algorithm.SignatureSizeInBytes, destination.Length);
+            };
+
+            VerifyMuFunc oldVerifyExternalMuHook = VerifyExternalMuHook;
+            VerifyExternalMuHook = (ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            {
+                bool ret = oldVerifyExternalMuHook(mu, signature);
+                Assert.Equal(64, mu.Length);
                 Assert.Equal(Algorithm.SignatureSizeInBytes, signature.Length);
                 return ret;
             };
@@ -372,6 +391,21 @@ namespace System.Security.Cryptography.Tests
             {
                 bool ret = oldVerifyPreHashCoreHook(hash, context, hashAlgorithmOid, signature);
                 AssertExtensions.Same(buffer.Span, hash);
+                return ret;
+            };
+
+            SignMuAction oldSignExternalMuHook = SignExternalMuHook;
+            SignExternalMuHook = (ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            {
+                oldSignExternalMuHook(mu, destination);
+                AssertExtensions.Same(buffer.Span, mu);
+            };
+
+            VerifyMuFunc oldVerifyExternalMuHook = VerifyExternalMuHook;
+            VerifyExternalMuHook = (ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            {
+                bool ret = oldVerifyExternalMuHook(mu, signature);
+                AssertExtensions.Same(buffer.Span, mu);
                 return ret;
             };
         }

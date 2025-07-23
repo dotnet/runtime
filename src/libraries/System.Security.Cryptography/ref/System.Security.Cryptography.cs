@@ -1959,8 +1959,9 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLDsa ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
-        public System.Security.Cryptography.MLDsaMuHash OpenExternalMuHash(byte[]? context = null) { throw null; }
-        public System.Security.Cryptography.MLDsaMuHash OpenExternalMuHash(System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.MLDsaMuHash OpenExternalMuHash() { throw null; }
+        public System.Security.Cryptography.MLDsaMuHash OpenExternalMuHash(byte[]? context) { throw null; }
+        public System.Security.Cryptography.MLDsaMuHash OpenExternalMuHash(System.ReadOnlySpan<byte> context) { throw null; }
         protected virtual System.Security.Cryptography.MLDsaMuHash OpenExternalMuHashCore(System.ReadOnlySpan<byte> context) { throw null; }
         public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
         public void SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { }

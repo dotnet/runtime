@@ -148,6 +148,8 @@
              Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\UntouchableStream.cs"
+             Link="CommonTest\System\IO\UntouchableStream.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"

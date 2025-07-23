@@ -462,8 +462,21 @@ namespace System.Security.Cryptography
                 new ReadOnlySpan<byte>(context));
         }
 
+
+        /// <summary>
+        ///   Opens an <see cref="MLDsaMuHash"/> instance to accumulate data for the computation of
+        ///   the signature mu (&#x3BC;) value, with an empty context.
+        /// </summary>
+        /// <returns>
+        ///   A hash accumulator instance that is associated with the current key, and the specified context.
+        /// </returns>
+        public MLDsaMuHash OpenExternalMuHash()
+        {
+            return OpenExternalMuHash(ReadOnlySpan<byte>.Empty);
+        }
+
         /// <inheritdoc cref="OpenExternalMuHash(ReadOnlySpan{byte})"/>
-        public MLDsaMuHash OpenExternalMuHash(byte[]? context = null)
+        public MLDsaMuHash OpenExternalMuHash(byte[]? context)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -472,11 +485,10 @@ namespace System.Security.Cryptography
 
         /// <summary>
         ///   Opens an <see cref="MLDsaMuHash"/> instance to accumulate data for the computation of
-        ///   the signature mu (&#x3BC;) value for use with the <c>SignExternalMu</c> method group.
+        ///   the signature mu (&#x3BC;) value, with an empty context.
         /// </summary>
         /// <param name="context">
-        ///   An optional context-specific value to limit the scope of the signature.
-        ///   The default value is the empty buffer.
+        ///   A context-specific value to limit the scope of the signature.
         /// </param>
         /// <returns>
         ///   A hash accumulator instance that is associated with the current key, and the specified context.
@@ -484,7 +496,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a length in excess of 255 bytes.
         /// </exception>
-        public MLDsaMuHash OpenExternalMuHash(ReadOnlySpan<byte> context = default)
+        public MLDsaMuHash OpenExternalMuHash(ReadOnlySpan<byte> context)
         {
             if (context.Length > MaxContextLength)
             {

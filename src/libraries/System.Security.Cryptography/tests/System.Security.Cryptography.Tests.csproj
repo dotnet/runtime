@@ -215,6 +215,8 @@
              Link="Common\System\IO\ConnectedStreams.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\UntouchableStream.cs"
+             Link="CommonTest\System\IO\UntouchableStream.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
              Link="CommonTest\System\RandomDataGenerator.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"

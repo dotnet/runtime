@@ -45,6 +45,15 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, []);
         }
 
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void GenerateSignVerifyExternalMuNoContext(MLDsaAlgorithm algorithm)
+        {
+            byte[] data = [1, 2, 3, 4, 5];
+            using MLDsa mldsa = GenerateKey(algorithm);
+            SignAndVerifyExternalMu(mldsa, data, []);
+        }
+
         [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyWithContext(MLDsaAlgorithm algorithm)
@@ -70,6 +79,16 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, context);
         }
 
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void GenerateSignVerifyExternalMuWithContext(MLDsaAlgorithm algorithm)
+        {
+            byte[] data = [1, 2, 3, 4, 5];
+            byte[] context = [1, 1, 3, 5, 6];
+            using MLDsa mldsa = GenerateKey(algorithm);
+            SignAndVerifyExternalMu(mldsa, data, context);
+        }
+
         [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
@@ -91,6 +110,27 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, context);
         }
 
+        [ConditionalTheory(
+            typeof(MLDsaTestHelpers),
+            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void GenerateSignVerifyEmptyMessageExternalMuNoContext(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = GenerateKey(algorithm);
+            SignAndVerifyExternalMu(mldsa, [], []);
+        }
+
+        [ConditionalTheory(
+            typeof(MLDsaTestHelpers),
+            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void GenerateSignVerifyEmptyMessageExternalMuWithContext(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = GenerateKey(algorithm);
+            byte[] context = [1, 1, 3, 5, 6];
+            SignAndVerifyExternalMu(mldsa, [], context);
+        }
+
         [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignExportPublicVerifyWithPublicOnly(MLDsaAlgorithm algorithm)
@@ -100,6 +140,8 @@ namespace System.Security.Cryptography.Tests
             byte[] signature;
             byte[] hash = HashInfo.Sha256.GetHash(data);
             byte[] signaturePreHash;
+            byte[] mu = null;
+            byte[] muSignature = null;
 
             using (MLDsa mldsa = GenerateKey(algorithm))
             {
@@ -110,13 +152,28 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.TrueExpression(mldsa.VerifyPreHash(hash, signaturePreHash, HashInfo.Sha256.Oid));
 
                 publicKey = mldsa.ExportMLDsaPublicKey();
+
+                if (MLDsaTestHelpers.ExternalMuIsSupported)
+                {
+                    using (MLDsaMuHash mldsaMuHash = mldsa.OpenExternalMuHash())
+                    {
+                        mldsaMuHash.AppendData(data);
+                        mu = mldsaMuHash.GetCurrentHash();
+                        muSignature = mldsaMuHash.SignAndReset();
+                    }
+                }
             }
 
             using (MLDsa mldsaPub = ImportPublicKey(algorithm, publicKey))
             {
-                ExerciseSuccessfulVerify(mldsaPub, data, signature, []);
+                ExerciseSuccessfulVerify(mldsaPub, data, signature, [], mu);
                 ExerciseSuccessfulVerifyPreHash(mldsaPub, HashInfo.Sha256.Oid, hash, signaturePreHash, []);
                 AssertExtensions.FalseExpression(mldsaPub.VerifyPreHash(hash, signature, HashInfo.Sha256.Oid));
+
+                if (muSignature is not null)
+                {
+                    ExerciseSuccessfulVerify(mldsaPub, data, muSignature, [], mu);
+                }
             }
         }
 
@@ -215,22 +272,7 @@ namespace System.Security.Cryptography.Tests
         public void NistImportPublicKeyVerify(MLDsaNistTestCase testCase)
         {
             using MLDsa mldsa = ImportPublicKey(testCase.Algorithm, testCase.PublicKey);
-
-            int runCount = 0;
-
-            if (testCase.Message is not null)
-            {
-                Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
-                runCount++;
-            }
-
-            if (testCase.Mu is not null)
-            {
-                Assert.Equal(testCase.ShouldPass, mldsa.VerifyExternalMu(testCase.Mu, testCase.Signature));
-                runCount++;
-            }
-
-            AssertExtensions.GreaterThan(runCount, 0, "At least one verification method should be tested.");
+            Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
         }
 
         [Theory]
@@ -240,6 +282,14 @@ namespace System.Security.Cryptography.Tests
             byte[] hash = HashInfo.HashData(testCase.HashAlgOid, testCase.Message);
             using MLDsa mldsa = ImportPublicKey(testCase.Algorithm, testCase.PublicKey);
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyPreHash(hash, testCase.Signature, testCase.HashAlgOid, testCase.Context));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllExternalMuMLDsaNistTestCases), MemberType = typeof(MLDsaTestsData))]
+        public void NistImportPublicKeyVerifyExternalMu(MLDsaNistTestCase testCase)
+        {
+            using MLDsa mldsa = ImportPublicKey(testCase.Algorithm, testCase.PublicKey);
+            Assert.Equal(testCase.ShouldPass, mldsa.VerifyExternalMu(testCase.Mu, testCase.Signature));
         }
 
         [Theory]
@@ -341,7 +391,140 @@ namespace System.Security.Cryptography.Tests
             Assert.DoesNotContain("unknown", ce.Message, StringComparison.OrdinalIgnoreCase);
         }
 
-        protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context)
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ExternalMuHash_AccruesProperly(MLDsaAlgorithm algorithm)
+        {
+            byte[] context = [ 9, 6, 3, 8, 5, 1, 2, 4 ];
+            byte[] msg = [ 1, 2, 3, 4, 5, 6, 7 ];
+
+            using MLDsa mldsa = GenerateKey(algorithm);
+            using MLDsaMuHash mldsaMuHash = mldsa.OpenExternalMuHash(context);
+            byte[] emptyMu = mldsaMuHash.GetCurrentHash();
+
+            mldsaMuHash.AppendData(msg);
+            byte[] mu = mldsaMuHash.GetCurrentHash();
+            AssertExtensions.SequenceNotEqual(emptyMu, mu);
+
+            byte[] mu2 = mldsaMuHash.GetCurrentHash();
+            AssertExtensions.SequenceEqual(mu, mu2);
+
+            Array.Clear(mu2, 0, mu2.Length);
+            mldsaMuHash.GetHashAndReset(mu2);
+            AssertExtensions.SequenceEqual(mu, mu2);
+
+            Array.Clear(mu2, 0, mu2.Length);
+            mldsaMuHash.GetHashAndReset(mu2);
+            AssertExtensions.SequenceEqual(emptyMu, mu2);
+
+            for (int i = 0; i < msg.Length; i++)
+            {
+                mldsaMuHash.AppendData(msg.AsSpan(i, 1));
+            }
+
+            Array.Clear(mu2, 0, mu2.Length);
+            mldsaMuHash.GetHashAndReset(mu2);
+            AssertExtensions.SequenceEqual(mu, mu2);
+
+            Array.Clear(mu2, 0, mu2.Length);
+            mldsaMuHash.AppendData(ReadOnlySpan<byte>.Empty);
+            mldsaMuHash.GetCurrentHash(mu2);
+            AssertExtensions.SequenceEqual(emptyMu, mu2);
+
+            for (int i = 0; i < msg.Length; i++)
+            {
+                mldsaMuHash.AppendData(msg.AsSpan(0, i));
+                mldsaMuHash.AppendData(msg.AsSpan(i));
+
+                Array.Clear(mu2, 0, mu2.Length);
+                mldsaMuHash.GetHashAndReset(mu2);
+                AssertExtensions.SequenceEqual(mu, mu2);
+
+                mldsaMuHash.Reset();
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ExternalMuHash_ClonesProperly(MLDsaAlgorithm algorithm)
+        {
+            byte[] context = [9, 6, 3, 8, 5, 1, 2, 4];
+            byte[] msg = [1, 2, 3, 4, 5, 6, 7];
+
+            using MLDsa mldsa = GenerateKey(algorithm);
+            using MLDsaMuHash mldsaMuHash = mldsa.OpenExternalMuHash(context);
+            byte[] emptyMu = mldsaMuHash.GetCurrentHash();
+
+            mldsaMuHash.AppendData(msg);
+            byte[] mu1 = mldsaMuHash.GetCurrentHash();
+
+            using MLDsaMuHash clone = mldsaMuHash.Clone();
+            AssertExtensions.SequenceEqual(mu1, clone.GetCurrentHash());
+
+            mldsaMuHash.AppendData(msg);
+            byte[] mu2 = mldsaMuHash.GetHashAndReset();
+            AssertExtensions.SequenceNotEqual(mu1, mu2);
+            AssertExtensions.SequenceEqual(mu1, clone.GetCurrentHash());
+
+            clone.AppendData(msg);
+            AssertExtensions.SequenceEqual(mu2, clone.GetCurrentHash());
+
+            AssertExtensions.SequenceEqual(emptyMu, mldsaMuHash.GetCurrentHash());
+            AssertExtensions.SequenceEqual(mu2, clone.GetHashAndReset());
+            AssertExtensions.SequenceEqual(emptyMu, clone.GetCurrentHash());
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ExternalMuHash_DoesNotKeepMLDsaAlive(MLDsaAlgorithm algorithm)
+        {
+            MLDsaMuHash hash;
+
+            using (MLDsa mldsa = GenerateKey(algorithm))
+            {
+                hash = mldsa.OpenExternalMuHash();
+            }
+
+            using (hash)
+            {
+                // Assert.NoThrow
+                hash.GetCurrentHash();
+
+                Exception e = Assert.Throws<ObjectDisposedException>(() => hash.SignAndReset());
+                Assert.Contains(typeof(MLDsa).FullName, e.Message);
+            }
+        }
+
+        protected static void SignAndVerifyExternalMu(MLDsa mldsa, byte[] data, byte[] context)
+        {
+            if (context?.Length > 0)
+            {
+                SignAndVerify(mldsa, data, context);
+            }
+            else
+            {
+                SignAndVerify(mldsa, data, null);
+                SignAndVerify(mldsa, data, Array.Empty<byte>());
+            }
+
+            static void SignAndVerify(MLDsa mldsa, byte[] data, byte[]? context)
+            {
+                using MLDsaMuHash mldsaMuHash = mldsa.OpenExternalMuHash(context);
+                mldsaMuHash.AppendData(data);
+
+                byte[] mu = mldsaMuHash.GetCurrentHash();
+                byte[] signature = mldsa.SignExternalMu(mu);
+                byte[] signature2 = mldsaMuHash.SignAndReset();
+
+                ExerciseSuccessfulVerify(mldsa, data, signature, context, mu);
+                ExerciseSuccessfulVerify(mldsa, data, signature2, context, mu);
+
+                mldsaMuHash.AppendData(data);
+                AssertExtensions.TrueExpression(mldsaMuHash.VerifyAndReset(signature));
+            }
+        }
+
+        protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context, byte[] mu = null)
         {
             ReadOnlySpan<byte> buffer = [0, 1, 2, 3];
 
@@ -365,8 +548,20 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.FalseExpression(mldsa.VerifyData(buffer.Slice(1, 3), signature, context));
             }
 
+            if (mu is not null)
+            {
+                AssertExtensions.TrueExpression(mldsa.VerifyExternalMu(mu, signature));
+            }
+
             signature[0] ^= 1;
-            AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
+            {
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
+
+                if (mu is not null)
+                {
+                    AssertExtensions.FalseExpression(mldsa.VerifyExternalMu(mu, signature));
+                }
+            }
             signature[0] ^= 1;
 
             if (context.Length > 0)
@@ -388,6 +583,11 @@ namespace System.Security.Cryptography.Tests
             }
 
             AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature, context));
+
+            if (mu is not null)
+            {
+                AssertExtensions.TrueExpression(mldsa.VerifyExternalMu(mu, signature));
+            }
         }
 
         protected static void ExerciseSuccessfulVerifyPreHash(MLDsa mldsa, string hashAlgorithmOid, byte[] hash, byte[] signature, byte[] context)

@@ -34,7 +34,16 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The output size, in bytes, of this hash algorithm.
         /// </value>
-        public int HashLengthInBytes => 64;
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public int HashLengthInBytes
+        {
+            get
+            {
+                ThrowIfDisposed();
+
+                return Key.Algorithm.MuSizeInBytes;
+            }
+        }
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="MLDsaMuHash"/> class for use with the specified key.
@@ -46,8 +55,6 @@ namespace System.Security.Cryptography
         protected MLDsaMuHash(MLDsa key)
         {
             ArgumentNullException.ThrowIfNull(key);
-            Debug.Assert(key.Algorithm.MuSizeInBytes == HashLengthInBytes);
-
             Key = key;
         }
 
@@ -105,6 +112,12 @@ namespace System.Security.Cryptography
         public void AppendData(ReadOnlySpan<byte> data)
         {
             ThrowIfDisposed();
+
+            // No-op, no data to append.
+            if (data.IsEmpty)
+            {
+                return;
+            }
 
             AppendDataCore(data);
         }
