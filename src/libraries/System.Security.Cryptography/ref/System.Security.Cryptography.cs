@@ -342,6 +342,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithm Sha256 { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha384 { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha512 { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithm SlhDsa { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngAlgorithm? other) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -362,6 +364,8 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithmGroup MLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup Rsa { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithmGroup SlhDsa { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngAlgorithmGroup? other) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -3108,6 +3112,20 @@ namespace System.Security.Cryptography
         public static bool operator ==(System.Security.Cryptography.SlhDsaAlgorithm? left, System.Security.Cryptography.SlhDsaAlgorithm? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.SlhDsaAlgorithm? left, System.Security.Cryptography.SlhDsaAlgorithm? right) { throw null; }
         public override string ToString() { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class SlhDsaCng : System.Security.Cryptography.SlhDsa
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public SlhDsaCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.SlhDsaAlgorithm)) { }
+        protected override void ExportSlhDsaPublicKeyCore(System.Span<byte> destination) { }
+        protected override void ExportSlhDsaSecretKeyCore(System.Span<byte> destination) { }
+        public System.Security.Cryptography.CngKey GetKey() { throw null; }
+        protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
+        protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
+        protected override bool VerifyPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.ReadOnlySpan<byte> signature) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class SlhDsaOpenSsl : System.Security.Cryptography.SlhDsa

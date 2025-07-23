@@ -9029,6 +9029,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresDynamicCodeAttribute : System.Attribute
     {
         public RequiresDynamicCodeAttribute(string message) { }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
@@ -9036,6 +9037,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }

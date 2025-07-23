@@ -51,14 +51,18 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
-    public virtual ushort GetNumMethods(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefToken(TypeHandle typeHandle);
+    public virtual ushort GetNumMethods(TypeHandle typeHandle);
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefTypeAttributes(TypeHandle typeHandle);
+    public ushort GetNumInstanceFields(TypeHandle typeHandle);
+    public ushort GetNumStaticFields(TypeHandle typeHandle);
+    public ushort GetNumThreadStaticFields(TypeHandle typeHandle);
+    public TargetPointer GetFieldDescList(TypeHandle typeHandle);
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
@@ -348,6 +352,10 @@ The contract additionally depends on these data descriptors
 | `EEClass` | `NumMethods` | Count of methods attached to the EEClass |
 | `EEClass` | `NumNonVirtualSlots` | Count of non-virtual slots for the EEClass |
 | `EEClass` | `CorTypeAttr` | Various flags |
+| `EEClass` | `NumInstanceFields` | Count of instance fields of the EEClass |
+| `EEClass` | `NumStaticFields` | Count of static fields of the EEClass |
+| `EEClass` | `NumThreadStaticFields` | Count of threadstatic fields of the EEClass |
+| `EEClass` | `FieldDescList` | A list of fields in the type |
 | `ArrayClass` | `Rank` | Rank of the associated array MethodTable |
 | `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
 | `ParamTypeDesc` | `TypeArg` | Associated type argument |
@@ -374,32 +382,6 @@ The contract additionally depends on these data descriptors
         return TypeHandle { Address = typeHandlePointer }
     }
 
-    internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
-    {
-        return (EEClassOrCanonMTBits)(eeClassOrCanonMTPtr & (ulong)EEClassOrCanonMTBits.Mask);
-    }
-
-    public uint GetBaseSize(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[TypeHandle.Address].Flags.BaseSize;
-
-    public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
-
-    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
-    {
-        ... // if the MethodTable stores a pointer to the EEClass, return it
-            // otherwise the MethodTable stores a pointer to the canonical MethodTable
-            // in that case, return the canonical MethodTable's EEClass.
-            // Canonical MethodTables always store an EEClass pointer.
-    }
-
-    private Data.EEClass GetClassData(TypeHandle TypeHandle)
-    {
-        TargetPointer eeClassPtr = GetClassPointer(TypeHandle);
-        ... // read Data.EEClass data from eeClassPtr
-    }
-
-
-    public TargetPointer GetCanonicalMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(TypeHandle).MethodTable;
-
     public TargetPointer GetModule(TypeHandle TypeHandle)
     {
         if (typeHandle.IsMethodTable())
@@ -420,12 +402,42 @@ The contract additionally depends on these data descriptors
         return TargetPointer.Null;
     }
 
+    internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
+    {
+        return (EEClassOrCanonMTBits)(eeClassOrCanonMTPtr & (ulong)EEClassOrCanonMTBits.Mask);
+    }
+
+    public TargetPointer GetCanonicalMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(TypeHandle).MethodTable;
+
     public TargetPointer GetParentMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[TypeHandle.Address].ParentMethodTable;
+
+    public uint GetBaseSize(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[TypeHandle.Address].Flags.BaseSize;
+
+    public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
+
+    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
+    {
+        ... // if the MethodTable stores a pointer to the EEClass, return it
+            // otherwise the MethodTable stores a pointer to the canonical MethodTable
+            // in that case, return the canonical MethodTable's EEClass.
+            // Canonical MethodTables always store an EEClass pointer.
+    }
+
+    private Data.EEClass GetClassData(TypeHandle TypeHandle)
+    {
+        TargetPointer eeClassPtr = GetClassPointer(TypeHandle);
+        ... // read Data.EEClass data from eeClassPtr
+    }
 
     public bool IsFreeObjectMethodTable(TypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
+
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
+
+    public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
+
+    public ushort GetNumInterfaces(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : _methodTables[TypeHandle.Address].NumInterfaces;
 
     public uint GetTypeDefToken(TypeHandle TypeHandle)
     {
@@ -438,11 +450,15 @@ The contract additionally depends on these data descriptors
 
     public ushort GetNumMethods(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).NumMethods;
 
-    public ushort GetNumInterfaces(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : _methodTables[TypeHandle.Address].NumInterfaces;
-
     public uint GetTypeDefTypeAttributes(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).CorTypeAttr;
 
-    public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
+    public ushort GetNumInstanceFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumInstanceFields;
+
+    public ushort GetNumStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumStaticFields;
+
+    public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
+
+    public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
 
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle TypeHandle)
     {
