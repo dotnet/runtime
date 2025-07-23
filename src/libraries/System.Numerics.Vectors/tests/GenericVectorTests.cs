@@ -6151,7 +6151,14 @@ namespace System.Numerics.Tests
         {
             for (int i = 0; i < Vector<double>.Count; i++)
             {
-                Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual[i]));
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
             }
         }
 
@@ -6160,7 +6167,14 @@ namespace System.Numerics.Tests
         {
             for (int i = 0; i < Vector<float>.Count; i++)
             {
-                Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual[i]));
+                if (float.IsNaN(expected))
+                {
+                    Assert.True(float.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual[i]));
+                }
             }
         }
 
