@@ -730,7 +730,7 @@ VIRTUALCommitMemory(
 
     nProtect = W32toUnixAccessControl(flProtect);
 
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
     // Commit the pages
     if (mprotect((void *) StartBoundary, MemSize, nProtect) != 0)
     {
@@ -739,7 +739,7 @@ VIRTUALCommitMemory(
     }
 #endif
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     // Include committed memory in coredump. Any newly allocated memory included by default.
     if (!IsNewMemory)
     {
@@ -750,7 +750,7 @@ VIRTUALCommitMemory(
     pRetVal = (void *) StartBoundary;
     goto done;
 
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
 error:
 #endif
     if ( flAllocationType & MEM_RESERVE || IsLocallyReserved )
@@ -1077,7 +1077,7 @@ VirtualFree(
             }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
             // Do not include freed memory in coredump.
             madvise((LPVOID) StartBoundary, MemSize, MADV_DONTDUMP);
 #endif
@@ -1211,11 +1211,11 @@ VirtualProtect(
     }
 
     pEntry = VIRTUALFindRegionInformation( StartBoundary );
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
     if ( 0 == mprotect( (LPVOID)StartBoundary, MemSize,
                    W32toUnixAccessControl( flNewProtect ) ) )
     {
-#endif // !TARGET_BROWSER
+#endif // !TARGET_WASM
         /* Reset the access protection. */
         TRACE( "Number of pages to change %d, starting page %d \n",
                NumberOfPagesToChange, OffSet );
@@ -1226,14 +1226,14 @@ VirtualProtect(
          */
         *lpflOldProtect = PAGE_EXECUTE_READWRITE;
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
         // Include or exclude memory from coredump based on the protection.
         int advise = flNewProtect == PAGE_NOACCESS ? MADV_DONTDUMP : MADV_DODUMP;
         madvise((LPVOID)StartBoundary, MemSize, advise);
 #endif
 
         bRetVal = TRUE;
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
     }
     else
     {
@@ -1247,7 +1247,7 @@ VirtualProtect(
             SetLastError( ERROR_INVALID_ACCESS );
         }
     }
-#endif // !TARGET_BROWSER
+#endif // !TARGET_WASM
 ExitVirtualProtect:
     minipal_mutex_leave(&virtual_critsec);
 
