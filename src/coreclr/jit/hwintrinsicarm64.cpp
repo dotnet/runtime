@@ -1420,13 +1420,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (simdBaseType == TYP_FLOAT)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_INT, I64(0x00000001));
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x00000001));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_LONG, I64(0x0000000000000001));
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x0000000000000001));
                 retNode = vecCns;
             }
             break;
@@ -1448,13 +1448,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (simdBaseType == TYP_FLOAT)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_INT, I64(0x7FC00000));
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x7FC00000));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_LONG, I64(0x7FF8000000000000));
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x7FF8000000000000));
                 retNode = vecCns;
             }
             break;
@@ -1468,13 +1468,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (simdBaseType == TYP_FLOAT)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_INT, I64(0xFF800000));
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0xFF800000));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_LONG, I64(0xFFF0000000000000));
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0xFFF0000000000000));
                 retNode = vecCns;
             }
             break;
@@ -1494,7 +1494,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             else if (varTypeIsSigned(simdBaseType))
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(simdBaseType, I64(-1));
+                vecCns->EvaluateBroadcastInPlace(simdBaseType, static_cast<int64_t>(-1));
                 retNode = vecCns;
             }
             break;
@@ -1544,13 +1544,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (simdBaseType == TYP_FLOAT)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_INT, I64(0x7F800000));
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x7F800000));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(TYP_LONG, I64(0x7FF0000000000000));
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x7FF0000000000000));
                 retNode = vecCns;
             }
             break;
