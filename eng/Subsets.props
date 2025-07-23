@@ -153,7 +153,7 @@
     <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' == 'true'">$(BootstrapSubsets)+clr.nativeaotlibs+clr.nativeaotruntime+libs.native</BootstrapSubsets>
 
     <SwapNativeForIL Condition="$(_subset.Contains('+bootstrap+')) and '$(RuntimeFlavor)' == 'CoreCLR'">true</SwapNativeForIL>
-    
+
     <!-- Define AllSubsets to include all available subsets including OnDemand ones -->
     <AllSubsetsExpansion>clr.nativeprereqs+clr.iltools+clr.runtime+clr.native+clr.aot+clr.nativeaotlibs+clr.nativeaotruntime+clr.crossarchtools</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.packages</AllSubsetsExpansion>
@@ -558,7 +558,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.aotcross+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)monoaotcross.proj" Category="mono" />
+    <ProjectToBuild Include="$(MonoProjectRoot)monoaotcross.proj" Category="mono" AdditionalProperties="%(AdditionalProperties);DotNetBuildMonoCrossAOT=true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
