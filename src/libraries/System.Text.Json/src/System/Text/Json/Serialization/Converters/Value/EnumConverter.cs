@@ -679,7 +679,8 @@ namespace System.Text.Json.Serialization.Converters
             var indices = new (int negativePopCount, int index)[enumFields.Length];
             for (int i = 0; i < enumFields.Length; i++)
             {
-                // we want values with more bits set to come first so negate the pop count
+                // We want values with more bits set to come first so negate the pop count.
+                // Keep the index as a second comparand so that sorting stability is preserved.
                 indices[i] = (-PopCount(enumFields[i].Key), i);
             }
 
