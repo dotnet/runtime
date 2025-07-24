@@ -7212,6 +7212,7 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
         // conservatively disables some cases that we don't handle well today (e.g. DOUBLE<->FLOAT).
         (genActualType(gdvType) != genActualType(callType)))
     {
+        JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
         return false;
     }
     if (varTypeIsStruct(gdvType))
@@ -7225,16 +7226,10 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
         getReturnTypeForStruct(callSig.retTypeClass, call->GetUnmanagedCallConv(), &callRetKind);
         getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &gdvRetKind);
 
-        if (callRetKind != gdvRetKind)
+        if ((callRetKind != gdvRetKind) ||
+            !ClassLayout::AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sig.retTypeClass)))
         {
-            return false;
-        }
-
-        ClassLayout* callLayout = typGetObjLayout(callSig.retTypeClass);
-        ClassLayout* tarLayout  = typGetObjLayout(sig.retTypeClass);
-
-        if (!ClassLayout::AreCompatible(callLayout, tarLayout))
-        {
+            JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
             return false;
         }
     }
