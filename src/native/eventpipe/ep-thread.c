@@ -343,7 +343,6 @@ ep_thread_session_state_alloc (
 
 	instance->session = session;
 	instance->sequence_number = 1;
-	instance->last_read_sequence_number = 0;
 
 #ifdef EP_CHECKED_BUILD
 	instance->buffer_manager = buffer_manager;
