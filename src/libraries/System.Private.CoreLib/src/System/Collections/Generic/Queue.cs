@@ -421,90 +421,76 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>,
             IEnumerator
         {
-            private readonly Queue<T> _q;
+            private readonly Queue<T> _queue;
             private readonly int _version;
-            private int _index;   // -1 = not started, -2 = ended/disposed
+            private int _i;
             private T? _currentElement;
 
-            internal Enumerator(Queue<T> q)
+            internal Enumerator(Queue<T> queue)
             {
-                _q = q;
-                _version = q._version;
-                _index = -1;
+                _queue = queue;
+                _version = queue._version;
+                _i = -1;
                 _currentElement = default;
             }
 
             public void Dispose()
             {
-                _index = -2;
+                _i = -2;
                 _currentElement = default;
             }
 
             public bool MoveNext()
             {
-                if (_version != _q._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-
-                if (_index == -2)
-                    return false;
-
-                _index++;
-
-                if (_index == _q._size)
+                if (_version != _queue._version)
                 {
-                    // We've run past the last element
-                    _index = -2;
-                    _currentElement = default;
-                    return false;
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                // Cache some fields in locals to decrease code size
-                T[] array = _q._array;
-                uint capacity = (uint)array.Length;
+                Queue<T> q = _queue;
+                int size = q._size;
 
-                // _index represents the 0-based index into the queue, however the queue
-                // doesn't have to start from 0 and it may not even be stored contiguously in memory.
-
-                uint arrayIndex = (uint)(_q._head + _index); // this is the actual index into the queue's backing array
-                if (arrayIndex >= capacity)
+                int offset = _i + 1;
+                if ((uint)offset < (uint)size)
                 {
-                    // NOTE: Originally we were using the modulo operator here, however
-                    // on Intel processors it has a very high instruction latency which
-                    // was slowing down the loop quite a bit.
-                    // Replacing it with simple comparison/subtraction operations sped up
-                    // the average foreach loop by 2x.
+                    _i = offset;
 
-                    arrayIndex -= capacity; // wrap around if needed
+                    T[] array = q._array;
+                    int index = q._head + offset;
+                    if ((uint)index < (uint)array.Length)
+                    {
+                        _currentElement = array[index];
+                    }
+                    else
+                    {
+                        // The index has wrapped around the end of the array. Shift the index and then
+                        // get the current element. It is tempting to dedup this dereferencing with that
+                        // in the if block above, but the if block above avoids a bounds check for the
+                        // accesses that are in that portion, whereas these still incur it.
+                        index -= array.Length;
+                        _currentElement = array[index];
+                    }
+
+                    return true;
                 }
 
-                _currentElement = array[arrayIndex];
-                return true;
+                _i = -2;
+                _currentElement = default;
+                return false;
             }
 
-            public T Current
-            {
-                get
-                {
-                    if (_index < 0)
-                        ThrowEnumerationNotStartedOrEnded();
-                    return _currentElement!;
-                }
-            }
+            public T Current => _currentElement!;
 
-            private void ThrowEnumerationNotStartedOrEnded()
-            {
-                Debug.Assert(_index == -1 || _index == -2);
-                throw new InvalidOperationException(_index == -1 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
-            }
-
-            object? IEnumerator.Current
-            {
-                get { return Current; }
-            }
+            object? IEnumerator.Current => Current;
 
             void IEnumerator.Reset()
             {
-                if (_version != _q._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                _index = -1;
+                if (_version != _queue._version)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+                }
+
+                _i = -1;
                 _currentElement = default;
             }
         }

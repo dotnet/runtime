@@ -1771,6 +1771,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT);
                 }
+
+                ULONG classSize;
+                if (SUCCEEDED(GetMDImport()->GetClassTotalSize(cl, &classSize)) && classSize != 0)
+                {
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT_SIZE);
+                }
             }
         }
     }

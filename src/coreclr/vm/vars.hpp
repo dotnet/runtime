@@ -356,6 +356,7 @@ GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
+GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
@@ -501,7 +502,7 @@ EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 EXTERN bool g_fWeControlLifetime;
 
 // There is a global table of prime numbers that's available for e.g. hashing
-extern const DWORD g_rgPrimes[71];
+extern const DWORD g_rgPrimes[102];
 
 //
 // Macros to check debugger and profiler settings.

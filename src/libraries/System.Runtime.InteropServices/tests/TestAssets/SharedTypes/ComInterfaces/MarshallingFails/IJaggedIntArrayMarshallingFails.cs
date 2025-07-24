@@ -43,7 +43,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
     }
 
     [GeneratedComClass]
-    internal partial class IJaggedIntArrayMarshallingFailsImpl : IJaggedIntArrayMarshallingFails
+    internal partial class IJaggedIntArrayMarshallingFailsImpl : IJaggedIntArrayMarshallingFails, ISupportErrorInfo
     {
         int[][] _data = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5 }, new int[] { 6, 7, 8, 9 } };
         int[] _widths = new int[] { 3, 2, 4 };
@@ -75,6 +75,15 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
         {
             _data = array;
             _widths = widths;
+        }
+
+        int ISupportErrorInfo.InterfaceSupportsErrorInfo(in Guid riid)
+        {
+            if (riid == typeof(IJaggedIntArrayMarshallingFails).GUID)
+            {
+                return 0; // S_OK
+            }
+            return 1; // S_FALSE
         }
     }
 }
