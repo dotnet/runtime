@@ -121,6 +121,18 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(\w)*?3(?<=33)$", "1233", RegexOptions.None, 0, 4, true, "1233");
                 yield return (@"(?=(\d))4\1", "44", RegexOptions.None, 0, 2, true, "44");
                 yield return (@"(?=(\d))4\1", "43", RegexOptions.None, 0, 2, false, "");
+                yield return (@"(?<=()??)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=()*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=(){0,100}?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<!()*?)a", "a", RegexOptions.None, 0, 1, false, "");
+                yield return (@"(?<=(?:)*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=(xyz)*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=^*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=\A*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=(xyz)*?)d", "a", RegexOptions.None, 0, 1, false, "");
+                yield return (@"(?<=(abc)+?)", "123abc", RegexOptions.None, 0, 6, true, "");
+                yield return (@"(?<=(abc)+?)", "123ab", RegexOptions.None, 0, 5, false, "");
+                yield return (@"(?<=(abc)+?123)", "abcabc123", RegexOptions.None, 0, 9, true, "");
 
                 // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                 yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");
@@ -259,6 +271,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(abc\d{2,3}?){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc45");
             yield return (@"(b|a|aa)((?:aa)+?)+?$", "aaaaaaaa", RegexOptions.None, 0, 8, true, "aaaaaaaa");
             yield return (@"(|a|aa)(((?:aa)+?)+?|aaaaab)\w$", "aaaaaabc", RegexOptions.None, 0, 8, true, "aaaaaabc");
+
+            // Nested loops
+            yield return (@"(abcd*)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
 
             // Testing selected FindOptimizations finds the right prefix
             yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");

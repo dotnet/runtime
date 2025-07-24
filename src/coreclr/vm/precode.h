@@ -40,8 +40,10 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #elif defined(TARGET_WASM)
 
-#define SIZEOF_PRECODE_BASE         0
-
+// on wasm we have "fake" precode, with precode type and MethodDesc information stored
+#define SIZEOF_PRECODE_BASE         2*sizeof(void*)
+#define OFFSETOF_PRECODE_TYPE       0
+#define OFFSETOF_PRECODE_MD         4
 #endif // TARGET_AMD64
 
 #ifndef DACCESS_COMPILE
@@ -100,7 +102,7 @@ struct StubPrecode
 #elif defined(TARGET_RISCV64)
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_WASM)
-    static const SIZE_T CodeSize = 0;
+    static const SIZE_T CodeSize = 3*sizeof(void*);
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
@@ -383,7 +385,7 @@ struct FixupPrecode
     static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 10;
 #elif defined(TARGET_WASM)
-    static const SIZE_T CodeSize = 0;
+    static const SIZE_T CodeSize = 2*sizeof(void*);
     static const int FixupCodeOffset = 0;
 #endif // TARGET_AMD64
 
@@ -530,6 +532,10 @@ inline BYTE StubPrecode::GetType()
     LIMITED_METHOD_DAC_CONTRACT;
     TADDR type = GetData()->Type;
 
+#ifdef TARGET_WASM
+    return (BYTE)type;
+#endif
+
     // There are a limited number of valid bit patterns here. Restrict to those, so that the
     // speculative variant of GetPrecodeFromEntryPoint is more robust. Type is stored as a TADDR
     // so that a single byte matching is not enough to cause a false match.
@@ -631,7 +637,9 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-
+#ifdef TARGET_WASM // WASM-TODO: we will not need this once we have real precode on Wasm
+        return (PrecodeType)m_data[OFFSETOF_PRECODE_TYPE];
+#endif
         PrecodeType basicPrecodeType = PRECODE_INVALID;
         if (StubPrecode::IsStubPrecodeByASM(PINSTRToPCODE(dac_cast<TADDR>(this))))
         {
@@ -748,6 +756,10 @@ public:
         fSpeculative = TRUE;
 #endif
 
+#ifdef TARGET_WASM // WASM-TODO: we will not need this once we have real precode on Wasm
+        return (PTR_Precode)addr;
+#endif
+
         TADDR pInstr = PCODEToPINSTR(addr);
 
         // Always do consistency check in debug
@@ -804,6 +816,13 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+#ifdef FEATURE_INTERPRETER
+// we are allocating InterpreterPrecode in the interleaved StubPrecodeHeap
+// (in Precode::AllocateInterpreterPrecode)
+// and so we need it to fit the data into the StubPrecode::CodeSize
+static_assert_no_msg(sizeof(InterpreterPrecodeData) <= StubPrecode::CodeSize);
+#endif // FEATURE_INTERPRETER
 
 // A summary of the precode layout for diagnostic purposes
 struct PrecodeMachineDescriptor

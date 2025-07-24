@@ -154,7 +154,15 @@ namespace System.Text.RegularExpressions
             N = max;
         }
 
-        private void MakeLoopAtomic()
+        /// <summary>Converts this loop node to be atomic.</summary>
+        /// <param name="noBacktrackingByPosition">
+        /// If a loop is atomic by construction, e.g. it's at the end of the pattern
+        /// or its parent is an atomic group, there's no backtracking into it, which means it does its full
+        /// initial processing and then stops. For an eager loop, that means consuming as much as possible,
+        /// but for a lazy loop, that means consuming as little as possible. Thus, if this is true, a lazy
+        /// loop should lower its max iteration count to its min iteration count.
+        /// </param>
+        private void MakeLoopAtomic(bool noBacktrackingByPosition = false)
         {
             switch (Kind)
             {
@@ -165,11 +173,15 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy:
-                    // For lazy, we not only change the Type, we also lower the max number of iterations
-                    // to the minimum number of iterations, creating a repeater, as they should end up
-                    // matching as little as possible.
+                    // For lazy, we not only change the Type, if we're at the end of the pattern,
+                    // we also lower the max number of iterations to the minimum number of iterations,
+                    // creating a repeater, as they should end up matching as little as possible.
                     Kind += RegexNodeKind.Oneloopatomic - RegexNodeKind.Onelazy;
-                    N = M;
+                    if (noBacktrackingByPosition)
+                    {
+                        N = M;
+                    }
+
                     if (N == 0)
                     {
                         // If moving the max to be the same as the min dropped it to 0, there's no
@@ -187,6 +199,34 @@ namespace System.Text.RegularExpressions
                         Ch = '\0';
                         M = N = 0;
                     }
+                    break;
+
+                case RegexNodeKind.Loop:
+                    if (Parent is not { Kind: RegexNodeKind.Atomic })
+                    {
+                        RegexNode loopAsChild = new(RegexNodeKind.Loop, Options, M, N);
+                        Kind = RegexNodeKind.Atomic;
+                        M = N = 0;
+                        loopAsChild.AddChild(Child(0));
+                        ReplaceChild(0, loopAsChild);
+                    }
+                    break;
+
+                case RegexNodeKind.Lazyloop:
+                    if (noBacktrackingByPosition)
+                    {
+                        N = M;
+                    }
+
+                    if (N != 0)
+                    {
+                        // A lazy loop that becomes atomic gets treated the same as a greedy loop,
+                        // so we can share the same logic.
+                        goto case RegexNodeKind.Loop;
+                    }
+
+                    Kind = RegexNodeKind.Empty;
+                    Children = null;
                     break;
 
                 default:
@@ -336,7 +376,7 @@ namespace System.Text.RegularExpressions
             // Only apply optimization when LTR to avoid needing additional code for the much rarer RTL case.
             // Also only apply these optimizations when not using NonBacktracking, as these optimizations are
             // all about avoiding things that are impactful for the backtracking engines but nops for non-backtracking.
-            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) == 0)
+            if ((rootNode.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) == 0)
             {
                 // Optimization: eliminate backtracking for loops.
                 // For any single-character loop (Oneloop, Notoneloop, Setloop), see if we can automatically convert
@@ -411,10 +451,9 @@ namespace System.Text.RegularExpressions
         private void EliminateEndingBacktracking()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack() ||
-                (Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
+                (Options & RegexOptions.NonBacktracking) != 0)
             {
                 // If we can't recur further, just stop optimizing.
-                // We haven't done the work to validate this is correct for RTL.
                 // And NonBacktracking doesn't support atomic groups and doesn't have backtracking to be eliminated.
                 return;
             }
@@ -423,6 +462,12 @@ namespace System.Text.RegularExpressions
             RegexNode node = this;
             while (true)
             {
+                // In general we don't care too much about RightToLeft performance, as it's rarely used as a top-level option,
+                // and thus haven't done the work to either implement or vet these optimizations for RTL.
+                // However, it's also used to implement lookbehinds, and so where possible we still want to optimize
+                // when we can do so easily. Most of these cases are appropriately trivial.
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+
                 switch (node.Kind)
                 {
                     // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes, e.g. [abc]* => (?>[abc]*).
@@ -430,7 +475,7 @@ namespace System.Text.RegularExpressions
                     // or even empty nodes.
                     case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop:
                     case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy:
-                        node.MakeLoopAtomic();
+                        node.MakeLoopAtomic(noBacktrackingByPosition: true);
                         break;
 
                     // Just because a particular node is atomic doesn't mean all its descendants are.
@@ -448,10 +493,10 @@ namespace System.Text.RegularExpressions
                     // an Atomic one if its grandparent is already Atomic.
                     // e.g. [xyz](?:abc|def) => [xyz](?>abc|def)
                     case RegexNodeKind.Capture:
-                    case RegexNodeKind.Concatenate:
+                    case RegexNodeKind.Concatenate when !rtl:
                         RegexNode existingChild = node.Child(node.ChildCount() - 1);
                         if ((existingChild.Kind is RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional or RegexNodeKind.Loop or RegexNodeKind.Lazyloop) &&
-                            (node.Parent is null || node.Parent.Kind != RegexNodeKind.Atomic)) // validate grandparent isn't atomic
+                            node.Parent is not { Kind: RegexNodeKind.Atomic }) // validate grandparent isn't atomic
                         {
                             var atomic = new RegexNode(RegexNodeKind.Atomic, existingChild.Options);
                             atomic.AddChild(existingChild);
@@ -489,24 +534,31 @@ namespace System.Text.RegularExpressions
                     // e.g. (?:abc*)* => (?:ab(?>c*))*
                     // e.g. (abc*?)+? => (ab){1}
                     case RegexNodeKind.Lazyloop:
-                        node.N = node.M;
-                        goto case RegexNodeKind.Loop;
                     case RegexNodeKind.Loop:
                         {
-                            if (node.N == 1)
+                            // Make the loop atomic, if it isn't already. This entails changing node to instead be an Atomic node
+                            // that has the {Lazy}Loop as its child. If the parent of the loop is already Atomic, this will be a nop.
+                            node.MakeLoopAtomic(noBacktrackingByPosition: true);
+                            Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Empty or RegexNodeKind.Loop or RegexNodeKind.Lazyloop);
+
+                            if (node.Kind is RegexNodeKind.Atomic)
                             {
-                                // If the loop has a max iteration count of 1 (e.g. it's an optional node),
-                                // there's no possibility for conflict between multiple iterations, so
-                                // we can process it.
                                 node = node.Child(0);
-                                continue;
+                                Debug.Assert(node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop);
                             }
 
-                            RegexNode? loopDescendent = node.FindLastExpressionInLoopForAutoAtomic();
-                            if (loopDescendent != null)
+                            if (node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
                             {
-                                node = loopDescendent;
-                                continue; // loop around to process node
+                                if (node.N == 1 || CanBeMadeAtomic(node.Child(0), node.Child(0), iterateNullableSubsequent: false, allowLazy: false))
+                                {
+                                    // If the loop has a max iteration count of 1 (e.g. it's an optional node),
+                                    // there's no possibility for conflict between multiple iterations, so
+                                    // we can process it. Or, if the node can be made atomic with itself as a subsequent
+                                    // node (which is logically what happens when there are multiple iterations), we can also
+                                    // recur into its child.
+                                    node = node.Child(0);
+                                    continue;
+                                }
                             }
                         }
                         break;
@@ -635,7 +687,7 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Onelazy:
                 case RegexNodeKind.Notonelazy:
                 case RegexNodeKind.Setlazy:
-                    child.MakeLoopAtomic();
+                    child.MakeLoopAtomic(noBacktrackingByPosition: true);
                     return child;
 
                 // Alternations have a variety of possible optimizations that can be applied
@@ -751,7 +803,9 @@ namespace System.Text.RegularExpressions
                 // For everything else, try to reduce ending backtracking of the last contained expression.
                 default:
                     child.EliminateEndingBacktracking();
-                    return atomic;
+                    return child.Kind == RegexNodeKind.Empty ?
+                        child : // if the child became empty, then the atomic node isn't needed
+                        atomic;
             }
         }
 
@@ -1807,12 +1861,6 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            if ((Options & RegexOptions.RightToLeft) != 0)
-            {
-                // RTL is so rare, we don't need to spend additional time/code optimizing for it.
-                return;
-            }
-
             // For all node types that have children, recur into each of those children.
             int childCount = ChildCount();
             if (childCount != 0)
@@ -1839,38 +1887,18 @@ namespace System.Text.RegularExpressions
 
                 static void ProcessNode(RegexNode node, RegexNode subsequent)
                 {
-                    if (!StackHelper.TryEnsureSufficientExecutionStack())
+                    if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                        (node.Options & RegexOptions.RightToLeft) != 0)
                     {
                         // If we can't recur further, just stop optimizing.
+                        // And RTL is so rare, we don't need to spend additional time/code optimizing for it.
                         return;
                     }
 
                     // Skip down the node past irrelevant nodes.
-                    while (true)
+                    while (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Concatenate)
                     {
-                        // We can always recur into captures and into the last node of concatenations.
-                        if (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Concatenate)
-                        {
-                            node = node.Child(node.ChildCount() - 1);
-                            continue;
-                        }
-
-                        // For loops with at least one guaranteed iteration, we can recur into them, but
-                        // we need to be careful not to just always do so; the ending node of a loop can only
-                        // be made atomic if what comes after the loop but also the beginning of the loop are
-                        // compatible for the optimization.
-                        if (node.Kind == RegexNodeKind.Loop)
-                        {
-                            RegexNode? loopDescendent = node.FindLastExpressionInLoopForAutoAtomic();
-                            if (loopDescendent != null)
-                            {
-                                node = loopDescendent;
-                                continue;
-                            }
-                        }
-
-                        // Can't skip any further.
-                        break;
+                        node = node.Child(node.ChildCount() - 1);
                     }
 
                     // If the node can be changed to atomic based on what comes after it, do so.
@@ -1905,6 +1933,66 @@ namespace System.Text.RegularExpressions
                             node.MakeLoopAtomic();
                             break;
 
+                        case RegexNodeKind.Loop when CanBeMadeAtomic(node, subsequent, iterateNullableSubsequent: true, allowLazy: false):
+                        case RegexNodeKind.Lazyloop when CanBeMadeAtomic(node, subsequent, iterateNullableSubsequent: false, allowLazy: true):
+                            // General loops and lazy loops can also be made atomic, but we need to be very careful in doing so. Making such loops
+                            // atomic means wrapping them in an atomic group, and children of these loops can look up through their ancestry, see
+                            // such an atomic group, and then decide to alter their behavior because backtracking isn't possible. For example, if
+                            // a developer writes the pattern (?>(abcd*?)+)e, it is safe for that inner lazy char loop to see that nothing can
+                            // backtrack into it, such that the lazy loop can match the minimum possible, such that the loop evaporates entirely,
+                            // and it becomes (?>(abc)+)e. Thus, given a pattern like (abcd*?)+e, even though the outer loop can be made atomic,
+                            // because the beginning/end of the loop don't overlap with each other or with their successor, we can't just wrap it
+                            // in an atomic block, because that would then trigger the nested loop to behave incorrectly. We can address this in
+                            // multiple ways, such as by tagging Atomic nodes we introduce as being different from ones originally part of the pattern,
+                            // and then having children treat them differently when looking at their ancestors, or we can address it by only introducing
+                            // such an atomic node when we can see it's safe for the children. For now, this does the latter, and to be conservative,
+                            // it allowlists a small known set of children types.
+                            RegexNode loopChild = node.Child(0);
+                            while (loopChild.Kind is RegexNodeKind.Capture or RegexNodeKind.Concatenate)
+                            {
+                                loopChild = loopChild.Child(loopChild.ChildCount() - 1);
+                            }
+
+                            if (loopChild.Kind is
+                                RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+                                RegexNodeKind.Multi or
+                                RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
+                            {
+                                // For types on the allow list, we can make the loop itself atomic.
+                                node.MakeLoopAtomic();
+                            }
+                            else if (node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
+                            {
+                                // For everything else, we can't make the loop itself atomic, but we can
+                                // possibly continue to make children of the loop atomic.
+                                goto case RegexNodeKind.Loop;
+                            }
+                            break;
+
+                        // For all other loops, we may not be able to make them atomic, but we might still be able to make a node
+                        // they end with be atomic. If the loop has a max iteration count of 1, then we don't need to worry about it
+                        // following itself and can simply examine its child. If it has a max iteration count greater than 1, then
+                        // we can examine its child iff its child could be made atomic against itself.
+                        case RegexNodeKind.Loop:
+                            {
+                                RegexNode child = node.Child(0);
+                                if (node.N == 1 || CanBeMadeAtomic(child, child, iterateNullableSubsequent: false, allowLazy: false))
+                                {
+                                    ProcessNode(child, subsequent);
+                                }
+                            }
+                            break;
+
+                        case RegexNodeKind.Lazyloop:
+                            {
+                                RegexNode child = node.Child(0);
+                                if (node.N == 1 || CanBeMadeAtomic(child, child, iterateNullableSubsequent: false, allowLazy: true))
+                                {
+                                    ProcessNode(child, subsequent);
+                                }
+                            }
+                            break;
+
                         case RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional:
                             // In the case of alternation, we can't change the alternation node itself
                             // based on what comes after it (at least not with more complicated analysis
@@ -1925,46 +2013,6 @@ namespace System.Text.RegularExpressions
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Recurs into the last expression of a loop node, looking to see if it can find a node
-        /// that could be made atomic _assuming_ the conditions exist for it with the loop's ancestors.
-        /// </summary>
-        /// <returns>The found node that should be explored further for auto-atomicity; null if it doesn't exist.</returns>
-        private RegexNode? FindLastExpressionInLoopForAutoAtomic()
-        {
-            RegexNode node = this;
-
-            Debug.Assert(node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop);
-
-            // Start by looking at the loop's sole child.
-            node = node.Child(0);
-
-            // Skip past captures.
-            while (node.Kind == RegexNodeKind.Capture)
-            {
-                node = node.Child(0);
-            }
-
-            // If the loop's body is a concatenate, we can skip to its last child iff that
-            // last child doesn't conflict with the first child, since this whole concatenation
-            // could be repeated, such that the first node ends up following the last.  For
-            // example, in the expression (a+[def])*, the last child is [def] and the first is
-            // a+, which can't possibly overlap with [def].  In contrast, if we had (a+[ade])*,
-            // [ade] could potentially match the starting 'a'.
-            if (node.Kind == RegexNodeKind.Concatenate)
-            {
-                int concatCount = node.ChildCount();
-                RegexNode lastConcatChild = node.Child(concatCount - 1);
-                if (CanBeMadeAtomic(lastConcatChild, node.Child(0), iterateNullableSubsequent: false, allowLazy: false))
-                {
-                    return lastConcatChild;
-                }
-            }
-
-            // Otherwise, the loop has nothing that can participate in auto-atomicity.
-            return null;
         }
 
         /// <summary>Optimizations for positive and negative lookaheads/behinds.</summary>
@@ -2060,6 +2108,12 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
+            // Skip down past irrelevant nodes.
+            while (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Concatenate)
+            {
+                node = node.Child(node.ChildCount() - 1);
+            }
+
             // In most case, we'll simply check the node against whatever subsequent is.  However, in case
             // subsequent ends up being a loop with a min bound of 0, we'll also need to evaluate the node
             // against whatever comes after subsequent.  In that case, we'll walk the tree to find the
@@ -2067,16 +2121,13 @@ namespace System.Text.RegularExpressions
             while (true)
             {
                 // Skip the successor down to the closest node that's guaranteed to follow it.
-                int childCount;
-                while ((childCount = subsequent.ChildCount()) > 0)
+                while (true)
                 {
-                    Debug.Assert(subsequent.Kind != RegexNodeKind.Group);
                     switch (subsequent.Kind)
                     {
                         case RegexNodeKind.Concatenate:
                         case RegexNodeKind.Capture:
                         case RegexNodeKind.Atomic:
-                        case RegexNodeKind.PositiveLookaround when (subsequent.Options & RegexOptions.RightToLeft) == 0: // only lookaheads, not lookbehinds (represented as RTL PositiveLookaround nodes)
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when subsequent.M > 0:
                             subsequent = subsequent.Child(0);
                             continue;
@@ -2098,10 +2149,11 @@ namespace System.Text.RegularExpressions
                 // only a yes branch, we'd need to also check whatever comes after the conditional).  It doesn't apply to
                 // backreference conditionals, as the condition itself is unknown statically and could overlap with the
                 // loop being considered for atomicity.
+                int childCount = subsequent.ChildCount();
                 switch (subsequent.Kind)
                 {
                     case RegexNodeKind.Alternate:
-                    case RegexNodeKind.ExpressionConditional when childCount == 3: // condition, yes, and no branch
+                    case RegexNodeKind.ExpressionConditional when childCount is 3: // condition, yes, and no branch
                         for (int i = 0; i < childCount; i++)
                         {
                             if (!CanBeMadeAtomic(node, subsequent.Child(i), iterateNullableSubsequent, allowLazy: false))
@@ -2185,6 +2237,53 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.NonBoundary when node.M > 0 && node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
                             case RegexNodeKind.ECMABoundary when node.M > 0 && node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
                             case RegexNodeKind.NonECMABoundary when node.M > 0 && node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
+                                // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
+                                break;
+
+                            default:
+                                return false;
+                        }
+                        break;
+
+                    case RegexNodeKind.Loop:
+                    case RegexNodeKind.Lazyloop when allowLazy:
+                        // With single character loops (e.g. OneLoop, NotOneLoop, SetLoop), we only need to prove there's no overlap between
+                        // what that single character could be and what comes next. For arbitrary loops, we have more to prove. First, we need
+                        // to understand what the loop can possibly start with and what it can possibly end with (with a single character loop,
+                        // those are the same things), and we need to ensure that there's no overlap between those two sets; otherwise, a second
+                        // iteration of a loop could end up giving back characters that could be consumed by the previous iteration. Second, we need
+                        // to ensure that neither the starting set nor the ending set overlaps with what could possibly come after it, for the same reason.
+                        RegexNode loopChild = node.Child(0);
+                        if (RegexPrefixAnalyzer.FindFirstCharClass(loopChild) is not string loopStartingSet ||
+                            RegexPrefixAnalyzer.FindLastCharClass(loopChild) is not string loopEndingSet ||
+                            (node.N > 1 && RegexCharClass.MayOverlap(loopStartingSet, loopEndingSet)))
+                        {
+                            return false;
+                        }
+
+                        bool CharInStartingOrEndingSet(char ch) =>
+                            RegexCharClass.CharInClass(ch, loopStartingSet) || RegexCharClass.CharInClass(ch, loopEndingSet);
+
+                        bool MayOverlapStartingOrEndingSet(string set) =>
+                            RegexCharClass.MayOverlap(set, loopStartingSet) || RegexCharClass.MayOverlap(set, loopEndingSet);
+
+                        switch (subsequent.Kind)
+                        {
+                            case RegexNodeKind.One when !CharInStartingOrEndingSet(subsequent.Ch):
+                            case RegexNodeKind.Set when !MayOverlapStartingOrEndingSet(subsequent.Str!):
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M > 0 && !CharInStartingOrEndingSet(subsequent.Ch):
+                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M > 0 && !MayOverlapStartingOrEndingSet(subsequent.Str!):
+                            case RegexNodeKind.Multi when !CharInStartingOrEndingSet(subsequent.Str![0]):
+                            case RegexNodeKind.End:
+                            case RegexNodeKind.EndZ or RegexNodeKind.Eol when !CharInStartingOrEndingSet('\n'):
+                                return true;
+
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !CharInStartingOrEndingSet(subsequent.Ch):
+                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !MayOverlapStartingOrEndingSet(subsequent.Str!):
+                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsKnownWordClassSubset(loopStartingSet) && RegexCharClass.IsKnownWordClassSubset(loopEndingSet):
+                            case RegexNodeKind.NonBoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass):
+                            case RegexNodeKind.ECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass) && (loopEndingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass):
+                            case RegexNodeKind.NonECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 

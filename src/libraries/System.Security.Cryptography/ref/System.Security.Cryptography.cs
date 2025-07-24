@@ -335,7 +335,6 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithm MD5 { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithm MLDsa { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithm MLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Rsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha1 { get { throw null; } }
@@ -361,7 +360,6 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithmGroup ECDsa { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithmGroup MLDsa { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithmGroup MLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup Rsa { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -440,11 +438,8 @@ namespace System.Security.Cryptography
         public string Format { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat GenericPrivateBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat GenericPublicBlob { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngKeyBlobFormat MLKemPrivateBlob { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngKeyBlobFormat MLKemPrivateSeedBlob { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngKeyBlobFormat MLKemPublicBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat OpaqueTransportBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat Pkcs8PrivateBlob { get { throw null; } }
@@ -2040,7 +2035,6 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
         protected override bool VerifyPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.ReadOnlySpan<byte> signature) { throw null; }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class MLKem : System.IDisposable
     {
         protected MLKem(System.Security.Cryptography.MLKemAlgorithm algorithm) { }
@@ -2060,47 +2054,75 @@ namespace System.Security.Cryptography
         public byte[] ExportEncapsulationKey() { throw null; }
         public void ExportEncapsulationKey(System.Span<byte> destination) { }
         protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportPkcs8PrivateKey() { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportPkcs8PrivateKeyPem() { throw null; }
         public byte[] ExportPrivateSeed() { throw null; }
         public void ExportPrivateSeed(System.Span<byte> destination) { }
         protected abstract void ExportPrivateSeedCore(System.Span<byte> destination);
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
         public static System.Security.Cryptography.MLKem GenerateKey(System.Security.Cryptography.MLKemAlgorithm algorithm) { throw null; }
         public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportDecapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<byte> passwordBytes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> password) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportFromEncryptedPem(string source, string password) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportFromPem(System.ReadOnlySpan<char> source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportFromPem(string source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportPkcs8PrivateKey(byte[] source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLKem ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLKemAlgorithm : System.IEquatable<System.Security.Cryptography.MLKemAlgorithm>
     {
         internal MLKemAlgorithm() { }
@@ -2120,7 +2142,6 @@ namespace System.Security.Cryptography
         public static bool operator !=(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLKemCng : System.Security.Cryptography.MLKem
     {
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -2134,7 +2155,6 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.CngKey GetKey() { throw null; }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLKemOpenSsl : System.Security.Cryptography.MLKem
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]

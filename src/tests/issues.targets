@@ -573,12 +573,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/arrres_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/109311</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/IsAlive/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109312</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/lifetime/lifetime2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109313</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/109314</Issue>
         </ExcludeList>
