@@ -199,6 +199,12 @@ namespace Microsoft.Extensions.Http
         {
             var active = (ActiveHandlerTrackingEntry)state!;
 
+            // If factory is disposed, don't process expiry
+            if (_disposed)
+            {
+                return;
+            }
+
             // The timer callback should be the only one removing from the active collection. If we can't find
             // our entry in the collection, then this is a bug.
             bool removed = _activeHandlers.TryRemove(active.Name, out Lazy<ActiveHandlerTrackingEntry>? found);
@@ -211,12 +217,17 @@ namespace Microsoft.Extensions.Http
             //
             // We use a different state object to track expired handlers. This allows any other thread that acquired
             // the 'active' entry to use it without safety problems.
-            var expired = new ExpiredHandlerTrackingEntry(active);
-            _expiredHandlers.Enqueue(expired);
 
-            Log.HandlerExpired(_logger, active.Name, active.Lifetime);
+            // Check again after removal to prevent race with Dispose
+            if (!_disposed)
+            {
+                var expired = new ExpiredHandlerTrackingEntry(active);
+                _expiredHandlers.Enqueue(expired);
 
-            StartCleanupTimer();
+                Log.HandlerExpired(_logger, active.Name, active.Lifetime);
+
+                StartCleanupTimer();
+            }
         }
 
         // Internal so it can be overridden in tests
@@ -230,7 +241,11 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
+                // Don't start cleanup timer if factory is disposed
+                if (!_disposed)
+                {
+                    _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
+                }
             }
         }
 
@@ -247,11 +262,6 @@ namespace Microsoft.Extensions.Http
         // Internal for tests
         internal void CleanupTimer_Tick()
         {
-            // If factory is disposed, don't perform any cleanup
-            if (_disposed)
-            {
-                return;
-            }
             // Stop any pending timers, we'll restart the timer if there's anything left to process after cleanup.
             //
             // With the scheme we're using it's possible we could end up with some redundant cleanup operations.
@@ -261,6 +271,12 @@ namespace Microsoft.Extensions.Http
             // would result in threads executing ExpiryTimer_Tick as they would need to block on cleanup to figure out
             // whether we need to start the timer.
             StopCleanupTimer();
+
+            // If factory is disposed, don't perform any cleanup
+            if (_disposed)
+            {
+                return;
+            }
 
             if (!Monitor.TryEnter(_cleanupActiveLock))
             {
@@ -276,6 +292,12 @@ namespace Microsoft.Extensions.Http
 
             try
             {
+                // Check again after acquiring the lock in case Dispose was called
+                if (_disposed)
+                {
+                    return;
+                }
+
                 int initialCount = _expiredHandlers.Count;
                 Log.CleanupCycleStart(_logger, initialCount);
 
@@ -317,7 +339,8 @@ namespace Microsoft.Extensions.Http
             }
 
             // We didn't totally empty the cleanup queue, try again later.
-            if (!_expiredHandlers.IsEmpty)
+            // But only if not disposed
+            if (!_expiredHandlers.IsEmpty && !_disposed)
             {
                 StartCleanupTimer();
             }
