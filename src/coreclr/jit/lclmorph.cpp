@@ -1241,10 +1241,12 @@ public:
                 break;
 
             case GT_CAST:
+            {
                 assert(TopValue(1).Node() == node);
                 assert(TopValue(0).Node() == node->AsCast()->CastOp());
 
-                if (!node->TypeIs(TYP_I_IMPL, TYP_BYREF) || node->gtOverflow() || !TopValue(0).IsAddress() ||
+                bool isPtrCast = (node->CastToType() == TYP_I_IMPL) || (node->CastToType() == TYP_BYREF);
+                if (!isPtrCast || node->gtOverflow() || !TopValue(0).IsAddress() ||
                     !TopValue(1).AddOffset(TopValue(0), 0))
                 {
                     EscapeValue(TopValue(0), node);
@@ -1252,7 +1254,7 @@ public:
 
                 PopValue();
                 break;
-
+            }
             case GT_CALL:
                 while (TopValue(0).Node() != node)
                 {
