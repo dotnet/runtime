@@ -24,6 +24,23 @@ internal struct DacpThreadStoreData
     public int fHostConfig; // Uses hosting flags defined above
 };
 
+internal enum DacpAppDomainDataStage : uint
+{
+    STAGE_CREATING,
+    STAGE_READYFORMANAGEDCODE,
+    STAGE_ACTIVE,
+    STAGE_OPEN,
+    STAGE_UNLOAD_REQUESTED,
+    STAGE_EXITING,
+    STAGE_EXITED,
+    STAGE_FINALIZING,
+    STAGE_FINALIZED,
+    STAGE_HANDLETABLE_NOACCESS,
+    STAGE_CLEARED,
+    STAGE_COLLECTED,
+    STAGE_CLOSED
+};
+
 internal struct DacpAppDomainData
 {
     // The pointer to the AppDomain or SystemDomain.
@@ -123,23 +140,6 @@ internal enum DacpObjectType
     OBJ_OBJECT,
     OBJ_ARRAY,
     OBJ_OTHER
-};
-
-internal enum DacpAppDomainDataStage : uint
-{
-    STAGE_CREATING,
-    STAGE_READYFORMANAGEDCODE,
-    STAGE_ACTIVE,
-    STAGE_OPEN,
-    STAGE_UNLOAD_REQUESTED,
-    STAGE_EXITING,
-    STAGE_EXITED,
-    STAGE_FINALIZING,
-    STAGE_FINALIZED,
-    STAGE_HANDLETABLE_NOACCESS,
-    STAGE_CLEARED,
-    STAGE_COLLECTED,
-    STAGE_CLOSED
 };
 
 internal struct DacpObjectData
