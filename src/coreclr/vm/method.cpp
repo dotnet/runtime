@@ -2316,66 +2316,68 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
 
 MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
 {
-    // Without FEATURE_RUNTIME_ASYNC every declared method is classified as a NormalMethod.
+    // Without RUNTIME_ASYNC every declared method is classified as a NormalMethod.
     // Thus code that handles runtime async scenarios becomes unreachable.
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0)
+    if (!g_pConfig->RuntimeAsync())
     {
-        PCCOR_SIGNATURE initialSig = sig.GetPtr();
-        uint32_t data;
-        IfFailThrow(sig.GetCallingConvInfo(&data));
-        if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
-        {
-            // Skip over generic argument count
-            IfFailThrow(sig.GetData(&data));
-        }
+        return MethodReturnKind::NormalMethod;
+    }
 
-        // skip argument count
+    PCCOR_SIGNATURE initialSig = sig.GetPtr();
+    uint32_t data;
+    IfFailThrow(sig.GetCallingConvInfo(&data));
+    if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        // Skip over generic argument count
         IfFailThrow(sig.GetData(&data));
+    }
 
-        // now look at return type
-        // NOTE: this will skip modifiers
-        CorElementType elemType;
+    // skip argument count
+    IfFailThrow(sig.GetData(&data));
+
+    // now look at return type
+    // NOTE: this will skip modifiers
+    CorElementType elemType;
+    IfFailThrow(sig.GetElemType(&elemType));
+
+    // can't reason about ELEMENT_TYPE_INTERNAL, but should not see it in metadata
+    if (elemType == ELEMENT_TYPE_INTERNAL)
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
+    LPCSTR name, _namespace;
+    mdToken tk;
+    if (elemType == ELEMENT_TYPE_GENERICINST)
+    {
         IfFailThrow(sig.GetElemType(&elemType));
-
         // can't reason about ELEMENT_TYPE_INTERNAL, but should not see it in metadata
         if (elemType == ELEMENT_TYPE_INTERNAL)
             ThrowHR(COR_E_BADIMAGEFORMAT);
 
-        *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
-        LPCSTR name, _namespace;
-        mdToken tk;
-        if (elemType == ELEMENT_TYPE_GENERICINST)
+        *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+        IfFailThrow(sig.GetToken(&tk));
+        IfFailThrow(sig.GetData(&data));
+        if (data == 1)
         {
-            IfFailThrow(sig.GetElemType(&elemType));
-            // can't reason about ELEMENT_TYPE_INTERNAL, but should not see it in metadata
-            if (elemType == ELEMENT_TYPE_INTERNAL)
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-
-            *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
-            IfFailThrow(sig.GetToken(&tk));
-            IfFailThrow(sig.GetData(&data));
-            if (data == 1)
-            {
-                // This might be System.Threading.Tasks.Task`1
-                GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-                if ((strcmp(name, *isValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
-                {
-                    if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
-                        return MethodReturnKind::GenericTaskReturningMethod;
-                }
-            }
-        }
-        else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
-        {
-            IfFailThrow(sig.GetToken(&tk));
-            *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
-            // This might be System.Threading.Tasks.Task or ValueTask
+            // This might be System.Threading.Tasks.Task`1
             GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-            if ((strcmp(name, *isValueTask ? "ValueTask" : "Task") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+            if ((strcmp(name, *isValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
             {
                 if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
-                    return MethodReturnKind::NonGenericTaskReturningMethod;
+                    return MethodReturnKind::GenericTaskReturningMethod;
             }
+        }
+    }
+    else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
+    {
+        IfFailThrow(sig.GetToken(&tk));
+        *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+        // This might be System.Threading.Tasks.Task or ValueTask
+        GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+        if ((strcmp(name, *isValueTask ? "ValueTask" : "Task") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+        {
+            if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                return MethodReturnKind::NonGenericTaskReturningMethod;
         }
     }
 

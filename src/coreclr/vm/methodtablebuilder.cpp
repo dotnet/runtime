@@ -2683,7 +2683,7 @@ MethodTableBuilder::EnumerateClassMethods()
 
     bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
 
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0)
+    if (g_pConfig->RuntimeAsync())
     {
         // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
         bmtMethod->m_cMaxDeclaredMethods *= 2;
