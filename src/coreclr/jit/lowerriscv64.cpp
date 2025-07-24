@@ -319,7 +319,10 @@ void Lowering::SignExtendIfNecessary(GenTree** arg)
     if (!genActualTypeIsInt(*arg))
         return;
 
-    if ((*arg)->OperIs(GT_ADD, GT_SUB, GT_CNS_INT))
+    if ((*arg)->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_MOD, GT_UMOD, GT_DIV, GT_UDIV, GT_CNS_INT))
+        return;
+
+    if ((*arg)->OperIsShiftOrRotate() || (*arg)->OperIsCmpCompare() || (*arg)->OperIsAtomicOp())
         return;
 
     *arg = comp->gtNewCastNode(TYP_I_IMPL, *arg, false, TYP_I_IMPL);
