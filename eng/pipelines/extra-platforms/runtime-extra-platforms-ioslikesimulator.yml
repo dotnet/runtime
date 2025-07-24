@@ -167,9 +167,3 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            condition: >-
-              or(
-              eq(variables['librariesContainsChange'], true),
-              eq(variables['coreclrContainsChange'], true),
-              eq(variables['illinkContainsChange'], true),
-              eq(variables['isRollingBuild'], true))
