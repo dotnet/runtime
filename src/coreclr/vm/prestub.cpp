@@ -1984,16 +1984,23 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+static InterpThreadContext* GetInterpThreadContext()
 {
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
     if (threadContext == nullptr || threadContext->pStackStart == nullptr)
     {
         COMPlusThrow(kOutOfMemoryException);
     }
+
+    return threadContext;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = GetInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
@@ -2019,6 +2026,20 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     frames.interpreterFrame.Pop();
 
     return frames.interpMethodContextFrame.pRetVal;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
+{
+    // copy the arguments to the stack
+    if (size > 0 && pArgs != nullptr)
+    {
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t *sp = threadContext->pStackPointer;
+
+        memcpy(sp, pArgs, size);
+    }
+
+    return ExecuteInterpretedMethod(pTransitionBlock, byteCodeAddr, retBuff);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -2314,13 +2335,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && FEATURE_JIT
 
     RETURN pCode;
 }

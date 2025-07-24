@@ -4114,6 +4114,59 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MultiplyDoublingWideningUpperAndSubtractSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static long MultiplyRoundedDoublingSaturateHigh(long op1, long op2)
+        {
+            return MultiplyDoublingSaturate(op1, op2, rounding: true, 0, subOp: false);
+        }
+
+        public static long MultiplyRoundedDoublingAndAddSaturateHigh(long op1, long op2, long op3)
+        {
+            return MultiplyDoublingSaturate(op2, op3, rounding: true, op1, subOp: false);
+        }
+
+        public static long MultiplyRoundedDoublingAndSubtractSaturateHigh(long op1, long op2, long op3)
+        {
+            return MultiplyDoublingSaturate(op2, op3, rounding: true, op1, subOp: true);
+        }
+
+        private static long MultiplyDoublingSaturate(long op1, long op2, bool rounding, long op3, bool subOp)
+        {
+            BigInteger a = new BigInteger(op1);
+            BigInteger b = new BigInteger(op2);
+            BigInteger c = new BigInteger(op3);
+
+            BigInteger result =  a * b << 1;
+
+            int shift = 8 * sizeof(long);
+            c = c << shift;
+            if (subOp)
+            {
+                result = c - result;
+            }
+            else
+            {
+                result = c + result;
+            }
+
+            if (rounding)
+            {
+                result += new BigInteger(1) << (8 * sizeof(long) - 1);
+            }
+
+            result = result >> shift;
+
+            if (result > long.MaxValue)
+            {
+                return long.MaxValue;
+            }
+            else if (result < long.MinValue)
+            {
+                return long.MinValue;
+            }
+
+            return long.CreateChecked(result);
+        }
+
         public static long ShiftLeftLogicalWidening(int op1, byte op2) => UnsignedShift((long)op1, (long)op2);
 
         public static ulong ShiftLeftLogicalWidening(uint op1, byte op2) => UnsignedShift((ulong)op1, (long)op2);

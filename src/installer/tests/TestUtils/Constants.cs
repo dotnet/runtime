@@ -103,9 +103,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class HostTracing
         {
-            public const string TraceLevelEnvironmentVariable = "COREHOST_TRACE";
-            public const string TraceFileEnvironmentVariable = "COREHOST_TRACEFILE";
-            public const string VerbosityEnvironmentVariable = "COREHOST_TRACE_VERBOSITY";
+            public const string TraceLevelEnvironmentVariable = "DOTNET_HOST_TRACE";
+            public const string TraceFileEnvironmentVariable = "DOTNET_HOST_TRACEFILE";
+            public const string VerbosityEnvironmentVariable = "DOTNET_HOST_TRACE_VERBOSITY";
         }
 
         public static class DotnetRoot

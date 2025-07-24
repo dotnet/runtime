@@ -2177,12 +2177,17 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd:
             case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven:
             case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
+            case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh:
+            case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh:
                 isLowVectorOpNum = (opNum == 3);
                 break;
             case NI_Sve_MultiplyBySelectedScalar:
             case NI_Sve2_MultiplyBySelectedScalar:
             case NI_Sve2_MultiplyBySelectedScalarWideningEven:
             case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
+            case NI_Sve2_MultiplyDoublingWideningSaturateEvenBySelectedScalar:
+            case NI_Sve2_MultiplyDoublingWideningSaturateOddBySelectedScalar:
+            case NI_Sve2_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
                 isLowVectorOpNum = (opNum == 2);
                 break;
             default:

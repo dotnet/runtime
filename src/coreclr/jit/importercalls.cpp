@@ -705,7 +705,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             JITDUMP("Call is an async task await\n");
 
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.SaveAndRestoreSynchronizationContextField = true;
 
             if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
             {
@@ -729,7 +730,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
         }
 
-        // For tailcalls the context does not need saving/restoring: it will be
+        // For tailcalls the contexts does not need saving/restoring: they will be
         // overwritten by the caller anyway.
         //
         // More specifically, if we can show that
@@ -738,7 +739,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // context. We do not do that optimization yet.
         if (tailCallFlags != 0)
         {
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::None;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
+            asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
+            asyncInfo.SaveAndRestoreSynchronizationContextField = false;
         }
 
         call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));

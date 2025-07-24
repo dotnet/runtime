@@ -82,6 +82,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
                 void LocalFunction(int a) { }
                 LocalFunction(2);
+
+                AttributedMethod();
             }
 
             // The attribute would generate warning, but it is suppressed due to the Requires on the type
@@ -1322,7 +1324,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 public static RequiresAll<T> field;
 
-                // Instance fields get generic warnings but static fields don't.
                 [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/108523")]
                 public RequiresAll<T> instanceField;
 
