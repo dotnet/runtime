@@ -106,11 +106,6 @@ external_assembly_probe(const char* name, void** data, int64_t* size)
         return false;
     }
 
-    // Get just the file name
-    const char* pos = strrchr(name, '/');
-    if (pos != NULL)
-        name = pos + 1;
-
     // Look in the bundle path where the files were extracted
     char full_path[1024];
     size_t path_len = strlen(g_bundle_path) + strlen(name) + 1; // +1 for '/'
