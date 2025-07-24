@@ -16,8 +16,8 @@ public class Test_IsAlive {
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void CreateArray() {
         array = new int[50];
-        // HACK: Create the weak reference inside of CreateArray to prevent a dangling 'array' reference
-        //  from surviving inside of TestEntryPoint
+        // Create the weak reference inside of CreateArray to prevent a dangling 'array' reference
+        // from surviving inside of TestEntryPoint.
         weak = new WeakReference(array);
     }
 
