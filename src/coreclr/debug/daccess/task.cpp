@@ -5152,19 +5152,12 @@ EnumMethodDefinitions::CdEnd(CLRDATA_ENUM handle)
 
 EnumMethodInstances::EnumMethodInstances(MethodDesc* methodDesc,
                                          IXCLRDataAppDomain* givenAppDomain)
+    : m_methodDesc(methodDesc),
+      m_appDomain(givenAppDomain ?
+                  ((ClrDataAppDomain*)givenAppDomain)->GetAppDomain() :
+                  AppDomain::GetCurrentDomain()),
+      m_completed(false)
 {
-    m_methodDesc = methodDesc;
-    if (givenAppDomain)
-    {
-        m_appDomain =
-            ((ClrDataAppDomain*)givenAppDomain)->GetAppDomain();
-    }
-    else
-    {
-        m_appDomain = AppDomain::GetCurrentDomain();
-    }
-
-    m_completed = false;
 }
 
 HRESULT
