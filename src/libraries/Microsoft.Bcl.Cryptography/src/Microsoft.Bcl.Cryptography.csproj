@@ -452,6 +452,8 @@
              Link="Common\System\Security\Cryptography\MLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemCng.Windows.cs"
              Link="Common\System\Security\Cryptography\MLKemCng.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
@@ -528,6 +530,7 @@
 
     <Compile Include="System\Security\Cryptography\CngExtensions.cs" />
     <Compile Include="System\Security\Cryptography\CngIdentifierExtensions.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
