@@ -143,6 +143,10 @@ namespace System.Threading
             _lockCount = 0;
 
             SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+
+            Debug.Assert(IsLockOwnedByCurrentThread || Thread.CurrentThreadIsFinalizerThread(),
+                "Abandon can only be called from the thread that owns the lock or from the finalizer thread.");
+
             ReleaseLockCore();
 
             RemoveOwnedNamedMutex(Thread.CurrentThread, this);
@@ -314,7 +318,6 @@ namespace System.Threading
 
         protected override void ReleaseLockCore()
         {
-            Debug.Assert(IsLockOwnedByCurrentThread);
             Debug.Assert(_lockCount == 0);
             Interop.Sys.LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(
                 _sharedData,
@@ -395,7 +398,6 @@ namespace System.Threading
 
         protected override void ReleaseLockCore()
         {
-            Debug.Assert(IsLockOwnedByCurrentThread);
             Debug.Assert(_lockCount == 0);
             _sharedData->LockOwnerProcessId = InvalidProcessId;
             _sharedData->LockOwnerThreadId = InvalidThreadId;

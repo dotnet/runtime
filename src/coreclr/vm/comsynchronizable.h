@@ -71,5 +71,7 @@ extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP
 
+extern "C" BOOL QCALLTYPE ThreadNative_CurrentThreadIsFinalizerThread();
+
 #endif // _COMSYNCHRONIZABLE_H
 
