@@ -140,7 +140,7 @@ internal readonly struct Loader_1 : ILoader
         return appDomain.RootAssembly;
     }
 
-    string ILoader.GetFriendlyName()
+    string ILoader.GetAppDomainFriendlyName()
     {
         TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));

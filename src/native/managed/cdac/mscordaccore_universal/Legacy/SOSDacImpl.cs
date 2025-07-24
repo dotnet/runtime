@@ -120,7 +120,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             ILoader loader = _target.Contracts.Loader;
-            string friendlyName = loader.GetFriendlyName();
+            string friendlyName = loader.GetAppDomainFriendlyName();
             TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
             ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
             if (addr == systemDomain || friendlyName == string.Empty)

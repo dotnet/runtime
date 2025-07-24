@@ -56,7 +56,7 @@ ModuleHandle GetModuleHandleFromModulePtr(TargetPointer module);
 ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
-string GetFriendlyName();
+string GetAppDomainFriendlyName();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -265,11 +265,11 @@ TargetPointer GetRootAssembly()
     return appDomain.RootAssembly;
 }
 
-string ILoader.GetFriendlyName()
+string ILoader.GetAppDomainFriendlyName()
 {
     TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
-    Data.AppDomain appDomain = // read AppDomain object starting at appDomainPointer
-    TargetPointer pathStart = target.ReadPointer(handle.Address + /* AppDomain::FriendlyName offset */);
+    TargetPointer appDomain = target.ReadPointer(appDomainPointer)
+    TargetPointer pathStart = appDomain + /* AppDomain::FriendlyName offset */;
     char[] name = // Read<char> from target starting at pathStart until null terminator
     return new string(name);
 }
