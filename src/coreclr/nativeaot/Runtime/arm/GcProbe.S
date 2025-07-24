@@ -75,19 +75,17 @@
 
     // Fix the stack by restoring the original return address
     ldr         lr, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-    ldr         r12, [r2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
     // Clear hijack state
     mov         r3, #0
     str         r3, [r2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
     str         r3, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-    str         r3, [r2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 .endm
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME r2, r3, r12
 
-    ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame] 
+    ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     bl          RhpWaitForGC2
 
     ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
@@ -99,7 +97,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
 
 LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
-    mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+    mov         r0, #STATUS_NATIVEAOT_THREAD_ABORT
     mov         r1, lr // return address as exception PC
     b           C_FUNC(RhpThrowHwEx)
 NESTED_END RhpWaitForGC
@@ -126,8 +124,8 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
-    mov         r3, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
-    orr         r12, r3
+    mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
+    orr         r12, r12, #PTFF_THREAD_HIJACK
     b           RhpWaitForGC
 NESTED_END RhpGcProbeHijack
 

@@ -17,7 +17,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/thread.hpp"
 #include "pal/mutex.hpp"
 #include "pal/handlemgr.hpp"
-#include "pal/cs.hpp"
 #include "pal/seh.hpp"
 #include "pal/signal.hpp"
 
@@ -41,6 +40,10 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #if defined(__sun)
 #include <procfs.h>
 #include <fcntl.h>
+#endif
+
+#if defined(TARGET_BROWSER)
+#include <emscripten/stack.h>
 #endif
 
 #include <signal.h>
@@ -88,34 +91,17 @@ void
 ThreadCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
-    );
-
-PAL_ERROR
-ThreadInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pImmutableData,
-    void *pSharedData,
-    void *pProcessLocalData
+    bool fShutdown
     );
 
 CObjectType CorUnix::otThread(
                 otiThread,
                 ThreadCleanupRoutine,
-                ThreadInitializationRoutine,
                 0,      // sizeof(CThreadImmutableData),
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // sizeof(CThreadSharedData),
-                0,      // THREAD_ALL_ACCESS,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
                 CObjectType::ThreadReleaseHasNoSideEffects,
@@ -151,7 +137,7 @@ static void InternalEndCurrentThreadWrapper(void *arg)
        will lock its own critical section */
     LOADCallDllMain(DLL_THREAD_DETACH, NULL);
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
     pThread->FreeSignalAlternateStack();
 #endif // !HAVE_MACH_EXCEPTIONS
 
@@ -203,7 +189,7 @@ Return:
 --*/
 CPalThread* AllocTHREAD()
 {
-    return InternalNew<CPalThread>();
+    return new(std::nothrow) CPalThread();
 }
 
 /*++
@@ -216,19 +202,7 @@ Abstract:
 --*/
 static void FreeTHREAD(CPalThread *pThread)
 {
-    //
-    // Run the destructors for this object
-    //
-
-    pThread->~CPalThread();
-
-#ifdef _DEBUG
-    // Fill value so we can find code re-using threads after they're dead. We
-    // check against pThread->dwGuard when getting the current thread's data.
-    memset((void*)pThread, 0xcc, sizeof(*pThread));
-#endif
-
-    free(pThread);
+    delete pThread;
 }
 
 
@@ -823,10 +797,6 @@ CorUnix::InternalEndCurrentThread(
     PAL_ERROR palError = NO_ERROR;
     ISynchStateController *pSynchStateController = NULL;
 
-#ifdef PAL_PERF
-    PERFDisableThreadProfile(UserCreatedThread != pThread->GetThreadType());
-#endif
-
     //
     // Abandon any objects owned by this thread
     //
@@ -1364,10 +1334,9 @@ CorUnix::GetThreadTimesInternal(
     CPalThread *pThread;
     CPalThread *pTargetThread;
     IPalObject *pobjThread = NULL;
+    clockid_t cid;
 #ifdef __sun
     int fd;
-#else // __sun
-    clockid_t cid;
 #endif // __sun
 
     pThread = InternalGetCurrentThread();
@@ -1388,6 +1357,7 @@ CorUnix::GetThreadTimesInternal(
 
     pTargetThread->Lock(pThread);
 
+#if HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #if HAVE_PTHREAD_GETCPUCLOCKID
     if (pthread_getcpuclockid(pTargetThread->GetPThreadSelf(), &cid) != 0)
     {
@@ -1396,6 +1366,9 @@ CorUnix::GetThreadTimesInternal(
         pTargetThread->Unlock(pThread);
         goto SetTimesToZero;
     }
+#else // HAVE_PTHREAD_GETCPUCLOCKID
+    cid = CLOCK_THREAD_CPUTIME_ID;
+#endif // HAVE_PTHREAD_GETCPUCLOCKID
 
     struct timespec ts;
     if (clock_gettime(cid, &ts) != 0)
@@ -1429,9 +1402,9 @@ CorUnix::GetThreadTimesInternal(
     close(fd);
 
     ts = status.pr_utime;
-#else // HAVE_PTHREAD_GETCPUCLOCKID
+#else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #error "Don't know how to obtain user cpu time on this platform."
-#endif // HAVE_PTHREAD_GETCPUCLOCKID
+#endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 
     pTargetThread->Unlock(pThread);
 
@@ -1479,7 +1452,7 @@ SetThreadDescription(
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
-    if (palError != NO_ERROR)
+    if (palError == NO_ERROR)
     {
         // Ignore requests to set the main thread name because
         // it causes the value returned by Process.ProcessName to change.
@@ -1493,10 +1466,12 @@ SetThreadDescription(
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }
-
-                int setNameResult = minipal_set_thread_name(pTargetThread->GetPThreadSelf(), nameBuf);
-                (void)setNameResult; // used
-                _ASSERTE(setNameResult == 0);
+                else
+                {
+                    int setNameResult = minipal_set_thread_name(pTargetThread->GetPThreadSelf(), nameBuf);
+                    (void)setNameResult; // used
+                    _ASSERTE(setNameResult == 0);
+                }
 
                 free(nameBuf);
             }
@@ -1506,7 +1481,8 @@ SetThreadDescription(
             }
         }
 
-        pobjThread->ReleaseReference(pThread);
+        if (pobjThread != NULL)
+            pobjThread->ReleaseReference(pThread);
     }
 
     LOGEXIT("SetThreadDescription");
@@ -1574,7 +1550,7 @@ CPalThread::ThreadEntry(
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
     if (!pThread->EnsureSignalAlternateStack())
     {
         ASSERT("Cannot allocate alternate stack for SIGSEGV!\n");
@@ -1638,11 +1614,6 @@ CPalThread::ThreadEntry(
            will take the module critical section */
         LOADCallDllMain(DLL_THREAD_ATTACH, NULL);
     }
-
-#ifdef PAL_PERF
-    PERFAllocThreadInfo();
-    PERFEnableThreadProfile(UserCreatedThread != pThread->GetThreadType());
-#endif
 
     /* call the startup routine */
     pfnStartRoutine = pThread->GetStartAddress();
@@ -2071,7 +2042,7 @@ CPalThread::RunPreCreateInitializers(
     // First, perform initialization of CPalThread private members
     //
 
-    InternalInitializeCriticalSection(&m_csLock);
+    minipal_mutex_init(&m_mtxLock);
     m_fLockInitialized = TRUE;
 
     iError = pthread_mutex_init(&m_startMutex, NULL);
@@ -2130,7 +2101,7 @@ CPalThread::~CPalThread()
 
     if (m_fLockInitialized)
     {
-        InternalDeleteCriticalSection(&m_csLock);
+        minipal_mutex_destroy(&m_mtxLock);
     }
 
     if (m_fStartItemsInitialized)
@@ -2297,7 +2268,7 @@ CPalThread::WaitForStartStatus(
     return m_fStartStatus;
 }
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
 /*++
 Function :
     EnsureSignalAlternateStack
@@ -2313,6 +2284,10 @@ Return :
 BOOL
 CPalThread::EnsureSignalAlternateStack()
 {
+#ifdef TARGET_WASM
+    // WebAssembly does not support alternate signal stacks.
+    return TRUE;
+#else // !TARGET_WASM
     int st = 0;
 
     if (g_registered_signal_handlers)
@@ -2366,6 +2341,7 @@ CPalThread::EnsureSignalAlternateStack()
     }
 
     return (st == 0);
+#endif // !TARGET_WASM
 }
 
 /*++
@@ -2383,6 +2359,7 @@ Return :
 void
 CPalThread::FreeSignalAlternateStack()
 {
+#ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
     m_alternateStack = nullptr;
 
@@ -2406,6 +2383,7 @@ CPalThread::FreeSignalAlternateStack()
             }
         }
     }
+#endif // !TARGET_WASM
 }
 
 #endif // !HAVE_MACH_EXCEPTIONS
@@ -2414,8 +2392,7 @@ void
 ThreadCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     CThreadProcessLocalData *pThreadData = NULL;
@@ -2458,18 +2435,6 @@ ThreadCleanupRoutine(
 
 }
 
-PAL_ERROR
-ThreadInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pImmutableData,
-    void *pSharedData,
-    void *pProcessLocalData
-    )
-{
-    return NO_ERROR;
-}
-
 // Get base address of the current thread's stack
 void *
 CPalThread::GetStackBase()
@@ -2489,6 +2454,7 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2505,7 +2471,10 @@ CPalThread::GetStackBase()
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 
     stackBase = (void*)((size_t)stackAddr + stackSize);
-#endif
+#else // TARGET_BROWSER
+    stackBase = (void*)emscripten_stack_get_base();
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackBase;
 }
@@ -2529,6 +2498,7 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2543,7 +2513,10 @@ CPalThread::GetStackLimit()
 
     status = pthread_attr_destroy(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
-#endif
+#else // TARGET_BROWSER
+    stackLimit = (void*)emscripten_stack_get_end();
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackLimit;
 }

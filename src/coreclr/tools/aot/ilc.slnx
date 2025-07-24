@@ -1,0 +1,75 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Checked" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="../../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+  </Project>
+  <Project Path="../../../tools/illink/src/ILLink.Shared/ILLink.Shared.shproj" />
+  <Project Path="../../../tools/illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+  </Project>
+  <Project Path="../../../tools/illink/test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+  </Project>
+  <Project Path="ILCompiler.Compiler.Tests/ILCompiler.Compiler.Tests.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="ILCompiler.Compiler/ILCompiler.Compiler.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.MetadataTransform/ILCompiler.MetadataTransform.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.RyuJit/ILCompiler.RyuJit.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.Trimming.Tests/ILCompiler.Trimming.Tests.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="ILCompiler.TypeSystem.Tests/ILCompiler.TypeSystem.Tests.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler/ILCompiler.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler/repro/repro.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+</Solution>

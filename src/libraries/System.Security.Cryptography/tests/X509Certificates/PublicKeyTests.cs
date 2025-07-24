@@ -3,8 +3,9 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Security.Cryptography.SLHDsa.Tests;
+using System.Security.Cryptography.Tests;
+using Microsoft.Diagnostics.Runtime.Interop;
 using Test.Cryptography;
 using Xunit;
 
@@ -273,6 +274,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             PublicKey pk = GetTestECDHKey();
             Assert.Equal(expectedParametersHex, pk.EncodedParameters.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void TestEncodedParameters_None()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaNoParametersCertificate))
+            {
+                PublicKey key = cert.PublicKey;
+                Assert.Null(key.EncodedParameters);
+
+                using (AsymmetricAlgorithm alg = key.Key)
+                {
+                    Assert.NotNull(alg);
+                }
+
+                byte[] spki = key.ExportSubjectPublicKeyInfo();
+                PublicKey imported = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out _);
+                Assert.Null(imported.EncodedParameters);
+            }
         }
 
         [Fact]
@@ -657,16 +677,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             rsa.ImportFromPem(TestData.RsaPkcs8PublicKey);
             PublicKey key = new PublicKey(rsa);
 
-            Span<byte> algSpki = rsa.ExportSubjectPublicKeyInfo();
-            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
-
-            // Just right
-            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(algSpki.Length, written);
-
-            // Too small
-            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(0, written);
+            AssertExportSubjectPublicKeyInfo(key, rsa.ExportSubjectPublicKeyInfo());
         }
 
         [Fact]
@@ -677,16 +688,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             dsa.ImportFromPem(TestData.DsaPkcs8PublicKey);
             PublicKey key = new PublicKey(dsa);
 
-            Span<byte> algSpki = dsa.ExportSubjectPublicKeyInfo();
-            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
-
-            // Just right
-            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(algSpki.Length, written);
-
-            // Too small
-            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(0, written);
+            AssertExportSubjectPublicKeyInfo(key, dsa.ExportSubjectPublicKeyInfo());
         }
 
         [Fact]
@@ -696,16 +698,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             ecdsa.ImportFromPem(TestData.ECDsaPkcs8PublicKey);
             PublicKey key = new PublicKey(ecdsa);
 
-            Span<byte> algSpki = ecdsa.ExportSubjectPublicKeyInfo();
-            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
-
-            // Just right
-            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(algSpki.Length, written);
-
-            // Too small
-            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(0, written);
+            AssertExportSubjectPublicKeyInfo(key, ecdsa.ExportSubjectPublicKeyInfo());
         }
 
         [Fact]
@@ -715,16 +708,73 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             ecdh.ImportFromPem(TestData.EcDhPkcs8Key);
             PublicKey key = new PublicKey(ecdh);
 
-            Span<byte> algSpki = ecdh.ExportSubjectPublicKeyInfo();
-            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
+            AssertExportSubjectPublicKeyInfo(key, ecdh.ExportSubjectPublicKeyInfo());
+        }
 
-            // Just right
-            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(algSpki.Length, written);
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ExportSubjectPublicKeyInfo_MLKem(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+            PublicKey key = new(kem);
 
-            // Too small
-            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
-            Assert.Equal(0, written);
+            AssertExportSubjectPublicKeyInfo(key, kem.ExportSubjectPublicKeyInfo());
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlgorithms))]
+        public static void ExportSubjectPublicKeyInfo_MLKem_Independent(MLKemAlgorithm algorithm)
+        {
+            using MLKem kem = MLKem.GenerateKey(algorithm);
+            PublicKey key = new(kem);
+
+            byte[] spki1 = kem.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = kem.ExportSubjectPublicKeyInfo();
+            Assert.NotSame(spki1, spki2);
+        }
+
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportSubjectPublicKeyInfo_MLDsa(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = MLDsa.GenerateKey(algorithm);
+            PublicKey key = new(mldsa);
+
+            AssertExportSubjectPublicKeyInfo(key, mldsa.ExportSubjectPublicKeyInfo());
+        }
+
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportSubjectPublicKeyInfo_MLDsa_Independent(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = MLDsa.GenerateKey(algorithm);
+            PublicKey key = new(mldsa);
+
+            byte[] spki1 = mldsa.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = mldsa.ExportSubjectPublicKeyInfo();
+            Assert.NotSame(spki1, spki2);
+        }
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public static void ExportSubjectPublicKeyInfo_SlhDsa(SlhDsaAlgorithm algorithm)
+        {
+            using SlhDsa slhDsa = SlhDsa.GenerateKey(algorithm);
+            PublicKey key = new(slhDsa);
+
+            AssertExportSubjectPublicKeyInfo(key, slhDsa.ExportSubjectPublicKeyInfo());
+        }
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public static void ExportSubjectPublicKeyInfo_SlhDsa_Independent(SlhDsaAlgorithm algorithm)
+        {
+            using SlhDsa slhDsa = SlhDsa.GenerateKey(algorithm);
+            PublicKey key = new(slhDsa);
+
+            byte[] spki1 = slhDsa.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = slhDsa.ExportSubjectPublicKeyInfo();
+            Assert.NotSame(spki1, spki2);
         }
 
         [Fact]
@@ -802,6 +852,48 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.ThrowsAny<CryptographicException>(() => key.Key);
             Assert.Equal("1.2.840.10040.4.1", key.Oid.Value);
             Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_MLKem512()
+        {
+            using MLKem kem = MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki);
+            byte[] spki = kem.ExportSubjectPublicKeyInfo();
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.Throws<NotSupportedException>(() => key.Key);
+            Assert.Equal("2.16.840.1.101.3.4.4.1", key.Oid.Value);
+            AssertExtensions.SequenceEqual(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_MLKem768()
+        {
+            using MLKem kem = MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem768Spki);
+            byte[] spki = kem.ExportSubjectPublicKeyInfo();
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.Throws<NotSupportedException>(() => key.Key);
+            Assert.Equal("2.16.840.1.101.3.4.4.2", key.Oid.Value);
+            AssertExtensions.SequenceEqual(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_MLKem1024()
+        {
+            using MLKem kem = MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem1024Spki);
+            byte[] spki = kem.ExportSubjectPublicKeyInfo();
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.Throws<NotSupportedException>(() => key.Key);
+            Assert.Equal("2.16.840.1.101.3.4.4.3", key.Oid.Value);
+            AssertExtensions.SequenceEqual(spki, key.ExportSubjectPublicKeyInfo());
             Assert.Equal(spki.Length, read);
         }
 
@@ -931,6 +1023,69 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.ThrowsAny<CryptographicException>(() => key.GetECDiffieHellmanPublicKey());
         }
 
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void GetMLKemPublicKey_MLKem512_ReturnsMLKemKey()
+        {
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki, out _);
+
+            using (MLKem kem = key.GetMLKemPublicKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(kem.ExportSubjectPublicKeyInfo(), key.ExportSubjectPublicKeyInfo());
+                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void GetMLKemPublicKey_MLKem768_ReturnsMLKemKey()
+        {
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(MLKemTestData.IetfMlKem768Spki, out _);
+
+            using (MLKem kem = key.GetMLKemPublicKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(kem.ExportSubjectPublicKeyInfo(), key.ExportSubjectPublicKeyInfo());
+                Assert.Equal(MLKemAlgorithm.MLKem768, kem.Algorithm);
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void GetMLKemPublicKey_MLKem1024_ReturnsMLKemKey()
+        {
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(MLKemTestData.IetfMlKem1024Spki, out _);
+
+            using (MLKem kem = key.GetMLKemPublicKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(kem.ExportSubjectPublicKeyInfo(), key.ExportSubjectPublicKeyInfo());
+                Assert.Equal(MLKemAlgorithm.MLKem1024, kem.Algorithm);
+            }
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [InlineData("2.16.840.1.101.3.4.4.1")]
+        [InlineData("2.16.840.1.101.3.4.4.2")]
+        [InlineData("2.16.840.1.101.3.4.4.3")]
+        public static void GetMLKemPublicKey_ThrowsForCorruptKey(string oid)
+        {
+            AsnEncodedData badData = new AsnEncodedData([1, 2, 3, 4]);
+            PublicKey key = new PublicKey(new Oid(oid), badData, badData);
+            Assert.ThrowsAny<CryptographicException>(() => key.GetMLKemPublicKey());
+        }
+
+        public static IEnumerable<object[]> MLKemAlgorithms
+        {
+            get
+            {
+                return
+                [
+                    [ MLKemAlgorithm.MLKem512 ],
+                    [ MLKemAlgorithm.MLKem768 ],
+                    [ MLKemAlgorithm.MLKem1024 ],
+                ];
+            }
+        }
+
         private static void TestKey_ECDsaCng(byte[] certBytes, TestData.ECDsaCngKeyValues expected)
         {
             using (X509Certificate2 cert = new X509Certificate2(certBytes))
@@ -950,6 +1105,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal<byte>(expected.QY, qy);
                 }
             }
+        }
+
+        private static void AssertExportSubjectPublicKeyInfo(PublicKey key, Span<byte> algSpki)
+        {
+            AssertExtensions.SequenceEqual(algSpki, key.ExportSubjectPublicKeyInfo().AsSpan());
+            int expectedSize = algSpki.Length;
+
+            // Just right
+            algSpki.Clear();
+            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(expectedSize, written);
+            AssertExtensions.SequenceEqual(algSpki, key.ExportSubjectPublicKeyInfo().AsSpan());
+
+            // Bigger than needed
+            algSpki = new byte[expectedSize + 42];
+            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(expectedSize, written);
+            AssertExtensions.SequenceEqual(algSpki.Slice(0, written), key.ExportSubjectPublicKeyInfo().AsSpan());
+
+            // Too small
+            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(0, 1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(0, written);
         }
     }
 }

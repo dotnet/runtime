@@ -8,11 +8,11 @@ pr:
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: SslStress nightly run
+  always: true
   branches:
     include:
     - main
-    - release/8.0
-    - release/9.0
+    - release/*-staging
 
 variables:
   - template: ../variables.yml
@@ -75,11 +75,6 @@ extends:
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
-          # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
-          # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
-          # This is worked around by handpicking the V2 executable.
-          # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
-          DOCKER_COMPOSE_CMD: "C:/ProgramData/docker/cli-plugins/docker-compose.exe"
         steps:
         - checkout: self
           clean: true
@@ -87,9 +82,6 @@ extends:
           lfs: false
 
         - powershell: |
-            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
-            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
-
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
           displayName: Build CLR and Libraries
 
@@ -102,7 +94,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = $env:SSLSTRESS_CLIENT_ARGS
             $env:STRESS_SERVER_ARGS = $env:SSLSTRESS_SERVER_ARGS
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
+            docker compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
         - publish: $(Build.ArtifactStagingDirectory)/dumps

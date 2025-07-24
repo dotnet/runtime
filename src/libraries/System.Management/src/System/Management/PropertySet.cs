@@ -214,7 +214,7 @@ namespace System.Management
         ///     public static int Main(string[] args) {
         ///         ManagementObject disk = new ManagementObject("Win32_LogicalDisk.DeviceID='C:'");
         ///         PropertyDataCollection.PropertyDataEnumerator propertyEnumerator = disk.Properties.GetEnumerator();
-        ///         while(propertyEnumerator.MoveNext()) {
+        ///         while (propertyEnumerator.MoveNext()) {
         ///             PropertyData p = (PropertyData)propertyEnumerator.Current;
         ///             Console.WriteLine("Property found: " + p.Name);
         ///         }

@@ -40,20 +40,9 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 #endif // HAVE_POLL
 
 #include <algorithm>
+#include <new>
 
 const int CorUnix::CThreadSynchronizationInfo::PendingSignalingsArraySize;
-
-// We use the synchronization manager's worker thread to handle
-// process termination requests. It does so by calling the
-// registered handler function.
-PTERMINATION_REQUEST_HANDLER g_terminationRequestHandler = NULL;
-
-// Set the handler for process termination requests.
-VOID PALAPI PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationHandler)
-{
-    g_terminationRequestHandler = terminationHandler;
-}
 
 namespace CorUnix
 {
@@ -152,8 +141,8 @@ namespace CorUnix
 
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csSynchProcessLock;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csMonitoredProcessesLock;
+    minipal_mutex CPalSynchronizationManager::s_csSynchProcessLock;
+    minipal_mutex CPalSynchronizationManager::s_csMonitoredProcessesLock;
 
     CPalSynchronizationManager::CPalSynchronizationManager()
         : m_dwWorkerThreadTid(0),
@@ -232,7 +221,6 @@ namespace CorUnix
 
                 // Lock
                 AcquireLocalSynchLock(pthrCurrent);
-                AcquireSharedSynchLock(pthrCurrent);
 
                 if (AreAPCsPending(pthrCurrent))
                 {
@@ -261,7 +249,6 @@ namespace CorUnix
                     if (fAlertable)
                     {
                         // Unlock
-                        ReleaseSharedSynchLock(pthrCurrent);
                         ReleaseLocalSynchLock(pthrCurrent);
                     }
 
@@ -286,7 +273,6 @@ namespace CorUnix
             if (fAlertable)
             {
                 // Unlock
-                ReleaseSharedSynchLock(pthrCurrent);
                 ReleaseLocalSynchLock(pthrCurrent);
             }
         }
@@ -402,8 +388,7 @@ namespace CorUnix
                 ptwiWaitInfo = GetThreadWaitInfo(pthrCurrent);
 
                 // Unregister the wait
-                // Note: UnRegisterWait will take care of grabbing the shared synch lock, if needed.
-                UnRegisterWait(pthrCurrent, ptwiWaitInfo, false);
+                UnRegisterWait(pthrCurrent, ptwiWaitInfo);
 
                 // Unlock
                 ReleaseLocalSynchLock(pthrCurrent);
@@ -564,7 +549,6 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;
         OwnedObjectsListNode * poolnItem;
-        bool fSharedSynchLock = false;
         CThreadSynchronizationInfo * pSynchInfo = &pthrTarget->synchronizationInfo;
         CPalSynchronizationManager * pSynchManager = GetInstance();
 
@@ -594,13 +578,6 @@ namespace CorUnix
 
             TRACE("Abandoning object with SynchData at %p\n", psdSynchData);
 
-            if (!fSharedSynchLock &&
-                (SharedObject == psdSynchData->GetObjectDomain()))
-            {
-                AcquireSharedSynchLock(pthrCurrent);
-                fSharedSynchLock = true;
-            }
-
             // Reset ownership data
             psdSynchData->ResetOwnership();
 
@@ -612,7 +589,7 @@ namespace CorUnix
             psdSynchData->SetAbandoned(true);
 
             // Signal the object and trigger thread awakening
-            psdSynchData->Signal(pthrCurrent, 1, false);
+            psdSynchData->Signal(pthrCurrent, 1);
 
             // Release reference to SynchData
             psdSynchData->Release(pthrCurrent);
@@ -661,18 +638,11 @@ namespace CorUnix
                 (0 < pSynchInfo->m_twiWaitInfo.lObjCount))
             {
                 // Unregister the wait
-                // Note: UnRegisterWait will take care of grabbing the shared synch lock, if needed.
-                UnRegisterWait(pthrCurrent, &pSynchInfo->m_twiWaitInfo, fSharedSynchLock);
+                UnRegisterWait(pthrCurrent, &pSynchInfo->m_twiWaitInfo);
             }
         }
 
         // Unlock
-        if (fSharedSynchLock)
-        {
-            ReleaseSharedSynchLock(pthrCurrent);
-            fSharedSynchLock = false;
-        }
-
         ReleaseLocalSynchLock(pthrCurrent);
 
         if (abandonNamedMutexes)
@@ -741,7 +711,6 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;
         unsigned int uIdx, uCount = 0, uSharedObjectCount = 0;
-        WaitDomain wdWaitDomain = LocalWait;
         CObjectType * potObjectType = NULL;
         unsigned int uErrCleanupIdxFirstNotInitializedCtrlr = 0;
         unsigned int uErrCleanupIdxLastCtrlr = 0;
@@ -790,30 +759,10 @@ namespace CorUnix
         AcquireLocalSynchLock(pthrCurrent);
         fLocalSynchLock = true;
 
-        for (uIdx=0; uIdx<dwObjectCount; uIdx++)
-        {
-            if (SharedObject == rgObjects[uIdx]->GetObjectDomain())
-            {
-                ++uSharedObjectCount;
-            }
-
-            if (uSharedObjectCount > 0 && uSharedObjectCount <= uIdx)
-            {
-                wdWaitDomain = MixedWait;
-                break;
-            }
-        }
-
-        if (dwObjectCount == uSharedObjectCount)
-        {
-            wdWaitDomain = SharedWait;
-        }
-
         for (uIdx=0;uIdx<dwObjectCount;uIdx++)
         {
             void * pvSData;
             CSynchData * psdSynchData;
-            ObjectDomain odObjectDomain = rgObjects[uIdx]->GetObjectDomain();
 
             palErr = rgObjects[uIdx]->GetObjectSynchData((void **)&pvSData);
             if (NO_ERROR != palErr)
@@ -821,9 +770,7 @@ namespace CorUnix
                 break;
             }
 
-            psdSynchData = (SharedObject == odObjectDomain) ? SharedIDToTypePointer(
-                CSynchData, reinterpret_cast<SharedID>(pvSData)) :
-                static_cast<CSynchData *>(pvSData);
+            psdSynchData = static_cast<CSynchData *>(pvSData);
 
             VALIDATEOBJECT(psdSynchData);
 
@@ -833,19 +780,15 @@ namespace CorUnix
             {
                 Ctrlrs.pWaitCtrlrs[uIdx]->Init(pthrCurrent,
                                             ctCtrlrType,
-                                            odObjectDomain,
                                             potObjectType,
-                                            psdSynchData,
-                                            wdWaitDomain);
+                                            psdSynchData);
             }
             else
             {
                 Ctrlrs.pStateCtrlrs[uIdx]->Init(pthrCurrent,
                                              ctCtrlrType,
-                                             odObjectDomain,
                                              potObjectType,
-                                             psdSynchData,
-                                             wdWaitDomain);
+                                             psdSynchData);
             }
 
             if (CSynchControllerBase::WaitController == ctCtrlrType &&
@@ -963,58 +906,26 @@ namespace CorUnix
     --*/
     PAL_ERROR CPalSynchronizationManager::AllocateObjectSynchData(
         CObjectType *potObjectType,
-        ObjectDomain odObjectDomain,
         VOID **ppvSynchData)
     {
         PAL_ERROR palErr = NO_ERROR;
         CSynchData * psdSynchData = NULL;
         CPalThread * pthrCurrent = InternalGetCurrentThread();
 
-        if (SharedObject == odObjectDomain)
+        psdSynchData = m_cacheSynchData.Get(pthrCurrent);
+        if (NULL == psdSynchData)
         {
-            SharedID shridSynchData = m_cacheSHRSynchData.Get(pthrCurrent);
-            if (NULL == shridSynchData)
-            {
-                ERROR("Unable to allocate shared memory\n");
-                return ERROR_NOT_ENOUGH_MEMORY;
-            }
-
-            psdSynchData = SharedIDToTypePointer(CSynchData, shridSynchData);
-
-            VALIDATEOBJECT(psdSynchData);
-
-            _ASSERT_MSG(NULL != psdSynchData, "Bad shared memory pointer\n");
-
-            // Initialize waiting list pointers
-            psdSynchData->SetWTLHeadShrPtr(NULL);
-            psdSynchData->SetWTLTailShrPtr(NULL);
-
-            // Store shared pointer to this object
-            psdSynchData->SetSharedThis(shridSynchData);
-
-            *ppvSynchData = reinterpret_cast<void *>(shridSynchData);
+            ERROR("Unable to allocate memory\n");
+            return ERROR_NOT_ENOUGH_MEMORY;
         }
-        else
-        {
-            psdSynchData = m_cacheSynchData.Get(pthrCurrent);
-            if (NULL == psdSynchData)
-            {
-                ERROR("Unable to allocate memory\n");
-                return ERROR_NOT_ENOUGH_MEMORY;
-            }
 
-            // Initialize waiting list pointers
-            psdSynchData->SetWTLHeadPtr(NULL);
-            psdSynchData->SetWTLTailPtr(NULL);
+        // Initialize waiting list pointers
+        psdSynchData->SetWTLHeadPtr(NULL);
+        psdSynchData->SetWTLTailPtr(NULL);
 
-            // Set shared this pointer to NULL
-            psdSynchData->SetSharedThis(NULL);
-
-            *ppvSynchData = static_cast<void *>(psdSynchData);
-        }
+        *ppvSynchData = static_cast<void *>(psdSynchData);
 
         // Initialize object domain and object type;
-        psdSynchData->SetObjectDomain(odObjectDomain);
         psdSynchData->SetObjectType(potObjectType);
 
         return palErr;
@@ -1031,27 +942,12 @@ namespace CorUnix
     --*/
     void CPalSynchronizationManager::FreeObjectSynchData(
         CObjectType *potObjectType,
-        ObjectDomain odObjectDomain,
         VOID *pvSynchData)
     {
         CSynchData * psdSynchData;
         CPalThread * pthrCurrent = InternalGetCurrentThread();
 
-        if (odObjectDomain == SharedObject)
-        {
-            psdSynchData = SharedIDToTypePointer(CSynchData,
-                reinterpret_cast<SharedID>(pvSynchData));
-
-            if (NULL == psdSynchData)
-            {
-                ASSERT("Bad shared memory pointer\n");
-                return;
-            }
-        }
-        else
-        {
-            psdSynchData = static_cast<CSynchData *>(pvSynchData);
-        }
+        psdSynchData = static_cast<CSynchData *>(pvSynchData);
 
         psdSynchData->Release(pthrCurrent);
     }
@@ -1066,16 +962,13 @@ namespace CorUnix
         CPalThread *pthrCurrent,
         CObjectType *potObjectType,
         VOID *pvSynchData,
-        ObjectDomain odObjectDomain,
         ISynchStateController **ppStateController)
     {
         PAL_ERROR palErr = NO_ERROR;
         CSynchStateController * pCtrlr =  NULL;
-        WaitDomain wdWaitDomain = (SharedObject == odObjectDomain) ? SharedWait : LocalWait;
         CSynchData * psdSynchData;
 
-        psdSynchData = (SharedObject == odObjectDomain) ? SharedIDToTypePointer(CSynchData, reinterpret_cast<SharedID>(pvSynchData))
-                                                        : static_cast<CSynchData *>(pvSynchData);
+        psdSynchData = static_cast<CSynchData *>(pvSynchData);
 
         VALIDATEOBJECT(psdSynchData);
 
@@ -1087,10 +980,8 @@ namespace CorUnix
 
         pCtrlr->Init(pthrCurrent,
                      CSynchControllerBase::StateController,
-                     odObjectDomain,
                      potObjectType,
-                     psdSynchData,
-                     wdWaitDomain);
+                     psdSynchData);
 
         // Succeeded
         *ppStateController = (ISynchStateController *)pCtrlr;
@@ -1113,16 +1004,12 @@ namespace CorUnix
         CPalThread *pthrCurrent,
         CObjectType *potObjectType,
         VOID *pvSynchData,
-        ObjectDomain odObjectDomain,
         ISynchWaitController **ppWaitController)
     {
         CSynchWaitController * pCtrlr =  NULL;
-        WaitDomain wdWaitDomain = (SharedObject == odObjectDomain) ? SharedWait : LocalWait;
         CSynchData * psdSynchData;
 
-        psdSynchData = (SharedObject == odObjectDomain) ? SharedIDToTypePointer(
-            CSynchData, reinterpret_cast<SharedID>(pvSynchData)) :
-            static_cast<CSynchData *>(pvSynchData);
+        psdSynchData = static_cast<CSynchData *>(pvSynchData);
 
         VALIDATEOBJECT(psdSynchData);
 
@@ -1134,10 +1021,8 @@ namespace CorUnix
 
         pCtrlr->Init(pthrCurrent,
                      CSynchControllerBase::WaitController,
-                     odObjectDomain,
                      potObjectType,
-                     psdSynchData,
-                     wdWaitDomain);
+                     psdSynchData);
 
         // Succeeded
         *ppWaitController = (ISynchWaitController *)pCtrlr;
@@ -1162,7 +1047,6 @@ namespace CorUnix
         DWORD * pdwWaitState;
         ThreadWaitInfo * pTargetTWInfo = GetThreadWaitInfo(pthrTarget);
         bool fLocalSynchLock = false;
-        bool fSharedSynchLock = false;
         bool fThreadLock = false;
 
         ptainNode = m_cacheThreadApcInfoNodes.Get(pthrCurrent);
@@ -1179,12 +1063,6 @@ namespace CorUnix
 
         AcquireLocalSynchLock(pthrCurrent);
         fLocalSynchLock = true;
-
-        if (LocalWait != pTargetTWInfo->wdWaitDomain)
-        {
-            AcquireSharedSynchLock(pthrCurrent);
-            fSharedSynchLock = true;
-        }
 
         pthrTarget->Lock(pthrCurrent);
         fThreadLock = true;
@@ -1235,7 +1113,7 @@ namespace CorUnix
         if (TWS_ALERTABLE == dwWaitState)
         {
             // Unregister the wait
-            UnRegisterWait(pthrCurrent, pTargetTWInfo, fSharedSynchLock);
+            UnRegisterWait(pthrCurrent, pTargetTWInfo);
 
             // Wake up target thread
             palErr = WakeUpLocalThread(
@@ -1257,11 +1135,6 @@ namespace CorUnix
             pthrTarget->Unlock(pthrCurrent);
         }
 
-        if (fSharedSynchLock)
-        {
-            ReleaseSharedSynchLock(pthrCurrent);
-        }
-
         if (fLocalSynchLock)
         {
             ReleaseLocalSynchLock(pthrCurrent);
@@ -1270,25 +1143,6 @@ namespace CorUnix
         if (ptainNode)
         {
             m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
-        CPalSynchronizationManager::SendTerminationRequestToWorkerThread
-
-    Send a request to the worker thread to initiate process termination.
-    --*/
-    PAL_ERROR CPalSynchronizationManager::SendTerminationRequestToWorkerThread()
-    {
-        PAL_ERROR palErr = GetInstance()->WakeUpLocalWorkerThread(SynchWorkerCmdTerminationRequest);
-        if (palErr != NO_ERROR)
-        {
-            ERROR("Failed to wake up worker thread [errno=%d {%s%}]\n",
-                  errno, strerror(errno));
-            palErr = ERROR_INTERNAL_ERROR;
         }
 
         return palErr;
@@ -1444,10 +1298,10 @@ namespace CorUnix
             goto I_exit;
         }
 
-        InternalInitializeCriticalSection(&s_csSynchProcessLock);
-        InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);
+        minipal_mutex_init(&s_csSynchProcessLock);
+        minipal_mutex_init(&s_csMonitoredProcessesLock);
 
-        pSynchManager = InternalNew<CPalSynchronizationManager>();
+        pSynchManager = new(std::nothrow) CPalSynchronizationManager();
         if (NULL == pSynchManager)
         {
             ERROR("Failed to allocate memory for Synchronization Manager");
@@ -1455,13 +1309,14 @@ namespace CorUnix
             goto I_exit;
         }
 
+#ifndef __wasm__
         if (!pSynchManager->CreateProcessPipe())
         {
             ERROR("Unable to create process pipe \n");
             palErr = ERROR_OPEN_FAILED;
             goto I_exit;
         }
-
+#endif
         s_pObjSynchMgr = pSynchManager;
 
         // Initialization was successful
@@ -1480,7 +1335,7 @@ namespace CorUnix
 
             s_pObjSynchMgr = NULL;
             g_pSynchronizationManager = NULL;
-            InternalDelete(pSynchManager);
+            delete pSynchManager;
         }
 
         return palErr;
@@ -1672,22 +1527,6 @@ namespace CorUnix
         return palErr;
     }
 
-    // Entry point routine for the thread that initiates process termination.
-    DWORD PALAPI TerminationRequestHandlingRoutine(LPVOID pArg)
-    {
-        // Call the termination request handler if one is registered.
-        if (g_terminationRequestHandler != NULL)
-        {
-            // The process will terminate normally by calling exit.
-            // We use an exit code of '128 + signo'. This is a convention used in popular
-            // shells to calculate an exit code when the process was terminated by a signal.
-            // This is also used by the Process.ExitCode implementation.
-            g_terminationRequestHandler(128 + SIGTERM);
-        }
-
-        return 0;
-    }
-
     /*++
     Method:
       CPalSynchronizationManager::WorkerThread
@@ -1726,31 +1565,6 @@ namespace CorUnix
             }
             switch (swcCmd)
             {
-                case SynchWorkerCmdTerminationRequest:
-                    // This worker thread is being asked to initiate process termination
-
-                    HANDLE hTerminationRequestHandlingThread;
-                    palErr = InternalCreateThread(pthrWorker,
-                                      NULL,
-                                      0,
-                                      &TerminationRequestHandlingRoutine,
-                                      NULL,
-                                      0,
-                                      PalWorkerThread,
-                                      NULL,
-                                      &hTerminationRequestHandlingThread);
-
-                    if (NO_ERROR != palErr)
-                    {
-                        ERROR("Unable to create worker thread\n");
-                    }
-
-                    if (hTerminationRequestHandlingThread != NULL)
-                    {
-                        CloseHandle(hTerminationRequestHandlingThread);
-                    }
-
-                    break;
                 case SynchWorkerCmdNop:
                     TRACE("Synch Worker: received SynchWorkerCmdNop\n");
                     if (fShuttingDown)
@@ -1782,154 +1596,6 @@ namespace CorUnix
                         }
                     }
                     break;
-                case SynchWorkerCmdRemoteSignal:
-                {
-                    // Note: this cannot be a wait all
-                    WaitingThreadsListNode * pWLNode;
-                    ThreadWaitInfo * ptwiWaitInfo;
-                    DWORD dwObjIndex;
-                    bool fSharedSynchLock = false;
-
-                    // Lock
-                    AcquireLocalSynchLock(pthrWorker);
-                    AcquireSharedSynchLock(pthrWorker);
-                    fSharedSynchLock = true;
-
-                    pWLNode = SharedIDToTypePointer(WaitingThreadsListNode,
-                                                    shridMarshaledData);
-
-                    _ASSERT_MSG(NULL != pWLNode, "Received bad Shared ID %p\n",
-                                shridMarshaledData);
-                    _ASSERT_MSG(gPID == pWLNode->dwProcessId,
-                                "Remote signal apparently sent to the wrong "
-                                "process [target pid=%u current pid=%u]\n",
-                                pWLNode->dwProcessId, gPID);
-                    _ASSERT_MSG(0 == (WTLN_FLAG_WAIT_ALL & pWLNode->dwFlags),
-                                "Wait all with remote awakening delegated "
-                                "through SynchWorkerCmdRemoteSignal rather than "
-                                "SynchWorkerCmdDelegatedObjectSignaling\n");
-
-
-                    // Get the object index
-                    dwObjIndex = pWLNode->dwObjIndex;
-
-                    // Get the WaitInfo
-                    ptwiWaitInfo = pWLNode->ptwiWaitInfo;
-
-                    // Initialize the WakeUpReason to WaitSucceeded
-                    twrWakeUpReason = WaitSucceeded;
-
-                    CSynchData * psdSynchData =
-                        SharedIDToTypePointer(CSynchData,
-                                              pWLNode->ptrOwnerObjSynchData.shrid);
-
-                    TRACE("Synch Worker: received REMOTE SIGNAL cmd "
-                        "[WInfo=%p {Type=%u Domain=%u ObjCount=%d TgtThread=%x} "
-                        "SynchData={shriId=%p p=%p} {SigCount=%d IsAbandoned=%d}\n",
-                        ptwiWaitInfo, ptwiWaitInfo->wtWaitType, ptwiWaitInfo->wdWaitDomain,
-                        ptwiWaitInfo->lObjCount, ptwiWaitInfo->pthrOwner->GetThreadId(),
-                        (VOID *)pWLNode->ptrOwnerObjSynchData.shrid, psdSynchData,
-                        psdSynchData->GetSignalCount(), psdSynchData->IsAbandoned());
-
-                    if (CObjectType::OwnershipTracked ==
-                        psdSynchData->GetObjectType()->GetOwnershipSemantics())
-                    {
-                        // Abandoned status is not propagated through process
-                        // pipe: need to get it from the object itself before
-                        // resetting the data by acquiring the object ownership
-                        if (psdSynchData->IsAbandoned())
-                        {
-                            twrWakeUpReason = MutexAbandoned;
-                        }
-
-                        // Acquire ownership
-                        palErr = psdSynchData->AssignOwnershipToThread(
-                                    pthrWorker,
-                                    ptwiWaitInfo->pthrOwner);
-                        if (NO_ERROR != palErr)
-                        {
-                            ERROR("Synch Worker: AssignOwnershipToThread "
-                                  "failed with error %u; ownership data on "
-                                  "object with SynchData %p may be "
-                                  "corrupted\n", palErr, psdSynchData);
-                        }
-                    }
-
-                    // Unregister the wait
-                    pSynchManager->UnRegisterWait(pthrWorker,
-                                                  ptwiWaitInfo,
-                                                  fSharedSynchLock);
-
-                    // pWLNode is no longer valid after UnRegisterWait
-                    pWLNode = NULL;
-
-                    TRACE("Synch Worker: Waking up local thread %x "
-                          "{WakeUpReason=%u ObjIndex=%u}\n",
-                          ptwiWaitInfo->pthrOwner->GetThreadId(),
-                          twrWakeUpReason, dwObjIndex);
-
-                    // Wake up the target thread
-                    palErr = WakeUpLocalThread(
-                        pthrWorker,
-                        ptwiWaitInfo->pthrOwner,
-                        twrWakeUpReason,
-                        dwObjIndex);
-                    if (NO_ERROR != palErr)
-                    {
-                        ERROR("Synch Worker: Failed to wake up local thread "
-                              "%#x while propagating remote signaling: "
-                              "object signaling may be lost\n",
-                              ptwiWaitInfo->pthrOwner->GetThreadId());
-                    }
-
-                    // Unlock
-                    ReleaseSharedSynchLock(pthrWorker);
-                    fSharedSynchLock = false;
-                    ReleaseLocalSynchLock(pthrWorker);
-
-                    break;
-                }
-                case SynchWorkerCmdDelegatedObjectSignaling:
-                {
-                    CSynchData * psdSynchData;
-
-                    TRACE("Synch Worker: received "
-                          "SynchWorkerCmdDelegatedObjectSignaling\n");
-
-                    psdSynchData = SharedIDToTypePointer(CSynchData,
-                                                       shridMarshaledData);
-
-                    _ASSERT_MSG(NULL != psdSynchData, "Received bad Shared ID %p\n",
-                                shridMarshaledData);
-                    _ASSERT_MSG(0 < dwData && (DWORD)INT_MAX > dwData,
-                                "Received remote signaling with invalid signal "
-                                "count\n");
-
-                    // Lock
-                    AcquireLocalSynchLock(pthrWorker);
-                    AcquireSharedSynchLock(pthrWorker);
-
-                    TRACE("Synch Worker: received DELEGATED OBJECT SIGNALING "
-                        "cmd [SynchData={shriId=%p p=%p} SigCount=%u] [Current obj SigCount=%d "
-                        "IsAbandoned=%d]\n", (VOID *)shridMarshaledData,
-                        psdSynchData, dwData, psdSynchData->GetSignalCount(),
-                        psdSynchData->IsAbandoned());
-
-                    psdSynchData->Signal(pthrWorker,
-                                       psdSynchData->GetSignalCount() + dwData,
-                                       true);
-
-                    // Current SynchData has been AddRef'd by remote process in
-                    // order to be marshaled to the current one, therefore at
-                    // this point we need to release it
-                    psdSynchData->Release(pthrWorker);
-
-                    // Unlock
-                    ReleaseSharedSynchLock(pthrWorker);
-                    ReleaseLocalSynchLock(pthrWorker);
-
-                    break;
-                }
                 case SynchWorkerCmdShutdown:
                     TRACE("Synch Worker: received SynchWorkerCmdShutdown\n");
 
@@ -2038,60 +1704,10 @@ namespace CorUnix
             }
 
             _ASSERT_MSG(SynchWorkerCmdNop == swcWorkerCmd ||
-                        SynchWorkerCmdRemoteSignal == swcWorkerCmd ||
-                        SynchWorkerCmdDelegatedObjectSignaling == swcWorkerCmd ||
-                        SynchWorkerCmdShutdown == swcWorkerCmd ||
-                        SynchWorkerCmdTerminationRequest == swcWorkerCmd,
+                        SynchWorkerCmdShutdown == swcWorkerCmd,
                         "Unknown worker command code %u\n", swcWorkerCmd);
 
             TRACE("Got cmd %u from process pipe\n", swcWorkerCmd);
-        }
-
-        if (SynchWorkerCmdRemoteSignal == swcWorkerCmd ||
-            SynchWorkerCmdDelegatedObjectSignaling == swcWorkerCmd)
-        {
-            SharedID shridMarshaledId = NULL;
-
-            TRACE("Received %s cmd\n",
-                  (swcWorkerCmd == SynchWorkerCmdRemoteSignal) ?
-                  "REMOTE SIGNAL" : "DELEGATED OBJECT SIGNALING" );
-
-            iRet = ReadBytesFromProcessPipe(WorkerCmdCompletionTimeout,
-                                            (BYTE *)&shridMarshaledId,
-                                            sizeof(shridMarshaledId));
-            if (sizeof(shridMarshaledId) != iRet)
-            {
-                ERROR("Unable to read marshaled Shared ID from the "
-                      "process pipe [pipe=%d ret=%d errno=%d (%s)]\n",
-                      m_iProcessPipeRead, iRet, errno, strerror(errno));
-
-                return ERROR_INTERNAL_ERROR;
-            }
-
-            TRACE("Received marshaled shrid=%p\n", (VOID *)shridMarshaledId);
-
-            *pshridMarshaledData = shridMarshaledId;
-        }
-
-        if (SynchWorkerCmdDelegatedObjectSignaling == swcWorkerCmd)
-        {
-            DWORD dwData;
-
-            iRet = ReadBytesFromProcessPipe(WorkerCmdCompletionTimeout,
-                                            (BYTE *)&dwData,
-                                            sizeof(dwData));
-            if (sizeof(dwData) != iRet)
-            {
-                ERROR("Unable to read signal count from the "
-                      "process pipe [pipe=%d ret=%d errno=%d (%s)]\n",
-                      m_iProcessPipeRead, iRet, errno, strerror(errno));
-
-                return ERROR_INTERNAL_ERROR;
-            }
-
-            TRACE("Received signal count %u\n", dwData);
-
-            *pdwData = dwData;
         }
 
         *pswcWorkerCmd = swcWorkerCmd;
@@ -2146,9 +1762,9 @@ namespace CorUnix
                 }
                 else
                 {
-                    tv.tv_usec = (iTimeout % tccSecondsToMillieSeconds) *
-                        tccMillieSecondsToMicroSeconds;
-                    tv.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                    tv.tv_usec = (iTimeout % tccSecondsToMilliSeconds) *
+                        tccMilliSecondsToMicroSeconds;
+                    tv.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                     ptv = &tv;
                 }
 
@@ -2177,9 +1793,9 @@ namespace CorUnix
                     }
                     else
                     {
-                        ts.tv_nsec = (iTimeout % tccSecondsToMillieSeconds) *
-                            tccMillieSecondsToNanoSeconds;
-                        ts.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                        ts.tv_nsec = (iTimeout % tccSecondsToMilliSeconds) *
+                            tccMilliSecondsToNanoSeconds;
+                        ts.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                         pts = &ts;
                     }
 
@@ -2428,7 +2044,7 @@ namespace CorUnix
             // If the array is full, add the target thread object at the end
             // of the overflow list
             DeferredSignalingListNode * pdsln =
-                InternalNew<DeferredSignalingListNode>();
+                new(std::nothrow) DeferredSignalingListNode();
 
             if (pdsln)
             {
@@ -2513,209 +2129,6 @@ namespace CorUnix
 
     /*++
     Method:
-      CPalSynchronizationManager::ReadBytesFromProcessPipe
-
-    Wakes up a remote thead currently sleeping for a wait or a sleep
-    by sending the appropriate cmd to the remote process' worker
-    thread, which will take care to convert this command into a
-    WakeUpLocalThread in the remote process
-    --*/
-    PAL_ERROR CPalSynchronizationManager::WakeUpRemoteThread(
-        SharedID shridWLNode)
-    {
-        const int MsgSize = sizeof(BYTE) + sizeof(SharedID);
-        PAL_ERROR palErr = NO_ERROR;
-        BYTE rgSendBuf[MsgSize];
-        BYTE * pbySrc, * pbyDst = rgSendBuf;
-        WaitingThreadsListNode * pWLNode = SharedIDToTypePointer(WaitingThreadsListNode, shridWLNode);
-
-
-        _ASSERT_MSG(NULL != pWLNode, "Bad shared wait list node identifier (%p)\n", (VOID*)shridWLNode);
-        _ASSERT_MSG(gPID != pWLNode->dwProcessId, "WakeUpRemoteThread called on local thread\n");
-        _ASSERT_MSG(NULL != shridWLNode, "NULL shared identifier\n");
-        _ASSERT_MSG(MsgSize <= PIPE_BUF, "Message too long [MsgSize=%d PIPE_BUF=%d]\n", MsgSize, (int)PIPE_BUF);
-
-        TRACE("Waking up remote thread {pid=%x, tid=%x} by sending cmd=%u and shridWLNode=%p over process pipe\n",
-              pWLNode->dwProcessId, pWLNode->dwThreadId, SynchWorkerCmdRemoteSignal, (VOID *)shridWLNode);
-
-        // Prepare the message
-        // Cmd
-        *pbyDst++ = (BYTE)(SynchWorkerCmdRemoteSignal & 0xFF);
-
-        // WaitingThreadsListNode (not aligned, copy byte by byte)
-        pbySrc = (BYTE *)&shridWLNode;
-        for (int i = 0; i < (int)sizeof(SharedID); i++)
-        {
-            *pbyDst++ = *pbySrc++;
-        }
-
-        _ASSERT_MSG(pbyDst <= rgSendBuf + MsgSize + 1, "Buffer overrun");
-
-        // Send the message
-        palErr = SendMsgToRemoteWorker(pWLNode->dwProcessId, rgSendBuf, MsgSize);
-        if (NO_ERROR != palErr)
-        {
-            ERROR("Failed sending message to remote worker in process %u\n", pWLNode->dwProcessId);
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::DelegateSignalingToRemoteProcess
-
-    This method transfers an object signaling operation to a remote process,
-    where it will be performed by the worker thread. Such delegation takes
-    place when the currently processed thread (among those waiting on the
-    signald object) lives in a different process as the signaling thread,
-    and it is performing a wait all. In this case generally is not possible
-    to find out whether or not the wait all is satisfied, therefore the
-    signaling operation must be continued in the target process.
-    --*/
-    PAL_ERROR CPalSynchronizationManager::DelegateSignalingToRemoteProcess(
-        CPalThread * pthrCurrent,
-        DWORD dwTargetProcessId,
-        SharedID shridSynchData)
-    {
-        const int MsgSize = sizeof(BYTE) + sizeof(SharedID) + sizeof(DWORD);
-        int i;
-        PAL_ERROR palErr = NO_ERROR;
-        BYTE rgSendBuf[MsgSize];
-        BYTE * pbySrc, * pbyDst = rgSendBuf;
-        DWORD dwSigCount;
-        CSynchData * psdSynchData =
-            SharedIDToTypePointer(CSynchData, shridSynchData);
-
-        _ASSERT_MSG(gPID != dwTargetProcessId, " called on local thread\n");
-        _ASSERT_MSG(NULL != shridSynchData, "NULL shared identifier\n");
-        _ASSERT_MSG(NULL != psdSynchData, "Bad shared SynchData identifier (%p)\n", (VOID*)shridSynchData);
-        _ASSERT_MSG(MsgSize <= PIPE_BUF, "Message too long [MsgSize=%d PIPE_BUF=%d]\n", MsgSize, (int)PIPE_BUF);
-
-        TRACE("Transfering wait all signaling to remote process pid=%x by sending cmd=%u and shridSynchData=%p over process pipe\n",
-              dwTargetProcessId, SynchWorkerCmdDelegatedObjectSignaling, (VOID *)shridSynchData);
-
-        dwSigCount = psdSynchData->GetSignalCount();
-
-        // AddRef SynchData to be marshaled to remote process
-        psdSynchData->AddRef();
-
-        //
-        // Prepare the message
-        //
-
-        // Cmd
-        *pbyDst++ = (BYTE)(SynchWorkerCmdDelegatedObjectSignaling & 0xFF);
-
-        // CSynchData (not aligned, copy byte by byte)
-        pbySrc = (BYTE *)&shridSynchData;
-        for (i=0; i<(int)sizeof(SharedID); i++)
-        {
-            *pbyDst++ = *pbySrc++;
-        }
-
-        // Signal Count (not aligned, copy byte by byte)
-        pbySrc = (BYTE *)&dwSigCount;
-        for (i=0; i<(int)sizeof(DWORD); i++)
-        {
-            *pbyDst++ = *pbySrc++;
-        }
-
-        _ASSERT_MSG(pbyDst <= rgSendBuf + MsgSize + 1, "Buffer overrun");
-
-        // Send the message
-        palErr = SendMsgToRemoteWorker(dwTargetProcessId, rgSendBuf, MsgSize);
-        if (NO_ERROR != palErr)
-        {
-            TRACE("Failed sending message to remote worker in process %u\n", dwTargetProcessId);
-
-            // Undo refcounting
-            psdSynchData->Release(pthrCurrent);
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::SendMsgToRemoteWorker
-
-    Sends a message (command + data) to a remote process's worker thread.
-    --*/
-    PAL_ERROR CPalSynchronizationManager::SendMsgToRemoteWorker(
-        DWORD dwProcessId,
-        BYTE * pMsg,
-        int iMsgSize)
-    {
-#ifndef CORECLR
-        PAL_ERROR palErr = NO_ERROR;
-        int iProcessPipe, iBytesToWrite, iRetryCount;
-        ssize_t sszRet;
-        char strPipeFilename[MAX_PATH];
-        BYTE * pPos = pMsg;
-        bool fRet;
-        CPalThread *pthrCurrent = InternalGetCurrentThread();
-
-        _ASSERT_MSG(gPID != dwProcessId, "SendMsgToRemoteWorker called with local process as target process\n");
-
-        fRet = GetProcessPipeName(strPipeFilename, MAX_PATH, dwProcessId);
-
-        _ASSERT_MSG(fRet, "Failed to retrieve process pipe's name!\n");
-
-        iProcessPipe = InternalOpen(strPipeFilename, O_WRONLY);
-        if (-1 == iProcessPipe)
-        {
-            ERROR("Unable to open a process pipe to wake up a remote thread "
-                  "[pid=%u errno=%d (%s) PipeFilename=%s]\n", dwProcessId,
-                  errno, strerror(errno), strPipeFilename);
-            palErr = ERROR_INTERNAL_ERROR;
-            goto SMTRW_exit;
-        }
-
-        pPos = pMsg;
-        iBytesToWrite = iMsgSize;
-        while (0 < iBytesToWrite)
-        {
-            iRetryCount = 0;
-            do
-            {
-                sszRet = write(iProcessPipe, pPos, iBytesToWrite);
-            } while (-1 == sszRet &&
-                     EAGAIN == errno &&
-                     ++iRetryCount < MaxConsecutiveEagains &&
-                     0 == sched_yield());
-
-            if (0 >= sszRet)
-            {
-                ERROR("Error writing message to process pipe %d [target_pid=%u "
-                      "bytes_to_write=%d bytes_written=%d ret=%d errno=%d (%s) "
-                      "PipeFilename=%s]\n", iProcessPipe, dwProcessId, iMsgSize,
-                      iMsgSize - iBytesToWrite, (int)sszRet, errno, strerror(errno),
-                      strPipeFilename);
-                palErr = ERROR_INTERNAL_ERROR;
-                break;
-            }
-            iBytesToWrite -= (int)sszRet;
-            pPos += sszRet;
-
-            _ASSERT_MSG(0 == iBytesToWrite,
-                        "Interleaved messages while writing to process pipe %d\n",
-                        iProcessPipe);
-        }
-
-        // Close the opened pipe
-        close(iProcessPipe);
-
-    SMTRW_exit:
-        return palErr;
-#else // !CORECLR
-        ASSERT("There should never be a reason to send a message to a remote worker\n");
-        return ERROR_INTERNAL_ERROR;
-#endif // !CORECLR
-    }
-
-    /*++
-    Method:
       CPalSynchronizationManager::WakeUpLocalWorkerThread
 
     Wakes up the local worker thread by writing a 'nop' cmd to the
@@ -2730,9 +2143,8 @@ namespace CorUnix
                     "Value too big for swcWorkerCmd\n");
 
         _ASSERT_MSG((SynchWorkerCmdNop == swcWorkerCmd) ||
-                    (SynchWorkerCmdShutdown == swcWorkerCmd) ||
-                    (SynchWorkerCmdTerminationRequest == swcWorkerCmd),
-                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop, SynchWorkerCmdShutdown, and SynchWorkerCmdTerminationRequest."
+                    (SynchWorkerCmdShutdown == swcWorkerCmd),
+                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop and SynchWorkerCmdShutdown."
                     "[received cmd=%d]\n", swcWorkerCmd);
 
         BYTE byCmd = (BYTE)(swcWorkerCmd & 0xFF);
@@ -2791,23 +2203,14 @@ namespace CorUnix
     --*/
     void CPalSynchronizationManager::UnRegisterWait(
         CPalThread * pthrCurrent,
-        ThreadWaitInfo * ptwiWaitInfo,
-        bool fHaveSharedLock)
+        ThreadWaitInfo * ptwiWaitInfo)
     {
         int i = 0;
         CSynchData * psdSynchData = NULL;
-        bool fSharedSynchLock = false;
 
-        if (!fHaveSharedLock && LocalWait != ptwiWaitInfo->wdWaitDomain)
-        {
-            AcquireSharedSynchLock(pthrCurrent);
-            fSharedSynchLock = true;
-        }
-
-        TRACE("Unregistering wait for thread=%u [ObjCount=%d WaitType=%u WaitDomain=%u]\n",
+        TRACE("Unregistering wait for thread=%u [ObjCount=%d WaitType=%u]\n",
               ptwiWaitInfo->pthrOwner->GetThreadId(),
-              ptwiWaitInfo->lObjCount, ptwiWaitInfo->wtWaitType,
-              ptwiWaitInfo->wdWaitDomain);
+              ptwiWaitInfo->lObjCount, ptwiWaitInfo->wtWaitType);
 
         for (i=0; i < ptwiWaitInfo->lObjCount; i++)
         {
@@ -2815,71 +2218,31 @@ namespace CorUnix
 
             VALIDATEOBJECT(pwtlnItem);
 
-            if (pwtlnItem->dwFlags & WTLN_FLAG_OWNER_OBJECT_IS_SHARED)
+            psdSynchData = pwtlnItem->ptrOwnerObjSynchData.ptr;
+
+            VALIDATEOBJECT(psdSynchData);
+
+            if (pwtlnItem->ptrPrev.ptr)
             {
-                // Shared object
-                WaitingThreadsListNode * pwtlnItemNext, * pwtlnItemPrev;
-
-                psdSynchData = SharedIDToTypePointer(CSynchData,
-                    pwtlnItem->ptrOwnerObjSynchData.shrid);
-
-                VALIDATEOBJECT(psdSynchData);
-
-                pwtlnItemNext = SharedIDToTypePointer(WaitingThreadsListNode,
-                    pwtlnItem->ptrNext.shrid);
-                pwtlnItemPrev = SharedIDToTypePointer(WaitingThreadsListNode,
-                    pwtlnItem->ptrPrev.shrid);
-                if (pwtlnItemPrev)
-                {
-                    VALIDATEOBJECT(pwtlnItemPrev);
-                    pwtlnItemPrev->ptrNext.shrid = pwtlnItem->ptrNext.shrid;
-                }
-                else
-                {
-                    psdSynchData->SetWTLHeadShrPtr(pwtlnItem->ptrNext.shrid);
-                }
-
-                if (pwtlnItemNext)
-                {
-                    VALIDATEOBJECT(pwtlnItemNext);
-                    pwtlnItemNext->ptrPrev.shrid = pwtlnItem->ptrPrev.shrid;
-                }
-                else
-                {
-                    psdSynchData->SetWTLTailShrPtr(pwtlnItem->ptrPrev.shrid);
-                }
-
-                m_cacheSHRWTListNodes.Add(pthrCurrent, pwtlnItem->shridSHRThis);
+                VALIDATEOBJECT(pwtlnItem);
+                pwtlnItem->ptrPrev.ptr->ptrNext.ptr = pwtlnItem->ptrNext.ptr;
             }
             else
             {
-                // Local object
-                psdSynchData = pwtlnItem->ptrOwnerObjSynchData.ptr;
-
-                VALIDATEOBJECT(psdSynchData);
-
-                if (pwtlnItem->ptrPrev.ptr)
-                {
-                    VALIDATEOBJECT(pwtlnItem);
-                    pwtlnItem->ptrPrev.ptr->ptrNext.ptr = pwtlnItem->ptrNext.ptr;
-                }
-                else
-                {
-                    psdSynchData->SetWTLHeadPtr(pwtlnItem->ptrNext.ptr);
-                }
-
-                if (pwtlnItem->ptrNext.ptr)
-                {
-                    VALIDATEOBJECT(pwtlnItem);
-                    pwtlnItem->ptrNext.ptr->ptrPrev.ptr = pwtlnItem->ptrPrev.ptr;
-                }
-                else
-                {
-                    psdSynchData->SetWTLTailPtr(pwtlnItem->ptrPrev.ptr);
-                }
-
-                m_cacheWTListNodes.Add(pthrCurrent, pwtlnItem);
+                psdSynchData->SetWTLHeadPtr(pwtlnItem->ptrNext.ptr);
             }
+
+            if (pwtlnItem->ptrNext.ptr)
+            {
+                VALIDATEOBJECT(pwtlnItem);
+                pwtlnItem->ptrNext.ptr->ptrPrev.ptr = pwtlnItem->ptrPrev.ptr;
+            }
+            else
+            {
+                psdSynchData->SetWTLTailPtr(pwtlnItem->ptrPrev.ptr);
+            }
+
+            m_cacheWTListNodes.Add(pthrCurrent, pwtlnItem);
 
             // Release the node's refcount on the synch data, and decerement
             // waiting thread count
@@ -2888,16 +2251,8 @@ namespace CorUnix
         }
 
         // Reset wait data in ThreadWaitInfo structure: it is enough
-        // to reset lObjCount, lSharedObjCount and wdWaitDomain.
+        // to reset lObjCount.
         ptwiWaitInfo->lObjCount       = 0;
-        ptwiWaitInfo->lSharedObjCount = 0;
-        ptwiWaitInfo->wdWaitDomain    = LocalWait;
-
-        // Done
-        if (fSharedSynchLock)
-        {
-            ReleaseSharedSynchLock(pthrCurrent);
-        }
 
         return;
     }
@@ -2934,9 +2289,6 @@ namespace CorUnix
         _ASSERT_MSG(0 != (WTLN_FLAG_WAIT_ALL & pwtlnNode->dwFlags),
             "UnsignalRestOfLocalAwakeningWaitAll() called on a normal (non wait all) wait");
 
-        _ASSERT_MSG(gPID == pwtlnNode->dwProcessId,
-            "UnsignalRestOfLocalAwakeningWaitAll() called on a wait all with remote awakening");
-
         ThreadWaitInfo *ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
 
         int iObjCount = ptwiWaitInfo->lObjCount;
@@ -2946,14 +2298,7 @@ namespace CorUnix
 
             VALIDATEOBJECT(pwtlnItem);
 
-            if (0 != (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnItem->dwFlags))
-            {
-                psdSynchDataItem = SharedIDToTypePointer(CSynchData, pwtlnItem->ptrOwnerObjSynchData.shrid);
-            }
-            else
-            {
-                psdSynchDataItem = pwtlnItem->ptrOwnerObjSynchData.ptr;
-            }
+            psdSynchDataItem = pwtlnItem->ptrOwnerObjSynchData.ptr;
 
             VALIDATEOBJECT(psdSynchDataItem);
 
@@ -2978,101 +2323,6 @@ namespace CorUnix
 
     /*++
     Method:
-      CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress
-
-    Marks all the thread waiting list nodes involved in the current wait-all
-    for "delegated object signaling in progress", so that this wait cannot be
-    involved in another delegated object signaling that may happen while the
-    current object singaling is being tranfered to the target process (while
-    transfering it, synchronization locks are released in this process and later
-    grabbed again in the target process; in this time window another thread
-    could signal another object part of the same wait-all. In this case no
-    signal delegation must take place.
-
-    Note: this method must be called while holding the synchronization locks
-          appropriate to the target object described by pwtlnNode (i.e. the
-          local process synch lock if the target object is local, both local
-          and shared one if the object is shared).
-    --*/
-    void CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress(
-        CPalThread * pthrCurrent,
-        WaitingThreadsListNode * pwtlnNode)
-    {
-        bool fSharedSynchLock = false;
-        bool fTargetObjectIsShared = (0 != (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNode->dwFlags));
-
-        VALIDATEOBJECT(pwtlnNode);
-
-        _ASSERT_MSG(gPID == pwtlnNode->dwProcessId,
-            "MarkWaitForDelegatedObjectSignalingInProgress() called from the wrong process");
-
-        ThreadWaitInfo *ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
-
-        if (!fSharedSynchLock && !fTargetObjectIsShared &&
-            LocalWait != ptwiWaitInfo->wdWaitDomain)
-        {
-            AcquireSharedSynchLock(pthrCurrent);
-            fSharedSynchLock = true;
-        }
-
-        _ASSERT_MSG(MultipleObjectsWaitAll == ptwiWaitInfo->wtWaitType,
-            "MarkWaitForDelegatedObjectSignalingInProgress() called on a normal (non wait-all) wait");
-
-        // Unmark all nodes other than the target one
-        int iTgtCount = ptwiWaitInfo->lObjCount;
-        for (int i = 0; i < iTgtCount; i++)
-        {
-            VALIDATEOBJECT(ptwiWaitInfo->rgpWTLNodes[i]);
-            ptwiWaitInfo->rgpWTLNodes[i]->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
-        }
-
-        // Mark the target node
-        pwtlnNode->dwFlags |= WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
-
-        // Done
-        if (fSharedSynchLock)
-        {
-            ReleaseSharedSynchLock(pthrCurrent);
-        }
-
-        return;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress
-
-    Resets the "delegated object signaling in progress" flags in all the
-    nodes of the thread waitin list for the target waitable objects (represented
-    by its SynchData)
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    void CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress(
-        CSynchData * pTgtObjectSynchData)
-    {
-        bool fSharedObject = (SharedObject == pTgtObjectSynchData->GetObjectDomain());
-        WaitingThreadsListNode * pwtlnNode;
-
-        VALIDATEOBJECT(pTgtObjectSynchData);
-
-        pwtlnNode =  fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pTgtObjectSynchData->GetWTLHeadShmPtr())
-                                   : pTgtObjectSynchData->GetWTLHeadPtr();
-
-        while (pwtlnNode)
-        {
-            VALIDATEOBJECT(pwtlnNode);
-
-            pwtlnNode->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
-            pwtlnNode = fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pwtlnNode->ptrNext.shrid)
-                                      : pwtlnNode->ptrNext.ptr;
-        }
-    }
-
-    /*++
-    Method:
       CPalSynchronizationManager::RegisterProcessForMonitoring
 
     Registers the process object represented by the passed psdSynchData and
@@ -3093,7 +2343,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         fMonitoredProcessesLock = true;
 
@@ -3115,7 +2365,7 @@ namespace CorUnix
         }
         else
         {
-            pmpln = InternalNew<MonitoredProcessesListNode>();
+            pmpln = new(std::nothrow) MonitoredProcessesListNode();
             if (NULL == pmpln)
             {
                 ERROR("No memory to allocate MonitoredProcessesListNode structure\n");
@@ -3142,7 +2392,7 @@ namespace CorUnix
         }
 
         // Unlock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (fWakeUpWorker)
@@ -3162,8 +2412,7 @@ namespace CorUnix
     RPFM_exit:
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent,
-                                         &s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         return palErr;
@@ -3188,7 +2437,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         pmpln = m_pmplnMonitoredProcesses;
         while (pmpln)
@@ -3219,7 +2468,7 @@ namespace CorUnix
                 m_lMonitoredProcessesCount--;
                 pmpln->pProcessObject->ReleaseReference(pthrCurrent);
                 pmpln->psdSynchData->Release(pthrCurrent);
-                InternalDelete(pmpln);
+                delete pmpln;
             }
         }
         else
@@ -3227,7 +2476,7 @@ namespace CorUnix
             palErr = ERROR_NOT_FOUND;
         }
 
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         return palErr;
     }
 
@@ -3266,7 +2515,6 @@ namespace CorUnix
         LONG lInitialNodeCount;
         LONG lRemovingCount = 0;
         bool fLocalSynchLock = false;
-        bool fSharedSynchLock = false;
         bool fMonitoredProcessesLock = false;
 
         // Note: we first need to grab the monitored processes lock to walk
@@ -3287,7 +2535,7 @@ namespace CorUnix
         //       lock is needed in order to support object promotion.
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = true;
 
         lInitialNodeCount = m_lMonitoredProcessesCount;
@@ -3332,7 +2580,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (lRemovingCount > 0)
@@ -3342,43 +2590,8 @@ namespace CorUnix
             fLocalSynchLock = true;
 
             // Acquire the monitored processes lock
-            InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+            minipal_mutex_enter(&s_csMonitoredProcessesLock);
             fMonitoredProcessesLock = true;
-
-            if (!fSharedSynchLock)
-            {
-                bool fSharedSynchLockIsNeeded = false;
-
-                // See if the shared lock is needed
-                pNode = m_pmplnExitedNodes;
-                while (pNode)
-                {
-                    if (SharedObject == pNode->psdSynchData->GetObjectDomain())
-                    {
-                        fSharedSynchLockIsNeeded = true;
-                        break;
-                    }
-
-                    pNode = pNode->pNext;
-                }
-
-                if (fSharedSynchLockIsNeeded)
-                {
-                    // Release the monitored processes lock
-                    InternalLeaveCriticalSection(pthrCurrent,
-                                                 &s_csMonitoredProcessesLock);
-                    fMonitoredProcessesLock = false;
-
-                    // Acquire the shared synch lock
-                    AcquireSharedSynchLock(pthrCurrent);
-                    fSharedSynchLock = true;
-
-                    // Acquire again the monitored processes lock
-                    InternalEnterCriticalSection(pthrCurrent,
-                                                 &s_csMonitoredProcessesLock);
-                    fMonitoredProcessesLock = true;
-                }
-            }
 
             // Start from the beginning of the exited processes list
             pNode = m_pmplnExitedNodes;
@@ -3428,7 +2641,7 @@ namespace CorUnix
                 pNode->psdSynchData->Release(pthrCurrent);
 
                 // Delete the node
-                InternalDelete(pNode);
+                delete pNode;
 
                 // Go to the next
                 pNode = pNext;
@@ -3437,12 +2650,7 @@ namespace CorUnix
 
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
-        }
-
-        if (fSharedSynchLock)
-        {
-            ReleaseSharedSynchLock(pthrCurrent);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         if (fLocalSynchLock)
@@ -3468,7 +2676,7 @@ namespace CorUnix
         MonitoredProcessesListNode * pNode;
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         while (m_pmplnMonitoredProcesses)
         {
@@ -3476,11 +2684,11 @@ namespace CorUnix
             m_pmplnMonitoredProcesses = pNode->pNext;
             pNode->pProcessObject->ReleaseReference(pthrCurrent);
             pNode->psdSynchData->Release(pthrCurrent);
-            InternalDelete(pNode);
+            delete pNode;
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
     }
 
     /*++
@@ -3755,278 +2963,6 @@ namespace CorUnix
         ReleaseLocalSynchLock(pthrCurrent);
     }
 
-    /*++
-    Method:
-      CPalSynchronizationManager::PromoteObjectSynchData
-
-    Promotes an object's synchdata from local to shared
-    --*/
-    PAL_ERROR CPalSynchronizationManager::PromoteObjectSynchData(
-        CPalThread *pthrCurrent,
-        VOID *pvLocalSynchData,
-        VOID **ppvSharedSynchData)
-    {
-        PAL_ERROR palError = NO_ERROR;
-        CSynchData *psdLocal = reinterpret_cast<CSynchData *>(pvLocalSynchData);
-        CSynchData *psdShared = NULL;
-        SharedID shridSynchData = NULL;
-        SharedID *rgshridWTLNodes = NULL;
-        CObjectType *pot = NULL;
-        ULONG ulcWaitingThreads;
-
-        _ASSERTE(NULL != pthrCurrent);
-        _ASSERTE(NULL != pvLocalSynchData);
-        _ASSERTE(NULL != ppvSharedSynchData);
-        _ASSERTE(ProcessLocalObject == psdLocal->GetObjectDomain());
-
-#if _DEBUG
-
-        //
-        // TODO: Verify that the proper locks are held
-        //
-#endif
-
-        //
-        // Allocate shared memory CSynchData and map to local memory
-        //
-
-        shridSynchData = m_cacheSHRSynchData.Get(pthrCurrent);
-        if (NULL == shridSynchData)
-        {
-            ERROR("Unable to allocate shared memory\n");
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            goto POSD_exit;
-        }
-
-        psdShared = SharedIDToTypePointer(CSynchData, shridSynchData);
-        _ASSERTE(NULL != psdShared);
-
-        //
-        // Allocate shared memory WaitingThreadListNodes if there are
-        // any threads currently waiting on this object
-        //
-
-        ulcWaitingThreads = psdLocal->GetWaitingThreadCount();
-        if (0 < ulcWaitingThreads)
-        {
-            int i;
-
-            rgshridWTLNodes = InternalNewArray<SharedID>(ulcWaitingThreads);
-            if (NULL == rgshridWTLNodes)
-            {
-                palError = ERROR_OUTOFMEMORY;
-                goto POSD_exit;
-            }
-
-            i = m_cacheSHRWTListNodes.Get(
-                    pthrCurrent,
-                    ulcWaitingThreads,
-                    rgshridWTLNodes
-                    );
-
-            if (static_cast<ULONG>(i) != ulcWaitingThreads)
-            {
-                for (i -= 1; i >= 0; i -= 1)
-                {
-                    m_cacheSHRWTListNodes.Add(pthrCurrent, rgshridWTLNodes[i]);
-                }
-
-                palError = ERROR_OUTOFMEMORY;
-                goto POSD_exit;
-            }
-        }
-
-        //
-        // If the synch data is for a process object we need to grab
-        // the monitored process list lock here
-        //
-
-        pot = psdLocal->GetObjectType();
-        _ASSERTE(NULL != pot);
-
-        if (otiProcess == pot->GetId())
-        {
-            InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
-        }
-
-        //
-        // Copy pertinent CSynchData info to the shared memory version (and
-        // initialize other members)
-        //
-
-        psdShared->SetSharedThis(shridSynchData);
-        psdShared->SetObjectDomain(SharedObject);
-        psdShared->SetObjectType(psdLocal->GetObjectType());
-        psdShared->SetSignalCount(psdLocal->GetSignalCount());
-
-#ifdef SYNCH_STATISTICS
-        psdShared->SetStatContentionCount(psdLocal->GetStatContentionCount());
-        psdShared->SetStatWaitCount(psdLocal->GetStatWaitCount());
-#endif
-
-        //
-        // Rebuild the waiting thread list, and update the wait domain
-        // for the waiting threads
-        //
-
-        psdShared->SetWTLHeadShrPtr(NULL);
-        psdShared->SetWTLTailShrPtr(NULL);
-
-        if (0 < ulcWaitingThreads)
-        {
-            WaitingThreadsListNode *pwtlnOld;
-            WaitingThreadsListNode *pwtlnNew;
-            int i = 0;
-
-            for (pwtlnOld = psdLocal->GetWTLHeadPtr();
-                 pwtlnOld != NULL;
-                 pwtlnOld = pwtlnOld->ptrNext.ptr, i += 1)
-            {
-                pwtlnNew = SharedIDToTypePointer(
-                    WaitingThreadsListNode,
-                    rgshridWTLNodes[i]
-                    );
-
-                _ASSERTE(NULL != pwtlnNew);
-
-                pwtlnNew->shridSHRThis = rgshridWTLNodes[i];
-                pwtlnNew->ptrOwnerObjSynchData.shrid = shridSynchData;
-
-                pwtlnNew->dwThreadId = pwtlnOld->dwThreadId;
-                pwtlnNew->dwProcessId = pwtlnOld->dwProcessId;
-                pwtlnNew->dwObjIndex = pwtlnOld->dwObjIndex;
-                pwtlnNew->dwFlags = pwtlnOld->dwFlags | WTLN_FLAG_OWNER_OBJECT_IS_SHARED;
-                pwtlnNew->shridWaitingState = pwtlnOld->shridWaitingState;
-                pwtlnNew->ptwiWaitInfo = pwtlnOld->ptwiWaitInfo;
-
-                psdShared->SharedWaiterEnqueue(rgshridWTLNodes[i], false);
-                psdShared->AddRef();
-
-                _ASSERTE(pwtlnOld = pwtlnOld->ptwiWaitInfo->rgpWTLNodes[pwtlnOld->dwObjIndex]);
-                pwtlnNew->ptwiWaitInfo->rgpWTLNodes[pwtlnNew->dwObjIndex] = pwtlnNew;
-
-                pwtlnNew->ptwiWaitInfo->lSharedObjCount += 1;
-                if (pwtlnNew->ptwiWaitInfo->lSharedObjCount
-                    == pwtlnNew->ptwiWaitInfo->lObjCount)
-                {
-                    pwtlnNew->ptwiWaitInfo->wdWaitDomain = SharedWait;
-                }
-                else
-                {
-                    _ASSERTE(pwtlnNew->ptwiWaitInfo->lSharedObjCount
-                        < pwtlnNew->ptwiWaitInfo->lObjCount);
-
-                    pwtlnNew->ptwiWaitInfo->wdWaitDomain = MixedWait;
-                }
-            }
-
-            _ASSERTE(psdShared->GetWaitingThreadCount() == ulcWaitingThreads);
-        }
-
-        //
-        // If the object tracks ownership and has a current owner update
-        // the OwnedObjectsListNode to point to the shared memory synch
-        // data
-        //
-
-        if (CObjectType::OwnershipTracked == pot->GetOwnershipSemantics())
-        {
-            OwnedObjectsListNode *pooln;
-
-            pooln = psdLocal->GetOwnershipListNode();
-            if (NULL != pooln)
-            {
-                pooln->pPalObjSynchData = psdShared;
-                psdShared->SetOwnershipListNode(pooln);
-                psdShared->AddRef();
-
-                //
-                // Copy over other ownership info.
-                //
-
-                psdShared->SetOwner(psdLocal->GetOwnerThread());
-                psdShared->SetOwnershipCount(psdLocal->GetOwnershipCount());
-                _ASSERTE(!psdShared->IsAbandoned());
-            }
-            else
-            {
-                _ASSERTE(0 == psdLocal->GetOwnershipCount());
-                _ASSERTE(0 == psdShared->GetOwnershipCount());
-                psdShared->SetAbandoned(psdLocal->IsAbandoned());
-            }
-        }
-
-        //
-        // If the synch data is for a process object update the monitored
-        // process list nodes to point to the shared memory object data,
-        // and release the monitored process list lock
-        //
-
-        if (otiProcess == pot->GetId())
-        {
-            MonitoredProcessesListNode *pmpn;
-
-            pmpn = m_pmplnMonitoredProcesses;
-            while (NULL != pmpn)
-            {
-                if (psdLocal == pmpn->psdSynchData)
-                {
-                    pmpn->psdSynchData = psdShared;
-                    psdShared->AddRef();
-                }
-
-                pmpn = pmpn->pNext;
-            }
-
-            pmpn = m_pmplnExitedNodes;
-            while (NULL != pmpn)
-            {
-                if (psdLocal == pmpn->psdSynchData)
-                {
-                    pmpn->psdSynchData = psdShared;
-                    psdShared->AddRef();
-                }
-
-                pmpn = pmpn->pNext;
-            }
-
-            InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
-        }
-
-        *ppvSharedSynchData = reinterpret_cast<VOID*>(shridSynchData);
-
-        //
-        // Free the local memory items to caches
-        //
-
-        if (0 < ulcWaitingThreads)
-        {
-            WaitingThreadsListNode *pwtln;
-
-            pwtln = psdLocal->GetWTLHeadPtr();
-            while (NULL != pwtln)
-            {
-                WaitingThreadsListNode *pwtlnTemp;
-
-                pwtlnTemp = pwtln;
-                pwtln = pwtln->ptrNext.ptr;
-                m_cacheWTListNodes.Add(pthrCurrent, pwtlnTemp);
-            }
-        }
-
-        m_cacheSynchData.Add(pthrCurrent, psdLocal);
-
-    POSD_exit:
-
-        if (NULL != rgshridWTLNodes)
-        {
-            InternalDeleteArray(rgshridWTLNodes);
-        }
-
-        return palError;
-    }
-
-
     /////////////////////////////
     //                         //
     //  _ThreadNativeWaitData  //
@@ -4054,7 +2990,6 @@ namespace CorUnix
             m_tsThreadState(TS_IDLE),
             m_shridWaitAwakened(NULL),
             m_lLocalSynchLockCount(0),
-            m_lSharedSynchLockCount(0),
             m_ownedNamedMutexListHead(nullptr)
     {
         InitializeListHead(&m_leOwnedObjsList);
@@ -4445,7 +3380,7 @@ namespace CorUnix
                     pdsln->pthrTarget->ReleaseThreadReference();
 
                     // Delete the node
-                    InternalDelete(pdsln);
+                    delete pdsln;
 
                     lIdx += 1;
                 }
@@ -4643,8 +3578,8 @@ namespace CorUnix
 #endif
         if (0 == iRet)
         {
-            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMillieSeconds;
-            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMillieSeconds) * tccMillieSecondsToNanoSeconds;
+            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMilliSeconds;
+            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
             while (ptsAbsTmo->tv_nsec >= tccSecondsToNanoSeconds)
             {
                 ptsAbsTmo->tv_sec  += 1;

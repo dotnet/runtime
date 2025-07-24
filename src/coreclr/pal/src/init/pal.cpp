@@ -19,19 +19,16 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/thread.hpp"
 #include "pal/synchobjects.hpp"
 #include "pal/procobj.hpp"
-#include "pal/cs.hpp"
 #include "pal/file.hpp"
 #include "pal/map.hpp"
-#include "../objmgr/shmobjectmanager.hpp"
+#include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/sharedmemory.h"
-#include "pal/shmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
 #include "pal/virtual.h"
-#include "pal/misc.h"
 #include "pal/environ.h"
 #include "pal/utils.h"
 #include "pal/debug.h"
@@ -113,7 +110,7 @@ BOOL g_useDefaultBaseAddr = FALSE;
 
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
-static PCRITICAL_SECTION init_critsec = NULL;
+static minipal_mutex* init_critsec = NULL;
 
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
@@ -299,7 +296,7 @@ Initialize(
 {
     PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = nullptr;
-    CSharedMemoryObjectManager *pshmom = nullptr;
+    CListedObjectManager *plom = nullptr;
     LPWSTR command_line = nullptr;
     LPWSTR exe_path = nullptr;
     int retval = -1;
@@ -313,31 +310,29 @@ Initialize(
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
 
-    CriticalSectionSubSysInitialize();
-
     if(nullptr == init_critsec)
     {
         pthread_mutex_lock(&init_critsec_mutex); // prevents race condition of two threads
                                                  // initializing the critical section.
         if(nullptr == init_critsec)
         {
-            static CRITICAL_SECTION temp_critsec;
+            static minipal_mutex temp_critsec;
 
             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
-            InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
+            minipal_mutex_init(&temp_critsec);
 
             if(nullptr != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, nullptr))
             {
                 // Another thread got in before us! shouldn't happen, if the PAL
                 // isn't initialized there shouldn't be any other threads
                 WARN("Another thread initialized the critical section\n");
-                InternalDeleteCriticalSection(&temp_critsec);
+                minipal_mutex_destroy(&temp_critsec);
             }
         }
         pthread_mutex_unlock(&init_critsec_mutex);
     }
 
-    InternalEnterCriticalSection(pThread, init_critsec); // here pThread is always nullptr
+    minipal_mutex_enter(init_critsec);
 
     if (init_count == 0)
     {
@@ -361,7 +356,7 @@ Initialize(
 
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
         // called unexpectedly during cleanup
-        gSharedFilesPath = InternalNew<PathCharString>();
+        gSharedFilesPath = new(std::nothrow) PathCharString();
         if (gSharedFilesPath == nullptr)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -402,7 +397,7 @@ Initialize(
         if (FALSE == EnvironInitialize())
         {
             palError = ERROR_PALINIT_ENV;
-            goto CLEANUP0;
+            goto CLEANUP1;
         }
 
         if (!INIT_IncreaseDescriptorLimit())
@@ -412,20 +407,7 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        if (!SharedMemoryManager::StaticInitialize())
-        {
-            ERROR("Shared memory static initialization failed!\n");
-            palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP0;
-        }
-
-        /* initialize the shared memory infrastructure */
-        if (!SHMInitialize())
-        {
-            ERROR("Shared memory initialization failed!\n");
-            palError = ERROR_PALINIT_SHM;
-            goto CLEANUP0;
-        }
+        SharedMemoryManager::StaticInitialize();
 
         //
         // Initialize global process data
@@ -482,23 +464,23 @@ Initialize(
         // Initialize the object manager
         //
 
-        pshmom = InternalNew<CSharedMemoryObjectManager>();
-        if (nullptr == pshmom)
+        plom = new(std::nothrow) CListedObjectManager();
+        if (nullptr == plom)
         {
             ERROR("Unable to allocate new object manager\n");
             palError = ERROR_OUTOFMEMORY;
             goto CLEANUP1b;
         }
 
-        palError = pshmom->Initialize();
+        palError = plom->Initialize();
         if (NO_ERROR != palError)
         {
             ERROR("object manager initialization failed!\n");
-            InternalDelete(pshmom);
+            delete plom;
             goto CLEANUP1b;
         }
 
-        g_pObjectManager = pshmom;
+        g_pObjectManager = plom;
 
         //
         // Initialize the synchronization manager
@@ -553,17 +535,6 @@ Initialize(
         // InitializeProcessCommandLine took ownership of this memory.
         command_line = nullptr;
 
-#ifdef PAL_PERF
-        // Initialize the Profiling structure
-        if(FALSE == PERFInitialize(command_line, exe_path))
-        {
-            ERROR("Performance profiling initial failed\n");
-            palError = ERROR_PALINIT_PERF;
-            goto CLEANUP2;
-        }
-        PERFAllocThreadInfo();
-#endif
-
         if (!LOADSetExeName(exe_path))
         {
             ERROR("Unable to set exe name\n");
@@ -617,6 +588,7 @@ Initialize(
             }
         }
 
+#ifndef TARGET_WASM
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -629,7 +601,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-
+#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -689,24 +661,13 @@ CLEANUP1b:
 CLEANUP1a:
     // Cleanup global process data
 CLEANUP1:
-    SHMCleanup();
-CLEANUP0:
     CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:
-#ifdef PAL_PERF
-    if( retval == 0)
-    {
-         PERFEnableProcessProfile();
-         PERFEnableThreadProfile(FALSE);
-         PERFCalibrate("Overhead of PERF entry/exit");
-    }
-#endif
-
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_mutex_leave(init_critsec);
 
     if (fFirstTimeInit && 0 == retval)
     {
@@ -758,6 +719,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
+#ifndef TARGET_WASM // we don't use shared libraries on wasm
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -765,6 +727,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
+#endif // !TARGET_WASM
 
     if (!PROCAbortInitialize())
     {
@@ -773,108 +736,6 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     }
 
     return ERROR_SUCCESS;
-}
-
-/*++
-Function:
-PAL_IsDebuggerPresent
-
-Abstract:
-This function should be used to determine if a debugger is attached to the process.
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent()
-{
-#if defined(__linux__)
-    BOOL debugger_present = FALSE;
-    char buf[2048];
-
-    int status_fd = open("/proc/self/status", O_RDONLY);
-    if (status_fd == -1)
-    {
-        return FALSE;
-    }
-    ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
-
-    if (num_read > 0)
-    {
-        static const char TracerPid[] = "TracerPid:";
-        char *tracer_pid;
-
-        buf[num_read] = '\0';
-        tracer_pid = strstr(buf, TracerPid);
-        if (tracer_pid)
-        {
-            debugger_present = !!atoi(tracer_pid + sizeof(TracerPid) - 1);
-        }
-    }
-
-    close(status_fd);
-
-    return debugger_present;
-#elif defined(__APPLE__) || defined(__FreeBSD__)
-    struct kinfo_proc info = {};
-    size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
-    int ret = sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
-
-    if (ret == 0)
-#if defined(__APPLE__)
-        return ((info.kp_proc.p_flag & P_TRACED) != 0);
-#else // __FreeBSD__
-        return ((info.ki_flag & P_TRACED) != 0);
-#endif
-
-    return FALSE;
-#elif defined(__NetBSD__)
-    int traced;
-    kvm_t *kd;
-    int cnt;
-
-    struct kinfo_proc *info;
-
-    kd = kvm_open(nullptr, nullptr, nullptr, KVM_NO_FILES, "kvm_open");
-    if (kd == nullptr)
-        return FALSE;
-
-    info = kvm_getprocs(kd, KERN_PROC_PID, getpid(), &cnt);
-    if (info == nullptr || cnt < 1)
-    {
-        kvm_close(kd);
-        return FALSE;
-    }
-
-    traced = info->kp_proc.p_slflag & PSL_TRACED;
-    kvm_close(kd);
-
-    if (traced != 0)
-        return TRUE;
-    else
-        return FALSE;
-#elif defined(__sun)
-    int readResult;
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
-    int fd = open(statusFilename, O_RDONLY);
-    if (fd == -1)
-    {
-        return FALSE;
-    }
-
-    pstatus_t status;
-    do
-    {
-        readResult = read(fd, &status, sizeof(status));
-    }
-    while ((readResult == -1) && (errno == EINTR));
-
-    close(fd);
-    return status.pr_flttrace.word[0] != 0;
-#else
-    return FALSE;
-#endif
 }
 
 /*++
@@ -1020,10 +881,7 @@ BOOL PALInitLock(void)
         return FALSE;
     }
 
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
-
-    InternalEnterCriticalSection(pThread, init_critsec);
+    minipal_mutex_enter(init_critsec);
     return TRUE;
 }
 
@@ -1042,10 +900,7 @@ void PALInitUnlock(void)
         return;
     }
 
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
-
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_mutex_leave(init_critsec);
 }
 
 /* Internal functions *********************************************************/
@@ -1063,6 +918,10 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
+#ifdef TARGET_WASM
+    // WebAssembly cannot set limits
+    return TRUE;
+#endif
 #ifndef DONT_SET_RLIMIT_NOFILE
     struct rlimit rlp;
     int result;

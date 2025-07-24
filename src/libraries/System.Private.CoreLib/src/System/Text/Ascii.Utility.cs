@@ -4,14 +4,21 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
+#endif
 
 namespace System.Text
 {
-    public static partial class Ascii
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static partial class Ascii
     {
         /// <summary>
         /// Returns <see langword="true"/> iff all bytes in <paramref name="value"/> are ASCII.
@@ -53,6 +60,7 @@ namespace System.Text
                 : AllCharsInUInt64AreAscii(value);
         }
 
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static int GetIndexOfFirstNonAsciiByteInLane_AdvSimd(Vector128<byte> value, Vector128<byte> bitmask)
@@ -75,6 +83,7 @@ namespace System.Text
             Debug.Assert((mask != 0) ? index < 16 : index >= 16);
             return index;
         }
+#endif
 
         /// <summary>
         /// Given a DWORD which represents two packed chars in machine-endian order,
@@ -102,6 +111,7 @@ namespace System.Text
             // like pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
+#if NET
             if (!Vector512.IsHardwareAccelerated &&
                 !Vector256.IsHardwareAccelerated &&
                 (Sse2.IsSupported || AdvSimd.IsSupported))
@@ -109,6 +119,7 @@ namespace System.Text
                 return GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength);
             }
             else
+#endif
             {
                 // Handles Vector512, Vector256, Vector128, and scalar.
                 return GetIndexOfFirstNonAsciiByte_Vector(pBuffer, bufferLength);
@@ -128,6 +139,7 @@ namespace System.Text
             // Note use of SBYTE instead of BYTE below; we're using the two's-complement
             // representation of negative integers to act as a surrogate for "is ASCII?".
 
+#if NET
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<byte>.Count)
             {
                 if (Vector512.Load(pBuffer).ExtractMostSignificantBits() == 0)
@@ -236,6 +248,7 @@ namespace System.Text
                     bufferLength += (nuint)pOriginalBuffer;
                 }
             }
+#endif
 
             // At this point, the buffer length wasn't enough to perform a vectorized search, or we did perform
             // a vectorized search and encountered non-ASCII data. In either case go down a non-vectorized code
@@ -332,6 +345,7 @@ namespace System.Text
             goto Finish;
         }
 
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool ContainsNonAsciiByte_Sse2(uint sseMask)
         {
@@ -702,6 +716,7 @@ namespace System.Text
 
             goto Finish;
         }
+#endif
 
         /// <summary>
         /// Returns the index in <paramref name="pBuffer"/> where the first non-ASCII char is found.
@@ -716,6 +731,7 @@ namespace System.Text
             // like pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
+#if NET
             if (!Vector512.IsHardwareAccelerated &&
                 !Vector256.IsHardwareAccelerated &&
                 (Sse2.IsSupported || AdvSimd.IsSupported))
@@ -723,6 +739,7 @@ namespace System.Text
                 return GetIndexOfFirstNonAsciiChar_Intrinsified(pBuffer, bufferLength);
             }
             else
+#endif
             {
                 // Handles Vector512, Vector256, Vector128, and scalar.
                 return GetIndexOfFirstNonAsciiChar_Vector(pBuffer, bufferLength);
@@ -740,6 +757,7 @@ namespace System.Text
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
 #endif
 
+#if NET
             // Before we drain off char-by-char, try a generic vectorized loop.
             // Only run the loop if we have at least two vectors we can pull out.
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<ushort>.Count)
@@ -849,7 +867,7 @@ namespace System.Text
                     bufferLength -= ((nuint)pBuffer - (nuint)pOriginalBuffer) / sizeof(char);
                 }
             }
-
+#endif
 
             // At this point, the buffer length wasn't enough to perform a vectorized search, or we did perform
             // a vectorized search and encountered non-ASCII data. In either case go down a non-vectorized code
@@ -932,6 +950,7 @@ namespace System.Text
             goto Finish;
         }
 
+#if NET
         private static unsafe nuint GetIndexOfFirstNonAsciiChar_Intrinsified(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
@@ -1235,6 +1254,7 @@ namespace System.Text
 
             goto Finish;
         }
+#endif
 
         /// <summary>
         /// Given a QWORD which represents a buffer of 4 ASCII chars in machine-endian order,
@@ -1246,6 +1266,7 @@ namespace System.Text
         {
             Debug.Assert(AllCharsInUInt64AreAscii(value));
 
+#if NET
             if (Sse2.X64.IsSupported)
             {
                 // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
@@ -1264,8 +1285,8 @@ namespace System.Text
                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(vecWide);
                 Unsafe.WriteUnaligned(ref outputBuffer, lower.AsUInt32().ToScalar());
             }
-
             else
+#endif
             {
                 if (BitConverter.IsLittleEndian)
                 {
@@ -1325,6 +1346,7 @@ namespace System.Text
             uint utf16Data32BitsHigh = 0, utf16Data32BitsLow = 0;
             ulong utf16Data64Bits = 0;
 
+#if NET
             if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector128<byte>.Count)
             {
                 // Since there's overhead to setting up the vectorized code path, we only want to
@@ -1361,6 +1383,7 @@ namespace System.Text
                     currentOffset = NarrowUtf16ToAscii_Intrinsified(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
             }
+#endif
 
             Debug.Assert(currentOffset <= elementCount);
             nuint remainingElementCount = elementCount - currentOffset;
@@ -1496,15 +1519,16 @@ namespace System.Text
             goto Finish;
         }
 
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
         {
             // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
 
-            // prefer architecture specific intrinsic as they offer better perf
+            // For performance, prefer architecture specific implementation
             if (Sse41.IsSupported)
             {
-                return !Sse41.TestZ(asciiVector, Vector128.Create((byte)0x80));
+                return (asciiVector & Vector128.Create((byte)0x80)) != Vector128<byte>.Zero;
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
@@ -1520,23 +1544,21 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
-            // prefer architecture specific intrinsic as they offer better perf
-            if (Sse2.IsSupported)
+            // For performance, prefer architecture specific implementation
+            if (Sse41.IsSupported)
             {
-                if (Sse41.IsSupported)
-                {
-                    Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
-                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    return !Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-                }
-                else
-                {
-                    Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
-                    // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
-                    // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
-                    // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
-                    return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
-                }
+                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+                Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
+                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+                return zeroIsAscii != Vector128<ushort>.Zero;
+            }
+            else if (Sse2.IsSupported)
+            {
+                Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
+                // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
+                // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
+                // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
+                return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
@@ -1557,18 +1579,10 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
         {
-            if (Avx.IsSupported)
-            {
-                Vector256<ushort> asciiMaskForTestZ = Vector256.Create((ushort)0xFF80);
-                return !Avx.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-            }
-            else
-            {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
-                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                return zeroIsAscii != Vector256<ushort>.Zero;
-            }
+            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+            Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
+            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+            return zeroIsAscii != Vector256<ushort>.Zero;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1601,14 +1615,13 @@ namespace System.Text
             if (typeof(T) == typeof(byte))
             {
                 return
-                    Sse41.IsSupported ? Sse41.TestZ(vector.AsByte(), Vector128.Create((byte)0x80)) :
+                    Sse41.IsSupported ? (vector.AsByte() & Vector128.Create((byte)0x80)) == Vector128<byte>.Zero :
                     AdvSimd.Arm64.IsSupported ? AllBytesInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsByte(), vector.AsByte()).AsUInt64().ToScalar()) :
                     vector.AsByte().ExtractMostSignificantBits() == 0;
             }
             else
             {
                 return
-                    Sse41.IsSupported ? Sse41.TestZ(vector.AsUInt16(), Vector128.Create((ushort)0xFF80)) :
                     AdvSimd.Arm64.IsSupported ? AllCharsInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsUInt16(), vector.AsUInt16()).AsUInt64().ToScalar()) :
                     (vector.AsUInt16() & Vector128.Create((ushort)0xFF80)) == Vector128<ushort>.Zero;
             }
@@ -1624,14 +1637,12 @@ namespace System.Text
             if (typeof(T) == typeof(byte))
             {
                 return
-                    Avx.IsSupported ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80)) :
+                    Avx.IsSupported ? (vector.AsByte() & Vector256.Create((byte)0x80)) == Vector256<byte>.Zero:
                     vector.AsByte().ExtractMostSignificantBits() == 0;
             }
             else
             {
-                return
-                    Avx.IsSupported ? Avx.TestZ(vector.AsUInt16(), Vector256.Create((ushort)0xFF80)) :
-                    (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
+                return (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
             }
         }
 
@@ -2045,6 +2056,7 @@ namespace System.Text
 
             goto Finish;
         }
+#endif
 
         /// <summary>
         /// Copies as many ASCII bytes (00..7F) as possible from <paramref name="pAsciiBuffer"/>
@@ -2057,6 +2069,7 @@ namespace System.Text
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
+#if NET
             if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
             {
                 if (Vector512.IsHardwareAccelerated && (elementCount - currentOffset) >= (uint)Vector512<byte>.Count)
@@ -2072,6 +2085,7 @@ namespace System.Text
                     WidenAsciiToUtf1_Vector<Vector128<byte>, Vector128<ushort>>(pAsciiBuffer, pUtf16Buffer, ref currentOffset, elementCount);
                 }
             }
+#endif
 
             Debug.Assert(currentOffset <= elementCount);
             nuint remainingElementCount = elementCount - currentOffset;
@@ -2171,6 +2185,7 @@ namespace System.Text
             goto Finish;
         }
 
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void WidenAsciiToUtf1_Vector<TVectorByte, TVectorUInt16>(byte* pAsciiBuffer, char* pUtf16Buffer, ref nuint currentOffset, nuint elementCount)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
@@ -2180,14 +2195,14 @@ namespace System.Text
             // Calculating the destination address outside the loop results in significant
             // perf wins vs. relying on the JIT to fold memory addressing logic into the
             // write instructions. See: https://github.com/dotnet/runtime/issues/33002
-            nuint finalOffsetWhereCanRunLoop = elementCount - (nuint)TVectorByte.Count;
+            nuint finalOffsetWhereCanRunLoop = elementCount - (nuint)TVectorByte.ElementCount;
             TVectorByte asciiVector = TVectorByte.Load(pAsciiBuffer + currentOffset);
             if (!HasMatch<TVectorByte>(asciiVector))
             {
                 (TVectorUInt16 utf16LowVector, TVectorUInt16 utf16HighVector) = Widen<TVectorByte, TVectorUInt16>(asciiVector);
                 utf16LowVector.Store(pCurrentWriteAddress);
-                utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.Count);
-                pCurrentWriteAddress += (nuint)(TVectorUInt16.Count * 2);
+                utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.ElementCount);
+                pCurrentWriteAddress += (nuint)(TVectorUInt16.ElementCount * 2);
                 if (((nuint)pCurrentWriteAddress % sizeof(char)) == 0)
                 {
                     // Bump write buffer up to the next aligned boundary
@@ -2198,7 +2213,7 @@ namespace System.Text
                 else
                 {
                     // If input isn't char aligned, we won't be able to align it to a Vector
-                    currentOffset += (nuint)TVectorByte.Count;
+                    currentOffset += (nuint)TVectorByte.ElementCount;
                 }
                 while (currentOffset <= finalOffsetWhereCanRunLoop)
                 {
@@ -2209,17 +2224,17 @@ namespace System.Text
                     }
                     (utf16LowVector, utf16HighVector) = Widen<TVectorByte, TVectorUInt16>(asciiVector);
                     utf16LowVector.Store(pCurrentWriteAddress);
-                    utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.Count);
+                    utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.ElementCount);
 
-                    currentOffset += (nuint)TVectorByte.Count;
-                    pCurrentWriteAddress += (nuint)(TVectorUInt16.Count * 2);
+                    currentOffset += (nuint)TVectorByte.ElementCount;
+                    pCurrentWriteAddress += (nuint)(TVectorUInt16.ElementCount * 2);
                 }
             }
             return;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool HasMatch<TVectorByte>(TVectorByte vector)
+        private static bool HasMatch<TVectorByte>(TVectorByte vector)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
         {
             return !(vector & TVectorByte.Create((byte)0x80)).Equals(TVectorByte.Zero);
@@ -2227,7 +2242,7 @@ namespace System.Text
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe (TVectorUInt16 Lower, TVectorUInt16 Upper) Widen<TVectorByte, TVectorUInt16>(TVectorByte vector)
+        private static (TVectorUInt16 Lower, TVectorUInt16 Upper) Widen<TVectorByte, TVectorUInt16>(TVectorByte vector)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
             where TVectorUInt16 : unmanaged, ISimdVector<TVectorUInt16, ushort>
         {
@@ -2248,7 +2263,7 @@ namespace System.Text
                 return ((TVectorUInt16)(object)Lower128, (TVectorUInt16)(object)Upper128);
             }
         }
-
+#endif
 
         /// <summary>
         /// Given a DWORD which represents a buffer of 4 bytes, widens the buffer into 4 WORDs and
@@ -2259,6 +2274,7 @@ namespace System.Text
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
 
+#if NET
             if (AdvSimd.Arm64.IsSupported)
             {
                 Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
@@ -2272,6 +2288,7 @@ namespace System.Text
                 Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
             }
             else
+#endif
             {
                 if (BitConverter.IsLittleEndian)
                 {

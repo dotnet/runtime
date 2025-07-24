@@ -289,7 +289,7 @@ public:
         UNREFERENCED_PARAMETER(level);
         return FALSE;
     #else
-        // In Redhawk we have rationalized facility codes and have much
+        // In NativeAOT, we have rationalized facility codes and have much
         // fewer compared to desktop, as such we'll log all facilities and
         // limit the filtering to the log level...
         return
@@ -450,8 +450,7 @@ public:
 
     static const size_t maxArgCnt = 63;
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
-    static size_t maxMsgSize ()
-    { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
+    static constexpr size_t maxMsgSize = sizeof(uint64_t) * 2 + maxArgCnt * sizeof(void*);
 
     friend void PopulateDebugHeaders();
 };
@@ -630,7 +629,7 @@ inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
     }
     curReadChunk = curReadChunk->next;
     void** p = (void**)curReadChunk->StartPtr();
-    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr ()) < (StressMsg::maxMsgSize()/sizeof(void*)))
+    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr ()) < (StressMsg::maxMsgSize/sizeof(void*)))
     {
         ++p;
     }

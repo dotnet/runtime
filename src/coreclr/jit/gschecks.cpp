@@ -35,12 +35,6 @@ PhaseStatus Compiler::gsPhase()
             gsCopyShadowParams();
         }
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         madeChanges = true;
     }
     else
@@ -416,7 +410,7 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
-        shadowVarDsc->SetHiddenBufferStructArg(varDsc->IsHiddenBufferStructArg());
+        shadowVarDsc->SetDefinedViaAddress(varDsc->IsDefinedViaAddress());
 #endif
 
         if (varTypeIsStruct(type))
@@ -424,8 +418,9 @@ void Compiler::gsParamsToShadows()
             // We don't need unsafe value cls check here since we are copying the params and this flag
             // would have been set on the original param before reaching here.
             lvaSetStruct(shadowVarNum, varDsc->GetLayout(), false);
-            shadowVarDsc->lvIsMultiRegArg = varDsc->lvIsMultiRegArg;
-            shadowVarDsc->lvIsMultiRegRet = varDsc->lvIsMultiRegRet;
+            shadowVarDsc->lvIsMultiRegArg  = varDsc->lvIsMultiRegArg;
+            shadowVarDsc->lvIsMultiRegRet  = varDsc->lvIsMultiRegRet;
+            shadowVarDsc->lvIsMultiRegDest = varDsc->lvIsMultiRegDest;
         }
         shadowVarDsc->lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
         shadowVarDsc->lvIsPtr          = varDsc->lvIsPtr;
@@ -517,7 +512,7 @@ void Compiler::gsParamsToShadows()
         }
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
-        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && (varDsc->TypeGet() == TYP_STRUCT))
+        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && varDsc->TypeIs(TYP_STRUCT))
         {
             JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
                     shadowVarNum);
@@ -531,25 +526,42 @@ void Compiler::gsParamsToShadows()
             call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
             call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
 
-            fgEnsureFirstBBisScratch();
             compCurBB = fgFirstBB; // Needed by some morphing
             if (opts.IsReversePInvoke())
             {
-                JITDUMP(
-                    "Inserting special copy helper call at the end of the first block after Reverse P/Invoke transition\n");
-
-#ifdef DEBUG
-                // assert that we don't have any uses of the local variable in the first block
-                // before we insert the shadow copy statement.
-                for (Statement* const stmt : fgFirstBB->Statements())
-                {
-                    assert(!gtHasRef(stmt->GetRootNode(), lclNum));
-                }
-#endif
                 // If we are in a reverse P/Invoke, then we need to insert
                 // the call at the end of the first block as we need to do the GC transition
                 // before we can call the helper.
-                (void)fgNewStmtAtEnd(fgFirstBB, fgMorphTree(call));
+                //
+                // TODO-Cleanup: These gymnastics indicate that we are
+                // inserting reverse pinvoke transitions way too early in the
+                // JIT.
+
+                auto isReversePInvoke = [=](GenTree* tree) {
+                    return tree->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                           tree->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS);
+                };
+
+                Statement* reversePInvokeStmt = nullptr;
+                for (Statement* const stmt : fgFirstBB->Statements())
+                {
+                    // assert that we don't have any uses of the local variable
+                    // at the point before we insert the shadow copy statement.
+                    assert(!gtHasRef(stmt->GetRootNode(), lclNum));
+
+                    if (gtFindNodeInTree<GTF_CALL>(stmt->GetRootNode(), isReversePInvoke) != nullptr)
+                    {
+                        reversePInvokeStmt = stmt;
+                        break;
+                    }
+                }
+
+                noway_assert(reversePInvokeStmt != nullptr);
+
+                JITDUMP("Inserting special copy helper call after Reverse P/Invoke transition " FMT_STMT "\n",
+                        reversePInvokeStmt->GetID());
+
+                (void)fgInsertStmtAfter(fgFirstBB, reversePInvokeStmt, gtNewStmt(fgMorphTree(call)));
             }
             else
             {
@@ -565,9 +577,8 @@ void Compiler::gsParamsToShadows()
 
             GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
-            fgEnsureFirstBBisScratch();
             compCurBB = fgFirstBB; // Needed by some morphing
-            (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+            fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
         }
     }
     compCurBB = nullptr;

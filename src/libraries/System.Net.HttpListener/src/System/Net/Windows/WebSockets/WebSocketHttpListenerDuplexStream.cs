@@ -978,7 +978,7 @@ namespace System.Net.WebSockets
                 _count = count;
             }
 
-            private unsafe void UpdateDataChunk()
+            private void UpdateDataChunk()
             {
                 if (_dataChunks == null)
                 {

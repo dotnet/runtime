@@ -21,6 +21,12 @@
     <Compile Include="MailMessageTest.cs" />
     <Compile Include="SmtpExceptionTest.cs" />
     <Compile Include="TestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.Dynamic.cs"
+             Link="TestCommon\System\Net\Configuration.Certificates.Dynamic.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
@@ -34,10 +40,20 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
+    <Compile Include="SmtpClientAttachmentTest.cs" />
+    <Compile Include="SmtpClientAuthTest.cs" />
     <Compile Include="SmtpClientTest.cs" />
+    <Compile Include="SmtpClientConnectionTest.cs" />
+    <Compile Include="SmtpClientSendMailTest.cs" />
+    <Compile Include="SmtpClientSpecifiedPickupDirectoryTest.cs" />
+    <Compile Include="SmtpClientTlsTest.cs" />
     <Compile Include="SmtpClientCredentialsTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="LoopbackSmtpServer.cs" />
+    <Compile Include="LoopbackServerTestBase.cs" />
+
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
 
   <!-- NTLM/Negotiate authentication fakes -->

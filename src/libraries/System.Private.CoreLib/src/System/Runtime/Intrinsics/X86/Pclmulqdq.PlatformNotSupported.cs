@@ -10,7 +10,7 @@ namespace System.Runtime.Intrinsics.X86
 {
     /// <summary>Provides access to X86 CLMUL hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
-    public abstract class Pclmulqdq : Sse2
+    public abstract partial class Pclmulqdq : Sse2
     {
         internal Pclmulqdq() { }
 

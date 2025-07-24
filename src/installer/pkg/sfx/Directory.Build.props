@@ -11,8 +11,10 @@
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
+  <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <GenerateInstallers>true</GenerateInstallers>
+    <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildDebPackage>
+    <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildRpmPackage>
     <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
   </PropertyGroup>
 </Project>

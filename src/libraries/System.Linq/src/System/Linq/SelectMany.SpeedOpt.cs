@@ -62,6 +62,19 @@ namespace System.Linq
 
                 return result;
             }
+
+            public override bool Contains(TResult value)
+            {
+                foreach (TSource element in _source)
+                {
+                    if (_selector(element).Contains(value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
     }
 }

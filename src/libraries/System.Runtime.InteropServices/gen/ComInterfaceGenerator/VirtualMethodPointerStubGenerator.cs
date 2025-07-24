@@ -16,9 +16,9 @@ namespace Microsoft.Interop
 {
     internal static class VirtualMethodPointerStubGenerator
     {
-        private const string NativeThisParameterIdentifier = "__this";
-        private const string VirtualMethodTableIdentifier = "__vtable";
-        private const string VirtualMethodTarget = "__target";
+        internal const string NativeThisParameterIdentifier = "__this";
+        internal const string VirtualMethodTableIdentifier = "__vtable";
+        internal const string VirtualMethodTarget = "__target";
 
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub,
@@ -257,7 +257,7 @@ namespace Microsoft.Interop
             return Block(statements);
         }
 
-        private static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
+        public static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
             IncrementalMethodStubGenerationContext method,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {

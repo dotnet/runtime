@@ -23,6 +23,17 @@
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
+  <!-- This is fake target, we assume that runtimeconfig.json was already generated on CI agent before during build -->
+  <Target Name="GenerateBuildRuntimeConfigurationFiles" >
+    <ItemGroup>
+      <_ProjectRuntimeConfigFilePathOriginal Include="$(OriginalPublishDir)**\*.runtimeconfig.json" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(ProjectRuntimeConfigFilePath)' == ''">
+      <ProjectRuntimeConfigFilePath Condition="$([System.String]::new(%(_ProjectRuntimeConfigFilePathOriginal.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(_ProjectRuntimeConfigFilePathOriginal)</ProjectRuntimeConfigFilePath>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="PrepareForWasmBuildApp">
     <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *wasm* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
              Importance="High" />

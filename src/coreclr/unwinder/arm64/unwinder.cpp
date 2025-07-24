@@ -823,7 +823,7 @@ RtlpExpandCompactToFull (
                 // !sav_predec_done can't even happen.
                 //
 
-                _ASSERTE(sav_predec_done);
+                UNWINDER_ASSERT(sav_predec_done);
 
                 DBG_OP("save_lrpair\t(%s, %i)\n", int_reg_names[intreg], sav_slot * 8);
                 emit_save_lrpair(&op_buffer, intreg, sav_slot * 8);
@@ -1063,7 +1063,7 @@ Return Value:
 --*/
 
 {
-    _ASSERTE(UnwindCode <= 0xFF);
+    UNWINDER_ASSERT(UnwindCode <= 0xFF);
 
     if (UnwindCode < 0xC0) {
         if (ARGUMENT_PRESENT(ScopeSize)) {
@@ -1621,7 +1621,7 @@ Return Value:
 
     case 0xeb:  // MSFT_OP_EC_CONTEXT:
         // NOTE: for .NET, the arm64ec context restoring is not implemented
-        _ASSERTE(FALSE);
+        UNWINDER_ASSERT(FALSE);
         return STATUS_UNSUCCESSFUL;
 
     case 0xec: // MSFT_OP_CLEAR_UNWOUND_TO_CALL
@@ -2574,7 +2574,7 @@ Return Value:
 
     UNREFERENCED_PARAMETER(HandlerType);
 
-    _ASSERTE((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
+    UNWINDER_ASSERT((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
 
     if (FunctionEntry == NULL) {
 
@@ -2648,7 +2648,7 @@ Return Value:
                 FunctionEntry = (PRUNTIME_FUNCTION)(ImageBase + FunctionEntry->UnwindData - 3);
                 UnwindType = (FunctionEntry->UnwindData & 3);
 
-                _ASSERTE(UnwindType != 3);
+                UNWINDER_ASSERT(UnwindType != 3);
 
                 ControlPcRva = FunctionEntry->BeginAddress;
 

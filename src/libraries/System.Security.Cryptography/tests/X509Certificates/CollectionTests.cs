@@ -1611,6 +1611,216 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [InlineData(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, nameof(HashAlgorithmName.SHA1), PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)]
+        [InlineData(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        [InlineData(Pkcs12ExportPbeParameters.Default, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        public static void ExportPkcs12_OneCert(
+            Pkcs12ExportPbeParameters pkcs12ExportPbeParameters,
+            string expectedHashAlgorithm,
+            PbeEncryptionAlgorithm expectedEncryptionAlgorithm)
+        {
+            const string password = "PLACEHOLDER";
+            using X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable);
+            X509Certificate2Collection collection = [cert];
+
+            byte[] pkcs12 = collection.ExportPkcs12(pkcs12ExportPbeParameters, password);
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                password,
+                expectedIterations: 2000,
+                expectedMacHashAlgorithm: new HashAlgorithmName(expectedHashAlgorithm),
+                expectedEncryptionAlgorithm);
+            Assert.Equal(1, certs);
+            Assert.Equal(1, keys);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, nameof(HashAlgorithmName.SHA1), 1200)]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, nameof(HashAlgorithmName.SHA256), 4000)]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, nameof(HashAlgorithmName.SHA256), 4)]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, nameof(HashAlgorithmName.SHA1), 1234)]
+        public static void ExportPkcs12_PbeParameters_OneCert(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            string hashAlgorithm,
+            int iterations)
+        {
+            const string password = "PLACEHOLDER";
+            HashAlgorithmName hashAlgorithmName = new(hashAlgorithm);
+            PbeParameters parameters = new(encryptionAlgorithm, hashAlgorithmName, iterations);
+
+            using X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable);
+            X509Certificate2Collection collection = [cert];
+
+            byte[] pkcs12 = collection.ExportPkcs12(parameters, password);
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                password,
+                expectedIterations: iterations,
+                expectedMacHashAlgorithm: hashAlgorithmName,
+                encryptionAlgorithm);
+            Assert.Equal(1, certs);
+            Assert.Equal(1, keys);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, nameof(HashAlgorithmName.SHA1), 1200)]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, nameof(HashAlgorithmName.SHA256), 4000)]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, nameof(HashAlgorithmName.SHA256), 4)]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, nameof(HashAlgorithmName.SHA1), 1234)]
+        public static void ExportPkcs12_PbeParameters_TwoCerts(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            string hashAlgorithm,
+            int iterations)
+        {
+            const string password = "PLACEHOLDER";
+            HashAlgorithmName hashAlgorithmName = new(hashAlgorithm);
+            PbeParameters parameters = new(encryptionAlgorithm, hashAlgorithmName, iterations);
+
+            using X509Certificate2 cert1 = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable);
+            using X509Certificate2 cert2 = new(TestData.Pkcs12Builder3DESCBCWithEmptyPassword, (string)null, X509KeyStorageFlags.Exportable);
+            X509Certificate2Collection collection = [cert1, cert2];
+
+            byte[] pkcs12 = collection.ExportPkcs12(parameters, password);
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                password,
+                iterations,
+                hashAlgorithmName,
+                encryptionAlgorithm);
+            Assert.Equal(2, certs);
+            Assert.Equal(2, keys);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        [InlineData(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, nameof(HashAlgorithmName.SHA1), PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)]
+        [InlineData(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        [InlineData(Pkcs12ExportPbeParameters.Default, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        public static void ExportPkcs12_TwoCerts(
+            Pkcs12ExportPbeParameters pkcs12ExportPbeParameters,
+            string expectedHashAlgorithm,
+            PbeEncryptionAlgorithm expectedEncryptionAlgorithm)
+        {
+            const string password = "PLACEHOLDER";
+
+            using X509Certificate2 cert1 = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable);
+            using X509Certificate2 cert2 = new(TestData.Pkcs12Builder3DESCBCWithEmptyPassword, (string)null, X509KeyStorageFlags.Exportable);
+            X509Certificate2Collection collection = [cert1, cert2];
+
+            byte[] pkcs12 = collection.ExportPkcs12(pkcs12ExportPbeParameters, password);
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                password,
+                expectedIterations: 2000,
+                new HashAlgorithmName(expectedHashAlgorithm),
+                expectedEncryptionAlgorithm);
+            Assert.Equal(2, certs);
+            Assert.Equal(2, keys);
+        }
+
+        [Theory]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, nameof(HashAlgorithmName.SHA1), 1200)]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, nameof(HashAlgorithmName.SHA256), 4000)]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, nameof(HashAlgorithmName.SHA256), 4)]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, nameof(HashAlgorithmName.SHA1), 1234)]
+        public static void ExportPkcs12_PbeParameters_CertOnly(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            string hashAlgorithm,
+            int iterations)
+        {
+            const string password = "PLACEHOLDER";
+            HashAlgorithmName hashAlgorithmName = new(hashAlgorithm);
+            PbeParameters parameters = new(encryptionAlgorithm, hashAlgorithmName, iterations);
+
+            using X509Certificate2 cert1 = new(TestData.MsCertificate);
+            using X509Certificate2 cert2 = new(TestData.MicrosoftDotComRootBytes);
+            X509Certificate2Collection collection = [cert1, cert2];
+
+            byte[] pkcs12 = collection.ExportPkcs12(parameters, password);
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                password,
+                iterations,
+                hashAlgorithmName,
+                encryptionAlgorithm);
+            Assert.Equal(2, certs);
+            Assert.Equal(0, keys);
+        }
+
+        [Theory]
+        [InlineData(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, nameof(HashAlgorithmName.SHA1), PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)]
+        [InlineData(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        [InlineData(Pkcs12ExportPbeParameters.Default, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        public static void ExportPkcs12_CertsOnly(
+            Pkcs12ExportPbeParameters pkcs12ExportPbeParameters,
+            string expectedHashAlgorithm,
+            PbeEncryptionAlgorithm expectedEncryptionAlgorithm)
+        {
+            const string password = "PLACEHOLDER";
+            using X509Certificate2 cert1 = new(TestData.MsCertificate);
+            using X509Certificate2 cert2 = new(TestData.MicrosoftDotComRootBytes);
+            X509Certificate2Collection collection = [cert1, cert2];
+
+            byte[] pkcs12 = collection.ExportPkcs12(pkcs12ExportPbeParameters, password);
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
+                pkcs12,
+                password,
+                expectedIterations: 2000,
+                new HashAlgorithmName(expectedHashAlgorithm),
+                expectedEncryptionAlgorithm);
+            Assert.Equal(2, certs);
+            Assert.Equal(0, keys);
+        }
+
+        [Fact]
+        public static void ExportPkcs12_Pkcs12ExportPbeParameters_ArgValidation()
+        {
+            X509Certificate2Collection collection = [];
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("exportParameters",
+                () => collection.ExportPkcs12((Pkcs12ExportPbeParameters)42, null));
+
+            AssertExtensions.Throws<ArgumentException>("password",
+                    () => collection.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, "PLACE\0HOLDER"));
+        }
+
+        [Theory]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, nameof(HashAlgorithmName.SHA256))]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, "")]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, null)]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, null)]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, "")]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, null)]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, "")]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, null)]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, "")]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, "SHA3-256")]
+        [InlineData((PbeEncryptionAlgorithm)(-1), nameof(HashAlgorithmName.SHA1))]
+        public static void ExportPkcs12_PbeParameters_ArgValidation(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            string hashAlgorithm)
+        {
+            X509Certificate2Collection collection = [];
+            PbeParameters badParameters = new(encryptionAlgorithm, new HashAlgorithmName(hashAlgorithm), 1);
+            Assert.Throws<CryptographicException>(() => collection.ExportPkcs12(badParameters, null));
+        }
+
+        [Fact]
+        public static void ExportPkcs12_PbeParameters_ArgValidation_Password()
+        {
+            X509Certificate2Collection collection = [];
+            PbeParameters parameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 1);
+            AssertExtensions.Throws<ArgumentException>("password",
+                () => collection.ExportPkcs12(parameters, "PLACE\0HOLDER"));
+        }
+
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.CreatePfxDataPasswordSecureString(), Cert.EphemeralIfPossible))

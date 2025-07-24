@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -19,27 +19,6 @@ namespace System.Reflection.Metadata
         // Keep this in sync with GetFullTypeNameLength/NeedsEscaping
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
-
-        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, ReadOnlySpan<TypeName> genericArgs)
-        {
-            Debug.Assert(genericArgs.Length > 0);
-
-            ValueStringBuilder result = new(stackalloc char[128]);
-            result.Append(fullTypeName);
-
-            result.Append('[');
-            foreach (TypeName genericArg in genericArgs)
-            {
-                result.Append('[');
-                result.Append(genericArg.AssemblyQualifiedName); // see recursion comments in TypeName.FullName
-                result.Append(']');
-                result.Append(',');
-            }
-            result[result.Length - 1] = ']'; // replace ',' with ']'
-
-            return result.ToString();
-        }
-
         /// <returns>Positive length or negative value for invalid name</returns>
         internal static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
         {
@@ -102,36 +81,56 @@ namespace System.Reflection.Metadata
             static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
-        internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
+        internal static int IndexOfNamespaceDelimiter(ReadOnlySpan<char> fullName)
         {
-            // The two-value form of MemoryExtensions.LastIndexOfAny does not suffer
-            // from the behavior mentioned in the comment at the top of GetFullTypeNameLength.
-            // It always takes O(m * i) worst-case time and is safe to use here.
+            // Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+            // This could result in the type name beginning with a '.' character.
+            int index = fullName.LastIndexOf('.');
 
-            int offset = fullName.LastIndexOfAny('.', '+');
-
-            if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
+            if (index > 0 && fullName[index - 1] == '.')
             {
-                offset = GetUnescapedOffset(fullName, startIndex: offset);
+                index--;
             }
 
-            return offset < 0 ? fullName : fullName.Slice(offset + 1);
+            return index;
+        }
 
-            static int GetUnescapedOffset(ReadOnlySpan<char> fullName, int startIndex)
+        internal static string Unescape(string input)
+        {
+            int indexOfEscapeCharacter = input.IndexOf(EscapeCharacter);
+            if (indexOfEscapeCharacter < 0)
             {
-                int offset = startIndex;
-                for (; offset >= 0; offset--)
+                // Nothing to escape, just return the original value.
+                return input;
+            }
+
+            return UnescapeToBuilder(input, indexOfEscapeCharacter);
+
+            static string UnescapeToBuilder(string name, int indexOfEscapeCharacter)
+            {
+                // This code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#).
+                var sb = new ValueStringBuilder(stackalloc char[64]);
+                sb.EnsureCapacity(name.Length);
+                sb.Append(name.AsSpan(0, indexOfEscapeCharacter));
+
+                for (int i = indexOfEscapeCharacter; i < name.Length;)
                 {
-                    if (fullName[offset] is '.' or '+')
+                    char c = name[i++];
+
+                    if (c != EscapeCharacter || i == name.Length)
                     {
-                        if (offset == 0 || fullName[offset - 1] != EscapeCharacter)
-                        {
-                            break;
-                        }
-                        offset--; // skip the escaping character
+                        sb.Append(c);
+                    }
+                    else if (name[i] == EscapeCharacter) // escaped escape character ;)
+                    {
+                        sb.Append(c);
+                        // Consume the escaped escape character, it's important for edge cases
+                        // like escaped escape character followed by another escaped char (example: "\\\\\\+")
+                        i++;
                     }
                 }
-                return offset;
+
+                return sb.ToString();
             }
         }
 
@@ -166,7 +165,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static string GetRankOrModifierStringRepresentation(int rankOrModifier, ref ValueStringBuilder builder)
+        internal static void AppendRankOrModifierStringRepresentation(int rankOrModifier, ref ValueStringBuilder builder)
         {
             if (rankOrModifier == ByRef)
             {
@@ -199,8 +198,6 @@ namespace System.Reflection.Metadata
                 builder.Append(',', rankOrModifier - 1);
                 builder.Append(']');
             }
-
-            return builder.ToString();
         }
 
         /// <summary>
@@ -351,6 +348,12 @@ namespace System.Reflection.Metadata
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentNullException(string paramName)
+        {
+            throw new ArgumentNullException(paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_InvalidTypeName(int errorIndex)
         {
             throw new ArgumentException(SR.Argument_InvalidTypeName, $"typeName@{errorIndex}");
@@ -405,6 +408,17 @@ namespace System.Reflection.Metadata
         {
 #if SYSTEM_REFLECTION_METADATA
             throw new InvalidOperationException(SR.Argument_HasToBeArrayClass);
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
+#endif
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NestedTypeNamespace()
+        {
+#if SYSTEM_REFLECTION_METADATA
+            throw new InvalidOperationException(SR.InvalidOperation_NestedTypeNamespace);
 #else
             Debug.Fail("Expected to be unreachable");
             throw new InvalidOperationException();

@@ -36,9 +36,9 @@ namespace System.Numerics.Tensors
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
-            T expSum = Aggregate<T, ExpOperator<T>, AddOperator<T>>(x);
-
-            InvokeSpanScalarIntoSpan<T, ExpOperator<T>, DivideOperator<T>>(x, expSum, destination);
+            InvokeSpanIntoSpan<T, ExpOperator<T>>(x, destination);
+            T expSum = Sum(destination);
+            InvokeSpanScalarIntoSpan<T, DivideOperator<T>>(destination, expSum, destination);
         }
     }
 }

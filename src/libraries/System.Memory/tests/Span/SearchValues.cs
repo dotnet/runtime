@@ -465,7 +465,7 @@ namespace System.SpanTests
                     s_randomLatin1Chars[i] = (char)rng.Next(0, 256);
                 }
 
-                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars.AsSpan()));
 
                 s_randomAsciiBytes = Encoding.ASCII.GetBytes(s_randomAsciiChars);
 

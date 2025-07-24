@@ -68,6 +68,22 @@ languageDecl            : '.language' SQSTRING
                         ;
 /*  Basic tokens  */
 id                      : ID 
+                        /* Allow methodImpl attributes to be used as identifiers */
+                        | 'native' 
+                        | 'cil' 
+                        | 'optil' 
+                        | 'managed' 
+                        | 'unmanaged' 
+                        | 'forwardref' 
+                        | 'preservesig' 
+                        | 'runtime' 
+                        | 'internalcall' 
+                        | 'synchronized' 
+                        | 'noinlining' 
+                        | 'aggressiveinlining' 
+                        | 'nooptimization' 
+                        | 'aggressiveoptimization' 
+                        | 'async' 
                         | SQSTRING 
                         ;
 
@@ -528,6 +544,7 @@ implAttr                : /* EMPTY */
                         | implAttr 'aggressiveinlining' 
                         | implAttr 'nooptimization' 
                         | implAttr 'aggressiveoptimization' 
+                        | implAttr 'async' 
                         | implAttr 'flags' '(' int32 ')' 
                         ;
 

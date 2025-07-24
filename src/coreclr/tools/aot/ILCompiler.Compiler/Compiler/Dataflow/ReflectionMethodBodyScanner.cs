@@ -130,6 +130,25 @@ namespace ILCompiler.Dataflow
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
+
+            // We're on an interface and we're processing annotations for the purposes of a object.GetType() call.
+            // Most of the annotations don't apply to the members of interfaces - the result of object.GetType() is
+            // never the interface type, it's a concrete type that implements the interface. Limit this to the only
+            // annotations that are applicable in this situation.
+            if (type.IsInterface)
+            {
+                // .All applies to interface members same as to the type
+                if (annotation != DynamicallyAccessedMemberTypes.All)
+                {
+                    // Filter to the MemberTypes that apply to interfaces
+                    annotation &= DynamicallyAccessedMemberTypes.Interfaces;
+
+                    // If we're left with nothing, we're done
+                    if (annotation == DynamicallyAccessedMemberTypes.None)
+                        return new DependencyList();
+                }
+            }
+
             var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
 
             // We need to apply annotations to this type, and its base/interface types (recursively)

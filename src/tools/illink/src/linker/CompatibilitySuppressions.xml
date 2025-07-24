@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
@@ -92,6 +92,10 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.MessageSubCategory</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILLink.Shared.TrimAnalysis.DiagnosticContext</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -531,6 +535,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypesEx</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.AssemblyNameHelpers</Target>
   </Suppression>
   <Suppression>
@@ -552,10 +560,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.RuntimeAssemblyName</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:ILLink.Shared.TrimAnalysis.DiagnosticContext</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -703,6 +707,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.GetEntryPointAssembly</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetLinkerAttributes``1(Mono.Cecil.IMemberDefinition)</Target>
   </Suppression>
   <Suppression>
@@ -740,14 +748,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.HasPreservedStaticCtor(Mono.Cecil.TypeDefinition)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.AnnotationStore.HasSubstitutedInit(Mono.Cecil.FieldDefinition)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.AnnotationStore.HasSubstitutedInit(Mono.Cecil.TypeDefinition)</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -820,6 +820,10 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetAppliedPreserve(Mono.Cecil.TypeDefinition,Mono.Linker.TypePreserve)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.SetEntryPointAssembly(Mono.Cecil.AssemblyDefinition)</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -991,6 +995,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_KeepComInterfaces</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_KeepMembersForDebugger</Target>
   </Suppression>
   <Suppression>
@@ -1047,6 +1055,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_PreserveSymbolPaths</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Resolver</Target>
   </Suppression>
   <Suppression>
@@ -1068,6 +1080,10 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_SymbolReaderProvider</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_SystemModuleName</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -1291,6 +1307,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.set_KeepComInterfaces(System.Boolean)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_KeepMembersForDebugger(System.Boolean)</Target>
   </Suppression>
   <Suppression>
@@ -1327,6 +1347,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.set_PreserveSymbolPaths(System.Boolean)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_SingleWarn(System.Collections.Generic.Dictionary{System.String,System.Boolean})</Target>
   </Suppression>
   <Suppression>
@@ -1340,6 +1364,10 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_SymbolReaderProvider(Mono.Cecil.Cil.ISymbolReaderProvider)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.set_SystemModuleName(System.String)</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -1503,27 +1531,15 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.LinkContext.get_KeepComInterfaces</Target>
+    <Target>M:Mono.Linker.LinkContext.get_DisableGeneratedCodeHeuristics</Target>
+    <Left>ref/net10.0/illink.dll</Left>
+    <Right>lib/net10.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.LinkContext.get_PreserveSymbolPaths</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.LinkContext.get_SystemModuleName</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.LinkContext.set_KeepComInterfaces(System.Boolean)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.LinkContext.set_PreserveSymbolPaths(System.Boolean)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.LinkContext.set_SystemModuleName(System.String)</Target>
+    <Target>M:Mono.Linker.LinkContext.set_DisableGeneratedCodeHeuristics(System.Boolean)</Target>
+    <Left>ref/net10.0/illink.dll</Left>
+    <Right>lib/net10.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>

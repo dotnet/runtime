@@ -17,10 +17,22 @@ extern "C" DLL_EXPORT int __cdecl NativeEntryPoint()
 }
 
 #pragma managed
+
+// Needed to provide a regression case for https://github.com/dotnet/runtime/issues/110365
+[assembly:System::Diagnostics::DebuggableAttribute(true, true)];
+[module:System::Diagnostics::DebuggableAttribute(true, true)];
+
+public value struct ValueToReturnStorage
+{
+    int valueToReturn;
+    bool valueSet;
+};
+
+// store the value to return in an appdomain local static variable to allow this test to be a regression test for https://github.com/dotnet/runtime/issues/110365
+static __declspec(appdomain) ValueToReturnStorage s_valueToReturnStorage;
+
 public ref class TestClass
 {
-private:
-    static int s_valueToReturn = 100;
 public:
     int ManagedEntryPoint()
     {
@@ -29,12 +41,16 @@ public:
 
     static void ChangeReturnedValue(int i)
     {
-        s_valueToReturn = i;
+        s_valueToReturnStorage.valueToReturn = i;
+        s_valueToReturnStorage.valueSet = true;
     }
 
     static int GetReturnValue()
     {
-        return s_valueToReturn;
+        if (s_valueToReturnStorage.valueSet)
+            return s_valueToReturnStorage.valueToReturn;
+        else
+            return 100;
     }
 };
 

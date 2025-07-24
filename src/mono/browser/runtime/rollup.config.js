@@ -9,7 +9,6 @@ import * as path from "path";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
 import { createFilter } from "@rollup/pluginutils";
-import fast_glob from "fast-glob";
 import gitCommitInfo from "git-commit-info";
 import MagicString from "magic-string";
 
@@ -23,11 +22,10 @@ const wasmEnableThreads = process.env.WasmEnableThreads === "true" ? true : fals
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
-const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
-// because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
+// because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
 // and unit test at with timers.mjs
 const keep_fnames = /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_schedule_timer_tick)/;
-const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/;
+const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
 const terserConfig = {
     compress: {
         defaults: true,
@@ -44,7 +42,7 @@ const terserConfig = {
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
-const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
+const banner_dts = banner + "//!\n//! This is generated file, see src/mono/browser/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const inlineAssert = [
     {
@@ -96,6 +94,11 @@ const checkNoRuntime =
     pattern: /_runtimeModuleLoaded/gm,
     failure: "module should not contain runtimeModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
 };
+const checkNoDiagnostics =
+{
+    pattern: /_diagnosticModuleLoaded/gm,
+    failure: "module should not contain _diagnosticModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+};
 
 
 let gitHash;
@@ -111,7 +114,6 @@ const envConstants = {
     wasmEnableThreads,
     wasmEnableSIMD,
     wasmEnableExceptionHandling,
-    monoDiagnosticsMock,
     gitHash,
     wasmEnableJsInteropByValue,
     isContinuousIntegrationBuild,
@@ -169,13 +171,14 @@ const loaderConfig = {
             format: "es",
             file: nativeBinDir + "/dotnet.js",
             banner,
+            intro: "/*! bundlerFriendlyImports */",
             plugins,
             sourcemap: true,
             sourcemapPathTransform,
         }
     ],
     external: externalDependencies,
-    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
+    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime, checkNoDiagnostics]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const runtimeConfig = {
@@ -192,7 +195,24 @@ const runtimeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoDiagnostics]), ...outputCodePlugins],
+    onwarn: onwarn
+};
+const diagConfig = {
+    treeshake: !isDebug,
+    input: "diagnostics/index.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.diagnostics.js",
+            banner,
+            plugins,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    external: externalDependencies,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoRuntime]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const wasmImportsConfig = {
@@ -225,20 +245,6 @@ const typesConfig = {
     plugins: [dts()],
     onwarn: onwarn
 };
-const hybridGlobalizationConfig = {
-    input: "./hybrid-globalization/module-exports.ts",
-    output: [
-        {
-            format: "es",
-            file: nativeBinDir + "/dotnet.globalization.js",
-            banner,
-            sourcemap: true,
-            sourcemapPathTransform,
-        }
-    ],
-    plugins: [...outputCodePlugins],
-    onwarn: onwarn
-};
 
 let diagnosticMockTypesConfig = undefined;
 
@@ -251,52 +257,15 @@ if (isDebug) {
         banner: banner_dts,
         plugins: [alwaysLF(), writeOnChangePlugin()],
     });
-
-    // export types into the source code and commit to git
-    diagnosticMockTypesConfig = {
-        input: "./diagnostics/mock/export-types.ts",
-        output: [
-            {
-                format: "es",
-                file: "./diagnostics-mock.d.ts",
-                banner: banner_dts,
-                plugins: [alwaysLF(), writeOnChangePlugin()],
-            }
-        ],
-        external: externalDependencies,
-        plugins: [dts()],
-        onwarn: onwarn
-    };
 }
-
-/* Web Workers */
-function makeWorkerConfig (workerName, workerInputSourcePath) {
-    const workerConfig = {
-        input: workerInputSourcePath,
-        output: [
-            {
-                file: nativeBinDir + `/src/dotnet-${workerName}-worker.js`,
-                format: "iife",
-                banner,
-                plugins
-            },
-        ],
-        external: externalDependencies,
-        plugins: outputCodePlugins,
-    };
-    return workerConfig;
-}
-
-const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => makeWorkerConfig(workerInput.workerName, workerInput.path));
 
 const allConfigs = [
     loaderConfig,
     runtimeConfig,
+    diagConfig,
     wasmImportsConfig,
     typesConfig,
-    hybridGlobalizationConfig,
 ]
-    .concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 
@@ -461,28 +430,6 @@ function regexReplace (replacements = []) {
         // eslint-disable-next-line no-cond-assign
         return result;
     }
-}
-
-// Finds all files that look like a webworker toplevel input file in the given path.
-// Does not look recursively in subdirectories.
-// Returns an array of objects {"workerName": "foo", "path": "/path/dotnet-foo-worker.ts"}
-//
-// A file looks like a webworker toplevel input if it's `dotnet-{name}-worker.ts` or `.js`
-function findWebWorkerInputs (basePath) {
-    const glob = "dotnet-*-worker.[tj]s";
-    const files = fast_glob.sync(glob, { cwd: basePath });
-    if (files.length == 0) {
-        return [];
-    }
-    const re = /^dotnet-(.*)-worker\.[tj]s$/;
-    let results = [];
-    for (const file of files) {
-        const match = file.match(re);
-        if (match) {
-            results.push({ "workerName": match[1], "path": path.join(basePath, file) });
-        }
-    }
-    return results;
 }
 
 function onwarn (warning) {

@@ -745,7 +745,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
         else
         {
             //================================================================
-            // We can potentially collide with the COM+ activity lock so spawn off
+            // We can potentially collide with the CLR activity lock so spawn off
             // another call that does its stream marshalling on the stack without
             // the need to do locking.
             fCallHelper = TRUE;
@@ -1340,7 +1340,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (FAILED(hr))
     {

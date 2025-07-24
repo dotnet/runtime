@@ -31,11 +31,6 @@ namespace System.Collections.Generic
         private readonly IComparer<TPriority>? _comparer;
 
         /// <summary>
-        /// Lazily-initialized collection used to expose the contents of the queue.
-        /// </summary>
-        private UnorderedItemsCollection? _unorderedItems;
-
-        /// <summary>
         /// The number of nodes in the heap.
         /// </summary>
         private int _size;
@@ -172,6 +167,11 @@ namespace System.Collections.Generic
         public int Count => _size;
 
         /// <summary>
+        ///  Gets the total numbers of elements the queue's backing storage can hold without resizing.
+        /// </summary>
+        public int Capacity => _nodes.Length;
+
+        /// <summary>
         ///  Gets the priority comparer used by the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public IComparer<TPriority> Comparer => _comparer ?? Comparer<TPriority>.Default;
@@ -183,7 +183,7 @@ namespace System.Collections.Generic
         ///  The enumeration does not order items by priority, since that would require N * log(N) time and N space.
         ///  Items are instead enumerated following the internal array heap layout.
         /// </remarks>
-        public UnorderedItemsCollection UnorderedItems => _unorderedItems ??= new UnorderedItemsCollection(this);
+        public UnorderedItemsCollection UnorderedItems => field ??= new UnorderedItemsCollection(this);
 
         /// <summary>
         ///  Adds the specified element with associated priority to the <see cref="PriorityQueue{TElement, TPriority}"/>.

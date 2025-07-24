@@ -24,7 +24,7 @@ namespace System.Globalization
             _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
             if (!GlobalizationMode.Invariant)
             {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                     return;
 #endif
@@ -130,14 +130,12 @@ namespace System.Globalization
                 }
 
                 int startIndex, endIndex, jump;
-                ReadOnlySpan<char> remainingSource;
                 if (fromBeginning)
                 {
                     // Left to right, from zero to last possible index in the source string.
                     // Incrementing by one after each iteration. Stop condition is last possible index plus 1.
                     startIndex = 0;
                     endIndex = source.Length - target.Length + 1;
-                    remainingSource = source.Slice(endIndex);
                     jump = 1;
                 }
                 else
@@ -146,7 +144,6 @@ namespace System.Globalization
                     // Decrementing by one after each iteration. Stop condition is last possible index minus 1.
                     startIndex = source.Length - target.Length;
                     endIndex = -1;
-                    remainingSource = source.Slice(0, startIndex);
                     jump = -1;
                 }
 
@@ -196,6 +193,10 @@ namespace System.Globalization
                 }
 
                 // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
+                ReadOnlySpan<char> remainingSource = fromBeginning
+                    ? source.Slice(endIndex)
+                    : source.Slice(0, startIndex);
+
                 if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
@@ -204,18 +205,7 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
-#if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid)
-                {
-                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
-                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
-                    {
-                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
-                        Helper.MarshalAndThrowIfException(exceptionPtr);
-                        return result;
-                    }
-                }
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                     return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
 #endif
@@ -255,14 +245,12 @@ namespace System.Globalization
                 }
 
                 int startIndex, endIndex, jump;
-                ReadOnlySpan<char> remainingSource;
                 if (fromBeginning)
                 {
                     // Left to right, from zero to last possible index in the source string.
                     // Incrementing by one after each iteration. Stop condition is last possible index plus 1.
                     startIndex = 0;
                     endIndex = source.Length - target.Length + 1;
-                    remainingSource = source.Slice(endIndex);
                     jump = 1;
                 }
                 else
@@ -271,7 +259,6 @@ namespace System.Globalization
                     // Decrementing by one after each iteration. Stop condition is last possible index minus 1.
                     startIndex = source.Length - target.Length;
                     endIndex = -1;
-                    remainingSource = source.Slice(0, startIndex);
                     jump = -1;
                 }
 
@@ -309,27 +296,10 @@ namespace System.Globalization
                 Next: ;
                 }
 
-                // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
-                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
-                {
-                    goto InteropCall;
-                }
-
                 return -1;
 
             InteropCall:
-#if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid)
-                {
-                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
-                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
-                    {
-                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
-                        Helper.MarshalAndThrowIfException(exceptionPtr);
-                        return result;
-                    }
-                }
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                     return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
 #endif
@@ -716,20 +686,17 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 
-#if TARGET_BROWSER
-            // JS cannot create locale-sensitive sort key, use invaraint functions instead.
-            if (GlobalizationMode.Hybrid)
-            {
-                if (!_isInvariantCulture)
-                    throw new PlatformNotSupportedException(GetPNSEWithReason("CreateSortKey", "non-invariant culture"));
-                return InvariantCreateSortKey(source, options);
-            }
-#endif
-
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
+#endif
 
             byte[] keyData;
             fixed (char* pSource = source)
@@ -777,12 +744,10 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
 
-#if TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
-                if (!_isInvariantCulture)
-                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKey", "non-invariant culture"));
-                return InvariantGetSortKey(source, destination, options);
+                AssertComparisonSupported(options);
             }
 #endif
 
@@ -828,12 +793,10 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
 
-#if TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
-                if (!_isInvariantCulture)
-                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKeyLength", "non-invariant culture"));
-                return InvariantGetSortKeyLength(source, options);
+                AssertComparisonSupported(options);
             }
 #endif
 
@@ -885,17 +848,10 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-#if TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
-                if (!_isInvariantCulture && !LocalizedHashCodeSupportsCompareOptions(options))
-                {
-                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetHashCode", "non-invariant culture with CompareOptions different than None or IgnoreCase"));
-                }
-
-                // JS cannot create locale-sensitive HashCode, use invaraint functions instead
-                ReadOnlySpan<char> sanitizedSource = SanitizeForInvariantHash(source, options);
-                return InvariantGetHashCode(sanitizedSource, options);
+                AssertComparisonSupported(options);
             }
 #endif
 
@@ -904,10 +860,10 @@ namespace System.Globalization
             // (The ArrayPool used to have a limit on the length of buffers it would cache; this code was avoiding
             // exceeding that limit to avoid a per-operation allocation, and the performance implications here
             // were not re-evaluated when the limit was lifted.)
-            int sortKeyLength = (source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length;
+            int sortKeyLength = checked((source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length);
 
             byte[]? borrowedArray = null;
-            Span<byte> sortKey = sortKeyLength <= 1024
+            Span<byte> sortKey = (uint)sortKeyLength <= 1024
                 ? stackalloc byte[1024]
                 : (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
 

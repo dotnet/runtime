@@ -62,10 +62,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public WriteOnceBlock(Func<T, T>? cloningFunction, DataflowBlockOptions dataflowBlockOptions)
         {
-            if (dataflowBlockOptions is null)
-            {
-                throw new ArgumentNullException(nameof(dataflowBlockOptions));
-            }
+            ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
 
             // Store the option
             _cloningFunction = cloningFunction;
@@ -208,10 +205,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception is null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
@@ -302,14 +296,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
         public IDisposable LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions)
         {
-            if (target is null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
-            if (linkOptions is null)
-            {
-                throw new ArgumentNullException(nameof(linkOptions));
-            }
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(linkOptions);
 
             bool hasValue;
             bool isCompleted;

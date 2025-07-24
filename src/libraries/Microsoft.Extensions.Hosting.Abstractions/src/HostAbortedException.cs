@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
-    /// The exception that is thrown upon <see cref="IHost"/> abortion.
+    /// The exception that is thrown when an <see cref="IHost"/> is stopped to indicate the Host is stopping gracefully.  This exception should not be thrown or handled by user code.
     /// </summary>
     [Serializable]
     public sealed class HostAbortedException : Exception

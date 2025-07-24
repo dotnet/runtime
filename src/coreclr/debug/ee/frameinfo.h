@@ -62,7 +62,7 @@ public:
 
     // Set to true if we are dealing with an internal explicit frame.  Currently this is only true
     // for prestub frames, security frames, funceval frames, and certain debugger-specific frames
-    // (e.g. DebuggerClassInitMarkFrame, DebuggerSecurityCodeMarkFrame).
+    // (e.g. DebuggerClassInitMarkFrame).
     // This affects HasMethodFrame() below.
     bool                 internal;
 

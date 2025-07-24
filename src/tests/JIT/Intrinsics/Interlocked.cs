@@ -300,5 +300,33 @@ namespace InterlockedTest
             Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
             _errors++;
         }
+
+        public struct FloatUint
+        {
+            public float f;
+            public uint u;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public static int DoTestCompareExchangeUnextended(FloatUint comparand)
+        {
+            uint val = 1;
+            uint old = Interlocked.CompareExchange(ref val, 0, comparand.u);
+            if (val != 0)
+                return 101;
+            if (old != 1)
+                return 102;
+            return 100;
+        }
+
+        [Fact]
+        public static int TestCompareExchangeUnextended()
+        {
+            // RISC-V comparisons are always full-register so the comparand reg must be extended.
+            // The integer field of a struct passed according to the floating-point calling convention is not ABI-extended.
+            // The reflection call poisons its remaining bits in runtime debug mode, making it a better repro.
+            return (int)typeof(Program).GetMethod("DoTestCompareExchangeUnextended").Invoke(
+                null, new object[] { new FloatUint{f = 0f, u = 1} });
+        }
     }
 }

@@ -42,17 +42,6 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 if (0 != (methodAttributes & MethodAttributes.Static))
                     isStatic = true;
             }
-#if ECMA_METADATA_SUPPORT
-            if (methodHandle.IsEcmaFormatMetadataBased)
-            {
-                var reader = methodHandle.EcmaFormatReader;
-                var method = reader.GetMethodDefinition(methodHandle.EcmaFormatHandle);
-                var blobReader = reader.GetBlobReader(method.Signature);
-                byte sigByte = blobReader.ReadByte();
-                if ((sigByte & (byte)System.Reflection.Metadata.SignatureAttributes.Instance) == 0)
-                    isStatic = true;
-            }
-#endif
 
             if (isStatic)
                 return new StaticMethodInvoker(methodInvokeInfo);

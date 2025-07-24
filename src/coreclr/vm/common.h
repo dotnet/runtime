@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// common.h - precompiled headers include for the COM+ Execution Engine
-//
 
 //
-
+// common.h - precompiled headers include for the CLR Execution Engine
+//
 
 #ifndef _common_h_
 #define _common_h_
@@ -73,6 +71,10 @@
 
 #include <olectl.h>
 
+#if defined(HOST_AMD64) || defined(HOST_X86)
+#include <xmmintrin.h>
+#endif
+
 using std::max;
 using std::min;
 
@@ -119,12 +121,15 @@ typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
 typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
+#ifdef FEATURE_INTERPRETER
+typedef VPTR(class InterpreterCodeManager) PTR_InterpreterCodeManager;
+#endif
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
 typedef VPTR(class EEDbgInterfaceImpl)  PTR_EEDbgInterfaceImpl;
 typedef VPTR(class DebugInfoManager)    PTR_DebugInfoManager;
 typedef DPTR(class FieldDesc)           PTR_FieldDesc;
-typedef VPTR(class Frame)               PTR_Frame;
+typedef DPTR(class Frame)               PTR_Frame;
 typedef DPTR(class GCFrame)             PTR_GCFrame;
 typedef VPTR(class ICodeManager)        PTR_ICodeManager;
 typedef VPTR(class IJitManager)         PTR_IJitManager;
@@ -197,22 +202,10 @@ Thread * const CURRENT_THREAD = NULL;
     (void)CURRENT_THREAD_AVAILABLE; /* silence "local variable initialized but not used" warning */ \
 
 #ifndef DACCESS_COMPILE
-EXTERN_C AppDomain* STDCALL GetAppDomain();
+AppDomain* GetAppDomain();
 #endif //!DACCESS_COMPILE
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
-
-#ifndef memcpyUnsafe_f
-#define memcpyUnsafe_f
-
-// use this when you want to memcpy something that contains GC refs
-FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
-{
-    WRAPPER_NO_CONTRACT;
-    return memcpy(dest, src, len);
-}
-
-#endif // !memcpyUnsafe_f
 
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
@@ -282,7 +275,6 @@ namespace Loader
 #include "synch.h"
 #include "regdisp.h"
 #include "stackframe.h"
-#include "gms.h"
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"

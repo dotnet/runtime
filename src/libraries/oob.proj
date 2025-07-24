@@ -1,19 +1,19 @@
-<Project Sdk="Microsoft.Build.NoTargets">
+<Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <!-- By default, build the NetCoreAppCurrent vertical only. -->
     <BuildTargetFramework Condition="'$(BuildAllConfigurations)' != 'true'">$(NetCoreAppCurrent)</BuildTargetFramework>
-     <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
-    <ExplicitlyImportCustomILLinkTargets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
-    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
+    <ProjectReference Include="sfx-src.proj" />
+    <ProjectReference Include="oob-src.proj" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
                       Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
+
+    <ProjectReference Include="oob-trim.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
@@ -21,51 +21,6 @@
     <!-- Skip building all source generators when building from source as that would bring new prebuilts in. -->
     <ProjectReference Include="oob-gen.proj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
-
-  <Target Name="GetTrimOOBAssembliesInputs"
-          DependsOnTargets="ResolveProjectReferences">
-    <PropertyGroup>
-      <OOBAssembliesTrimDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'illink-$(TargetArchitecture)'))</OOBAssembliesTrimDir>
-      <OOBAssembliesTrimMarkerFile>$(OOBAssembliesTrimDir)marker.txt</OOBAssembliesTrimMarkerFile>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <OOBLibrarySuppressionsXml Include="@(OOBAssembly->Metadata('ILLinkSuppressionsXmls'))" />
-
-      <OOBAssemblyToTrim Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'true'))" />
-      <OOBAssemblyReference Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'false'));
-                                     @(SharedFrameworkAssembly)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="TrimOOBAssemblies"
-          AfterTargets="Build"
-          Condition="'@(OOBAssembly)' != ''"
-          DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
-          Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
-          Outputs="$(OOBAssembliesTrimMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) out-of-band assemblies with ILLinker..." Importance="high" />
-
-    <PropertyGroup>
-      <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
-      <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
-      <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
-      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
-    </PropertyGroup>
-
-    <MakeDir Directories="$(OOBAssembliesTrimDir)" />
-    <ILLink AssemblyPaths=""
-        RootAssemblyNames="@(OOBAssemblyToTrim)"
-        ReferenceAssemblyPaths="@(OOBAssemblyReference)"
-        OutputDirectory="$(OOBAssembliesTrimDir)"
-        ExtraArgs="$(OOBILLinkArgs)"
-        ToolExe="$(_DotNetHostFileName)"
-        ToolPath="$(_DotNetHostDirectory)" />
-
-    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
-    <Touch Files="$(OOBAssembliesTrimMarkerFile)"
-           AlwaysCreate="true" />
-  </Target>
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"

@@ -1,0 +1,294 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": ".NET Networking Echo Test Servers",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://corefx-net-http11.azurewebsites.net/"
+    }
+  ],
+  "paths": {
+    "/deflate.ashx": {
+      "get": {
+        "summary": "Get DEFLATE compressed content",
+        "description": "Get DEFLATE compressed content",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "text/plain": {
+                "example": "Sending DEFLATE compressed"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/echo.ashx": {
+      "get": {
+        "summary": "Get request data echoed back",
+        "description": "Get request data echoed back",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestInformation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emptycontent.ashx": {
+      "get": {
+        "summary": "Get empty content back",
+        "description": "Get empty content back",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        }
+      }
+    },
+    "/gzip.ashx": {
+      "get": {
+        "summary": "Get gzip-compressed content",
+        "description": "Get gzip-compressed content",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "text/plain": {
+                "example": "Sending GZIP compressed"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/redirect.ashx": {
+      "get": {
+        "summary": "Get a redirect response",
+        "description": "get a redirect response",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "uri",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestInformation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Failed operation"
+          }
+        }
+      }
+    },
+    "/statuscode.ashx": {
+      "get": {
+        "summary": "Get a specific status code in response",
+        "description": "Get a specific status code in response",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "statuscode",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "statusdescription",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "delay",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Error parsing status code"
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "summary": "Get version information",
+        "description": "Get version information",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "text/plain": {
+                "example": "Information for: NetCoreServer.dll\nLocation: C:\\home\\site\\wwwroot\nFramework: .NET 6.0.32\nFile Version: 1.0.0.0\nProduct Version: 1.0.0\nCreation Date: 4/11/2019 9:05:08 PM\nLast Modified: 2/28/2022 2:06:00 PM\n"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test.ashx": {
+      "get": {
+        "summary": "Test endpoint",
+        "description": "Test endpoint",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "text/plain": {
+                "example": {
+                  "Method": "GET",
+                  "Url": "/test.ashx",
+                  "Headers": {
+                    "Accept": "text/plain",
+                    "Accept-Encoding": "gzip, deflate, br, zstd",
+                    "Accept-Language": "en-US,en;q=0.9,cs;q=0.8",
+                    "Host": "corefx-net-http11.azurewebsites.net",
+                    "Max-Forwards": "10",
+                    "Referer": "https://editor-next.swagger.io/",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+                    "Origin": "https://editor-next.swagger.io",
+                    "sec-ch-ua-platform": "\"Windows\"",
+                    "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "Sec-Fetch-Site": "cross-site",
+                    "Sec-Fetch-Mode": "cors",
+                    "Sec-Fetch-Dest": "empty",
+                    "X-ARR-LOG-ID": "46cb3aaa-9ad7-44b1-b284-a492ded947ed",
+                    "CLIENT-IP": "167.220.196.35:19180",
+                    "DISGUISED-HOST": "corefx-net-http11.azurewebsites.net",
+                    "X-SITE-DEPLOYMENT-ID": "corefx-net-http11",
+                    "WAS-DEFAULT-HOSTNAME": "corefx-net-http11.azurewebsites.net",
+                    "X-Forwarded-Proto": "https",
+                    "X-AppService-Proto": "https",
+                    "X-ARR-SSL": "2048|256|CN=Microsoft Azure RSA TLS Issuing CA 08, O=Microsoft Corporation, C=US|CN=*.azurewebsites.net, O=Microsoft Corporation, L=Redmond, S=WA, C=US",
+                    "X-Forwarded-TlsVersion": "1.3",
+                    "X-Forwarded-For": "167.220.196.35:19180",
+                    "X-Original-URL": "/test.ashx",
+                    "X-WAWS-Unencoded-URL": "/test.ashx"
+                  },
+                  "Cookies": {},
+                  "BodyContent": "",
+                  "BodyLength": 0,
+                  "SecureConnection": true,
+                  "ClientCertificatePresent": false,
+                  "ClientCertificate": null
+                }
+              }
+            },
+            "headers": {
+              "Content-MD5": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Base64-encoded MD5 hash of the response content"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/large.ashx": {
+      "get": {
+        "summary": "Get a large response",
+        "description": "Get a large response",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "array"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RequestInformation": {
+        "type": "object",
+        "properties": {
+          "Method": {
+            "type": "string",
+            "example": "GET"
+          },
+          "Url": {
+            "type": "string",
+            "format": "uri",
+            "example": "/echo.ashx"
+          },
+          "Headers": {
+            "type": "object"
+          },
+          "Cookies": {
+            "type": "object"
+          },
+          "BodyContent": {
+            "type": "string"
+          },
+          "BodyLength": {
+            "type": "integer"
+          },
+          "SecureConnection": {
+            "type": "boolean"
+          },
+          "ClientCertificatePresent": {
+            "type": "boolean"
+          },
+          "ClientCertificate": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

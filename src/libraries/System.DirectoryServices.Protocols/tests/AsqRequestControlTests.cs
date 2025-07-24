@@ -19,25 +19,26 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1504", control.Type);
 
-            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } : new byte[] { 48, 2, 4, 0 };
+#if NETFRAMEWORK
+            var expected = new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 };
+#else
+            var expected = new byte[] { 48, 2, 4, 0 };
+#endif
 
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_String_Test_data()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                yield return new object[] { null, new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } };
-                yield return new object[] { "", new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } };
-                yield return new object[] { "A", new byte[] { 48, 132, 0, 0, 0, 3, 4, 1, 65 } };
-            }
-            else
-            {
-                yield return new object[] { null, new byte[] { 48, 2, 4, 0 } };
-                yield return new object[] { "", new byte[] { 48, 2, 4, 0 } };
-                yield return new object[] { "A", new byte[] { 48, 3, 4, 1, 65 } };
-            }
+#if NETFRAMEWORK
+            yield return new object[] { null, new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } };
+            yield return new object[] { "", new byte[] { 48, 132, 0, 0, 0, 2, 4, 0 } };
+            yield return new object[] { "A", new byte[] { 48, 132, 0, 0, 0, 3, 4, 1, 65 } };
+#else
+            yield return new object[] { null, new byte[] { 48, 2, 4, 0 } };
+            yield return new object[] { "", new byte[] { 48, 2, 4, 0 } };
+            yield return new object[] { "A", new byte[] { 48, 3, 4, 1, 65 } };
+#endif
         }
 
         [Theory]

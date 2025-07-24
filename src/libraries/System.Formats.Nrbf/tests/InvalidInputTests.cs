@@ -355,6 +355,36 @@ public class InvalidInputTests : ReadTests
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
+    public static IEnumerable<object[]> AllPrimitiveTypes()
+    {
+        foreach (PrimitiveType primitiveType in Enum.GetValues(typeof(PrimitiveType)))
+        {
+            yield return new object[] { (byte)primitiveType };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllPrimitiveTypes))]
+    public void ThrowsForInvalidPrimitiveTypeForBinaryArrayRecords(byte primitiveType)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)SerializationRecordType.BinaryArray);
+        writer.Write(1); // object Id
+        writer.Write((byte)BinaryArrayType.Jagged);
+        writer.Write(1); // rank!
+        writer.Write(1); // length
+        writer.Write((byte)BinaryType.Primitive); // A jagged array must consist of other arrays, not primitive values
+        writer.Write(primitiveType);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
+
     [Theory]
     [InlineData(SerializationRecordType.ClassWithMembersAndTypes)]
     [InlineData(SerializationRecordType.SystemClassWithMembersAndTypes)]
