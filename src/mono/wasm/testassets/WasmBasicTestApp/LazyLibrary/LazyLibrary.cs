@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.InteropServices.JavaScript;
 
+[assembly:System.Runtime.Versioning.SupportedOSPlatform("browser")]
+
 namespace LazyLibrary;
 
 public partial class Foo
