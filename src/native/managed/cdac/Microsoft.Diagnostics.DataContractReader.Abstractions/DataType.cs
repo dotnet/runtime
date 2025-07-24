@@ -34,7 +34,6 @@ public enum DataType
     Assembly,
     LoaderAllocator,
     PEAssembly,
-    BinderSpaceAssembly,
     AssemblyBinder,
     PEImage,
     PEImageLayout,

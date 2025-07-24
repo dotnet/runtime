@@ -5031,7 +5031,6 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
 
     INT_PTR managedAssemblyLoadContextHandle = pBinder->GetManagedAssemblyLoadContext();
-    INT_PTR* m_pAssemblyLoadContext = pBinder->GetManagedAssemblyLoadContextAddr();
 
     TADDR managedAssemblyLoadContextAddr = 0;
     if (managedAssemblyLoadContextHandle != 0)

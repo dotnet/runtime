@@ -665,7 +665,7 @@ PEAssembly::PEAssembly(
     m_isSystem = isSystem;
     m_pHostAssembly = nullptr;
     m_pFallbackBinder = nullptr;
-    m_pAssemblyLoadContext = nullptr;
+    m_pActiveBinder = nullptr;
 
     pPEImage = pBindResultInfo ? pBindResultInfo->GetPEImage() : pPEImage;
     if (pPEImage)
@@ -719,13 +719,13 @@ PEAssembly::PEAssembly(
 
     if (m_pHostAssembly != nullptr)
     {
-        m_pAssemblyLoadContext = m_pHostAssembly->GetBinder()->GetManagedAssemblyLoadContextAddr();
+        m_pActiveBinder = m_pHostAssembly->GetBinder();
     }
     else
     {
         if (m_PEImage == NULL)
         {
-            m_pAssemblyLoadContext = m_pFallbackBinder->GetManagedAssemblyLoadContextAddr();
+            m_pActiveBinder = m_pFallbackBinder;
         }
     }
 

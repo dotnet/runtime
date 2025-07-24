@@ -299,7 +299,8 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
-        return _target.ReadPointer(peAssembly.AssemblyLoadContext);
+        Data.AssemblyBinder binder = _target.ProcessedData.GetOrAdd<Data.AssemblyBinder>(peAssembly.ActiveBinder);
+        return binder.ManagedAssemblyLoadContext;
     }
 
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)

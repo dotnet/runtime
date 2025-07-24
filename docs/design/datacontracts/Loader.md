@@ -105,9 +105,7 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
 | `Assembly` | `Level` | File load level of the assembly |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
-| `PEAssembly` | `HostAssembly` | Pointer to the PEAssembly's HostAssembly |
-| `PEAssembly` | `FallbackBinder` | Pointer to the PEAssembly's FallbackBinder (if HostAssembly is null) |
-| `BinderSpaceAssembly` | `Binder` | Pointer to the BinderSpaceAssembly's Binder |
+| `PEAssembly` | `ActiveBinder` | Pointer to the PEAssembly's binder (either the associated HostAssembly's binder or the fallback binder) |
 | `AssemblyBinder` | `ManagedAssemblyLoadContext` | Pointer to the AssemblyBinder's ManagedAssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
@@ -379,16 +377,8 @@ TargetPointer GetILBase(ModuleHandle handle)
 TargetPointer ILoader.GetBinderAssemblyLoadContext(ModuleHandle handle)
 {
     PEAssembly peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssembly.HostAssembly != TargetPointer.Null)
-    {
-        Data.AssemblyBinder assemblyBinder = target.ReadPointer(pe.HostAssembly + /* BinderSpaceAssembly::Binder offset */);
-        return assemblyBinder.ManagedAssemblyLoadContext;
-    }
-
-    else
-    {
-        return peAssembly.FallbackBinder;
-    }
+    AssemblyBinder binder = target.ReadPointer(peAssembly + /* PEAssembly::ActiveBinder offset */)
+    return binder.ManagedAssemblyLoadContext;
 }
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)

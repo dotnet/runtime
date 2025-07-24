@@ -316,6 +316,10 @@ public:
     void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
+        if (m_pActiveBinder == m_pFallbackBinder)
+        {
+            m_pActiveBinder = pFallbackBinder;
+        }
         m_pFallbackBinder = pFallbackBinder;
     }
 
@@ -443,8 +447,6 @@ template<>
 struct cdac_data<PEAssembly>
 {
     static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
-    static constexpr size_t HostAssembly = offsetof(PEAssembly, m_pHostAssembly);
-    static constexpr size_t FallbackBinder = offsetof(PEAssembly, m_pFallbackBinder);
     static constexpr size_t ActiveBinder = offsetof(PEAssembly, m_pActiveBinder);
 };
 

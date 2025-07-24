@@ -42,11 +42,6 @@ public:
         return m_ptrManagedAssemblyLoadContext;
     }
 
-    INT_PTR* GetManagedAssemblyLoadContextAddr()
-    {
-        return &m_ptrManagedAssemblyLoadContext;
-    }
-
     void SetManagedAssemblyLoadContext(INT_PTR ptrManagedDefaultBinderInstance)
     {
         m_ptrManagedAssemblyLoadContext = ptrManagedDefaultBinderInstance;
