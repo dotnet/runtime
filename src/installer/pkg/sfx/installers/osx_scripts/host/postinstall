@@ -30,7 +30,7 @@ if [[ "$(uname -m)" =~ ${UnameMachineRegex} && "$(sysctl -i -n sysctl.proc_trans
     if [ -f "$SETTINGS_PLIST" ]; then
         # Use defaults to read the ConfigureHostPath setting, it has been around in MacOS since 2001: https://developer.apple.com/documentation/foundation/userdefaults
         # The 2>/dev/null suppresses error output if the key doesn't exist
-        CONFIGURE_HOST_PATH=$(defaults read "$SETTINGS_PLIST" ConfigureHostPath 2>/dev/null || echo "")
+        CONFIGURE_HOST_PATH=$(defaults read "$SETTINGS_PLIST" ConfigureHostPath 2>/dev/null)
     fi
 
     if [ "$CONFIGURE_HOST_PATH" = "0" ]; then
