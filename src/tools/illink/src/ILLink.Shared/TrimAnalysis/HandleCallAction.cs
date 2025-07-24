@@ -604,6 +604,12 @@ namespace ILLink.Shared.TrimAnalysis
                         genericParameterCount = GetGenericParameterCountFromValue(argumentValues[1]);
                         bindingFlags = GetBindingFlagsFromValue(argumentValues[2]);
                     }
+                    else if (calledMethod.HasParameterOfType((ParameterIndex)2, "System.Int32"))
+                    {
+                        // GetMethod(string name, int genericParameterCount, Type[] types, ...)
+                        genericParameterCount = GetGenericParameterCountFromValue(argumentValues[1]);
+                        bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+                    }
                     else if (calledMethod.HasParameterOfType((ParameterIndex)2, "System.Reflection.BindingFlags"))
                         bindingFlags = GetBindingFlagsFromValue(argumentValues[1]);
                     else if (calledMethod.HasParameterOfType((ParameterIndex)3, "System.Reflection.BindingFlags"))
