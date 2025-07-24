@@ -881,6 +881,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         static void TestInArray<T>()
         {
             var arr = new RequiresParameterlessCtor<T>[1];
