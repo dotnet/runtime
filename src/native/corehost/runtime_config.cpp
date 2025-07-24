@@ -188,7 +188,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         m_is_framework_dependent = true;
 
         fx_reference_t fx_out;
-        if (!parse_framework(framework->value, fx_out))
+        if (!parse_framework(framework->value, /*name_and_version_only*/ false, fx_out))
         {
             return false;
         }
@@ -201,7 +201,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
     {
         m_is_framework_dependent = true;
 
-        if (!read_framework_array(iter->value, m_frameworks))
+        if (!read_framework_array(iter->value, /*name_and_version_only*/ false, m_frameworks))
         {
             return false;
         }
@@ -216,7 +216,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
             return false;
         }
 
-        if (!read_framework_array(includedFrameworks->value, m_included_frameworks, /*name_and_version_only*/ true))
+        if (!read_framework_array(includedFrameworks->value, /*name_and_version_only*/ true, m_included_frameworks))
         {
             return false;
         }
@@ -241,7 +241,7 @@ namespace
     }
 }
 
-bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, fx_reference_t& fx_out, bool name_and_version_only)
+bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, bool name_and_version_only, fx_reference_t& fx_out)
 {
     if (!name_and_version_only)
     {
@@ -272,16 +272,14 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, fx_
 
     fx_out.set_fx_version(fx_ver->value.GetString());
 
+    if (name_and_version_only)
+        return true;
+
     // Release version should prefer release versions, unless the rollForwardToPrerelease is set
     // in which case no preference should be applied.
-    if (!name_and_version_only && !fx_out.get_fx_version_number().is_prerelease() && !m_roll_forward_to_prerelease)
+    if (!fx_out.get_fx_version_number().is_prerelease() && !m_roll_forward_to_prerelease)
     {
         fx_out.set_prefer_release(true);
-    }
-
-    if (name_and_version_only)
-    {
-        return true;
     }
 
     const auto& roll_forward = fx_obj.FindMember(_X("rollForward"));
@@ -369,12 +367,12 @@ bool runtime_config_t::ensure_dev_config_parsed()
     return true;
 }
 
-bool runtime_config_t::read_framework_array(const json_parser_t::value_t& frameworks_json, fx_reference_vector_t& frameworks_out, bool name_and_version_only)
+bool runtime_config_t::read_framework_array(const json_parser_t::value_t& frameworks_json, bool name_and_version_only, fx_reference_vector_t& frameworks_out)
 {
     for (const auto& fx_json : frameworks_json.GetArray())
     {
         fx_reference_t fx_out;
-        if (!parse_framework(fx_json, fx_out, name_and_version_only))
+        if (!parse_framework(fx_json, name_and_version_only, fx_out))
             return false;
 
         if (std::find_if(
