@@ -19,10 +19,31 @@ echo $INSTALL_DESTINATION | tee /etc/dotnet/install_location_${InstallerTargetAr
 
 # if we're running on the native architecture
 if [[ "$(uname -m)" =~ ${UnameMachineRegex} && "$(sysctl -i -n sysctl.proc_translated)" != "1" ]]; then
-    # Add the installation directory to the system-wide paths
-    # But first create the directory if it doesn't exist
+    # Create the directory if it doesn't exist
     mkdir -p /etc/paths.d
-    echo $INSTALL_DESTINATION | tee /etc/paths.d/dotnet
+
+    # Check if /dotnet/Settings.plist exists and read ConfigureHostPath to see if we should append to PATH instead of overwriting it
+    SETTINGS_PLIST="/Library/Preferences/dotnet/Settings.plist"
+    CONFIGURE_HOST_PATH=""
+
+    if [ -f "$SETTINGS_PLIST" ]; then
+        # Use defaults to read the ConfigureHostPath setting, it has been around in MacOS since 2001: https://developer.apple.com/documentation/foundation/userdefaults
+        # The 2>/dev/null suppresses error output if the key doesn't exist
+        CONFIGURE_HOST_PATH=$(defaults read "$SETTINGS_PLIST" ConfigureHostPath 2>/dev/null || echo "")
+    fi
+
+    # If ConfigureHostPath is explicitly set to 0, append to the existing paths file
+    # Otherwise, overwrite the file (existing behavior)
+    if [ "$CONFIGURE_HOST_PATH" = "0" ]; then
+        # Per paths_helper(8) spec (https://www.unix.com/man-page/osx/8/path_helper/), each path must be on its own line
+        if [ -s /etc/paths.d/dotnet ]; then
+            echo "" >> /etc/paths.d/dotnet
+        fi
+        echo $INSTALL_DESTINATION >> /etc/paths.d/dotnet
+    else
+        # Default behavior: overwrite the file
+        echo $INSTALL_DESTINATION | tee /etc/paths.d/dotnet
+    fi
 fi
 
 exit 0
