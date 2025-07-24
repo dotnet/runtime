@@ -5394,7 +5394,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
 //   TFunc - Callback functor type
 
 // Arguments:
-//    comp              - compiler instance
+//    tree              - The tree to check
 //    limit             - complexity limit
 //    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
 //
