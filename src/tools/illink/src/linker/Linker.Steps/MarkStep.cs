@@ -4073,13 +4073,19 @@ namespace Mono.Linker.Steps
                     {
                         case MethodDefinition nestedFunction:
                             if (nestedFunction.Body is MethodBody nestedBody)
-                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), origin);
+                            {
+                                var nestedOrigin = new MessageOrigin(nestedFunction);
+                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), nestedOrigin);
+                            }
                             break;
                         case TypeDefinition stateMachineType:
                             foreach (var method in stateMachineType.Methods)
                             {
                                 if (method.Body is MethodBody stateMachineBody)
-                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), origin);
+                                {
+                                    var stateMachineOrigin = new MessageOrigin(method);
+                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), stateMachineOrigin);
+                                }
                             }
                             break;
                         default:

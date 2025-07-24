@@ -588,7 +588,7 @@ Initialize(
             }
         }
 
-#ifndef __wasm__
+#ifndef TARGET_WASM
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -601,7 +601,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-#endif
+#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -719,6 +719,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
+#ifndef TARGET_WASM // we don't use shared libraries on wasm
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -726,6 +727,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
+#endif // !TARGET_WASM
 
     if (!PROCAbortInitialize())
     {
@@ -916,7 +918,7 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
-#ifdef __wasm__
+#ifdef TARGET_WASM
     // WebAssembly cannot set limits
     return TRUE;
 #endif

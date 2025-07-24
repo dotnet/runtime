@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
 #include "callstubgenerator.h"
 #include "ecall.h"
@@ -1839,7 +1839,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                     break;
                             }
                                 break;
-#ifdef FEATURE_SIMD
                             case CORINFO_HFA_ELEM_VECTOR64:
                                 switch (thReturnValueType.GetSize())
                                 {
@@ -1860,7 +1859,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                         break;
                                 }
                                 break;
-#endif
                         default:
                             _ASSERTE(!"HFA type is not supported");
                             break;
@@ -1897,4 +1895,4 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
     return ReturnTypeVoid;
 }
 
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && !TARGET_WASM

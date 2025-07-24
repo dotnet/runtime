@@ -222,6 +222,12 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(MLDsaTestsData.AllPreHashMLDsaNistTestCases), MemberType = typeof(MLDsaTestsData))]
         public void NistImportPublicKeyVerifyPreHash(MLDsaNistTestCase testCase)
         {
+            if (!HashInfo.KnownHashAlgorithmOids.Contains(testCase.HashAlgOid))
+            {
+                // This test case is not supported by the current platform.
+                return;
+            }
+
             byte[] hash = HashInfo.HashData(testCase.HashAlgOid, testCase.Message);
             using MLDsa mldsa = ImportPublicKey(testCase.Algorithm, testCase.PublicKey);
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyPreHash(hash, testCase.Signature, testCase.HashAlgOid, testCase.Context));
@@ -317,7 +323,7 @@ namespace System.Security.Cryptography.Tests
         public void SignPreHash_ThrowsForUnsupportedAlgorithmCombinations(MLDsaAlgorithm algorithm, HashInfo hashInfo)
         {
             using MLDsa mldsa = GenerateKey(algorithm);
-            byte[] hash = hashInfo.GetHash([1, 2, 3, 4]);
+            byte[] hash = new byte[hashInfo.OutputSize];
 
             CryptographicException ce = Assert.Throws<CryptographicException>(() => mldsa.SignPreHash(hash, hashInfo.Oid));
             Assert.Contains(algorithm.Name, ce.Message);
