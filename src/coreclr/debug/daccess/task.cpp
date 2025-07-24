@@ -5163,41 +5163,24 @@ EnumMethodInstances::EnumMethodInstances(MethodDesc* methodDesc,
     {
         m_appDomain = AppDomain::GetCurrentDomain();
     }
-    m_appDomainUsed = false;
+
+    m_completed = false;
 }
 
 HRESULT
 EnumMethodInstances::Next(ClrDataAccess* dac,
                           IXCLRDataMethodInstance **instance)
 {
-    if (!m_appDomainUsed)
+    if (m_completed)
     {
-        m_appDomainUsed = true;
-        m_methodIter.Start(m_appDomain,
-                           m_methodDesc->GetModule(),       // module
-                           m_methodDesc->GetMemberDef(),    // token
-                           m_methodDesc);                   // initial method desc
+        return S_FALSE;
     }
 
- NextMethod:
-    {
-        // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        if (!m_methodIter.Next(pAssembly.This()))
-        {
-            return S_FALSE;
-        }
-    }
-
-    if (!m_methodIter.Current()->HasNativeCodeAnyVersion())
-    {
-        goto NextMethod;
-    }
-
+    m_completed = true;
     *instance = new (nothrow)
         ClrDataMethodInstance(dac,
                               m_appDomain,
-                              m_methodIter.Current());
+                              m_methodDesc);
     return *instance ? S_OK : E_OUTOFMEMORY;
 }
 
@@ -5206,13 +5189,6 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              IXCLRDataAppDomain* appDomain,
                              CLRDATA_ENUM* handle)
 {
-    if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !(methodDesc->HasNativeCodeAnyVersion()))
-    {
-        *handle = 0;
-        return S_FALSE;
-    }
-
     EnumMethodInstances* iter = new (nothrow)
         EnumMethodInstances(methodDesc, appDomain);
     if (iter)

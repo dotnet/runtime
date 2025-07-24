@@ -4186,6 +4186,11 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             goto Exit;
         }
 
+        if (!methodDesc->HasNativeCodeAnyVersion())
+        {
+            goto Exit;
+        }
+
         status = EnumMethodInstances::CdStart(methodDesc, appDomain,
                                               handle);
 
@@ -5990,7 +5995,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
-        BoundsType::Instrumented, 
+        BoundsType::Instrumented,
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
 

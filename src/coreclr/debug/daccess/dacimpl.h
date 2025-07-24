@@ -3798,9 +3798,8 @@ public:
     static HRESULT CdEnd(CLRDATA_ENUM handle);
 
     MethodDesc* m_methodDesc;
-    bool m_appDomainUsed;
     AppDomain* m_appDomain;
-    LoadedMethodDescIterator m_methodIter;
+    bool m_completed;
 };
 
 //----------------------------------------------------------------------------
