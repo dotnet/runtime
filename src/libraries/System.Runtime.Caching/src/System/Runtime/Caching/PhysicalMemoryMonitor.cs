@@ -17,12 +17,18 @@ namespace System.Runtime.Caching
         private const int MinTotalMemoryTrimPercent = 10;
         private const long TargetTotalMemoryTrimIntervalTicks = 5 * TimeSpan.TicksPerMinute;
 
-        // This value has specific meaning:
-        //    -1: means physical memory pressure should be calculated based on the detected size of physical memory.
-        //    0:  means physical memory pressure should be based on GC thresholds for determining memory pressure.
-        //    >0: means physical memory pressure should be calculated based on the value given.
-        // Default target pressure precentages differe between these cases as well, though explicit percentage values take precedence.
+        // It can be difficult to determine an accurate total for physical memory on non-bare-metal-windows systems.
+        // This value has some special meanings:
+        //  -1: indicates physical memory pressure should be determined in the classical way; platform-specific code & GC induced stats on non-windows.
+        //   0: indicates physical memory pressure should always be based on latest GCMemroyInfo stats, without induced GC.
+        //  >0: same as 0, except the total physical memory is given by this value rather than GCMemoryInfo.TotalAvailableMemoryBytes.
         private long _physicalMemoryBytesAvailable;
+
+#if NETCOREAPP
+        // This value indicates that "high" pressure should follow the GC's definition of high pressure. This is only applicable on .Net Core.
+        // This can be set to true by specifying a physicalMemoryLimitPercentage of 1 in the configuration.
+        private bool _followGCThresholds;
+#endif
 
         // Returns the percentage of physical machine memory that can be consumed by an
         // application before the cache starts forcibly removing items.
@@ -71,23 +77,26 @@ namespace System.Runtime.Caching
 
             if (physicalMemoryLimitPercentage == 0)
             {
-                // If using GC thresholds, the GC threshold _is_ the limit.
-                if (_physicalMemoryBytesAvailable == 0)
-                {
-                    _pressureHigh = 100;
-                    _pressureLow = 90;
-                }
-                else
-                {
-                    // Otherwise (-1, or any positive value), calculate defaults.
-                    UseDefaultLimits();
-                }
-                Dbg.Trace("MemoryCacheStats", $"PhysicalMemoryMonitor.SetLimit: _pressureHigh={_pressureHigh}, _pressureLow={_pressureLow}");
-                return;
+                UseDefaultLimits();
+            }
+#if NETCOREAPP
+            // Using GC thresholds only applies on .Net Core, and not in legacy mode.
+            // Technically, the non-windows legacy code could compare against GC thresholds still, but allowing
+            // that runs the risk of concept confusion for these already overloaded settings. So just let the
+            // legacy mode stay legacy without the new features.
+            else if (physicalMemoryLimitPercentage == 1 && physicalMemoryBytesAvailable >= 0)
+            {
+                _followGCThresholds = true;
+                _pressureHigh = 100; // 100%, because we will check against the GC's high memory load threshold instead of total physical memory.
+                _pressureLow = _pressureHigh - 9;
+            }
+#endif
+            else
+            {
+                _pressureHigh = Math.Max(3, physicalMemoryLimitPercentage);
+                _pressureLow = Math.Max(1, _pressureHigh - 9);
             }
 
-            _pressureHigh = Math.Max(3, physicalMemoryLimitPercentage);
-            _pressureLow = Math.Max(1, _pressureHigh - 9);
             Dbg.Trace("MemoryCacheStats", $"PhysicalMemoryMonitor.SetLimit: _pressureHigh={_pressureHigh}, _pressureLow={_pressureLow}");
         }
 
@@ -136,13 +145,20 @@ namespace System.Runtime.Caching
 
         protected override int GetCurrentPressure()
         {
-#if NETCORAPP
+#if NETCOREAPP
             // Do things the new way
             if (_physicalMemoryBytesAvailable >= 0)
             {
                 // Get stats from GC.
                 GCMemoryInfo memInfo = GC.GetGCMemoryInfo();
-                var limit = (_physicalMemoryBytesAvailable == 0) ? memInfo.HighMemoryLoadThresholdBytes : _physicalMemoryBytesAvailable;
+
+                var limit = (_physicalMemoryBytesAvailable == 0) ? memInfo.TotalAvailableMemoryBytes : _physicalMemoryBytesAvailable;
+
+                // If we are following GC thresholds, then we're checking against the GC's "high" threshold, not total physical mem.
+                if (_followGCThresholds)
+                {
+                    limit = memInfo.HighMemoryLoadThresholdBytes;
+                }
 
                 if (limit > memInfo.MemoryLoadBytes)
                 {

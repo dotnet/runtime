@@ -39,9 +39,10 @@ namespace System.Runtime.Caching
             // Get stats from GC.
             GCMemoryInfo memInfo = GC.GetGCMemoryInfo();
 
-            if (memInfo.TotalAvailableMemoryBytes >= memInfo.MemoryLoadBytes)
+            var limit = _followGCThresholds ? memInfo.HighMemoryLoadThresholdBytes : memInfo.TotalAvailableMemoryBytes;
+            if (limit > memInfo.MemoryLoadBytes)
             {
-                int memoryLoad = (int)((float)memInfo.MemoryLoadBytes * 100.0 / (float)memInfo.TotalAvailableMemoryBytes);
+                int memoryLoad = (int)((float)memInfo.MemoryLoadBytes * 100.0 / (float)limit);
                 return Math.Max(1, memoryLoad);
             }
 

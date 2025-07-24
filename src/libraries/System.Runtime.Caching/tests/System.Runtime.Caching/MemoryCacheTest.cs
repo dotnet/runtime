@@ -189,6 +189,22 @@ namespace MonoTests.System.Runtime.Caching
             mc = new MemoryCache("MyCache", config);
 
             config.Clear();
+            config.Add("PhysicalMemoryBytesAvailable", "-2");
+            if (IsFullFramework)
+            {
+                // On .NET Framework, this does not throw, because the Framework version of SRC gets loaded,
+                // and it cares nothing for this setting.
+                mc = new MemoryCache("MyCache", config);
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    mc = new MemoryCache("MyCache", config);
+                });
+            }
+
+            config.Clear();
             config.Add("PhysicalMemoryBytesAvailable", (long.MaxValue - 1).ToString());
             // Just make sure it doesn't throw any exception
             mc = new MemoryCache("MyCache", config);
@@ -292,25 +308,23 @@ namespace MonoTests.System.Runtime.Caching
             var mc = new MemoryCache("MyCache", config);
             Assert.Equal(1048576, mc.CacheMemoryLimit);
             Assert.Equal(TimeSpan.FromMinutes(10), mc.PollingInterval);
+            Assert.True(mc.PhysicalMemoryLimit < 100);
+            Assert.True(mc.PhysicalMemoryLimit >= 95);
 
-            // This uses some knowledge about internal workings, but following the GC for physical pressure will result in a
-            // physical memory limit of 100% by default, whereas the legacy way will result in something less than 100%.
-            // This setting however, doesn't have any meaning on .NET Framework.
             Assert.True(mc.PhysicalMemoryLimit < 100);
             config.Add("PhysicalMemoryBytesAvailable", "0");
             mc = new MemoryCache("MyCache", config);
-            if (IsFullFramework)    // Full .Net Framework uses the in-box SRC. So none of this 'PhysicalMemoryBytesAvailable' setting matters.
-                Assert.True(mc.PhysicalMemoryLimit < 100);
-            else
-                Assert.Equal(100, mc.PhysicalMemoryLimit);
+            Assert.True(mc.PhysicalMemoryLimit < 100);
+            Assert.True(mc.PhysicalMemoryLimit >= 95);
 
             config.Set("PhysicalMemoryBytesAvailable", "-1");   // This is the default for now.
             mc = new MemoryCache("MyCache", config);
             Assert.True(mc.PhysicalMemoryLimit < 100);
+            Assert.True(mc.PhysicalMemoryLimit >= 95);
 
             config.Set("PhysicalMemoryBytesAvailable", ((long)0x50000000).ToString());  // A value known to result in 97% physical memory limit when auto-calculated.
             mc = new MemoryCache("MyCache", config);
-            if (IsFullFramework)    // Again, full .Net Framework uses the in-box SRC. So none of this 'PhysicalMemoryBytesAvailable' setting matters.
+            if (IsFullFramework)    // Full .Net Framework uses the in-box SRC. So none of this 'PhysicalMemoryBytesAvailable' setting matters.
                 Assert.True(mc.PhysicalMemoryLimit < 100);
             else
                 Assert.Equal(97, mc.PhysicalMemoryLimit);
@@ -323,11 +337,33 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal(10, mc.PhysicalMemoryLimit);
             Assert.Equal(5242880, mc.CacheMemoryLimit);
             Assert.Equal(TimeSpan.FromMinutes(70), mc.PollingInterval);
-            // However, if the physical memory limit is set explicitly, it will still be that value, no matter what the
-            // source for "total physical memory" is.
-            config.Add("PhysicalMemoryBytesAvailable", "0");
+
+            config.Set("PhysicalMemoryLimitPercentage", "0");
             mc = new MemoryCache("MyCache", config);
-            Assert.Equal(10, mc.PhysicalMemoryLimit);
+            Assert.True(mc.PhysicalMemoryLimit < 100);
+            Assert.True(mc.PhysicalMemoryLimit >= 95);
+
+            // Without jumping into the new monitor mode, this should have legacy behavior
+            config.Set("PhysicalMemoryLimitPercentage", "1");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(3, mc.PhysicalMemoryLimit);
+
+            // Switching over to the new mode, we should get GC-tracking behavior for the special 1%
+            config.Add("PhysicalMemoryBytesAvailable", ((long)0x50000000).ToString());
+            mc = new MemoryCache("MyCache", config);
+            if (IsFullFramework)    // Full .Net Framework uses the in-box SRC. So none of this 'PhysicalMemoryBytesAvailable' setting matters.
+                Assert.Equal(3, mc.PhysicalMemoryLimit);
+            else
+                Assert.Equal(100, mc.PhysicalMemoryLimit);  // Setting 1 means to go against 100% of the GC's high memory load threshold.
+
+            // But non-special values still work as before
+            config.Set("PhysicalMemoryLimitPercentage", "2");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(3, mc.PhysicalMemoryLimit);
+
+            config.Set("PhysicalMemoryLimitPercentage", "42");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(42, mc.PhysicalMemoryLimit);
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
