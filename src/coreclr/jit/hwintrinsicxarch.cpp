@@ -2274,13 +2274,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                if ((varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType)) &&
-                    !compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                {
-                    break;
-                }
-                if (varTypeIsInt(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_AVX) ||
-                                                   !compOpportunisticallyDependsOn(InstructionSet_AVX512)))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
                     break;
                 }
