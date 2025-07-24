@@ -69,4 +69,62 @@ public class Async2Reflection
         var res = await f.Invoke();
         Assert.Equal(expected, res);
     }
+
+    public interface IExample<T>
+    {
+        Task TaskReturning();
+        T TReturning();
+    }
+
+    public class ExampleClass : IExample<Task>
+    {
+        public Task TaskReturning()
+        {
+            return null;
+        }
+
+        public Task TReturning()
+        {
+            return null;
+        }
+    }
+
+    public struct ExampleStruct : IExample<Task>
+    {
+        public Task TaskReturning()
+        {
+            return null;
+        }
+
+        public Task TReturning()
+        {
+            return null;
+        }
+    }
+
+    [Fact]
+    public static void GetInterfaceMap()
+    {
+        Type interfaceType = typeof(IExample<Task>);
+        Type classType = typeof(ExampleClass);
+
+        InterfaceMapping map = classType.GetInterfaceMap(interfaceType);
+
+        Assert.Equal(2, map.InterfaceMethods.Length);
+        Assert.Equal("System.Threading.Tasks.Task TaskReturning() --> System.Threading.Tasks.Task TaskReturning()",
+            $"{map.InterfaceMethods[0]?.ToString()} --> {map.TargetMethods[0]?.ToString()}");
+
+        Assert.Equal("System.Threading.Tasks.Task TReturning() --> System.Threading.Tasks.Task TReturning()",
+            $"{map.InterfaceMethods[1]?.ToString()} --> {map.TargetMethods[1]?.ToString()}");
+
+        Type structType = typeof(ExampleStruct);
+
+        map = structType.GetInterfaceMap(interfaceType);
+        Assert.Equal(2, map.InterfaceMethods.Length);
+        Assert.Equal("System.Threading.Tasks.Task TaskReturning() --> System.Threading.Tasks.Task TaskReturning()",
+            $"{map.InterfaceMethods[0]?.ToString()} --> {map.TargetMethods[0]?.ToString()}");
+
+        Assert.Equal("System.Threading.Tasks.Task TReturning() --> System.Threading.Tasks.Task TReturning()",
+            $"{map.InterfaceMethods[1]?.ToString()} --> {map.TargetMethods[1]?.ToString()}");
+    }
 }
