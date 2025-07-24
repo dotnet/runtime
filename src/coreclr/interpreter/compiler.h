@@ -478,7 +478,12 @@ private:
     CORINFO_CLASS_HANDLE m_classHnd;
     #ifdef DEBUG
     TArray<char> m_methodName;
+#ifdef TARGET_WASM
+    // enable verbose output on wasm temporarily
+    bool m_verbose = true;
+#else
     bool m_verbose = false;
+#endif // TARGET_WASM
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
@@ -494,7 +499,7 @@ private:
         checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
     }
     void PrintNameInPointerMap(void* ptr);
-#endif
+#endif // DEBUG
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 

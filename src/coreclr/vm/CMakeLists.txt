@@ -914,6 +914,14 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
+        ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/helpers.cpp
+        exceptionhandling.cpp
+        gcinfodecoder.cpp
+    )
 endif()
 
 set(VM_SOURCES_DAC_ARCH

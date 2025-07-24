@@ -45,11 +45,20 @@ namespace ILLink.RoslynAnalyzer.Tests
             var sources = new List<SyntaxTree>() { src };
             sources.AddRange(additionalSources ?? Array.Empty<SyntaxTree>());
             TestCaseUtils.GetDirectoryPaths(out string rootSourceDirectory);
-            var commonSourcePath = Path.Combine(Path.GetDirectoryName(rootSourceDirectory)!,
-                "Mono.Linker.Tests.Cases.Expectations",
-                "Support",
-                "DynamicallyAccessedMembersAttribute.cs");
-            sources.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(commonSourcePath), path: commonSourcePath));
+            var testDir = Path.GetDirectoryName(rootSourceDirectory)!;
+            var srcDir = Path.Combine(Path.GetDirectoryName(testDir)!, "src");
+            var sharedDir = Path.Combine(srcDir, "ILLink.Shared");
+            var commonSourcePaths = new List<string>()
+            {
+                Path.Combine(testDir,
+                    "Mono.Linker.Tests.Cases.Expectations",
+                    "Support",
+                    "DynamicallyAccessedMembersAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresUnreferencedCodeAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresDynamicCodeAttribute.cs"),
+            };
+
+            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), path: p)));
             var comp = CSharpCompilation.Create(
                 assemblyName: Guid.NewGuid().ToString("N"),
                 syntaxTrees: sources,
