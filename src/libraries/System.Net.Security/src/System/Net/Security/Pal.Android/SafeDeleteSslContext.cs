@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
@@ -29,7 +30,7 @@ namespace System.Net
 
         private readonly SafeSslHandle _sslContext;
 
-        private readonly object _lock = new object();
+        private readonly Lock _lock = new Lock();
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
