@@ -1435,11 +1435,6 @@ OpenPipe(const char* name, int mode)
 
     while(fd == -1)
     {
-        if (access(name, F_OK) == -1)
-        {
-            break;
-        }
-
         fd = open(name, flags);
         if (fd == -1)
         {
@@ -1505,34 +1500,40 @@ NotifyRuntimeUsingPipes()
     LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
 
     PAL_GetTransportPipeName(continuePipeName, gPID, applicationGroupId, RuntimeContinuePipeName);
-    if (access(continuePipeName, F_OK) == -1)
-    {
-        TRACE("NotifyRuntimeUsingPipes: access(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
-        goto exit;
-    }
-
-    PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
-    if (access(startupPipeName, F_OK) == -1)
-    {
-        TRACE("NotifyRuntimeUsingPipes: access(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
-        goto exit;
-    }
-
-    result = RuntimeEventsOverPipes_Failed;
-
-    TRACE("NotifyRuntimeUsingPipes: opening continue '%s' startup '%s' pipes\n", continuePipeName, startupPipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening continue '%s' pipe\n", continuePipeName);
 
     continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
     if (continuePipeFd == -1)
     {
-        TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", continuePipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
         goto exit;
     }
+
+    PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening startup '%s' pipe\n", startupPipeName);
 
     startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
     if (startupPipeFd == -1)
     {
-        TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", startupPipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
         goto exit;
     }
 
