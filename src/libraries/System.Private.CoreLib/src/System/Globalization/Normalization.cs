@@ -44,6 +44,11 @@ namespace System.Globalization
         {
             CheckNormalizationForm(normalizationForm);
 
+            if (source.Overlaps(destination))
+            {
+                throw new ArgumentException(SR.Argument_OverlapSpansAreNotAllowed, nameof(destination));
+            }
+
             // In Invariant mode we assume all characters are normalized because we don't support any linguistic operations on strings.
             // If it's ASCII && one of the 4 main forms, then it's already normalized.
             if (GlobalizationMode.Invariant || Ascii.IsValid(source))

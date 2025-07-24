@@ -126,6 +126,11 @@ namespace System.Globalization.Tests
 
             AssertExtensions.Throws<ArgumentException>("strInput", () => "\uD800\uD800".Normalize()); // Invalid surrogate pair
             AssertExtensions.Throws<ArgumentException>("source", () => "\uD800\uD800".AsSpan().TryNormalize(destination, out int charsWritten)); // Invalid surrogate pair
+
+            char[] overlappingDestination = new char[5] { 'a', 'b', 'c', 'd', 'e' };
+            Assert.Throws<ArgumentException>("destination", () => overlappingDestination.AsSpan().TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
+            Assert.Throws<ArgumentException>("destination", () => overlappingDestination.AsSpan(0, 3).TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
+            Assert.Throws<ArgumentException>("destination", () => overlappingDestination.AsSpan().TryNormalize(overlappingDestination.AsSpan(4), out int charsWritten, NormalizationForm.FormC));
         }
 
         [Fact]
