@@ -500,7 +500,7 @@ public partial class ApkBuilder
 
         var dynamicLibs = new List<string>();
         if (!IsNativeAOT)
-            dynamicLibs.Add(Path.Combine(AppDir, mainLibraryFileName));
+            dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
 
         if (IsLibraryMode)
         {

@@ -6,7 +6,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <MainLibraryFileName>Android.Device_Emulator.JIT.Test.dll</MainLibraryFileName>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
