@@ -664,7 +664,9 @@ namespace System.Security.Cryptography
         protected abstract void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination);
 
         /// <inheritdoc cref="VerifyExternalMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
-        /// <exception cref="ArgumentNullException"><paramref name="mu"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="mu"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
         public bool VerifyExternalMu(byte[] mu, byte[] signature)
         {
             ArgumentNullException.ThrowIfNull(mu);

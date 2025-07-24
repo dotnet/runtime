@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyPreHash(hash, testCase.Signature, testCase.HashAlgOid, testCase.Context));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllExternalMuMLDsaNistTestCases), MemberType = typeof(MLDsaTestsData))]
         public void NistImportPublicKeyVerifyExternalMu(MLDsaNistTestCase testCase)
         {
@@ -528,7 +528,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context, byte[] mu = null)
+        protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[]? context, byte[]? mu = null)
         {
             ReadOnlySpan<byte> buffer = [0, 1, 2, 3];
 
