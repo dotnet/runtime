@@ -70,11 +70,11 @@ namespace System.Net
                 {
                     _disposed = true;
 
+                    // First dispose the SSL context to trigger native cleanup
+                    _sslContext.Dispose();
+
                     if (disposing)
                     {
-                        // First dispose the SSL context to trigger native cleanup
-                        _sslContext.Dispose();
-
                         // Then dispose the buffers
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
