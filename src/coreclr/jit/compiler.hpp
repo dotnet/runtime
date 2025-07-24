@@ -5412,7 +5412,7 @@ bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getCompl
         };
 
         ComplexityVisitor(Compiler* comp, unsigned limit, TFunc getComplexity)
-            : GenTreeVisitor(comp)
+            : GenTreeVisitor<ComplexityVisitor>(comp)
             , m_complexity(0)
             , m_limit(limit)
             , m_getComplexity(getComplexity)
