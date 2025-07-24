@@ -238,8 +238,7 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
             }
             left  = comp->gtNewOperNode(oper, type, left, right);
             right = comp->gtNewZeroConNode(type);
-            BlockRange().InsertBefore(cmp, left);
-            BlockRange().InsertBefore(cmp, right);
+            BlockRange().InsertBefore(cmp, left, right);
             ContainCheckBinary(left->AsOp());
         }
         // a != 0  --->  a > 0 (unsigned)

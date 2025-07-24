@@ -1691,8 +1691,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     else if (tree->OperIs(GT_NOT))
     {
         assert(!varTypeIsFloating(targetType));
-        ssize_t mask = tree->gtGetOp1()->OperIsCmpCompare() ? 1 : -1;
-        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, mask);
+        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
     }
 
     genProduceReg(tree);
