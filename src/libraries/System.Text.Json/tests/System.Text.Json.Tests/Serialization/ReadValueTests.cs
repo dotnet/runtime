@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Tests
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(json: (string)null, returnType: typeof(string)));
             Assert.Contains("json", ex.Message);
 
-            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(utf8Json: null, returnType: null));
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(utf8Json: (Stream?)null, returnType: null));
             Assert.Contains("utf8Json", ex.Message);
         }
 

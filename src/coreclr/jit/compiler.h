@@ -601,8 +601,7 @@ public:
     unsigned char lvIsMultiRegDest : 1; // true if this is a multireg LclVar struct that is stored from a multireg node
 
 #ifdef DEBUG
-    unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
-                                               // pointer.
+    unsigned char lvDefinedViaAddress : 1; // True when this local may have LCL_ADDRs representing definitions
 #endif
 
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -753,14 +752,14 @@ public:
     }
 
 #ifdef DEBUG
-    void SetHiddenBufferStructArg(char value)
+    void SetDefinedViaAddress(char value)
     {
-        lvHiddenBufferStructArg = value;
+        lvDefinedViaAddress = value;
     }
 
-    bool IsHiddenBufferStructArg() const
+    bool IsDefinedViaAddress() const
     {
-        return lvHiddenBufferStructArg;
+        return lvDefinedViaAddress;
     }
 #endif
 
@@ -3741,6 +3740,7 @@ public:
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+    GenTreeLclVarCommon* gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -4741,11 +4741,6 @@ protected:
     void getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                                 CORINFO_SIG_INFO*    sig,
                                 unsigned             immNumber,
-                                var_types            simdBaseType,
-                                CorInfoType          simdBaseJitType,
-                                CORINFO_CLASS_HANDLE op1ClsHnd,
-                                CORINFO_CLASS_HANDLE op2ClsHnd,
-                                CORINFO_CLASS_HANDLE op3ClsHnd,
                                 unsigned*            immSimdSize,
                                 var_types*           immSimdBaseType);
 
@@ -6990,8 +6985,8 @@ private:
 public:
     PhaseStatus optOptimizeBools();
     PhaseStatus optRecognizeAndOptimizeSwitchJumps();
-    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
-    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false);
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest, bool testingForConversion = false, BitVec* ccmpVec = nullptr);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false, BitVec* ccmpVec = nullptr);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
@@ -9676,6 +9671,17 @@ public:
     bool canUseApxEncoding() const
     {
         return compOpportunisticallyDependsOn(InstructionSet_APX);
+    }
+
+    //------------------------------------------------------------------------
+    // canUseApxEvexEncoding - Answer the question: Are APX-EVEX encodings supported on this target.
+    //
+    // Returns:
+    //    `true` if APX-EVEX encoding is supported, `false` if not.
+    //
+    bool canUseApxEvexEncoding() const
+    {
+        return canUseApxEncoding() && canUseEvexEncoding();
     }
 
 private:

@@ -40,7 +40,6 @@ public partial class ApkBuilder
     public bool ForceAOT { get; set; }
     public bool ForceFullAOT { get; set; }
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
-    public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
     public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
@@ -432,11 +431,6 @@ public partial class ApkBuilder
             string name = item.ItemSpec;
             string value = item.GetMetadata("Value");
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
-        }
-
-        if (InvariantGlobalization)
-        {
-            envVariables += $"\t\tsetEnv(\"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT\", \"true\");\n";
         }
 
         string jniLibraryName;
