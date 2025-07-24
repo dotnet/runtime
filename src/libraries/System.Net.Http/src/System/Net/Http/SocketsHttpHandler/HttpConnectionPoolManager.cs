@@ -227,35 +227,6 @@ namespace System.Net.Http
         public HttpConnectionSettings Settings => _settings;
         public ICredentials? ProxyCredentials => _proxyCredentials;
 
-        private static string ParseHostNameFromHeader(string hostHeader)
-        {
-            // See if we need to trim off a port.
-            int colonPos = hostHeader.IndexOf(':');
-            if (colonPos >= 0)
-            {
-                // There is colon, which could either be a port separator or a separator in
-                // an IPv6 address.  See if this is an IPv6 address; if it's not, use everything
-                // before the colon as the host name, and if it is, use everything before the last
-                // colon iff the last colon is after the end of the IPv6 address (otherwise it's a
-                // part of the address).
-                int ipV6AddressEnd = hostHeader.IndexOf(']');
-                if (ipV6AddressEnd == -1)
-                {
-                    return hostHeader.Substring(0, colonPos);
-                }
-                else
-                {
-                    colonPos = hostHeader.LastIndexOf(':');
-                    if (colonPos > ipV6AddressEnd)
-                    {
-                        return hostHeader.Substring(0, colonPos);
-                    }
-                }
-            }
-
-            return hostHeader;
-        }
-
         private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri? proxyUri, bool isProxyConnect)
         {
             Uri? uri = request.RequestUri;
@@ -273,7 +244,7 @@ namespace System.Net.Http
                 string? hostHeader = request.Headers.Host;
                 if (hostHeader != null)
                 {
-                    sslHostName = ParseHostNameFromHeader(hostHeader);
+                    sslHostName = HttpUtilities.ParseHostNameFromHeader(hostHeader);
                 }
                 else
                 {
@@ -330,6 +301,34 @@ namespace System.Net.Http
             }
         }
 
+        // Picks the value of the 'server.address' tag following rules specified in
+        // https://github.com/open-telemetry/semantic-conventions/blob/728e5d1/docs/http/http-spans.md#http-client-span
+        // When there is no proxy, we need to prioritize the contents of the Host header.
+        private static string? GetTelemetryServerAddress(HttpRequestMessage request, HttpConnectionKey key)
+        {
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled || GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
+            {
+                Uri? uri = request.RequestUri;
+                Debug.Assert(uri is not null);
+
+                if (key.SslHostName is not null)
+                {
+                    return key.SslHostName;
+                }
+
+                if (key.ProxyUri is not null && key.Kind == HttpConnectionKind.Proxy)
+                {
+                    // In case there is no tunnel, return the proxy address since the connection is shared.
+                    return key.ProxyUri.IdnHost;
+                }
+
+                string? hostHeader = request.Headers.Host;
+                return hostHeader is null ? uri.IdnHost : HttpUtilities.ParseHostNameFromHeader(hostHeader);
+            }
+
+            return null;
+        }
+
         public ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool async, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
@@ -337,7 +336,7 @@ namespace System.Net.Http
             HttpConnectionPool? pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri);
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, GetTelemetryServerAddress(request, key));
 
                 if (_cleaningTimer == null)
                 {

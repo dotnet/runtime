@@ -138,8 +138,8 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, longSignature, ReadOnlySpan<byte>.Empty));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignExternalMu(mu, shortSignature));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignExternalMu(mu, longSignature));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize], shortSignature, HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize], longSignature, HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], shortSignature, HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], longSignature, HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
 
             // Context length must be less than 256
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, signature, new byte[256]));
@@ -158,21 +158,17 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentException>("mu", () => mldsa.SignExternalMu(longMu, signature));
 
             // Hash length of known OID hash algorithms must be correct
-            AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize - 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha256.OutputSize + 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[HashInfo.Sha256.OutputSize - 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[HashInfo.Sha256.OutputSize + 1], new byte[signatureSize], HashInfo.Sha256.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize - 1], new byte[signatureSize], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize + 1], new byte[signatureSize], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[HashInfo.Sha512.OutputSize - 1], new byte[signatureSize], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[HashInfo.Sha512.OutputSize + 1], new byte[signatureSize], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
 
             // Must be valid OID
             Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([], "not.an.oid"));
             Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([], signature, "not-an-oid"));
-            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash(Array.Empty<byte>(), signature, "1"));
-            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash([], signature.AsSpan(), "a"));
 
             Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([1], string.Empty));
             Assert.Throws<CryptographicException>(() => mldsa.SignPreHash([1], signature, "-1.0.0"));
-            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash(new byte[] { 1 }, signature, "a"));
-            Assert.Throws<CryptographicException>(() => mldsa.VerifyPreHash([1], signature.AsSpan(), "a"));
         }
 
         public static IEnumerable<object[]> ArgumentValidation_Hash_WrongSizeInputs()
@@ -212,61 +208,26 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ArgumentValidation_HashAlgorithm_UnknownOidCallsCore()
+        public static void ArgumentValidation_HashAlgorithm_UnknownOidDoesNotCallCore()
         {
-            using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa44);
+            using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44);
 
             byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
             string hashAlgorithmOid = "1.0";
-
-            mlDsa.SignPreHashHook = (_, _, _, _) => { };
-            mlDsa.AddSignatureBufferIsSameAssertion(signature.AsMemory());
-            mlDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
-
-            _ = mlDsa.SignPreHash([], hashAlgorithmOid);
-            Assert.Equal(1, mlDsa.SignPreHashCoreCallCount);
-
-            mlDsa.SignPreHash([], signature, hashAlgorithmOid);
-            Assert.Equal(2, mlDsa.SignPreHashCoreCallCount);
-
-            _ = mlDsa.SignPreHash([1], hashAlgorithmOid);
-            Assert.Equal(3, mlDsa.SignPreHashCoreCallCount);
-
-            mlDsa.SignPreHash([1], signature, hashAlgorithmOid);
-            Assert.Equal(4, mlDsa.SignPreHashCoreCallCount);
-
-            mlDsa.SignPreHashHook = (_, _, _, _) => Assert.Fail();
-            mlDsa.VerifyPreHashHook = (_, _, _, _) => true;
-            mlDsa.AddSignatureBufferIsSameAssertion(signature.AsMemory());
-            mlDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
-
-            _ = mlDsa.VerifyPreHash(Array.Empty<byte>(), signature, hashAlgorithmOid);
-            Assert.Equal(1, mlDsa.VerifyPreHashCoreCallCount);
-
-            _ = mlDsa.VerifyPreHash([], signature.AsSpan(), hashAlgorithmOid);
-            Assert.Equal(2, mlDsa.VerifyPreHashCoreCallCount);
-
-            _ = mlDsa.VerifyPreHash(new byte[] { 1 }, signature, hashAlgorithmOid);
-            Assert.Equal(3, mlDsa.VerifyPreHashCoreCallCount);
-
-            _ = mlDsa.VerifyPreHash([1], signature.AsSpan(), hashAlgorithmOid);
-            Assert.Equal(4, mlDsa.VerifyPreHashCoreCallCount);
+            CryptographicException ce = Assert.Throws<CryptographicException>(() => mlDsa.SignPreHash([], hashAlgorithmOid));
+            Assert.Contains(hashAlgorithmOid, ce.Message);
         }
 
-        public static IEnumerable<object[]> AllHashesAndLengthsAndExtraUnknown()
+        public static IEnumerable<object[]> AllHashesAndLengths()
         {
             foreach (HashInfo hashInfo in HashInfo.AllHashInfos())
             {
                 yield return new object[] { hashInfo.Oid, hashInfo.OutputSize };
             }
-
-            yield return new object[] { "1.0", 0 };
-            yield return new object[] { "1.0", 1 };
-            yield return new object[] { "1.0", 2 };
         }
 
         [Theory]
-        [MemberData(nameof(AllHashesAndLengthsAndExtraUnknown))]
+        [MemberData(nameof(AllHashesAndLengths))]
         public static void SignPreHash_CallsCore(string hashAlgorithmOid, int hashLength)
         {
             MLDsaAlgorithm algorithm = MLDsaAlgorithm.MLDsa44;
@@ -303,7 +264,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AllHashesAndLengthsAndExtraUnknown))]
+        [MemberData(nameof(AllHashesAndLengths))]
         public static void VerifyPreHash_CallsCore(string hashAlgorithmOid, int hashLength)
         {
             using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa44);
@@ -339,7 +300,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AllHashesAndLengthsAndExtraUnknown))]
+        [MemberData(nameof(AllHashesAndLengths))]
         public static void VerifyPreHash_ByteArray_CallsCore(string hashAlgorithmOid, int hashLength)
         {
             using MLDsaTestImplementation mlDsa = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa44);

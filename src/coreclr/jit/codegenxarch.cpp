@@ -5806,9 +5806,37 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
 
-                            if (intrinsicId == NI_X86Base_Extract)
+                            // We may have opportunistically selected an EVEX only instruction
+                            // that isn't actually required, so fallback to the VEX compatible
+                            // encoding to potentially save on the number of bytes emitted.
+
+                            switch (ins)
                             {
-                                ins = INS_pextrw_sse42;
+                                case INS_pextrw:
+                                {
+                                    // The encoding which supports containment is SSE4.1+ only
+                                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE42));
+
+                                    ins = INS_pextrw_sse42;
+                                    break;
+                                }
+
+                                case INS_vextractf64x2:
+                                {
+                                    ins = INS_vextractf32x4;
+                                    break;
+                                }
+
+                                case INS_vextracti64x2:
+                                {
+                                    ins = INS_vextracti32x4;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    break;
+                                }
                             }
 
                             // The hardware intrinsics take unsigned bytes between [0, 255].

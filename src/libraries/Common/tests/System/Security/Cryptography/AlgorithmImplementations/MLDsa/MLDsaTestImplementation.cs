@@ -135,12 +135,12 @@ namespace System.Security.Cryptography.Tests
                 ExportMLDsaPublicKeyHook = _ => Assert.Fail(),
                 ExportMLDsaSecretKeyHook = _ => Assert.Fail(),
                 SignDataHook = (_, _, _) => Assert.Fail(),
-                VerifyDataHook = (_, _, _) => { Assert.Fail(); return false; },
-                SignPreHashHook = (_, _, _, _) => Assert.Fail(),
-                VerifyPreHashHook = (_, _, _, _) => { Assert.Fail(); return false; },
-                OpenExternalMuHashHook = _ => { Assert.Fail(); return null; },
+                SignPreHashHook = delegate { Assert.Fail(); },
                 SignExternalMuHook = (_, _) => Assert.Fail(),
+                VerifyDataHook = (_, _, _) => { Assert.Fail(); return false; },
+                VerifyPreHashHook = (_, _, _, _) => { Assert.Fail(); return false; },
                 VerifyExternalMuHook = (_, _) => { Assert.Fail(); return false; },
+                OpenExternalMuHashHook = _ => { Assert.Fail(); return null; },
                 DisposeHook = _ => { },
 
                 TryExportPkcs8PrivateKeyHook = (_, out bytesWritten) =>

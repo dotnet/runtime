@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -130,7 +131,7 @@ namespace System.Net.WebSockets
 
         /// <inheritdoc />
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-            ValueTask.FromException<int>(new NotSupportedException());
+            ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException()));
 
         /// <inheritdoc />
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
@@ -150,7 +151,7 @@ namespace System.Net.WebSockets
 
         /// <inheritdoc />
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
-            ValueTask.FromException(new NotSupportedException());
+            ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException()));
 
         /// <inheritdoc />
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
@@ -195,12 +196,12 @@ namespace System.Net.WebSockets
             {
                 if (_disposed)
                 {
-                    return ValueTask.FromException(new ObjectDisposedException(GetType().FullName));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
                 }
 
                 if (!CanWrite)
                 {
-                    return ValueTask.FromException(new NotSupportedException(SR.NotWriteableStream));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.NotWriteableStream)));
                 }
 
                 if (cancellationToken.IsCancellationRequested)
@@ -297,12 +298,12 @@ namespace System.Net.WebSockets
             {
                 if (_disposed)
                 {
-                    return ValueTask.FromException(new ObjectDisposedException(GetType().FullName));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
                 }
 
                 if (!CanWrite)
                 {
-                    return ValueTask.FromException(new NotSupportedException(SR.NotWriteableStream));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.NotWriteableStream)));
                 }
 
                 if (cancellationToken.IsCancellationRequested)

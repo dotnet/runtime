@@ -8,6 +8,7 @@ using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net.Http.Metrics;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
@@ -527,14 +528,14 @@ namespace System.Net.Http
             // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
             if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
             {
-                handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+                handler = new MetricsHandler(handler, settings._meterFactory, settings._proxy, out Meter meter);
                 settings._metrics = new SocketsHttpHandlerMetrics(meter);
             }
 
             // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
             if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
             {
-                handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
+                handler = new DiagnosticsHandler(handler, propagator, settings._proxy, settings._allowAutoRedirect);
             }
 
             if (settings._allowAutoRedirect)
@@ -634,7 +635,7 @@ namespace System.Net.Http
         {
             if (request.Version != HttpVersion.Version10 && request.Version != HttpVersion.Version11 && request.Version != HttpVersion.Version20 && request.Version != HttpVersion.Version30)
             {
-                return new NotSupportedException(SR.net_http_unsupported_version);
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_unsupported_version));
             }
 
             // Add headers to define content transfer, if not present
@@ -642,8 +643,8 @@ namespace System.Net.Http
             {
                 if (request.Content == null)
                 {
-                    return new HttpRequestException(SR.net_http_client_execution_error,
-                        new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content));
+                    return ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_client_execution_error,
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content))));
                 }
 
                 // Since the user explicitly set TransferEncodingChunked to true, we need to remove
@@ -661,7 +662,7 @@ namespace System.Net.Http
                 // HTTP 1.0 does not support chunking
                 if (request.Headers.TransferEncodingChunked == true)
                 {
-                    return new NotSupportedException(SR.net_http_unsupported_chunking);
+                    return ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_unsupported_chunking));
                 }
 
                 // HTTP 1.0 does not support Expect: 100-continue; just disable it.
@@ -674,12 +675,12 @@ namespace System.Net.Http
             Uri? requestUri = request.RequestUri;
             if (requestUri is null || !requestUri.IsAbsoluteUri)
             {
-                return new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_http_client_invalid_requesturi));
             }
 
             if (!HttpUtilities.IsSupportedScheme(requestUri.Scheme))
             {
-                return new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme)));
             }
 
             return null;

@@ -162,7 +162,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Scrub this block from the pred lists of any successors
     bool profileInconsistent = false;
 
-    for (BasicBlock* const succBlock : block->Succs(this))
+    for (BasicBlock* const succBlock : block->Succs())
     {
         FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
 
@@ -3359,7 +3359,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         fgLastBB = curBBdesc;
 
-        DBEXEC(verbose, curBBdesc->dspBlockHeader(this, false, false, false));
+        DBEXEC(verbose, curBBdesc->dspBlockHeader(false, false, false));
 
         /* Remember where the next BB will start */
 

@@ -56,20 +56,8 @@ namespace System.Xml.Schema
         private XmlSchemaObjectTable? _typeExtensions;
 
         //Thread safety
-        private object? _internalSyncObject;
-        internal object InternalSyncObject
-        {
-            get
-            {
-                if (_internalSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange<object?>(ref _internalSyncObject, o, null);
-                }
-
-                return _internalSyncObject;
-            }
-        }
+        internal object InternalSyncObject =>
+            field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
 
         //Constructors
 
