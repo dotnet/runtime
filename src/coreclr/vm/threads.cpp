@@ -1142,13 +1142,13 @@ void InitThreadManager()
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
 
-    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
+    g_offsetOfCurrentThreadInfo = (DWORD)Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
 
-    _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
+    _ASSERTE(g_offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
 
     // Save t_CurrentThreadInfo location for debugger
-    SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
+    SetIlsIndex((DWORD)(_tls_index + (g_offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
 #endif // !TARGET_UNIX
@@ -6044,11 +6044,13 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     {
         m_CacheStackBase  = GetStackUpperBound();
         m_CacheStackLimit = GetStackLowerBound();
+#if !defined(TARGET_WASM) // WASM-TODO: stack can start at address 0 on wasm/emscripten and usually does in Debug builds
         if (m_CacheStackLimit == NULL)
         {
             _ASSERTE(!"Failed to set stack limits");
             return FALSE;
         }
+#endif
 
         // Compute the limit used by TryEnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and

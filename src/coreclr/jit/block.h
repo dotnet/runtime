@@ -1185,14 +1185,13 @@ public:
     }
 
 #ifdef DEBUG
-    void     dspFlags() const;             // Print the flags
-    unsigned dspPreds() const;             // Print the predecessors (bbPreds)
-    void     dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
-                                           // regions are printed: see NumSucc() for details.
-    void dspKind() const;                  // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
+    void     dspFlags() const; // Print the flags
+    unsigned dspPreds() const; // Print the predecessors (bbPreds)
+    void     dspSuccs() const; // Print the successors.
+    void     dspKind() const;  // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
-    void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
+    void dspBlockHeader(bool showKind = true, bool showFlags = false, bool showPreds = true) const;
 
     const char* dspToString(int blockNumPadding = 0) const;
 #endif // DEBUG
@@ -1381,15 +1380,12 @@ public:
     //
     // NumSucc: Returns the number of successors of "this".
     unsigned NumSucc() const;
-    unsigned NumSucc(Compiler* comp);
 
     // GetSuccEdge: Returns the "i"th successor edge. Requires (0 <= i < NumSucc()).
     FlowEdge* GetSuccEdge(unsigned i) const;
-    FlowEdge* GetSuccEdge(unsigned i, Compiler* comp);
 
     // GetSucc: Returns the "i"th successor block. Requires (0 <= i < NumSucc()).
     BasicBlock* GetSucc(unsigned i) const;
-    BasicBlock* GetSucc(unsigned i, Compiler* comp);
 
     // SwitchSuccs: convenience method for enabling range-based `for` iteration over a switch block's unique successors,
     // e.g.:
@@ -1732,8 +1728,6 @@ public:
     static size_t s_Count;
 #endif // MEASURE_BLOCK_SIZE
 
-    bool bbFallsThrough() const;
-
 #ifdef DEBUG
     unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
     static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
@@ -1891,222 +1885,50 @@ public:
 
     bool HasPotentialEHSuccs(Compiler* comp);
 
-    // Base class for Successor block/edge iterators.
+    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs()) ...
     //
-    class SuccList
+    template <typename IteratorType>
+    class BBSuccList
     {
-    protected:
+    private:
         // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
         // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
-        // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
+        // points of the iteration, for use by the iterator. `m_begin` and `m_end` will either point at
         // `m_succs` or at the switch table successor array.
         FlowEdge*        m_succs[2];
         FlowEdge* const* m_begin;
         FlowEdge* const* m_end;
 
-        SuccList(const BasicBlock* block);
-    };
-
-    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
-    // normally used via BasicBlock::Succs(), e.g.:
-    //    for (BasicBlock* const target : block->Succs()) ...
-    //
-    class BBSuccList : private SuccList
-    {
     public:
-        BBSuccList(const BasicBlock* block)
-            : SuccList(block)
+        BBSuccList(const BasicBlock* block);
+
+        IteratorType begin() const
         {
+            return IteratorType(m_begin);
         }
 
-        BBArrayIterator begin() const
+        IteratorType end() const
         {
-            return BBArrayIterator(m_begin);
-        }
-
-        BBArrayIterator end() const
-        {
-            return BBArrayIterator(m_end);
+            return IteratorType(m_end);
         }
     };
 
-    // BBSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
-    // normally used via BasicBlock::SuccEdges(), e.g.:
-    //    for (FlowEdge* const succEdge : block->SuccEdges()) ...
-    //
-    class BBSuccEdgeList : private SuccList
-    {
-    public:
-        BBSuccEdgeList(const BasicBlock* block)
-            : SuccList(block)
-        {
-        }
-
-        FlowEdgeArrayIterator begin() const
-        {
-            return FlowEdgeArrayIterator(m_begin);
-        }
-
-        FlowEdgeArrayIterator end() const
-        {
-            return FlowEdgeArrayIterator(m_end);
-        }
-    };
-
-    // BBCompilerSuccList: adapter class for forward iteration of block successors, using range-based `for`,
-    // normally used via BasicBlock::Succs(), e.g.:
-    //    for (BasicBlock* const target : block->Succs(compiler)) ...
-    //
-    // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
-    // of the implications of this versus the version that does not take `Compiler*`.
-    class BBCompilerSuccList
-    {
-        Compiler*   m_comp;
-        BasicBlock* m_block;
-
-        // iterator: forward iterator for an array of BasicBlock*
-        //
-        class iterator
-        {
-            Compiler*   m_comp;
-            BasicBlock* m_block;
-            unsigned    m_succNum;
-
-        public:
-            iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
-                : m_comp(comp)
-                , m_block(block)
-                , m_succNum(succNum)
-            {
-            }
-
-            BasicBlock* operator*() const
-            {
-                assert(m_block != nullptr);
-                BasicBlock* bTarget = m_block->GetSucc(m_succNum, m_comp);
-                assert(bTarget != nullptr);
-                return bTarget;
-            }
-
-            iterator& operator++()
-            {
-                ++m_succNum;
-                return *this;
-            }
-
-            bool operator!=(const iterator& i) const
-            {
-                return m_succNum != i.m_succNum;
-            }
-        };
-
-    public:
-        BBCompilerSuccList(Compiler* comp, BasicBlock* block)
-            : m_comp(comp)
-            , m_block(block)
-        {
-        }
-
-        iterator begin() const
-        {
-            return iterator(m_comp, m_block, 0);
-        }
-
-        iterator end() const
-        {
-            return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
-        }
-    };
-
-    // BBCompilerSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
-    // normally used via BasicBlock::SuccEdges(), e.g.:
-    //    for (FlowEdge* const succEdge : block->SuccEdges(compiler)) ...
-    //
-    // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
-    // of the implications of this versus the version that does not take `Compiler*`.
-    class BBCompilerSuccEdgeList
-    {
-        Compiler*   m_comp;
-        BasicBlock* m_block;
-
-        // iterator: forward iterator for an array of BasicBlock*
-        //
-        class iterator
-        {
-            Compiler*   m_comp;
-            BasicBlock* m_block;
-            unsigned    m_succNum;
-
-        public:
-            iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
-                : m_comp(comp)
-                , m_block(block)
-                , m_succNum(succNum)
-            {
-            }
-
-            FlowEdge* operator*() const
-            {
-                assert(m_block != nullptr);
-                FlowEdge* succEdge = m_block->GetSuccEdge(m_succNum, m_comp);
-                assert(succEdge != nullptr);
-                return succEdge;
-            }
-
-            iterator& operator++()
-            {
-                ++m_succNum;
-                return *this;
-            }
-
-            bool operator!=(const iterator& i) const
-            {
-                return m_succNum != i.m_succNum;
-            }
-        };
-
-    public:
-        BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block)
-            : m_comp(comp)
-            , m_block(block)
-        {
-        }
-
-        iterator begin() const
-        {
-            return iterator(m_comp, m_block, 0);
-        }
-
-        iterator end() const
-        {
-            return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
-        }
-    };
-
-    // Succs: convenience methods for enabling range-based `for` iteration over a block's successors, e.g.:
+    // Succs: convenience method for enabling range-based `for` iteration over unique successor blocks, e.g.:
     //    for (BasicBlock* const succ : block->Succs()) ...
     //
-    // There are two options: one that takes a Compiler* and one that doesn't. These correspond to the
-    // NumSucc()/GetSucc() functions that do or do not take a Compiler*. See the comment for NumSucc()/GetSucc()
-    // for the distinction.
-    BBSuccList Succs() const
+    BBSuccList<BBArrayIterator> Succs() const
     {
-        return BBSuccList(this);
+        return BBSuccList<BBArrayIterator>(this);
     }
 
-    BBCompilerSuccList Succs(Compiler* comp)
+    // SuccEdges: convenience method for enabling range-based `for` iteration over unique successor edges, e.g.:
+    //    for (FlowEdge* const edge : block->SuccEdges()) ...
+    //
+    BBSuccList<FlowEdgeArrayIterator> SuccEdges()
     {
-        return BBCompilerSuccList(comp, this);
-    }
-
-    BBSuccEdgeList SuccEdges()
-    {
-        return BBSuccEdgeList(this);
-    }
-
-    BBCompilerSuccEdgeList SuccEdges(Compiler* comp)
-    {
-        return BBCompilerSuccEdgeList(comp, this);
+        return BBSuccList<FlowEdgeArrayIterator>(this);
     }
 
     // Clone block state and statements from `from` block to `to` block (which must be new/empty)
@@ -2472,9 +2294,10 @@ inline BBArrayIterator BBJumpTableList::end() const
     return BBArrayIterator(m_bbJumpTable->GetSuccs() + m_bbJumpTable->GetSuccCount());
 }
 
-// SuccList out-of-class-declaration implementations
+// BBSuccList out-of-class-declaration implementations
 //
-inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
+template <typename IteratorType>
+inline BasicBlock::BBSuccList<IteratorType>::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
 
@@ -2503,7 +2326,7 @@ inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
             m_succs[0] = block->GetFalseEdge();
             m_begin    = &m_succs[0];
 
-            // If both fall-through and branch successors are identical, then only include
+            // If the true/false successors are identical, then only include
             // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
             if (block->TrueEdgeIs(block->GetFalseEdge()))
             {
@@ -2534,10 +2357,9 @@ inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->bbSwtTargets != nullptr);
-            assert(block->bbSwtTargets->GetCases() != nullptr);
-            m_begin = block->bbSwtTargets->GetCases();
-            m_end   = block->bbSwtTargets->GetCases() + block->bbSwtTargets->GetCaseCount();
+            assert(block->GetSwitchTargets() != nullptr);
+            m_begin = block->GetSwitchTargets()->GetSuccs();
+            m_end   = block->GetSwitchTargets()->GetSuccs() + block->GetSwitchTargets()->GetSuccCount();
             break;
 
         default:

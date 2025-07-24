@@ -678,6 +678,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "StackArrayLocal";
         case WellKnownArg::RuntimeMethodHandle:
             return "RuntimeMethodHandle";
+        case WellKnownArg::AsyncSuspendedIndicator:
+            return "AsyncSuspendedIndicator";
     }
 
     return "N/A";
@@ -1842,8 +1844,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
 
-        ABIPassingInformation abiInfo;
-
         // Some well known args have custom register assignment.
         // These should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
@@ -1852,20 +1852,26 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         if (nonStdRegNum == REG_NA)
         {
-            abiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
+            {
+                // Represents definition of a local. Expanded out by async transformation.
+                arg.AbiInfo = ABIPassingInformation(comp, 0);
+            }
+            else
+            {
+                arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            }
         }
         else
         {
             ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            abiInfo                   = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
         }
 
         JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
-        DBEXEC(VERBOSE, abiInfo.Dump());
+        DBEXEC(VERBOSE, arg.AbiInfo.Dump());
 
-        arg.AbiInfo = abiInfo;
-
-        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        for (const ABIPassingSegment& segment : arg.AbiInfo.Segments())
         {
             if (segment.IsPassedOnStack())
             {
@@ -1919,6 +1925,13 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
+        if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
+        {
+            // Represents definition of a local. Expanded out by async transformation.
+            arg.AbiInfo = ABIPassingInformation(comp, 0);
+            continue;
+        }
+
         const var_types            argSigType  = arg.GetSignatureType();
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
@@ -6824,22 +6837,22 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
 
 void Compiler::fgAssignSetVarDef(GenTree* tree)
 {
-    GenTreeLclVarCommon* lclVarCmnTree;
-    bool                 isEntire = false;
-    if (tree->DefinesLocal(this, &lclVarCmnTree, &isEntire))
-    {
-        if (isEntire)
+    auto visitDef = [=](const LocalDef& def) {
+        if (def.IsEntire)
         {
-            lclVarCmnTree->gtFlags |= GTF_VAR_DEF;
+            def.Def->gtFlags |= GTF_VAR_DEF;
         }
         else
         {
             // We consider partial definitions to be modeled as uses followed by definitions.
             // This captures the idea that precedings defs are not necessarily made redundant
             // by this definition.
-            lclVarCmnTree->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
+            def.Def->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
         }
-    }
+        return GenTree::VisitResult::Continue;
+    };
+
+    tree->VisitLocalDefs(this, visitDef);
 }
 
 #ifdef FEATURE_SIMD
@@ -11279,6 +11292,43 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         // Perform the required oper-specific postorder morphing
         //
 
+        // If the folded tree is a vector to mask conversion, or vice versa,
+        // then we want to morph the inner operand as we may have folded something
+        // like xor(masktovector(op1), AllBitsSet) into masktovector(not(op1)), which
+        // can unlock further optimizations over op1, like the ability to invert
+        // not(cmple(op1, op2)) into cmpgt(op1, op2)
+
+        int opIndex = 0;
+
+        if (tree->OperIsConvertVectorToMask() || tree->OperIsConvertMaskToVector())
+        {
+            opIndex = 1;
+        }
+
+#if defined(TARGET_ARM64)
+        if (tree->OperIsConvertVectorToMask())
+        {
+            opIndex = 2;
+        }
+#endif // TARGET_ARM64
+
+        if (opIndex != 0)
+        {
+            GenTree* innerOp = tree->Op(opIndex);
+
+            if (innerOp->OperIsHWIntrinsic())
+            {
+                innerOp = fgMorphHWIntrinsicRequired(innerOp->AsHWIntrinsic());
+
+                if (innerOp->OperIsHWIntrinsic())
+                {
+                    innerOp = fgMorphHWIntrinsicOptional(innerOp->AsHWIntrinsic());
+                }
+
+                tree->Op(opIndex) = innerOp;
+            }
+        }
+
         morphedTree = fgMorphHWIntrinsicRequired(tree);
 
         if (morphedTree->OperIsHWIntrinsic())
@@ -12723,10 +12773,14 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
 
     // Kill active assertions
     //
-    GenTreeLclVarCommon* lclVarTree = nullptr;
-    if ((optAssertionCount > 0) && tree->DefinesLocal(this, &lclVarTree))
+    if (optAssertionCount > 0)
     {
-        fgKillDependentAssertions(lclVarTree->GetLclNum() DEBUGARG(tree));
+        auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+            fgKillDependentAssertions(lcl->GetLclNum() DEBUGARG(tree));
+            return GenTree::VisitResult::Continue;
+        };
+
+        tree->VisitLocalDefNodes(this, visitDef);
     }
 
     // Generate assertions
