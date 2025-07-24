@@ -170,7 +170,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task ReadAsyncAfterReceivingCompletedReadResultAndResetingStreamPositionWorks()
+        public async Task ReadAsyncAfterReceivingCompletedReadResultAndResettingStreamPositionWorks()
         {
             byte[] helloBytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream(helloBytes);
