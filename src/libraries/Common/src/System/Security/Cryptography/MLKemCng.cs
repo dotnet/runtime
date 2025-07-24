@@ -22,7 +22,6 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class MLKemCng : MLKem
     {
         private CngKey _key;
