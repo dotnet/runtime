@@ -464,30 +464,6 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 break;
             }
 
-            CORINFO_CLASS_HANDLE op1ClsHnd = NO_CLASS_HANDLE;
-            CORINFO_CLASS_HANDLE op2ClsHnd = NO_CLASS_HANDLE;
-            CORINFO_CLASS_HANDLE op3ClsHnd = NO_CLASS_HANDLE;
-
-            size_t argCount = operandCount - (sigInfo.hasThis() ? 1 : 0);
-
-            if (argCount > 0)
-            {
-                CORINFO_ARG_LIST_HANDLE args = sigInfo.args;
-                comp->info.compCompHnd->getArgType(&sigInfo, args, &op1ClsHnd);
-
-                if (argCount > 1)
-                {
-                    args = comp->info.compCompHnd->getArgNext(args);
-                    comp->info.compCompHnd->getArgType(&sigInfo, args, &op2ClsHnd);
-
-                    if (argCount > 2)
-                    {
-                        args = comp->info.compCompHnd->getArgNext(args);
-                        comp->info.compCompHnd->getArgType(&sigInfo, args, &op3ClsHnd);
-                    }
-                }
-            }
-
             // Position of the immediates from top of stack
             int imm1Pos = -1;
             int imm2Pos = -1;
@@ -511,8 +487,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
             if (immOp2 != nullptr)
             {
-                comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 2, simdBaseType, simdBaseJitType, op1ClsHnd,
-                                             op2ClsHnd, op3ClsHnd, &immSimdSize, &immSimdBaseType);
+                comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 2, &immSimdSize, &immSimdBaseType);
                 HWIntrinsicInfo::lookupImmBounds(intrinsicId, immSimdSize, immSimdBaseType, 2, &immLowerBound,
                                                  &immUpperBound);
 
@@ -527,8 +502,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 immSimdBaseType = simdBaseType;
             }
 
-            comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 1, simdBaseType, simdBaseJitType, op1ClsHnd, op2ClsHnd,
-                                         op3ClsHnd, &immSimdSize, &immSimdBaseType);
+            comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 1, &immSimdSize, &immSimdBaseType);
             HWIntrinsicInfo::lookupImmBounds(intrinsicId, immSimdSize, immSimdBaseType, 1, &immLowerBound,
                                              &immUpperBound);
 #endif
