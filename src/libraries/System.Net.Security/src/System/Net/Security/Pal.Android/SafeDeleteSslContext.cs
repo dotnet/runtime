@@ -49,7 +49,6 @@ namespace System.Net
             try
             {
                 _sslContext = CreateSslContext(SslStreamProxy, authOptions);
-
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -89,12 +88,10 @@ namespace System.Net
         private static unsafe void WriteToConnection(IntPtr connection, byte* data, int dataLength)
         {
             GCHandle h = GCHandle.FromIntPtr(connection);
-            SafeDeleteSslContext? context = h.IsAllocated ? h.Target as SafeDeleteSslContext : null;
-            if (context is null)
-            {
-                Debug.Write("WriteToConnection: context is null");
-                return;
-            }
+            Debug.Assert(h.IsAllocated);
+
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)h.Target;
+            Debug.Assert(context != null);
 
             try
             {
@@ -116,6 +113,7 @@ namespace System.Net
             catch (Exception ex)
             {
                 Debug.Write("Exception Caught. - " + ex);
+                throw;
             }
         }
 
@@ -123,13 +121,10 @@ namespace System.Net
         private static unsafe PAL_SSLStreamStatus ReadFromConnection(IntPtr connection, byte* data, int* dataLength)
         {
             GCHandle h = GCHandle.FromIntPtr(connection);
-            SafeDeleteSslContext? context = h.IsAllocated ? h.Target as SafeDeleteSslContext : null;
-            if (context is null)
-            {
-                Debug.Write("ReadFromConnection: context is null");
-                *dataLength = 0;
-                return PAL_SSLStreamStatus.Error;
-            }
+            Debug.Assert(h.IsAllocated);
+
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)h.Target;
+            Debug.Assert(context != null);
 
             try
             {
@@ -164,8 +159,7 @@ namespace System.Net
             catch (Exception ex)
             {
                 Debug.Write("Exception Caught. - " + ex);
-                *dataLength = 0;
-                return PAL_SSLStreamStatus.Error;
+                throw;
             }
         }
 
