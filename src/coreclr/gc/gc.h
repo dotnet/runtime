@@ -421,7 +421,7 @@ void GCLog (const char *fmt, ... );
 // time, which doesn't match usual stress log usage.
 //
 // In practice, dprintf(1) and LL_INFO10 (which has the value 4) have been used
-// similarly on log messages.  A dprintf(1) is generally called a few times per
+// similarly on log messages.  A dprintf(1) is generally called about a few times per
 // GC, and LL_INFO10 is "10 logs per small but not trivial run".  Other values
 // have been audited.  We could consider moving the GC values to be in line with
 // the rest of the runtime (change 1 to 4 to make room for errors/warnings, etc.)
