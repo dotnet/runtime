@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public string Locale { get; set; }
 
-        // Depending on the source of the runtime file, this path may be relative to the
+        // Depending on the source of the resource assembly, this path may be relative to the
         // a referenced NuGet package's root or to the app/component root.
         public string Path { get; set; }
 
