@@ -630,30 +630,27 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     public MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer)
+        => GetMethodDescHandle(methodDescPointer, validate: true);
+
+    private MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer, bool validate)
     {
-        // if we already validated this address, return a handle
+        // if we already have a method desc at this address, return a handle
         if (_methodDescs.ContainsKey(methodDescPointer))
         {
             return new MethodDescHandle(methodDescPointer);
         }
-        // Check if we cached the underlying data already
-        if (_target.ProcessedData.TryGet(methodDescPointer, out Data.MethodDesc? methodDescData))
-        {
-            // we already cached the data, we must have validated the address, create the representation struct for our use
-            TargetPointer mdescChunkPtr = _methodValidation.GetMethodDescChunkPointerThrowing(methodDescPointer, methodDescData);
-            // FIXME[cdac]: this isn't threadsafe
-            if (!_target.ProcessedData.TryGet(mdescChunkPtr, out Data.MethodDescChunk? methodDescChunkData))
-            {
-                throw new InvalidOperationException("cached MethodDesc data but not its containing MethodDescChunk");
-            }
-            MethodDesc validatedMethodDesc = new MethodDesc(_target, methodDescPointer, methodDescData, mdescChunkPtr, methodDescChunkData);
-            _ = _methodDescs.TryAdd(methodDescPointer, validatedMethodDesc);
-            return new MethodDescHandle(methodDescPointer);
-        }
 
-        if (!_methodValidation.ValidateMethodDescPointer(methodDescPointer, out TargetPointer methodDescChunkPointer))
+        TargetPointer methodDescChunkPointer;
+        if (validate)
         {
-            throw new ArgumentException("Invalid method desc pointer", nameof(methodDescPointer));
+            if (!_methodValidation.ValidateMethodDescPointer(methodDescPointer, out methodDescChunkPointer))
+            {
+                throw new ArgumentException("Invalid method desc pointer", nameof(methodDescPointer));
+            }
+        }
+        else
+        {
+            methodDescChunkPointer = _methodValidation.GetMethodDescChunkPointerThrowing(methodDescPointer, _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer));
         }
 
         // ok, we validated it, cache the data and add the MethodDesc struct to the dictionary
@@ -998,7 +995,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             // chunk.Count is the number of MethodDescs in the chunk - 1
             for (int i = 0; i < chunk.Count + 1; i++)
             {
-                MethodDescHandle methodDescHandle = GetMethodDescHandle(methodDescPtr);
+                // Validation of some MethodDescs fails in heap dumps due to missing memory.
+                // Skipping validation should be okay as the pointers come from the target.
+                MethodDescHandle methodDescHandle = GetMethodDescHandle(methodDescPtr, validate: false);
                 MethodDesc md = _methodDescs[methodDescHandle.Address];
                 methodDescPtr += md.Size;
                 yield return methodDescHandle;
