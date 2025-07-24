@@ -668,10 +668,24 @@ namespace ILCompiler
             TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
                 (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
 
-            if (foundType == null)
-                throw new CommandLineException(string.Format(SR.TypeNotFound, typeName));
+            if (foundType != null)
+                return foundType;
 
-            return foundType;
+            // In composite mode the method we care about may be in any one of the input files, not just the system module.
+            if (Get(_command.Composite))
+            {
+                foreach (var searchModulePath in context.InputFilePaths.Values)
+                {
+                    var searchModule = context.GetModuleFromPath(searchModulePath, true);
+                    foundType = searchModule.GetTypeByCustomAttributeTypeName(typeName, false,
+                        (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+
+                    if (foundType != null)
+                        return foundType;
+                }
+            }
+
+            throw new CommandLineException(string.Format(SR.TypeNotFound, typeName));
         }
 
         private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
